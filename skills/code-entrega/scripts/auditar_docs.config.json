@@ -1,0 +1,7 @@
+{
+  "readme_nome": "README.md",
+  "secoes_obrigatorias": ["Visão geral", "Stack", "Setup", "Testes", "Licença"],
+  "module_roots": ["backend", "frontend"],
+  "docs_dir": "docs",
+  "license_globs": ["LICENSE", "LICENSE.*", "LICENSE.md", "LICENSE.txt"]
+}

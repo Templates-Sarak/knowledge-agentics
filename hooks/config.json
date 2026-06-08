@@ -1,0 +1,30 @@
+{
+  "_doc": "Tunables não-secretos dos hooks de QUALIDADE. Cada projeto que importa a base ajusta aqui. Segurança (cyber-git-seguro) é fail-closed fixo e NÃO depende deste arquivo.",
+  "qualidade": {
+    "modo": "warn",
+    "_modo_doc": "block = bloqueia/cobra correção | warn = só avisa o modelo | off = ignora",
+    "limiares": { "linhas": 40, "aninhamento": 3, "parametros": 4 },
+    "proibir": { "printConsole": true, "excecaoEngolida": true }
+  },
+  "formatacao": { "ativo": true },
+  "cobertura": {
+    "modo": "ask",
+    "_modo_doc": "ask = pede aprovação do usuário se abaixo do mínimo | block = bloqueia o push | warn = avisa e prossegue | off = ignora",
+    "minima": 80,
+    "_minima_doc": "% mínimo por projeto (alinhado a padrao-escrita §9). Roda só no push e só onde há ferramenta + testes.",
+    "ferramentas": { "python": "pytest", "js": "vitest", "go": "go", "java": "jacoco" }
+  },
+  "dependencias": {
+    "modo": "warn",
+    "_modo_doc": "block = bloqueia o push | warn = avisa e prossegue | off = ignora. Missing-tool segue o modo (não trava em warn).",
+    "severidadeMinima": "high",
+    "_sev_doc": "low | moderate | high | critical — aplicado nativamente pelo npm; pip-audit/govulncheck reportam qualquer achado.",
+    "ferramentas": { "node": "npm", "python": "pip-audit", "go": "govulncheck" }
+  },
+  "linguagens": {
+    "python": { "linter": "ruff", "formatter": "ruff" },
+    "js": { "linter": "eslint", "formatter": "prettier" },
+    "go": { "linter": "golangci-lint", "formatter": "gofmt" },
+    "java": { "linter": "checkstyle", "formatter": "google-java-format" }
+  }
+}

@@ -1,0 +1,23 @@
+# SPA estático — build do bundle + nginx NÃO-ROOT (imagem unprivileged, porta 8080). Fallback try_files.
+# --- build ---
+FROM node:20-slim AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# --- runtime ---
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+# config de SPA: serve index.html para qualquer rota (fallback). A imagem unprivileged já roda como user "nginx".
+COPY --chown=nginx:nginx <<'CONF' /etc/nginx/conf.d/default.conf
+server {
+  listen 8080;
+  root /usr/share/nginx/html;
+  location / { try_files $uri $uri/ /index.html; }
+}
+CONF
+COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
+USER nginx
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -qO- http://localhost:8080/ >/dev/null || exit 1

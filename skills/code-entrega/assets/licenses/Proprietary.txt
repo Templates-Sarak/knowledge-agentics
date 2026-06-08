@@ -1,0 +1,16 @@
+Copyright (c) [ANO] [NOME]. Todos os direitos reservados.
+All Rights Reserved.
+
+Este software e seu código-fonte são propriedade exclusiva de [NOME]. Nenhuma
+parte deste projeto — código, documentação, assets ou configuração — pode ser
+copiada, modificada, mesclada, publicada, distribuída, sublicenciada, vendida
+ou usada, no todo ou em parte, sem autorização prévia e por escrito do detentor
+dos direitos.
+
+O acesso a este repositório não concede qualquer licença ou direito sobre a
+propriedade intelectual aqui contida, exceto quando expressamente acordado por
+escrito.
+
+O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA DE QUALQUER
+TIPO. EM NENHUMA HIPÓTESE O AUTOR SERÁ RESPONSÁVEL POR QUAISQUER REIVINDICAÇÕES,
+DANOS OU OUTRAS RESPONSABILIDADES DECORRENTES DO USO DESTE SOFTWARE.

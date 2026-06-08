@@ -1,0 +1,12 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "[NOME_DA_ORGANIZACAO]",
+  "url": "[URL_DO_SITE]",
+  "logo": "[URL_DA_LOGO]",
+  "sameAs": [
+    "[URL_INSTAGRAM]",
+    "[URL_LINKEDIN]",
+    "[URL_FACEBOOK]"
+  ]
+}

@@ -1,0 +1,19 @@
+#!/bin/sh
+# pre-commit — gate de segredos do ecossistema Sarak (skill git-verificacao-commit).
+# Instalado pela git-commit-inicial. Roda em TODO `git commit` e bloqueia se houver
+# segredo ou arquivo sensível no que está staged. O script viaja com o repo em .githooks/.
+
+if command -v python >/dev/null 2>&1; then PY=python; else PY=python3; fi
+
+"$PY" .githooks/verificar_commit.py --raiz .
+status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo ""
+  echo "⛔ COMMIT BLOQUEADO — segredo ou arquivo sensível detectado no staged (ver acima)."
+  echo "   • Corrija: mova o segredo para .env (e adicione ao .gitignore) e re-stage."
+  echo "   • Histórico/branches: rode a skill git-especialista-repositorio."
+  echo "   • Falso positivo? ajuste .githooks/config.json (allowlist)."
+  exit 1
+fi
+exit 0

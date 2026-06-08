@@ -1,0 +1,26 @@
+{
+  "padrao_kebab": "^[a-z0-9]+(-[a-z0-9]+)*$",
+  "config_modulo_nome": "config.json",
+  "tipos": {
+    "backend": {
+      "pasta_raiz": "backend",
+      "extensao": "ts",
+      "estrutura": {
+        "api": ["routes", "adapter"],
+        "domain": [],
+        "data": [],
+        "tests": []
+      },
+      "config_modulo": true
+    },
+    "frontend": {
+      "pasta_raiz": "frontend",
+      "extensao": "ts",
+      "estrutura": {
+        "components": [],
+        "api-client": ["client"]
+      },
+      "config_modulo": true
+    }
+  }
+}

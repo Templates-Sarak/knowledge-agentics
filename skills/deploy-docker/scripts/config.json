@@ -1,0 +1,9 @@
+{
+  "_fonte": "Tunables do validar_docker.py (zero-hardcoded). Cada projeto pode ajustar globs/listas.",
+  "dockerfile_globs": ["Dockerfile", "Dockerfile.*", "*.Dockerfile"],
+  "nomes_segredo_build": [
+    "secret", "password", "passwd", "api_key", "apikey", "token", "private_key",
+    "access_key", "client_secret", "credential"
+  ],
+  "ignorar_dirs": [".git", "node_modules", "dist", "build", "target", ".venv", "venv", "__pycache__"]
+}

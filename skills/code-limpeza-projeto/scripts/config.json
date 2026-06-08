@@ -1,0 +1,8 @@
+{
+  "padroes_nome_lixo": ["*.log", "*.tmp", "*.swp", "*.bak", "*~"],
+  "dirs_lixo": ["old", "backup", "legacy", "_bkp", "temp", "tmp", "v1_trash"],
+  "marcadores": ["console.log", "debugger", "TODO", "FIXME", "XXX"],
+  "extensoes_codigo": [".js", ".ts", ".jsx", ".tsx", ".py", ".go", ".java", ".rb", ".php"],
+  "ignorar_dirs": ["node_modules", ".git", "dist", "build", ".venv", "venv", "__pycache__"],
+  "tamanho_grande_bytes": 5000000
+}

@@ -1,0 +1,23 @@
+# Node/TS — multi-stage, não-root, porta via ENV. Ajuste nomes (dist/, start) ao módulo.
+# --- build ---
+FROM node:20-slim AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# --- runtime ---
+FROM node:20-slim AS runtime
+ENV NODE_ENV=production
+ENV PORT=3000
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=build /app/dist ./dist
+# usuário não-root (a imagem node já traz o usuário "node")
+USER node
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:'+process.env.PORT,r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+CMD ["node", "dist/main.js"]

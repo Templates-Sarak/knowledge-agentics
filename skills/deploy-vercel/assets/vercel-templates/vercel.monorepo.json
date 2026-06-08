@@ -1,0 +1,8 @@
+{
+  "projects": [
+    {
+      "rootDirectory": "frontend",
+      "framework": "nextjs"
+    }
+  ]
+}

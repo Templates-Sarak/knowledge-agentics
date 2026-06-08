@@ -1,0 +1,39 @@
+# Orquestração local microservice-ready: UM serviço por módulo, rede compartilhada, env_file (sem valor inline).
+# Os módulos se falam pelo api/ um do outro (nunca o banco direto de outro módulo). Ajuste nomes ao projeto.
+services:
+  orders:
+    build:
+      context: ./backend/orders        # 1 Dockerfile por módulo (módulo=domínio)
+    env_file: .env                      # nunca valores inline; .env no .gitignore, .env.example versionado
+    environment:
+      PORT: 8000                        # tunable, não segredo
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks: [appnet]
+
+  users:
+    build:
+      context: ./backend/users
+    env_file: .env
+    environment:
+      PORT: 8001
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+    networks: [appnet]
+
+  db:
+    image: postgres:16-alpine           # versão fixada, nunca :latest
+    env_file: .env                      # POSTGRES_PASSWORD etc. vêm do .env (segredo só em runtime)
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks: [appnet]
+
+networks:
+  appnet:
+
+volumes:
+  dbdata:

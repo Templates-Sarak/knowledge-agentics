@@ -1,0 +1,10 @@
+{
+  "padroes": {
+    "Conflito de merge nao resolvido": {"regex": "(<<<<<<<|>>>>>>>)", "severidade": "bloqueio"},
+    "Breakpoint de debug": {"regex": "(debugger;|pdb\\.set_trace|breakpoint\\(\\)|binding\\.pry|dd\\(|var_dump\\()", "severidade": "bloqueio"},
+    "Log de debug": {"regex": "(?i)(console\\.(log|debug|dir)|System\\.out\\.print|fmt\\.Print|\\bprint\\()", "severidade": "aviso"},
+    "Marcador pendente": {"regex": "\\b(TODO|FIXME|XXX|HACK)\\b", "severidade": "aviso"},
+    "skip de teste": {"regex": "(?i)(\\.only\\(|\\.skip\\(|xit\\(|xdescribe\\(|@pytest\\.mark\\.skip)", "severidade": "aviso"}
+  },
+  "bloquear_em": ["bloqueio"]
+}

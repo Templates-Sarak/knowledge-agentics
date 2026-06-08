@@ -1,0 +1,27 @@
+# Mantém o contexto de build enxuto e impede vazar segredo/artefato para a imagem.
+.git
+.gitignore
+**/.env
+**/.env.*
+!**/.env.example
+node_modules
+**/node_modules
+dist
+build
+target
+__pycache__
+*.pyc
+.venv
+venv
+coverage
+.coverage
+htmlcov
+.pytest_cache
+tests
+**/tests
+.vscode
+.idea
+*.log
+Dockerfile*
+docker-compose*.yml
+README.md

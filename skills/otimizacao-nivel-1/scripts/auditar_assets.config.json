@@ -1,0 +1,8 @@
+{
+  "extensoes_imagem_legada": [".png", ".jpg", ".jpeg", ".gif", ".bmp"],
+  "extensoes_imagem": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".avif"],
+  "tamanho_imagem_grande_bytes": 200000,
+  "extensoes_markup": [".html", ".jsx", ".tsx", ".vue", ".svelte", ".astro"],
+  "libs_pesadas": ["framer-motion", "gsap", "moment", "lodash", "three", "chart.js"],
+  "ignorar_dirs": ["node_modules", ".git", "dist", "build", ".next", ".venv", "venv", "__pycache__"]
+}

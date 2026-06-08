@@ -1,0 +1,24 @@
+{
+  "_doc": "TEMPLATE de ativação dos hooks no projeto que IMPORTA esta base. Não ativa nada na própria base. Para usar: mescle este bloco 'hooks' no .claude/settings.json do projeto-destino. Ao empacotar como plugin, troque $CLAUDE_PROJECT_DIR por ${CLAUDE_PLUGIN_ROOT} e mova para hooks/hooks.json do plugin.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/hooks/cyber-git-seguro.js\"" },
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/hooks/cyber-dependencias.js\"" },
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/hooks/test-cobertura.js\"" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/hooks/padrao-format.js\"" },
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/hooks/padrao-limiares.js\"" }
+        ]
+      }
+    ]
+  }
+}

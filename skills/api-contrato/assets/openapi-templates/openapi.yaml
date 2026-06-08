@@ -1,0 +1,57 @@
+# Template de contrato (copie para backend/<modulo>/api/openapi.yaml e ajuste ao módulo).
+# Padrão Sarak: prefixo /api/v1, recurso plural kebab-case, sem verbo no path, schemas em camelCase.
+openapi: 3.1.0
+info:
+  title: <modulo> — contrato público
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /<recursos-kebab>:
+    get:
+      summary: Lista <recursos>
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Recurso" } }
+    post:
+      summary: Cria <recurso>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecursoInput" }
+      responses:
+        "201": { description: criado, content: { application/json: { schema: { $ref: "#/components/schemas/Recurso" } } } }
+        "400": { description: inválido, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /<recursos-kebab>/{recursoId}:
+    get:
+      summary: Detalha <recurso>
+      parameters:
+        - { name: recursoId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Recurso" } } } }
+        "404": { description: não encontrado, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+components:
+  schemas:
+    Recurso:
+      type: object
+      properties:
+        recursoId: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [recursoId]
+    RecursoInput:
+      type: object
+      properties:
+        nome: { type: string }
+      required: [nome]
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+      required: [code, message]

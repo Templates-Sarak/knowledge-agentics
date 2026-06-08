@@ -1,0 +1,28 @@
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "[NOME_DO_NEGOCIO]",
+  "image": "[URL_DA_LOGO_OU_FACHADA]",
+  "@id": "[URL_DO_SITE]",
+  "url": "[URL_DO_SITE]",
+  "telephone": "[TELEFONE]",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "[RUA_E_NUMERO]",
+    "addressLocality": "[CIDADE]",
+    "addressRegion": "[UF]",
+    "postalCode": "[CEP]",
+    "addressCountry": "BR"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "0.000",
+    "longitude": "0.000"
+  },
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "opens": "09:00",
+    "closes": "18:00"
+  }
+}

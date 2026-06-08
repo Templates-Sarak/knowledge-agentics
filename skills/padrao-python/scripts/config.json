@@ -1,0 +1,11 @@
+{
+  "maxFunctionLines": 40,
+  "maxNesting": 3,
+  "maxParams": 4,
+  "ignoreParamNames": ["self", "cls"],
+  "skipDirs": ["__pycache__", ".venv", "venv", ".git", ".mypy_cache", ".pytest_cache", "build", "dist"],
+  "allowedMagicNumbers": [0, 1, -1, 2],
+  "secretNamePatterns": ["password", "passwd", "secret", "token", "api_key", "apikey", "access_key", "private_key", "client_secret"],
+  "urlLikePrefixes": ["http://", "https://", "postgres://", "postgresql://", "mysql://", "mongodb://", "redis://", "amqp://"],
+  "hardcodedHeuristic": true
+}

@@ -1,0 +1,15 @@
+{
+  "padroes": {
+    "eval/Function dinamico": {"regex": "(?i)\\b(eval|new\\s+Function)\\s*\\(", "confianca": "alta"},
+    "Command injection (Node)": {"regex": "(?i)\\b(exec|execSync)\\s*\\(", "confianca": "media"},
+    "Command injection (Python)": {"regex": "(?i)(os\\.system\\s*\\(|subprocess\\.[A-Za-z]+\\([^)]*shell\\s*=\\s*True|os\\.popen\\s*\\()", "confianca": "media"},
+    "XSS sink (innerHTML/dangerouslySetInnerHTML)": {"regex": "(?i)(innerHTML|outerHTML|dangerouslySetInnerHTML|document\\.write\\s*\\()", "confianca": "media"},
+    "Cripto fraca (MD5/SHA1/DES/ECB)": {"regex": "(?i)(createHash\\(['\"](md5|sha1)['\"]\\)|\\bDES-|\\bECB\\b|hashlib\\.(md5|sha1)\\s*\\()", "confianca": "media"},
+    "Random inseguro p/ token": {"regex": "(?i)Math\\.random\\s*\\(", "confianca": "baixa"},
+    "Desserializacao insegura": {"regex": "(?i)(pickle\\.loads\\s*\\(|yaml\\.load\\s*\\(|unserialize\\s*\\(|Marshal\\.load\\s*\\()", "confianca": "alta"},
+    "Path traversal literal": {"regex": "\\.\\./\\.\\.", "confianca": "baixa"},
+    "SSRF (request com variavel)": {"regex": "(?i)(requests\\.(get|post)|axios|fetch)\\s*\\(\\s*[a-zA-Z_$]", "confianca": "baixa"}
+  },
+  "extensoes": [".js", ".ts", ".jsx", ".tsx", ".py", ".go", ".java", ".rb", ".php"],
+  "ignorar_dirs": ["node_modules", ".git", "dist", "build", ".next", ".venv", "venv", "__pycache__"]
+}

@@ -1,0 +1,9 @@
+{
+  "_comentario": "Template de config.json de um módulo. Valores NÃO secretos. Substitua os exemplos.",
+  "_regra": "Segredos (tokens, senhas, chaves, strings de conexão) vão no .env, NUNCA aqui.",
+  "timeout_ms": 5000,
+  "limite_por_pagina": 20,
+  "feature_flags": {
+    "exemplo_recurso_novo": false
+  }
+}

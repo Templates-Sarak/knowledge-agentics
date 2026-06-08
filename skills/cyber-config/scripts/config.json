@@ -1,0 +1,15 @@
+{
+  "headers_seguranca": [
+    "content-security-policy",
+    "strict-transport-security",
+    "x-content-type-options",
+    "x-frame-options",
+    "referrer-policy",
+    "permissions-policy"
+  ],
+  "paths_sensiveis": [
+    "/.git/config", "/.git/HEAD", "/.env", "/.env.local", "/.env.production",
+    "/backup.zip", "/backup.sql", "/dump.sql", "/.DS_Store", "/config.json", "/phpinfo.php"
+  ],
+  "timeout_s": 10
+}

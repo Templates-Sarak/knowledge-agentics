@@ -1,0 +1,10 @@
+{
+  "_fonte": "Tunables do validar_contrato.py (zero-hardcoded). Cada projeto pode ajustar prefixo/verbos/globs.",
+  "prefixo_obrigatorio": "/api/v1/",
+  "verbos_proibidos": [
+    "get", "post", "put", "patch", "delete", "create", "update", "remove",
+    "list", "fetch", "find", "search", "add", "edit", "new"
+  ],
+  "spec_globs": ["openapi.yaml", "openapi.yml", "openapi.json", "*.openapi.yaml", "*.openapi.json"],
+  "ignorar_dirs": [".git", "node_modules", "dist", "build", "target", ".venv", "venv", "__pycache__"]
+}

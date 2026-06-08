@@ -1,0 +1,13 @@
+# Ambiente e caches
+__pycache__/
+*.pyc
+node_modules/
+.venv/
+
+# Auditorias e artefatos locais temporários
+.sarak/
+*.log
+.DS_Store
+
+# Opcional: ignorar pasta de hooks/scripts caso queira separar o core
+# Mas como fazem parte do plugin, eles ficam.

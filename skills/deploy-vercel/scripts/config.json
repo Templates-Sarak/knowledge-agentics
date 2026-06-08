@@ -1,0 +1,7 @@
+{
+  "arquivos_config_build": ["vercel.json", "next.config.js", "next.config.ts", "next.config.mjs", "package.json"],
+  "arquivos_segredo_proibidos": [".env", ".env.local", ".env.production", "*.pem"],
+  "padroes_segredo": ["(?i)(secret|password|passwd|api[_-]?key|token)[\"'\\s]*[:=]", "(?i)://[^\\s\"']+:[^\\s\"']+@"],
+  "env_example": ".env.example",
+  "ignorar_dirs": ["node_modules", ".git", "dist", "build", ".venv"]
+}

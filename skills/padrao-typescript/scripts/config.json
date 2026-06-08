@@ -1,0 +1,12 @@
+{
+  "maxFunctionLines": 40,
+  "maxNesting": 3,
+  "maxParams": 4,
+  "ignoreParamNames": ["this"],
+  "extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"],
+  "skipDirs": ["node_modules", "dist", "build", ".next", "out", "coverage", ".git", ".turbo"],
+  "allowedMagicNumbers": [0, 1, -1, 2],
+  "secretNamePatterns": ["password", "passwd", "secret", "token", "apikey", "accesskey", "privatekey", "clientsecret"],
+  "urlLikePrefixes": ["http://", "https://", "postgres://", "postgresql://", "mysql://", "mongodb://", "redis://", "amqp://"],
+  "hardcodedHeuristic": true
+}

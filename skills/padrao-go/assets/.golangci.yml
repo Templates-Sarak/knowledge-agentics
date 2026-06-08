@@ -1,0 +1,35 @@
+# golangci-lint — limiares do padrao-escrita (ecossistema Sarak).
+# Uso: golangci-lint run --config .golangci.yml ./...
+run:
+  timeout: 3m
+
+linters:
+  enable:
+    - funlen      # tamanho de função
+    - nestif      # aninhamento
+    - gocyclo     # complexidade ciclomática
+    - revive      # estilo + limite de parâmetros
+    - errcheck    # erro retornado não tratado
+    - govet       # correção
+    - ineffassign # atribuição inútil
+    - gosec       # segurança básica
+
+linters-settings:
+  funlen:
+    lines: 40         # função <= 40 linhas (padrao-escrita)
+    statements: 40
+  gocyclo:
+    min-complexity: 12
+  nestif:
+    min-complexity: 4 # aninhamento ~<= 3
+  revive:
+    rules:
+      - name: argument-limit
+        arguments: [4]   # <= 4 parametros
+      - name: error-return
+      - name: unexported-return
+
+issues:
+  exclude-rules:
+    - path: _test\.go    # testes podem ser mais longos
+      linters: [funlen]
