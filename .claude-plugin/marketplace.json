@@ -1,0 +1,11 @@
+{
+  "name": "knowledge-agentics",
+  "owner": { "name": "Templates-Sarak" },
+  "plugins": [
+    {
+      "name": "sarak",
+      "source": "./",
+      "description": "Ecossistema de Inteligência Sarak (X-Skills) — skills, commands, agents e hooks."
+    }
+  ]
+}

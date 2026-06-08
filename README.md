@@ -270,17 +270,44 @@ README é a fonte da verdade**. Toda funcionalidade nova nasce já neste padrão
 
 ---
 
-## 6. Como Instalar (Sincronizador Global)
+## 6. Como Instalar
 
-O ecossistema Sarak não precisa ser copiado fisicamente para cada projeto novo. Ele funciona como um **Cérebro Global** injetado na sua IDE ou provedor de IA favorito.
+O ecossistema Sarak é a **fonte da verdade** versionada no GitHub (`Templates-Sarak/knowledge-agentics`).
+Cada ferramenta agêntica o consome do seu jeito — o repositório é **agnóstico**: os manifestos de cada
+provedor convivem sem interferir um no outro.
 
-Para sincronizar todas as skills e comandos desta pasta para a sua máquina, utilize o script em `plugin/`:
+### Claude Code — plugin nativo (do GitHub)
+
+O repo é, ao mesmo tempo, um **marketplace** e o **plugin `sarak`** (manifestos em `.claude-plugin/`).
+Instala e atualiza direto do GitHub — sem copiar nada para o projeto:
+
+```
+/plugin marketplace add Templates-Sarak/knowledge-agentics
+/plugin install sarak@knowledge-agentics
+```
+
+Isso carrega **skills, commands, agents e hooks** nativamente em qualquer projeto. As 4 garantias
+(`hooks/hooks.json`) ficam **ativas por padrão** ao instalar. Atualizar depois:
+
+```
+/plugin marketplace update knowledge-agentics
+```
+
+> O `CLAUDE.md` (inegociáveis sempre-ativos) **não** viaja no plugin — mantenha-o na raiz do projeto-alvo
+> ou em `~/.claude/CLAUDE.md`. O modo manual dos hooks (mesclar `hooks/settings.template.json`) segue
+> disponível para quem não usa o plugin.
+
+### Antigravity / outros provedores — Sincronizador Global
+
+Provedores sem suporte a marketplace consomem via script em `plugin/`:
 
 ```bash
 cd plugin
-python sync_ide.py --target all
+python sync_ide.py --target antigravity
 ```
 
-**Alvos Suportados:**
-- `--target antigravity`: Copia a base de inteligência e constrói o manifesto nativo do Gemini Antigravity (em `~/.gemini/config/plugins/sarak`).
-- `--target claude`: Varre a pasta `commands/` e compila uma tabela de roteamento estática para você colar nas suas `Global Custom Instructions` do Claude Code.
+- `--target antigravity`: copia a base de inteligência e constrói o manifesto nativo do Gemini Antigravity
+  (em `~/.gemini/config/plugins/sarak`) + gera as User Rules de roteamento dos commands.
+
+> **Claude via sync (legado):** `--target claude` gera uma tabela de roteamento para colar nas Custom
+> Instructions. **Preferir o plugin nativo acima** — este caminho fica só como alternativa sem instalação.

@@ -1,0 +1,6 @@
+{
+  "name": "sarak",
+  "version": "1.0.0",
+  "description": "Ecossistema de Inteligência Sarak — skills, commands, agents e hooks sob um padrão único.",
+  "author": { "name": "Igor Sarak", "email": "igorsarak@gmail.com" }
+}

@@ -1,0 +1,24 @@
+{
+  "_doc": "Wiring NATIVO dos hooks quando esta base é instalada como plugin do Claude Code. Ativo por padrão ao instalar o plugin 'sarak'. Os caminhos resolvem via ${CLAUDE_PLUGIN_ROOT}; os scripts operam sobre o projeto-alvo (cwd). Equivalente manual (mesclar no settings.json de um projeto): hooks/settings.template.json.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/cyber-git-seguro.js\"" },
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/cyber-dependencias.js\"" },
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/test-cobertura.js\"" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/padrao-format.js\"" },
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/padrao-limiares.js\"" }
+        ]
+      }
+    ]
+  }
+}

@@ -9,5 +9,13 @@ node_modules/
 *.log
 .DS_Store
 
-# Opcional: ignorar pasta de hooks/scripts caso queira separar o core
-# Mas como fazem parte do plugin, eles ficam.
+# Config LOCAL do Claude (permissões/overrides da máquina) — não versionar.
+# A config versionada é .claude/settings.json; a local é por desenvolvedor.
+.claude/settings.local.json
+
+# ─────────────────────────────────────────────────────────────────────────────
+# O QUE FICA VERSIONADO (não ignorar — é o plugin, a fonte da verdade):
+#   .claude-plugin/  (plugin.json + marketplace.json)
+#   skills/  commands/  agents/  hooks/  (inclui hooks/hooks.json)
+#   CLAUDE.md  README.md  plugin/sync_ide.py
+# Nada acima é ignorado — listado aqui só para deixar a intenção explícita.
