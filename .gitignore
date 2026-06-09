@@ -5,7 +5,6 @@ node_modules/
 .venv/
 
 # Auditorias e artefatos locais temporários
-.sarak/
 *.log
 .DS_Store
 
