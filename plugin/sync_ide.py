@@ -12,7 +12,7 @@ def get_args():
     return parser.parse_args()
 
 def sync_antigravity(xskills_root):
-    print("\n--- Sincronizando com Antigravity ---")
+    print("\n--- Sincronizando Core Local do Antigravity ---")
     home = Path.home()
     plugins_dir = home / ".gemini" / "config" / "plugins"
     
@@ -52,53 +52,37 @@ def sync_antigravity(xskills_root):
             print(f"[OK] Subagentes instalados em {dest_agents}")
     except Exception as e:
         print(f"[ERRO] Falha ao copiar arquivos para o Antigravity: {e}")
-        
-    # Roteamento estático dos comandos para injetar em User Rules
-    commands_dir = xskills_root / "commands"
-    rules_text = "Sarak Routing Table (Insira nas suas User Rules globais do Antigravity):\n\n"
-    rules_text += "Sempre que o usuário iniciar o prompt com um dos comandos abaixo, leia silenciosamente o arquivo absoluto correspondente antes de executar qualquer plano:\n"
-    
-    if commands_dir.exists():
-        for file in os.listdir(commands_dir):
-            if file.endswith(".md"):
-                cmd_name = "/" + file[:-3]
-                abs_path = str(commands_dir / file).replace('\\', '/')
-                rules_text += f"- Se o comando for '{cmd_name}': Leia {abs_path}\n"
-                
-    output_rules = xskills_root / "plugin" / "antigravity_rules.txt"
-    with open(output_rules, "w", encoding="utf-8") as f:
-        f.write(rules_text)
-        
-    print(f"[OK] Regras de comandos (Antigravity Routing) geradas em: {output_rules}")
-    print("[INFO] Copie o conteúdo de 'antigravity_rules.txt' e cole nas 'User Rules' da IDE Antigravity para habilitar os slash commands.")
 
-def sync_claude(xskills_root):
-    print("\n--- Sincronizando com Claude Code ---")
-    
-    # Roteamento dinâmico dos comandos
+def generate_routing_table(xskills_root):
+    print("\n--- Gerando Tabela de Roteamento Unificada ---")
     commands_dir = xskills_root / "commands"
-    routing_table = "Sarak Routing Table (Insira no seu Custom Instruction global do Claude):\n"
-    routing_table += "O diretório principal de suas skills é: " + str(xskills_root / "skills").replace('\\', '/') + "\n\n"
-    routing_table += "Sempre que o usuário digitar um dos comandos abaixo, leia silenciosamente o arquivo markdown absoluto correspondente e siga as instruções contidas nele antes de realizar qualquer outra ação:\n"
+    
+    table = "# Sarak Global Routing Table\n\n"
+    table += "> **Atenção IAs:** Quando o usuário enviar qualquer comando com o prefixo `/` listado abaixo, "
+    table += "você deve ler o arquivo absoluto correspondente e seguir as instruções antes de agir.\n\n"
     
     if commands_dir.exists():
-        for file in os.listdir(commands_dir):
+        for file in sorted(os.listdir(commands_dir)):
             if file.endswith(".md"):
                 cmd_name = "/" + file[:-3]
                 abs_path = str(commands_dir / file).replace('\\', '/')
-                routing_table += f"- Se o usuário digitar '{cmd_name}': Leia {abs_path}\n"
+                table += f"- **{cmd_name}**: `{abs_path}`\n"
                 
-    output_instructions = xskills_root / "plugin" / "claude_instructions.txt"
-    with open(output_instructions, "w", encoding="utf-8") as f:
-        f.write(routing_table)
+    output_file = xskills_root / "plugin" / "sarak_routing_table.md"
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(table)
         
-    print(f"[OK] Tabela de roteamento de comandos gerada em: {output_instructions}")
-    print("[INFO] Para o Claude, copie o conteúdo desse arquivo de texto e cole nas 'Global Custom Instructions' da sua conta/terminal.")
+    print(f"[OK] Tabela unificada gerada em: {output_file}")
+    
+    print("\n[INSTRUÇÃO ÚNICA DE CONFIGURAÇÃO (SETUP)]")
+    print("Cole a frase abaixo nas Regras Globais das suas IDEs (Antigravity e Claude) UMA ÚNICA VEZ:")
+    print("-" * 70)
+    print(f"Sempre que o usuário enviar um comando iniciando com '/', leia silenciosamente o arquivo de rotas centralizado em {str(output_file).replace(chr(92), '/')} para descobrir qual arquivo absoluto executar.")
+    print("-" * 70)
 
 def main():
     args = get_args()
     
-    # Diretório raiz do X-Skills (assumindo que o script roda de X-Skills/plugin/)
     xskills_root = Path(__file__).parent.parent.resolve()
     
     if not (xskills_root / "skills").exists():
@@ -108,10 +92,10 @@ def main():
     if args.target in ["antigravity", "all"]:
         sync_antigravity(xskills_root)
         
-    if args.target in ["claude", "all"]:
-        sync_claude(xskills_root)
+    # A tabela é gerada de forma unificada para ambas as IDEs
+    generate_routing_table(xskills_root)
         
-    print("\nSincronização global concluída!")
+    print("\nSincronização global concluída com sucesso!")
 
 if __name__ == "__main__":
     main()
