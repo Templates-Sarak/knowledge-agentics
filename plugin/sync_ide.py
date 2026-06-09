@@ -62,7 +62,7 @@ def sync_claude(xskills_root):
     dest_root = plugins_cache / marketplace_name / plugin_name / version
     dest_root.mkdir(parents=True, exist_ok=True)
 
-    copy_subdirs(xskills_root, dest_root, ["skills", "agents", "commands", "hooks"])
+    copy_subdirs(xskills_root, dest_root, ["skills", "agents", "commands", "hooks", "specs"])
     print(f"[OK] Plugin '{plugin_name}' v{version} espelhado no cache do Claude.")
     print("[NOTA] Reinicie a sessão do Claude para o catálogo recarregar as skills novas.")
 
@@ -86,7 +86,7 @@ def sync_antigravity(xskills_root):
     with open(sarak_plugin_dir / "plugin.json", "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
-    copy_subdirs(xskills_root, sarak_plugin_dir, ["skills", "agents", "commands", "hooks"])
+    copy_subdirs(xskills_root, sarak_plugin_dir, ["skills", "agents", "commands", "hooks", "specs"])
 
 def generate_routing_table(xskills_root):
     print("\n--- Gerando Tabela de Roteamento Unificada ---")
