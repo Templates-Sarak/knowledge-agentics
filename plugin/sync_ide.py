@@ -11,6 +11,53 @@ def get_args():
                         help="Provedor de IA alvo para instalação do Sarak")
     return parser.parse_args()
 
+def copy_subdirs(xskills_root, dest_root, subdirs):
+    """Espelha cada subpasta da base para dest_root (rmtree + copytree). I/O claro."""
+    for name in subdirs:
+        source = xskills_root / name
+        if not source.exists():
+            continue
+        dest = dest_root / name
+        if dest.exists():
+            shutil.rmtree(dest)
+        try:
+            shutil.copytree(source, dest)
+            print(f"[OK] {name}/ espelhado em {dest}")
+        except Exception as e:
+            print(f"[ERRO] Falha ao copiar {name}/ para {dest_root}: {e}")
+
+def read_plugin_meta(xskills_root):
+    """Lê nome do marketplace, nome e versão do plugin a partir dos manifestos do repo."""
+    plugin_json = xskills_root / ".claude-plugin" / "plugin.json"
+    marketplace_json = xskills_root / ".claude-plugin" / "marketplace.json"
+    with open(plugin_json, "r", encoding="utf-8") as f:
+        plugin = json.load(f)
+    with open(marketplace_json, "r", encoding="utf-8") as f:
+        marketplace = json.load(f)
+    return marketplace["name"], plugin["name"], plugin["version"]
+
+def sync_claude(xskills_root):
+    print("\n--- Sincronizando Cache do Plugin Claude ---")
+    home = Path.home()
+    plugins_cache = home / ".claude" / "plugins" / "cache"
+
+    if not plugins_cache.exists():
+        print(f"[ERRO] Cache de plugins do Claude não encontrado: {plugins_cache}")
+        return
+
+    try:
+        marketplace_name, plugin_name, version = read_plugin_meta(xskills_root)
+    except Exception as e:
+        print(f"[ERRO] Falha ao ler manifestos do plugin (.claude-plugin/): {e}")
+        return
+
+    dest_root = plugins_cache / marketplace_name / plugin_name / version
+    dest_root.mkdir(parents=True, exist_ok=True)
+
+    copy_subdirs(xskills_root, dest_root, ["skills", "agents", "commands"])
+    print(f"[OK] Plugin '{plugin_name}' v{version} espelhado no cache do Claude.")
+    print("[NOTA] Reinicie a sessão do Claude para o catálogo recarregar as skills novas.")
+
 def sync_antigravity(xskills_root):
     print("\n--- Sincronizando Core Local do Antigravity ---")
     home = Path.home()
@@ -104,7 +151,10 @@ def main():
         
     if args.target in ["antigravity", "all"]:
         sync_antigravity(xskills_root)
-        
+
+    if args.target in ["claude", "all"]:
+        sync_claude(xskills_root)
+
     # A tabela é gerada de forma unificada para ambas as IDEs
     generate_routing_table(xskills_root)
         
