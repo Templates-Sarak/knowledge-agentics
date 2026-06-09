@@ -116,6 +116,17 @@ def generate_routing_table(xskills_root):
                 abs_path = str(skill_md).replace('\\', '/')
                 table += f"- **{skill_folder}**: `{abs_path}`\n"
                 
+    table += "\n## 3. Variáveis de Ambiente Globais (Agent Context)\n"
+    table += "Sempre que uma skill pedir para você rodar ferramentas como Python, Pytest, Eslint, etc., "
+    table += "NÃO use os instaladores locais do repositório. Em vez disso, use EXATAMENTE os caminhos absolutos abaixo:\n"
+    
+    python_path = str(xskills_root / ".venv" / ("Scripts" if os.name == "nt" else "bin") / ("python.exe" if os.name == "nt" else "python")).replace('\\', '/')
+    node_bin_path = str(xskills_root / "node_modules" / ".bin").replace('\\', '/')
+    
+    table += f"- **SARAK_PYTHON_VENV**: `{python_path}`\n"
+    table += f"- **SARAK_NODE_BIN**: `{node_bin_path}`\n"
+    table += f"\n> **Exemplo Prático**: Se a skill disser 'Rode o pytest', você deve rodar: `{python_path} -m pytest .`\n"
+
     output_file = xskills_root / "plugin" / "sarak_routing_table.md"
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(table)

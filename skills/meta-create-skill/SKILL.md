@@ -114,6 +114,7 @@ Trate **uma skill por vez**. Cada passo é acionável; o detalhe verboso está e
 - **NÃO** deixe o `SKILL.md` virar roteador vazio nem inchar — denso e auto-suficiente; verboso vai para Camada 3.
 - **NÃO** crie arquivo de Camada 3 sem ponteiro no `SKILL.md`, nem `templates.md` vazio quando não há output.
 - **NÃO** assuma que o modelo conhece o padrão base de outra skill (ex: padrao-escrita); declare dependências explicitamente no topo do corpo da skill com `> **Dependência:**`.
+- **NÃO** invoque comandos genéricos locais de sistema (`pytest`, `eslint`, `bandit`, `flake8`) que exijam instalação no repositório-alvo do cliente. Oriente a IA a buscar os caminhos absolutos das ferramentas na Tabela de Roteamento (ex: `<SARAK_PYTHON_VENV> -m pytest` e `<SARAK_NODE_BIN>/eslint`).
 - **NÃO** faça hardcoded/segredos em scripts, nem script para tarefa que exige julgamento (CLAUDE.md).
 - **NÃO** referencie skills inexistentes (ex.: sistema de registro/GSD) — o passo de Registro é opcional.
 

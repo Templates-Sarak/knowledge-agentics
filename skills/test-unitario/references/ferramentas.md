@@ -4,8 +4,8 @@ Idiomas da linguagem vêm de `padrao-python` / `padrao-typescript`. Testes ficam
 
 ## Python — `pytest`
 ```bash
-pytest                          # roda a suíte
-pytest --cov=<modulo> --cov-report=term-missing   # cobertura (pytest-cov)
+<SARAK_PYTHON_VENV> -m pytest                          # roda a suíte (consulte a Tabela de Roteamento)
+<SARAK_PYTHON_VENV> -m pytest --cov=<modulo> --cov-report=term-missing   # cobertura (pytest-cov)
 ```
 - **Fixtures** (`@pytest.fixture`) para arrange reutilizável; `tmp_path` para fs.
 - **Mock**: `monkeypatch` (patch leve) ou `unittest.mock`/`pytest-mock` (`mocker`).
@@ -13,7 +13,7 @@ pytest --cov=<modulo> --cov-report=term-missing   # cobertura (pytest-cov)
 
 ## TypeScript/JavaScript — `vitest` (ou `jest`)
 ```bash
-vitest run                      # roda a suíte (jest: jest)
+<SARAK_NODE_BIN>/vitest run                      # roda a suíte (jest: <SARAK_NODE_BIN>/jest)
 vitest run --coverage           # cobertura (v8/istanbul)
 ```
 - **Mock**: `vi.mock('modulo')` / `vi.fn()` (jest: `jest.mock`/`jest.fn`).

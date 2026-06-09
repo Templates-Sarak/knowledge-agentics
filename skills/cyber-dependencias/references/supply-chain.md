@@ -6,7 +6,7 @@ CVE conhecido é só parte. Estes são os vetores de cadeia de suprimentos a che
 | Stack | Comando |
 |---|---|
 | Node | `npm audit --json` (ou `pnpm audit` / `yarn npm audit`) |
-| Python | `pip-audit` (ou `safety check`) |
+| Python | `<SARAK_PYTHON_VENV> -m pip-audit` (ou `<SARAK_PYTHON_VENV> -m safety check`) |
 | Multi/genérico | `osv-scanner -r .` (cobre vários lockfiles) |
 
 ## O que checar além do CVE

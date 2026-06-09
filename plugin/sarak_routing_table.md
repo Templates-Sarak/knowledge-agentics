@@ -56,3 +56,10 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **site-seo**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/site-seo/SKILL.md`
 - **test-e2e**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-e2e/SKILL.md`
 - **test-unitario**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-unitario/SKILL.md`
+
+## 3. Variáveis de Ambiente Globais (Agent Context)
+Sempre que uma skill pedir para você rodar ferramentas como Python, Pytest, Eslint, etc., NÃO use os instaladores locais do repositório. Em vez disso, use EXATAMENTE os caminhos absolutos abaixo:
+- **SARAK_PYTHON_VENV**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/.venv/Scripts/python.exe`
+- **SARAK_NODE_BIN**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/node_modules/.bin`
+
+> **Exemplo Prático**: Se a skill disser 'Rode o pytest', você deve rodar: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/.venv/Scripts/python.exe -m pytest .`

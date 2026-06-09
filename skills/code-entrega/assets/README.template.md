@@ -40,7 +40,7 @@ Detalhe por módulo em `backend/[modulo]/api/` (ou `docs/`).
 
 ## Testes
 ```bash
-[npm test | pytest]
+[npm test | <SARAK_PYTHON_VENV> -m pytest | <SARAK_NODE_BIN>/jest]
 ```
 Cobertura-alvo: ~80% por módulo (sinal de saúde, não gate).
 
