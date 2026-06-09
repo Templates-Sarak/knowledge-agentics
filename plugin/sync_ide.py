@@ -5,6 +5,14 @@ import shutil
 import argparse
 from pathlib import Path
 
+# Importa o instalador do ambiente global Sarak
+try:
+    import setup_env
+except ImportError:
+    # Caso rode diretamente da raiz ou de outra forma, ajusta o path
+    sys.path.append(str(Path(__file__).parent))
+    import setup_env
+
 def get_args():
     parser = argparse.ArgumentParser(description="Instalador Sarak Ecosystem (Sync IDEs)")
     parser.add_argument("--target", choices=["antigravity", "claude", "all"], required=True, 
@@ -54,7 +62,7 @@ def sync_claude(xskills_root):
     dest_root = plugins_cache / marketplace_name / plugin_name / version
     dest_root.mkdir(parents=True, exist_ok=True)
 
-    copy_subdirs(xskills_root, dest_root, ["skills", "agents", "commands"])
+    copy_subdirs(xskills_root, dest_root, ["skills", "agents", "commands", "hooks"])
     print(f"[OK] Plugin '{plugin_name}' v{version} espelhado no cache do Claude.")
     print("[NOTA] Reinicie a sessão do Claude para o catálogo recarregar as skills novas.")
 
@@ -77,28 +85,8 @@ def sync_antigravity(xskills_root):
     }
     with open(sarak_plugin_dir / "plugin.json", "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
-        
-    # Copia a pasta skills
-    source_skills = xskills_root / "skills"
-    dest_skills = sarak_plugin_dir / "skills"
-    if dest_skills.exists():
-        shutil.rmtree(dest_skills)
-        
-    # Copia a pasta agents
-    source_agents = xskills_root / "agents"
-    dest_agents = sarak_plugin_dir / "agents"
-    if dest_agents.exists():
-        shutil.rmtree(dest_agents)
-        
-    try:
-        shutil.copytree(source_skills, dest_skills)
-        print(f"[OK] Skills instaladas em {dest_skills}")
-        
-        if source_agents.exists():
-            shutil.copytree(source_agents, dest_agents)
-            print(f"[OK] Subagentes instalados em {dest_agents}")
-    except Exception as e:
-        print(f"[ERRO] Falha ao copiar arquivos para o Antigravity: {e}")
+
+    copy_subdirs(xskills_root, sarak_plugin_dir, ["skills", "agents", "commands", "hooks"])
 
 def generate_routing_table(xskills_root):
     print("\n--- Gerando Tabela de Roteamento Unificada ---")
@@ -148,6 +136,9 @@ def main():
     if not (xskills_root / "skills").exists():
         print(f"[ERRO] Diretório de skills não encontrado na raiz: {xskills_root}")
         sys.exit(1)
+        
+    # Garante que as dependências globais (Python/Node) estão instaladas antes do sync
+    setup_env.run_setup(xskills_root)
         
     if args.target in ["antigravity", "all"]:
         sync_antigravity(xskills_root)

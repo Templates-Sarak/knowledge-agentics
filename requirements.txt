@@ -1,0 +1,16 @@
+# Família Cyber (Segurança)
+bandit        # SAST Python
+safety        # Auditoria de dependências
+requests      # DAST e requisições HTTP
+
+# Família Testes e Qualidade
+pytest        # Testes unitários
+pytest-cov    # Cobertura de testes
+
+# Família Padrão (Linting / Formatação)
+pylint        # Linting avançado
+black         # Formatação
+flake8        # Linting rápido
+
+# Outros utilitários Sarak
+pyyaml        # Parsers YAML

@@ -1,0 +1,11 @@
+{
+  "name": "knowledge-agentics",
+  "version": "1.0.0",
+  "description": "Sarak Global Environment (Node Tools)",
+  "private": true,
+  "dependencies": {
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "jest": "^29.7.0"
+  }
+}
