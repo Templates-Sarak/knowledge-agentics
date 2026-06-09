@@ -1,15 +1,15 @@
 Sarak Routing Table (Insira nas suas User Rules globais do Antigravity):
 
 Sempre que o usuário iniciar o prompt com um dos comandos abaixo, leia silenciosamente o arquivo absoluto correspondente antes de executar qualquer plano:
-- Se o comando for '/code1-auditar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/code1-auditar.md
-- Se o comando for '/code2-caracterizar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/code2-caracterizar.md
-- Se o comando for '/code3-adequar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/code3-adequar.md
-- Se o comando for '/cyber1-auditar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/cyber1-auditar.md
-- Se o comando for '/cyber2-adequar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/cyber2-adequar.md
-- Se o comando for '/deploy-docker': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/deploy-docker.md
-- Se o comando for '/deploy-vercel': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/deploy-vercel.md
-- Se o comando for '/git1-auditar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/git1-auditar.md
-- Se o comando for '/git2-adequar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/git2-adequar.md
-- Se o comando for '/meta-criar-skill': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/meta-criar-skill.md
-- Se o comando for '/site-organizar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/site-organizar.md
-- Se o comando for '/site-seo': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/X-Skills/commands/site-seo.md
+- Se o comando for '/code1-auditar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code1-auditar.md
+- Se o comando for '/code2-caracterizar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code2-caracterizar.md
+- Se o comando for '/code3-adequar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code3-adequar.md
+- Se o comando for '/cyber1-auditar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/cyber1-auditar.md
+- Se o comando for '/cyber2-adequar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/cyber2-adequar.md
+- Se o comando for '/deploy-docker': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/deploy-docker.md
+- Se o comando for '/deploy-vercel': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/deploy-vercel.md
+- Se o comando for '/git1-auditar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/git1-auditar.md
+- Se o comando for '/git2-adequar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/git2-adequar.md
+- Se o comando for '/meta-criar-skill': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/meta-criar-skill.md
+- Se o comando for '/site-organizar': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-organizar.md
+- Se o comando for '/site-seo': Leia C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-seo.md
