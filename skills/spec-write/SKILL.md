@@ -22,7 +22,8 @@ Sempre que o usuário pedir para **"escrever uma spec"**, **"rascunhar uma featu
    - Preencha corretamente campos como `status`, `dominio` e `prioridade`.
    - Quebre as regras em seções numeradas claras.
    - Escreva Critérios de Aceite no formato de checklist markdown (`- [ ]`).
-4. **Salve no Repositório-Alvo**: Crie o arquivo Markdown dentro da pasta correspondente (`specs/`, `arquitetura/` ou `adr/`) do projeto onde você está trabalhando. O nome do arquivo deve ser em `kebab-case` (Ex: `01-autenticacao.md`).
+4. **Análise de Impacto (HITL)**: Avalie silenciosamente se a funcionalidade solicitada introduz uma nova tecnologia, dependência crítica ou mudança de paradigma. Se sim, **PARE** e pergunte ao usuário (Human-in-the-Loop): *'Notei que esta Spec introduz mudanças arquiteturais. Deseja que eu também crie/atualize o documento de Arquitetura e um ADR correspondente?'*. Só gere esses documentos extras se o usuário autorizar.
+5. **Salve no Repositório-Alvo**: Crie o arquivo Markdown dentro da pasta correspondente (`specs/`, `arquitetura/` ou `adr/`) do projeto onde você está trabalhando. O nome do arquivo deve ser em `kebab-case` (Ex: `01-autenticacao.md`).
 
 ## Regras de Ouro
 

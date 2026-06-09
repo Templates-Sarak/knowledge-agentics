@@ -7,6 +7,8 @@ from pathlib import Path
 def get_args():
     parser = argparse.ArgumentParser(description="Inicializa Sarak local em um repositório-alvo.")
     parser.add_argument("--target", required=True, help="Caminho do repositório-alvo.")
+    parser.add_argument("--langs", nargs='*', help="Linguagens da arquitetura (ex: python typescript go java)", default=[])
+    parser.add_argument("--name", help="Nome do sistema", default="Sistema Sarak")
     return parser.parse_args()
 
 def main():
@@ -27,8 +29,9 @@ def main():
         (agents_dir / sub).mkdir(exist_ok=True)
     print("[OK] Estrutura de diretórios criada.")
     
-    # 2. Cópia da meta-create-skill
     xskills_root = Path(__file__).parent.parent.parent.parent.resolve()
+    
+    # 2. Cópia da meta-create-skill
     source_create_skill = xskills_root / "skills" / "meta-create-skill"
     dest_create_skill = agents_dir / "skills" / "meta-create-skill"
     
@@ -127,6 +130,52 @@ git add .agents/index.md
     else:
         print("[AVISO] Pasta .git/hooks não encontrada. O auto-indexador não foi amarrado ao git commit. Execute 'git init' primeiro se desejar o hook.")
         
+    # 6. Montagem da Arquitetura Lego (specs/)
+    specs_target_dir = target_path / "specs"
+    specs_target_dir.mkdir(exist_ok=True)
+    
+    # 6.1 Copiar estrutura base
+    estrutura_base_src = xskills_root / "specs" / "_estrutura_base"
+    if estrutura_base_src.exists():
+        shutil.copytree(estrutura_base_src, specs_target_dir, dirs_exist_ok=True)
+        print("[OK] Estrutura agnóstica de specs injetada.")
+        
+        # Injetar o nome do sistema no INDEX.md
+        index_spec = specs_target_dir / "INDEX.md"
+        if index_spec.exists():
+            with open(index_spec, "r", encoding="utf-8") as f:
+                content = f.read()
+            content = content.replace("# 🧭 Mapa de Especificações (Bússola da IA)", f"# 🧭 Mapa de Especificações: {args.name}")
+            with open(index_spec, "w", encoding="utf-8") as f:
+                f.write(content)
+    
+    # 6.2 Copiar as bases de linguagem
+    if args.langs:
+        arquitetura_target_dir = specs_target_dir / "arquitetura"
+        arquitetura_target_dir.mkdir(exist_ok=True)
+        bases_src = xskills_root / "specs" / "_bases_arquiteturais"
+        
+        for lang in args.langs:
+            lang_lower = lang.lower()
+            base_file = bases_src / f"00-base-{lang_lower}.md"
+            if base_file.exists():
+                dest_file = arquitetura_target_dir / base_file.name
+                shutil.copy2(base_file, dest_file)
+                
+                # Injetar o nome do sistema no cabeçalho
+                with open(dest_file, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                
+                if lines and lines[0].startswith("# Arquitetura Base:"):
+                    original_lang_title = lines[0].replace("# Arquitetura Base: ", "").strip()
+                    lines[0] = f"# Arquitetura: {args.name} ({original_lang_title})\n"
+                    with open(dest_file, "w", encoding="utf-8") as f:
+                        f.writelines(lines)
+                
+                print(f"[OK] Arquitetura base injetada: {base_file.name}")
+            else:
+                print(f"[AVISO] Arquitetura base não encontrada para a linguagem: {lang}")
+
     print("\n--- Repositório Sarak-Ready! ---")
 
 if __name__ == "__main__":

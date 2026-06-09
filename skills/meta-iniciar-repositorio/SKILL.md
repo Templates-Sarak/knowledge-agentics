@@ -13,17 +13,21 @@ Transforma um repositório vazio ou existente em um ambiente Sarak-ready, instal
 
 ## Workflow
 
-1. **Gate: Definir Caminho Alvo**
-   - **Ferramenta:** Diálogo
-   - **Ação:** Confirme com o usuário o caminho absoluto do repositório alvo (onde a pasta `.agents` será instalada).
+1. **Gate: Coleta de Dados (HITL)**
+   - **Ferramenta:** Diálogo (Pergunte ao usuário no chat antes de prosseguir)
+   - **Ação:** Faça obrigatoriamente as seguintes perguntas:
+     1. Qual o caminho absoluto do repositório alvo?
+     2. Qual(is) a(s) linguagem(ns) principal(is) do projeto? (Ex: Python, TypeScript, Go, Java. Pode ser mais de uma).
+     3. Qual o nome oficial deste sistema/projeto?
 
-2. **Injeção da Base Local**
+2. **Injeção da Base Local e Arquitetura Lego**
    - **Ferramenta:** `run_command`
-   - **Ação:** No diretório raiz do `knowledge-agentics`, rode o script orquestrador apontando para o alvo:
+   - **Ação:** No diretório raiz do `knowledge-agentics`, rode o script orquestrador passando os parâmetros coletados:
      ```bash
-     python skills/meta-iniciar-repositorio/scripts/init_repo.py --target <caminho-alvo>
+     python skills/meta-iniciar-repositorio/scripts/init_repo.py --target "<caminho-alvo>" --name "<nome-do-sistema>" --langs <linguagens...>
      ```
-   - **Critério:** O script deve reportar criação das pastas, cópia da `meta-create-skill`, injeção do gerador de índice e configuração dos *entrypoints* (incluindo o hook de git `pre-commit`).
+     *(Exemplo: `--langs python typescript`)*
+   - **Critério:** O script deve reportar a criação da estrutura local `.agents`, a cópia da arquitetura `specs/` com os templates de linguagem escolhidos, e a configuração dos *entrypoints*.
 
 3. **Confirmação e Homologação**
    - **Ferramenta:** Texto (Resposta ao usuário)

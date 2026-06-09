@@ -1,8 +1,10 @@
 ---
-tipo: "spec-arquitetura"
+tipo: "arquitetura"
 titulo: "Nome do Componente/Diagrama"
 dominio: "Infraestrutura / Design"
 status: "🟢 Vigente" # Opções: 🟢 Vigente, 🔴 Obsoleto
+tags: ["arquitetura"]
+relacionados: []
 ---
 
 # 1. Propósito

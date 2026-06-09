@@ -1,9 +1,11 @@
 ---
-tipo: "spec-negocio"
+tipo: "spec"
 titulo: "Nome da Funcionalidade"
 dominio: "Nome do Módulo (Ex: Autenticação)"
 status: "🔴 A Implementar" # Opções: 🔴 A Implementar, 🟡 Em Progresso, 🟢 Implementado
 prioridade: "Alta"
+tags: ["spec"]
+relacionados: [] # Ex: [[02-banco-de-dados]]
 ---
 
 # 1. Visão Geral

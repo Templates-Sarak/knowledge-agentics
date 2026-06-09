@@ -1,8 +1,10 @@
 ---
 tipo: "adr"
 titulo: "Título Curto e Direto (Ex: Escolha do PostgreSQL)"
-data: "YYYY-MM-DD"
 status: "Proposto" # Opções: Proposto, 🟢 Aceito, Rejeitado, 🔴 Substituído
+tags: ["adr"]
+relacionados: []
+substitui: ""      # Ex: [[001-escolha-mysql]]
 substituido_por: ""
 ---
 
