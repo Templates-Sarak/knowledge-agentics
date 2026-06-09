@@ -56,17 +56,30 @@ def sync_antigravity(xskills_root):
 def generate_routing_table(xskills_root):
     print("\n--- Gerando Tabela de Roteamento Unificada ---")
     commands_dir = xskills_root / "commands"
+    skills_dir = xskills_root / "skills"
     
     table = "# Sarak Global Routing Table\n\n"
-    table += "> **Atenção IAs:** Quando o usuário enviar qualquer comando com o prefixo `/` listado abaixo, "
-    table += "você deve ler o arquivo absoluto correspondente e seguir as instruções antes de agir.\n\n"
+    table += "> **Atenção IAs:** Este arquivo é o mapa central do ecossistema Sarak. "
+    table += "Ele lista os comandos imperativos (Iniciados com `/`) e as Skills Orgânicas disponíveis.\n\n"
     
+    table += "## 1. Comandos (Slash Commands)\n"
+    table += "Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo correspondente antes de agir.\n"
     if commands_dir.exists():
         for file in sorted(os.listdir(commands_dir)):
             if file.endswith(".md"):
                 cmd_name = "/" + file[:-3]
                 abs_path = str(commands_dir / file).replace('\\', '/')
                 table += f"- **{cmd_name}**: `{abs_path}`\n"
+                
+    table += "\n## 2. Skills Orgânicas\n"
+    table += "Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessário pelo contexto), "
+    table += "leia o arquivo SKILL.md correspondente para carregar o seu workflow.\n"
+    if skills_dir.exists():
+        for skill_folder in sorted(os.listdir(skills_dir)):
+            skill_md = skills_dir / skill_folder / "SKILL.md"
+            if skill_md.exists():
+                abs_path = str(skill_md).replace('\\', '/')
+                table += f"- **{skill_folder}**: `{abs_path}`\n"
                 
     output_file = xskills_root / "plugin" / "sarak_routing_table.md"
     with open(output_file, "w", encoding="utf-8") as f:
