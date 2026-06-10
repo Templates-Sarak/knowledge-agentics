@@ -30,6 +30,8 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **cyber-config**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-config/SKILL.md`
 - **cyber-dados**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-dados/SKILL.md`
 - **cyber-dependencias**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-dependencias/SKILL.md`
+- **cyber-ia**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-ia/SKILL.md`
+- **cyber-infra**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-infra/SKILL.md`
 - **cyber-segredos**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-segredos/SKILL.md`
 - **db-migrations**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/db-migrations/SKILL.md`
 - **deploy-docker**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/deploy-docker/SKILL.md`
