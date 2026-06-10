@@ -92,10 +92,12 @@ def generate_routing_table(xskills_root):
     print("\n--- Gerando Tabela de Roteamento Unificada ---")
     commands_dir = xskills_root / "commands"
     skills_dir = xskills_root / "skills"
+    agents_dir = xskills_root / "agents"
+    specs_dir = xskills_root / "specs" / "_estrutura_base" / "_templates"
     
     table = "# Sarak Global Routing Table\n\n"
     table += "> **Atenção IAs:** Este arquivo é o mapa central do ecossistema Sarak. "
-    table += "Ele lista os comandos imperativos (Iniciados com `/`) e as Skills Orgânicas disponíveis.\n\n"
+    table += "Ele lista os comandos imperativos (Iniciados com `/`), as Skills Orgânicas, os Subagentes e Templates.\n\n"
     
     table += "## 1. Comandos (Slash Commands)\n"
     table += "Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo correspondente antes de agir.\n"
@@ -116,7 +118,23 @@ def generate_routing_table(xskills_root):
                 abs_path = str(skill_md).replace('\\', '/')
                 table += f"- **{skill_folder}**: `{abs_path}`\n"
                 
-    table += "\n## 3. Variáveis de Ambiente Globais (Agent Context)\n"
+    table += "\n## 3. Subagentes Especializados\n"
+    table += "Agentes que podem ser acionados via ferramentas/tasks (ex: code-auditor). Leia o manifesto para descobrir as regras e os papéis.\n"
+    if agents_dir.exists():
+        for agent_file in sorted(os.listdir(agents_dir)):
+            if agent_file.endswith(".md"):
+                abs_path = str(agents_dir / agent_file).replace('\\', '/')
+                table += f"- **{agent_file[:-3]}**: `{abs_path}`\n"
+
+    table += "\n## 4. Templates de Documentação\n"
+    table += "Modelos oficiais que devem ser usados como molde ao gerar documentação (Specs, ADRs, Arquitetura).\n"
+    if specs_dir.exists():
+        for tpl_file in sorted(os.listdir(specs_dir)):
+            if tpl_file.endswith(".md"):
+                abs_path = str(specs_dir / tpl_file).replace('\\', '/')
+                table += f"- **{tpl_file[:-3]}**: `{abs_path}`\n"
+
+    table += "\n## 5. Variáveis de Ambiente Globais (Agent Context)\n"
     table += "Sempre que uma skill pedir para você rodar ferramentas como Python, Pytest, Eslint, etc., "
     table += "NÃO use os instaladores locais do repositório. Em vez disso, use EXATAMENTE os caminhos absolutos abaixo:\n"
     

@@ -1,6 +1,6 @@
 # Sarak Global Routing Table
 
-> **Atenção IAs:** Este arquivo é o mapa central do ecossistema Sarak. Ele lista os comandos imperativos (Iniciados com `/`) e as Skills Orgânicas disponíveis.
+> **Atenção IAs:** Este arquivo é o mapa central do ecossistema Sarak. Ele lista os comandos imperativos (Iniciados com `/`), as Skills Orgânicas, os Subagentes e Templates.
 
 ## 1. Comandos (Slash Commands)
 Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo correspondente antes de agir.
@@ -58,7 +58,21 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **test-e2e**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-e2e/SKILL.md`
 - **test-unitario**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-unitario/SKILL.md`
 
-## 3. Variáveis de Ambiente Globais (Agent Context)
+## 3. Subagentes Especializados
+Agentes que podem ser acionados via ferramentas/tasks (ex: code-auditor). Leia o manifesto para descobrir as regras e os papéis.
+- **code-adequador**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/code-adequador.md`
+- **code-auditor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/code-auditor.md`
+- **code-revisor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/code-revisor.md`
+- **cyber-auditor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/cyber-auditor.md`
+- **git-auditor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/git-auditor.md`
+
+## 4. Templates de Documentação
+Modelos oficiais que devem ser usados como molde ao gerar documentação (Specs, ADRs, Arquitetura).
+- **template-adr**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-adr.md`
+- **template-arquitetura**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-arquitetura.md`
+- **template-spec**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-spec.md`
+
+## 5. Variáveis de Ambiente Globais (Agent Context)
 Sempre que uma skill pedir para você rodar ferramentas como Python, Pytest, Eslint, etc., NÃO use os instaladores locais do repositório. Em vez disso, use EXATAMENTE os caminhos absolutos abaixo:
 - **SARAK_PYTHON_VENV**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/.venv/Scripts/python.exe`
 - **SARAK_NODE_BIN**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/node_modules/.bin`

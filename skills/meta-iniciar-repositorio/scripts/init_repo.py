@@ -83,6 +83,13 @@ def main():
                 cmd_name = "/" + cmd_file[:-3]
                 lines.append(f"- **{cmd_name}**: `.agents/commands/{cmd_file}`\\n")
                 
+    agents_dir = base_dir / "agents"
+    lines.append("\\n## Subagentes\\n")
+    if agents_dir.exists():
+        for agent_file in sorted(os.listdir(agents_dir)):
+            if agent_file.endswith(".md"):
+                lines.append(f"- **{agent_file[:-3]}**: `.agents/agents/{agent_file}`\\n")
+                
     with open(index_file, 'w', encoding='utf-8') as f:
         f.write("\\n".join(lines))
         
