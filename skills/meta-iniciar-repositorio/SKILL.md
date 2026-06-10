@@ -33,6 +33,10 @@ Transforma um repositório vazio ou existente em um ambiente Sarak-ready, instal
    - **Ferramenta:** Texto (Resposta ao usuário)
    - **Ação:** Informe ao usuário que o projeto alvo agora é auto-gerenciável. Explique brevemente que o hook de `pre-commit` fará a manutenção automática do índice quando ele criar novas skills locais.
 
+4. **Handoff Arquitetural (Wizard)**
+   - **Ferramenta:** Acionamento de Skill
+   - **Ação:** Ao terminar a homologação física, engatilhe imediatamente a skill `spec-fundacao` no chat para iniciar a entrevista com o usuário, garantindo que o novo repositório já nasça com a sua fundação tecnológica (ADRs) documentada. (Você já pode apresentar as 5 perguntas da `spec-fundacao` na mesma mensagem para puxar o fluxo).
+
 ## Regras
 - **NÃO** tente rodar o script em diretórios não confirmados ou suspeitos (ex: raiz do sistema operacional).
 - **NUNCA** exclua arquivos locais pré-existentes; o script orquestrador deve apenas adicionar pastas ou mesclar configurações.
