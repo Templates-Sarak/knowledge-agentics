@@ -1,6 +1,6 @@
 ---
 name: time-tracking
-description: Rastreia tempo via MCP. Deve ser acionada AUTOMATICAMENTE ao iniciar tarefas de spec, engenharia ou testes (ex: spec-write, test-unitario, code-adequacao), OU via /time-timer. Lê .agents/config.json para provedor.
+description: "Rastreia tempo via MCP. Deve ser acionada AUTOMATICAMENTE ao iniciar tarefas de spec, engenharia ou testes (ex: spec-write, test-unitario, code-adequacao), OU via /time-timer. Lê .agents/config.json para provedor."
 ---
 
 # Skill: Time Tracking Automatizado
