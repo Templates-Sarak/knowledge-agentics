@@ -103,32 +103,61 @@ if __name__ == "__main__":
         f.write(pointer_text)
     print(f"[OK] Entrypoint atualizado ({claude_md.name}).")
     
-    # 5. Git Pre-Commit Hook
-    git_hooks_dir = target_path / ".git" / "hooks"
-    if git_hooks_dir.exists():
-        pre_commit_path = git_hooks_dir / "pre-commit"
-        hook_script = """#!/bin/bash
-# Sarak Auto-Index Hook
+    # 5. Git Pre-Commit Hook Unificado (Segurança + Auto-Index)
+    if (target_path / ".git").exists():
+        githooks_dir = target_path / ".githooks"
+        githooks_dir.mkdir(exist_ok=True)
+        
+        # 5.1 Copiar ferramentas de segurança do Sarak
+        verificacao_src = xskills_root / "skills" / "git-verificacao-commit" / "scripts"
+        if verificacao_src.exists():
+            shutil.copy2(verificacao_src / "verificar_commit.py", githooks_dir / "verificar_commit.py")
+            shutil.copy2(verificacao_src / "config.json", githooks_dir / "config.json")
+            print("[OK] Ferramentas de segurança copiadas para .githooks/")
+        
+        # 5.2 Criar o hook pre-commit combinado
+        pre_commit_path = githooks_dir / "pre-commit"
+        hook_script = """#!/bin/sh
+# --- Sarak Git Hook (Pre-Commit) ---
+if command -v python >/dev/null 2>&1; then PY=python; else PY=python3; fi
+
+# 1. Gate de Segurança (Diff Rápido)
+echo "[Sarak] Verificando vazamento de segredos no staged..."
+"$PY" .githooks/verificar_commit.py --raiz .
+status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo ""
+  echo "⛔ COMMIT BLOQUEADO — segredo ou arquivo sensível detectado no staged."
+  echo "   Corrija: mova o segredo para .env (e adicione ao .gitignore) e re-stage."
+  exit 1
+fi
+
+# 2. Auto-Indexador da Inteligência Local
 echo "[Sarak] Atualizando indice local de agentes..."
-python .agents/gerar_indice.py
+"$PY" .agents/gerar_indice.py
 git add .agents/index.md
+
+exit 0
 """
-        # Append or create
-        if pre_commit_path.exists():
-            with open(pre_commit_path, "a", encoding="utf-8") as f:
-                f.write("\n" + hook_script)
-        else:
-            with open(pre_commit_path, "w", encoding="utf-8") as f:
-                f.write(hook_script)
+        with open(pre_commit_path, "w", encoding="utf-8") as f:
+            f.write(hook_script)
             
-        # Tenta dar permissão de execução
         try:
             os.chmod(pre_commit_path, 0o755)
         except Exception:
             pass
-        print("[OK] Hook de pre-commit injetado em .git/hooks/pre-commit.")
+            
+        # 5.3 Ativar o hooksPath no Git local
+        import subprocess
+        try:
+            subprocess.run(["git", "-C", str(target_path), "config", "core.hooksPath", ".githooks"], check=True)
+            print("[OK] Git configurado para usar a pasta .githooks/")
+        except Exception as e:
+            print(f"[AVISO] Não foi possível rodar git config: {e}")
+            
     else:
-        print("[AVISO] Pasta .git/hooks não encontrada. O auto-indexador não foi amarrado ao git commit. Execute 'git init' primeiro se desejar o hook.")
+        print("[AVISO] Pasta .git não encontrada. Os hooks de segurança não foram amarrados. Execute 'git init' primeiro se desejar o hook.")
         
     # 6. Montagem da Arquitetura Lego (specs/)
     specs_target_dir = target_path / "specs"

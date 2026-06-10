@@ -18,3 +18,13 @@ Descreva brevemente o objetivo desta funcionalidade e o problema que ela resolve
 # 3. Critérios de Aceite
 - [ ] Cenário A funciona conforme esperado.
 - [ ] Cenário B lança o erro X.
+
+# 4. Plano de Testes (Quality Gate)
+Mapeamento obrigatório dos testes que a skill `test-unitario` ou `test-e2e` deverá implementar para considerar esta spec "Concluída".
+
+## Testes Unitários
+- [ ] **Deve** ...
+- [ ] **Deve** ...
+
+## Testes E2E (Integração)
+- [ ] Fluxo feliz: ...
