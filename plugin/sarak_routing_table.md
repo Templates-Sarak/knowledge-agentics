@@ -16,6 +16,7 @@ Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo corresp
 - **/meta-criar-skill**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/meta-criar-skill.md`
 - **/site-organizar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-organizar.md`
 - **/site-seo**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-seo.md`
+- **/time-timer**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/time-timer.md`
 
 ## 2. Skills Orgânicas
 Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessário pelo contexto), leia o arquivo SKILL.md correspondente para carregar o seu workflow.
@@ -60,6 +61,7 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **spec-write**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/spec-write/SKILL.md`
 - **test-e2e**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-e2e/SKILL.md`
 - **test-unitario**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-unitario/SKILL.md`
+- **time-tracking**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/time-tracking/SKILL.md`
 
 ## 3. Subagentes Especializados
 Agentes que podem ser acionados via ferramentas/tasks (ex: code-auditor). Leia o manifesto para descobrir as regras e os papéis.

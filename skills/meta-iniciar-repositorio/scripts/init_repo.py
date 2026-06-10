@@ -9,6 +9,8 @@ def get_args():
     parser.add_argument("--target", required=True, help="Caminho do repositório-alvo.")
     parser.add_argument("--langs", nargs='*', help="Linguagens da arquitetura (ex: python typescript go java)", default=[])
     parser.add_argument("--name", help="Nome do sistema", default="Sistema Sarak")
+    parser.add_argument("--time-provider", help="Provedor de apontamento de horas (ex: clockify, toggl)")
+    parser.add_argument("--time-project-id", help="ID do projeto no provedor de apontamento de horas")
     return parser.parse_args()
 
 def main():
@@ -105,6 +107,24 @@ if __name__ == "__main__":
     # 4. Entrypoint CLAUDE.md
     claude_md = target_path / "CLAUDE.md"
     pointer_text = "\n\n> **Atenção (IA):** Sou um projeto Sarak modular. Sempre que atuar aqui, leia as regras de negócio listadas em `.agents/index.md` antes de codificar.\n"
+    
+    # 4.1 Time Tracking Config
+    if args.time_provider and args.time_project_id:
+        import json
+        config_path = agents_dir / "config.json"
+        config_data = {
+            "time_tracking": {
+                "provider": args.time_provider,
+                "project_id": args.time_project_id
+            }
+        }
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config_data, f, indent=2)
+        print(f"[OK] Configuração de Time Tracking criada em .agents/config.json")
+        
+        # Reforça o comportamento autônomo no CLAUDE.md
+        pointer_text += "> **Regra de Ouro (Time Tracking):** Este projeto possui apontamento de horas. SEMPRE inicie o cronômetro via MCP (skill `time-tracking`) em background *antes* de executar tarefas de spec ou código.\n"
+        
     mode = "a" if claude_md.exists() else "w"
     with open(claude_md, mode, encoding="utf-8") as f:
         f.write(pointer_text)
