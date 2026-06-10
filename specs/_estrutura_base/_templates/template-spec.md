@@ -20,11 +20,14 @@ Descreva brevemente o objetivo desta funcionalidade e o problema que ela resolve
 - [ ] Cenário B lança o erro X.
 
 # 4. Plano de Testes (Quality Gate)
-Mapeamento obrigatório dos testes que a skill `test-unitario` ou `test-e2e` deverá implementar para considerar esta spec "Concluída".
+Mapeamento obrigatório dos testes que as skills (`test-unitario`, `api-contrato` ou `test-e2e`) deverão implementar para considerar esta spec "Concluída".
 
 ## Testes Unitários
 - [ ] **Deve** ...
 - [ ] **Deve** ...
+
+## Testes de Contrato (API)
+- [ ] **Endpoint** `GET /api/v1/...`: Deve retornar o payload no formato X sem quebrar o contrato.
 
 ## Testes E2E (Integração)
 - [ ] Fluxo feliz: ...

@@ -23,8 +23,9 @@ Sempre que o usuário pedir para **"escrever uma spec"**, **"rascunhar uma featu
    - Quebre as regras em seções numeradas claras.
    - Escreva Critérios de Aceite no formato de checklist markdown (`- [ ]`).
 4. **Desenho de Testes (TDD/BDD)**: Preencha obrigatoriamente a seção `# 4. Plano de Testes` do template da spec.
-   - Avalie as regras de negócio e defina os cenários de testes unitários necessários (para a skill `test-unitario`).
-   - Avalie se a funcionalidade possui jornada de usuário/interface. Se sim, defina os cenários E2E (para a skill `test-e2e`). Se não possuir, marque a subseção E2E com um aviso de *N/A*.
+   - **Unitários:** Avalie as regras de negócio isoladas e defina os cenários essenciais (para a skill `test-unitario`).
+   - **Contrato/API:** Se a spec expõe ou consome endpoints de rede, mapeie a garantia do formato dos dados (para a skill `api-contrato`). Se não houver I/O de rede, marque *N/A*.
+   - **E2E:** Avalie se a funcionalidade possui jornada de usuário na interface. Se sim, defina os fluxos críticos (para a skill `test-e2e`). Se for uma rotina invisível de backend, marque *N/A*.
 5. **Análise de Impacto (HITL)**: Avalie silenciosamente se a funcionalidade solicitada introduz uma nova tecnologia, dependência crítica ou mudança de paradigma. Se sim, **PARE** e pergunte ao usuário (Human-in-the-Loop): *'Notei que esta Spec introduz mudanças arquiteturais. Deseja que eu também crie/atualize o documento de Arquitetura e um ADR correspondente?'*. Só gere esses documentos extras se o usuário autorizar.
 6. **Salve no Repositório-Alvo**: Crie o arquivo Markdown dentro da pasta correspondente (`specs/`, `arquitetura/` ou `adr/`) do projeto onde você está trabalhando. O nome do arquivo deve ser em `kebab-case` (Ex: `01-autenticacao.md`).
 
