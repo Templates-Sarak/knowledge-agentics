@@ -98,6 +98,11 @@ def generate_routing_table(xskills_root):
     table = "# Sarak Global Routing Table\n\n"
     table += "> **Atenção IAs:** Este arquivo é o mapa central do ecossistema Sarak. "
     table += "Ele lista os comandos imperativos (Iniciados com `/`), as Skills Orgânicas, os Subagentes e Templates.\n\n"
+    table += "> **Diretriz de Orquestração (Time Tracking):** Ao iniciar QUALQUER tarefa solicitada pelo usuário, "
+    table += "sua **primeiríssima** ação deve ser ler o arquivo `.agents/config.json` na raiz do projeto alvo. "
+    table += "Se ele existir e possuir configuração de `time_tracking`, ligue o cronômetro usando a ferramenta MCP "
+    table += "`start_timer` ANTES de planejar ou ler o código. Ao entregar a solução final, chame a ferramenta "
+    table += "`stop_timer`. Isso garante o rastreio contínuo do início ao fim.\n\n"
     
     table += "## 1. Comandos (Slash Commands)\n"
     table += "Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo correspondente antes de agir.\n"

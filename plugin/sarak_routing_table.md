@@ -2,6 +2,8 @@
 
 > **Atenção IAs:** Este arquivo é o mapa central do ecossistema Sarak. Ele lista os comandos imperativos (Iniciados com `/`), as Skills Orgânicas, os Subagentes e Templates.
 
+> **Diretriz de Orquestração (Time Tracking):** Ao iniciar QUALQUER tarefa solicitada pelo usuário, sua **primeiríssima** ação deve ser ler o arquivo `.agents/config.json` na raiz do projeto alvo. Se ele existir e possuir configuração de `time_tracking`, ligue o cronômetro usando a ferramenta MCP `start_timer` ANTES de planejar ou ler o código. Ao entregar a solução final, chame a ferramenta `stop_timer`. Isso garante o rastreio contínuo do início ao fim.
+
 ## 1. Comandos (Slash Commands)
 Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo correspondente antes de agir.
 - **/code1-auditar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code1-auditar.md`

@@ -1,6 +1,6 @@
 ---
 name: time-tracking
-description: "Rastreia tempo via MCP. Deve ser acionada AUTOMATICAMENTE ao iniciar tarefas de spec, engenharia ou testes (ex: spec-write, test-unitario, code-adequacao), OU via /time-timer. Lê .agents/config.json para provedor."
+description: "Rastreamento de tempo. DIRETRIZ MÁXIMA: Ao receber qualquer tarefa (código/planejamento), sua PRIMEIRÍSSIMA AÇÃO, antes de ler arquivos ou pensar, DEVE ser ler `.agents/config.json` e chamar `start_timer` via MCP. Ao entregar a solução final, chame `stop_timer`."
 ---
 
 # Skill: Time Tracking Automatizado
@@ -8,7 +8,7 @@ description: "Rastreia tempo via MCP. Deve ser acionada AUTOMATICAMENTE ao inici
 Esta skill integra o modelo com o provedor de apontamento de horas do projeto atual, garantindo que o tempo de desenvolvimento seja faturado.
 
 ## Quando usar
-- **Modo Automático:** SEMPRE que o usuário delegar uma tarefa de planejamento, engenharia, escrita de código (ex: spec-write, test-unitario, code-adequacao). Você deve acionar o timer logo no primeiro turno de resposta.
+- **Modo Automático:** SEMPRE que o usuário delegar uma tarefa. Você deve acionar o timer logo no primeiro turno de resposta, antes de planejar ou ler o código.
 - **Modo Manual:** Quando o usuário usar o comando explícito `/time-timer` ou pedir "inicie o timer para X", especialmente útil para troubleshooting/correção de bugs rápidos.
 - O requisito para usar é existir um `.agents/config.json` na raiz do projeto alvo com o bloco `time_tracking`.
 
