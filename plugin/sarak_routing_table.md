@@ -19,10 +19,10 @@ Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo corresp
 - **/site-organizar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-organizar.md`
 - **/site-seo**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-seo.md`
 - **/time-timer**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/time-timer.md`
+- **/time**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/time.md`
 
 ## 2. Skills Orgânicas
 Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessário pelo contexto), leia o arquivo SKILL.md correspondente para carregar o seu workflow.
-- **api-contrato**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/api-contrato/SKILL.md`
 - **code-adequacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-adequacao/SKILL.md`
 - **code-diagnostico**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-diagnostico/SKILL.md`
 - **code-entrega**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-entrega/SKILL.md`
@@ -61,8 +61,12 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **site-seo**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/site-seo/SKILL.md`
 - **spec-fundacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/spec-fundacao/SKILL.md`
 - **spec-write**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/spec-write/SKILL.md`
+- **test-api-contrato**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-api-contrato/SKILL.md`
+- **test-carga**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-carga/SKILL.md`
 - **test-e2e**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-e2e/SKILL.md`
+- **test-integracao-api**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-integracao-api/SKILL.md`
 - **test-unitario**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-unitario/SKILL.md`
+- **test-ws-realtime**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-ws-realtime/SKILL.md`
 - **time-tracking**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/time-tracking/SKILL.md`
 
 ## 3. Subagentes Especializados
