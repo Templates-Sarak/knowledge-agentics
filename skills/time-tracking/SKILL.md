@@ -1,6 +1,6 @@
 ---
 name: time-tracking
-description: "Rastreamento de tempo. DIRETRIZ MÁXIMA: Ao receber qualquer tarefa (código/planejamento), sua PRIMEIRÍSSIMA AÇÃO, antes de ler arquivos ou pensar, DEVE ser ler `.agents/config.json` e chamar `start_timer` via MCP. Ao entregar a solução final, chame `stop_timer`."
+description: "Rastreamento de tempo. DIRETRIZ MÁXIMA: Ao receber qualquer tarefa (código/planejamento), sua PRIMEIRÍSSIMA AÇÃO DEVE ser chamar `ping_activity` via MCP. Se ele retornar 'paused_by_idle', dispare o HITL perguntando se retoma a tarefa anterior ou cria nova. Caso contrário, leia o `.agents/config.json` e chame `start_timer`. Ao finalizar a entrega, chame `stop_timer`."
 ---
 
 # Skill: Time Tracking Automatizado
@@ -34,6 +34,12 @@ Além do formato da descrição, a IA DEVE enviar uma array de `tags` (string) a
 2. Uma tag dinâmica informando qual skill está sendo usada (ex: `test-ws-realtime`), quando aplicável, para permitir auditoria posterior no relatório do cliente.
 
 ## Workflow
+
+**0. O Ping de Sobrevivência (Watchdog de Inatividade)**
+   - Toda vez que você for iniciar a resposta para uma nova solicitação do usuário, a sua PRIMEIRA ferramenta chamada DEVE ser `ping_activity` (presente em `clockify-sarak` e `toggl-sarak`).
+   - O servidor MCP verificará o Watchdog. Se ele retornar um JSON indicando `{"status": "paused_by_idle", "last_task": "..."}`, **PAUSE** toda a sua lógica de código e dispare imediatamente o **Gate HITL de Retomada**:
+     *"Notei um período de inatividade e pausei o cronômetro para proteger suas horas. Deseja **Retomar** a tarefa anterior (`{last_task}`) ou iniciar uma **Nova Implementação**?"*
+   - Prossiga (iniciando o timer correto) apenas após a resposta do usuário.
 
 1. **Gate: Leitura de Contexto**
    - Leia `.agents/config.json`. Se não houver configuração `time_tracking`, não inicie o timer. Extraia `project_id` e `tags_default`.

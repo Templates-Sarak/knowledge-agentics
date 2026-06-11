@@ -13,17 +13,27 @@ import time
 import atexit
 import signal
 import sys
+import threading
+import json
 from datetime import datetime, timezone
 from mcp.server.fastmcp import FastMCP
 
 # Cria o servidor MCP
 mcp = FastMCP("Toggl Time Tracker")
 
+# Globals do Watchdog de Inatividade
+last_activity_time = time.time()
+is_timer_running = False
+is_paused_by_idle = False
+last_task_description = ""
+last_project_id = None
+last_tags = None
+IDLE_TIMEOUT_MINUTES = 10
+
 def get_headers():
     token = os.environ.get("TOGGL_API_KEY")
     if not token:
         raise ValueError("A variável de ambiente TOGGL_API_KEY não está configurada.")
-    # Autenticação Básica do Toggl exige "token:api_token"
     auth_str = f"{token}:api_token"
     b64_auth = base64.b64encode(auth_str.encode()).decode()
     return {"Authorization": f"Basic {b64_auth}", "Content-Type": "application/json"}
@@ -34,15 +44,58 @@ def get_workspace_id():
     data = res.json()
     return data.get("default_workspace_id")
 
+def stop_timer_internal():
+    """Para o timer do Toggl internamente sem passar pelo @mcp.tool"""
+    try:
+        headers = get_headers()
+        res = requests.get("https://api.track.toggl.com/api/v9/me/time_entries/current", headers=headers)
+        if res.status_code == 200:
+            current = res.json()
+            if current:
+                workspace_id = current.get("workspace_id")
+                time_entry_id = current.get("id")
+                requests.patch(
+                    f"https://api.track.toggl.com/api/v9/workspaces/{workspace_id}/time_entries/{time_entry_id}/stop",
+                    headers=headers
+                )
+    except:
+        pass
+
+def watchdog_loop():
+    global is_timer_running, is_paused_by_idle, last_activity_time
+    while True:
+        time.sleep(60)
+        if is_timer_running:
+            if (time.time() - last_activity_time) > (IDLE_TIMEOUT_MINUTES * 60):
+                stop_timer_internal()
+                is_timer_running = False
+                is_paused_by_idle = True
+
+watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
+watchdog_thread.start()
+
+@mcp.tool()
+def ping_activity() -> str:
+    """
+    Sinaliza que a IA interagiu e verifica se o timer foi pausado por inatividade.
+    Deve ser a PRIMEIRA chamada de ferramenta da IA no início de cada turno.
+    Retorna uma string JSON com o status do watchdog e a última tarefa rodada.
+    """
+    global last_activity_time
+    last_activity_time = time.time()
+    
+    return json.dumps({
+        "status": "paused_by_idle" if is_paused_by_idle else "active",
+        "last_task": last_task_description
+    })
+
 @mcp.tool()
 def start_timer(description: str, project_id: int = None, tags: list[str] = None) -> str:
     """
     Inicia um cronômetro no Toggl Track.
-    Args:
-        description: A descrição do que você está trabalhando (obrigatório).
-        project_id: O ID numérico do projeto no Toggl (opcional).
-        tags: Lista de nomes de tags a serem adicionadas ao registro (opcional).
     """
+    global is_timer_running, is_paused_by_idle, last_activity_time, last_task_description, last_project_id, last_tags
+    
     try:
         workspace_id = get_workspace_id()
         if not workspace_id:
@@ -53,7 +106,6 @@ def start_timer(description: str, project_id: int = None, tags: list[str] = None
             "created_with": "sarak-mcp-agent",
             "description": description,
             "start": start_time.isoformat().replace("+00:00", "Z"),
-            # Toggl usa duração negativa (-1 * timestamp) para indicar timer rodando
             "duration": -1 * int(time.time()),
             "workspace_id": workspace_id
         }
@@ -68,6 +120,15 @@ def start_timer(description: str, project_id: int = None, tags: list[str] = None
             json=payload
         )
         res.raise_for_status()
+        
+        # Atualiza globais do watchdog
+        last_activity_time = time.time()
+        is_timer_running = True
+        is_paused_by_idle = False
+        last_task_description = description
+        last_project_id = project_id
+        last_tags = tags
+        
         return f"Cronômetro iniciado com sucesso para: {description}"
     except Exception as e:
         return f"Erro ao iniciar cronômetro no Toggl: {str(e)}"
@@ -76,12 +137,6 @@ def start_timer(description: str, project_id: int = None, tags: list[str] = None
 def add_time_entry(description: str, start_time_iso: str, end_time_iso: str, project_id: int = None, tags: list[str] = None) -> str:
     """
     Adiciona um registro de tempo finalizado (retroativo) no Toggl Track.
-    Args:
-        description: A descrição da tarefa (obrigatório).
-        start_time_iso: ISO 8601 string do início (ex: '2026-06-10T20:00:00Z')
-        end_time_iso: ISO 8601 string do término (ex: '2026-06-10T21:00:00Z')
-        project_id: O ID numérico do projeto no Toggl (opcional).
-        tags: Lista de nomes de tags a serem adicionadas (opcional).
     """
     try:
         workspace_id = get_workspace_id()
@@ -116,11 +171,6 @@ def add_time_entry(description: str, start_time_iso: str, end_time_iso: str, pro
 
 @mcp.tool()
 def create_project(name: str) -> str:
-    """
-    Cria um novo projeto no Toggl Track e retorna seu ID (em formato string).
-    Args:
-        name: O nome do projeto a ser criado.
-    """
     try:
         workspace_id = get_workspace_id()
         if not workspace_id:
@@ -143,12 +193,14 @@ def stop_timer() -> str:
     """
     Para o cronômetro que está rodando atualmente no Toggl Track.
     """
+    global is_timer_running
     try:
         headers = get_headers()
-        # Encontra o timer que está rodando
         res = requests.get("https://api.track.toggl.com/api/v9/me/time_entries/current", headers=headers)
         res.raise_for_status()
         current = res.json()
+        
+        is_timer_running = False
         
         if not current:
             return "Nenhum cronômetro está rodando atualmente."
@@ -165,12 +217,9 @@ def stop_timer() -> str:
     except Exception as e:
         return f"Erro ao parar cronômetro no Toggl: {str(e)}"
 
-# Handlers para Auto-Stop
+# Handlers para Auto-Stop via fechamento
 def auto_stop_handler():
-    try:
-        stop_timer()
-    except:
-        pass
+    stop_timer_internal()
 
 atexit.register(auto_stop_handler)
 

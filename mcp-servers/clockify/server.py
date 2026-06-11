@@ -11,11 +11,23 @@ import requests
 import atexit
 import signal
 import sys
+import time
+import threading
+import json
 from datetime import datetime, timezone
 from mcp.server.fastmcp import FastMCP
 
 # Cria o servidor MCP
 mcp = FastMCP("Clockify Time Tracker")
+
+# Globals do Watchdog de Inatividade
+last_activity_time = time.time()
+is_timer_running = False
+is_paused_by_idle = False
+last_task_description = ""
+last_project_id = None
+last_tags = None
+IDLE_TIMEOUT_MINUTES = 10
 
 def get_headers():
     token = os.environ.get("CLOCKIFY_API_KEY")
@@ -29,6 +41,34 @@ def get_workspace_and_user():
     res.raise_for_status()
     user_data = res.json()
     return user_data.get("activeWorkspace"), user_data.get("id")
+
+def stop_timer_internal():
+    """Função interna para parar o timer via watchdog/atexit sem passar pelo FastMCP"""
+    try:
+        workspace_id, user_id = get_workspace_and_user()
+        if not workspace_id or not user_id:
+            return
+        payload = {"end": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+        requests.patch(
+            f"https://api.clockify.me/api/v1/workspaces/{workspace_id}/user/{user_id}/time-entries",
+            headers=get_headers(),
+            json=payload
+        )
+    except:
+        pass
+
+def watchdog_loop():
+    global is_timer_running, is_paused_by_idle, last_activity_time
+    while True:
+        time.sleep(60)
+        if is_timer_running:
+            if (time.time() - last_activity_time) > (IDLE_TIMEOUT_MINUTES * 60):
+                stop_timer_internal()
+                is_timer_running = False
+                is_paused_by_idle = True
+
+watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
+watchdog_thread.start()
 
 def resolve_tags(workspace_id: str, tag_names: list[str]) -> list[str]:
     """Resolve nomes de tags para seus IDs no Clockify. Cria a tag se não existir."""
@@ -56,6 +96,21 @@ def resolve_tags(workspace_id: str, tag_names: list[str]) -> list[str]:
     return tag_ids
 
 @mcp.tool()
+def ping_activity() -> str:
+    """
+    Sinaliza que a IA interagiu e verifica se o timer foi pausado por inatividade.
+    Deve ser a PRIMEIRA chamada de ferramenta da IA no início de cada turno.
+    Retorna uma string JSON com o status do watchdog e a última tarefa rodada.
+    """
+    global last_activity_time
+    last_activity_time = time.time()
+    
+    return json.dumps({
+        "status": "paused_by_idle" if is_paused_by_idle else "active",
+        "last_task": last_task_description
+    })
+
+@mcp.tool()
 def start_timer(description: str, project_id: str = None, tags: list[str] = None) -> str:
     """
     Inicia um cronômetro no Clockify.
@@ -64,6 +119,8 @@ def start_timer(description: str, project_id: str = None, tags: list[str] = None
         project_id: O ID do projeto no Clockify (opcional).
         tags: Lista de nomes de tags a serem adicionadas ao registro (opcional).
     """
+    global is_timer_running, is_paused_by_idle, last_activity_time, last_task_description, last_project_id, last_tags
+    
     try:
         workspace_id, _ = get_workspace_and_user()
         if not workspace_id:
@@ -85,6 +142,15 @@ def start_timer(description: str, project_id: str = None, tags: list[str] = None
             json=payload
         )
         res.raise_for_status()
+        
+        # Atualiza os globals do watchdog
+        last_activity_time = time.time()
+        is_timer_running = True
+        is_paused_by_idle = False
+        last_task_description = description
+        last_project_id = project_id
+        last_tags = tags
+        
         return f"Cronômetro iniciado com sucesso para: {description}"
     except Exception as e:
         return f"Erro ao iniciar cronômetro no Clockify: {str(e)}"
@@ -93,12 +159,6 @@ def start_timer(description: str, project_id: str = None, tags: list[str] = None
 def add_time_entry(description: str, start_time_iso: str, end_time_iso: str, project_id: str = None, tags: list[str] = None) -> str:
     """
     Adiciona um registro de tempo finalizado (retroativo) no Clockify.
-    Args:
-        description: A descrição da tarefa (obrigatório).
-        start_time_iso: ISO 8601 string do início (ex: '2026-06-10T20:00:00Z')
-        end_time_iso: ISO 8601 string do término (ex: '2026-06-10T21:00:00Z')
-        project_id: O ID do projeto no Clockify (opcional).
-        tags: Lista de nomes de tags a serem adicionadas (opcional).
     """
     try:
         workspace_id, _ = get_workspace_and_user()
@@ -130,8 +190,6 @@ def add_time_entry(description: str, start_time_iso: str, end_time_iso: str, pro
 def create_project(name: str) -> str:
     """
     Cria um novo projeto no Clockify e retorna seu ID.
-    Args:
-        name: O nome do projeto a ser criado.
     """
     try:
         workspace_id, _ = get_workspace_and_user()
@@ -155,6 +213,7 @@ def stop_timer() -> str:
     """
     Para o cronômetro que está rodando atualmente no Clockify.
     """
+    global is_timer_running
     try:
         workspace_id, user_id = get_workspace_and_user()
         if not workspace_id or not user_id:
@@ -169,6 +228,8 @@ def stop_timer() -> str:
             json=payload
         )
         
+        is_timer_running = False
+        
         if res.status_code == 404:
             return "Nenhum cronômetro está rodando atualmente."
             
@@ -177,18 +238,14 @@ def stop_timer() -> str:
     except Exception as e:
         return f"Erro ao parar cronômetro no Clockify: {str(e)}"
 
-# Handlers para Auto-Stop
+# Handlers para Auto-Stop via fechamento
 def auto_stop_handler():
-    try:
-        # Se for chamado de forma síncrona sem contexto do event loop, funciona perfeitamente via requests
-        stop_timer()
-    except:
-        pass
+    stop_timer_internal()
 
 atexit.register(auto_stop_handler)
 
 def sigterm_handler(signum, frame):
-    sys.exit(0)  # O sys.exit chama os handlers do atexit
+    sys.exit(0)
 
 signal.signal(signal.SIGTERM, sigterm_handler)
 signal.signal(signal.SIGINT, sigterm_handler)
