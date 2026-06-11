@@ -10,6 +10,9 @@ import os
 import requests
 import base64
 import time
+import atexit
+import signal
+import sys
 from datetime import datetime, timezone
 from mcp.server.fastmcp import FastMCP
 
@@ -32,12 +35,13 @@ def get_workspace_id():
     return data.get("default_workspace_id")
 
 @mcp.tool()
-def start_timer(description: str, project_id: int = None) -> str:
+def start_timer(description: str, project_id: int = None, tags: list[str] = None) -> str:
     """
     Inicia um cronômetro no Toggl Track.
     Args:
         description: A descrição do que você está trabalhando (obrigatório).
         project_id: O ID numérico do projeto no Toggl (opcional).
+        tags: Lista de nomes de tags a serem adicionadas ao registro (opcional).
     """
     try:
         workspace_id = get_workspace_id()
@@ -55,6 +59,8 @@ def start_timer(description: str, project_id: int = None) -> str:
         }
         if project_id:
             payload["project_id"] = project_id
+        if tags:
+            payload["tags"] = tags
             
         res = requests.post(
             f"https://api.track.toggl.com/api/v9/workspaces/{workspace_id}/time_entries",
@@ -65,6 +71,48 @@ def start_timer(description: str, project_id: int = None) -> str:
         return f"Cronômetro iniciado com sucesso para: {description}"
     except Exception as e:
         return f"Erro ao iniciar cronômetro no Toggl: {str(e)}"
+
+@mcp.tool()
+def add_time_entry(description: str, start_time_iso: str, end_time_iso: str, project_id: int = None, tags: list[str] = None) -> str:
+    """
+    Adiciona um registro de tempo finalizado (retroativo) no Toggl Track.
+    Args:
+        description: A descrição da tarefa (obrigatório).
+        start_time_iso: ISO 8601 string do início (ex: '2026-06-10T20:00:00Z')
+        end_time_iso: ISO 8601 string do término (ex: '2026-06-10T21:00:00Z')
+        project_id: O ID numérico do projeto no Toggl (opcional).
+        tags: Lista de nomes de tags a serem adicionadas (opcional).
+    """
+    try:
+        workspace_id = get_workspace_id()
+        if not workspace_id:
+            return "Erro: Workspace padrão não encontrado."
+            
+        start_dt = datetime.fromisoformat(start_time_iso.replace("Z", "+00:00"))
+        end_dt = datetime.fromisoformat(end_time_iso.replace("Z", "+00:00"))
+        duration_seconds = int((end_dt - start_dt).total_seconds())
+
+        payload = {
+            "created_with": "sarak-mcp-agent",
+            "description": description,
+            "start": start_time_iso,
+            "duration": duration_seconds,
+            "workspace_id": workspace_id
+        }
+        if project_id:
+            payload["project_id"] = project_id
+        if tags:
+            payload["tags"] = tags
+            
+        res = requests.post(
+            f"https://api.track.toggl.com/api/v9/workspaces/{workspace_id}/time_entries",
+            headers=get_headers(),
+            json=payload
+        )
+        res.raise_for_status()
+        return f"Registro retroativo de tempo criado com sucesso para: {description}"
+    except Exception as e:
+        return f"Erro ao criar registro de tempo retroativo no Toggl: {str(e)}"
 
 @mcp.tool()
 def create_project(name: str) -> str:
@@ -116,6 +164,21 @@ def stop_timer() -> str:
         return "Cronômetro parado com sucesso no Toggl."
     except Exception as e:
         return f"Erro ao parar cronômetro no Toggl: {str(e)}"
+
+# Handlers para Auto-Stop
+def auto_stop_handler():
+    try:
+        stop_timer()
+    except:
+        pass
+
+atexit.register(auto_stop_handler)
+
+def sigterm_handler(signum, frame):
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, sigterm_handler)
+signal.signal(signal.SIGINT, sigterm_handler)
 
 if __name__ == "__main__":
     mcp.run()

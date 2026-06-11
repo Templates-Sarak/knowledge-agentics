@@ -1,5 +1,5 @@
 ---
-name: api-contrato
+name: test-api-contrato
 description: Define e valida o contrato OpenAPI do api/ de cada módulo (REST /api/v1/, plural kebab-case, camelCase) e testa o contrato — provider conforma à spec e consumidores dependem só do contrato (reforça o encapsulamento). Use ao criar/auditar contrato de API, escrever OpenAPI ou montar contract testing. NÃO acione proativamente.
 ---
 

@@ -5,36 +5,46 @@ description: "Rastreamento de tempo. DIRETRIZ MÁXIMA: Ao receber qualquer taref
 
 # Skill: Time Tracking Automatizado
 
-Esta skill integra o modelo com o provedor de apontamento de horas do projeto atual, garantindo que o tempo de desenvolvimento seja faturado.
+Esta skill integra o modelo com o provedor de apontamento de horas (`clockify-sarak` ou `toggl-sarak`), garantindo apontamento padronizado de nível empresarial. 
 
-## Quando usar
-- **Modo Automático:** SEMPRE que o usuário delegar uma tarefa. Você deve acionar o timer logo no primeiro turno de resposta, antes de planejar ou ler o código.
-- **Modo Manual:** Quando o usuário usar o comando explícito `/time-timer` ou pedir "inicie o timer para X", especialmente útil para troubleshooting/correção de bugs rápidos.
-- O requisito para usar é existir um `.agents/config.json` na raiz do projeto alvo com o bloco `time_tracking`.
+## Regras de Taxonomia e Nomenclatura (Padrão Estrito)
+A empresa exige formatação estrita para faturamento. O parâmetro `description` DEVE sempre seguir o formato:
+`[{Categoria}] {Branch_ou_Módulo} — {Resumo_da_Tarefa}`
+*(Ex: `[Feat] feature/login — Implementação de middleware JWT`)*
+
+**Categorias Automáticas (A IA deve deduzir do prompt):**
+- `[Plan]` — Arquitetura, especificação, documentação.
+- `[Feat]` — Escrita de código novo e funcionalidades.
+- `[Fix]` — Resolução de erros e bugs.
+- `[Refactor]` — Adequação a padrões ou refatoração.
+- `[Test]` — Coberturas e testes (ex: unitários, integração).
+- `[Audit]` — Diagnósticos e segurança.
+- `[DevOps]` — Infraestrutura, pipelines e DB.
+- `[Meta]` — Trabalho interno no ecossistema Sarak.
+
+**Categorias Manuais (Usadas via comando interativo):**
+A IA deve reconhecer se o usuário usar inglês ou português e SEMPRE mapear para o padrão estrito em INGLÊS nos colchetes:
+- Planejamento Estrutural / Design -> `[Arch]`
+- Reuniões / Calls -> `[Meeting]`
+- Consultoria / Suporte -> `[Consulting]`
+
+## Metadados Passivos (Tags)
+Além do formato da descrição, a IA DEVE enviar uma array de `tags` (string) ao MCP contendo:
+1. Todas as tags contidas em `tags_default` no arquivo `.agents/config.json`.
+2. Uma tag dinâmica informando qual skill está sendo usada (ex: `test-ws-realtime`), quando aplicável, para permitir auditoria posterior no relatório do cliente.
 
 ## Workflow
 
-1. **Gate: Leitura de Configuração**
-   - **Ferramenta:** `Read` (view_file)
-   - **Ação:** Leia o arquivo `.agents/config.json` na raiz do repositório auditado.
-   - **Critério:** Verifique qual o provedor de tempo (ex: `clockify`, `toggl`) e qual o ID do projeto configurado (`project_id`). Se o arquivo não existir ou não contiver configuração de timer, **NÃO inicie nenhum timer e não avise o usuário** (apenas siga com a tarefa normal).
+1. **Gate: Leitura de Contexto**
+   - Leia `.agents/config.json`. Se não houver configuração `time_tracking`, não inicie o timer. Extraia `project_id` e `tags_default`.
+   - Se for uma tarefa automatizada em um repositório Git, execute de forma silenciosa `git branch --show-current` para obter o {Branch_ou_Módulo} para compor a Descrição. Se falhar, use o nome da pasta alvo.
 
 2. **Ação: Iniciar o Cronômetro**
-   - **Ferramenta:** Chamada de MCP (`call_mcp_tool`)
-   - **Ação:** Chame a ferramenta `start_timer` do servidor correspondente (`clockify-sarak` ou `toggl-sarak`).
-   - **Parâmetros:** 
-     - `description`: String com prefixo semântico (ex: "Planejamento: [Nome]", "Desenvolvimento: [Nome]", "Correção de Bug: [Nome]").
-     - `project_id`: Extraído do `config.json`.
-   - **Critério:** O servidor retornará sucesso. Não interrompa o fluxo de resposta ao usuário para avisar que o timer foi iniciado, apenas coloque no seu resumo no final "*(Timer iniciado: Nome da Tarefa)*".
+   - Chame a ferramenta `start_timer` do provedor (MCP `clockify-sarak` ou `toggl-sarak`).
+   - Parâmetros: `description` (formatada), `project_id`, `tags` (array de strings: tags default + skill atual).
+   - Não avise o usuário explicitamente da criação num parágrafo longo; apenas coloque silenciosamente no rodapé da sua resposta "*(Timer iniciado: [Categoria])*".
 
 3. **Ação: Parar o Cronômetro (Fim da Tarefa)**
-   - **Ferramenta:** Chamada de MCP (`call_mcp_tool`)
-   - **Ação:** Ao terminar DE FATO a tarefa e entregar o código ou artefato final para revisão humana, chame a ferramenta `stop_timer` do provedor configurado.
+   - Ao terminar DE FATO a tarefa e entregar o código, chame a ferramenta `stop_timer`.
 
-## Regras
-- **NÃO** pergunte ao usuário "posso iniciar o timer?" para tarefas padrão de spec e código. Faça de forma autônoma e invisível.
-- **NUNCA** chame o timer se não houver `.agents/config.json` explícito no projeto. O Sarak é opt-in por projeto.
-
-## Checklist
-- [ ] O `config.json` foi consultado antes de tentar chamar o MCP?
-- [ ] A ferramenta MCP correta foi chamada com os parâmetros mapeados?
+*(Nota: Para tarefas lançadas retroativamente ou offline, utilize o assistente manual via rota de comando `/time`, que dispõe de uma etapa HITL para usar a ferramenta `add_time_entry`).*
