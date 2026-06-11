@@ -17,6 +17,26 @@ import json
 from datetime import datetime, timezone
 from mcp.server.fastmcp import FastMCP
 
+ACTIVITY_FILE = os.path.expanduser("~/.sarak_activity.json")
+
+def update_activity_file(is_running):
+    try:
+        data = {"is_running": is_running, "last_activity": time.time() * 1000}
+        with open(ACTIVITY_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+    except:
+        pass
+
+def read_activity_file():
+    try:
+        if os.path.exists(ACTIVITY_FILE):
+            with open(ACTIVITY_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("last_activity", 0) / 1000.0
+    except:
+        pass
+    return 0
+
 # Cria o servidor MCP
 mcp = FastMCP("Clockify Time Tracker")
 
@@ -62,10 +82,15 @@ def watchdog_loop():
     while True:
         time.sleep(60)
         if is_timer_running:
+            hook_activity_sec = read_activity_file()
+            if hook_activity_sec > last_activity_time:
+                last_activity_time = hook_activity_sec
+                
             if (time.time() - last_activity_time) > (IDLE_TIMEOUT_MINUTES * 60):
                 stop_timer_internal()
                 is_timer_running = False
                 is_paused_by_idle = True
+                update_activity_file(False)
 
 watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
 watchdog_thread.start()
@@ -150,6 +175,7 @@ def start_timer(description: str, project_id: str = None, tags: list[str] = None
         last_task_description = description
         last_project_id = project_id
         last_tags = tags
+        update_activity_file(True)
         
         return f"Cronômetro iniciado com sucesso para: {description}"
     except Exception as e:
@@ -229,6 +255,7 @@ def stop_timer() -> str:
         )
         
         is_timer_running = False
+        update_activity_file(False)
         
         if res.status_code == 404:
             return "Nenhum cronômetro está rodando atualmente."

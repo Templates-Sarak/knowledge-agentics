@@ -88,4 +88,7 @@ Sempre que uma skill pedir para você rodar ferramentas como Python, Pytest, Esl
 - **SARAK_PYTHON_VENV**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/.venv/Scripts/python.exe`
 - **SARAK_NODE_BIN**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/node_modules/.bin`
 
-> **Exemplo Prático**: Se a skill disser 'Rode o pytest', você deve rodar: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/.venv/Scripts/python.exe -m pytest .`
+> **Exemplos Práticos de Ferramentas Globais**:
+> - **Pytest**: `"C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/.venv/Scripts/python.exe" -m pytest .`
+> - **Playwright**: `"C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/node_modules/.bin/playwright" test`
+> - **Artillery**: `"C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/node_modules/.bin/artillery" run test.yml`

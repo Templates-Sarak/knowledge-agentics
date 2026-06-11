@@ -12,5 +12,13 @@ pylint        # Linting avançado
 black         # Formatação
 flake8        # Linting rápido
 
+# Família Testes Específicos
+testcontainers # Bancos de dados efêmeros para teste de integração
+websocket-client # Testes de WS Realtime
+pytest-asyncio # Suporte a testes assíncronos no pytest
+
 # Outros utilitários Sarak
 pyyaml        # Parsers YAML
+mcp           # Servidores MCP nativos
+fastmcp       # Wrapper FastMCP
+requests      # Chamadas HTTP genéricas e MCPs

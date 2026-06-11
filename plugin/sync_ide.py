@@ -148,7 +148,10 @@ def generate_routing_table(xskills_root):
     
     table += f"- **SARAK_PYTHON_VENV**: `{python_path}`\n"
     table += f"- **SARAK_NODE_BIN**: `{node_bin_path}`\n"
-    table += f"\n> **Exemplo Prático**: Se a skill disser 'Rode o pytest', você deve rodar: `{python_path} -m pytest .`\n"
+    table += f"\n> **Exemplos Práticos de Ferramentas Globais**:\n"
+    table += f"> - **Pytest**: `\"{python_path}\" -m pytest .`\n"
+    table += f"> - **Playwright**: `\"{node_bin_path}/playwright\" test`\n"
+    table += f"> - **Artillery**: `\"{node_bin_path}/artillery\" run test.yml`\n"
 
     output_file = xskills_root / "plugin" / "sarak_routing_table.md"
     with open(output_file, "w", encoding="utf-8") as f:
