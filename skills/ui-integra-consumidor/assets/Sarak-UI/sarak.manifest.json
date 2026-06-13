@@ -1,0 +1,10 @@
+{
+  "id": "meu-novo-modulo",
+  "label": "Nome do Módulo",
+  "icon": "Box",
+  "category": "Geral",
+  "version": "1.0.0",
+  "priority": 10,
+  "endpoints": {},
+  "visualContracts": []
+}

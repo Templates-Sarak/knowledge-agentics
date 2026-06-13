@@ -68,6 +68,7 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **test-unitario**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-unitario/SKILL.md`
 - **test-ws-realtime**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-ws-realtime/SKILL.md`
 - **time-tracking**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/time-tracking/SKILL.md`
+- **ui-integra-consumidor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/ui-integra-consumidor/SKILL.md`
 
 ## 3. Subagentes Especializados
 Agentes que podem ser acionados via ferramentas/tasks (ex: code-auditor). Leia o manifesto para descobrir as regras e os papéis.
