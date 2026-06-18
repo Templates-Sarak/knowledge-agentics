@@ -38,8 +38,8 @@ Toda skill é organizada para o agente ler o mínimo necessário:
 │   ├── workflow.md        # passos detalhados com antes/depois
 │   ├── templates.md       # templates de preenchimento (só se produz output)
 │   └── examples.md        # exemplo bom + exemplo ruim
-├── scripts/               # automação determinística em Python (CONDICIONAL)
-│   └── *.py
+├── scripts/               # automação determinística na linguagem do repositório (CONDICIONAL)
+│   └── *.<ext>
 └── assets/                # binários / boilerplate copiável (CONDICIONAL)
 ```
 
@@ -101,7 +101,7 @@ Trate **uma skill por vez**. Cada passo é acionável; o detalhe verboso está e
 4. **Escrever o `SKILL.md` denso** — seções: o que é, quando usar, workflow acionável, regras, checklist, ponteiros. Cada passo declara **ferramenta + ação + output/critério** ("analise o código" é proibido). ~150–200 linhas.
 5. **Passo HITL** — se a skill modifica algo, inclua no workflow dela um passo de confirmação (Plano de Execução: o quê / por quê / como / expectativa → "⚠️ Confirma?") antes da 1ª ação mutativa.
 6. **Preencher Camada 3** *(condicional)* — `references/workflow.md` (antes/depois), `templates.md` (se produz output), `examples.md`. Cada um com ponteiro no `SKILL.md`.
-7. **Criar script** *(condicional, Python)* — só para tarefa determinística (mesma entrada→mesma saída). Tarefa que exige julgamento fica nas instruções. _(critérios e template em `references/workflow.md` e `templates.md`)_
+7. **Criar script** *(condicional)* — **criados obrigatoriamente na linguagem principal do repositório atual**. Só para tarefa determinística (mesma entrada→mesma saída). Tarefa que exige julgamento fica nas instruções. _(critérios e template em `references/workflow.md` e `templates.md`)_
 8. **Validar** — passe o checklist abaixo na skill nova antes de considerá-la pronta.
 
 ## Regras e limites
@@ -130,7 +130,7 @@ Trate **uma skill por vez**. Cada passo é acionável; o detalhe verboso está e
 - [ ] As regras começam com NÃO/NUNCA, têm justificativa e incluem ao menos 1 item de escopo?
 - [ ] As dependências cruzadas (ex: uso do padrao-escrita) estão declaradas explicitamente no topo do SKILL.md?
 - [ ] Cada arquivo de `references/`/`scripts/` tem ponteiro no `SKILL.md` e nenhum ponteiro é órfão?
-- [ ] Scripts (se houver) são Python, sem hardcoded/segredos, responsabilidade única e saída clara?
+- [ ] Scripts (se houver) foram escritos na **linguagem do repositório**, sem hardcoded/segredos, com responsabilidade única e saída clara?
 
 ## Referências (Camada 3 — leia sob demanda)
 

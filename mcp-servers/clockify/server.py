@@ -68,7 +68,7 @@ def stop_timer_internal():
         workspace_id, user_id = get_workspace_and_user()
         if not workspace_id or not user_id:
             return
-        payload = {"end": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+        payload = {"end": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")}
         requests.patch(
             f"https://api.clockify.me/api/v1/workspaces/{workspace_id}/user/{user_id}/time-entries",
             headers=get_headers(),
@@ -147,12 +147,15 @@ def start_timer(description: str, project_id: str = None, tags: list[str] = None
     global is_timer_running, is_paused_by_idle, last_activity_time, last_task_description, last_project_id, last_tags
     
     try:
+        # Garante que qualquer timer anterior seja pausado antes de iniciar um novo
+        stop_timer_internal()
+        
         workspace_id, _ = get_workspace_and_user()
         if not workspace_id:
             return "Erro: Workspace ativo não encontrado."
             
         payload = {
-            "start": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "start": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
             "description": description
         }
         if project_id:
@@ -246,7 +249,7 @@ def stop_timer() -> str:
             return "Erro: Workspace ou Usuário não encontrados."
             
         payload = {
-            "end": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            "end": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
         }
         res = requests.patch(
             f"https://api.clockify.me/api/v1/workspaces/{workspace_id}/user/{user_id}/time-entries",

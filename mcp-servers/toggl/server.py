@@ -122,6 +122,9 @@ def start_timer(description: str, project_id: int = None, tags: list[str] = None
     global is_timer_running, is_paused_by_idle, last_activity_time, last_task_description, last_project_id, last_tags
     
     try:
+        # Garante que qualquer timer anterior seja pausado antes de iniciar um novo
+        stop_timer_internal()
+        
         workspace_id = get_workspace_id()
         if not workspace_id:
             return "Erro: Workspace padrão não encontrado."
@@ -130,7 +133,7 @@ def start_timer(description: str, project_id: int = None, tags: list[str] = None
         payload = {
             "created_with": "sarak-mcp-agent",
             "description": description,
-            "start": start_time.isoformat().replace("+00:00", "Z"),
+            "start": start_time.replace(microsecond=0).isoformat().replace("+00:00", "Z"),
             "duration": -1 * int(time.time()),
             "workspace_id": workspace_id
         }

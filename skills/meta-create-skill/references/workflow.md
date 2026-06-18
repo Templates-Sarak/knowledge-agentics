@@ -84,8 +84,8 @@ Nome da pasta = `name` da skill, em **kebab-case, sem prefixo** (`code-padroniza
 │   ├── workflow.md
 │   ├── templates.md
 │   └── examples.md
-├── scripts/            # automação determinística — condicional
-│   └── *.py
+├── scripts/            # automação determinística na linguagem do repositório — condicional
+│   └── *.<ext>
 └── assets/             # binários / boilerplate copiável — condicional
 ```
 
@@ -156,21 +156,23 @@ Cada arquivo criado **precisa** ter um ponteiro correspondente no `SKILL.md`. Se
 
 ---
 
-## Passo 6: Criar script em `scripts/` *(condicional — Python)*
+## Passo 6: Criar script em `scripts/` *(condicional)*
 
 Crie um script **quando a tarefa é determinística e repetível** — mesma entrada, mesma saída (varrer
 arquivos, detectar padrões, contar, converter, validar, gerar estrutura).
+
+**Atenção:** Se a skill precisar de um script, ele deve ser criado **na linguagem principal do repositório** onde a skill será utilizada (ex.: Node.js para repositórios TypeScript, Python para repositórios Python).
 
 **Critério de decisão:**
 - Mecânica, determinística → **script** (ex.: scanner de segredos, scaffold de pastas).
 - Exige julgamento/contexto → **não** vira script; fica nas instruções (ex.: decidir como modularizar).
 
 **Padrões (alinhados ao `CLAUDE.md`):**
-- Python (multiplataforma).
+- Escrito na linguagem do repositório (multiplataforma preferencialmente).
 - **Zero hardcoded:** caminhos/limites/padrões vêm de argumentos ou de `config.json`, nunca embutidos.
 - Zero segredos.
 - Responsabilidade única; saída clara (texto ou JSON) para o agente consumir.
-- Docstring no topo: o que faz, como rodar, o que retorna.
+- Comentário/Docstring no topo: o que faz, como rodar, o que retorna.
 
 ---
 

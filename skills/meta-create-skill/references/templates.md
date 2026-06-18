@@ -47,7 +47,7 @@ N. **[Passo final]** — [ação].
 - `references/workflow.md` — workflow detalhado com antes/depois.
 - `references/templates.md` — templates de preenchimento. *(se houver)*
 - `references/examples.md` — exemplo bom e ruim. *(se houver)*
-- `scripts/[nome].py` — [o que automatiza]. *(se houver)*
+- `scripts/[nome].[ext]` — [o que automatiza]. *(se houver)*
 ```
 
 **Exemplos de `description`:**
@@ -126,7 +126,9 @@ Só se houver sistema de registro/GSD ativo. Caso não exista, omita.
 
 ---
 
-## Template: `scripts/[nome].py` *(condicional — automação determinística)*
+## Template: `scripts/[nome].[ext]` *(condicional — automação determinística na linguagem do repositório)*
+
+> **Nota:** Molde o script para a linguagem principal do repositório. O exemplo abaixo está em Python, mas converta para TypeScript, Go, etc. conforme a necessidade do projeto alvo.
 
 ```python
 """
