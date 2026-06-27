@@ -84,7 +84,7 @@ def audit_base(base_dir):
     }
     
     for root, _, files in os.walk(base_dir):
-        if ".git" in root or "node_modules" in root:
+        if ".git" in root or "node_modules" in root or ".venv" in root or "mcp-servers" in root:
             continue
         for file in files:
             if not file.endswith((".md", ".js", ".json", ".py")):

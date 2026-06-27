@@ -3,12 +3,6 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": ".*",
-        "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/hooks/meta-time-tracking.js\"" }
-        ]
-      },
-      {
         "matcher": "Bash",
         "hooks": [
           { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/hooks/cyber-git-seguro.js\"" },
