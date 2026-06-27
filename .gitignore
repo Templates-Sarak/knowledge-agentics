@@ -18,3 +18,6 @@ node_modules/
 #   skills/  commands/  agents/  hooks/  (inclui hooks/hooks.json)
 #   CLAUDE.md  README.md  plugin/sync_ide.py
 # Nada acima é ignorado — listado aqui só para deixar a intenção explícita.
+
+# Proteção de Segredos e Chaves de API
+mcp-servers/
