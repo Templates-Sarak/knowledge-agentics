@@ -26,6 +26,7 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **code-adequacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-adequacao/SKILL.md`
 - **code-auditoria-padrao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-auditoria-padrao/SKILL.md`
 - **code-diagnostico**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-diagnostico/SKILL.md`
+- **code-documentacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-documentacao/SKILL.md`
 - **code-entrega**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-entrega/SKILL.md`
 - **code-limpeza-projeto**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-limpeza-projeto/SKILL.md`
 - **cyber-api**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-api/SKILL.md`
