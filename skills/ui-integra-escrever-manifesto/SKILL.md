@@ -1,6 +1,6 @@
 ---
 name: ui-integra-escrever-manifesto
-description: Ensina a compor telas, componentes e lógicas construindo arquivos JSON válidos para o SarakManifestRenderer. Use ao criar ou editar páginas de interface no consumidor. NÃO acione proativamente.
+description: Ensina a compor telas, componentes e lógicas construindo arquivos JSON válidos para o SarakManifestRenderer. Use ao criar ou editar páginas de interface num consumidor que já importou @sarak/lib-ui-core, ou logo após rodar a skill ui-integra-consumidor (Handoff). NÃO acione proativamente.
 ---
 
 # Skill: Escrever Manifesto Declarativo (UI)
@@ -29,15 +29,19 @@ Ao instruir o agente ou escrever código para criar uma tela, siga obrigatoriame
    - Strings de conteúdo visual podem conter expressões reativas usando chaves duplas: `"label": "Olá, {{user.name | capitalize}}!"`.
    - Modificadores de formatação (*Pipes*) como `currency`, `date` ou `uppercase` ficam após o caractere `|`.
 5. **Eventos e Ações (Dispatcher)**
-   - Interações são declaradas no bloco `"actions": {}`.
+   - Interações são declaradas em `"actions": []` — **array plano**, nunca um objeto com chaves de evento (`onClick`/`onSubmit`). A própria Engine decide o gatilho: `onClick` em botões, `onChange` em campos com `model`. Não existe `"actions": { "onClick": [...] }` — isso quebra a iteração da Engine (`actions` deixa de ser iterável) e o nó cai no Error Boundary.
+   - `api_call` exige `endpoint`/`method`/`body`/`params` dentro de `payload` — **nunca soltos** no objeto da ação (o Dispatcher só lê `action.payload.*`).
    - Exemplo (Botão de Salvar que dispara API e fecha modal):
      ```json
-     "actions": {
-       "onClick": [
-         { "type": "api_call", "endpoint": "/api/save", "method": "POST", "body": "{{formState}}" },
-         { "type": "mutate_state", "key": "isModalOpen", "value": false }
-       ]
-     }
+     "actions": [
+       { "type": "api_call", "payload": { "endpoint": "/api/save", "method": "POST", "body": "{{formState}}" } },
+       { "type": "mutate_state", "payload": { "path": "isModalOpen", "value": false } }
+     ]
+     ```
+   - **Erro comum a evitar** (schema que já causou falha real em produção — o nó renderiza um erro genérico em vez do botão):
+     ```json
+     // ❌ ERRADO: "actions" como objeto, endpoint/method soltos
+     "actions": { "onClick": [{ "type": "api_call", "endpoint": "/api/save", "method": "POST" }] }
      ```
 
 ## Regras de Ouro e Segurança
