@@ -17,7 +17,7 @@ Pode ser executada logo após a conclusão da `spec-site-fundacao` ou invocada m
 
 2. **Entrevista com Formulário Granular (HITL Obrigatório)**
    - **Ferramenta:** Diálogo (Chat)
-   - **Ação:** Envie o seguinte formulário em Markdown ao usuário e PARE a execução aguardando as respostas. Este formulário foi milimetricamente desenhado para cobrir cada lacuna dos 10 templates da `_estrutura_base_site`:
+   - **Ação:** Envie o seguinte formulário em Markdown ao usuário e PARE a execução aguardando as respostas. Este formulário foi milimetricamente desenhado para cobrir cada lacuna dos 11 templates da `_estrutura_base_site`:
 
    ```markdown
    ## 📝 Formulário Completo de Criação do Site
@@ -49,6 +49,11 @@ Pode ser executada logo após a conclusão da `spec-site-fundacao` ou invocada m
    14. **Páginas Internas (Hub & Spoke):** Como funcionará a arquitetura de catálogos (ex: estrutura da página mãe `/servicos` vs. detalhe `/servicos/[slug]`)? Qual a estratégia para páginas 404 (Fallback dinâmico ou página padrão)?
    15. **Formulários e Conversão:** Quais os campos exatos do formulário de contato? Qual a estratégia Anti-spam (Honeypot, reCAPTCHA)? A validação ocorre em tempo real (onBlur) ou no envio? O sucesso exibe uma mensagem in-line ou redireciona para `/obrigado`?
    16. **Páginas Legais:** Haverá banner de consentimento de cookies? Teremos páginas dedicadas de Termos de Uso e Política de Privacidade?
+
+   ### PARTE 6: Estrutura de Código e Escabilidade
+   17. **Arquitetura de Pastas (DDD):** A organização dos componentes será orientada a domínio (ex: `components/home`, `components/ui`) ou flat?
+   18. **Segregação de Dados:** Haverá separação estrita de conteúdo (textos) do código JSX (ex: usando pastas `data/` ou `messages/` para i18n)?
+   19. **Arquivos Nativos:** Exigiremos a geração nativa de `sitemap.ts`, `robots.ts` e `opengraph-image.tsx` na raiz do projeto (Next.js App Router)?
    ```
 
 3. **Síntese e Preenchimento dos Arquivos**
@@ -60,5 +65,5 @@ Pode ser executada logo após a conclusão da `spec-site-fundacao` ou invocada m
    - Comunique ao usuário que a fundação e o planejamento do site estão 100% especificados, documentados na pasta `specs/` e prontos para embasar o desenvolvimento técnico.
 
 ## Regras de Ouro
-- O questionário agora possui 16 pontos focais e mapeia 100% dos micro-detalhes de UI, UX e Infraestrutura da `_estrutura_base_site`. Não avance para a escrita dos arquivos até ter massa crítica de respostas.
+- O questionário agora possui 19 pontos focais e mapeia 100% dos micro-detalhes de UI, UX e Arquitetura da `_estrutura_base_site`. Não avance para a escrita dos arquivos até ter massa crítica de respostas.
 - Preencha cada arquivo respeitando sua finalidade de domínio, e remova blocos/itens que o usuário decidir não utilizar (ex: se não tiver Dark Mode, delete os parâmetros referentes ao tema escuro da Identidade Visual).

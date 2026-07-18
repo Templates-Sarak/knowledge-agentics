@@ -20,14 +20,24 @@ Deve ser engatilhada automaticamente ao iniciar o projeto de um site ou invocada
      3. **Tom de Voz e Copy:** Qual a principal mensagem que o site deve passar e qual o tom de voz (formal, descontraído, persuasivo)?
      4. **Dados SEO/Institucionais:** Qual o nome da marca, palavras-chave principais e dados de contato que devem aparecer (NAP)?
      5. **Estrutura de Páginas:** Além da Home e Contato, quais páginas principais o site terá (Sobre, Serviços, Blog)?
+     6. **Orquestração de Navegação:** O site precisará de rotas complexas, sub-abas ou suporte a múltiplos idiomas (i18n)?
+     7. **Orquestração de Descoberta:** O site dependerá fortemente de tráfego orgânico (Google), busca local (GEO) ou otimização para IA (AEO)?
+     8. **Orquestração de Detalhamento:** Deseja que eu detalhe toda a arquitetura física de pastas (ex: DDD), UI e infraestrutura técnica agora mesmo?
 
-2. **Cópia da Estrutura Base**
+2. **Orquestração de Especialistas (Roteamento Dinâmico)**
+   - **Ação:** Baseado nas respostas das perguntas 6, 7 e 8, INVOQUE ou RECOMENDE imediatamente o uso das seguintes skills especializadas:
+     - Se sim para a P6 (Navegação/i18n), acione `/site-organizacao` para criar o mapa de rotas.
+     - Se sim para a P7 (Tráfego/SEO/IA), acione `/site-seo` para mapear a estratégia técnica de descobrimento.
+     - Se sim para a P8 (Detalhamento Arquitetural), acione `/site-criacao` para aprofundar as decisões estruturais.
+
+3. **Cópia da Estrutura Base**
    - **Ação:** Baseado na localização `_estrutura_base_site` (que contém as pastas `arquitetura` e `specs`), copie a estrutura para a pasta `specs/` do projeto alvo, instanciando os arquivos:
      - `specs/arquitetura/01-stack-tecnologica.md`
      - `specs/arquitetura/02-identidade-visual.md`
      - `specs/arquitetura/03-tom-de-voz-e-copy.md`
      - `specs/arquitetura/04-dados-institucionais-seo.md`
      - `specs/arquitetura/05-acessibilidade-e-performance.md`
+     - `specs/arquitetura/06-estrutura-de-codigo.md`
      - `specs/plan/06-layout-global-e-nav.md`
      - `specs/plan/07-pagina-home.md`
      - `specs/plan/08-paginas-internas-e-hub.md`
@@ -36,11 +46,11 @@ Deve ser engatilhada automaticamente ao iniciar o projeto de um site ou invocada
      
      *(Nota: Certifique-se de ajustar a nomenclatura/pastas exatas conforme o repositório original `_estrutura_base_site` determine, utilizando as respostas do usuário para preencher os arquivos)*.
 
-3. **Preenchimento Inicial dos Arquivos**
+4. **Preenchimento Inicial dos Arquivos**
    - **Ferramenta:** `Write`
    - **Ação:** Preencha o conteúdo dos arquivos recém-copiados com base nas respostas dadas pelo usuário na entrevista. Adapte os moldes aos requisitos reais.
 
-4. **Entrega**
+5. **Entrega**
    - Informe ao usuário que a fundação do site foi documentada com sucesso e a estrutura básica (`arquitetura/` e `specs/`) foi populada.
 
 ## Regras de Ouro
