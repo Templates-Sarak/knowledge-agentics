@@ -72,8 +72,6 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **test-integracao-api**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-integracao-api/SKILL.md`
 - **test-unitario**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-unitario/SKILL.md`
 - **test-ws-realtime**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-ws-realtime/SKILL.md`
-- **ui-integra-consumidor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/ui-integra-consumidor/SKILL.md`
-- **ui-integra-escrever-manifesto**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/ui-integra-escrever-manifesto/SKILL.md`
 
 ## 3. Subagentes Especializados
 Agentes que podem ser acionados via ferramentas/tasks (ex: code-auditor). Leia o manifesto para descobrir as regras e os papéis.
