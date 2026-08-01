@@ -13,7 +13,8 @@ Pode ser executada logo após a conclusão da `spec-site-fundacao` ou invocada m
 ## Workflow
 
 1. **Validação de Contexto**
-   - **Ação:** Verifique (de forma silenciosa) se as pastas `specs/arquitetura/` e `specs/plan/` (ou `specs/`) existem no repositório e se contêm os arquivos Markdown de base gerados.
+   - **Ação:** Verifique (de forma silenciosa) se as pastas `specs/arquitetura/` e `specs/specs/` existem no repositório e se contêm os arquivos Markdown de base gerados pela `spec-site-fundacao` (`arquitetura/01`…`06` e `specs/06`…`10`).
+   - **Ação:** Leia `specs/00-contexto.md` para não repetir o que a fundação já definiu. **Ignore `specs/plan/`**: é a fila de execução do ciclo SDD, não contém spec de conteúdo.
 
 2. **Entrevista com Formulário Granular (HITL Obrigatório)**
    - **Ferramenta:** Diálogo (Chat)

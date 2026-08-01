@@ -1,8 +1,12 @@
 {
-  "_doc": "Esta é a BASE de inteligência (importada nos projetos); os hooks NÃO rodam aqui. Para ativá-los num projeto-destino, mescle hooks/settings.template.json no settings.json daquele projeto.",
   "permissions": {
     "allow": [
-      "Bash(.venv/Scripts/python.exe -c ' *)"
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(cd \"c:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs\" && cp _estrutura_base/00-indice.md _estrutura_base/00-knowledge.md _estrutura_base/00-prompt-revisor.md _estrutura_base/00-prompt-executor.md _estrutura_base_site/ && mkdir -p _estrutura_base_site/_templates _estrutura_base_site/adr _estrutura_base_site/plan && cp _estrutura_base/_templates/*.md _estrutura_base_site/_templates/ && touch _estrutura_base_site/adr/.gitkeep _estrutura_base_site/plan/.gitkeep && find _estrutura_base_site -type f | sort)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates"
     ]
-  }
+  },
+  "_doc": "Esta é a BASE de inteligência (importada nos projetos); os hooks NÃO rodam aqui. Para ativá-los num projeto-destino, mescle hooks/settings.template.json no settings.json daquele projeto."
 }

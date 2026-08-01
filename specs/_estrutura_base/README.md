@@ -30,7 +30,8 @@ O modelo é **SDD (Spec-Driven Development)**: **toda e qualquer alteração nas
 | `specs/` | O **QUÊ** — regras de negócio, validações, comportamento | `01-login.md` | Documento vivo |
 | `arquitetura/` | O **COMO** — design estrutural, stack, banco, contratos | `00-base-python.md`, `api-design.md` | Documento vivo |
 | `adr/` | O **POR QUÊ** — decisões técnicas com trade-off | `001-escolha-do-postgres.md` | **Imutável** — decisão nova = ADR novo |
-| `plan/` | O **COMO CHEGAR LÁ** — as plans de execução | `plan-01-extrair-validacao.md` | Rastro auditável, append-only |
+| `plan/` | O **COMO CHEGAR LÁ** — plans **ativas** | `plan-01-extrair-validacao.md` | Fila de execução |
+| `plan/executadas/` | O que já terminou — plans aprovadas e sintetizadas | `plan-01-extrair-validacao.md` | Rastro auditável permanente |
 
 Moldes de todos eles em `_templates/`.
 
@@ -47,11 +48,21 @@ executada pelo **agente executor**. Ela contém descrição, escopo, referência
 execução** e o **destino da síntese**.
 
 Plans são **versionadas e preservadas**. Elas não são rascunho: são o histórico de por que o repositório é
-como é, e o registro de cada veredito de revisão. Após serem sintetizadas nas specs fixas, o arquivo
-**permanece** em `plan/` — só sai da fila do `00-indice`.
+como é, e o registro de cada veredito de revisão. **Nenhuma plan é apagada, nunca.**
 
-> Numeração é **monotônica e definitiva**: `plan-07` é `plan-07` para sempre. A ordem de execução se muda na
-> coluna `#` do `00-indice`, nunca renomeando o arquivo.
+Para a fila não virar depósito, o volume é separado por pasta — e a pasta espelha o estado:
+
+| Pasta | Status | O que é |
+|---|---|---|
+| `plan/` | 🔴 🟡 🟠 🔵 ⛔ | **Fila ativa** — o que está em jogo agora. Curta e legível |
+| `plan/executadas/` | 🟢 ⚪ | **Histórico** — aprovadas (aguardando síntese) e já sintetizadas. Cresce para sempre |
+
+O arquivo muda de pasta **uma única vez**, no momento da aprovação, movido pelo revisor com `git mv` — na mesma
+ação em que a linha migra da §1 para a §4 do `00-indice`. A síntese (`spec-atualizar`) só muda o status para
+`⚪`; o arquivo fica onde está.
+
+> Numeração é **monotônica e definitiva**: `plan-07` é `plan-07` para sempre, e o próximo número livre considera
+> as duas pastas. A ordem de execução se muda na coluna `#` do `00-indice`, nunca renomeando o arquivo.
 
 ---
 
@@ -64,10 +75,11 @@ como é, e o registro de cada veredito de revisão. Após serem sintetizadas nas
 4. EXECUTOR executa → alterações no worktree → resumo escrito na própria plan (🟠)
 5. REVISOR verifica DIRETAMENTE o worktree (não confia no resumo)
      ├─ reprovado → 🔵 + prompt de correção → volta ao 4
-     └─ aprovado  → 🟢 na plan e no 00-indice
+     └─ aprovado  → 🟢 + git mv para plan/executadas/ + linha migra da §1 para a §4
+                    do 00-indice
 6. USUÁRIO commita
-7. periodicamente: usuário dispara a skill `spec-atualizar` → as plans aprovadas são
-   sintetizadas em specs/ · arquitetura/ · adr/ e viram ⚪ Sintetizada
+7. periodicamente: usuário dispara a skill `spec-atualizar` → as 🟢 de plan/executadas/
+   são sintetizadas em specs/ · arquitetura/ · adr/ e viram ⚪ Sintetizada (sem sair da pasta)
 ```
 
 | Papel | Prompt de entrada | Pode escrever | Nunca faz |
@@ -88,6 +100,7 @@ como é, e o registro de cada veredito de revisão. Após serem sintetizadas nas
 | Registrar regra de negócio consolidada | `specs/NN-<nome>.md` — via `spec-atualizar`, não à mão |
 | Registrar design/stack consolidados | `arquitetura/NN-<nome>.md` — idem |
 | Registrar uma decisão com trade-off | `adr/NNN-<nome>.md` — idem |
+| Consultar por que algo foi feito assim | `plan/executadas/` — veredito e escopo de cada execução |
 | Contextualizar um agente novo | ele lê `00-contexto.md` — você não explica nada no chat |
 
 > As specs fixas são atualizadas **pela síntese das plans** (skill `spec-atualizar`, com HITL), não por edição

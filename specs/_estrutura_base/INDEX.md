@@ -20,13 +20,15 @@
 - 📁 **`arquitetura/`**: design vivo e regras globais (O COMO).
 - 📁 **`specs/`**: specs vivas de funcionalidades (O QUÊ).
 - 📁 **`adr/`**: decisões imutáveis (O POR QUÊ). Decisão nova = ADR novo.
-- 📁 **`plan/`**: as plans de execução (`plan-NN-<slug>.md`) — **versionadas**, é por elas que toda alteração
-  do repositório passa. Rastro auditável, não arquivo temporário.
+- 📁 **`plan/`**: as plans **ativas** (`plan-NN-<slug>.md`) — a fila de execução. É por elas que toda
+  alteração do repositório passa.
+  - 📁 **`plan/executadas/`**: as plans aprovadas (🟢) e já sintetizadas (⚪). **Versionadas e permanentes** —
+    rastro auditável, nunca apagado. É aqui que se descobre *por que* algo foi feito assim.
 - 📁 **`_templates/`**: moldes (`template-spec`, `template-arquitetura`, `template-adr`, `template-plan`).
 
 ## O ciclo em uma linha
 
-`revisor escreve plan` → `executor executa (worktree, sem commit)` → `revisor verifica e aprova` →
-`usuário commita` → `spec-atualizar sintetiza nas specs fixas`
+`revisor escreve plan` → `executor executa (worktree, sem commit)` → `revisor verifica, aprova e move para
+plan/executadas/` → `usuário commita` → `spec-atualizar sintetiza nas specs fixas`
 
 Detalhe em [`README.md`](README.md).

@@ -108,12 +108,15 @@ alterações ficam no worktree (nenhum agente commita)
       ↓
 revisor VERIFICA diretamente (não confia no resumo do executor)
       ├─ reprovado → prompt de correção → executor corrige → repete
-      └─ aprovado  → status da plan + [[00-indice]] atualizados
+      └─ aprovado  → status 🟢 + plan movida para plan/executadas/ + [[00-indice]] atualizado
       ↓
 usuário commita
       ↓
-periodicamente: /spec-atualizar sintetiza as plans aprovadas nas specs fixas (adr/ · arquitetura/ · specs/)
+periodicamente: spec-atualizar sintetiza as plans 🟢 de plan/executadas/ nas specs
+fixas (adr/ · arquitetura/ · specs/) e as marca ⚪ — nenhuma plan é apagada
 ```
+
+**`specs/plan/`** é a fila **ativa**; **`specs/plan/executadas/`** é o histórico (aprovadas e sintetizadas).
 
 | Papel | Spec de entrada | Pode escrever | Nunca faz |
 |---|---|---|---|

@@ -31,28 +31,36 @@ Deve ser engatilhada automaticamente ao iniciar o projeto de um site ou invocada
      - Se sim para a P8 (Detalhamento Arquitetural), acione `/site-criacao` para aprofundar as decisões estruturais.
 
 3. **Cópia da Estrutura Base**
-   - **Ação:** Baseado na localização `_estrutura_base_site` (que contém as pastas `arquitetura` e `specs`), copie a estrutura para a pasta `specs/` do projeto alvo, instanciando os arquivos:
-     - `specs/arquitetura/01-stack-tecnologica.md`
-     - `specs/arquitetura/02-identidade-visual.md`
-     - `specs/arquitetura/03-tom-de-voz-e-copy.md`
-     - `specs/arquitetura/04-dados-institucionais-seo.md`
-     - `specs/arquitetura/05-acessibilidade-e-performance.md`
-     - `specs/arquitetura/06-estrutura-de-codigo.md`
-     - `specs/plan/06-layout-global-e-nav.md`
-     - `specs/plan/07-pagina-home.md`
-     - `specs/plan/08-paginas-internas-e-hub.md`
-     - `specs/plan/09-formularios-e-contato.md`
-     - `specs/plan/10-paginas-legais-e-cookies.md`
-     
-     *(Nota: Certifique-se de ajustar a nomenclatura/pastas exatas conforme o repositório original `_estrutura_base_site` determine, utilizando as respostas do usuário para preencher os arquivos)*.
+   - **Ação:** Copie a estrutura **inteira** de `_estrutura_base_site` para a pasta `specs/` do projeto-alvo, **preservando a hierarquia exatamente como está na origem**. Nada é renomeado, movido nem descartado — a estrutura é o contrato do ciclo SDD. Um `copytree` recursivo resolve; se copiar arquivo a arquivo, siga a tabela:
+
+   | Origem (`_estrutura_base_site/`) | Destino (no projeto) | O que é |
+   |---|---|---|
+   | `00-contexto.md`, `00-indice.md`, `00-knowledge.md`, `00-prompt-revisor.md`, `00-prompt-executor.md` | `specs/00-*.md` | **Specs de processo — obrigatórias.** É por elas que qualquer agente se contextualiza |
+   | `README.md`, `INDEX.md` | `specs/` | Manual e bússola do diretório |
+   | `arquitetura/01`…`06` | `specs/arquitetura/` | Stack, identidade visual, tom de voz, SEO/NAP, a11y/performance, estrutura de código |
+   | `specs/06`…`10` | **`specs/specs/`** | Layout global, Home, páginas internas, formulários, páginas legais |
+   | `_templates/*.md` | `specs/_templates/` | Moldes, incluindo `template-plan.md` |
+   | `adr/` (vazia) | `specs/adr/` | ADRs — decisões imutáveis |
+   | `plan/` (vazia) | `specs/plan/` | **Fila de execução** das plans ativas (`plan-NN-<slug>.md`) |
+   | `plan/executadas/` (vazia) | `specs/plan/executadas/` | Histórico das plans aprovadas e sintetizadas |
+
+   > ⚠️ **As specs `06`–`10` vão para `specs/specs/`, NUNCA para `specs/plan/`.** A pasta `plan/` é a fila de
+   > execução do ciclo SDD e só recebe arquivos `plan-NN-<slug>.md` escritos pelo agente revisor. Despejar
+   > spec de conteúdo ali corrompe o índice de execução.
 
 4. **Preenchimento Inicial dos Arquivos**
    - **Ferramenta:** `Write`
-   - **Ação:** Preencha o conteúdo dos arquivos recém-copiados com base nas respostas dadas pelo usuário na entrevista. Adapte os moldes aos requisitos reais.
+   - **Ação:** Preencha, com as respostas da entrevista, **apenas as specs fixas** — as 6 de `specs/arquitetura/` e as 5 de `specs/specs/`. Adapte os moldes aos requisitos reais.
+   - **Ação:** No `specs/00-contexto.md`, preencha **somente** a §1 (Identidade do site) e a §3 (Stack e arquitetura em uma página) a partir das mesmas respostas. Mantenha intactos os blocos `> **Como escrever:**` e os demais `<!-- PREENCHER -->` — eles são o contrato de manutenção da spec, completado depois pelo agente revisor.
+   - **NÃO** altere `00-indice.md`, `00-knowledge.md`, `00-prompt-revisor.md` nem `00-prompt-executor.md`: são **universais**, idênticas em todos os projetos.
 
 5. **Entrega**
-   - Informe ao usuário que a fundação do site foi documentada com sucesso e a estrutura básica (`arquitetura/` e `specs/`) foi populada.
+   - Informe ao usuário que a fundação do site foi documentada: specs fixas populadas (`arquitetura/` + `specs/`), specs de processo instaladas (`00-*`) e o ciclo SDD pronto (`plan/` vazia, aguardando a primeira plan).
+   - Indique os próximos passos: `site-criacao` para aprofundar o detalhamento, e uma **primeira plan** do agente revisor para completar o `00-contexto.md` (§2 específicas, §7 fronteiras, §8 estado).
 
 ## Regras de Ouro
 - **NÃO** tente adivinhar as informações de marca e identidade. O HITL (Perguntas) é inegociável.
 - **Formatação Rigorosa:** Todos os arquivos markdown gerados DEVEM seguir a estrutura de seções proposta nos originais de `_estrutura_base_site`.
+- **NÃO** crie nenhum arquivo em `specs/plan/`. A pasta nasce **vazia**: só o agente revisor escreve plans, e só no formato `plan-NN-<slug>.md`.
+- **NÃO** omita as specs de processo (`00-*`). Sem elas o projeto nasce sem o ciclo SDD e nenhum agente consegue se contextualizar.
+- **NÃO** commite. Entregue os arquivos no worktree — quem commita é o usuário.
