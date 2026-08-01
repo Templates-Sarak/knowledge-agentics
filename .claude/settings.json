@@ -1,3 +1,8 @@
 {
-  "_doc": "Esta é a BASE de inteligência (importada nos projetos); os hooks NÃO rodam aqui. Para ativá-los num projeto-destino, mescle hooks/settings.template.json no settings.json daquele projeto."
+  "_doc": "Esta é a BASE de inteligência (importada nos projetos); os hooks NÃO rodam aqui. Para ativá-los num projeto-destino, mescle hooks/settings.template.json no settings.json daquele projeto.",
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe -c ' *)"
+    ]
+  }
 }

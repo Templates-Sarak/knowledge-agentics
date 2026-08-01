@@ -18,8 +18,6 @@ Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo corresp
 - **/meta-criar-skill**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/meta-criar-skill.md`
 - **/site-organizar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-organizar.md`
 - **/site-seo**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-seo.md`
-- **/time-timer**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/time-timer.md`
-- **/time**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/time.md`
 
 ## 2. Skills Orgânicas
 Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessário pelo contexto), leia o arquivo SKILL.md correspondente para carregar o seu workflow.
@@ -85,6 +83,7 @@ Agentes que podem ser acionados via ferramentas/tasks (ex: code-auditor). Leia o
 Modelos oficiais que devem ser usados como molde ao gerar documentação (Specs, ADRs, Arquitetura).
 - **template-adr**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-adr.md`
 - **template-arquitetura**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-arquitetura.md`
+- **template-plan**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-plan.md`
 - **template-spec**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-spec.md`
 
 ## 5. Variáveis de Ambiente Globais (Agent Context)
