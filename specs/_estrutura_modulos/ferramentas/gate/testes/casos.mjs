@@ -82,13 +82,31 @@ export const CASOS = [
   {
     regra: 'consome-ciclo',
     descricao: 'ciclo no grafo de consome',
+    // O contrato declarado tem de EXISTIR na spec do vizinho (`/resumo` e obrigatoria em todo
+    // modulo). Com `GET /x`, este caso violava tambem `consome-contrato` e deixava de exercitar
+    // uma regra so — caso de teste com duas violacoes nao prova qual das duas esta viva.
     mutar: (m) => m.manifesto((x) => ({
       ...x,
-      consome: [{ modulo: 'vizinho', contrato: 'GET /x', porQue: 'ciclo' }],
+      consome: [{ modulo: 'vizinho', contrato: 'GET /resumo', porQue: 'ciclo' }],
       envRequerido: [...x.envRequerido, 'VIZINHO_URL'],
     })),
     exigeVizinho: true,
     vizinhoConsome: true,
+  },
+  {
+    regra: 'consome-contrato',
+    descricao: 'consome rota que o contrato do dono nao declara',
+    mutar: (m) => {
+      // O gateway acompanha a entrada em `consome` (senao violaria tambem `gateway-declarado`),
+      // e nada e acrescentado a `envRequerido` (senao violaria `env-exemplo`). Este caso acusa
+      // UM id — e o unico jeito de o autoteste provar que e ESTA regra que esta viva.
+      m.escrever('core/gateways/vizinho.ts', 'export async function f(u) { return fetch(u); }\n');
+      m.manifesto((x) => ({
+        ...x,
+        consome: [{ modulo: 'vizinho', contrato: 'GET /rota-aposentada', porQue: 'deriva de contrato' }],
+      }));
+    },
+    exigeVizinho: true,
   },
 
   // --- Dados ---------------------------------------------------------------------------------

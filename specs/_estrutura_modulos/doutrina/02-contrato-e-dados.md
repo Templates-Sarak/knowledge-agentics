@@ -105,6 +105,9 @@ depreciação anunciada no `openapi.yaml`.
 não na spec, ou o contrário, é divergência que o gate pega.
 
 Mudança de contrato afeta quem declarou `consome` do seu módulo — **consulte o grafo antes**, não depois.
+Remover uma rota, renomeá-la ou trocar o método dela quebra quem depende: a regra `consome-contrato`
+(`specs/arquitetura/04-regras.md` §4.2) confere cada `consome` contra a spec do dono e reprova no consumidor.
+Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (§7.2).
 
 # 6. Dados
 

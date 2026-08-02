@@ -4,26 +4,12 @@
  *
  * O `contrato/openapi.yaml` é a FONTE. Estas regras existem para que ele não seja ficção: o que
  * está na spec existe no código, o que está no código existe na spec, e nada sensível vaza.
+ *
+ * A leitura da spec mora em `../spec.mjs`, compartilhada com `consome-contrato` (Isolamento).
  */
+import { normalizar, rotasDaSpec, specDe } from '../spec.mjs';
+
 const OBRIGATORIAS = ['/health', '/meta', '/resumo'];
-
-/** Caminhos declarados sob `paths:` — as chaves de recuo 2 que começam com `/`. */
-function rotasDaSpec(yaml) {
-  const linhas = yaml.split(/\r?\n/);
-  const rotas = new Set();
-  let dentro = false;
-
-  for (const linha of linhas) {
-    if (/^paths:\s*$/.test(linha)) {
-      dentro = true;
-      continue;
-    }
-    if (dentro && /^\S/.test(linha)) break;
-    const casado = dentro ? linha.match(/^\s{2}(\/[^:\s]*):\s*$/) : null;
-    if (casado !== null) rotas.add(casado[1]);
-  }
-  return rotas;
-}
 
 /** Rotas registradas no código, em qualquer binding. Normaliza `:hash` e `{hash}` para `{}`. */
 function rotasDoCodigo(ctx) {
@@ -39,10 +25,6 @@ function rotasDoCodigo(ctx) {
     }
   }
   return rotas;
-}
-
-function normalizar(caminho) {
-  return caminho.replace(/:[A-Za-z_]\w*/g, '{}').replace(/\{[^}]+\}/g, '{}');
 }
 
 /** Recorta um bloco YAML por nome de chave, devolvendo o texto indentado sob ela. */
@@ -81,10 +63,6 @@ function trechosDeResposta(yaml) {
     partes.push(blocoDe(componentes, new RegExp(`^\\s*${nome}:\\s*$`)));
   }
   return partes.join('\n');
-}
-
-function specDe(ctx) {
-  return ctx.arquivos.find((a) => a.rel === 'contrato/openapi.yaml') ?? null;
 }
 
 /** Chaves de objeto literal devolvidas pela projeção de saída do mapeador. */

@@ -67,7 +67,8 @@ function criarVizinho(pastaModulos, molde, consome) {
   manifesto.rotaWeb = '/vizinho';
   manifesto.dados = { schema: 'escopo', prefixo: 'vizinho_', tabelas: ['vizinho_metadados'] };
   manifesto.permissoes = ['vizinho:ler', 'vizinho:escrever'];
-  manifesto.consome = consome ? [{ modulo: 'molde', contrato: 'GET /x', porQue: 'ciclo' }] : [];
+  // `/resumo` e obrigatoria em todo modulo: o vizinho fecha o ciclo sem violar `consome-contrato`.
+  manifesto.consome = consome ? [{ modulo: 'molde', contrato: 'GET /resumo', porQue: 'ciclo' }] : [];
   gravarJson(caminho, manifesto);
   return raiz;
 }

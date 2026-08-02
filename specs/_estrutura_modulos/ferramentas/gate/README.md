@@ -89,6 +89,9 @@ Ative com `git config core.hooksPath .githooks`.
    achado.
 4. **Nenhuma regra lê disco.** Tudo vem do contexto (`ferramentas/gate/contexto.mjs`) — é o que as mantém
    rápidas e testáveis.
+5. **Leitura de `contrato/openapi.yaml` já existe** em `ferramentas/gate/spec.mjs` (`specDe`,
+   `rotasDaSpec`, `operacoesDaSpec`, `normalizar`). Importe de lá — duas famílias a usam, e um segundo
+   parser divergiria do primeiro sem ninguém notar.
 
 ## O molde também é validado
 

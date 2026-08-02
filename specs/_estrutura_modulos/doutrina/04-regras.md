@@ -109,6 +109,7 @@ misto acima é **decisão de cada projeto**, registrada em `specs/adr/` — o ga
 | `gateway-http` | erro | arquivo em `core/gateways/` sem SQL, conexão ou acesso a tabela — só HTTP | módulo |
 | `gateway-declarado` | erro | todo arquivo em `core/gateways/` tem módulo correspondente em `consome`, e vice-versa | módulo |
 | `consome-ciclo` | erro | não há ciclo no grafo de `consome` | global |
+| `consome-contrato` | erro | toda entrada de `consome` aponta para um módulo que existe, e o `contrato/openapi.yaml` dele declara aquele caminho **e** aquele método. Dono sem spec é achado, não silêncio. Reportado no **consumidor** | global |
 
 ## 4.3 Dados
 
@@ -237,7 +238,7 @@ puro e chamável de qualquer lugar — inclusive de dentro de um hook.
 
 ## 7.2 Precisão dos verificadores heurísticos
 
-Quatro regras leem estrutura de bloco, não AST. São **conservadoras**: na dúvida, não acusam. Onde o gate e o
+Cinco regras leem estrutura de bloco, não AST. São **conservadoras**: na dúvida, não acusam. Onde o gate e o
 linter discordarem, o linter tem razão.
 
 | Regra | Limite conhecido |
@@ -246,6 +247,7 @@ linter discordarem, o linter tem razão.
 | `hardcode-numero` | pega literal atribuído a nome de infraestrutura; número mágico com nome de negócio passa (e deve — o lugar dele é `config/dominio.json`) |
 | `contrato-sincronizado` | reconhece registro de rota em Express/FastAPI. Framework diferente faz a regra **declarar que não verificou**, em vez de passar calada |
 | `sensivel-em-saida` | cobre projeção e chamada de log; um campo sensível montado por indireção (spread, `Object.assign`) escapa |
+| `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor) passa — a regra lê o caminho e o método, nunca o corpo. Contrato compatível na rota e incompatível no payload continua sendo trabalho de revisão |
 
 ## 7.3 O gate se testa
 

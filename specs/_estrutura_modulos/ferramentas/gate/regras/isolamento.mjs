@@ -1,9 +1,11 @@
 /**
  * regras/isolamento.mjs — família "Isolamento" do catálogo (specs/arquitetura/04-regras.md §4.2).
- * ids: import-lateral, import-adapter, sdk-fornecedor, gateway-http, gateway-declarado, consome-ciclo
+ * ids: import-lateral, import-adapter, sdk-fornecedor, gateway-http, gateway-declarado,
+ *      consome-ciclo, consome-contrato
  *
  * É a família que sustenta a extraibilidade. Se ela passa, o módulo sai da pasta sem refactor.
  */
+import { normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
 
 const SDKS_FORNECEDOR = [
   '@supabase/', 'pg', 'mysql', 'mysql2', 'aws-sdk', '@aws-sdk/', 'firebase',
@@ -149,6 +151,22 @@ export default [
     },
   },
   {
+    id: 'consome-contrato',
+    nivel: 'erro',
+    escopo: 'global',
+    verificar(contextos) {
+      const donos = new Map(contextos.map((c) => [c.idPasta, c]));
+      const achados = [];
+      for (const ctx of contextos) {
+        for (const entrada of ctx.manifesto?.consome ?? []) {
+          const falha = conferirConsumo(donos.get(entrada.modulo) ?? null, entrada);
+          if (falha !== null) achados.push({ modulo: ctx.idPasta, mensagem: falha });
+        }
+      }
+      return achados;
+    },
+  },
+  {
     id: 'consome-ciclo',
     nivel: 'erro',
     escopo: 'global',
@@ -165,6 +183,33 @@ export default [
     },
   },
 ];
+
+/**
+ * Confere UMA entrada de `consome` contra o contrato do módulo dono. `null` = conforme.
+ *
+ * Nunca aprova por omissão: dono inexistente e dono sem spec viram achado, e não silêncio. É o
+ * §7 aplicado — a regra diz que não conseguiu verificar, em vez de deixar passar.
+ */
+function conferirConsumo(dono, entrada) {
+  const alvo = `"${entrada.contrato}" (modulo dono "${entrada.modulo}")`;
+  if (dono === null) return `consome ${alvo}: o modulo dono nao existe em modulos/`;
+
+  const spec = specDe(dono);
+  if (spec === null) return `consome ${alvo}: o dono nao tem contrato/openapi.yaml — NAO foi possivel verificar`;
+
+  // Forma garantida pelo schema (`^(GET|POST|PATCH|PUT|DELETE) /`); manifesto torto e do
+  // `schema-manifesto`, nao desta regra — nao acusamos duas vezes o mesmo defeito.
+  const [metodo, caminho] = entrada.contrato.split(/\s+/);
+  if (caminho === undefined) return null;
+
+  const operacoes = operacoesDaSpec(spec.conteudo);
+  const rota = [...operacoes.keys()].find((r) => normalizar(r) === normalizar(caminho));
+  if (rota === undefined) return `consome ${alvo}: o contrato do dono nao declara o caminho "${caminho}"`;
+
+  const metodos = operacoes.get(rota);
+  if (metodos.has(metodo)) return null;
+  return `consome ${alvo}: o dono declara "${rota}" mas nao o metodo ${metodo} (declara: ${[...metodos].join(', ') || 'nenhum'})`;
+}
 
 /** Busca em profundidade a partir de `inicio`, devolvendo o caminho do ciclo que volta a ele. */
 function buscarCiclo(grafo, inicio) {

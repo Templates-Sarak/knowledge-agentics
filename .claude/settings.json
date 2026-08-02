@@ -26,7 +26,18 @@
       "Bash(grep -nE '`\\(validar\\\\.mjs|sync_ide\\\\.py|specs/arquitetura/04-regras\\\\.md\\)`|ferramentas/gate/validar' CLAUDE.md README.md)",
       "Bash(grep -ohE '`[a-z][a-z0-9-]+`')",
       "Bash(grep -n '`api-contrato`' README.md)",
-      "Bash(grep -rn \"\\\\.\\\\./\\\\.\\\\./\\\\.\\\\./doutrina\" bindings/)"
+      "Bash(grep -rn \"\\\\.\\\\./\\\\.\\\\./\\\\.\\\\./doutrina\" bindings/)",
+      "Bash(rm -rf \"c:/tmp/rev-consome\")",
+      "Bash(mkdir -p \"c:/tmp/rev-consome\")",
+      "Bash(node __TRACKED_VAR__/criar-projeto.mjs . --binding typescript --escopo rev)",
+      "Bash(node __TRACKED_VAR__/criar-modulo.mjs catalogo --binding typescript)",
+      "Bash(node __TRACKED_VAR__/gate/validar.mjs --todos)",
+      "Bash(echo \"--- exit=$? ---\")",
+      "Bash(node ferramentas/gate/validar.mjs --todos)",
+      "Bash(mv modulos/catalogo/contrato/openapi.yaml /tmp/spec-guardada.yaml)",
+      "Bash(mv /tmp/spec-guardada.yaml modulos/catalogo/contrato/openapi.yaml)",
+      "Bash(node ferramentas/gate/validar.mjs modulos/catalogo)",
+      "Read(//c//**)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates",
