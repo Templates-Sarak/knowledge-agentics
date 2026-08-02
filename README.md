@@ -16,19 +16,22 @@ padrões e garantias.
 agente (normas, capacidades, automações), de forma que cada projeto novo *herde* o mesmo comportamento
 em vez de reconfigurar tudo do zero. O destino é empacotar como **plugin** e importá-lo em cada projeto.
 
-> Padrões de **código** vivem no `CLAUDE.md` (→ skill `padrao-escrita`). Padrão de **criação de skills** na
-> skill `meta-create-skill`. Este README é a fonte da verdade do **padrão do diretório** (nomes + autoria).
+> Padrões de **escrita de código** (Nível 0) vivem na skill `padrao-escrita`; a **arquitetura de módulos**
+> (Nível 1) no catálogo `specs/_estrutura_modulos/doutrina/04-regras.md`; os **idiomas de cada linguagem**
+> (Nível 2) nas skills `padrao-<linguagem>`. O `CLAUDE.md` só **aponta** para os três. Padrão de **criação de
+> skills** na skill `meta-create-skill`. Este README é a fonte da verdade do **padrão do diretório**
+> (nomes + autoria).
 
 ### Estado atual
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ 34 skills por área |
+| `skills/` | ✅ 50 skills por área (§6) |
 | `hooks/` | ✅ 4 garantias (segredos, padrão de escrita, dependências, cobertura) |
 | `commands/` | ✅ 12 (code/cyber/git auditar→adequar; deploy/site/meta) |
 | `agents/` | ✅ 5 (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
 | `plugin/` | ✅ Sincronizador Global IDE (Antigravity & Claude Code) |
-| `specs/` | ⬜ Convenção a adotar |
+| `specs/` | ✅ Template de módulos (`specs/_estrutura_modulos/`) — a lei do Nível 1 e seu gate |
 
 ---
 
@@ -42,7 +45,7 @@ em vez de reconfigurar tudo do zero. O destino é empacotar como **plugin** e im
 | **agents/** | **Subagente** com contexto próprio | Modelo **delega** (`Task`) ou você cita pelo nome | `agents/<nome>.md` |
 | **hooks** | Comando shell em **eventos** do harness | **Automático/determinístico** no evento | `settings.json` (scripts em `hooks/`) |
 | **plugin/** | **Instalador Global** (Sincroniza X-Skills nas IDEs) | **Manual** (rodar `sync_ide.py`) | `plugin/sync_ide.py` |
-| **specs** | **Convenção** sua: especificações/planos (PRD, design) | Manual (referência humana) | `specs/` (opcional) |
+| **specs** | Especificações e **a lei da arquitetura de módulos** (Nível 1) + seu gate | Manual (referência humana) + `validar.mjs` | `specs/` — template em `specs/_estrutura_modulos/` |
 | **settings.json** | Configuração (permissões, env, model, hooks) | **Automático** | `.claude/settings.json` |
 | **MCP** | Servidores de **ferramentas externas** (Gmail, DB, APIs) | Ferramentas ficam disponíveis ao modelo | `.mcp.json` |
 
@@ -189,14 +192,14 @@ o prefixo diz *de que assunto* o artefato trata.
 | Prefixo | Área |
 |---|---|
 | `padrao-` | Normas de escrita/organização (sempre referenciadas) |
-| `code-` | Operações sobre código |
-| `test-` | Testes |
+| `code-` | Operações sobre código (inclui a criação de módulo/sistema modular) |
+| `spec-` | Especificações e fluxo SDD |
+| `test-` | Testes (inclui contrato de API — OpenAPI + contract testing) |
 | `db-` | Banco de dados |
 | `deploy-` | Publicação/entrega |
 | `otimizacao-` | Performance (back+front) |
 | `obs-` | Observabilidade |
 | `site-` | Construção de site |
-| `api-` | Contrato de API (OpenAPI + contract testing) |
 | `git-` | Versionamento/repositório |
 | `cyber-` | Segurança (por domínio) |
 | `meta-` | Ecossistema/governança das próprias funcionalidades |
@@ -222,12 +225,12 @@ interno/compartilhado (`hooks/_lib.js`); nomes diretos para config/ativação (`
 
 | Área | skill | hook | command | agent |
 |---|---|---|---|---|
-| `code-` | `code-diagnostico`, `code-adequacao`, `git-revisao-diff` | — | ✅ `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar` | ✅ `code-auditor`, `code-adequador`, `code-revisor` |
-| `cyber-` | `cyber-segredos` … `cyber-config` (7) | `cyber-git-seguro`, `cyber-dependencias` | ✅ `/cyber1-auditar`, `/cyber2-adequar` | ✅ `cyber-auditor` |
+| `code-` | `code-diagnostico`, `code-adequacao`, `code-modulo` … (7) | — | ✅ `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar` | ✅ `code-auditor`, `code-adequador`, `code-revisor` |
+| `cyber-` | `cyber-segredos` … `cyber-infra` (9) | `cyber-git-seguro`, `cyber-dependencias` | ✅ `/cyber1-auditar`, `/cyber2-adequar` | ✅ `cyber-auditor` |
 | `git-` | `git-especialista-repositorio`, `git-verificacao-commit`, `git-revisao-diff` | _(pre-commit)_ | ✅ `/git1-auditar`, `/git2-adequar` | ✅ `git-auditor` |
 | `deploy-` | `deploy-vercel`, `deploy-docker` | — | ✅ `/deploy-vercel`, `/deploy-docker` | — |
 | `site-` | `site-organizacao`, `site-seo` | — | ✅ `/site-organizar`, `/site-seo` | — |
-| `meta-` | `meta-create-skill` | — | ✅ `/meta-criar-skill` | — |
+| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-atualizar-base`, `meta-verificacao-base` | — | ✅ `/meta-criar-skill` | — |
 | `padrao-` | `padrao-escrita` | `padrao-limiares`, `padrao-format` | ⬜ (subsumido pelo `code-`) | ⬜ |
 
 > **`code-`/`cyber-`/`git-`** seguem o molde **auditar → adequar**: `/X1-auditar` (agent read-only → `.sarak/`)
@@ -242,22 +245,22 @@ README é a fonte da verdade**. Toda funcionalidade nova nasce já neste padrão
 
 ## 6. Inventário atual
 
-### Skills (por área)
+### Skills (50, por área)
 
 | Prefixo | Skills |
 |---|---|
-| `padrao-` | `padrao-escrita`, `padrao-python`, `padrao-typescript`, `padrao-go`, `padrao-java` |
-| `code-` | `code-diagnostico`, `code-adequacao`, `code-limpeza-projeto`, `code-entrega` |
-| `test-` | `test-unitario`, `test-e2e` |
-| `db-` | `db-migrations` |
-| `deploy-` | `deploy-vercel`, `deploy-docker` |
-| `otimizacao-` | `otimizacao-nivel-1`, `-nivel-2`, `-nivel-3` |
-| `obs-` | `obs-logs`, `obs-monitoramento` |
-| `site-` | `site-organizacao`, `site-seo` |
-| `api-` | `api-contrato` |
-| `git-` | `git-commit-inicial`, `git-verificacao-commit`, `git-revisao-diff`, `git-especialista-repositorio` |
-| `cyber-` | `cyber-segredos`, `cyber-dependencias`, `cyber-codigo`, `cyber-auth`, `cyber-api`, `cyber-config`, `cyber-dados` |
-| `meta-` | `meta-create-skill` |
+| `padrao-` (5) | `padrao-escrita`, `padrao-python`, `padrao-typescript`, `padrao-go`, `padrao-java` |
+| `code-` (7) | `code-adequacao`, `code-auditoria-padrao`, `code-diagnostico`, `code-documentacao`, `code-entrega`, `code-limpeza-projeto`, `code-modulo` |
+| `spec-` (4) | `spec-atualizar`, `spec-fundacao`, `spec-site-fundacao`, `spec-write` |
+| `test-` (6) | `test-api-contrato`, `test-carga`, `test-e2e`, `test-integracao-api`, `test-unitario`, `test-ws-realtime` |
+| `db-` (1) | `db-migrations` |
+| `deploy-` (2) | `deploy-docker`, `deploy-vercel` |
+| `otimizacao-` (3) | `otimizacao-nivel-1`, `otimizacao-nivel-2`, `otimizacao-nivel-3` |
+| `obs-` (2) | `obs-logs`, `obs-monitoramento` |
+| `site-` (3) | `site-criacao`, `site-organizacao`, `site-seo` |
+| `git-` (4) | `git-commit-inicial`, `git-especialista-repositorio`, `git-revisao-diff`, `git-verificacao-commit` |
+| `cyber-` (9) | `cyber-api`, `cyber-auth`, `cyber-codigo`, `cyber-config`, `cyber-dados`, `cyber-dependencias`, `cyber-ia`, `cyber-infra`, `cyber-segredos` |
+| `meta-` (4) | `meta-atualizar-base`, `meta-create-skill`, `meta-iniciar-repositorio`, `meta-verificacao-base` |
 
 > Só as `padrao-*` disparam **proativamente** (toda escrita/revisão). As demais são **sob demanda** (você pede ou
 > digita `/`), por serem mutativas/sensíveis. Garantia determinística (rodar sempre) é trabalho de **hook**.
@@ -270,7 +273,7 @@ README é a fonte da verdade**. Toda funcionalidade nova nasce já neste padrão
 
 ---
 
-## 6. Como Instalar
+## 7. Como Instalar
 
 O ecossistema Sarak é a **fonte da verdade** versionada no GitHub (`Templates-Sarak/knowledge-agentics`).
 Cada ferramenta agêntica o consome do seu jeito — o repositório é **agnóstico**: os manifestos de cada

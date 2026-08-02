@@ -21,7 +21,11 @@
       "Bash(./.venv/Scripts/python.exe -m ruff check . --output-format=concise)",
       "Bash(./.venv/Scripts/python.exe -m pip install -q -e \".[dev]\")",
       "Bash(./.venv/Scripts/python.exe verificar.py)",
-      "Bash(./.venv/Scripts/python.exe skills/meta-verificacao-base/scripts/audit_base.py --raiz .)"
+      "Bash(./.venv/Scripts/python.exe skills/meta-verificacao-base/scripts/audit_base.py --raiz .)",
+      "Bash(grep -vE \"^ M \\(CLAUDE|README\\)\\\\.md$\")",
+      "Bash(grep -nE '`\\(validar\\\\.mjs|sync_ide\\\\.py|specs/arquitetura/04-regras\\\\.md\\)`|ferramentas/gate/validar' CLAUDE.md README.md)",
+      "Bash(grep -ohE '`[a-z][a-z0-9-]+`')",
+      "Bash(grep -n '`api-contrato`' README.md)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates",

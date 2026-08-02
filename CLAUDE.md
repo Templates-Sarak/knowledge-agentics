@@ -1,9 +1,10 @@
 # CLAUDE.md — Padrões do ecossistema Sarak
 
 > Gancho sempre-ativo, na **raiz do projeto**. Enuncia os inegociáveis em forma compacta e **aponta** para a
-> fonte da verdade — não duplica conteúdo. A base de inteligência Sarak (skills/commands/agents/hooks) é
-> **copiada para `.claude/`** do projeto; o **manual do diretório** é **`.claude/README.md`**. Detalhe do padrão
-> na skill **`padrao-escrita`** (`.claude/skills/padrao-escrita/SKILL.md` → `references/PADRAO-ORGANIZACAO.md`).
+> fonte da verdade — não duplica conteúdo. A base de inteligência Sarak (skills/commands/agents/hooks) é o
+> repositório **`knowledge-agentics`**, consumido como o plugin `sarak` (ou espelhado por `plugin/sync_ide.py`);
+> o **manual do diretório** é o **`README.md` da raiz da base**. Detalhe do padrão de escrita na skill
+> **`padrao-escrita`** (`skills/padrao-escrita/SKILL.md`).
 >
 > Equivalente em outros provedores: no Antigravity, replicar este gancho em `GEMINI.md` (global) ou
 > `.agents/rules/` (workspace), apontando para a mesma skill.
@@ -11,23 +12,22 @@
 ## Inegociáveis (Nível 0 — qualquer linguagem)
 - **SRP**: módulo, arquivo e função com uma responsabilidade.
 - **Limiares**: função ≤ 40 linhas, aninhamento ≤ 3, ≤ 4 parâmetros, guard clauses.
-- **Zero hardcoded**: tunables não-secretos em `config.json` (por módulo); segredos/ambiente em `.env`.
+- **Zero hardcoded**: tunables não-secretos na config versionada; segredos e valores por-ambiente no `.env`. Nunca um default de infraestrutura embutido.
 - **Segredos**: `.env` no `.gitignore`, `.env.example` versionado, variáveis prefixadas por módulo.
 - **Scripts**: uma responsabilidade, parametrizados, I/O claro.
 
-## Inegociáveis (Nível 1 — organização microservice-ready)
-- **Módulo = domínio**; pasta por módulo, mesmo nome (kebab-case) em `backend/` e `frontend/`.
-- **Encapsulamento**: consome só o `api/` (contrato) de outro módulo — nunca `domain/`/`data/`.
-- **Comunicação**: contrato + adaptador (local→rede sem mexer no consumidor).
-- **Dados**: banco compartilhado disciplinado, tabelas prefixadas pelo módulo; sem JOIN cross-módulo.
-- **API**: REST `/api/v1/`, plural kebab-case, sem verbos; contrato em camelCase.
-- **`shared/`**: só contratos/tipos, zero lógica.
+## Inegociáveis (Nível 1 — arquitetura de módulos)
+- **O princípio** — o único que este gancho afirma: **a fronteira física de pastas É a fronteira de dependência**. Extrair um módulo é copiar uma pasta e recortar chaves `<MODULO>_*` do `.env`, nunca reescrever import.
+- **A lei não está aqui, e não deve ser reproduzida aqui**: o catálogo normativo é o `04-regras.md` — na base, `specs/_estrutura_modulos/doutrina/04-regras.md`; no projeto instanciado, `specs/arquitetura/04-regras.md`. Regra que não está lá não é regra.
+- **Cobrada por máquina**, não de cabeça: `node ferramentas/gate/validar.mjs --todos` (ou `<caminho-do-modulo>` para um só).
+- **Só se aplica a projeto que adota o template de módulos** (`specs/_estrutura_modulos/README.md`). Sem o template, vale o Nível 0 acima mais a `padrao-<linguagem>` — não improvise meia estrutura modular.
 
 ## Como trabalhar
-- A base vive em **`.claude/`** (skills/commands/agents/hooks); o **manual** (o que é cada bloco + como criar) é **`.claude/README.md`**.
+- A base vive no repositório **`knowledge-agentics`** (skills/commands/agents/hooks); o **manual** (o que é cada bloco + como criar) é o **`README.md` da raiz dele**.
 - Toda skill/command/agent **referencia** estes padrões — nunca os duplica.
-- Em dúvida sobre estrutura/organização, leia `.claude/skills/padrao-escrita/references/PADRAO-ORGANIZACAO.md`.
-- **Fluxos prontos** (commands): adequar legado ao padrão → `/code1-auditar` → `/code2-caracterizar` → `/code3-adequar`;
+- Em dúvida sobre **qual lei do Nível 1 responde a quê**, o mapa é `skills/padrao-escrita/references/PADRAO-ORGANIZACAO.md` — ele não descreve a anatomia de módulo, aponta para o documento que a descreve.
+- **Fluxos prontos**: criar módulo ou sistema modular → skill `code-modulo`; inicializar repositório completo → skill `meta-iniciar-repositorio`;
+  adequar legado ao padrão → `/code1-auditar` → `/code2-caracterizar` → `/code3-adequar`;
   segurança → `/cyber1-auditar` → `/cyber2-adequar`; histórico git → `/git1-auditar` → `/git2-adequar`.
-- Criar/revisar **skill** → `meta-create-skill` (ou `/meta-criar-skill`); criar **command/agent/hook** → siga `.claude/README.md`.
-- **Ativar os hooks** no projeto: mescle `.claude/hooks/settings.template.json` no `.claude/settings.json` (+ instale as ferramentas externas do `.claude/hooks/README.md`).
+- Criar/revisar **skill** → `meta-create-skill` (ou `/meta-criar-skill`); criar **command/agent/hook** → siga o `README.md` da base.
+- **Ativar os hooks**: instalados com o plugin `sarak`, o wiring de `hooks/hooks.json` já entra ativo. No modo manual, mescle `hooks/settings.template.json` no `.claude/settings.json` do projeto (+ instale as ferramentas externas do `hooks/README.md`).
