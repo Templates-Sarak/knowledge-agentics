@@ -1,172 +1,92 @@
-# Padrão de Organização (Nível 1) — Microservice-Ready
+# Padrão de Organização (Nível 1) — o mapa
 
-Detalhamento da organização de projeto. Leia sob demanda; o resumo dos inegociáveis está no `SKILL.md`.
-Princípio-mestre: **cada módulo é uma fatia vertical autossuficiente, desacoplada o suficiente para
-virar um microsserviço sem reescrever quem o consome.**
+**Este documento não descreve mais a organização de módulos. Ele diz onde ela está descrita.**
 
----
-
-## 1. Árvore-padrão
-
-```
-repo/
-├── backend/
-│   ├── orders/                  # módulo = domínio
-│   │   ├── config.json          # tunables não-secretos DO módulo
-│   │   ├── api/                 # CONTRATO PÚBLICO — única porta de entrada do módulo
-│   │   │   ├── routes.*         # rotas REST
-│   │   │   └── adapter.*        # adaptador p/ outros módulos consumirem (ver §4)
-│   │   ├── domain/              # regra de negócio (privado)
-│   │   ├── data/                # persistência própria (privado) — tabelas orders_*
-│   │   └── tests/
-│   └── users/                   # mesma forma
-├── frontend/
-│   ├── orders/                  # MESMO nome do módulo backend
-│   │   ├── config.json
-│   │   ├── components/
-│   │   └── api-client/          # fala só com backend/orders/api (contrato)
-│   ├── users/
-│   └── app-shell/               # cross-cutting do front: routing, layout, design system
-├── shared/                      # SÓ contratos/tipos (DTOs) — zero lógica (ver §6)
-├── scripts/                     # automação de repo (build, deploy, validação)
-├── docs/
-├── .env.example                 # versionado — chaves vazias, vars prefixadas por módulo
-└── .gitignore                   # inclui .env
-```
-
-Cada módulo "viaja junto": para extrair `orders` como microsserviço, leva-se `backend/orders/`,
-suas tabelas `orders_*`, suas vars `ORDERS_*` e o `frontend/orders/` aponta o `api-client` para a nova URL.
+Até a versão anterior, a anatomia de módulo vivia aqui *e* no template de módulos. Regra escrita em dois
+lugares diverge, e o agente que a lê escolhe a errada em silêncio — por isso a descrição saiu daqui e ficou
+onde há **verificador executável**.
 
 ---
 
-## 2. Módulo = domínio (fatia vertical)
+## 1. A fonte
 
-- Um módulo resolve **um domínio** de negócio (orders, users, billing). Nome = substantivo de domínio em
-  **kebab-case**, idêntico em `backend/` e `frontend/`.
-- Tudo do domínio mora dentro da pasta: rotas, regra, dados, testes, config. Nada espalhado por camadas
-  técnicas globais (`controllers/`, `services/` no topo são **proibidos** — isso quebra a fatia vertical).
+| Camada | Onde, na base Sarak | Onde, no projeto instanciado |
+|---|---|---|
+| **A lei** (5 documentos) | `specs/_estrutura_modulos/doutrina/` | `specs/arquitetura/` |
+| **As decisões** (ADR-001..007) | `specs/_estrutura_modulos/doutrina/adr/decisoes.md` | `specs/adr/000-decisoes-do-template.md` |
+| **O verificador** | `specs/_estrutura_modulos/ferramentas/gate/` | `ferramentas/gate/` |
+| **Os moldes por linguagem** | `specs/_estrutura_modulos/bindings/<linguagem>/` | — (já materializados) |
 
-**❌ Por camada (espalha o domínio):**
-```
-backend/controllers/orders.py
-backend/services/orders.py
-backend/models/orders.py
-```
-**✅ Por domínio (fatia coesa):**
-```
-backend/orders/api/routes.py
-backend/orders/domain/order_service.py
-backend/orders/data/order_repository.py
-```
+**`04-regras.md` é a única fonte normativa do Nível 1.** Regra que não está lá não é regra; regra que não
+pode ser verificada por máquina não entra lá.
 
 ---
 
-## 3. Encapsulamento — só o `api/` é público
+## 2. Qual lei responde a quê
 
-- A pasta `api/` é a **única** porta de entrada do módulo. `domain/` e `data/` são privados.
-- **Nenhum** módulo importa `domain/` ou `data/` de outro. Quem precisa de algo de `orders` chama o
-  contrato exposto em `orders/api/`.
-
-**❌ Vazando internals:**
-```python
-# em backend/billing/domain/invoice_service.py
-from orders.data.order_repository import OrderRepository   # acopla billing ao schema de orders
-```
-**✅ Pelo contrato:**
-```python
-from orders.api.adapter import OrdersApi                   # depende só do contrato público
-order = OrdersApi.get_order(order_id)
-```
-
----
-
-## 4. Comunicação — contrato + adaptador
-
-Módulos conversam por um **adaptador** que implementa o contrato público. Hoje o adaptador faz uma
-chamada local; ao virar microsserviço, troca-se a implementação por HTTP/fila **sem tocar nos consumidores**.
-
-```python
-# orders/api/adapter.py  — contrato estável que o resto do sistema enxerga
-class OrdersApi:
-    @staticmethod
-    def get_order(order_id: str) -> OrderDTO:
-        # HOJE (monólito): chama o domínio local
-        return order_service.get(order_id)
-        # AMANHÃ (microsserviço): return http_client.get(f"{ORDERS_BASE_URL}/api/v1/orders/{order_id}")
-```
-
-O consumidor só conhece `OrdersApi.get_order(...)` → a migração local→rede é transparente para ele.
+| Sua pergunta | Lei | Seção |
+|---|---|---|
+| De que peças o sistema é feito? Onde estão as fronteiras? | `00-arquitetura.md` | §3, §4 |
+| Qual a diferença entre módulo, adapter, package e raiz de composição? | `00-arquitetura.md` | §3 |
+| Como um módulo é por dentro? Qual a árvore? | `01-modulo.md` | §2 |
+| O que declaro no `modulo.json`? | `01-modulo.md` | §3 |
+| Onde ponho cada valor de configuração? Como funciona o `.env`? | `01-modulo.md` | §4 |
+| Como desacoplo infraestrutura (banco, storage, auth)? | `01-modulo.md` | §5 |
+| Como pego dado de **outro módulo**? | `01-modulo.md` | §6 |
+| Como crio um módulo? Como altero um que já existe? | `01-modulo.md` | §8, §9 |
+| Qual a forma das rotas, do erro, da paginação? | `02-contrato-e-dados.md` | §2, §3 |
+| Como o contrato OpenAPI se relaciona com o código? | `02-contrato-e-dados.md` | §5 |
+| Como modelo tabelas, migrations e trilha de auditoria? | `02-contrato-e-dados.md` | §6 |
+| Segurança da API: auth, CORS, rate limit, headers? | `03-operacao.md` | §2 |
+| Log, erro e teste em execução? | `03-operacao.md` | §3, §4, §5 |
+| Como provo que um módulo já pode virar microsserviço? | `03-operacao.md` | §6 |
+| **Qual é a regra exata, e o que a verifica?** | **`04-regras.md`** | **§4** |
+| Nomenclatura canônica (pasta, rota, tabela, env, permissão)? | `04-regras.md` | §3.1 |
+| O que o gate **não** consegue verificar? | `04-regras.md` | §7 |
+| Por que foi decidido assim? | `adr/decisoes.md` | ADR-001..007 |
 
 ---
 
-## 5. Dados — banco compartilhado disciplinado
+## 3. O princípio, em uma frase
 
-- Banco único, mas **cada módulo é dono das suas tabelas**, e **toda tabela é prefixada pelo módulo**:
-  `orders_orders`, `orders_items`, `users_users`, `users_sessions`.
-- **Proibido** ler ou dar JOIN em tabela de outro módulo. Precisa de dado de `users` dentro de `orders`?
-  Chame `UsersApi.get_user(...)` (§4), não `SELECT ... FROM users_users`.
-- O prefixo torna a posse explícita e a extração trivial: as tabelas `orders_*` migram junto com o módulo.
+> **A fronteira física de pastas É a fronteira de dependência.**
 
-**❌ Acoplamento escondido:** `SELECT * FROM users_users JOIN orders_orders ...` dentro de `orders`.
-**✅** `orders` pega o usuário por `UsersApi.get_user(userId)` e cruza em memória, se precisar.
+Cada módulo é uma fatia vertical autossuficiente: dono do próprio front, da própria API, do próprio motor e
+da própria fatia de banco. Extrair um módulo é **copiar uma pasta e recortar as chaves `<MODULO>_*` do
+`.env`** — nunca reescrever import. Tudo no Nível 1 existe para sustentar essa frase.
 
----
+As quatro fronteiras que a tornam verdadeira, cada uma com regra de gate própria:
 
-## 6. `shared/` — só contratos/tipos
-
-- Contém apenas **DTOs e definições de contrato** (os tipos trocados entre módulos). **Zero** lógica de
-  negócio, zero estado, zero utilitário "geral".
-- Lógica comum **não** vai para `shared/` — se dois módulos parecem precisar da mesma regra, provavelmente
-  ela pertence ao domínio de um deles (que a expõe via `api/`), ou é genuína duplicação aceitável.
+| Fronteira | O que garante | Regras que a cobram |
+|---|---|---|
+| **Código** | nenhum módulo importa outro; lógica de negócio nunca é compartilhada — duplica-se | `import-lateral`, `import-adapter` |
+| **Infraestrutura** | o módulo declara o que precisa; quem fornece é escolhido fora dele | `sdk-fornecedor`, `schema-config` |
+| **Módulo alheio** | dado de outro módulo vem por HTTP, declarado — nunca por import ou tabela | `gateway-http`, `gateway-declarado`, `consome-ciclo` |
+| **Dados** | schema nunca `public`, tabela sempre prefixada, sem JOIN/FK cruzando módulos | `schema-nao-public`, `tabela-prefixo`, `tabela-alheia` |
 
 ---
 
-## 7. Config e segredos
+## 4. Como trabalhar
 
-- **`config.json` por módulo** (co-localizado em `backend/<modulo>/` e `frontend/<modulo>/`): tunables
-  não-secretos. Some/move junto com o módulo.
-- **`.env` único na raiz**, variáveis **prefixadas pelo módulo** dono: `ORDERS_DB_URL`, `USERS_JWT_SECRET`.
-  No `.gitignore`; `.env.example` versionado com as chaves e valores vazios/fake.
-- Código lê config/env **na borda** (carregamento/bootstrap), nunca espalha `process.env`/`os.getenv`
-  pelo `domain/`.
+| Quero… | Faça |
+|---|---|
+| Criar um sistema modular do zero | skill **`code-modulo`** (Fluxo A) — ou `/sarak:meta-iniciar-repositorio`, que faz a inicialização completa |
+| Criar um módulo num projeto que já adota o template | skill **`code-modulo`** (Fluxo B) |
+| Saber se o que escrevi está conforme | `node ferramentas/gate/validar.mjs <caminho-do-modulo>` |
+| Verificar o repositório inteiro | `node ferramentas/gate/validar.mjs --todos` |
+| Saber se um módulo já pode virar serviço | `node ferramentas/gate/validar.mjs --extracao <caminho>` |
+| Adequar um projeto **legado** que não segue o template | skill `code-diagnostico` → `code-adequacao` |
 
----
-
-## 8. Contrato de API (REST)
-
-- Prefixo de versão: **`/api/v1/`**.
-- Recursos no **plural, kebab-case**: `/api/v1/orders`, `/api/v1/payment-methods`.
-- **Sem verbos** no path — a ação é o método HTTP: `POST /api/v1/orders` (cria), `GET /api/v1/orders/{id}`,
-  `DELETE /api/v1/orders/{id}`. Subcoleções: `GET /api/v1/orders/{id}/items`.
-- **Filtros, ordenação e paginação via query string**: `GET /api/v1/orders?status=open&page=2`.
-- **Casing do contrato = camelCase** (corpo JSON e chaves de query): `{ "orderId": "...", "createdAt": "..." }`.
-  O backend converte `snake_case` interno ↔ `camelCase` do contrato **na camada de serialização** (borda),
-  mantendo o código interno idiomático sem vazar casing para fora.
-- **Validação e segurança acontecem na borda `api/`**, antes de chamar o `domain/`: todo input externo é
-  validado/sanitizado ali; o `domain/` assume entrada já confiável. **Queries sempre parametrizadas**
-  (nunca concatenar string com input). O `api/` também é **documentado** (o que cada rota/contrato recebe
-  e devolve) — é o material de referência de quem consome o módulo.
+**Ninguém cria módulo copiando a pasta do molde à mão.** Módulo manual nasce sem manifesto e com nome
+divergente — as duas coisas que quebram o gate e que ele não consegue consertar sozinho.
 
 ---
 
-## 9. Testes
+## 5. Projeto que não adota o template
 
-- **Localização:** `backend/<modulo>/tests/` (e equivalente no front) — os testes viajam junto com o módulo.
-- **Quando:** toda nova funcionalidade entra **com seus testes na mesma entrega**. Não há TDD obrigatório;
-  o que não se admite é funcionalidade entregue sem testes.
-- **O que cobrir:** os **caminhos críticos** do comportamento são obrigatórios (caminho feliz + erros/limites
-  relevantes). Teste pela **borda pública** (`api/`/funções públicas), não pelos internals.
-- **Cobertura:** **meta de ~80%** por módulo como **sinal de saúde**, não gate dogmático — cobertura alta com
-  testes vazios não vale; preferir poucos testes significativos a muitos triviais para "bater o número".
-- **Legado:** quando não há testes, a adequação cria **testes de caracterização** (congela o comportamento
-  atual) antes de refatorar — ver skill `code-adequacao`.
+O Nível 1 pressupõe o template de módulos instalado. Num repositório que não o adota — um script, uma
+biblioteca, um site — **o Nível 1 simplesmente não se aplica**, e o padrão em vigor é o Nível 0 (`SKILL.md`)
+mais a `padrao-<linguagem>`.
 
----
-
-## 10. Nomenclatura
-
-- **Pastas e módulos**: kebab-case, iguais em `backend/` e `frontend/` (`payment-methods`).
-- **Arquivos**: idiomáticos da linguagem — `snake_case.py` em Python, `PascalCase.tsx` para componentes,
-  `camelCase.ts` para módulos JS utilitários.
-- **Tabelas**: `<modulo>_<entidade>` em snake_case (`orders_items`).
-- **Variáveis de ambiente**: `<MODULO>_<NOME>` em SCREAMING_SNAKE_CASE (`ORDERS_DB_URL`).
+Não improvise uma "versão reduzida" da anatomia: meia estrutura modular dá o custo da modularidade sem a
+extraibilidade que a justifica.

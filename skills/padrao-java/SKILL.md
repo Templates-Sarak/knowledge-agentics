@@ -24,6 +24,8 @@ objetivos via **Checkstyle** (e, opcionalmente, PMD) com a configuração do eco
 - **Imutabilidade**: `final` onde possível; preferir objetos imutáveis; coleções imutáveis na fronteira.
 - **Logging**: logger (SLF4J/Logback) — **nunca** `System.out.println` (ver `obs-logs`).
 - **Null/Optional**: `Optional` em retornos onde ausência é válida; validar input na borda.
+- **Injeção de dependências**: exclusivamente **por construtor**. `@Autowired` em campo esconde a dependência, impede `final` e torna a classe intestável sem container.
+- **Entidade não é contrato**: **nunca** exponha `@Entity`/`@Document` direto numa API — a saída é montada em DTO/`record`. Entidade publicada vaza coluna nova e PII por omissão, no dia em que alguém alterar o schema.
 
 ## Validador — Checkstyle + `assets/checkstyle.xml`
 ```

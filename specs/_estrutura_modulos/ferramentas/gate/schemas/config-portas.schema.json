@@ -1,0 +1,15 @@
+{
+  "$comentario": "UNICO lugar do modulo onde o nome de um fornecedor aparece. Lei dona: specs/arquitetura/01-modulo.md §5. `additionalProperties: false` com o vocabulario de portas garante que ninguem invente uma porta aqui sem declara-la no manifesto.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "repositorio": { "type": "string", "minLength": 1 },
+    "auditoria": { "type": "string", "minLength": 1 },
+    "relogio": { "type": "string", "minLength": 1 },
+    "geradorId": { "type": "string", "minLength": 1 },
+    "storage": { "type": "string", "minLength": 1 },
+    "auth": { "type": "string", "minLength": 1 },
+    "notificador": { "type": "string", "minLength": 1 },
+    "fila": { "type": "string", "minLength": 1 }
+  }
+}

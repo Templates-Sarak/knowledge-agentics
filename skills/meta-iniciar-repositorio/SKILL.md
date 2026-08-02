@@ -1,53 +1,103 @@
 ---
 name: meta-iniciar-repositorio
-description: Inicializa a arquitetura de inteligência local (Sarak) num repositório-alvo. Cria a estrutura .agents/, os entrypoints para as IDEs, copia a skill de meta-criação e cria o hook de auto-indexação. Use APENAS quando pedirem para preparar um repositório para receber regras de negócio locais. NÃO acione proativamente.
+description: Inicialização completa de um repositório Sarak — git, projeto modular (template de módulos), specs do fluxo SDD, primeiros módulos, .agents/ e hook de pre-commit, com gate verde ao final. Use APENAS quando pedirem para iniciar/preparar um repositório para o ecossistema Sarak. NÃO acione proativamente.
 ---
 
-# Skill: Iniciar Repositório (Local Sarak Base)
+# Skill: Iniciar Repositório
 
-Transforma um repositório vazio ou existente em um ambiente Sarak-ready, instalando nativamente a capacidade de criar, indexar e gerenciar skills de negócio locais (`.agents/`).
+Leva um diretório vazio (ou um repositório existente) a **Sarak-ready completo**: versionado, com a
+arquitetura de módulos instalada, o fluxo SDD montado, os primeiros módulos criados e o gate verde.
+
+> **Fonte normativa da arquitetura:** `specs/_estrutura_modulos/doutrina/04-regras.md` — que este fluxo
+> instala no projeto como `specs/arquitetura/04-regras.md`. **Não duplique regra aqui.**
+> A criação de módulo em si é da skill **`code-modulo`**; esta orquestra o repositório inteiro.
 
 ## Quando usar
-- Quando o usuário pedir para iniciar um repositório, instalar o sarak num cliente, ou preparar um projeto para IA.
-- Use APENAS quando o usuário solicitar explicitamente apontando um repositório-alvo. NÃO acione proativamente.
+- Ao iniciar um repositório, instalar o Sarak num cliente, ou preparar um projeto para IA.
+- **Mutativa** (cria dezenas de arquivos e roda `git init`) → **HITL obrigatório** antes de executar.
+
+## O que o fluxo monta, na ordem
+
+```
+1. git init                     (se não houver .git)
+2. projeto modular              ferramentas/ · packages/portas · adapters/memoria · src/composicao
+                                · modulos/_template · specs/arquitetura/ (as 5 leis)
+                                · specs/adr/000-decisoes-do-template.md
+3. specs/ do fluxo SDD          00-contexto · 00-indice · 00-knowledge · prompts · _templates · plan/
+4. base da linguagem            specs/arquitetura/00-base-<binding>.md
+5. primeiros módulos            um por vez; o `conector` por último
+6. .agents/ + hook pre-commit   gate de segredos + auto-índice
+7. gate --todos                 não encerra vermelho
+```
+
+**A doutrina não vira árvore paralela.** Ela é a spec de arquitetura do projeto e cai dentro de `specs/`.
+Se você vir uma pasta `doutrina/` na raiz do alvo, algo rodou errado.
 
 ## Workflow
 
-1. **Gate: Coleta de Dados (HITL)**
-   - **Ferramenta:** Diálogo (Pergunte ao usuário no chat antes de prosseguir)
-   - **Ação:** Faça obrigatoriamente as seguintes perguntas:
-     1. Qual o caminho absoluto do repositório alvo?
-     2. Qual(is) a(s) linguagem(ns) principal(is) do projeto? (Ex: Python, TypeScript, Go, Java. Pode ser mais de uma).
-     3. Qual o nome oficial deste sistema/projeto?
-     4. Deseja configurar apontamento de horas automáticas via MCP? Se sim, escolha o provedor (clockify ou toggl).
+### 1. Entrevista (HITL) — pergunte só o que não dá para inferir
 
-2. **Criação Automática do Projeto de Horas (Se Aplicável)**
-   - **Ferramenta:** Chamada de MCP (`call_mcp_tool`)
-   - **Ação:** Se o usuário escolheu um provedor de horas na pergunta 4, acione o servidor MCP correspondente (`clockify-sarak` ou `toggl-sarak`) usando a ferramenta `create_project`. 
-   - **Parâmetros:** `name`: o nome oficial do sistema (da Pergunta 3).
-   - **Critério:** O servidor retornará o `project_id` recém criado na plataforma. Memorize este ID para o próximo passo.
+| Pergunta | Observação |
+|---|---|
+| Caminho absoluto do repositório-alvo | confirme que não é raiz de sistema nem pasta suspeita |
+| Nome oficial do sistema | se houver git com remoto, proponha o nome do repo e peça só confirmação |
+| **Binding**: `typescript` \| `javascript` \| `python` | **não há binding para Go/Java** — ver Limites |
+| Escopo dos packages (`@acme`) | derive do nome do sistema e confirme |
+| Primeiros módulos e o papel de cada um | mínimo um `dominio`; `conector` se houver mais de um módulo com tela |
+| Apontamento de horas via MCP? | se sim, provedor (`clockify` \| `toggl`) |
 
-3. **Injeção da Base Local e Arquitetura Lego**
-   - **Ferramenta:** `run_command`
-   - **Ação:** No diretório raiz do `knowledge-agentics`, rode o script orquestrador passando os parâmetros coletados:
-     ```bash
-     python skills/meta-iniciar-repositorio/scripts/init_repo.py --target "<caminho-alvo>" --name "<nome-do-sistema>" --langs <linguagens...> --time-provider "<provider>" --time-project-id "<id_retornado_do_mcp>"
-     ```
-     *(Omitir os parâmetros `--time-*` se não houver time tracking)*
-   - **Critério:** O script deve reportar a criação da estrutura local `.agents`, a cópia da arquitetura `specs/` com os templates de linguagem escolhidos, e a configuração dos *entrypoints*.
+**Sem binding** (repositório que não é um sistema modular — um site, uma lib, uma base de conhecimento):
+rode sem `--binding`. O script instala só `specs/` e `.agents/`, e o Nível 1 não se aplica.
 
-4. **Confirmação e Homologação**
-   - **Ferramenta:** Texto (Resposta ao usuário)
-   - **Ação:** Informe ao usuário que o projeto alvo agora é auto-gerenciável. Explique brevemente que o hook de `pre-commit` fará a manutenção automática do índice quando ele criar novas skills locais.
+### 2. Projeto de horas (se aplicável)
+Acione o MCP correspondente (`clockify-sarak` / `toggl-sarak`) com `create_project`, `name` = nome do
+sistema. Guarde o `project_id` retornado.
 
-5. **Handoff Arquitetural (Wizard)**
-   - **Ferramenta:** Acionamento de Skill
-   - **Ação:** Ao terminar a homologação física, engatilhe imediatamente a skill `spec-fundacao` no chat para iniciar a entrevista com o usuário, garantindo que o novo repositório já nasça com a sua fundação tecnológica (ADRs) documentada. (Você já pode apresentar as 5 perguntas da `spec-fundacao` na mesma mensagem para puxar o fluxo).
+### 3. HITL — plano
+Apresente: alvo, binding, escopo, módulos com papel, **o que será criado** e **o que não será tocado**.
+→ "⚠️ Confirma a inicialização de `<alvo>`?" **Aguarde.**
 
-## Regras
-- **NÃO** tente rodar o script em diretórios não confirmados ou suspeitos (ex: raiz do sistema operacional).
-- **NUNCA** exclua arquivos locais pré-existentes; o script orquestrador deve apenas adicionar pastas ou mesclar configurações.
+### 4. Executar
+```bash
+python skills/meta-iniciar-repositorio/scripts/init_repo.py \
+  --target "<caminho-alvo>" --name "<nome>" \
+  --binding <typescript|javascript|python> --escopo <escopo> \
+  --modulos <id> [<id>...] --git-init \
+  [--time-provider <p> --time-project-id <id>]
+```
 
-## Checklist
-- [ ] O script `init_repo.py` rodou com sucesso sem erros de permissão?
-- [ ] O usuário foi instruído sobre como utilizar o ambiente local recém-criado?
+**Se o script abortar por colisão** (`o destino ja tem package.json, ...`): **pare e pergunte**. `--forcar`
+sobrescreve o manifesto de pacote do projeto — o `.gitignore` é mesclado, mas o `package.json` **não**.
+Essa decisão é do usuário, nunca sua.
+
+### 5. Verificar
+O próprio script roda `validar.mjs --todos` ao final. Rode também o comando composto do binding
+(`npm run verificar` ou `python verificar.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
+
+### 6. Handoff
+1. Explique que o `pre-commit` mantém o índice de `.agents/` e barra segredo no staged.
+2. Aponte os pendentes de HITL: `.env` da raiz, `specs/00-contexto.md`, ADRs do projeto.
+3. Engate o fluxo seguinte: **`spec-fundacao`** (entrevista dos ADRs) e, para módulos adicionais,
+   **`code-modulo`**. O primeiro commit e o remoto são da **`git-commit-inicial`**.
+
+## Regras e limites
+- **NUNCA** rode o script num diretório não confirmado pelo usuário (raiz do SO, `~`, pasta de outro projeto).
+- **NUNCA** exclua arquivo pré-existente. O script só acrescenta ou mescla — e aborta quando não consegue.
+- **NUNCA** use `--forcar` sem autorização explícita: ele sobrescreve `package.json`/`pyproject.toml`.
+- **NUNCA** commite nem crie remoto por conta própria — é irreversível e externo. Isso é `git-commit-inicial`.
+- **NÃO** aceite `go` ou `java` como binding: eles têm camada de escrita (`padrao-go`, `padrao-java`) para
+  código existente, mas **não têm molde de módulo**. Sistema modular nasce em `typescript`, `javascript` ou `python`.
+- **NÃO** crie módulo copiando pasta à mão — sempre pelo `criar-modulo` (é o que o script faz).
+- **NÃO encerre com o gate vermelho.**
+
+## Checklist "pronta"
+- [ ] Alvo confirmado pelo usuário, com caminho absoluto?
+- [ ] HITL com plano explícito antes de qualquer arquivo criado?
+- [ ] Binding dentro do vocabulário (`typescript` \| `javascript` \| `python`), ou modo sem-binding assumido?
+- [ ] Nenhuma colisão sobrescrita sem autorização?
+- [ ] `specs/arquitetura/` com as 5 leis + a base da linguagem, e **nenhuma** pasta `doutrina/` na raiz?
+- [ ] `specs/adr/000-decisoes-do-template.md` presente?
+- [ ] Módulos criados, cada um com manifesto e contrato?
+- [ ] `.agents/` com `gerar_indice.py`, e `core.hooksPath` apontando para `.githooks`?
+- [ ] `validar.mjs --todos` verde?
+- [ ] Pendências de HITL comunicadas (`.env`, `00-contexto.md`, ADRs, primeiro commit)?

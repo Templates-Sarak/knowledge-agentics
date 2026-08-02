@@ -1,0 +1,12 @@
+{
+  "$comentario": "Tunables NAO-secretos da api. Lei dona: specs/arquitetura/01-modulo.md §4.1. Segredo vai para .env, nunca aqui.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["paginaTamanhoPadrao", "paginaTamanhoMaximo", "corpoMaximoKb", "nivelLog"],
+  "properties": {
+    "paginaTamanhoPadrao": { "type": "integer", "minimum": 1 },
+    "paginaTamanhoMaximo": { "type": "integer", "minimum": 1 },
+    "corpoMaximoKb": { "type": "integer", "minimum": 1 },
+    "nivelLog": { "type": "string", "enum": ["debug", "info", "warn", "error"] }
+  }
+}

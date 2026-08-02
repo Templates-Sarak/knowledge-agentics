@@ -1,0 +1,146 @@
+openapi: 3.1.0
+
+# A FONTE do contrato do modulo <modulo>. O codigo segue esta spec, nunca o inverso.
+# Lei dona: doutrina/02-contrato-e-dados.md
+info:
+  title: <Modulo> — contrato publico
+  version: 1.0.0
+  description: >
+    Unica superficie publica do modulo <modulo>. O front dele, o conector e qualquer
+    outro modulo obtem dado por aqui — nunca pelo banco, nunca por import.
+
+servers:
+  - url: /api/v1/<modulo>
+
+paths:
+  /health:
+    get:
+      summary: Vivo e com as portas resolvidas
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  modulo: { type: string }
+
+  /meta:
+    get:
+      summary: Ecoa o manifesto — e por aqui que o sistema descobre o modulo
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /resumo:
+    get:
+      summary: Contagem e indicadores agregados pelo conector
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+
+  /registros:
+    get:
+      summary: Lista registros
+      parameters:
+        - { name: pagina, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: tamanho, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: colecao paginada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  itens:
+                    type: array
+                    items: { $ref: '#/components/schemas/Registro' }
+                  pagina: { type: integer }
+                  tamanho: { type: integer }
+                  total: { type: integer }
+    post:
+      summary: Cria um registro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NovoRegistro' }
+      responses:
+        '201':
+          description: criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Registro' }
+        '400':
+          description: VALIDACAO
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+
+  /registros/{hash}:
+    get:
+      summary: Obtem um registro pelo identificador universal
+      parameters:
+        - { name: hash, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Registro' }
+        '404':
+          description: NAO_ENCONTRADO
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+
+components:
+  schemas:
+    Registro:
+      type: object
+      required: [hash, titulo, status]
+      properties:
+        hash: { type: string }
+        titulo: { type: string }
+        status: { type: string, enum: [rascunho, ativo, encerrado] }
+        criadoEm: { type: string, format: date-time }
+
+    NovoRegistro:
+      type: object
+      required: [titulo]
+      properties:
+        titulo: { type: string, minLength: 1 }
+        status: { type: string, enum: [rascunho, ativo, encerrado] }
+
+    Erro:
+      type: object
+      properties:
+        erro:
+          type: object
+          properties:
+            codigo:
+              type: string
+              enum:
+                - VALIDACAO
+                - NAO_AUTENTICADO
+                - NAO_AUTORIZADO
+                - NAO_ENCONTRADO
+                - CONFLITO
+                - LIMITE_EXCEDIDO
+                - DEPENDENCIA_EXTERNA
+                - INTERNO
+            mensagem: { type: string }
+            requestId: { type: string }

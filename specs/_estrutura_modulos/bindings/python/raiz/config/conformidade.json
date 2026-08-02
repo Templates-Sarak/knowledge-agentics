@@ -1,0 +1,10 @@
+{
+  "_comentario": "Excecoes NOMINAIS ao catalogo (doutrina/04-regras.md §6). Toda excecao exige o campo 'decisao' apontando para um ADR — sem ele, o gate rejeita a propria excecao. A lista comeca vazia, e esse e o estado correto.",
+  "_exemplo": {
+    "modulo": "legado",
+    "regra": "estrutura-estrita",
+    "motivo": "migracao em curso, prazo ate a onda 3",
+    "decisao": "ADR-011"
+  },
+  "excecoes": []
+}

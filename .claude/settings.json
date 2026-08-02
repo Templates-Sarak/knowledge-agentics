@@ -2,10 +2,30 @@
   "permissions": {
     "allow": [
       "Bash(.venv/Scripts/python.exe -c ' *)",
-      "Bash(cd \"c:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs\" && cp _estrutura_base/00-indice.md _estrutura_base/00-knowledge.md _estrutura_base/00-prompt-revisor.md _estrutura_base/00-prompt-executor.md _estrutura_base_site/ && mkdir -p _estrutura_base_site/_templates _estrutura_base_site/adr _estrutura_base_site/plan && cp _estrutura_base/_templates/*.md _estrutura_base_site/_templates/ && touch _estrutura_base_site/adr/.gitkeep _estrutura_base_site/plan/.gitkeep && find _estrutura_base_site -type f | sort)"
+      "Bash(cd \"c:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs\" && cp _estrutura_base/00-indice.md _estrutura_base/00-knowledge.md _estrutura_base/00-prompt-revisor.md _estrutura_base/00-prompt-executor.md _estrutura_base_site/ && mkdir -p _estrutura_base_site/_templates _estrutura_base_site/adr _estrutura_base_site/plan && cp _estrutura_base/_templates/*.md _estrutura_base_site/_templates/ && touch _estrutura_base_site/adr/.gitkeep _estrutura_base_site/plan/.gitkeep && find _estrutura_base_site -type f | sort)",
+      "Bash(grep -n \"^#\\\\{1,3\\\\} \" README.md)",
+      "Bash(echo \"=== specs/arquitetura ===\")",
+      "Bash(ls -1 c:/tmp/sarak-verif/limpo/specs/arquitetura)",
+      "Bash(echo \"=== specs/adr ===\")",
+      "Bash(ls -1 c:/tmp/sarak-verif/limpo/specs/adr)",
+      "Bash(echo \"\")",
+      "Bash(node 'c:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_modulos/ferramentas/criar-projeto.mjs' . --binding typescript --escopo acme --forcar)",
+      "Bash(set -e)",
+      "Bash(rm -rf __TRACKED_VAR__/existente)",
+      "Bash(mkdir -p __TRACKED_VAR__/existente)",
+      "Bash(cd __TRACKED_VAR__/existente)",
+      "Bash(printf '{\"name\":\"meu-repo-antigo\"}')",
+      "Bash(SRC=\"c:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/Template/.claude/skills/code-novo-modulo/references\" *)",
+      "Bash(grep -n \"^#\\\\{1,3\\\\} \" templates.md)",
+      "Bash(./.venv/Scripts/python.exe -m ruff check .)",
+      "Bash(./.venv/Scripts/python.exe -m ruff check . --output-format=concise)",
+      "Bash(./.venv/Scripts/python.exe -m pip install -q -e \".[dev]\")",
+      "Bash(./.venv/Scripts/python.exe verificar.py)",
+      "Bash(./.venv/Scripts/python.exe skills/meta-verificacao-base/scripts/audit_base.py --raiz .)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates"
+      "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates",
+      "c:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\Template\\.claude\\skills\\code-novo-modulo\\references"
     ]
   },
   "_doc": "Esta é a BASE de inteligência (importada nos projetos); os hooks NÃO rodam aqui. Para ativá-los num projeto-destino, mescle hooks/settings.template.json no settings.json daquele projeto."

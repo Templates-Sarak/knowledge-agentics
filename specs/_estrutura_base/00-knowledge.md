@@ -42,6 +42,8 @@ justamente porque são mutativas ou sensíveis.
 | Preciso… | Use |
 |---|---|
 | Escrever/revisar qualquer código | `padrao-escrita` **+** a `padrao-<linguagem>` do alvo |
+| **Criar um módulo, ou estruturar um sistema em módulos** | `code-modulo` — detecta sozinha se é sistema novo ou módulo novo |
+| Iniciar um repositório do zero (git, specs, projeto, 1º módulo, hooks) | `meta-iniciar-repositorio` |
 | Fechar uma tarefa de escrita/refactor antes de dizer "pronto" | `code-auditoria-padrao` (gate obrigatório) |
 | Saber se um código legado está conforme | `code-diagnostico` (read-only) · em escala: `/code1-auditar` |
 | Adequar legado ao padrão sem mudar comportamento | `code-adequacao` · fluxo completo: `/code2-caracterizar` → `/code3-adequar` |
@@ -71,22 +73,40 @@ justamente porque são mutativas ou sensíveis.
 
 ---
 
-# 4. Catálogo de skills (49)
+# 4. Catálogo de skills (50)
+
+## 4.0 Os três níveis de norma — quem é dono de quê
+
+Cada regra tem **um** dono. Quem não é dono, aponta; ninguém copia.
+
+| Nível | Assunto | Dono | Verificador |
+|---|---|---|---|
+| **0** | escrita: SRP, limiares, zero hardcoded, segredos, erro, log | `padrao-escrita` | validador da `padrao-<linguagem>` + hook `padrao-limiares` |
+| **1** | arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento | `arquitetura/04-regras.md` **do projeto** | `node ferramentas/gate/validar.mjs` |
+| **2** | idiomas de cada linguagem | `padrao-<linguagem>` | linter configurado da linguagem |
+
+O Nível 1 só existe em projeto que adota o **template de módulos**. Onde ele não existe, o padrão em vigor é
+o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 
 ## 4.1 `padrao-` — normas de escrita (as únicas proativas)
 
 | Skill | Quando |
 |---|---|
-| `padrao-escrita` | **Fonte da verdade** universal: clean code, limiares, zero hardcoded, organização microservice-ready. Toda outra skill referencia esta. |
+| `padrao-escrita` | **Porta de entrada e dona do Nível 0**: clean code, limiares, zero hardcoded, segredos. Toda outra skill referencia esta. |
 | `padrao-python` | Código Python — idiomas + validador de limiares (`scripts/validate.py`). |
 | `padrao-typescript` | Código TS/JS — idiomas + validador via API do compilador TS. |
-| `padrao-go` | Código Go — idiomas + `golangci-lint` configurado. |
-| `padrao-java` | Código Java — idiomas + Checkstyle configurado. |
+| `padrao-go` | Código Go — idiomas + `golangci-lint` configurado. **Sem binding**: não se inicia projeto modular em Go. |
+| `padrao-java` | Código Java — idiomas + Checkstyle configurado. **Sem binding**: não se inicia projeto modular em Java. |
+
+> **Bindings do template de módulos:** `typescript`, `javascript`, `python`. Go e Java têm camada de escrita
+> (Nível 2) para escrever e auditar código existente, mas **não** têm molde de módulo — `code-modulo` e
+> `meta-iniciar-repositorio` não os aceitam.
 
 ## 4.2 `code-` — operações sobre código
 
 | Skill | Quando |
 |---|---|
+| `code-modulo` | **Criar módulo ou sistema modular** conforme o template. Dois fluxos, detecção automática, HITL antes do scaffold, gate verde ao final. |
 | `code-auditoria-padrao` | **Gate de fechamento**: invoca os validadores de AST antes de declarar uma tarefa concluída. |
 | `code-diagnostico` | Diagnosticar conformidade de legado (read-only) e gerar backlog priorizado. |
 | `code-adequacao` | Adequar legado item por item, com rede de caracterização, **preservando comportamento**. |
@@ -185,7 +205,7 @@ justamente porque são mutativas ou sensíveis.
 
 | Agent | Papel | Disparado por | Escreve? |
 |---|---|---|---|
-| `code-auditor` | Auditoria de conformidade de **um** módulo (11 dimensões) | `/code1-auditar` | só `.sarak/audit` |
+| `code-auditor` | Auditoria de conformidade de **um** módulo (12 dimensões) | `/code1-auditar` | só `.sarak/audit` |
 | `code-adequador` | Executa **uma** tarefa de adequação de risco baixo/médio | `/code3-adequar` | sim (código) |
 | `code-revisor` | Revisão **independente** de um diff/PR (gate + caça-bugs) | sob demanda / orquestrador | não |
 | `cyber-auditor` | Auditoria de **um** domínio de segurança | `/cyber1-auditar` | só `.sarak/security/` |

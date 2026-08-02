@@ -1,0 +1,46 @@
+{
+  "$comentario": "Cadeia de seguranca da api. Lei dona: specs/arquitetura/03-operacao.md §2.1. `origensPermitidas` nunca contem '*' — cobrado pela regra `cors-aberto`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["rateLimit", "cors", "headers"],
+  "properties": {
+    "rateLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["janelaSegundos", "limiteLeitura", "limiteEscrita"],
+      "properties": {
+        "janelaSegundos": { "type": "integer", "minimum": 1 },
+        "limiteLeitura": { "type": "integer", "minimum": 1 },
+        "limiteEscrita": { "type": "integer", "minimum": 1 },
+        "limiteGeracao": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "cors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origensPermitidas", "metodos"],
+      "properties": {
+        "origensPermitidas": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "metodos": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "enum": ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"] }
+        }
+      }
+    },
+    "headers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hsts", "noSniff", "frameDeny", "referrerPolicy"],
+      "properties": {
+        "hsts": { "type": "boolean" },
+        "noSniff": { "type": "boolean" },
+        "frameDeny": { "type": "boolean" },
+        "referrerPolicy": {
+          "type": "string",
+          "enum": ["no-referrer", "same-origin", "strict-origin", "strict-origin-when-cross-origin"]
+        }
+      }
+    }
+  }
+}

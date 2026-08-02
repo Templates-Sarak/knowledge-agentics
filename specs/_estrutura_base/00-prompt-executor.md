@@ -56,9 +56,13 @@ suposição. Suposição não registrada é reprovação garantida.
 3. **Respeite o escopo, ao pé da letra.** Só toque nos arquivos de "dentro do escopo". Encontrou um problema
    real fora dele? **Não corrija** — anote no resumo, seção *Achados fora do escopo*. Isso vira plan nova;
    quem decide é o revisor.
-4. **Padrão do repositório é piso, não meta:** SRP, função ≤ 40 linhas, aninhamento ≤ 3, ≤ 4 parâmetros,
-   guard clauses, zero hardcoded (tunable em `config.json`, segredo em `.env`), consumo de outro módulo só
-   pelo `api/`, `shared/` sem lógica.
+4. **Padrão do repositório é piso, não meta.** Três níveis, cada um com **um** dono — nenhum reescrito aqui:
+   - **Nível 0** (`padrao-escrita`): SRP, função ≤ 40 linhas, aninhamento ≤ 3, ≤ 4 parâmetros, guard clauses,
+     zero hardcoded, segredo só em `.env`, nenhuma exceção engolida.
+   - **Nível 1** (`specs/arquitetura/04-regras.md`, se este projeto adota o template de módulos): anatomia,
+     manifesto, contrato, dados e isolamento. **É cobrado por máquina** —
+     `node ferramentas/gate/validar.mjs <modulo>`. Rode antes de entregar.
+   - **Nível 2** (`padrao-<linguagem>`): idiomas e limiares da linguagem do alvo.
 5. **Escreva o código como o código vizinho.** Mesma nomenclatura, mesmos idiomas, mesma densidade de
    comentário. Não introduza estilo, biblioteca ou paradigma novos — nada que a plan não autorize.
 6. **Mudou comportamento? Tem teste.** Use a skill `test-*` que a plan indicar.

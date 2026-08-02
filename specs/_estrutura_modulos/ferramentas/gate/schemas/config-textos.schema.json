@@ -1,0 +1,4 @@
+{
+  "$comentario": "Rotulos e mensagens exibidos ao usuario. Lei dona: specs/arquitetura/01-modulo.md §4.1. Mapa livre de chave camelCase para texto — nenhum literal de texto no codigo.",
+  "type": "object"
+}

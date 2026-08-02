@@ -41,8 +41,10 @@ inegociável ou o mapa de roteamento. Nunca por conta própria fora de uma plan.
 > curtos e verificáveis. Duas fontes, nesta ordem:
 > 1. **Universais do ecossistema** — não reescreva: aponte para `CLAUDE.md` (raiz) e para a skill
 >    `padrao-escrita`. Cite no máximo os limiares que causam reprovação imediata (SRP; função ≤ 40 linhas;
->    aninhamento ≤ 3; ≤ 4 parâmetros; zero hardcoded; segredos só em `.env`; consumo só via `api/` de outro
->    módulo; `shared/` sem lógica).
+>    aninhamento ≤ 3; ≤ 4 parâmetros; zero hardcoded; segredos só em `.env`; nenhuma exceção engolida).
+> 1b. **Arquitetura de módulos** — se este projeto adota o template, **não descreva a anatomia**: aponte para
+>    `arquitetura/04-regras.md` e diga a única coisa que o agente precisa saber sem abrir o arquivo — que ela
+>    é cobrada por máquina, com `node ferramentas/gate/validar.mjs`.
 > 2. **Específicas deste repositório** — o que só vale aqui (convenções de nomes locais, uma biblioteca
 >    proibida, um diretório que não se toca, um formato de retorno obrigatório).
 >
@@ -59,8 +61,11 @@ inegociável ou o mapa de roteamento. Nunca por conta própria fora de uma plan.
 > - **Stack**: linguagens + versões, frameworks, banco, runtime, gerenciador de pacotes.
 > - **Camada de padrão da linguagem**: qual skill `padrao-*` se aplica (`padrao-python`, `padrao-typescript`,
 >   `padrao-go`, `padrao-java`).
-> - **Mapa de módulos/domínios**: tabela `módulo → responsabilidade → onde vive (backend/frontend)`.
-> - **Fronteiras**: quem pode chamar quem, e por onde (contrato `api/`).
+> - **Mapa de módulos/domínios**: tabela `módulo → papel → responsabilidade`. Projeto com o template de
+>   módulos: os papéis são `dominio` / `gateway` / `conector`, e a fonte é o `modulo.json` de cada um — não
+>   transcreva, aponte.
+> - **Fronteiras**: quem pode chamar quem, e por onde. No template, a resposta é sempre a mesma — pelo
+>   **contrato HTTP** da `api/` do dono, declarado em `modulo.json:consome`.
 > - **Comandos vitais**: instalar, rodar, testar, lintar, buildar — copiáveis, verificados.
 >
 > Cada item aponta para a spec fixa em `arquitetura/` que o detalha. Esta seção é o índice, não o tratado.

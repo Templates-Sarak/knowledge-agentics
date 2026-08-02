@@ -3,82 +3,126 @@
 Leia quando estiver em dúvida sobre como aplicar o padrão. O bom mostra um módulo desacoplado e
 extraível; o ruim mostra os acoplamentos que impedem a futura separação.
 
+> A anatomia completa é do Nível 1 (`PADRAO-ORGANIZACAO.md` → `04-regras.md`). Aqui o foco é o **contraste**:
+> que cara tem uma violação, e o que exatamente ela custa.
+
 ---
 
-## Exemplo bom — módulo `orders` autossuficiente
+## Exemplo bom — módulo `catalogo` autossuficiente
 
 ### Estrutura
+
 ```
-backend/orders/
-├── config.json                 # { "pageSize": 50, "maxItemsPerOrder": 100 }
-├── api/
-│   ├── routes.py               # GET /api/v1/orders, POST /api/v1/orders, ...
-│   └── adapter.py              # OrdersApi.get_order(orderId) -> OrderDTO
-├── domain/order_service.py
-├── data/order_repository.py    # tabelas orders_orders, orders_items
-└── tests/
+modulos/catalogo/
+├── modulo.json              id, papel, dados, portas, consome, camposSensiveis…
+├── contrato/openapi.yaml    a FONTE do contrato — o código segue
+├── config/
+│   ├── api.json             { "paginaTamanhoMaximo": 100 }
+│   ├── dominio.json         { "statusValidos": ["rascunho","vigente"] }
+│   ├── seguranca.json       rate limit, CORS declarado, headers
+│   ├── portas.json          { "repositorio": "postgres" }  ← único lugar com nome de fornecedor
+│   └── textos.json          rótulos exibidos ao usuário
+├── core/
+│   ├── dominio/             tipos + validação
+│   ├── portas/              o que preciso de INFRAESTRUTURA
+│   └── gateways/            o que preciso de OUTRO MÓDULO — só HTTP
+├── api/src/{index,config,logger}.ts  routes/  middlewares/  mapeadores/
+├── web/src/{pages,components,hooks,api-client}/
+├── database/{schema.sql,migrations/}  tabelas catalogo_*
+└── tests/{dominio,contrato,web,fixtures}/
 ```
 
-### Como consome outro módulo (users)
-```python
-# orders/domain/order_service.py
-from users.api.adapter import UsersApi          # ✅ só o contrato público
+### Como consome outro módulo
 
-def create_order(user_id: str, items: list) -> Order:
-    if not items:                                # ✅ guard clause (aninhamento baixo)
-        raise EmptyOrderError("pedido sem itens")
-    user = UsersApi.get_user(user_id)            # ✅ dado de outro módulo via contrato
-    return repository.save(Order(user_id=user.id, items=items))
-```
-
-### Contrato REST exposto
-```
-POST   /api/v1/orders            body: { "userId": "u_1", "items": [...] }   # ✅ camelCase, plural, sem verbo
-GET    /api/v1/orders/{id}/items
-GET    /api/v1/orders?status=open&page=2                                     # ✅ filtro/paginação via query
+```ts
+// core/gateways/financeiro.ts        ✅ pasta separada: "falo com outro módulo" ≠ "falo com meu banco"
+export async function buscarAliquotaVigente(deps: Deps): Promise<Aliquota> {
+  const resposta = await fetch(`${deps.config.financeiroBaseUrl}/api/v1/financeiro/aliquotas/vigente`);
+  if (!resposta.ok) throw new ErroDependenciaExterna('financeiro indisponivel');  // ✅ taxonomia fechada
+  const bruto = await resposta.json();
+  return { percentual: bruto.percentual, vigenteEm: bruto.vigenteEm };            // ✅ fatia mínima projetada
+}
 ```
 
-### Config e segredos
-```
-config.json → { "pageSize": 50 }                # ✅ tunable não-secreto, por módulo
-.env        → ORDERS_DB_URL=...                  # ✅ segredo, prefixado pelo módulo, gitignored
+```jsonc
+// modulo.json                        ✅ dependência DECLARADA — sem isso, o gate reprova
+"consome": [
+  { "modulo": "financeiro", "contrato": "GET /aliquotas/vigente", "porQue": "alíquota do mês na conciliação" }
+]
 ```
 
-**Por que está conforme:** depende só de `UsersApi` (não do schema de users), tabelas prefixadas
-`orders_*`, contrato REST camelCase versionado, config/segredos fora do código e prefixados. Para virar
-microsserviço, troca-se só o corpo de `UsersApi`/`OrdersApi.adapter` por HTTP — nenhum consumidor muda.
+### Como consome infraestrutura
+
+```ts
+// api/src/index.ts     ✅ RECEBE os adapters, nunca os cria — e nunca importa o SDK do fornecedor
+export function montar(deps: DependenciasDoModulo) { … }
+```
+
+Trocar Postgres por Supabase é **editar uma linha** de `config/portas.json`. Se for preciso mais que isso,
+a porta está mal desenhada.
+
+### Regra de negócio
+
+```ts
+// core/dominio/item.ts
+export function criarItem(entrada: EntradaItem, deps: Deps): Item {
+  if (entrada.itens.length === 0) throw new ErroValidacao('pedido sem itens');   // ✅ guard clause
+  if (entrada.itens.length > deps.config.dominio.itensMaximo) {                  // ✅ limite em config
+    throw new ErroValidacao('itens acima do maximo');
+  }
+  return { hash: deps.geradorId.novo(), criadoEm: deps.relogio.agora(), ...entrada }; // ✅ portas: determinístico
+}
+```
+
+**Por que está conforme:** depende do **contrato HTTP** de `financeiro` (não do schema dele), tabelas
+prefixadas `catalogo_*`, nome de fornecedor só em `config/portas.json`, `relogio`/`geradorId` no lugar de
+`new Date()`/`Math.random()`, e todos os testes rodam com adapters de memória — sem rede, sem banco. Extrair
+o módulo é copiar a pasta e recortar as chaves `CATALOGO_*` do `.env`.
 
 ---
 
-## Exemplo ruim — módulo `orders` acoplado
+## Exemplo ruim — módulo `catalogo` acoplado
 
-### Estado incorreto
-```python
-# orders/order_service.py  (sem separação api/domain/data)
-from users.data.user_table import UserTable      # importa internals de outro módulo
-import os
+```ts
+// modulos/catalogo/api/src/rotas.ts
+import { buscarCliente } from '../../../financeiro/core/dominio/cliente';  // import lateral
+import { Pool } from 'pg';                                                  // SDK do fornecedor dentro do módulo
 
-def createOrderAndNotifyAndLog(user_id, items):  # faz 3 coisas (viola SRP)
-    db = connect(os.getenv("DATABASE_URL"))       # segredo lido no meio da lógica, sem prefixo
-    rows = db.query(
-        "SELECT * FROM users JOIN orders ON ...")  # JOIN cross-módulo em tabelas sem prefixo
-    if user_id:
-        if items:
-            if len(items) < 100:                  # 3+ níveis de aninhamento, número mágico
-                ...                                # função longa, múltiplas responsabilidades
+const pool = new Pool({ connectionString: process.env.DB_URL ?? 'postgres://localhost:5432/app' });
+
+export async function criarItemENotificarELogar(req, res, usuario, itens, opcoes, extra) {  // 6 params, 3 responsabilidades
+  const linhas = await pool.query(
+    `SELECT * FROM clientes JOIN financeiro_aliquotas ON ...`);   // JOIN cross-módulo, tabela sem prefixo
+  if (usuario) {
+    if (itens) {
+      if (itens.length < 100) {                                    // aninhamento 4, número mágico
+        try { await enviar(usuario); } catch (e) {}                // exceção engolida
+        console.log('criado', usuario.cpf);                        // console + PII em log
+      }
+    }
+  }
+  res.json(linhas[0]);                                             // registro CRU do banco na resposta
+}
 ```
-Rota: `POST /api/createOrder` → `{ "user_id": "...", "order_items": [...] }`
 
-**Por que é ruim:**
-| Violação | Impacto |
-|----------|---------|
-| `from users.data...` | Acopla `orders` ao schema interno de `users`; mudar `users` quebra `orders`. |
-| `JOIN users ... orders` | Banco vira acoplamento escondido; impossível separar os módulos. |
-| Tabelas sem prefixo | Não dá pra saber quem é dono; extração ambígua. |
-| `os.getenv` no meio da lógica | Segredo espalhado, sem prefixo de módulo, difícil de auditar. |
-| `createOrderAndNotifyAndLog` | Viola SRP; nome com "And" denuncia 3 responsabilidades. |
-| `if/if/if` + `100` mágico | Aninhamento > 3, número hardcoded (deveria estar em `config.json`). |
-| `POST /api/createOrder` | Verbo no path, sem versão; corpo em `snake_case` (contrato deveria ser camelCase). |
+Rota: `POST /api/criarItem` → `{ "user_id": "...", "order_items": [...] }`
 
-**Consequência:** o módulo não pode ser extraído sem reescrever quem o consome — exatamente o que o
-padrão microservice-ready existe para evitar.
+**Por que é ruim — e qual regra do gate pega cada coisa:**
+
+| Violação | Impacto | Regra |
+|---|---|---|
+| `import ../../financeiro/core/…` | acopla ao **interno** de outro módulo; extração vira refactor | `import-lateral` |
+| `import { Pool } from 'pg'` | o módulo conhece o fornecedor; trocar de banco vira caçada | `sdk-fornecedor` |
+| `?? 'postgres://localhost…'` | sobe apontando para o lugar errado em vez de falhar | `fallback-silencioso` |
+| `JOIN financeiro_aliquotas` | banco vira acoplamento escondido; impossível separar | `tabela-alheia` |
+| tabela `clientes` sem prefixo | não se sabe quem é dono; extração ambígua | `tabela-prefixo` |
+| `criarItemENotificarELogar` | viola SRP — o "E" no nome denuncia 3 responsabilidades | Nível 0 |
+| 6 parâmetros · aninhamento 4 · `100` mágico | ilegível e não configurável | `limiar-parametros`, `limiar-aninhamento`, `hardcode-numero` |
+| `catch (e) {}` | falha some; o bug aparece longe da causa | `excecao-engolida` |
+| `console.log(..., usuario.cpf)` | PII em log, burlando a redação automática | `log`, `sensivel-em-saida` |
+| `res.json(linhas[0])` | publica coluna nova e PII por omissão | `saida-crua` |
+| `POST /api/criarItem`, corpo `snake_case` | verbo no path, sem versão, casing do contrato errado | `contrato-sincronizado`, `payload-camelcase` |
+
+**Consequência:** o módulo não pode ser extraído sem reescrever quem o consome — exatamente o que o padrão
+microservice-ready existe para evitar. **E nada disso depende de alguém lembrar:** cada linha da tabela tem
+um id de regra, e `validar.mjs` reprova com exit 1.

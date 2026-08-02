@@ -51,8 +51,9 @@ eleva o risco de qualquer refatoração e sinaliza à `code-adequacao` que preci
 | **hardcoded** | Literais numéricos/strings de config (timeouts, limites, URLs, paths) e **segredos** (chaves, tokens) embutidos no código | alta (segredo) / média | **baixo** |
 | **limiares** | Função > 40 linhas; aninhamento > 3 níveis; > 4 parâmetros; `if` aninhado sem guard clause | média | médio |
 | **srp** | Arquivo/função fazendo várias coisas; nomes com "And"/"E"; arquivo muito grande | média | médio |
-| **acoplamento** | `import` de `domain/`/`data/` de outro módulo (deveria ser via `api/`) | alta | **alto** |
-| **dados** | Tabela sem prefixo de módulo; `JOIN`/`SELECT` em tabela de outro módulo | alta | **alto** |
+| **acoplamento** | Um domínio alcança o **interno** de outro em vez do contrato: `import` do `domain/`/`data/`/`models/` alheio, ou caminho relativo saindo da fatia. No template, é a regra `import-lateral` | alta | **alto** |
+| **infra-acoplada** | SDK de fornecedor (`pg`, `mysql*`, `@supabase/*`, `aws-sdk`, `firebase*`, `mongodb`, `redis`, `openai`) importado dentro da regra de negócio, sem porta. É o que faz "trocar de fornecedor" virar projeto | alta | **alto** |
+| **dados** | Tabela sem prefixo de módulo; `JOIN`/`SELECT`/FK em tabela de outro módulo; schema `public` | alta | **alto** |
 | **api** | Rota sem `/api/v1/`, com verbo no path, fora do plural kebab-case; payload/query fora de camelCase | média | médio |
 | **cobertura** | Módulo/arquivo sem `tests/` cobrindo o comportamento (sinal por módulo, não por linha) | alta | **baixo** (criar teste não muda código) |
 | **validacao** | Input externo usado sem validação na borda `api/`; SQL montado por concatenação de string | alta (SQL) | médio |

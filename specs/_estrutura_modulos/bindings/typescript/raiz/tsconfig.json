@@ -1,0 +1,22 @@
+{
+  "//": "Tipos da RAIZ do projeto: fiacao (`src/`), interfaces (`packages/`) e adapters. Cada modulo tem o proprio tsconfig e e checado pelo `npm run tipos` dele — e o que mantem o modulo compilavel isolado, condicao pratica da extracao (doutrina/03-operacao.md §6).",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": ["src", "packages", "adapters"],
+  "exclude": ["node_modules", "dist", "modulos"]
+}

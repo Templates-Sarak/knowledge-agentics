@@ -1,0 +1,14 @@
+# Segredo real. O .env.example (GERADO dos manifestos) e versionado; este nunca.
+.env
+modulos/*/.env
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/

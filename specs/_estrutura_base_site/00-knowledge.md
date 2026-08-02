@@ -185,7 +185,7 @@ justamente porque são mutativas ou sensíveis.
 
 | Agent | Papel | Disparado por | Escreve? |
 |---|---|---|---|
-| `code-auditor` | Auditoria de conformidade de **um** módulo (11 dimensões) | `/code1-auditar` | só `.sarak/audit` |
+| `code-auditor` | Auditoria de conformidade de **um** módulo (12 dimensões) | `/code1-auditar` | só `.sarak/audit` |
 | `code-adequador` | Executa **uma** tarefa de adequação de risco baixo/médio | `/code3-adequar` | sim (código) |
 | `code-revisor` | Revisão **independente** de um diff/PR (gate + caça-bugs) | sob demanda / orquestrador | não |
 | `cyber-auditor` | Auditoria de **um** domínio de segurança | `/cyber1-auditar` | só `.sarak/security/` |

@@ -1,0 +1,7 @@
+{
+  "_comentario": "Tunables NAO-secretos da api. Segredo vai para .env, nunca aqui.",
+  "paginaTamanhoPadrao": 20,
+  "paginaTamanhoMaximo": 100,
+  "corpoMaximoKb": 128,
+  "nivelLog": "info"
+}

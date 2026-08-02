@@ -28,12 +28,32 @@ O modelo é **SDD (Spec-Driven Development)**: **toda e qualquer alteração nas
 | Pasta | Pergunta | Exemplo | Natureza |
 |---|---|---|---|
 | `specs/` | O **QUÊ** — regras de negócio, validações, comportamento | `01-login.md` | Documento vivo |
-| `arquitetura/` | O **COMO** — design estrutural, stack, banco, contratos | `00-base-python.md`, `api-design.md` | Documento vivo |
-| `adr/` | O **POR QUÊ** — decisões técnicas com trade-off | `001-escolha-do-postgres.md` | **Imutável** — decisão nova = ADR novo |
+| `arquitetura/` | O **COMO** — design estrutural, stack, banco, contratos | `00-base-python.md`, `04-regras.md` | Documento vivo |
+| `adr/` | O **POR QUÊ** — decisões técnicas com trade-off | `000-decisoes-do-template.md`, `001-escolha-do-postgres.md` | **Imutável** — decisão nova = ADR novo |
 | `plan/` | O **COMO CHEGAR LÁ** — plans **ativas** | `plan-01-extrair-validacao.md` | Fila de execução |
 | `plan/executadas/` | O que já terminou — plans aprovadas e sintetizadas | `plan-01-extrair-validacao.md` | Rastro auditável permanente |
 
 Moldes de todos eles em `_templates/`.
+
+### 1.3 A lei da arquitetura de módulos mora em `arquitetura/`
+
+Projeto que adota o **template de módulos** recebe as cinco leis dentro de `arquitetura/` — elas *são* specs
+de arquitetura, e por isso não ganham uma árvore paralela:
+
+| Arquivo | Responde |
+|---|---|
+| `00-arquitetura.md` | de que peças o sistema é feito, onde estão as fronteiras |
+| `01-modulo.md` | como um módulo é por dentro; manifesto, config, portas, gateways |
+| `02-contrato-e-dados.md` | forma da API, do erro, do schema, da migration |
+| `03-operacao.md` | segurança, log, teste, extração |
+| **`04-regras.md`** | **o catálogo normativo — a regra exata e o que a verifica** |
+| `00-base-<linguagem>.md` | a stack e o ferramental desta linguagem |
+
+**Estas seis não se editam à mão como as demais specs.** As cinco primeiras vêm do template e são atualizadas
+por ele; mudar de ideia sobre uma delas é ADR novo em `adr/`. E, diferente de toda outra spec deste
+diretório, elas têm **verificador executável**: `node ferramentas/gate/validar.mjs`.
+
+As decisões que as justificam estão em `adr/000-decisoes-do-template.md`.
 
 **Regra do SDD:** as specs de `specs/`, `arquitetura/` e `adr/` devem refletir a **realidade exata** do
 repositório — um agente que as lê fica corretamente contextualizado sem abrir uma linha de código. Spec

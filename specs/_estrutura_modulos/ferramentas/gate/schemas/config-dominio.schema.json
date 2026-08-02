@@ -1,0 +1,4 @@
+{
+  "$comentario": "Parametros de NEGOCIO do modulo. Lei dona: specs/arquitetura/01-modulo.md §4.1. A FORMA e livre por definicao — cada dominio tem os seus parametros — mas o arquivo precisa ser um objeto, e toda chave de primeiro nivel precisa ser LIDA pelo codigo (regra `config-morta`).",
+  "type": "object"
+}

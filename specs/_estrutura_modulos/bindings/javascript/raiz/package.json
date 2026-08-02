@@ -1,0 +1,31 @@
+{
+  "name": "<escopo>",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Federacao de modulos autossuficientes.",
+  "//workspaces": "O padrao `modulos/[a-z]*` exclui os moldes (`_template`) DE PROPOSITO: o package.json deles carrega o marcador `<modulo>` no nome, que nao e um nome npm valido. Trocar por `modulos/*` quebra `npm install` na raiz com EINVALIDPACKAGENAME. O molde continua sendo validado pelo gate (ADR-006) — o que ele nao e, e membro do workspace.",
+  "workspaces": [
+    "modulos/[a-z]*",
+    "packages/*",
+    "adapters/*"
+  ],
+  "scripts": {
+    "validar": "node ferramentas/gate/validar.mjs --todos",
+    "validar:env": "node ferramentas/sincronizar-env.mjs --conferir",
+    "criar-modulo": "node ferramentas/criar-modulo.mjs",
+    "test": "npm run test --workspaces --if-present",
+    "//tipos": "raiz (fiacao e packages) MAIS cada modulo pelo jsconfig proprio dele — modulo que so passa no type-check junto do resto nao esta pronto para extracao. Em JS o contrato de tipo e JSDoc, cobrado por `checkJs`.",
+    "tipos": "tsc --noEmit -p jsconfig.json && npm run tipos --workspaces --if-present",
+    "verificar": "npm run validar && npm run validar:env && npm run tipos && npm test"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

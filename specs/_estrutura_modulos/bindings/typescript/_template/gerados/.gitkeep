@@ -1,0 +1,3 @@
+# Saida publicavel do modulo <modulo> (so existe se geraArtefato = true).
+# O NOME desta pasta e fixo em todo modulo — renomear quebra o gate e a publicacao.
+# Artefato publicado e IMUTAVEL: nao se altera, reformata nem regera (doutrina/02 §7).

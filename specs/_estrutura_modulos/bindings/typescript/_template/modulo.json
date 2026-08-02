@@ -1,0 +1,49 @@
+{
+  "id": "<modulo>",
+  "nome": "<Modulo>",
+  "versao": "0.1.0",
+  "descricao": "Descreva em uma linha o dominio de negocio deste modulo.",
+  "papel": "dominio",
+  "binding": "typescript",
+  "rotaBase": "/api/v1/<modulo>",
+  "rotaWeb": "/<modulo>",
+  "dados": {
+    "schema": "<escopo>",
+    "prefixo": "<modulo>_",
+    "tabelas": [
+      "<modulo>_metadados",
+      "<modulo>_auditoria"
+    ]
+  },
+  "envRequerido": [
+    "<MODULO>_API_PORT",
+    "<MODULO>_DB_URL"
+  ],
+  "portas": [
+    "repositorio",
+    "auditoria",
+    "relogio",
+    "geradorId"
+  ],
+  "consome": [],
+  "ui": {
+    "modo": "proprio"
+  },
+  "permissoes": [
+    "<modulo>:ler",
+    "<modulo>:escrever"
+  ],
+  "rotasPublicas": [
+    "GET /health",
+    "GET /meta",
+    "GET /resumo"
+  ],
+  "camposSensiveis": [],
+  "navegacao": {
+    "label": "<Modulo>",
+    "icone": "Box",
+    "ordem": 100
+  },
+  "exportaResumo": true,
+  "geraArtefato": true
+}

@@ -1,0 +1,11 @@
+# Segredo real. O .env.example (GERADO dos manifestos) e versionado; este nunca.
+.env
+modulos/*/.env
+
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+*.log
+.DS_Store

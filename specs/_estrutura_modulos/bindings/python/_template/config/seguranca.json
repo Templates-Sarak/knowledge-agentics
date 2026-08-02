@@ -1,0 +1,23 @@
+{
+  "_comentario": "Cadeia de seguranca da api (doutrina/03-operacao.md §2.1). CORS nunca usa '*'.",
+  "rateLimit": {
+    "janelaSegundos": 60,
+    "limiteLeitura": 120,
+    "limiteEscrita": 20
+  },
+  "cors": {
+    "origensPermitidas": [],
+    "metodos": [
+      "GET",
+      "POST",
+      "PATCH",
+      "DELETE"
+    ]
+  },
+  "headers": {
+    "hsts": true,
+    "noSniff": true,
+    "frameDeny": true,
+    "referrerPolicy": "no-referrer"
+  }
+}

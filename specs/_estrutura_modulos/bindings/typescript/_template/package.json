@@ -1,0 +1,32 @@
+{
+  "name": "@<escopo>/<modulo>",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Modulo <modulo> — fatia vertical autossuficiente (contrato + core + api + web).",
+  "main": "web/src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:observar": "vitest",
+    "tipos": "tsc --noEmit",
+    "build:web": "vite build --config web/vite.config.ts",
+    "validar": "node ../../ferramentas/gate/validar.mjs .",
+    "validar:extracao": "node ../../ferramentas/gate/validar.mjs --extracao ."
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.0.1",
+    "@types/express": "^4.17.21",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  }
+}

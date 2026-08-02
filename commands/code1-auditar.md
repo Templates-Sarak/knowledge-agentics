@@ -14,8 +14,21 @@ consolida os achados num **plano de adequação** e **persiste** em `.sarak/audi
 
 ## Passos
 
-1. **Delimitar módulos** — `Glob` em `backend/*/` e `frontend/*/` (e, na ausência dessa estrutura, trate o alvo
-   como um módulo único). Liste os módulos a auditar. Capture a data com `Bash`: `date +%F` (use como `<data>`).
+1. **Identificar a topologia, e só então delimitar módulos** — `Glob` nesta ordem, parando no primeiro que
+   casar (detalhe em `code-diagnostico` §Workflow 1):
+
+   | # | `Glob` | Topologia | Módulos são |
+   |---|---|---|---|
+   | 1 | `modulos/*/modulo.json` | **template** | cada pasta em `modulos/` (menos `_template`) |
+   | 2 | `backend/*/`, `frontend/*/`, `src/modules/*/`, `apps/*/`, `packages/*/` | **modular-legado** | cada pasta encontrada |
+   | 3 | `controllers/`, `services/`, `models/` no topo | **por-camadas** | **não há** — o alvo é o repo inteiro, como um módulo único |
+   | 4 | nenhum acima | **monólito simples** | o repo inteiro; avise que o Nível 1 não se aplica |
+
+   **Nenhum módulo encontrado nunca é "está conforme"** — é sinal de que a topologia é outra. Declare qual é
+   antes de seguir. Se for **template**, rode `node ferramentas/gate/validar.mjs --todos --json` primeiro e
+   passe o resultado aos agentes: eles complementam o gate, não o repetem.
+
+   Capture a data com `Bash`: `date +%F` (use como `<data>`).
 
 2. **Fan-out (um `code-auditor` por módulo, em paralelo)** — dispare, via **Task**, o agente `code-auditor`
    para **cada módulo**, passando o caminho do módulo. Os agentes rodam em **Sonnet**, são **read-only** sobre o
