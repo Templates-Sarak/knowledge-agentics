@@ -178,7 +178,41 @@ export const CASOS = [
   {
     regra: 'contrato',
     descricao: 'contrato sem os endpoints obrigatorios',
-    mutar: (m) => m.escrever('contrato/openapi.yaml', 'openapi: 3.1.0\npaths:\n  /outra:\n    get:\n      responses:\n        200:\n          description: ok\n'),
+    // O `servers:` entra na spec minima de proposito: sem ele o caso acusaria tambem
+    // `rota-nomenclatura`, e deixaria de provar a ausencia das rotas OBRIGATORIAS, que e o dele.
+    mutar: (m) => m.escrever(
+      'contrato/openapi.yaml',
+      'openapi: 3.1.0\nservers:\n  - url: /api/v1/<modulo>\npaths:\n  /outra:\n    get:\n      responses:\n        200:\n          description: ok\n',
+    ),
+  },
+  {
+    regra: 'rota-nomenclatura',
+    descricao: 'servers[0].url diverge do rotaBase do manifesto',
+    mutar: (m) => m.substituir('contrato/openapi.yaml', 'url: /api/v1/<modulo>', 'url: /api/v1/outro-lugar'),
+  },
+  {
+    regra: 'rota-nomenclatura',
+    descricao: 'parametro de caminho fora de camelCase',
+    // `{Hash}` e `:hash` normalizam para o mesmo `{}`, entao `contrato-sincronizado` continua
+    // calado — este caso acusa UM id, e prova que a checagem de segmento esta viva.
+    mutar: (m) => m.substituir('contrato/openapi.yaml', '/registros/{hash}:', '/registros/{Hash}:'),
+  },
+  {
+    regra: 'rota-nomenclatura',
+    descricao: 'verbo em portugues como segmento de path',
+    // A rota entra na spec E no codigo, senao o caso acusaria tambem `contrato-sincronizado`.
+    mutar: (m) => {
+      m.substituir('contrato/openapi.yaml', '  /health:', [
+        '  /criar-item:',
+        '    get:',
+        '      summary: verbo no path',
+        '      responses:',
+        "        '200':",
+        '          description: ok',
+        '  /health:',
+      ].join('\n'));
+      m.escrever('api/src/extra.ts', "router.get('/criar-item', (_req, res) => res.json({ ok: true }));\n");
+    },
   },
   {
     regra: 'contrato-sincronizado',

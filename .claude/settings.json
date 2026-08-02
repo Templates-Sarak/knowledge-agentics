@@ -37,7 +37,11 @@
       "Bash(mv modulos/catalogo/contrato/openapi.yaml /tmp/spec-guardada.yaml)",
       "Bash(mv /tmp/spec-guardada.yaml modulos/catalogo/contrato/openapi.yaml)",
       "Bash(node ferramentas/gate/validar.mjs modulos/catalogo)",
-      "Read(//c//**)"
+      "Read(//c//**)",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(awk '/^## 7\\\\.2/,/^## 7\\\\.3/' specs/_estrutura_modulos/doutrina/04-regras.md)",
+      "Bash(grep -c '^| `')",
+      "Bash(rm -rf \"c:/tmp/rev-rota\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates",

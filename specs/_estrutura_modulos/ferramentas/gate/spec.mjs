@@ -31,7 +31,7 @@ export function operacoesDaSpec(yaml) {
   const operacoes = new Map();
   let atual = null;
 
-  for (const linha of dentroDePaths(yaml)) {
+  for (const linha of dentroDe(yaml, /^paths:\s*$/)) {
     const rota = linha.match(/^\s{2}(\/[^:\s]*):\s*$/);
     if (rota !== null) {
       atual = rota[1];
@@ -51,13 +51,28 @@ export function rotasDaSpec(yaml) {
   return new Set(operacoesDaSpec(yaml).keys());
 }
 
-/** As linhas do bloco `paths:` — dele até a próxima chave de recuo zero. */
-function dentroDePaths(yaml) {
+/**
+ * `servers[0].url` — o prefixo em que o módulo atende. `null` se a spec não declarar.
+ *
+ * É aqui que o prefixo mora, e NÃO nas chaves de `paths:`: a spec declara `/api/v1/<modulo>` em
+ * `servers` e os paths saem dele relativos (`/health`). Procurar `/api/v1/` no path reprovaria
+ * todo contrato conforme.
+ */
+export function servidorDaSpec(yaml) {
+  for (const linha of dentroDe(yaml, /^servers:\s*$/)) {
+    const casado = linha.match(/^\s*-\s*url:\s*(\S+)\s*$/);
+    if (casado !== null) return casado[1];
+  }
+  return null;
+}
+
+/** As linhas do bloco de uma chave de recuo zero — dela até a próxima chave de recuo zero. */
+function dentroDe(yaml, padraoChave) {
   const linhas = [];
   let dentro = false;
 
   for (const linha of yaml.split(/\r?\n/)) {
-    if (/^paths:\s*$/.test(linha)) {
+    if (padraoChave.test(linha)) {
       dentro = true;
       continue;
     }

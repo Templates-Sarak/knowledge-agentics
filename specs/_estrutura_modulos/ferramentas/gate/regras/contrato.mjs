@@ -1,15 +1,36 @@
 /**
  * regras/contrato.mjs — família "Contrato" do catálogo (specs/arquitetura/04-regras.md §4.5).
- * ids: contrato, contrato-sincronizado, payload-camelcase, saida-sensivel, saida-crua
+ * ids: contrato, rota-nomenclatura, contrato-sincronizado, payload-camelcase, saida-sensivel,
+ *      sensivel-em-saida, saida-crua
  *
  * O `contrato/openapi.yaml` é a FONTE. Estas regras existem para que ele não seja ficção: o que
  * está na spec existe no código, o que está no código existe na spec, e nada sensível vaza.
  *
  * A leitura da spec mora em `../spec.mjs`, compartilhada com `consome-contrato` (Isolamento).
  */
-import { normalizar, rotasDaSpec, specDe } from '../spec.mjs';
+import { normalizar, rotasDaSpec, servidorDaSpec, specDe } from '../spec.mjs';
 
 const OBRIGATORIAS = ['/health', '/meta', '/resumo'];
+
+/**
+ * Verbos que não podem ser SEGMENTO de path — a ação é o método HTTP (02-contrato-e-dados §2).
+ * Inline como `SDKS_FORNECEDOR`: é vocabulário NORMATIVO fechado, parte da regra, não tunable de
+ * projeto — mudá-lo é mudar a lei, e a lei não mora em config.
+ *
+ * Critério de inclusão: a palavra nomeia uma AÇÃO que o método HTTP já expressa. Substantivo de
+ * recurso fica de fora, mesmo quando parece verbo — por isso `busca`, `lista` e `resumo` não
+ * estão aqui, e `buscar`, `listar` estão. Os dois idiomas entram porque a doutrina manda rota em
+ * português (§3.1 "Idioma") e a comparação é por segmento inteiro, nunca substring.
+ */
+const VERBOS_PROIBIDOS = new Set([
+  // inglês
+  'get', 'post', 'put', 'patch', 'delete', 'create', 'update', 'remove', 'list',
+  'fetch', 'find', 'search', 'add', 'edit', 'new', 'save', 'send',
+  // português
+  'criar', 'atualizar', 'remover', 'deletar', 'apagar', 'excluir', 'listar', 'buscar',
+  'procurar', 'pesquisar', 'adicionar', 'editar', 'novo', 'nova', 'obter', 'consultar',
+  'salvar', 'gravar', 'alterar', 'cadastrar', 'inserir', 'enviar', 'gerar',
+]);
 
 /** Rotas registradas no código, em qualquer binding. Normaliza `:hash` e `{hash}` para `{}`. */
 function rotasDoCodigo(ctx) {
@@ -65,6 +86,45 @@ function trechosDeResposta(yaml) {
   return partes.join('\n');
 }
 
+/** `servers[0].url` da spec confere com o `rotaBase` do manifesto. */
+function conferirServidor(ctx, yaml) {
+  const esperado = ctx.manifesto?.rotaBase ?? null;
+  // Manifesto ausente ou sem rotaBase e do `manifesto`/`schema-manifesto` — nao acusamos duas vezes.
+  if (esperado === null) return [];
+  const declarado = servidorDaSpec(yaml);
+  if (declarado === null) return ['contrato/openapi.yaml nao declara servers[0].url — o prefixo do modulo fica implicito'];
+  if (declarado !== esperado) {
+    return [`contrato/openapi.yaml: servers[0].url "${declarado}" diverge do rotaBase "${esperado}" do manifesto`];
+  }
+  return [];
+}
+
+/**
+ * O verbo do segmento, ou `null`. Compara **palavra inteira** do kebab, nunca substring: por isso
+ * `criar-item` e `listar-registros` caem (a palavra `criar` é um token), e `postagens` e
+ * `novidades` NÃO caem (`post` e `new` não são token nenhum ali). Substring pegaria os dois.
+ */
+function verboNoSegmento(segmento) {
+  return segmento.toLowerCase().split('-').find((palavra) => VERBOS_PROIBIDOS.has(palavra)) ?? null;
+}
+
+/** Cada segmento de um path: verbo proibido, kebab-case, e camelCase dentro de `{}`. */
+function conferirSegmentos(rota) {
+  const achados = [];
+  for (const segmento of rota.split('/').filter((s) => s !== '')) {
+    const parametro = segmento.match(/^\{(.*)\}$/);
+    const verbo = parametro === null ? verboNoSegmento(segmento) : null;
+    if (parametro !== null && !/^[a-z][A-Za-z0-9]*$/.test(parametro[1])) {
+      achados.push(`rota "${rota}": parametro "{${parametro[1]}}" nao e camelCase`);
+    } else if (verbo !== null) {
+      achados.push(`rota "${rota}": segmento "${segmento}" carrega o verbo "${verbo}" — a acao e o metodo HTTP, nao o path`);
+    } else if (parametro === null && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(segmento)) {
+      achados.push(`rota "${rota}": segmento "${segmento}" nao e kebab-case minusculo`);
+    }
+  }
+  return achados;
+}
+
 /** Chaves de objeto literal devolvidas pela projeção de saída do mapeador. */
 function chavesDaProjecao(ctx) {
   const chaves = [];
@@ -95,6 +155,26 @@ export default [
       return OBRIGATORIAS
         .filter((rota) => !spec.conteudo.includes(`${rota}:`))
         .map((rota) => `contrato/openapi.yaml nao declara a rota obrigatoria "${rota}"`);
+    },
+  },
+  {
+    id: 'rota-nomenclatura',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      const spec = specDe(ctx);
+      // Spec ausente e do `contrato`; acusar aqui tambem so duplica o mesmo defeito.
+      if (spec === null) return [];
+
+      const achados = conferirServidor(ctx, spec.conteudo);
+      const rotas = [...rotasDaSpec(spec.conteudo)];
+
+      // Spec presente e ilegivel nao e conformidade — e cegueira. Dizer isso em voz alta e o que
+      // impede a regra de "passar" num contrato que o leitor linha-a-linha nao sabe ler.
+      if (rotas.length === 0) {
+        return achados.concat('nao foi possivel extrair path do contrato/openapi.yaml — esta regra NAO verificou nada neste modulo');
+      }
+      return achados.concat(rotas.flatMap(conferirSegmentos));
     },
   },
   {

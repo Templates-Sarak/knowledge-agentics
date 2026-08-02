@@ -63,7 +63,7 @@ gate de auditar.
 | Hook | `use` + PascalCase | `useListaDeItens.ts` |
 | Demais arquivos | kebab-case | `api-client/index.ts` |
 | Teste | espelha o alvo + `.test` | `motor.test.ts` |
-| Rota REST | `/api/v1/` + recurso plural kebab-case, **sem verbo** | `/api/v1/catalogo/:hash` |
+| Rota REST | `servers[0].url` = `rotaBase`; segmentos kebab-case, **sem verbo**; parâmetro de caminho camelCase — tudo cobrado por `rota-nomenclatura`. Recurso no **plural** é convenção, sem verificador | `/api/v1/catalogo/{hash}` |
 | Campo do payload | camelCase | `clienteApelido` |
 | Schema do banco | declarado em `dados.schema`, **nunca** `public` | `"<escopo>"` |
 | Tabela | `<modulo>_<entidade>`, snake_case | `catalogo_metadados` |
@@ -78,6 +78,11 @@ gate de auditar.
 
 **Um nome, um lugar.** O identificador do módulo é o mesmo na pasta, no package, na rota, no prefixo de tabela,
 no prefixo de env e no `modulo.json`. Divergência é erro de gate, não estilo.
+
+**Plural de recurso é convenção, não regra.** Escreva `/registros`, não `/registro` — mas não há verificador, e
+pelo §1 (lei 2) o que não tem verificador **não é regra**: não se cobra em revisão. Não é descuido, é limite
+real — as três rotas obrigatórias (`/health`, `/meta`, `/resumo`) são singulares por desenho, e pluralidade em
+português não é decidível por máquina. O resto da linha "Rota REST" **é** cobrado, por `rota-nomenclatura`.
 
 **Idioma.** Português no domínio, nas rotas e nos dados; inglês onde a linguagem ou o framework impõem
 (`src`, `hooks`, `pages`, `components`, `routes`, `middlewares`, `index`). A escolha entre português puro e o
@@ -142,6 +147,7 @@ misto acima é **decisão de cada projeto**, registrada em `specs/adr/` — o ga
 | id | nível | verifica | escopo |
 |---|---|---|---|
 | `contrato` | erro | `contrato/openapi.yaml` existe e declara `/health`, `/meta` e `/resumo` | módulo |
+| `rota-nomenclatura` | erro | `servers[0].url` é igual ao `rotaBase` do manifesto; nenhum segmento de path carrega verbo (vocabulário fechado, PT e EN, comparado token a token do kebab); todo segmento é kebab-case minúsculo e todo parâmetro de caminho é camelCase. Se nenhum path puder ser extraído, a regra **diz que não verificou** em vez de passar calada | módulo |
 | `contrato-sincronizado` | erro | as rotas registradas no código e as declaradas em `paths:` coincidem **nos dois sentidos** (parâmetro de caminho normalizado). Se nenhuma rota puder ser extraída do código, a regra **diz que não verificou** em vez de passar calada | módulo |
 | `payload-camelcase` | erro | toda chave da projeção de saída é camelCase, e nenhuma propriedade de schema de **resposta** no OpenAPI usa `snake_case` | módulo |
 | `saida-sensivel` | erro | nenhum campo de `camposSensiveis` aparece em schema de **resposta** do `openapi.yaml` | módulo |
@@ -238,7 +244,7 @@ puro e chamável de qualquer lugar — inclusive de dentro de um hook.
 
 ## 7.2 Precisão dos verificadores heurísticos
 
-Cinco regras leem estrutura de bloco, não AST. São **conservadoras**: na dúvida, não acusam. Onde o gate e o
+Seis regras leem estrutura de bloco, não AST. São **conservadoras**: na dúvida, não acusam. Onde o gate e o
 linter discordarem, o linter tem razão.
 
 | Regra | Limite conhecido |
@@ -247,6 +253,7 @@ linter discordarem, o linter tem razão.
 | `hardcode-numero` | pega literal atribuído a nome de infraestrutura; número mágico com nome de negócio passa (e deve — o lugar dele é `config/dominio.json`) |
 | `contrato-sincronizado` | reconhece registro de rota em Express/FastAPI. Framework diferente faz a regra **declarar que não verificou**, em vez de passar calada |
 | `sensivel-em-saida` | cobre projeção e chamada de log; um campo sensível montado por indireção (spread, `Object.assign`) escapa |
+| `rota-nomenclatura` | lê `servers:` e `paths:` linha a linha — contrato em *flow style* (`paths: {"/x": …}`) faz a regra **declarar que não verificou**. O verbo sai de vocabulário fechado (PT e EN): verbo fora da lista passa, e substantivo homógrafo de verbo acusa. **Plural não é verificado** (§3.1) |
 | `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor) passa — a regra lê o caminho e o método, nunca o corpo. Contrato compatível na rota e incompatível no payload continua sendo trabalho de revisão |
 
 ## 7.3 O gate se testa
