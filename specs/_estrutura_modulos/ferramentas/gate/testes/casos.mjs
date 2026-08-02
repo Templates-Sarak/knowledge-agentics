@@ -178,11 +178,32 @@ export const CASOS = [
   {
     regra: 'contrato',
     descricao: 'contrato sem os endpoints obrigatorios',
-    // O `servers:` entra na spec minima de proposito: sem ele o caso acusaria tambem
-    // `rota-nomenclatura`, e deixaria de provar a ausencia das rotas OBRIGATORIAS, que e o dele.
+    // O `servers:` e as `properties:` entram na spec minima de proposito: sem eles o caso acusaria
+    // tambem `rota-nomenclatura` e `projecao-contrato`, e deixaria de provar a ausencia das rotas
+    // OBRIGATORIAS, que e o dele. As propriedades sao as que o mapeador do molde projeta.
     mutar: (m) => m.escrever(
       'contrato/openapi.yaml',
-      'openapi: 3.1.0\nservers:\n  - url: /api/v1/<modulo>\npaths:\n  /outra:\n    get:\n      responses:\n        200:\n          description: ok\n',
+      [
+        'openapi: 3.1.0',
+        'servers:',
+        '  - url: /api/v1/<modulo>',
+        'paths:',
+        '  /outra:',
+        '    get:',
+        '      responses:',
+        '        200:',
+        '          description: ok',
+        '          content:',
+        '            application/json:',
+        '              schema:',
+        '                type: object',
+        '                properties:',
+        '                  hash: { type: string }',
+        '                  titulo: { type: string }',
+        '                  status: { type: string }',
+        '                  criadoEm: { type: string }',
+        '',
+      ].join('\n'),
     ),
   },
   {
@@ -226,6 +247,17 @@ export const CASOS = [
       'contrato/openapi.yaml',
       'paths:\n',
       'paths:\n  /so-na-spec:\n    get:\n      summary: fantasma\n      responses:\n        200:\n          description: ok\n',
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'projecao publica campo que nenhum schema de resposta declara',
+    // Arquivo novo em `api/src/` cujo nome casa com /mapeador/i: vale nos tres bindings, sem
+    // depender do caminho do mapeador de cada um (`mapeadores/index.ts` x `mapeadores.py`).
+    // `hash` esta declarado em `Registro`; `campoFantasma` nao esta em resposta nenhuma.
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-extra.ts',
+      'export function paraContratoExtra(r) {\n  return { hash: r.hash, campoFantasma: r.fantasma };\n}\n',
     ),
   },
   {

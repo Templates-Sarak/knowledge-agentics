@@ -47,8 +47,12 @@ o detalhe, com o campo **mascarado** quando ele precisa aparecer. Dado que não 
 tipo de domínio.
 
 **A consequência que se aceita de propósito:** campo novo exige tocar em dois lugares — schema e mapeador.
-Esquecer o segundo faz o campo simplesmente não aparecer. É falha silenciosa, e é papel do teste de contrato
-pegá-la. O inverso — publicar por omissão — seria pior.
+
+Esquecer o **schema** deixou de ser falha silenciosa: publicar campo que o contrato não promete é erro de
+gate (`projecao-contrato`, `specs/arquitetura/04-regras.md` §4.5). Esquecer o **mapeador** continua silencioso
+por escolha — o campo simplesmente não aparece, e cobrar essa direção acusaria toda resposta que a `api/` monta
+sem passar pelo mapeador (§7.2). Essa metade é do teste de contrato, que exercita a resposta de verdade.
+Assimetria deliberada: publicar por omissão é o risco grave, e é o que o gate agora fecha.
 
 ## 3.1 Envelope e taxonomia de erro
 

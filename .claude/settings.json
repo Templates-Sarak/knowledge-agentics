@@ -41,7 +41,12 @@
       "Bash(node --input-type=module -e ' *)",
       "Bash(awk '/^## 7\\\\.2/,/^## 7\\\\.3/' specs/_estrutura_modulos/doutrina/04-regras.md)",
       "Bash(grep -c '^| `')",
-      "Bash(rm -rf \"c:/tmp/rev-rota\")"
+      "Bash(rm -rf \"c:/tmp/rev-rota\")",
+      "Bash(awk '/^function divergenciasDaProjecao/,/^}/' ferramentas/gate/regras/contrato.mjs)",
+      "Bash(rm -rf \"c:/tmp/rev-proj\")",
+      "Bash(mkdir -p \"c:/tmp/rev-proj\")",
+      "Bash(cp modulos/catalogo/api/src/mapeadores/index.ts _map.ts)",
+      "Bash(cp modulos/catalogo/contrato/openapi.yaml _spec.yaml)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates",

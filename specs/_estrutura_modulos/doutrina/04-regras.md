@@ -149,6 +149,7 @@ misto acima é **decisão de cada projeto**, registrada em `specs/adr/` — o ga
 | `contrato` | erro | `contrato/openapi.yaml` existe e declara `/health`, `/meta` e `/resumo` | módulo |
 | `rota-nomenclatura` | erro | `servers[0].url` é igual ao `rotaBase` do manifesto; nenhum segmento de path carrega verbo (vocabulário fechado, PT e EN, comparado token a token do kebab); todo segmento é kebab-case minúsculo e todo parâmetro de caminho é camelCase. Se nenhum path puder ser extraído, a regra **diz que não verificou** em vez de passar calada | módulo |
 | `contrato-sincronizado` | erro | as rotas registradas no código e as declaradas em `paths:` coincidem **nos dois sentidos** (parâmetro de caminho normalizado). Se nenhuma rota puder ser extraída do código, a regra **diz que não verificou** em vez de passar calada | módulo |
+| `projecao-contrato` | erro | toda chave que o mapeador projeta na saída aparece como propriedade em algum schema de **resposta** do `contrato/openapi.yaml` — publicar o que o contrato não promete é campo saindo sem ninguém ter decidido. **Uma direção só** (§7.2). Sem projeção ou sem schema de resposta extraível, a regra **diz que não verificou** | módulo |
 | `payload-camelcase` | erro | toda chave da projeção de saída é camelCase, e nenhuma propriedade de schema de **resposta** no OpenAPI usa `snake_case` | módulo |
 | `saida-sensivel` | erro | nenhum campo de `camposSensiveis` aparece em schema de **resposta** do `openapi.yaml` | módulo |
 | `sensivel-em-saida` | erro | nenhum campo de `camposSensiveis` entra na projeção de saída nem é citado em chamada de log — citá-lo direto burla a redação automática do logger | módulo |
@@ -244,7 +245,7 @@ puro e chamável de qualquer lugar — inclusive de dentro de um hook.
 
 ## 7.2 Precisão dos verificadores heurísticos
 
-Seis regras leem estrutura de bloco, não AST. São **conservadoras**: na dúvida, não acusam. Onde o gate e o
+Sete regras leem estrutura de bloco, não AST. São **conservadoras**: na dúvida, não acusam. Onde o gate e o
 linter discordarem, o linter tem razão.
 
 | Regra | Limite conhecido |
@@ -253,6 +254,7 @@ linter discordarem, o linter tem razão.
 | `hardcode-numero` | pega literal atribuído a nome de infraestrutura; número mágico com nome de negócio passa (e deve — o lugar dele é `config/dominio.json`) |
 | `contrato-sincronizado` | reconhece registro de rota em Express/FastAPI. Framework diferente faz a regra **declarar que não verificou**, em vez de passar calada |
 | `sensivel-em-saida` | cobre projeção e chamada de log; um campo sensível montado por indireção (spread, `Object.assign`) escapa |
+| `projecao-contrato` | **uma direção só**, de propósito: pega campo projetado e não declarado. A inversa (propriedade declarada e nunca projetada) **não** é cobrada — `/health`, `/meta` e `/resumo` são montadas pela própria `api/` e o schema `Erro` pelo tratador de erro, nenhum deles passa pelo mapeador, então cobrá-la seria falso positivo garantido. Herda a fragilidade do extrator de projeção: ele perde a **primeira** chave do objeto quando a projeção abre em `return {` sem chave de assinatura antes (é o caso do binding Python) — falso negativo, nunca falso positivo. Chave fora de camelCase é do `payload-camelcase` e não é acusada aqui |
 | `rota-nomenclatura` | lê `servers:` e `paths:` linha a linha — contrato em *flow style* (`paths: {"/x": …}`) faz a regra **declarar que não verificou**. O verbo sai de vocabulário fechado (PT e EN): verbo fora da lista passa, e substantivo homógrafo de verbo acusa. **Plural não é verificado** (§3.1) |
 | `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor) passa — a regra lê o caminho e o método, nunca o corpo. Contrato compatível na rota e incompatível no payload continua sendo trabalho de revisão |
 

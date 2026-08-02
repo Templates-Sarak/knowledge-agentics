@@ -1,7 +1,7 @@
 /**
  * regras/contrato.mjs — família "Contrato" do catálogo (specs/arquitetura/04-regras.md §4.5).
- * ids: contrato, rota-nomenclatura, contrato-sincronizado, payload-camelcase, saida-sensivel,
- *      sensivel-em-saida, saida-crua
+ * ids: contrato, rota-nomenclatura, contrato-sincronizado, projecao-contrato, payload-camelcase,
+ *      saida-sensivel, sensivel-em-saida, saida-crua
  *
  * O `contrato/openapi.yaml` é a FONTE. Estas regras existem para que ele não seja ficção: o que
  * está na spec existe no código, o que está no código existe na spec, e nada sensível vaza.
@@ -86,6 +86,33 @@ function trechosDeResposta(yaml) {
   return partes.join('\n');
 }
 
+/**
+ * Nomes de propriedade declarados em schema de RESPOSTA — as chaves filhas de cada `properties:`.
+ *
+ * Reusa `trechosDeResposta`, então schema de REQUISIÇÃO fica de fora de graça: `NovoRegistro` é
+ * alcançado por `$ref` de dentro de `requestBody:`, nunca de `responses:`, e não entra no texto.
+ *
+ * A pilha de recuos existe para o aninhamento (`Erro.erro.codigo`): sem ela, entrar num
+ * `properties:` interno perdia o escopo externo, e propriedade legítima ficava fora do conjunto —
+ * o que viraria falso positivo, a direção de erro que esta regra não pode ter.
+ */
+function propriedadesDeResposta(yaml) {
+  const nomes = new Set();
+  const pilha = [];
+
+  for (const linha of trechosDeResposta(yaml).split(/\r?\n/)) {
+    if (linha.trim() === '') continue;
+    const recuo = linha.length - linha.trimStart().length;
+    while (pilha.length > 0 && recuo <= pilha[pilha.length - 1]) pilha.pop();
+    const chave = linha.match(/^\s*([A-Za-z_]\w*)\s*:/);
+    if (chave !== null && pilha.length > 0 && recuo === pilha[pilha.length - 1] + 2) {
+      nomes.add(chave[1]);
+    }
+    if (/^\s*properties:\s*$/.test(linha)) pilha.push(recuo);
+  }
+  return nomes;
+}
+
 /** `servers[0].url` da spec confere com o `rotaBase` do manifesto. */
 function conferirServidor(ctx, yaml) {
   const esperado = ctx.manifesto?.rotaBase ?? null;
@@ -142,6 +169,28 @@ function chavesDaProjecao(ctx) {
     }
   }
   return chaves;
+}
+
+/**
+ * Chaves projetadas que nenhum schema de resposta declara. UMA direção só, de propósito.
+ *
+ * A inversa (propriedade declarada e nunca projetada) parece simétrica e não é: `/health`,
+ * `/meta` e `/resumo` são montadas pela própria `api/`, e o schema `Erro` pelo tratador de erro —
+ * nenhum deles passa pelo mapeador. Cobrá-la daria falso positivo garantido nos três moldes.
+ */
+function divergenciasDaProjecao(projetadas, declaradas) {
+  const vistos = new Set();
+  const achados = [];
+  for (const { chave, arquivo } of projetadas) {
+    // Chave fora de camelCase e do `payload-camelcase`. Ela JAMAIS estara no contrato (que fala
+    // camelCase por regra), entao acusa-la aqui daria dois erros para um defeito so — e o segundo
+    // apontaria para o conserto errado ("declare no contrato" em vez de "renomeie o campo").
+    if (!/^[a-z][A-Za-z0-9]*$/.test(chave)) continue;
+    if (declaradas.has(chave) || vistos.has(chave)) continue;
+    vistos.add(chave);
+    achados.push(`${arquivo}: campo "${chave}" e projetado na saida e NAO esta declarado em nenhum schema de RESPOSTA do openapi.yaml`);
+  }
+  return achados;
 }
 
 export default [
@@ -204,6 +253,30 @@ export default [
         if (!noCodigo.has(rota)) achados.push(`rota "${rota}" existe no contrato/openapi.yaml e NAO no codigo`);
       }
       return achados;
+    },
+  },
+  {
+    id: 'projecao-contrato',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      const spec = specDe(ctx);
+      // Spec ausente e do `contrato`; acusar aqui tambem so duplica o mesmo defeito.
+      if (spec === null) return [];
+
+      const projetadas = chavesDaProjecao(ctx);
+      const temMapeador = ctx.codigo.some((a) => !a.eTeste && /mapeador/i.test(a.rel));
+      if (projetadas.length === 0) {
+        return temMapeador
+          ? ['nao foi possivel extrair projecao do mapeador — esta regra NAO verificou nada neste modulo']
+          : [];
+      }
+
+      const declaradas = propriedadesDeResposta(spec.conteudo);
+      if (declaradas.size === 0) {
+        return ['nao foi possivel extrair propriedade de schema de RESPOSTA do openapi.yaml — esta regra NAO verificou nada neste modulo'];
+      }
+      return divergenciasDaProjecao(projetadas, declaradas);
     },
   },
   {
