@@ -1,4 +1,4 @@
-"""Bootstrap da api do modulo <modulo>. Lei dona: doutrina/01-modulo.md §5.
+"""Bootstrap da api do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §5.
 
 REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria e nunca importa
 adapter nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
@@ -42,7 +42,7 @@ def criar_app(deps: DependenciasModulo, auth: Auth, config: ConfiguracaoModulo |
 def porta_de_escuta() -> int:
     """Execucao standalone — dev isolado e modulo ja extraido.
 
-    A porta vem do ambiente, e a falta dela DERRUBA o boot (doutrina/01 §4.3).
+    A porta vem do ambiente, e a falta dela DERRUBA o boot (specs/arquitetura/01-modulo.md §4.3).
     O limite de corpo (config/api.json:corpoMaximoKb) e aplicado pelo servidor ASGI na frente.
     """
     return int(env_obrigatoria("<MODULO>_API_PORT"))

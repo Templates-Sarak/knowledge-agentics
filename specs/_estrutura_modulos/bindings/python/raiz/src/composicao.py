@@ -1,4 +1,4 @@
-"""Raiz de composicao — o WIRING, e nada alem. Lei dona: doutrina/00-arquitetura.md §3.4.
+"""Raiz de composicao — o WIRING, e nada alem. Lei dona: specs/arquitetura/00-arquitetura.md §3.4.
 
 O que este modulo faz:
   1. DESCOBRE os modulos lendo modulos/*/modulo.json — nao existe lista fixa de modulos no codigo;

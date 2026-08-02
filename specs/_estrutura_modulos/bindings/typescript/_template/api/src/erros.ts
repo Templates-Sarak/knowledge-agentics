@@ -1,4 +1,4 @@
-// Taxonomia FECHADA de erro do modulo <modulo>. Lei dona: doutrina/02-contrato-e-dados.md §3.1.
+// Taxonomia FECHADA de erro do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
 //
 // Fechada quer dizer: acrescentar codigo aqui e mudanca de contrato, nao improviso de rota.
 // Num projeto com `packages/portas`, este arquivo re-exporta a versao canonica de la — assim

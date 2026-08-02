@@ -1,5 +1,5 @@
 // Gateways do modulo <modulo>: o que ele precisa de OUTROS MODULOS.
-// Lei dona: doutrina/01-modulo.md §6.  Decisao: ADR-002.
+// Lei dona: specs/arquitetura/01-modulo.md §6.  Decisao: ADR-002 (specs/adr/000-decisoes-do-template.md).
 //
 // PORTA e infraestrutura (banco, storage, auth). GATEWAY e outro modulo.
 // Sao riscos diferentes, por isso moram em pastas diferentes — e o gate cobra regras diferentes:

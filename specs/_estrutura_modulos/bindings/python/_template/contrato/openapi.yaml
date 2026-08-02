@@ -1,7 +1,7 @@
 openapi: 3.1.0
 
 # A FONTE do contrato do modulo <modulo>. O codigo segue esta spec, nunca o inverso.
-# Lei dona: doutrina/02-contrato-e-dados.md
+# Lei dona: specs/arquitetura/02-contrato-e-dados.md
 info:
   title: <Modulo> — contrato publico
   version: 1.0.0

@@ -1,4 +1,4 @@
-// Dubles das portas do modulo <modulo>. Lei dona: doutrina/03-operacao.md §5.
+// Dubles das portas do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §5.
 //
 // TODO teste do modulo roda com estes — sem rede e sem banco. Isso nao e preferencia de teste:
 // e a PROVA EXECUTAVEL de que o desacoplamento existe. Se um teste precisar de infraestrutura,

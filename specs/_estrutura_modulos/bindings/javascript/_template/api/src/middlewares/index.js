@@ -1,4 +1,4 @@
-// Cadeia de seguranca do modulo <modulo>. Lei dona: doutrina/03-operacao.md §2.1.
+// Cadeia de seguranca do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
 //
 // Ordem obrigatoria, igual em todo modulo:
 //   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro

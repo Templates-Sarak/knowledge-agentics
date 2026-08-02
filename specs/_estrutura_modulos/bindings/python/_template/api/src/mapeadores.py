@@ -1,4 +1,4 @@
-"""Mapeadores do modulo <modulo>. Lei dona: doutrina/02-contrato-e-dados.md §3.
+"""Mapeadores do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.
 
 Duas responsabilidades, e so estas:
   1. FRONTEIRA DE CAIXA — o banco fala snake_case, o contrato fala camelCase. Explicita, nas
@@ -52,7 +52,7 @@ def para_contrato(registro: Registro) -> dict[str, Any]:
 
 
 def para_colecao(registros: Sequence[Registro], pagina: int, tamanho: int, total: int) -> dict[str, Any]:
-    """Envelope unico de colecao (doutrina/02 §3.1)."""
+    """Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1)."""
     return {
         "itens": [para_contrato(r) for r in registros],
         "pagina": pagina,

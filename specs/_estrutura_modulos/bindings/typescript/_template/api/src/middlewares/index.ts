@@ -1,4 +1,4 @@
-// Cadeia de seguranca do modulo <modulo>. Lei dona: doutrina/03-operacao.md §2.1.
+// Cadeia de seguranca do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
 //
 // Ordem obrigatoria, igual em todo modulo:
 //   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro
@@ -36,7 +36,7 @@ export function headersDeSeguranca(config: ConfigSeguranca['headers']): RequestH
   };
 }
 
-/** Origens sao DECLARADAS em config/seguranca.json. `*` e proibido (doutrina/03 §2.1). */
+/** Origens sao DECLARADAS em config/seguranca.json. `*` e proibido (specs/arquitetura/03-operacao.md §2.1). */
 export function cors(config: ConfigSeguranca['cors']): RequestHandler {
   return (req, res, next) => {
     const origem = req.headers.origin;

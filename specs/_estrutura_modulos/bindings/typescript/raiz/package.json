@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Federacao de modulos autossuficientes.",
-  "//workspaces": "O padrao `modulos/[a-z]*` exclui os moldes (`_template`) DE PROPOSITO: o package.json deles carrega o marcador `<modulo>` no nome, que nao e um nome npm valido. Trocar por `modulos/*` quebra `npm install` na raiz com EINVALIDPACKAGENAME. O molde continua sendo validado pelo gate (ADR-006) — o que ele nao e, e membro do workspace.",
+  "//workspaces": "O padrao `modulos/[a-z]*` exclui os moldes (`_template`) DE PROPOSITO: o package.json deles carrega o marcador `<modulo>` no nome, que nao e um nome npm valido. Trocar por `modulos/*` quebra `npm install` na raiz com EINVALIDPACKAGENAME. O molde continua sendo validado pelo gate (ADR-006, specs/adr/000-decisoes-do-template.md) — o que ele nao e, e membro do workspace.",
   "workspaces": [
     "modulos/[a-z]*",
     "packages/*",

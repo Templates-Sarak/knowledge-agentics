@@ -12,10 +12,10 @@ dependência: extrair este módulo é copiar esta pasta, os adapters que ele dec
 > ajusta o manifesto, cria o `.env` com o ponteiro e roda o gate. Módulo manual nasce sem manifesto e com nome
 > divergente, e o gate não consegue consertar isso sozinho.
 
-**Leis donas:** [`doutrina/01-modulo.md`](../../../doutrina/01-modulo.md) (anatomia, manifesto, portas,
-gateways) · [`02-contrato-e-dados.md`](../../../doutrina/02-contrato-e-dados.md) (API, erro, schema) ·
-[`03-operacao.md`](../../../doutrina/03-operacao.md) (segurança, log, teste, extração) ·
-[`04-regras.md`](../../../doutrina/04-regras.md) (**o catálogo — a única fonte normativa**).
+**Leis donas:** `specs/arquitetura/01-modulo.md` (anatomia, manifesto, portas,
+gateways) · `specs/arquitetura/02-contrato-e-dados.md` (API, erro, schema) ·
+`specs/arquitetura/03-operacao.md` (segurança, log, teste, extração) ·
+`specs/arquitetura/04-regras.md` (**o catálogo — a única fonte normativa**).
 
 ## Marcadores
 

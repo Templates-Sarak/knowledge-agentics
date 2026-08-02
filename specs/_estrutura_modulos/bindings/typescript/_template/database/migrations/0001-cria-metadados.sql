@@ -1,4 +1,4 @@
--- Primeira migration do modulo <modulo>. Lei dona: doutrina/02-contrato-e-dados.md §6.3.
+-- Primeira migration do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §6.3.
 --
 -- Regras materializadas aqui:
 --   - schema DECLARADO em modulo.json:dados.schema. NUNCA "public".
@@ -23,7 +23,7 @@ create index "<modulo>_metadados_status_idx" on "<escopo>"."<modulo>_metadados" 
 
 alter table "<escopo>"."<modulo>_metadados" enable row level security;
 
--- Trilha de auditoria: guarda o NOME dos campos alterados, nunca o valor (doutrina/02 §6.4).
+-- Trilha de auditoria: guarda o NOME dos campos alterados, nunca o valor (specs/arquitetura/02-contrato-e-dados.md §6.4).
 create table "<escopo>"."<modulo>_auditoria" (
   id               uuid primary key default gen_random_uuid(),
   hash             text        not null,

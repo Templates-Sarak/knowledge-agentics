@@ -1,9 +1,9 @@
-"""Dominio do modulo <modulo>: tipos e validacao. Lei dona: doutrina/01-modulo.md §2.
+"""Dominio do modulo <modulo>: tipos e validacao. Lei dona: specs/arquitetura/01-modulo.md §2.
 
 Regras desta camada:
   - ZERO I/O. Nada de rede, banco, arquivo ou ambiente.
   - ZERO nao-determinismo: `datetime.now()` e `random` sao PROIBIDOS aqui — o instante e o
-    identificador chegam pelas portas `relogio` e `geradorId` (doutrina/01-modulo.md §5.1).
+    identificador chegam pelas portas `relogio` e `geradorId` (specs/arquitetura/01-modulo.md §5.1).
   - ZERO literal de vocabulario: os status validos vem de config/dominio.json.
 """
 from __future__ import annotations

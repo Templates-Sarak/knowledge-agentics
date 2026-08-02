@@ -5,10 +5,10 @@ catálogo de regras são idênticos** ao binding TypeScript — só a materializ
 
 > **Não copie esta pasta à mão.** Use `node ferramentas/criar-modulo.mjs <id> --binding python`.
 
-**Leis donas:** [`doutrina/01-modulo.md`](../../../doutrina/01-modulo.md) ·
-[`02-contrato-e-dados.md`](../../../doutrina/02-contrato-e-dados.md) ·
-[`03-operacao.md`](../../../doutrina/03-operacao.md) ·
-[`04-regras.md`](../../../doutrina/04-regras.md) (**a única fonte normativa**).
+**Leis donas:** `specs/arquitetura/01-modulo.md` ·
+`specs/arquitetura/02-contrato-e-dados.md` ·
+`specs/arquitetura/03-operacao.md` ·
+`specs/arquitetura/04-regras.md` (**a única fonte normativa**).
 
 ## O que muda em relação ao binding TypeScript
 

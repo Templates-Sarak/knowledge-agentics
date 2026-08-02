@@ -1,6 +1,6 @@
 // Listagem do modulo <modulo>.
-// Os TRES estados sao obrigatorios e testados (doutrina/03-operacao.md §5).
-// Nenhum texto literal: todo rotulo vem de config/textos.json (doutrina/01 §4.1).
+// Os TRES estados sao obrigatorios e testados (specs/arquitetura/03-operacao.md §5).
+// Nenhum texto literal: todo rotulo vem de config/textos.json (specs/arquitetura/01-modulo.md §4.1).
 import textos from '../../../config/textos.json' with { type: 'json' };
 import { Aviso } from '../components/Aviso.jsx';
 import { useListaDeRegistros } from '../hooks/useListaDeRegistros.js';

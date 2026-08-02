@@ -1,4 +1,4 @@
-"""Cadeia de seguranca do modulo <modulo>. Lei dona: doutrina/03-operacao.md §2.1.
+"""Cadeia de seguranca do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
 
 Ordem obrigatoria, igual em todo modulo:
   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro
@@ -33,7 +33,7 @@ def _caminho_relativo(caminho: str, rota_base: str) -> str:
 @dataclass(frozen=True)
 class ContextoDaBorda:
     """O que a cadeia precisa alem da config. Agrupado para respeitar o limiar de 4 parametros
-    (doutrina/04-regras.md §4.7) — e porque os tres andam sempre juntos."""
+    (specs/arquitetura/04-regras.md §4.7) — e porque os tres andam sempre juntos."""
 
     gerador: GeradorId
     auth: Auth

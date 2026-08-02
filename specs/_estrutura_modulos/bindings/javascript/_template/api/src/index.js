@@ -1,4 +1,4 @@
-// Bootstrap da api do modulo <modulo>. Lei dona: doutrina/01-modulo.md §5.
+// Bootstrap da api do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §5.
 //
 // REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria e nunca importa
 // `adapters/*` nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
@@ -46,7 +46,7 @@ export function criarApp({ deps, auth }) {
 /**
  * Execucao standalone — dev do modulo isolado e modulo ja extraido.
  * No monolito modular quem sobe e a raiz de composicao; aqui a porta vem do ambiente, e a falta
- * dela DERRUBA o boot (doutrina/01 §4.3).
+ * dela DERRUBA o boot (specs/arquitetura/01-modulo.md §4.3).
  */
 export function iniciar(opcoes) {
   const config = carregarConfiguracao();

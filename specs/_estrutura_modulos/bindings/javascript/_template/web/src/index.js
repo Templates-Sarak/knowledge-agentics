@@ -1,4 +1,4 @@
-// Superficie publica do front do modulo <modulo>. Lei dona: ADR-007.
+// Superficie publica do front do modulo <modulo>. Lei dona: ADR-007 (specs/adr/000-decisoes-do-template.md).
 //
 // O web/ e SEMPRE um pacote que exporta suas paginas. Isso permite os dois modelos de composicao
 // sobre a MESMA estrutura:

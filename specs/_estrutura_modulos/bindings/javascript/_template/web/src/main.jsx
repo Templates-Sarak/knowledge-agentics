@@ -1,4 +1,4 @@
-// Entrada standalone do modulo <modulo> — FINA de proposito (ADR-007).
+// Entrada standalone do modulo <modulo> — FINA de proposito (ADR-007, specs/adr/000-decisoes-do-template.md).
 //
 // Este arquivo so monta a raiz JA exportada por `web/src/index.js`. Nenhuma logica vive aqui:
 // e o que permite ao mesmo modulo ser servido como SPA proprio E ser importado por um shell,

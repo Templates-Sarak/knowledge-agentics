@@ -1,6 +1,6 @@
 """Testes de contrato do modulo <modulo> — cada rota do contrato/openapi.yaml.
 
-Cobre o que a lei exige (doutrina/03-operacao.md §5): rota declarada, auth NEGADA por padrao e
+Cobre o que a lei exige (specs/arquitetura/03-operacao.md §5): rota declarada, auth NEGADA por padrao e
 payload malformado rejeitado. Roda com adapters de memoria — sem rede, sem banco.
 """
 from __future__ import annotations

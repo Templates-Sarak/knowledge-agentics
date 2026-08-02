@@ -1,5 +1,5 @@
 {
-  "_comentario": "Cadeia de seguranca da api (doutrina/03-operacao.md §2.1). CORS nunca usa '*'.",
+  "_comentario": "Cadeia de seguranca da api (specs/arquitetura/03-operacao.md §2.1). CORS nunca usa '*'.",
   "rateLimit": {
     "janelaSegundos": 60,
     "limiteLeitura": 120,

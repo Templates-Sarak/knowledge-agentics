@@ -1,4 +1,4 @@
-// Mapeadores do modulo <modulo>. Lei dona: doutrina/02-contrato-e-dados.md §3.
+// Mapeadores do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.
 //
 // Duas responsabilidades, e so estas:
 //   1. FRONTEIRA DE CAIXA — o banco fala snake_case, o contrato fala camelCase. A conversao e
@@ -54,7 +54,7 @@ export function paraContrato(registro: Registro): Record<string, unknown> {
   };
 }
 
-/** Envelope unico de colecao (doutrina/02 §3.1). */
+/** Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1). */
 export function paraColecao(
   registros: Registro[],
   pagina: number,

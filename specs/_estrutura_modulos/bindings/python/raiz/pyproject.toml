@@ -33,7 +33,7 @@ asyncio_mode = "auto"
 
 # NAO ha `testpaths` apontando para `modulos/` de proposito: cada modulo e testado a partir da
 # PASTA DELE (`python verificar.py` faz isso), e e justamente isso que prova que ele roda isolado
-# — a condicao pratica de "pronto para extracao" (doutrina/03-operacao.md §6).
+# — a condicao pratica de "pronto para extracao" (specs/arquitetura/03-operacao.md §6).
 
 [tool.mypy]
 python_version = "3.11"

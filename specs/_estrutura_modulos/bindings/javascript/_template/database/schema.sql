@@ -1,6 +1,6 @@
 -- Estado ALVO do schema do modulo <modulo>, depois da ultima migration.
 -- Este arquivo e um espelho, nao a fonte: a fonte sao as migrations em database/migrations/.
--- Alterar schema em ambiente com dado real e HITL (doutrina/02-contrato-e-dados.md §6.3).
+-- Alterar schema em ambiente com dado real e HITL (specs/arquitetura/02-contrato-e-dados.md §6.3).
 
 create schema if not exists "<escopo>";
 

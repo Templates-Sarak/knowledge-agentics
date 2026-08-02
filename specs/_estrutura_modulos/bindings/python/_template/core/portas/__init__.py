@@ -1,5 +1,5 @@
 """Portas do modulo <modulo>: o que ele precisa de INFRAESTRUTURA.
-Lei dona: doutrina/01-modulo.md §5.
+Lei dona: specs/arquitetura/01-modulo.md §5.
 
 Aqui mora o CONTRATO ("preciso de um repositorio"), nunca a implementacao ("falo com Postgres").
 Quem atende cada porta e decidido em config/portas.json, e o adapter e INJETADO no bootstrap.

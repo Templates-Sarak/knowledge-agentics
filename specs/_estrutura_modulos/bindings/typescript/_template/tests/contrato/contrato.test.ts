@@ -1,5 +1,5 @@
 // Testes de contrato do modulo <modulo> — cada rota do contrato/openapi.yaml.
-// Cobre o que a lei exige (doutrina/03-operacao.md §5): rota declarada, auth NEGADA por padrao,
+// Cobre o que a lei exige (specs/arquitetura/03-operacao.md §5): rota declarada, auth NEGADA por padrao,
 // e payload malformado rejeitado. Roda sobre HTTP real, com adapters de memoria.
 import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

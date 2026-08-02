@@ -1,4 +1,4 @@
-// Carregador UNICO de configuracao do modulo <modulo>. Lei dona: doutrina/01-modulo.md §4.
+// Carregador UNICO de configuracao do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §4.
 //
 // Regras que este arquivo materializa:
 //   - SO ele toca o ambiente. Qualquer outro arquivo lendo env e aviso do gate.
@@ -52,7 +52,7 @@ function aplicarSemSobrescrever(pares) {
 }
 
 /**
- * Resolve o `.env` em cascata (ADR-004).
+ * Resolve o `.env` em cascata (ADR-004, specs/adr/000-decisoes-do-template.md).
  * O `.env` do modulo aponta para o da raiz por `ENV_RAIZ`. Na extracao, apaga-se essa linha e
  * os valores passam a viver localmente — sem uma linha de codigo mudar.
  */

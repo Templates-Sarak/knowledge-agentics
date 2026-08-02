@@ -1,5 +1,5 @@
 {
-  "//": "Tipos do modulo <modulo>. Estrito nas fronteiras (doutrina/04-regras.md §4.7).",
+  "//": "Tipos do modulo <modulo>. Estrito nas fronteiras (specs/arquitetura/04-regras.md §4.7).",
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

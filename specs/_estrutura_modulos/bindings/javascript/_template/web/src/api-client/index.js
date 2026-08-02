@@ -1,4 +1,4 @@
-// Cliente da API do PROPRIO modulo <modulo>. Lei dona: doutrina/00-arquitetura.md §4.4.
+// Cliente da API do PROPRIO modulo <modulo>. Lei dona: specs/arquitetura/00-arquitetura.md §4.4.
 //
 // O front de um modulo fala EXCLUSIVAMENTE com /api/v1/<modulo>, por caminho RELATIVO na mesma
 // origem. Nunca com o banco, nunca com a api de outro modulo — dado alheio e responsabilidade da

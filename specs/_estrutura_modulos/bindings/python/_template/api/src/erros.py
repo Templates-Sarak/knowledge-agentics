@@ -1,4 +1,4 @@
-"""Taxonomia FECHADA de erro do modulo <modulo>. Lei dona: doutrina/02-contrato-e-dados.md §3.1.
+"""Taxonomia FECHADA de erro do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
 
 Fechada quer dizer: acrescentar codigo aqui e mudanca de contrato, nao improviso de rota.
 A mensagem ao cliente e generica e estavel; o detalhe vai so para o log, ligado pelo requestId.

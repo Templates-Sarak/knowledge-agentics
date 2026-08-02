@@ -31,7 +31,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [tool.ruff]
-# Limiares de doutrina/04-regras.md §4.7. O gate cobre a arquitetura ENTRE arquivos;
+# Limiares de specs/arquitetura/04-regras.md §4.7. O gate cobre a arquitetura ENTRE arquivos;
 # o linter cobre a qualidade DENTRO do arquivo.
 line-length = 110
 target-version = "py311"

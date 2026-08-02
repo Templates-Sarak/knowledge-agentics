@@ -25,7 +25,8 @@
       "Bash(grep -vE \"^ M \\(CLAUDE|README\\)\\\\.md$\")",
       "Bash(grep -nE '`\\(validar\\\\.mjs|sync_ide\\\\.py|specs/arquitetura/04-regras\\\\.md\\)`|ferramentas/gate/validar' CLAUDE.md README.md)",
       "Bash(grep -ohE '`[a-z][a-z0-9-]+`')",
-      "Bash(grep -n '`api-contrato`' README.md)"
+      "Bash(grep -n '`api-contrato`' README.md)",
+      "Bash(grep -rn \"\\\\.\\\\./\\\\.\\\\./\\\\.\\\\./doutrina\" bindings/)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates",

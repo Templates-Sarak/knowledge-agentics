@@ -1,8 +1,8 @@
-"""Interfaces CANONICAS das portas. Lei dona: doutrina/00-arquitetura.md §3.3 e §4.2.
+"""Interfaces CANONICAS das portas. Lei dona: specs/arquitetura/00-arquitetura.md §3.3 e §4.2.
 
 `packages/` e a excecao minima ao isolamento: so entra o que e interface, contrato ou design,
 SEM logica de negocio. Regra de negocio nunca mora aqui — se dois modulos precisam da mesma
-regra, duplica-se (ADR-001).
+regra, duplica-se (ADR-001, specs/adr/000-decisoes-do-template.md).
 
 Por que a interface canonica existe: um adapter generico precisa de uma forma comum. Se cada
 modulo inventasse a propria, nenhum adapter serviria a dois. O `core/portas/` do modulo ESPELHA

@@ -1,4 +1,4 @@
-// Rotas do modulo <modulo>. Lei dona: doutrina/02-contrato-e-dados.md §2.
+// Rotas do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
 //
 // O contrato manda: toda rota daqui existe em contrato/openapi.yaml, e o inverso tambem.
 // Regras cobradas aqui: valida na borda ANTES do dominio; exige permissao nomeada; monta a
@@ -30,7 +30,7 @@ function lerPaginacao(query: Record<string, unknown>, config: ConfiguracaoModulo
   return [pagina, tamanho];
 }
 
-/** Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado (doutrina/02 §3.2). */
+/** Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado (specs/arquitetura/02-contrato-e-dados.md §3.2). */
 function lerCorpo(corpo: unknown): { titulo: unknown; status?: unknown } {
   if (typeof corpo !== 'object' || corpo === null) {
     throw new ErroApi('VALIDACAO', 'corpo deve ser um objeto');
@@ -127,7 +127,7 @@ async function criar(corpo: unknown, deps: DependenciasModulo, config: Configura
   return registro;
 }
 
-/** Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO (doutrina/02 §3.2). */
+/** Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO (specs/arquitetura/02-contrato-e-dados.md §3.2). */
 function traduzir(causa: unknown): unknown {
   if (causa instanceof ErroDeValidacao) return new ErroApi('VALIDACAO', causa.message);
   return causa;

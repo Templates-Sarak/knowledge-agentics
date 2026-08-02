@@ -1,8 +1,8 @@
-// Adapter de MEMORIA — obrigatorio em todo projeto. Lei dona: doutrina/01-modulo.md §5.2.
+// Adapter de MEMORIA — obrigatorio em todo projeto. Lei dona: specs/arquitetura/01-modulo.md §5.2.
 //
 // Nao e um adapter "de brinquedo": e o que permite os testes de todo modulo rodarem sem rede e
 // sem banco. Sem variante de memoria para cada porta, o desacoplamento nao e verificavel — e o
-// que nao e verificavel e folclore (ADR-003).
+// que nao e verificavel e folclore (ADR-003, specs/adr/000-decisoes-do-template.md).
 //
 // Adapter NAO conhece dominio: nao existe `if (modulo === 'catalogo')` aqui dentro.
 

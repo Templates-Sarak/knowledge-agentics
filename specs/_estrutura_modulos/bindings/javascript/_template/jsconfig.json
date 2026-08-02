@@ -1,5 +1,5 @@
 {
-  "//": "JavaScript com verificacao de tipo pelo JSDoc. `checkJs` e o que impede o binding JS de virar 'TypeScript sem as garantias' — as fronteiras continuam cobradas, so que por JSDoc em vez de anotacao (doutrina/04-regras.md §4.7). `maxNodeModuleJsDepth: 0` impede o checkJs de entrar no .js de dependencia: sem ele o type-check reprova por erro DENTRO de node_modules, que nao e codigo deste modulo.",
+  "//": "JavaScript com verificacao de tipo pelo JSDoc. `checkJs` e o que impede o binding JS de virar 'TypeScript sem as garantias' — as fronteiras continuam cobradas, so que por JSDoc em vez de anotacao (specs/arquitetura/04-regras.md §4.7). `maxNodeModuleJsDepth: 0` impede o checkJs de entrar no .js de dependencia: sem ele o type-check reprova por erro DENTRO de node_modules, que nao e codigo deste modulo.",
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

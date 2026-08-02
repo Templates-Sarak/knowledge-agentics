@@ -1,4 +1,4 @@
-// Testes do modulo <modulo>. Lei dona: doutrina/03-operacao.md §5.
+// Testes do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §5.
 //
 // Tudo em `tests/`, espelhando as camadas. Os testes de dominio e de contrato rodam em Node;
 // os de tela rodam em jsdom. Nenhum deles toca rede ou banco — as portas sao servidas pelos

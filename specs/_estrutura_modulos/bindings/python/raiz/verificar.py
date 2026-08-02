@@ -12,7 +12,7 @@ Equivalente ao `npm run verificar` do binding TypeScript. Roda, nesta ordem:
     5. testes de CADA modulo, a partir da pasta dele (pytest)
 
 O passo 5 roda modulo a modulo de proposito: testar a partir da pasta do modulo e o que prova que
-ele roda ISOLADO — a condicao pratica de "pronto para extracao" (doutrina/03-operacao.md §6).
+ele roda ISOLADO — a condicao pratica de "pronto para extracao" (specs/arquitetura/03-operacao.md §6).
 
 DEPENDENCIA DECLARADA: o gate e uma ferramenta Node — a mesma em todos os bindings, de proposito.
 Um verificador por linguagem divergiria do outro, e a doutrina deixaria de ter uma unica leitura.

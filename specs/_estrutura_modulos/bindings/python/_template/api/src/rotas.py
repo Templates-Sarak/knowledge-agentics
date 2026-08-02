@@ -1,4 +1,4 @@
-"""Rotas do modulo <modulo>. Lei dona: doutrina/02-contrato-e-dados.md §2.
+"""Rotas do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
 
 O contrato manda: toda rota daqui existe em contrato/openapi.yaml, e o inverso tambem.
 Regras cobradas aqui: valida na borda ANTES do dominio; exige permissao nomeada; monta a resposta
@@ -18,7 +18,7 @@ from .middlewares import exigir_permissao
 
 _CAMPOS_PERMITIDOS = {"titulo", "status"}
 
-# Leitura e escrita: o minimo que todo modulo declara (doutrina/01-modulo.md §3.1).
+# Leitura e escrita: o minimo que todo modulo declara (specs/arquitetura/01-modulo.md §3.1).
 _PERMISSOES_MINIMAS = 2
 
 
@@ -43,7 +43,8 @@ def _ler_paginacao(request: Request, config: Any) -> tuple[int, int]:
 
 
 def _ler_corpo(corpo: Any) -> dict[str, Any]:
-    """Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado (doutrina/02 §3.2)."""
+    """Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado
+    (specs/arquitetura/02-contrato-e-dados.md §3.2)."""
     if not isinstance(corpo, dict):
         raise ErroApi("VALIDACAO", "corpo deve ser um objeto")
     desconhecido = next((c for c in corpo if c not in _CAMPOS_PERMITIDOS), None)
@@ -97,7 +98,8 @@ def criar_rotas(deps: DependenciasModulo, config: Any) -> APIRouter:
 async def _persistir(
     corpo: dict[str, Any], deps: DependenciasModulo, config: Any, request_id: str
 ) -> Registro:
-    """Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO (doutrina/02 §3.2)."""
+    """Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO
+    (specs/arquitetura/02-contrato-e-dados.md §3.2)."""
     try:
         registro = montar_registro(
             corpo,

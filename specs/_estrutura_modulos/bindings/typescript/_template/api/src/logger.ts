@@ -1,4 +1,4 @@
-// Logger estruturado do modulo <modulo>. Lei dona: doutrina/03-operacao.md §3.
+// Logger estruturado do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §3.
 //
 // Uma linha JSON por evento, com requestId. Campos de `camposSensiveis` sao redigidos AQUI —
 // nao e responsabilidade de quem chama lembrar. `console.*` e proibido no modulo (regra `log`);
