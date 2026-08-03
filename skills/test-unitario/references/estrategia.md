@@ -2,7 +2,7 @@
 
 ## Pirâmide
 - **Base — unitários** (muitos, rápidos): uma unidade/função, isolada de I/O.
-- **Meio — integração** (alguns): módulos reais conversando (ex.: `api/` + `domain/` + DB de teste).
+- **Meio — integração** (alguns): as camadas reais do módulo conversando (ex.: `api/` + `core/` + DB de teste).
 - **Topo — e2e** (poucos, lentos): fluxo do usuário ponta-a-ponta → skill `test-e2e`.
 > Se está difícil testar, geralmente é acoplamento — refatore (extrair, injeção de dependência), não mocke tudo.
 

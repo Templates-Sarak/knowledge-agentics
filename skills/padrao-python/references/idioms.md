@@ -17,10 +17,11 @@ a detecta**.
 | Tipos | `type hints` em tudo que é público; checar com `mypy` |
 | Privado | prefixo `_` (`_helper`) — sinaliza "não é contrato público" |
 
-- **Borda de serialização:** interno `snake_case` ↔ contrato `camelCase` é convertido na camada `api/`
-  (Pydantic alias, serializer, etc.), nunca espalhando o casing do contrato pelo `domain/`.
-- **Imports:** dependa só do `api/` de outro módulo (`from users.api.adapter import UsersApi`),
-  nunca de `users.domain`/`users.data` — ver `PADRAO-ORGANIZACAO.md`.
+- **Borda de serialização:** interno `snake_case` ↔ contrato `camelCase` é convertido em
+  `api/src/mapeadores.py` (Pydantic alias, serializer, etc.), nunca espalhando o casing do contrato pelo `core/`.
+- **Imports:** **nunca** importe código de outro módulo — nem o `api/` dele. Dado alheio vem por **HTTP**,
+  num gateway em `core/gateways/<provider>`, declarado em `modulo.json:consome`. A anatomia e a regra estão
+  em `specs/arquitetura/01-modulo.md` §6 (na base, `specs/_estrutura_modulos/doutrina/01-modulo.md`).
 
 ---
 

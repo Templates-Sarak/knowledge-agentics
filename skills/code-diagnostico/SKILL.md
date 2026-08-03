@@ -76,7 +76,7 @@ Legado não usa o nosso vocabulário de pastas. Cada dimensão descreve o **prin
 | 1 | **Segredos/hardcoded** | valor de config ou segredo embutido no código | literal de URL/timeout/chave; `env['X'] ?? 'http://localhost'` |
 | 2 | **Limiares** | função > 40 linhas, aninhamento > 3, > 4 parâmetros, sem guard clause | mecânico — vem do validador da linguagem |
 | 3 | **SRP** | uma unidade com mais de uma responsabilidade | nome com "And"/"E"; arquivo enorme; função que faz I/O e regra |
-| 4 | **Encapsulamento** | um domínio alcança o **interno** de outro em vez do contrato dele | `import` do `domain/`/`data/`/`models/` alheio; import relativo saindo da fatia; no template, a regra `import-lateral` |
+| 4 | **Encapsulamento** | um domínio alcança o **interno** de outro em vez do contrato dele | `import` de qualquer caminho interno da fatia alheia; import relativo saindo da própria; no template, o legítimo é HTTP por `core/gateways/` declarado em `consome` (regras `import-lateral`, `gateway-http`, `gateway-declarado`) |
 | 5 | **Infraestrutura acoplada** | o domínio conhece o fornecedor | SDK (`pg`, `@supabase/*`, `aws-sdk`) importado dentro da regra de negócio, sem porta |
 | 6 | **Dados** | tabela sem dono declarado; leitura de dado alheio pelo banco | tabela sem prefixo de módulo; JOIN/FK cruzando domínios; schema `public` |
 | 7 | **Contrato de API** | a superfície pública não é estável nem descritível | rota sem `/api/v1/`, verbo no path, recurso fora do plural kebab-case, payload fora de camelCase; registro cru na resposta |

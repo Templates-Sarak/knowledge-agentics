@@ -37,7 +37,7 @@ mvn jacoco:report               # gera target/site/jacoco/jacoco.csv|html (cober
 - Gradle: `./gradlew test jacocoTestReport`.
 
 ## Integração
-- Suba o real do módulo (`api/`+`domain/`+`data/`) contra um **DB de teste** (container/sqlite/em memória), não mocks.
+- Suba o real do módulo (`api/` + `core/`, com o adapter de banco no lugar do de memória) contra um **DB de teste** (container/sqlite/em memória), não mocks.
 - Resete o estado entre testes (transação com rollback ou recriar schema).
 
 ## Cobertura

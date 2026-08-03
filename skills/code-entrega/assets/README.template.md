@@ -27,11 +27,15 @@ cp .env.example .env   # preencha os valores
 ```
 
 ## Arquitetura modular
-Cada módulo é uma fatia vertical (`api/` público, `domain/`/`data/` privados). Ver `PADRAO-ORGANIZACAO`.
+Cada módulo é uma fatia vertical em `modulos/<modulo>/`: `api/` é a única superfície pública, `core/` é
+interno (`dominio`, `motor`, `portas`, `gateways`), e `contrato/openapi.yaml` é a fonte do contrato.
+Dado de outro módulo vem por **HTTP**, num gateway em `core/gateways/`, declarado em `modulo.json:consome` —
+nunca por import nem por tabela alheia. Anatomia: `specs/arquitetura/01-modulo.md`. Regras:
+`specs/arquitetura/04-regras.md`.
 
 | Módulo | Responsabilidade |
 |---|---|
-| `backend/[modulo]` | [o que faz] |
+| `modulos/[modulo]` | [o que faz] |
 | `frontend/[modulo]` | [o que faz] |
 
 ## API

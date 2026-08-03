@@ -30,7 +30,8 @@ determinísticos pegam. Devolve achados classificados; **não modifica nada**.
    recurso não liberado, concorrência/race, exceção engolida, edge case não tratado, regressão de comportamento.
 5. **Conformidade ao padrão (julgamento)** — `references/criterios.md`: SRP (a mudança faz **uma** coisa?), nomes
    claros, **zero hardcoded** (config/`.env`), validação na borda `api/` + query parametrizada, sem `print`/`console.log`,
-   **encapsulamento** (não importar `domain/`/`data/` de outro módulo), **testes acompanham** (norma §9).
+   **encapsulamento** (não importar código de outro módulo nem ler tabela alheia — dado alheio vem por HTTP,
+   num gateway em `core/gateways/`), **testes acompanham** (norma §9).
 6. **Classificar & devolver** — cada achado com `arquivo:linha`, severidade e correção sugerida; **bloqueio**
    (impede o commit) × **aviso** (registrar). Devolva estruturado.
 
