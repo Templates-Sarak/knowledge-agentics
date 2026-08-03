@@ -83,7 +83,10 @@ export default [
     escopo: 'modulo',
     verificar(ctx) {
       const achados = [];
-      if (!temArquivoEm(ctx, 'contrato/openapi.yaml')) achados.push('contrato/openapi.yaml ausente');
+      // `contrato/openapi.yaml` NAO entra aqui: a regra `contrato` e a dona do arquivo de ponta a
+      // ponta (ausente, ilegivel, sem rota obrigatoria) e emite a mesma frase. Duas regras dizendo
+      // "contrato/openapi.yaml ausente" e um defeito com duas mensagens — e a segunda nao acrescenta
+      // conserto nenhum. Um defeito, uma mensagem, um conserto.
       if (!temArquivoEm(ctx, 'api/')) achados.push('api/ ausente');
       if (!temArquivoEm(ctx, 'tests/')) achados.push('tests/ ausente');
       for (const assunto of CONFIGS) {

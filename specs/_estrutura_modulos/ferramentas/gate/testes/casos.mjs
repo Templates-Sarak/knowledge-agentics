@@ -14,6 +14,8 @@ export const CASOS = [
   {
     regra: 'manifesto',
     descricao: 'id do manifesto diverge do nome da pasta',
+    // Cascata legitima: com o id trocado, o prefixo `molde_` das tabelas passa a divergir de verdade.
+    tambem: ['tabela-prefixo'],
     mutar: (m) => m.manifesto((x) => ({ ...x, id: 'outro-nome' })),
   },
   {
@@ -24,12 +26,17 @@ export const CASOS = [
   {
     regra: 'schema-manifesto',
     descricao: 'papel fora do vocabulario',
+    // O `papel` e cobrado pelo JSON Schema E pelo vocabulario fechado do `manifesto`: duas leituras
+    // do mesmo campo, e as duas mensagens ajudam. Declarado, nao silenciado.
+    tambem: ['manifesto'],
     mutar: (m) => m.manifesto((x) => ({ ...x, papel: 'inventado' })),
   },
   {
     regra: 'estrutura',
-    descricao: 'contrato/openapi.yaml ausente',
-    mutar: (m) => m.remover('contrato/openapi.yaml'),
+    descricao: 'arquivo previsto na arvore ausente',
+    // Era `contrato/openapi.yaml`, do qual a regra `contrato` passou a ser dona sozinha.
+    // `config/textos.json` segue sendo item da arvore que so a `estrutura` cobra.
+    mutar: (m) => m.remover('config/textos.json'),
   },
   {
     regra: 'estrutura-estrita',
@@ -39,6 +46,9 @@ export const CASOS = [
   {
     regra: 'web-declarado',
     descricao: 'rotaWeb declarada sem pagina real',
+    // Cascata legitima: sem as paginas, as chaves de `config/textos.json` ficam sem leitor. So em
+    // TS/JS — o molde Python nasce sem `web/`, e por isso `tambem` e teto, nao obrigacao.
+    tambem: ['config-morta'],
     // Declara a rotaWeb no proprio caso: assim vale tambem para molde que nasce sem tela
     // (o binding Python), em vez de depender do default de um binding especifico.
     mutar: (m) => {
@@ -72,6 +82,8 @@ export const CASOS = [
   {
     regra: 'gateway-http',
     descricao: 'gateway falando com banco',
+    // Cascata legitima: o arquivo novo em `core/gateways/` nao tem entrada em `consome`.
+    tambem: ['gateway-declarado'],
     mutar: (m) => m.escrever('core/gateways/vizinho.ts', "export const q = 'select 1 from t';\nexport async function f(c) { return c.query(q); }\n"),
   },
   {
@@ -82,14 +94,21 @@ export const CASOS = [
   {
     regra: 'consome-ciclo',
     descricao: 'ciclo no grafo de consome',
+    // Cascata legitima: declarar `consome` sem criar `core/gateways/vizinho.*` e defeito de verdade.
+    tambem: ['gateway-declarado'],
     // O contrato declarado tem de EXISTIR na spec do vizinho (`/resumo` e obrigatoria em todo
     // modulo). Com `GET /x`, este caso violava tambem `consome-contrato` e deixava de exercitar
     // uma regra so — caso de teste com duas violacoes nao prova qual das duas esta viva.
-    mutar: (m) => m.manifesto((x) => ({
-      ...x,
-      consome: [{ modulo: 'vizinho', contrato: 'GET /resumo', porQue: 'ciclo' }],
-      envRequerido: [...x.envRequerido, 'VIZINHO_URL'],
-    })),
+    mutar: (m) => {
+      m.manifesto((x) => ({
+        ...x,
+        consome: [{ modulo: 'vizinho', contrato: 'GET /resumo', porQue: 'ciclo' }],
+        envRequerido: [...x.envRequerido, 'VIZINHO_URL'],
+      }));
+      // A chave nova tem de chegar ao `.env.example`, senao o caso violava tambem `env-exemplo` —
+      // ruido do fixture, nao defeito do grafo de `consome`.
+      m.acrescentar('.env.example', 'VIZINHO_URL=\n');
+    },
     exigeVizinho: true,
     vizinhoConsome: true,
   },
@@ -118,6 +137,8 @@ export const CASOS = [
   {
     regra: 'tabela-prefixo',
     descricao: 'tabela declarada sem o prefixo do modulo',
+    // Cascata legitima: a tabela nova tambem nao tem ENABLE ROW LEVEL SECURITY no SQL.
+    tambem: ['rls'],
     mutar: (m) => m.manifesto((x) => ({ ...x, dados: { ...x.dados, tabelas: [...x.dados.tabelas, 'clientes'] } })),
   },
   {
@@ -156,11 +177,15 @@ export const CASOS = [
   {
     regra: 'fallback-silencioso',
     descricao: 'default silencioso de env',
+    // Cascata legitima: a mesma linha embute URL literal e le env fora do carregador.
+    tambem: ['hardcode-url', 'env-fora-do-carregador'],
     mutar: (m) => m.escrever('core/dominio/mau.ts', "export const u = process.env['X'] ?? 'http://localhost';\n"),
   },
   {
     regra: 'env-declarado',
     descricao: 'env usada e nao declarada no manifesto',
+    // Cascata legitima: ler env dentro de `core/` e, por definicao, fora do carregador.
+    tambem: ['env-fora-do-carregador'],
     mutar: (m) => m.escrever('core/dominio/mau.ts', 'export const s = process.env.MOLDE_SEGREDO_NOVO;\n'),
   },
   {
@@ -178,6 +203,9 @@ export const CASOS = [
   {
     regra: 'contrato',
     descricao: 'contrato sem os endpoints obrigatorios',
+    // Cascata legitima e inevitavel: a spec minima omite as rotas obrigatorias que o codigo
+    // registra, entao divergir do codigo e consequencia do proprio defeito sob teste.
+    tambem: ['contrato-sincronizado'],
     // O `servers:` e as `properties:` entram na spec minima de proposito: sem eles o caso acusaria
     // tambem `rota-nomenclatura` e `projecao-contrato`, e deixaria de provar a ausencia das rotas
     // OBRIGATORIAS, que e o dele. As propriedades sao as que o mapeador do molde projeta.
@@ -341,12 +369,21 @@ export const CASOS = [
   {
     regra: 'saida-sensivel',
     descricao: 'campo sensivel citado em schema de resposta do OpenAPI',
-    mutar: (m) => m.manifesto((x) => ({ ...x, camposSensiveis: ['status'] })),
+    // `total` e declarado em resposta e NUNCA projetado nem logado — isola o lado do CONTRATO.
+    // Com `status` (que o mapeador projeta) o caso acusava tambem `sensivel-em-saida`.
+    mutar: (m) => m.manifesto((x) => ({ ...x, camposSensiveis: ['total'] })),
   },
   {
     regra: 'sensivel-em-saida',
-    descricao: 'campo sensivel entra na projecao de saida',
-    mutar: (m) => m.manifesto((x) => ({ ...x, camposSensiveis: ['titulo'] })),
+    descricao: 'campo sensivel citado em chamada de log',
+    // Isola o lado do CODIGO pela metade de LOG: campo que nao existe em schema nenhum, entao
+    // `saida-sensivel` nao tem o que acusar. Todo campo PROJETADO esta, por construcao, declarado
+    // em resposta (`projecao-contrato` cobra isso), logo a projecao nunca isola esta regra.
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, camposSensiveis: ['segredoDeLog'] }));
+      m.escrever('api/src/vaza.ts',
+        'export function registrar(logger, segredoDeLog) {\n  logger.info("processado", segredoDeLog);\n}\n');
+    },
   },
   {
     regra: 'saida-crua',
@@ -368,7 +405,11 @@ export const CASOS = [
   {
     regra: 'gateway-credencial',
     descricao: 'modulo de dominio declarando credencial externa',
-    mutar: (m) => m.manifesto((x) => ({ ...x, envRequerido: [...x.envRequerido, 'MOLDE_OPENAI_API_KEY'] })),
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, envRequerido: [...x.envRequerido, 'MOLDE_OPENAI_API_KEY'] }));
+      // Sem isto o caso violava tambem `env-exemplo` — ruido do fixture, nao da credencial.
+      m.acrescentar('.env.example', 'MOLDE_OPENAI_API_KEY=\n');
+    },
   },
 
   // --- Escrita -------------------------------------------------------------------------------

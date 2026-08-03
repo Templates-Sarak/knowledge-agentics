@@ -6,7 +6,16 @@
  *
  * Duas afirmações, e o gate só está saudável se as duas valerem:
  *   1. o molde CONFORME produz ZERO erro — senão o gate acusa o que não deve;
- *   2. cada mutação de `casos.mjs` produz EXATAMENTE o id esperado — senão a regra não cobra nada.
+ *   2. cada mutação de `casos.mjs` produz o id esperado e **NENHUM id não declarado** — senão ou a
+ *      regra não cobra nada, ou outra regra passou a acusar onde não devia.
+ *
+ * A mutação que cria um segundo defeito de verdade declara o co-achado em `tambem: [...]`. Declarar
+ * é permitido; surpreender, não. Extra fora da lista REPROVA, e é assim que uma regra nova que
+ * comece a acusar em cima de caso alheio derruba o autoteste em vez de entrar calada.
+ *
+ * `tambem` é lido como TETO, não como obrigação: o co-achado pode não aparecer num binding cujo
+ * molde não tem a peça (o `web/` só existe em TS e JS). Exigir presença tornaria a lista falsa em
+ * dois dos três bindings.
  *
  * A segunda é a que importa mais: uma regra quebrada passa despercebida para sempre, porque
  * "verde" é indistinguível de "não verificou". Este runner torna as duas coisas distinguíveis.
@@ -117,12 +126,25 @@ function verificarCaso(binding, caso) {
     throw causa;
   }
   const ids = new Set(achados.map((a) => a.regra));
-  if (ids.has(caso.regra)) return { ok: true, rotulo };
-  return {
-    ok: false,
-    rotulo,
-    detalhe: ids.size === 0 ? 'nenhum achado' : `acusou: ${[...ids].join(', ')}`,
-  };
+  const permitidos = new Set([caso.regra, ...(caso.tambem ?? [])]);
+  const extras = [...ids].filter((id) => !permitidos.has(id));
+
+  if (!ids.has(caso.regra)) {
+    return {
+      ok: false,
+      rotulo,
+      detalhe: ids.size === 0 ? 'nenhum achado' : `acusou: ${[...ids].join(', ')}`,
+    };
+  }
+  if (extras.length > 0) {
+    return {
+      ok: false,
+      rotulo,
+      detalhe: `id NAO declarado: ${extras.join(', ')} — se o co-achado for legitimo, declare em `
+        + '`tambem: [...]`; se nao for, o caso ou a regra e que precisa de conserto',
+    };
+  }
+  return { ok: true, rotulo };
 }
 
 function principal() {

@@ -25,6 +25,17 @@ GERADOS = frozenset({
     "plugin/claude_instructions.txt",
 })
 
+# Um índice que se declara COMPLETO aceita ser cobrado na direção inversa: tudo que existe no disco
+# tem de estar nele. A declaração mora no índice, nunca aqui — índice curado que precise omitir algo
+# declara a omissão no próprio texto. Verificador com lista de exceção editorial vira dono de decisão
+# que não é dele e envelhece escondido.
+MARCA_DE_INVENTARIO = "**Inventário completo.**"
+
+# O que um índice completo tem de citar. `hooks/` fica de fora: hook não é roteado por nome, dispara
+# sozinho no evento do harness — indexá-lo seria cobrar presença de quem ninguém invoca.
+PASTAS_INDEXADAS = ("skills", "agents", "commands")
+PASTAS_PUBLICADAS = ("skills", "agents", "commands", "hooks")
+
 PREFIXOS_DE_AREA = (
     "padrao", "code", "test", "cyber", "git", "meta", "deploy", "site", "obs", "db",
     "otimizacao", "spec",
@@ -50,16 +61,26 @@ ALVOS = ("agents", "commands", "hooks", "skills", "specs/_estrutura_base",
          "specs/_estrutura_base_site")
 
 
-def artefatos_da_base(base_dir):
-    """Todo nome que a base publica: skill, agent, command e hook."""
+def _nomes_de(base_dir, pastas):
+    """Nome de cada entrada das pastas, sem extensão."""
     nomes = set()
-    for pasta in ("skills", "agents", "commands", "hooks"):
+    for pasta in pastas:
         caminho = os.path.join(base_dir, pasta)
         if not os.path.isdir(caminho):
             continue
         for entrada in os.listdir(caminho):
             nomes.add(os.path.splitext(entrada)[0])
     return nomes
+
+
+def artefatos_da_base(base_dir):
+    """Todo nome que a base publica: skill, agent, command e hook."""
+    return _nomes_de(base_dir, PASTAS_PUBLICADAS)
+
+
+def artefatos_indexaveis(base_dir):
+    """O que um índice completo tem de citar — sem os hooks."""
+    return _nomes_de(base_dir, PASTAS_INDEXADAS)
 
 
 def _caminhos_dos_alvos(base_dir):
@@ -175,18 +196,56 @@ def orfaos_do_arquivo(base_dir, rel, texto, universo):
     return achados
 
 
-def auditar_ponteiros(base_dir):
-    """Varre os alvos e devolve a lista de ponteiros órfãos.
-
-    Pula o próprio arquivo: ele DOCUMENTA o que detecta, citando nome e caminho fictícios
-    (`padrao-go`, `references/x.md`) como ilustração da regra. Auto-detecção é falso positivo, não
-    achado — o mesmo motivo pelo qual `audit_base.py` não varre a si mesmo em busca de segredo.
+def _e_este_arquivo(base_dir, rel):
+    """Este script DOCUMENTA o que detecta: cita nome e caminho fictícios (`padrao-go`,
+    `references/x.md`) e carrega a própria `MARCA_DE_INVENTARIO` como constante. Varrê-lo faz cada
+    checagem casar consigo mesma. Auto-detecção é falso positivo, não achado — o mesmo motivo pelo
+    qual `audit_base.py` não se varre em busca de segredo. Vale para as DUAS direções.
     """
-    universo = artefatos_da_base(base_dir)
-    eu_mesmo = os.path.abspath(__file__)
+    return os.path.abspath(os.path.join(base_dir, rel)) == os.path.abspath(__file__)
+
+
+def declara_inventario(texto):
+    """O arquivo DECLARA ser inventário completo?
+
+    A marca tem de **abrir a linha** (aceitando o `>` da citação markdown), não apenas aparecer no
+    texto: declaração é uma frase que o índice assume, enquanto menção é qualquer arquivo que fale
+    da checagem — a própria `SKILL.md` desta skill cita a marca ao documentá-la. Substring solta
+    transformaria toda documentação da regra num índice a cobrar.
+    """
+    for linha in texto.split("\n"):
+        if linha.lstrip("> \t").startswith(MARCA_DE_INVENTARIO):
+            return True
+    return False
+
+
+def ausentes_do_indice(rel, texto, indexaveis):
+    """Artefatos do disco que um índice completo não cita."""
+    return ["[%s] artefato existe e NAO esta indexado: %s" % (rel, nome)
+            for nome in sorted(indexaveis) if nome not in texto]
+
+
+def auditar_cobertura(base_dir):
+    """A direção inversa: o que existe no disco aparece nos índices que se declaram completos.
+
+    Só olha arquivo que carrega `MARCA_DE_INVENTARIO`. Índice sem a marca não é cobrado — e é o
+    próprio índice que decide, escrevendo (ou não) a declaração. Índice curado que não se declara
+    curado é indistinguível de índice furado, e essa distinção não cabe ao verificador fazer.
+    """
+    indexaveis = artefatos_indexaveis(base_dir)
     achados = []
     for rel, texto in arquivos_auditaveis(base_dir):
-        if os.path.abspath(os.path.join(base_dir, rel)) == eu_mesmo:
+        if declara_inventario(texto) and not _e_este_arquivo(base_dir, rel):
+            achados.extend(ausentes_do_indice(rel, texto, indexaveis))
+    return achados
+
+
+def auditar_ponteiros(base_dir):
+    """As duas direções: o que é citado existe, e o que existe é citado."""
+    universo = artefatos_da_base(base_dir)
+    achados = []
+    for rel, texto in arquivos_auditaveis(base_dir):
+        if _e_este_arquivo(base_dir, rel):
             continue
         achados.extend(orfaos_do_arquivo(base_dir, rel, texto, universo))
-    return achados
+    return achados + auditar_cobertura(base_dir)

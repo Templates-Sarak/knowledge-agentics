@@ -47,4 +47,11 @@ Trate **a base inteira** como um único bloco.
 
 ## Referências (Camada 3 — leia sob demanda)
 - `scripts/audit_base.py` — script de validação determinística de metadados, contratos e sintaxes no ecossistema Sarak.
-- `scripts/ponteiros.py` — checagem de ponteiro órfão (caminho citado e nome de artefato citado), chamada pelo `audit_base.py`. As isenções estão documentadas no topo do arquivo: ele resolve só o que consegue ancorar sem ambiguidade e **prefere falso negativo a falso positivo**, como a família heurística do gate (`04-regras.md` §7.2).
+- `scripts/ponteiros.py` — coerência de referência nas **duas direções**, chamada pelo `audit_base.py`:
+  **(a)** o que é citado existe — ponteiro órfão de caminho e de nome de artefato;
+  **(b)** o que existe é citado — todo artefato do disco (`skills/`, `agents/`, `commands/`) aparece nos
+  índices que **se declaram** inventário completo, pela marca `**Inventário completo.**` no próprio texto.
+  A decisão de ser completo ou curado é do índice, nunca do script — verificador com lista de exceção
+  editorial vira dono de decisão que não é dele. As isenções estão documentadas no topo do arquivo: ele
+  resolve só o que consegue ancorar sem ambiguidade e **prefere falso negativo a falso positivo**, como a
+  família heurística do gate (`04-regras.md` §7.2).

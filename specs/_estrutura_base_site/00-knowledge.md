@@ -42,6 +42,7 @@ justamente porque são mutativas ou sensíveis.
 | Preciso… | Use |
 |---|---|
 | Escrever/revisar qualquer código | `padrao-escrita` **+** a `padrao-<linguagem>` do alvo |
+| **Criar um módulo, ou estruturar um sistema em módulos** | `code-modulo` — detecta sozinha se é sistema novo ou módulo novo |
 | Fechar uma tarefa de escrita/refactor antes de dizer "pronto" | `code-auditoria-padrao` (gate obrigatório) |
 | Saber se um código legado está conforme | `code-diagnostico` (read-only) · em escala: `/code1-auditar` |
 | Adequar legado ao padrão sem mudar comportamento | `code-adequacao` · fluxo completo: `/code2-caracterizar` → `/code3-adequar` |
@@ -71,7 +72,11 @@ justamente porque são mutativas ou sensíveis.
 
 ---
 
-# 4. Catálogo de skills (49)
+# 4. Catálogo de skills
+
+> **Inventário completo.** Este índice lista **todas** as skills, agents e commands da base — não é
+> subconjunto curado. Ausência aqui é **defeito**, não decisão editorial, e a checagem inversa do
+> `ponteiros.py` (skill `meta-verificacao-base`) a cobra por máquina.
 
 ## 4.1 `padrao-` — normas de escrita (as únicas proativas)
 
@@ -91,6 +96,7 @@ justamente porque são mutativas ou sensíveis.
 
 | Skill | Quando |
 |---|---|
+| `code-modulo` | **Criar módulo ou sistema modular** conforme o template. Dois fluxos, detecção automática, HITL antes do scaffold, gate verde ao final. |
 | `code-auditoria-padrao` | **Gate de fechamento**: invoca os validadores de AST antes de declarar uma tarefa concluída. |
 | `code-diagnostico` | Diagnosticar conformidade de legado (read-only) e gerar backlog priorizado. |
 | `code-adequacao` | Adequar legado item por item, com rede de caracterização, **preservando comportamento**. |
