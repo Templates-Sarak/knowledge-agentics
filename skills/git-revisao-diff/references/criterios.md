@@ -13,9 +13,18 @@ Revise **só o que mudou** contra o `padrao-escrita`. Foco na mudança, não no 
 |---|---|
 | Python | `padrao-python/scripts/validate.py <arquivos>` |
 | TS/JS | `padrao-typescript/scripts/validate.mjs <arquivos>` |
-| Go | `padrao-go` → `golangci-lint` com `.golangci.yml` |
-| Java | `padrao-java` → Checkstyle com `checkstyle.xml` |
+| Go | `golangci-lint` — `funlen`, `nestif`, `gocyclo`, `errcheck` (o hook `padrao-limiares` já roda) |
+| Java | `checkstyle` — `MethodLength`, `NestedIfDepth`, `ParameterNumber`, `EmptyCatchBlock` (idem) |
+| **Qualquer outra** | **sem automação** — confira os limiares **lendo o diff**, e diga no relatório que a checagem foi humana |
 - Função ≤ **40** linhas · aninhamento ≤ **3** · ≤ **4** parâmetros · guard clauses.
+
+> **São dois eixos, não um.** A skill de **Nível 2** (idiomas documentados + validador Sarak próprio) existe
+> só para TS/JS e Python. O **hook `padrao-limiares`** é outra coisa: cobra os mesmos limiares em `.py`,
+> `.ts`/`.js`, `.go` e `.java`, e nunca dependeu das skills. Go e Java perderam o **idioma documentado**,
+> não a **checagem de limiar**.
+>
+> Linguagem sem nenhum dos dois (Rust, C#, PHP…) fica no Nível 0 do `padrao-escrita`, aplicado à mão — e aí
+> "não verifiquei por máquina" tem de aparecer no relatório, senão verde vira indistinguível de não-conferido.
 
 ## Conformidade & clareza (julgamento, no que mudou)
 - **SRP**: a mudança/função faz **uma** coisa? Nome precisa de "e"? → dividir.

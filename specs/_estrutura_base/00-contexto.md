@@ -59,8 +59,10 @@ inegociável ou o mapa de roteamento. Nunca por conta própria fora de uma plan.
 
 > **Como escrever:** o mínimo para orientar, com ponteiro para o detalhe. Inclua:
 > - **Stack**: linguagens + versões, frameworks, banco, runtime, gerenciador de pacotes.
-> - **Camada de padrão da linguagem**: qual skill `padrao-*` se aplica (`padrao-python`, `padrao-typescript`,
->   `padrao-go`, `padrao-java`).
+> - **Camada de padrão da linguagem**: qual skill `padrao-*` se aplica (`padrao-python`, `padrao-typescript`).
+>   Outra linguagem não tem camada de Nível 2, mas pode ter automação de limiar: o hook `padrao-limiares`
+>   cobre `.go` e `.java` além de `.py` e `.ts`/`.js`. Registre qual dos dois cobre a stack — e, se nenhum
+>   cobrir, que ali vale o Nível 0 do `padrao-escrita` conferido por leitura.
 > - **Mapa de módulos/domínios**: tabela `módulo → papel → responsabilidade`. Projeto com o template de
 >   módulos: os papéis são `dominio` / `gateway` / `conector`, e a fonte é o `modulo.json` de cada um — não
 >   transcreva, aponte.

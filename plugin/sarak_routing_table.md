@@ -54,8 +54,6 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **otimizacao-nivel-2**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/otimizacao-nivel-2/SKILL.md`
 - **otimizacao-nivel-3**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/otimizacao-nivel-3/SKILL.md`
 - **padrao-escrita**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/padrao-escrita/SKILL.md`
-- **padrao-go**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/padrao-go/SKILL.md`
-- **padrao-java**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/padrao-java/SKILL.md`
 - **padrao-python**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/padrao-python/SKILL.md`
 - **padrao-typescript**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/padrao-typescript/SKILL.md`
 - **site-criacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/site-criacao/SKILL.md`

@@ -5,7 +5,14 @@ Versão expandida do workflow de `SKILL.md`. Este documento detalha como orquest
 ## Passo 1: Identificar a Linguagem/Stack
 **Objetivo:** descobrir qual script validador deve ser acionado.
 1. Olhe para a extensão principal dos arquivos modificados.
-2. Identifique qual skill da família `padrao-[linguagem]` gerencia essa stack. (Ex: `padrao-typescript`, `padrao-python`, `padrao-go`).
+2. Identifique qual skill da família `padrao-[linguagem]` gerencia essa stack. Existem **duas**:
+   `padrao-typescript` (TS/JS) e `padrao-python`.
+3. **Stack fora dessas duas?** Não há motor de AST **Sarak** para ela — e isso não é o mesmo que estar sem
+   verificação: o hook `padrao-limiares` cobra os mesmos limiares em `.go` (`golangci-lint`) e `.java`
+   (`checkstyle`). Confira a saída dele antes de concluir qualquer coisa.
+4. **Nem skill nem hook cobrem a linguagem** (Rust, C#, PHP…)? Aí sim **pule o Passo 2** e vá à conferência
+   humana do Nível 0 (`padrao-escrita`). A norma continua valendo; o que não existe é a automação. Declare
+   isso na saída: uma auditoria que não rodou validador nenhum não pode ser reportada como "sem violações".
 
 ## Passo 2: Acionar o Motor de AST
 **Objetivo:** Rodar a ferramenta especializada que executa as validações estruturais.

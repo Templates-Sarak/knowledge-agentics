@@ -13,7 +13,8 @@ parte de **julgamento** (conformidade/clareza, feita pelo agente quando invocada
 
 > Complementar à `git-verificacao-commit` (aquela é o gate de **segredos**; esta é o gate de **qualidade**).
 > Revisão do **repo inteiro** é da `code-diagnostico`; aqui o foco é o **diff**. Os limiares precisos vêm dos
-> validadores de linguagem (`padrao-python`/`padrao-typescript`/`padrao-go`/`padrao-java`). Globais em `CLAUDE.md`.
+> validadores de linguagem (`padrao-python`/`padrao-typescript`) e do hook `padrao-limiares`, que cobra os
+> mesmos limiares também em `.go` e `.java`. Globais em `CLAUDE.md`.
 
 ## Quando usar
 - Ao revisar um diff/PR antes do commit, quando o gate `revisar_diff.py` bloquear, ou para checar o staged manualmente.
@@ -32,7 +33,7 @@ Trate **um diff por vez**. Critérios em `references/criterios.md`.
 
 1. **Pegar o diff e os arquivos alterados** — `git diff --cached` e `git diff --cached --name-only`.
 2. **Gate determinístico** — `python scripts/revisar_diff.py` (conflito de merge, breakpoint, log de debug, TODO, `.only`/`.skip`). Bloqueio → resolver antes.
-3. **Limiares por linguagem** — rode o validador da stack **nos arquivos alterados**: `padrao-python` (`validate.py`), `padrao-typescript` (`validate.mjs`), `padrao-go`/`padrao-java` (linter configurado). Função ≤40, aninhamento ≤3, ≤4 params.
+3. **Limiares por linguagem** — rode o validador da stack **nos arquivos alterados**: `padrao-python` (`validate.py`), `padrao-typescript` (`validate.mjs`); em `.go` e `.java` os mesmos limiares saem do hook `padrao-limiares` (`golangci-lint` / `checkstyle`). Função ≤40, aninhamento ≤3, ≤4 params. **Linguagem que nem a skill nem o hook cobrem** — confira lendo o diff e **registre no relatório que a checagem foi humana**. Silêncio aqui faz "não verificado" passar por "conforme".
 4. **Conformidade & clareza (julgamento)** — no que mudou: SRP (a mudança faz uma coisa?), nomes claros, sem hardcoded (config/.env), validação na borda, testes acompanham (norma §9), sem lógica em dumb component. Ver `references/criterios.md`.
 5. **Classificar & reportar** — achados com `arquivo:linha`, severidade e correção. **Bloqueio** (impede commit) × **aviso** (registrar).
 6. **(Se gate bloqueou)** — orientar a correção; nunca `--no-verify` para burlar achado real.

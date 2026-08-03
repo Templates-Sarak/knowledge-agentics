@@ -95,12 +95,12 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `padrao-escrita` | **Porta de entrada e dona do Nível 0**: clean code, limiares, zero hardcoded, segredos. Toda outra skill referencia esta. |
 | `padrao-python` | Código Python — idiomas + validador de limiares (`scripts/validate.py`). |
 | `padrao-typescript` | Código TS/JS — idiomas + validador via API do compilador TS. |
-| `padrao-go` | Código Go — idiomas + `golangci-lint` configurado. **Sem binding**: não se inicia projeto modular em Go. |
-| `padrao-java` | Código Java — idiomas + Checkstyle configurado. **Sem binding**: não se inicia projeto modular em Java. |
 
-> **Bindings do template de módulos:** `typescript`, `javascript`, `python`. Go e Java têm camada de escrita
-> (Nível 2) para escrever e auditar código existente, mas **não** têm molde de módulo — `code-modulo` e
-> `meta-iniciar-repositorio` não os aceitam.
+> **Bindings do template de módulos:** `typescript`, `javascript`, `python` — e a camada de **Nível 2**
+> (idioma documentado + validador Sarak) existe só para TS/JS e Python. **Isso não é o mesmo que
+> automação de limiar:** o hook `padrao-limiares` cobra função ≤40, aninhamento ≤3 e ≤4 parâmetros em
+> `.py`, `.ts`/`.js`, `.go` e `.java`, sem depender de skill nenhuma. Linguagem sem nenhum dos dois segue
+> o **Nível 0** do `padrao-escrita`, conferido por leitura — ausência de automação, não de norma.
 
 ## 4.2 `code-` — operações sobre código
 

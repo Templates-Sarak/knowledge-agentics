@@ -16,7 +16,7 @@ const path = require("path");
 const { readInput, allow, blockPostTool, warnPostTool, commandExists, loadConfig, langOf, run } = require("./_lib");
 
 // Gera uma config Checkstyle mínima a partir dos limiares (zero-hardcoded, self-contained).
-// Mesmos limites que a skill padrao-java (MethodLength/NestedIfDepth/ParameterNumber); aqui derivados do config.
+// Limiares do Nivel 0 (padrao-escrita) mapeados para MethodLength/NestedIfDepth/ParameterNumber; do config.
 function buildCheckstyleXml({ linhas, aninhamento, parametros }, noPrint, noSwallow) {
   const mods = [
     `<module name="MethodLength"><property name="max" value="${linhas}"/></module>`,

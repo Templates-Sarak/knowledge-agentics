@@ -26,7 +26,7 @@ em vez de reconfigurar tudo do zero. O destino é empacotar como **plugin** e im
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ 50 skills por área (§6) |
+| `skills/` | ✅ 48 skills por área (§6) |
 | `hooks/` | ✅ 4 garantias (segredos, padrão de escrita, dependências, cobertura) |
 | `commands/` | ✅ 12 (code/cyber/git auditar→adequar; deploy/site/meta) |
 | `agents/` | ✅ 5 (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
@@ -245,11 +245,11 @@ README é a fonte da verdade**. Toda funcionalidade nova nasce já neste padrão
 
 ## 6. Inventário atual
 
-### Skills (50, por área)
+### Skills (48, por área)
 
 | Prefixo | Skills |
 |---|---|
-| `padrao-` (5) | `padrao-escrita`, `padrao-python`, `padrao-typescript`, `padrao-go`, `padrao-java` |
+| `padrao-` (3) | `padrao-escrita`, `padrao-python`, `padrao-typescript` |
 | `code-` (7) | `code-adequacao`, `code-auditoria-padrao`, `code-diagnostico`, `code-documentacao`, `code-entrega`, `code-limpeza-projeto`, `code-modulo` |
 | `spec-` (4) | `spec-atualizar`, `spec-fundacao`, `spec-site-fundacao`, `spec-write` |
 | `test-` (6) | `test-api-contrato`, `test-carga`, `test-e2e`, `test-integracao-api`, `test-unitario`, `test-ws-realtime` |

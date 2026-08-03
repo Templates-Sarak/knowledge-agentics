@@ -55,7 +55,7 @@ vocabulário **fechado** — ele agrupa as skills no `ls` e revela o papel de ca
 
 | Prefixo | Área | Exemplos |
 |---|---|---|
-| `padrao-` | **Normas** que definem o padrão | `padrao-escrita`, `padrao-python`, `padrao-typescript`, `padrao-go`, `padrao-java` |
+| `padrao-` | **Normas** que definem o padrão | `padrao-escrita`, `padrao-python`, `padrao-typescript` |
 | `code-` | **Operações** sobre código que aplicam o padrão | `code-diagnostico`, `code-adequacao`, `code-entrega` |
 | `test-` | **Testes** | `test-unitario`, `test-e2e` |
 | `db-` | **Banco de dados** | `db-migrations` |

@@ -85,8 +85,8 @@ O próprio script roda `validar.mjs --todos` ao final. Rode também o comando co
 - **NUNCA** exclua arquivo pré-existente. O script só acrescenta ou mescla — e aborta quando não consegue.
 - **NUNCA** use `--forcar` sem autorização explícita: ele sobrescreve `package.json`/`pyproject.toml`.
 - **NUNCA** commite nem crie remoto por conta própria — é irreversível e externo. Isso é `git-commit-inicial`.
-- **NÃO** aceite `go` ou `java` como binding: eles têm camada de escrita (`padrao-go`, `padrao-java`) para
-  código existente, mas **não têm molde de módulo**. Sistema modular nasce em `typescript`, `javascript` ou `python`.
+- **NÃO** aceite `go` ou `java` como binding: **não existe molde de módulo** para eles — nem doutrina, nem
+  gate, nem camada de escrita. Sistema modular nasce em `typescript`, `javascript` ou `python`.
 - **NÃO** crie módulo copiando pasta à mão — sempre pelo `criar-modulo` (é o que o script faz).
 - **NÃO encerre com o gate vermelho.**
 

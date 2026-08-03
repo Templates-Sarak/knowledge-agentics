@@ -80,8 +80,12 @@ justamente porque são mutativas ou sensíveis.
 | `padrao-escrita` | **Fonte da verdade** universal: clean code, limiares, zero hardcoded, organização microservice-ready. Toda outra skill referencia esta. |
 | `padrao-python` | Código Python — idiomas + validador de limiares (`scripts/validate.py`). |
 | `padrao-typescript` | Código TS/JS — idiomas + validador via API do compilador TS. |
-| `padrao-go` | Código Go — idiomas + `golangci-lint` configurado. |
-| `padrao-java` | Código Java — idiomas + Checkstyle configurado. |
+
+> **Bindings do template de módulos:** `typescript`, `javascript`, `python` — e a camada de **Nível 2**
+> (idioma documentado + validador Sarak) existe só para TS/JS e Python. **Isso não é o mesmo que
+> automação de limiar:** o hook `padrao-limiares` cobra função ≤40, aninhamento ≤3 e ≤4 parâmetros em
+> `.py`, `.ts`/`.js`, `.go` e `.java`, sem depender de skill nenhuma. Linguagem sem nenhum dos dois segue
+> o **Nível 0** do `padrao-escrita`, conferido por leitura — ausência de automação, não de norma.
 
 ## 4.2 `code-` — operações sobre código
 

@@ -19,7 +19,7 @@ Cada regra do ecossistema tem **um** dono. Ninguém copia ninguém; quem não é
 |---|---|---|---|
 | **0** | escrita: SRP, limiares, zero hardcoded, segredos, erro, log, teste, nomes | **esta skill** (§ abaixo) | aqui |
 | **1** | arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento | **catálogo de regras do template** | `specs/_estrutura_modulos/doutrina/04-regras.md` (vira `specs/arquitetura/04-regras.md` no projeto) |
-| **2** | idiomas e linter de cada linguagem | `padrao-typescript` · `padrao-python` · `padrao-go` · `padrao-java` | skills irmãs |
+| **2** | idiomas e linter de cada linguagem | `padrao-typescript` · `padrao-python` | skills irmãs |
 
 **O Nível 1 tem verificador executável.** O gate do template (`ferramentas/gate/validar.mjs`) cobra as ~40
 regras de arquitetura mecanicamente, e **repete** os quatro limiares de escrita do Nível 0 porque viaja com o
@@ -51,6 +51,16 @@ eles é **muda por ambiente?**, não "é sensível?":
 **Scripts** — uma responsabilidade por script; parametrizados por args/config; I/O claro (texto ou JSON).
 
 **Erros** — tratados explicitamente (**nunca engolir exceção**); falhe cedo com mensagem acionável.
+- **Ao propagar, preserve a causa** — embrulhe o erro original em vez de substituí-lo (`%w` em Go,
+  `throw new X("...", e)` em Java, `raise ... from e` em Python). Erro re-lançado sem a causa apaga o rastro
+  no exato ponto em que ele seria útil.
+- **Exceção não é fluxo de controle** — caminho esperado se resolve com retorno e condição; exceção (e
+  `panic`) é para invariante quebrada.
+
+**Dependências injetadas** — o que uma unidade precisa **entra por parâmetro** (construtor, argumento,
+campo recebido); nunca é construído lá dentro nem resolvido por container em campo. Dependência escondida
+não aparece na assinatura, impede imutabilidade e torna a unidade intestável sem subir o mundo inteiro.
+Corolário: **sem estado global mutável** — dado compartilhado que muda é dependência que ninguém declarou.
 
 **Nomes** — descritivos e sem abreviação obscura; o nome revela a intenção.
 
@@ -72,7 +82,7 @@ eles é **muda por ambiente?**, não "é sensível?":
 | Onde | O quê |
 |---|---|
 | `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~40 regras, cada uma com id e verificador |
-| `doutrina/00-arquitetura.md` · `01-modulo.md` · `02-contrato-e-dados.md` · `03-operacao.md` | por que a regra existe e como trabalhar dentro dela |
+| `specs/_estrutura_modulos/doutrina/` — `00-arquitetura.md` · `01-modulo.md` · `02-contrato-e-dados.md` · `03-operacao.md` | por que a regra existe e como trabalhar dentro dela |
 | `ferramentas/gate/validar.mjs` | **o verificador** — a regra é cobrada por máquina, não por memória |
 
 No projeto instanciado, essas leis vivem em `specs/arquitetura/`; as decisões, em `specs/adr/`.
@@ -92,7 +102,10 @@ que reprovam no gate e que o gate não conserta sozinho. A porta é a skill **`c
 - **NUNCA** versione segredos — `.env` no `.gitignore`; só `.env.example` é commitado.
 - **NUNCA** use default de infraestrutura (`env['X'] ?? 'http://localhost'`) — falta de config derruba o boot.
 - **NÃO** crie função > 40 linhas, com > 3 níveis de aninhamento ou > 4 parâmetros — refatore.
-- **NUNCA** engula exceção (`catch {}`, `except: pass`) — trate, traduza ou deixe subir.
+- **NUNCA** engula exceção (`catch {}`, `except: pass`) — trate, traduza ou deixe subir; ao propagar, embrulhe
+  o erro original em vez de substituí-lo.
+- **NÃO** construa dependência dentro da unidade que a usa, nem a resolva por container em campo — ela entra
+  por parâmetro. **NÃO** use estado global mutável.
 - **NÃO** dê a um script mais de uma responsabilidade.
 - **NÃO** entregue funcionalidade nova sem testes (caminhos críticos cobertos) na mesma entrega.
 - **NUNCA** concatene SQL nem confie em input externo — valide na borda pública e use queries parametrizadas.
@@ -108,7 +121,8 @@ que reprovam no gate e que o gate não conserta sozinho. A porta é a skill **`c
 - [ ] `.env` no `.gitignore`, `.env.example` presente, variáveis prefixadas pelo módulo dono?
 - [ ] Nenhum default de infraestrutura embutido — falta de config derruba o boot?
 - [ ] Cada função ≤ 40 linhas, ≤ 3 níveis de aninhamento, ≤ 4 parâmetros, com guard clauses?
-- [ ] Nenhuma exceção engolida; falha cedo com mensagem acionável?
+- [ ] Nenhuma exceção engolida; falha cedo com mensagem acionável; propagação preserva a causa?
+- [ ] Toda dependência entra por parâmetro; nenhum estado global mutável?
 - [ ] Funcionalidade nova acompanha testes (caminhos críticos), em `tests/` do módulo?
 - [ ] Input externo validado na borda pública, com allowlist, e queries parametrizadas?
 - [ ] Logger estruturado (sem `print`/`console.log`), sem segredo em log?
@@ -119,7 +133,10 @@ que reprovam no gate e que o gate não conserta sozinho. A porta é a skill **`c
 - [ ] `node ferramentas/gate/validar.mjs --todos` verde (inclui `import-lateral` e `consome-ciclo`)?
 - [ ] Projeto **sem** o template de módulos? Então o Nível 1 não se aplica — só a lista acima vale.
 
-**Nível 2 — o validador da linguagem:** `padrao-typescript` · `padrao-python` · `padrao-go` · `padrao-java`.
+**Nível 2 — o idioma da linguagem:** `padrao-typescript` · `padrao-python`. São as duas com idioma documentado
+e validador Sarak próprio. **Não confunda com a automação de limiar:** o hook `padrao-limiares` cobra os
+quatro limiares acima em `.py`, `.ts`/`.js`, `.go` e `.java`, independente de haver skill. Linguagem que não
+tem nenhum dos dois fica no Nível 0 conferido por pessoa — a lista acima é a régua.
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/PADRAO-ORGANIZACAO.md` — **mapa** do Nível 1: qual lei do template responde a cada assunto.
