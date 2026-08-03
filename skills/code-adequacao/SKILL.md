@@ -10,9 +10,10 @@ description: Adequa código legado ao padrao-escrita de forma segura e increment
 Pega código fora do padrão e o traz à conformidade com `padrao-escrita`, **um item por vez** e com
 rede de segurança — porque legado geralmente não tem testes e refatorar às cegas quebra comportamento.
 
-> O padrão-alvo vive em `padrao-escrita` (`SKILL.md` + `references/PADRAO-ORGANIZACAO.md`) e nos
-> inegociáveis do `CLAUDE.md`. Esta skill **aplica** esse padrão — não o redefine. O diagnóstico/backlog
-> vem da `code-diagnostico`.
+> O padrão-alvo tem dois donos: **Nível 0** (escrita) em `padrao-escrita`, e **Nível 1** (arquitetura de
+> módulos) no catálogo `specs/_estrutura_modulos/doutrina/04-regras.md` — mapa de qual lei responde a quê em
+> `padrao-escrita/references/PADRAO-ORGANIZACAO.md`. Mais os inegociáveis do `CLAUDE.md`. Esta skill
+> **aplica** esse padrão — não o redefine. O diagnóstico/backlog vem da `code-diagnostico`.
 
 ## Quando usar
 - Sob demanda, para adequar um módulo/arquivo legado (avulso ou vindo do backlog do diagnóstico).

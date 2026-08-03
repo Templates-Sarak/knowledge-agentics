@@ -47,3 +47,4 @@ Trate **a base inteira** como um único bloco.
 
 ## Referências (Camada 3 — leia sob demanda)
 - `scripts/audit_base.py` — script de validação determinística de metadados, contratos e sintaxes no ecossistema Sarak.
+- `scripts/ponteiros.py` — checagem de ponteiro órfão (caminho citado e nome de artefato citado), chamada pelo `audit_base.py`. As isenções estão documentadas no topo do arquivo: ele resolve só o que consegue ancorar sem ambiguidade e **prefere falso negativo a falso positivo**, como a família heurística do gate (`04-regras.md` §7.2).

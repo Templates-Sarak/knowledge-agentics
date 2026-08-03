@@ -59,7 +59,7 @@ description: [O QUE faz, 1 frase] + [QUANDO/gatilhos: "Use ao…"]. [SE sob dema
 
 [1–2 linhas: o que a skill faz e o que a diferencia.]
 
-> Padrões globais em `CLAUDE.md`; estrutura/contratos em `PADRAO-ORGANIZACAO.md`. Referencie, não duplique.
+> Padrões globais em `CLAUDE.md`; estrutura/contratos de módulo no catálogo `04-regras.md` do template. Referencie, não duplique.
 
 ## Quando usar
 - [Situação que dispara o uso]

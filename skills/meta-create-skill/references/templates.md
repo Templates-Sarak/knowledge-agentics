@@ -18,7 +18,7 @@ description: [O QUE faz, em 1 frase] + [QUANDO usar / gatilhos: "Use ao…", "ao
 
 [1–2 linhas: o que a skill faz e o que a diferencia.]
 
-> Padrões globais em `CLAUDE.md`; estrutura/contratos em `PADRAO-ORGANIZACAO.md`. Referencie, não duplique.
+> Padrões globais em `CLAUDE.md`; estrutura/contratos de módulo no catálogo `04-regras.md` do template. Referencie, não duplique.
 
 ## Quando usar
 - [Situação específica que dispara o uso]

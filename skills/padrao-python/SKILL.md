@@ -23,7 +23,7 @@ pelo futuro hook de conformidade.
 - **Arquivos** em `snake_case.py`; **classes** em `PascalCase`; **funções/variáveis** em `snake_case`;
   **constantes** em `UPPER_CASE` (constante de número/string é aceitável; segredo/URL não — vão para `.env`/`config.json`).
 - **Type hints** nas assinaturas públicas (`api/`/contratos) e idealmente em tudo; validar com `mypy`.
-- **Casing interno snake_case** convive com o **contrato camelCase** — a conversão é na borda de serialização (ver `PADRAO-ORGANIZACAO.md`).
+- **Casing interno snake_case** convive com o **contrato camelCase** — a conversão é explícita no mapeador da borda (`api/src/mapeadores.py`); a lei é o `02-contrato-e-dados.md` §3.
 - **Tooling complementar:** `ruff` (lint/format) e `mypy` (tipos) são recomendados, mas o **validador próprio** é a fonte de verdade dos nossos limiares (eles cobrem mais regras genéricas; o nosso garante exatamente o padrão Sarak).
 
 ## Validador — `scripts/validate.py`

@@ -39,8 +39,9 @@ nunca por import nem por tabela alheia. Anatomia: `specs/arquitetura/01-modulo.m
 | `frontend/[modulo]` | [o que faz] |
 
 ## API
-Contratos REST em `/api/v1/` (plural kebab-case, payload camelCase). Ex.: `GET /api/v1/[recursos]`.
-Detalhe por módulo em `backend/[modulo]/api/` (ou `docs/`).
+Contratos REST em `/api/v1/<modulo>`, segmentos kebab-case **sem verbo**, payload camelCase — cobrado por
+`rota-nomenclatura`. Recurso no plural é convenção, sem verificador (§3.1). Ex.: `GET /api/v1/[modulo]/[recursos]`.
+O contrato de cada módulo é `modulos/[modulo]/contrato/openapi.yaml` (ou `docs/`, para a visão de conjunto).
 
 ## Testes
 ```bash

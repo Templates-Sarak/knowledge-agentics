@@ -23,7 +23,7 @@ Terceiro degrau: quando código (Nível 1) e concessões (Nível 2) não bastam,
 ## Workflow
 Trate **um projeto por vez**.
 
-1. **Medir baseline** — `references/diagnostico-performance.md`; foque em **TTFB** (latência de origem), entrega de ativos e latência de DB. Registre os números e o que Níveis 1–2 já entregaram.
+1. **Medir baseline** — `references/diagnostico-performance.md` (mora em `otimizacao-nivel-1`); foque em **TTFB** (latência de origem), entrega de ativos e latência de DB. Registre os números e o que Níveis 1–2 já entregaram.
 2. **Mapear gargalos de origem** — onde o servidor central atrasa: ativos sem CDN, APIs com TTFB alto, DB central distante do usuário.
 3. **Selecionar serviços** — escolha do catálogo (`references/fornecedores.md`) conforme o gargalo: **front** — Image CDN (mídia), Edge/Middleware (lógica), ISR/edge render (HTML); **back** — **cache gerenciado** (Redis/Upstash), **read replicas** (escalar leitura), **DB na borda** (dados globais), **fila/worker** (offload async), **autoscaling**.
 4. **HITL de faturamento** — apresente a proposta de `assets/plano_investimento.md` (serviço · propósito · **custo estimado/mês** · ganho). → "⚠️ Confirma o investimento?". **Aguarde.**

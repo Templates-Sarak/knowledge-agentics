@@ -9,7 +9,8 @@ Skill-base de **meta-criação**: define como toda skill Sarak é construída �
 a `description` que dispara a skill, regras e validação. É a fonte de verdade do padrão.
 
 > Padrões globais de código (clean code, zero hardcoded, segredos no `.env`) vivem no `CLAUDE.md`.
-> Estrutura/nomenclatura/contratos vivem em `PADRAO-ORGANIZACAO.md`. **Referencie, nunca duplique.**
+> Estrutura/nomenclatura/contratos de **módulo** vivem no catálogo `04-regras.md` do template (mapa de qual
+> lei responde a quê em `padrao-escrita/references/PADRAO-ORGANIZACAO.md`). **Referencie, nunca duplique.**
 
 ## Quando usar
 - Ao criar uma skill nova do zero.

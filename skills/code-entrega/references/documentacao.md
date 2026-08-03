@@ -2,8 +2,8 @@
 
 Material do **pilar documentação** da entrega. A norma espelha o padrão modular: documentação é uma
 **fatia que viaja com o que descreve**. Não redefine a doc de contrato — essa já é norma em `padrao-escrita`
-("o `api/` de cada módulo é documentado") e em `PADRAO-ORGANIZACAO.md` (§8 + pasta `docs/`); aqui ela é
-formalizada junto com as demais camadas.
+("o `api/` de cada módulo é documentado") e no `04-regras.md` §4.5, que a cobra por máquina. A convenção da
+pasta `docs/` é desta skill — está no §4 abaixo; aqui a doc é formalizada junto com as demais camadas.
 
 ## Princípios
 - **Co-localizada** — a doc mora junto do que documenta (README do módulo no módulo; doc de contrato no `api/`). Viaja com o módulo → microservice-ready.

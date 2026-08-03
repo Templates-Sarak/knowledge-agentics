@@ -64,7 +64,7 @@ seguindo as melhores práticas. Garanta qualidade e escalabilidade.
 | `description` seria "Melhorar Código" | Título, não gatilho: falta o quando/palavras-gatilho. |
 | "Analise o código" | Qual ferramenta? Quais critérios? O que procurar? Não acionável. |
 | "Faça melhorias onde necessário" | "Onde necessário" é subjetivo — cada agente interpreta diferente. |
-| "Dentro dos padrões" | Que padrões? Sem referência concreta a `CLAUDE.md`/`PADRAO-ORGANIZACAO.md`. |
+| "Dentro dos padrões" | Que padrões? Sem referência concreta a `CLAUDE.md`, `padrao-escrita` ou `04-regras.md`. |
 | Sem regras nem checklist | O agente não sabe o que evitar nem quando a tarefa terminou. |
 | Sem delimitação de escopo | O agente pode fazer qualquer coisa em nome de "melhorar". |
 

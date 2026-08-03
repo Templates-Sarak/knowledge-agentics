@@ -3,6 +3,10 @@ import re
 import json
 import subprocess
 import argparse
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from ponteiros import auditar_ponteiros  # noqa: E402
 
 def get_args():
     parser = argparse.ArgumentParser(description="Auditoria Sarak X-Skills Base")
@@ -15,6 +19,7 @@ def audit_base(base_dir):
         "commands": [],
         "hooks": [],
         "skills": [],
+        "ponteiros": [],
         "vazamentos": []
     }
     
@@ -76,13 +81,20 @@ def audit_base(base_dir):
                         if ": " in line[12:].strip():
                             report["skills"].append(f"[{skill_folder}] Armadilha YAML na description.")
 
-    # 5. Vazamentos
+    # 5. Ponteiros orfaos (caminho citado e nome de artefato citado) — ver ponteiros.py
+    report["ponteiros"] = auditar_ponteiros(base_dir)
+
+    # 6. Vazamentos
     patterns = {
         "AWS_AKIA": r"AKIA[0-9A-Z]{16}",
         "PrivateKey": r"-----BEGIN .* PRIVATE KEY-----",
         "GenericSecret": r"(?i)(api_key|secret|password|token)[\"']?\s*[:=]\s*[\"'][a-zA-Z0-9\-_]{16,}[\"']"
     }
     
+    # Este arquivo DEFINE os padroes acima — varre-lo faz cada padrao casar consigo mesmo e
+    # reportar um vazamento que nao existe. Auto-deteccao e falso positivo, nao achado.
+    eu_mesmo = os.path.abspath(__file__)
+
     for root, _, files in os.walk(base_dir):
         if ".git" in root or "node_modules" in root or ".venv" in root or "mcp-servers" in root:
             continue
@@ -90,6 +102,8 @@ def audit_base(base_dir):
             if not file.endswith((".md", ".js", ".json", ".py")):
                 continue
             path = os.path.join(root, file)
+            if os.path.abspath(path) == eu_mesmo:
+                continue
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     content = f.read()
