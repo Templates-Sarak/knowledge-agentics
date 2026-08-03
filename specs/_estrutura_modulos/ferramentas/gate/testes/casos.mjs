@@ -207,6 +207,35 @@ export const CASOS = [
     ),
   },
   {
+    regra: 'contrato',
+    descricao: 'spec valida em flow style, que o leitor de bloco nao le',
+    // OpenAPI VALIDO: declara servers, /health, /meta e /resumo. So que em flow style. O gate tem
+    // de acusar UMA vez que nao consegue ler — nunca afirmar que as rotas faltam, que e falso.
+    mutar: (m) => m.escrever(
+      'contrato/openapi.yaml',
+      [
+        'openapi: 3.1.0',
+        'servers: [{url: /api/v1/<modulo>}]',
+        'paths: {"/health": {get: {responses: {"200": {description: ok}}}},'
+          + ' "/meta": {get: {responses: {"200": {description: ok}}}},'
+          + ' "/resumo": {get: {responses: {"200": {description: ok}}}}}',
+        '',
+      ].join('\n'),
+    ),
+  },
+  {
+    regra: 'contrato',
+    descricao: 'servers em bloco com description antes de url',
+    // JA esta em bloco: a causa nao e flow style, e o leitor mesmo assim nao acha a URL. Prova que
+    // a deteccao e agnostica de causa e que a mensagem nomeia a secao certa — mandar "reescreva em
+    // bloco" para quem ja esta em bloco deixaria o autor sem saida.
+    mutar: (m) => m.substituir(
+      'contrato/openapi.yaml',
+      'servers:\n  - url: /api/v1/<modulo>',
+      'servers:\n  - description: local\n    url: /api/v1/<modulo>',
+    ),
+  },
+  {
     regra: 'rota-nomenclatura',
     descricao: 'servers[0].url diverge do rotaBase do manifesto',
     mutar: (m) => m.substituir('contrato/openapi.yaml', 'url: /api/v1/<modulo>', 'url: /api/v1/outro-lugar'),

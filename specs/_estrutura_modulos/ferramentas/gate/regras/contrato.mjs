@@ -8,9 +8,36 @@
  *
  * A leitura da spec mora em `../spec.mjs`, compartilhada com `consome-contrato` (Isolamento).
  */
-import { normalizar, rotasDaSpec, servidorDaSpec, specDe } from '../spec.mjs';
+import { leiturasFalhas, normalizar, rotasDaSpec, servidorDaSpec, specDe } from '../spec.mjs';
 
 const OBRIGATORIAS = ['/health', '/meta', '/resumo'];
+
+/**
+ * A forma que o leitor de bloco aceita, por seção. É o que falta numa mensagem que só diz
+ * "não verifiquei": o autor precisa saber o que editar, e citar só *flow style* manda quem já
+ * está em bloco refazer o que já fez.
+ */
+const FORMA_ACEITA = {
+  paths: 'em "paths:", cada rota e uma chave de recuo 2 na propria linha ("  /registros:") e cada '
+    + 'metodo, uma chave de recuo 4 ("    get:")',
+  servers: 'em "servers:", a URL vem na PROPRIA linha do traco ("  - url: /api/v1/<modulo>") — '
+    + '"url:" numa linha seguinte, depois de "description:", nao e lida',
+};
+
+/**
+ * A mensagem de spec ilegível, e o único lugar que a escreve. Dona: a regra `contrato`.
+ *
+ * Nomeia a seção que falhou, e não uma causa: a detecção é agnóstica de propósito, e a mensagem
+ * tem de ser fiel a isso. *Flow style* entra como a causa mais provável, não como a única —
+ * `url:` fora da linha do traço em `servers:` chega aqui pelo mesmo caminho, e o autor que
+ * lesse "reescreva em bloco" ficaria sem saída, exatamente o que esta mensagem existe para evitar.
+ */
+function mensagemIlegivel(falhas) {
+  return `contrato/openapi.yaml presente mas ILEGIVEL para o gate: a leitura de "${falhas.join(':" e "')}:" `
+    + 'nao extraiu nada. O gate le YAML em BLOCO, sem dependencia externa — e o que permite ele viajar '
+    + 'com o modulo extraido e rodar sem instalar nada. A causa mais comum e flow style ({...} numa linha '
+    + `so), mas nao e a unica. O leitor aceita assim: ${falhas.map((f) => FORMA_ACEITA[f]).join('; ')}.`;
+}
 
 /**
  * Verbos que não podem ser SEGMENTO de path — a ação é o método HTTP (02-contrato-e-dados §2).
@@ -201,6 +228,11 @@ export default [
     verificar(ctx) {
       const spec = specDe(ctx);
       if (spec === null) return ['contrato/openapi.yaml ausente'];
+      // DONA de "spec ilegivel": esta regra ja e a dona de o contrato existir e servir de fonte.
+      // Ilegivel e da mesma classe que ausente — o arquivo esta la e nao pode ser usado.
+      // UMA mensagem mesmo quando as duas leituras falham: e um defeito so, com um conserto so.
+      const falhas = leiturasFalhas(spec.conteudo);
+      if (falhas.length > 0) return [mensagemIlegivel(falhas)];
       return OBRIGATORIAS
         .filter((rota) => !spec.conteudo.includes(`${rota}:`))
         .map((rota) => `contrato/openapi.yaml nao declara a rota obrigatoria "${rota}"`);
@@ -212,18 +244,16 @@ export default [
     escopo: 'modulo',
     verificar(ctx) {
       const spec = specDe(ctx);
-      // Spec ausente e do `contrato`; acusar aqui tambem so duplica o mesmo defeito.
+      // Spec ausente OU ilegivel e do `contrato`; acusar aqui tambem so duplica o mesmo defeito.
       if (spec === null) return [];
 
-      const achados = conferirServidor(ctx, spec.conteudo);
-      const rotas = [...rotasDaSpec(spec.conteudo)];
-
-      // Spec presente e ilegivel nao e conformidade — e cegueira. Dizer isso em voz alta e o que
-      // impede a regra de "passar" num contrato que o leitor linha-a-linha nao sabe ler.
-      if (rotas.length === 0) {
-        return achados.concat('nao foi possivel extrair path do contrato/openapi.yaml — esta regra NAO verificou nada neste modulo');
-      }
-      return achados.concat(rotas.flatMap(conferirSegmentos));
+      // Silencio SEPARADO por secao: `servers:` ilegivel nao cega a checagem de nome das rotas,
+      // que so depende de `paths:`. Silenciar as duas juntas jogaria fora verificacao que da para
+      // fazer — e o gate so deve deixar de verificar o que realmente nao conseguiu ler.
+      const falhas = leiturasFalhas(spec.conteudo);
+      const achados = falhas.includes('servers') ? [] : conferirServidor(ctx, spec.conteudo);
+      if (falhas.includes('paths')) return achados;
+      return achados.concat([...rotasDaSpec(spec.conteudo)].flatMap(conferirSegmentos));
     },
   },
   {
@@ -232,7 +262,10 @@ export default [
     escopo: 'modulo',
     verificar(ctx) {
       const spec = specDe(ctx);
-      if (spec === null) return [];
+      // Spec ausente OU com `paths:` ilegivel e do `contrato`. Sem este silencio, uma spec que o
+      // leitor nao alcanca faria esta regra AFIRMAR que toda rota do codigo falta no contrato —
+      // falsidade, nao cegueira. So `paths:` importa aqui: `servers:` nao entra na comparacao.
+      if (spec === null || leiturasFalhas(spec.conteudo).includes('paths')) return [];
       const naSpec = new Set([...rotasDaSpec(spec.conteudo)].map(normalizar));
       const noCodigo = rotasDoCodigo(ctx);
 
@@ -261,8 +294,10 @@ export default [
     escopo: 'modulo',
     verificar(ctx) {
       const spec = specDe(ctx);
-      // Spec ausente e do `contrato`; acusar aqui tambem so duplica o mesmo defeito.
-      if (spec === null) return [];
+      // Spec ausente OU com `paths:` ilegivel e do `contrato`; acusar aqui so duplica o defeito.
+      // Sem isto, spec que o leitor nao alcanca zera `declaradas` e a regra acusaria TODO campo
+      // projetado. Os schemas de resposta vivem dentro de `paths:`; `servers:` nao afeta isto.
+      if (spec === null || leiturasFalhas(spec.conteudo).includes('paths')) return [];
 
       const projetadas = chavesDaProjecao(ctx);
       const temMapeador = ctx.codigo.some((a) => !a.eTeste && /mapeador/i.test(a.rel));

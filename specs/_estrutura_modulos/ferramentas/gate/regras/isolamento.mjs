@@ -5,7 +5,7 @@
  *
  * É a família que sustenta a extraibilidade. Se ela passa, o módulo sai da pasta sem refactor.
  */
-import { normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
+import { leiturasFalhas, normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
 
 const SDKS_FORNECEDOR = [
   '@supabase/', 'pg', 'mysql', 'mysql2', 'aws-sdk', '@aws-sdk/', 'firebase',
@@ -196,6 +196,12 @@ function conferirConsumo(dono, entrada) {
 
   const spec = specDe(dono);
   if (spec === null) return `consome ${alvo}: o dono nao tem contrato/openapi.yaml — NAO foi possivel verificar`;
+
+  // `paths:` do DONO ilegivel: o defeito e do dono, e o `contrato` DELE ja o reporta (esta regra
+  // e global, entao o dono esta sempre no conjunto analisado). Acusar aqui mandaria o autor do
+  // CONSUMIDOR consertar um arquivo que nao e dele — o conserto errado, para a pessoa errada.
+  // So `paths:` importa: o contrato consumido e a rota, e o `servers:` do dono nao entra nela.
+  if (leiturasFalhas(spec.conteudo).includes('paths')) return null;
 
   // Forma garantida pelo schema (`^(GET|POST|PATCH|PUT|DELETE) /`); manifesto torto e do
   // `schema-manifesto`, nao desta regra — nao acusamos duas vezes o mesmo defeito.

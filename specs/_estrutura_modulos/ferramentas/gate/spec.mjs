@@ -66,6 +66,28 @@ export function servidorDaSpec(yaml) {
   return null;
 }
 
+/**
+ * Quais leituras a spec declara e o leitor de bloco NÃO conseguiu fazer: `['paths']`,
+ * `['servers']`, as duas, ou `[]` quando está tudo legível.
+ *
+ * O critério é verificável, não adivinhado: a seção existe no texto e a extração devolveu nada.
+ * Não tentamos reconhecer *flow style* por sintaxe — tentamos ler, e concluímos pelo resultado.
+ * Assim qualquer forma que o leitor não alcance cai aqui, não só a que previmos.
+ *
+ * Devolve QUAIS, e não um booleano, por duas razões: a mensagem precisa nomear a seção certa
+ * (dizer "reescreva em bloco" para quem já está em bloco deixa o autor sem saída), e a regra que
+ * só depende de `paths:` pode continuar verificando quando o ilegível é o `servers:`.
+ *
+ * Existe para que as regras parem de afirmar AUSÊNCIA quando a verdade é "não consegui ler".
+ * Afirmar falsidade é pior que declarar cegueira: manda o autor apagar o que está certo.
+ */
+export function leiturasFalhas(yaml) {
+  const falhas = [];
+  if (/^\s*paths\s*:/m.test(yaml) && operacoesDaSpec(yaml).size === 0) falhas.push('paths');
+  if (/^\s*servers\s*:/m.test(yaml) && servidorDaSpec(yaml) === null) falhas.push('servers');
+  return falhas;
+}
+
 /** As linhas do bloco de uma chave de recuo zero — dela até a próxima chave de recuo zero. */
 function dentroDe(yaml, padraoChave) {
   const linhas = [];

@@ -245,18 +245,30 @@ puro e chamável de qualquer lugar — inclusive de dentro de um hook.
 
 ## 7.2 Precisão dos verificadores heurísticos
 
-Sete regras leem estrutura de bloco, não AST. São **conservadoras**: na dúvida, não acusam. Onde o gate e o
-linter discordarem, o linter tem razão.
+São **duas famílias com política oposta na dúvida**, e saber qual é qual importa mais que a tabela.
+
+**Heurística sobre código** — `limiar-funcao`, `limiar-aninhamento`, `limiar-parametros`, `hardcode-numero`,
+`sensivel-em-saida`. Lê estrutura de bloco, não AST, e é **conservadora**: na dúvida, **não acusa**. Admite
+falso negativo de propósito; falso positivo, não. Onde o gate e o linter discordarem, o linter tem razão.
+
+**Extração de texto de spec e de mapeador** — `contrato`, `contrato-sincronizado`, `rota-nomenclatura`,
+`consome-contrato`, `projecao-contrato`. Faz o **oposto**: quando não consegue ler, **declara e reprova**.
+Calar ali seria indistinguível de conformidade, que é a falha que este §7 inteiro existe para evitar.
+
+A contrapartida, e ela é dura: **"não consegui ler" nunca pode virar "não existe"**. Afirmar ausência do que
+não se leu manda o autor apagar o que está certo. Por isso `contrato/openapi.yaml` ilegível tem **um dono só**,
+a regra `contrato`, e as outras quatro silenciam nesse caso — um defeito, uma mensagem, um conserto.
 
 | Regra | Limite conhecido |
 |---|---|
 | `limiar-funcao`, `limiar-aninhamento`, `limiar-parametros` | assinatura fora do padrão comum pode não ser medida; nenhum falso positivo esperado, falso negativo é possível |
 | `hardcode-numero` | pega literal atribuído a nome de infraestrutura; número mágico com nome de negócio passa (e deve — o lugar dele é `config/dominio.json`) |
-| `contrato-sincronizado` | reconhece registro de rota em Express/FastAPI. Framework diferente faz a regra **declarar que não verificou**, em vez de passar calada |
+| `contrato` | **dona** de "spec ilegível": o leitor é de bloco, sem dependência externa — é o que permite o gate viajar com o módulo extraído e rodar sem instalar nada. Detecta pelo **resultado** da leitura, nunca pela causa: *flow style* (`paths: {"/x": …}`) é a mais comum, mas `url:` fora da linha do traço em `servers:` cai pelo mesmo caminho, já em bloco. A mensagem nomeia **qual** seção falhou (`paths:`, `servers:` ou as duas) e a forma que o leitor aceita — nunca "a rota não existe". `servers:` ilegível não cega a checagem de nome das rotas, que só depende de `paths:` |
+| `contrato-sincronizado` | reconhece registro de rota em Express/FastAPI. Framework diferente faz a regra **declarar que não verificou**, em vez de passar calada. Do lado da spec ela silencia: contrato ilegível é do `contrato` |
 | `sensivel-em-saida` | cobre projeção e chamada de log; um campo sensível montado por indireção (spread, `Object.assign`) escapa |
 | `projecao-contrato` | **uma direção só**, de propósito: pega campo projetado e não declarado. A inversa (propriedade declarada e nunca projetada) **não** é cobrada — `/health`, `/meta` e `/resumo` são montadas pela própria `api/` e o schema `Erro` pelo tratador de erro, nenhum deles passa pelo mapeador, então cobrá-la seria falso positivo garantido. Herda a fragilidade do extrator de projeção: ele perde a **primeira** chave do objeto quando a projeção abre em `return {` sem chave de assinatura antes (é o caso do binding Python) — falso negativo, nunca falso positivo. Chave fora de camelCase é do `payload-camelcase` e não é acusada aqui |
-| `rota-nomenclatura` | lê `servers:` e `paths:` linha a linha — contrato em *flow style* (`paths: {"/x": …}`) faz a regra **declarar que não verificou**. O verbo sai de vocabulário fechado (PT e EN): verbo fora da lista passa, e substantivo homógrafo de verbo acusa. **Plural não é verificado** (§3.1) |
-| `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor) passa — a regra lê o caminho e o método, nunca o corpo. Contrato compatível na rota e incompatível no payload continua sendo trabalho de revisão |
+| `rota-nomenclatura` | lê `servers:` e `paths:` linha a linha; contrato ilegível é do `contrato`, e aqui ela silencia. O verbo sai de vocabulário fechado (PT e EN): verbo fora da lista passa, e substantivo homógrafo de verbo acusa. **Plural não é verificado** (§3.1) |
+| `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor) passa — a regra lê o caminho e o método, nunca o corpo. Contrato compatível na rota e incompatível no payload continua sendo trabalho de revisão. Spec do **dono** ilegível não acusa no consumidor: o defeito é do dono, e o `contrato` dele o reporta |
 
 ## 7.3 O gate se testa
 
