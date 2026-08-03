@@ -18,10 +18,12 @@ const OBRIGATORIAS = ['/health', '/meta', '/resumo'];
  * está em bloco refazer o que já fez.
  */
 const FORMA_ACEITA = {
-  paths: 'em "paths:", cada rota e uma chave de recuo 2 na propria linha ("  /registros:") e cada '
-    + 'metodo, uma chave de recuo 4 ("    get:")',
-  servers: 'em "servers:", a URL vem na PROPRIA linha do traco ("  - url: /api/v1/<modulo>") — '
-    + '"url:" numa linha seguinte, depois de "description:", nao e lida',
+  paths: 'em "paths:", cada rota e uma chave de recuo EXATAMENTE 2 na propria linha '
+    + '("  /registros:") e cada metodo, uma chave de recuo EXATAMENTE 4 ("    get:") — recuo '
+    + 'diferente disso e bloco valido que o leitor nao alcanca',
+  servers: 'em "servers:", o PRIMEIRO item declara "url:" — na linha do traco '
+    + '("  - url: /api/v1/<modulo>") ou em qualquer outra linha do mesmo item; aspas simples ou '
+    + 'duplas sao aceitas',
 };
 
 /**
@@ -29,7 +31,7 @@ const FORMA_ACEITA = {
  *
  * Nomeia a seção que falhou, e não uma causa: a detecção é agnóstica de propósito, e a mensagem
  * tem de ser fiel a isso. *Flow style* entra como a causa mais provável, não como a única —
- * `url:` fora da linha do traço em `servers:` chega aqui pelo mesmo caminho, e o autor que
+ * `paths:` indentado com 4 espaços é bloco válido e chega aqui pelo mesmo caminho, e o autor que
  * lesse "reescreva em bloco" ficaria sem saída, exatamente o que esta mensagem existe para evitar.
  */
 function mensagemIlegivel(falhas) {
@@ -179,18 +181,58 @@ function conferirSegmentos(rota) {
   return achados;
 }
 
+/** Janela entre o nome da projeção e a `{` que a abre — assinatura, tipos, docstring. */
+const JANELA_ATE_ABERTURA = 900;
+
+/**
+ * Fim (exclusivo) do trecho que abre em `inicio`, contando profundidade de chaves.
+ * `-1` quando o texto acaba sem fechar.
+ */
+function fimBalanceado(texto, inicio) {
+  let profundidade = 0;
+  for (let i = inicio; i < texto.length; i += 1) {
+    if (texto[i] === '{') profundidade += 1;
+    else if (texto[i] === '}') {
+      profundidade -= 1;
+      if (profundidade === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+/**
+ * O texto de cada projeção, delimitado por BALANCEAMENTO de chaves.
+ *
+ * Balancear, e não casar um terminador por regex, é o que mata a classe inteira de erro: o fim do
+ * trecho passa a ser o fim REAL do objeto, e não "a próxima linha que termina em `}`". Enquanto o
+ * regex exigia `\n\s*\}`, uma projeção que fechava na mesma linha (arrow de uma linha) não achava
+ * terminador ali e a captura ATRAVESSAVA a função seguinte, colhendo chaves que nunca são
+ * publicadas — falso positivo em `projecao-contrato` e em `sensivel-em-saida`, sobre código
+ * correto. Agora não depende de como o autor quebrou a linha.
+ */
+function regioesDeProjecao(conteudo) {
+  const regioes = [];
+  // matchAll, nao match: um mapeador tem mais de uma projecao (resumo e detalhe, por exemplo),
+  // e olhar so a primeira deixava as demais sem verificacao nenhuma.
+  for (const nome of conteudo.matchAll(/(?:paraContrato|para_contrato)\w*/g)) {
+    const abertura = conteudo.indexOf('{', nome.index);
+    if (abertura === -1 || abertura - nome.index > JANELA_ATE_ABERTURA) continue;
+    const fim = fimBalanceado(conteudo, abertura);
+    if (fim !== -1) regioes.push(conteudo.slice(abertura, fim));
+  }
+  return regioes;
+}
+
 /** Chaves de objeto literal devolvidas pela projeção de saída do mapeador. */
 function chavesDaProjecao(ctx) {
   const chaves = [];
   for (const arquivo of ctx.codigo) {
     if (arquivo.eTeste || !/mapeador/i.test(arquivo.rel)) continue;
-    // matchAll, nao match: um mapeador tem mais de uma projecao (resumo e detalhe, por exemplo),
-    // e olhar so a primeira deixava as demais sem verificacao nenhuma.
-    const projecoes = arquivo.conteudo.matchAll(/(?:paraContrato|para_contrato)\w*[\s\S]{0,900}?\{([\s\S]*?)\n\s*\}/g);
-    for (const projecao of projecoes) {
+    for (const regiao of regioesDeProjecao(arquivo.conteudo)) {
       // Chave apos `{` ou `,` — nao apenas no inicio da linha. Objeto escrito numa linha so
       // (`{ hash: x, criado_em: y }`) escapava inteiro quando a extracao exigia inicio de linha.
-      for (const achado of projecao[1].matchAll(/[{,]\s*["']?([A-Za-z_]\w*)["']?\s*:/g)) {
+      // A regiao COMECA na `{`, entao a primeira chave tem o mesmo delimitador que as demais.
+      for (const achado of regiao.matchAll(/[{,]\s*["']?([A-Za-z_]\w*)["']?\s*:/g)) {
         chaves.push({ chave: achado[1], arquivo: arquivo.rel });
       }
     }

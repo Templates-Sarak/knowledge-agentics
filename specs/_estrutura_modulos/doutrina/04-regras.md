@@ -230,8 +230,8 @@ Esta seção é a diferença entre o que as leis afirmam e o que o gate cobra. *
 obrigação**: uma lei que esconde a própria lacuna é pior que uma lacuna conhecida.
 
 **Toda regra deste catálogo tem verificador.** O que resta aqui não são regras sem verificador — são a
-fronteira do que um verificador estático consegue afirmar, e duas coisas que **deixaram de ser regra** por
-não serem verificáveis mecanicamente (§1, lei 2).
+fronteira do que um verificador estático consegue afirmar, e o que **deixou de ser regra** por não ser
+verificável mecanicamente (§1, lei 2).
 
 ## 7.1 Deixaram de ser regra
 
@@ -247,9 +247,9 @@ puro e chamável de qualquer lugar — inclusive de dentro de um hook.
 
 São **duas famílias com política oposta na dúvida**, e saber qual é qual importa mais que a tabela.
 
-**Heurística sobre código** — `limiar-funcao`, `limiar-aninhamento`, `limiar-parametros`, `hardcode-numero`,
-`sensivel-em-saida`. Lê estrutura de bloco, não AST, e é **conservadora**: na dúvida, **não acusa**. Admite
-falso negativo de propósito; falso positivo, não. Onde o gate e o linter discordarem, o linter tem razão.
+**Heurística sobre código** — `limiar-funcao`, `limiar-aninhamento`, `limiar-parametros`, `hardcode-numero`.
+Lê estrutura de bloco, não AST, e é **conservadora**: na dúvida, **não acusa**. Admite falso negativo de
+propósito; falso positivo, não. Onde o gate e o linter discordarem, o linter tem razão.
 
 **Extração de texto de spec e de mapeador** — `contrato`, `contrato-sincronizado`, `rota-nomenclatura`,
 `consome-contrato`, `projecao-contrato`. Faz o **oposto**: quando não consegue ler, **declara e reprova**.
@@ -257,16 +257,22 @@ Calar ali seria indistinguível de conformidade, que é a falha que este §7 int
 
 A contrapartida, e ela é dura: **"não consegui ler" nunca pode virar "não existe"**. Afirmar ausência do que
 não se leu manda o autor apagar o que está certo. Por isso `contrato/openapi.yaml` ilegível tem **um dono só**,
-a regra `contrato`, e as outras quatro silenciam nesse caso — um defeito, uma mensagem, um conserto.
+a regra `contrato`, e as **demais** silenciam nesse caso — um defeito, uma mensagem, um conserto.
+
+**`sensivel-em-saida` atravessa as duas famílias**, de propósito, e por isso não está em nenhuma das listas
+acima: lê a chamada de log por heurística de bloco — ali vale a política conservadora — e a projeção pelo
+mesmo extrator de `projecao-contrato`, de quem herda o falso positivo. Ela não lê o `openapi.yaml`, então
+não entra no silêncio de "spec ilegível" do parágrafo anterior. O falso positivo dela é o **mesmo** de
+`projecao-contrato` — herdado do mesmo extrator — e está descrito nas duas linhas.
 
 | Regra | Limite conhecido |
 |---|---|
 | `limiar-funcao`, `limiar-aninhamento`, `limiar-parametros` | assinatura fora do padrão comum pode não ser medida; nenhum falso positivo esperado, falso negativo é possível |
 | `hardcode-numero` | pega literal atribuído a nome de infraestrutura; número mágico com nome de negócio passa (e deve — o lugar dele é `config/dominio.json`) |
-| `contrato` | **dona** de "spec ilegível": o leitor é de bloco, sem dependência externa — é o que permite o gate viajar com o módulo extraído e rodar sem instalar nada. Detecta pelo **resultado** da leitura, nunca pela causa: *flow style* (`paths: {"/x": …}`) é a mais comum, mas `url:` fora da linha do traço em `servers:` cai pelo mesmo caminho, já em bloco. A mensagem nomeia **qual** seção falhou (`paths:`, `servers:` ou as duas) e a forma que o leitor aceita — nunca "a rota não existe". `servers:` ilegível não cega a checagem de nome das rotas, que só depende de `paths:` |
+| `contrato` | **dona** de "spec ilegível": o leitor é de bloco, sem dependência externa — é o que permite o gate viajar com o módulo extraído e rodar sem instalar nada. Detecta pelo **resultado** da leitura, nunca pela causa: *flow style* (`paths: {"/x": …}`) é a mais comum, mas `paths:` indentado com 4 espaços é bloco válido e cai pelo mesmo caminho — o leitor exige recuo **exatamente** 2 na rota e 4 no método. A mensagem nomeia **qual** seção falhou (`paths:`, `servers:` ou as duas) e a forma que o leitor aceita — nunca "a rota não existe". `servers:` ilegível não cega a checagem de nome das rotas, que só depende de `paths:` |
 | `contrato-sincronizado` | reconhece registro de rota em Express/FastAPI. Framework diferente faz a regra **declarar que não verificou**, em vez de passar calada. Do lado da spec ela silencia: contrato ilegível é do `contrato` |
-| `sensivel-em-saida` | cobre projeção e chamada de log; um campo sensível montado por indireção (spread, `Object.assign`) escapa |
-| `projecao-contrato` | **uma direção só**, de propósito: pega campo projetado e não declarado. A inversa (propriedade declarada e nunca projetada) **não** é cobrada — `/health`, `/meta` e `/resumo` são montadas pela própria `api/` e o schema `Erro` pelo tratador de erro, nenhum deles passa pelo mapeador, então cobrá-la seria falso positivo garantido. Herda a fragilidade do extrator de projeção: ele perde a **primeira** chave do objeto quando a projeção abre em `return {` sem chave de assinatura antes (é o caso do binding Python) — falso negativo, nunca falso positivo. Chave fora de camelCase é do `payload-camelcase` e não é acusada aqui |
+| `sensivel-em-saida` | cobre projeção e chamada de log, com precisão diferente em cada metade. Na **chamada de log**, heurística de bloco conservadora: campo sensível montado por indireção (spread, `Object.assign`) escapa — falso negativo. Na **projeção**, usa o extrator de `projecao-contrato` e herda os dois limites dele, inclusive o falso positivo: campo sensível citado num objeto intermediário **dentro** da função de projeção é acusado como se fosse publicado |
+| `projecao-contrato` | **uma direção só**, de propósito: pega campo projetado e não declarado. A inversa (propriedade declarada e nunca projetada) **não** é cobrada — `/health`, `/meta` e `/resumo` são montadas pela própria `api/` e o schema `Erro` pelo tratador de erro, nenhum deles passa pelo mapeador, então cobrá-la seria falso positivo garantido. O extrator delimita a projeção **balanceando chaves** a partir de `paraContrato`/`para_contrato`, e por isso não atravessa a função seguinte, qualquer que seja a quebra de linha. Restam dois limites reais: projeção montada por indireção (spread, `Object.assign`, dicionário construído em laço) **escapa** — falso negativo; e objeto intermediário declarado **dentro** da própria função de projeção (`const interno = { … }`) entra na conta como se fosse publicado — **o falso positivo conhecido**, evitável montando a saída num `return` só. Chave fora de camelCase é do `payload-camelcase` e não é acusada aqui |
 | `rota-nomenclatura` | lê `servers:` e `paths:` linha a linha; contrato ilegível é do `contrato`, e aqui ela silencia. O verbo sai de vocabulário fechado (PT e EN): verbo fora da lista passa, e substantivo homógrafo de verbo acusa. **Plural não é verificado** (§3.1) |
 | `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor) passa — a regra lê o caminho e o método, nunca o corpo. Contrato compatível na rota e incompatível no payload continua sendo trabalho de revisão. Spec do **dono** ilegível não acusa no consumidor: o defeito é do dono, e o `contrato` dele o reporta |
 

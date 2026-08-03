@@ -225,15 +225,33 @@ export const CASOS = [
   },
   {
     regra: 'contrato',
-    descricao: 'servers em bloco com description antes de url',
-    // JA esta em bloco: a causa nao e flow style, e o leitor mesmo assim nao acha a URL. Prova que
-    // a deteccao e agnostica de causa e que a mensagem nomeia a secao certa — mandar "reescreva em
-    // bloco" para quem ja esta em bloco deixaria o autor sem saida.
-    mutar: (m) => m.substituir(
-      'contrato/openapi.yaml',
-      'servers:\n  - url: /api/v1/<modulo>',
-      'servers:\n  - description: local\n    url: /api/v1/<modulo>',
-    ),
+    descricao: 'paths em bloco, com recuo diferente de 2',
+    // Substitui o caso "description antes de url", que deixou de ser ilegivel quando o leitor de
+    // `servers:` passou a aceitar essa forma. O proposito e o mesmo, e continua necessario: provar
+    // que a deteccao NAO e "flow style" e que a mensagem nomeia a secao certa. Este YAML e bloco
+    // valido, indentado com 4 — e o leitor exige recuo 2 na rota e 4 no metodo.
+    mutar: (m) => m.escrever('contrato/openapi.yaml', [
+      'openapi: 3.1.0',
+      'servers:',
+      '  - url: /api/v1/<modulo>',
+      'paths:',
+      '    /health:',
+      '        get:',
+      '            responses:',
+      "                '200':",
+      '                    description: ok',
+      '    /meta:',
+      '        get:',
+      '            responses:',
+      "                '200':",
+      '                    description: ok',
+      '    /resumo:',
+      '        get:',
+      '            responses:',
+      "                '200':",
+      '                    description: ok',
+      '',
+    ].join('\n')),
   },
   {
     regra: 'rota-nomenclatura',
@@ -276,6 +294,29 @@ export const CASOS = [
       'contrato/openapi.yaml',
       'paths:\n',
       'paths:\n  /so-na-spec:\n    get:\n      summary: fantasma\n      responses:\n        200:\n          description: ok\n',
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'PRIMEIRA chave da projecao nao declarada (molde Python)',
+    // Escrito para o binding Python de proposito: e o unico em que a primeira chave nao tinha um
+    // `{` sobrando antes dela, e por isso era invisivel ao extrator antigo. Com o extrator antigo
+    // este caso NAO acusa nada — e a diferenca entre consertar de verdade e mover o sintoma.
+    mutar: (m) => m.substituir(
+      'api/src/mapeadores.py',
+      'mascarado.\n    """\n    return {\n        "hash": registro.hash,',
+      'mascarado.\n    """\n    return {\n        "campoFantasma": registro.hash,',
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'projecao em arrow de UMA linha, com campo nao declarado',
+    // A forma que o extrator antigo nao sabia terminar: fecha na mesma linha, sem `\n` antes do
+    // `}`. Prova que o balanceamento continua LENDO a projecao — o conserto da sobre-captura nao
+    // pode ter virado cegueira para a forma que a causava.
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-arrow.ts',
+      'export const paraContratoArrow = (r) => ({ hash: r.hash, campoArrow: r.extra });\n',
     ),
   },
   {

@@ -46,7 +46,8 @@
       "Bash(rm -rf \"c:/tmp/rev-proj\")",
       "Bash(mkdir -p \"c:/tmp/rev-proj\")",
       "Bash(cp modulos/catalogo/api/src/mapeadores/index.ts _map.ts)",
-      "Bash(cp modulos/catalogo/contrato/openapi.yaml _spec.yaml)"
+      "Bash(cp modulos/catalogo/contrato/openapi.yaml _spec.yaml)",
+      "Bash(awk '/^## 7/,/^## 8/' doutrina/04-regras.md)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Igor\\Desktop\\Sarak\\X - Trabalho\\Code\\knowledge-agentics\\_estrutura_base\\_templates",

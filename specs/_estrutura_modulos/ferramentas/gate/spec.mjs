@@ -59,11 +59,27 @@ export function rotasDaSpec(yaml) {
  * todo contrato conforme.
  */
 export function servidorDaSpec(yaml) {
+  let dentroDoPrimeiro = false;
+
   for (const linha of dentroDe(yaml, /^servers:\s*$/)) {
-    const casado = linha.match(/^\s*-\s*url:\s*(\S+)\s*$/);
-    if (casado !== null) return casado[1];
+    const abreItem = /^\s*-(\s|$)/.test(linha);
+    // Só o PRIMEIRO item: `servers[0]` é o que a regra compara. Ao ver o segundo traço, para —
+    // senão um servidor alternativo (staging, mock) responderia pelo prefixo do módulo.
+    if (abreItem && dentroDoPrimeiro) return null;
+    if (abreItem) dentroDoPrimeiro = true;
+    if (!dentroDoPrimeiro) continue;
+
+    // `url:` em QUALQUER linha do item, não só na do traço: `- description: local` seguido de
+    // `  url: …` é bloco YAML ordinário, e exigir a URL no traço reprovava contrato correto.
+    const casado = linha.match(/^\s*(?:-\s*)?url:\s*(.+?)\s*$/);
+    if (casado !== null) return semAspas(casado[1]);
   }
   return null;
+}
+
+/** `"/api/v1/x"` e `'/api/v1/x'` são o mesmo valor que `/api/v1/x` — a aspa é sintaxe, não dado. */
+function semAspas(valor) {
+  return valor.replace(/^(['"])([\s\S]*)\1$/, '$2');
 }
 
 /**
