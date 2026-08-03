@@ -1,78 +1,79 @@
-# OpenAPI mínimo (alinhado ao padrão Sarak)
+# Ler o `contrato/openapi.yaml` — o que o gate já garante nele
 
-A spec é o **contrato** do módulo: mora em `backend/<modulo>/api/openapi.yaml`, versionada junto do código.
-Descreve só a **superfície pública** (o `api/`) — nunca internals. Nomenclatura segue `PADRAO-ORGANIZACAO.md`.
+**A spec de referência é a do molde, e não uma cópia:**
 
-## Regras de nomenclatura (verificáveis)
-- **Prefixo** `/api/v1/` em toda rota. Breaking change → `/api/v2/` (a v1 em uso não quebra).
-- **Recurso no plural, kebab-case**: `/api/v1/order-items`, não `/api/v1/orderItem` nem `/api/v1/order_items`.
-- **Sem verbo no path**: o método HTTP é o verbo. `GET /orders`, não `/getOrders` nem `/orders/list`.
-- **Filtros via query**: `GET /api/v1/orders?status=open&page=2` — não rota dedicada por filtro.
-- **Path param** entre chaves e em camelCase: `/api/v1/orders/{orderId}`.
-- **Schemas em camelCase**: `unitPrice`, `createdAt` (o backend converte snake↔camel na borda).
-- **Erros tipados**: cada resposta de erro tem código HTTP e um shape consistente (ex.: `{ code, message }`).
-
-## Esqueleto mínimo
-```yaml
-openapi: 3.1.0
-info:
-  title: orders — contrato público
-  version: 1.0.0
-servers:
-  - url: /api/v1
-paths:
-  /orders:
-    get:
-      summary: Lista pedidos
-      parameters:
-        - { name: status, in: query, schema: { type: string } }
-      responses:
-        "200":
-          description: ok
-          content:
-            application/json:
-              schema: { type: array, items: { $ref: "#/components/schemas/Order" } }
-    post:
-      summary: Cria pedido
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/OrderInput" }
-      responses:
-        "201": { description: criado, content: { application/json: { schema: { $ref: "#/components/schemas/Order" } } } }
-        "400": { description: inválido, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
-  /orders/{orderId}:
-    get:
-      summary: Detalha um pedido
-      parameters:
-        - { name: orderId, in: path, required: true, schema: { type: string } }
-      responses:
-        "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Order" } } } }
-        "404": { description: não encontrado, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
-components:
-  schemas:
-    Order:
-      type: object
-      properties:
-        orderId: { type: string }
-        unitPrice: { type: number }
-        createdAt: { type: string, format: date-time }
-      required: [orderId, unitPrice]
-    OrderInput:
-      type: object
-      properties:
-        unitPrice: { type: number }
-      required: [unitPrice]
-    Error:
-      type: object
-      properties:
-        code: { type: string }
-        message: { type: string }
-      required: [code, message]
+```
+specs/_estrutura_modulos/bindings/<binding>/_template/contrato/openapi.yaml
 ```
 
+Num projeto instanciado, o contrato de cada módulo mora em `modulos/<modulo>/contrato/openapi.yaml` —
+**não** em `api/`. `api/` é quem implementa; `core/` é interno e nunca aparece no contrato.
+
+Este documento não é template copiável. Ele diz **o que já está garantido** por máquina, para você não
+gastar teste com isso, e **o que precisa de leitura humana**.
+
+## O que o gate garante, sem executar nada
+
+Norma dona: `specs/arquitetura/04-regras.md` §4.5 (na base, `specs/_estrutura_modulos/doutrina/04-regras.md`).
+
+| Já é cobrado | Regra |
+|---|---|
+| `/health`, `/meta` e `/resumo` declarados | `contrato` |
+| a spec é legível pelo leitor de bloco do gate | `contrato` |
+| `servers[0].url` igual ao `rotaBase` do `modulo.json` | `rota-nomenclatura` |
+| nenhum segmento de path carrega verbo (PT ou EN) | `rota-nomenclatura` |
+| segmento em kebab-case; parâmetro de caminho em camelCase | `rota-nomenclatura` |
+| rotas do código e do `paths:` coincidem nos dois sentidos | `contrato-sincronizado` |
+| todo campo projetado pelo mapeador está num schema de resposta | `projecao-contrato` |
+| propriedade de resposta em camelCase | `payload-camelcase` |
+
+**Plural de recurso é convenção, não regra** (§3.1): escreva `/registros`, mas nenhum verificador o cobra —
+e as três rotas obrigatórias são singulares por desenho.
+
+## As formas que o contrato usa de verdade
+
+**Prefixo em `servers`, path relativo.** O prefixo do módulo não se repete em cada rota:
+
+```yaml
+servers:
+  - url: /api/v1/<modulo>
+paths:
+  /registros:
+  /registros/{hash}:
+```
+
+Escrever `/api/v1/<modulo>/registros` dentro de `paths:` é erro — `rota-nomenclatura` compara
+`servers[0].url` com o `rotaBase`, e o path sai relativo dali.
+
+**Bloco, nunca flow style.** O leitor do gate é linha a linha, sem dependência externa — é o que permite o
+gate viajar junto do módulo extraído. `paths: {"/x": {...}}` numa linha é reprovado como ilegível, e o recuo
+tem de ser **exatamente** 2 na rota e 4 no método.
+
+**Identificador é o hash universal**, nunca o id interno do banco (`02-contrato-e-dados.md` §4):
+`/registros/{hash}`.
+
+**Erro tem taxonomia fechada.** O schema chama-se `Erro`, e o envelope é `{ erro: { codigo, mensagem,
+requestId } }`, com `codigo` num enum fechado (`VALIDACAO`, `NAO_AUTENTICADO`, `NAO_AUTORIZADO`,
+`NAO_ENCONTRADO`, `CONFLITO`, `LIMITE_EXCEDIDO`, `DEPENDENCIA_EXTERNA`, `INTERNO`). A taxonomia vive em
+`packages/portas` e está em `02-contrato-e-dados.md` §3.1 — não invente código novo, e não use um schema
+`Error` com `{ code, message }`.
+
+**Coleção tem envelope único**: `{ itens, pagina, tamanho, total }`.
+
+**Idioma**: domínio, rotas e dados em português (§3.1). O molde usa `registros`, `titulo`, `criadoEm` —
+não `orders`, `unitPrice`, `createdAt`.
+
+## O que continua sendo leitura humana
+
+Nada disto o gate vê, e é onde a `test-api-contrato` trabalha:
+
+- **A resposta real bate com o schema?** O gate lê o texto da spec, não a saída do app.
+- **O schema mudou de forma?** Tipo alterado, campo que virou obrigatório, enum que perdeu valor, campo
+  removido — todos **breaking**, e `consome-contrato` não os enxerga (§7.2).
+- **A descrição diz a verdade?** `summary` e `description` errados passam por qualquer verificador.
+
 ## Versão e evolução
-- **Aditivo é seguro**: adicionar campo opcional ou rota nova não quebra consumidor → fica na v1.
-- **Breaking** (remover/renomear campo, mudar tipo, tornar obrigatório): nova versão de caminho (`/api/v2/`)
-  ou novo campo opcional — nunca alterar o significado de algo em uso.
+
+`v1` é estável (`02-contrato-e-dados.md` §5). Acrescentar campo **opcional** ou rota nova é compatível;
+remover ou renomear campo, mudar tipo, apertar validação ou mudar semântica **não é** — exige `/api/v2/`
+convivendo com `v1` por uma janela de depreciação anunciada no próprio `openapi.yaml`.

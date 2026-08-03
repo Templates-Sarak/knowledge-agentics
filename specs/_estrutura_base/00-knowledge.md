@@ -49,7 +49,7 @@ justamente porque são mutativas ou sensíveis.
 | Adequar legado ao padrão sem mudar comportamento | `code-adequacao` · fluxo completo: `/code2-caracterizar` → `/code3-adequar` |
 | Cobrir código novo com testes | `test-unitario` |
 | Testar endpoint com banco real efêmero | `test-integracao-api` |
-| Garantir contrato de API (OpenAPI, provider/consumer) | `test-api-contrato` |
+| Testar contrato de API em runtime (provider/consumer, payload entre versões) | `test-api-contrato` |
 | Testar jornada de usuário ponta a ponta | `test-e2e` |
 | Testar WebSocket/SSE, tempo real, reconexão | `test-ws-realtime` |
 | Medir limite de carga, concorrência, N+1 | `test-carga` |
@@ -129,7 +129,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 |---|---|
 | `test-unitario` | Código **novo**: caminhos críticos pela borda pública, mock só de I/O externo (~80%). |
 | `test-integracao-api` | Endpoint com infraestrutura real efêmera (Testcontainers/Docker), sem UI. |
-| `test-api-contrato` | Definir/validar o OpenAPI do `api/` e testar provider ⇄ consumidores. |
+| `test-api-contrato` | Contract testing onde o gate estático não alcança: resposta real contra o schema, mock derivado do contrato, compatibilidade de payload entre versões. |
 | `test-e2e` | Jornadas críticas na UI (Playwright/Cypress) ou API ponta a ponta. |
 | `test-ws-realtime` | Conexões com estado: WebSocket/SSE, heartbeat, broadcast, pub/sub, reconexão. |
 | `test-carga` | Estresse, concorrência e gargalos (k6/Artillery). **HITL obrigatório.** |

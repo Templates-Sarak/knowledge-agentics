@@ -194,7 +194,7 @@ o prefixo diz *de que assunto* o artefato trata.
 | `padrao-` | Normas de escrita/organização (sempre referenciadas) |
 | `code-` | Operações sobre código (inclui a criação de módulo/sistema modular) |
 | `spec-` | Especificações e fluxo SDD |
-| `test-` | Testes (inclui contrato de API — OpenAPI + contract testing) |
+| `test-` | Testes (inclui contract testing de API — provider/consumer em runtime) |
 | `db-` | Banco de dados |
 | `deploy-` | Publicação/entrega |
 | `otimizacao-` | Performance (back+front) |
