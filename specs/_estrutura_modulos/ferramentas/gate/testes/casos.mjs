@@ -273,6 +273,57 @@ export const CASOS = [
     mutar: (m) => m.escrever('core/dominio/mau.ts', 'export const ambiente = process.env;\n'),
   },
   {
+    regra: 'gitignore-segredo',
+    descricao: '.gitignore do projeto sem .env nem modulos/*/.env',
+    // `../../` sobe para a raiz do PROJETO, como nos casos das outras regras de projeto. O ignore
+    // continua existindo e valido — so deixou de cobrir o segredo, que e o defeito sob teste.
+    mutar: (m) => m.escrever('../../.gitignore', 'node_modules/\ndist/\n'),
+  },
+  {
+    regra: 'segredo-em-publico',
+    descricao: 'credencial declarada em env de prefixo publico (vai para o bundle)',
+    // `papel: "gateway"` cala o `gateway-credencial`, que isenta o gateway porque credencial e o
+    // oficio dele — e assim o caso acusa UM id. A escolha tambem diz o que a regra afirma: nem o
+    // gateway, dono da credencial, pode publica-la no bundle do front.
+    mutar: (m) => {
+      m.manifesto((x) => ({
+        ...x,
+        papel: 'gateway',
+        envRequerido: [...x.envRequerido, 'VITE_MOLDE_API_KEY'],
+      }));
+      // Sem isto o caso violava tambem `env-exemplo` — ruido do fixture, nao do defeito.
+      m.acrescentar('.env.example', 'VITE_MOLDE_API_KEY=\n');
+    },
+  },
+  {
+    regra: 'random-inseguro',
+    descricao: 'token gerado com Math.random fora de core/',
+    // FORA de `core/` de proposito: dentro dele quem cobra e o `determinismo`, e este caso existe
+    // para provar que a regra alcanca o territorio que o `determinismo` nao cobre.
+    mutar: (m) => m.escrever(
+      'api/src/tokens.ts',
+      'export function novoToken() {\n  return String(Math.random());\n}\n',
+    ),
+  },
+  {
+    regra: 'verificacao-declarada',
+    descricao: 'projeto sem config/verificacao.json na raiz',
+    // `../../` sobe da pasta do modulo para a raiz do PROJETO: e la que a politica mora, e e por
+    // isso que estas duas regras leem `ctx.projeto` em vez do modulo.
+    mutar: (m) => m.remover('../../config/verificacao.json'),
+  },
+  {
+    regra: 'lint-derivado',
+    descricao: 'config do linter editada a mao, divergindo da fonte dos limiares',
+    // A regra compara BYTE A BYTE com o que o gerador produziria, entao qualquer edicao manual e o
+    // defeito — nao so a troca de um numero. Alvo logico + trecho por sintaxe: o arquivo e
+    // `eslint.config.js` em TS/JS e `.ruff.toml` no Python, e o comentario muda de marcador junto.
+    mutar: (m) => m.acrescentarEm('lintRaiz', {
+      js: '\n// limiar ajustado a mao, fora de ferramentas/gate/limiares.mjs\n',
+      py: '\n# limiar ajustado a mao, fora de ferramentas/gate/limiares.mjs\n',
+    }),
+  },
+  {
     regra: 'schema-config',
     descricao: 'nivelLog fora do vocabulario',
     mutar: (m) => m.config('api', (x) => ({ ...x, nivelLog: 'gritante' })),

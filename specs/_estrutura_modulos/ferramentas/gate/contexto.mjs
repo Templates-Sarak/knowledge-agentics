@@ -151,6 +151,53 @@ function lerConfigs(raiz, eMolde) {
   return configs;
 }
 
+/**
+ * Config do PROJETO — lida uma vez por raiz, não uma vez por módulo.
+ *
+ * Ponto próprio, e não mais um campo montado dentro de `carregarContexto`, porque o dado é por
+ * PROJETO: num repositório com dez módulos, `carregarContexto` roda dez vezes e leria os mesmos
+ * arquivos dez vezes. A memória é por caminho de raiz, então dois projetos no mesmo processo (o
+ * autoteste cria um temporário por caso) não se confundem.
+ */
+const projetosLidos = new Map();
+
+/** Os nomes que o gerador pode produzir. Ler os dois é mais barato que descobrir o binding aqui. */
+const CONFIGS_DE_LINT = ['eslint.config.js', '.ruff.toml'];
+
+function lerProjeto(raizProjeto) {
+  // "Raiz de projeto" é a pasta que tem `modulos/` — a mesma definição de `acharRaizProjeto`. Sem
+  // ela não há projeto: é módulo solto (extraído e ainda não religado) ou fixture, e cobrar
+  // política de projeto de quem não é projeto seria falso positivo garantido.
+  const ehProjeto = existsSync(join(raizProjeto, 'modulos'));
+  const caminho = join(raizProjeto, 'config', 'verificacao.json');
+  const verificacao = { presente: existsSync(caminho), valor: null };
+  if (verificacao.presente) {
+    try {
+      verificacao.valor = JSON.parse(lerTexto(caminho));
+    } catch {
+      verificacao.valor = null;
+    }
+  }
+
+  const configsDeLint = {};
+  for (const nome of CONFIGS_DE_LINT) {
+    const alvo = join(raizProjeto, nome);
+    configsDeLint[nome] = existsSync(alvo) ? lerTexto(alvo) : null;
+  }
+
+  // O `.gitignore` da raiz, cru. Quem interpreta é a regra `gitignore-segredo` — aqui só se lê.
+  const ignore = join(raizProjeto, '.gitignore');
+  const gitignore = existsSync(ignore) ? lerTexto(ignore) : null;
+
+  return { ehProjeto, verificacao, configsDeLint, gitignore };
+}
+
+/** Config do projeto, memoizada por raiz. */
+export function carregarProjeto(raizProjeto) {
+  if (!projetosLidos.has(raizProjeto)) projetosLidos.set(raizProjeto, lerProjeto(raizProjeto));
+  return projetosLidos.get(raizProjeto);
+}
+
 /** Nome de pasta do módulo, já resolvido para o id sintético quando for molde. */
 export function idDaPasta(caminhoModulo) {
   const nome = basename(caminhoModulo);
@@ -175,6 +222,9 @@ export function carregarContexto(raiz, raizProjeto) {
     manifesto,
     manifestoErro: erro,
     configs: lerConfigs(raiz, eMolde),
+    // Config do PROJETO (política de verificação, config do linter). Chega pelo contexto porque
+    // regra nenhuma toca disco; memoizada por raiz, então N módulos não custam N leituras.
+    projeto: carregarProjeto(raizProjeto),
     arquivos,
     codigo: arquivos.filter((a) => EXT_CODIGO.has(a.ext)),
     sql: arquivos.filter((a) => a.ext === '.sql'),

@@ -38,8 +38,12 @@ Se o verificador só funcionasse no repositório inteiro, o módulo extraído pe
 conformidade morreria exatamente no momento em que a arquitetura foi cobrada. Verificar o repositório é um
 **laço** sobre `modulos/*`, não uma capacidade separada.
 
-Só **três** regras precisam de visão global e por isso rodam apenas no `--todos`: `import-lateral`,
-`tabela-alheia` e `consome-ciclo`.
+Só **quatro** regras precisam de visão global e por isso rodam apenas no `--todos`: `import-lateral`,
+`tabela-alheia`, `consome-ciclo` e `consome-contrato`.
+
+Regra sobre o **projeto** (`verificacao-declarada`, `lint-derivado`) **não** é global: ela precisa de UM
+contexto qualquer, não de todos, porque todos carregam a mesma `ctx.projeto`. Global só quem compara módulos
+entre si.
 
 ## Plugar num executor
 
@@ -88,7 +92,10 @@ Ative com `git config core.hooksPath .githooks`.
 3. Regra de escopo `global` devolve `{ modulo, mensagem }` em vez de string, porque precisa dizer de quem é o
    achado.
 4. **Nenhuma regra lê disco.** Tudo vem do contexto (`ferramentas/gate/contexto.mjs`) — é o que as mantém
-   rápidas e testáveis.
+   rápidas e testáveis. O que é do **projeto**, e não do módulo, chega em `ctx.projeto`
+   (`carregarProjeto`): a política de `config/verificacao.json` e a config do linter em disco. É lido uma vez
+   por raiz e memoizado — dez módulos não custam dez leituras —, e `ctx.projeto.ehProjeto` diz se a raiz é
+   mesmo um projeto (tem `modulos/`) ou um módulo solto, caso em que regra de projeto silencia.
 5. **Leitura de `contrato/openapi.yaml` já existe** em `ferramentas/gate/spec.mjs` (`specDe`,
    `rotasDaSpec`, `operacoesDaSpec`, `normalizar`). Importe de lá — duas famílias a usam, e um segundo
    parser divergiria do primeiro sem ninguém notar.

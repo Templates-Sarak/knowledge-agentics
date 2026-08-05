@@ -15,10 +15,11 @@ no §7.2 quando houver. Regra sem caso não entra.
 
 | Métrica | Valor |
 |---|---|
-| Regras no catálogo | **48** |
-| Regras com caso de teste próprio | **48** — cobertura total |
+| Regras no catálogo | **53** |
+| Regras com caso de teste próprio | **53** — cobertura total |
 | Bindings | `typescript` · `javascript` · `python` — gate verde nos três |
-| Autoteste | `58/58` (TS) · `58/58` (JS) · `56/56` (PY) |
+| Autoteste | `63/63` (TS) · `63/63` (JS) · `61/61` (PY) |
+| Pipeline do `verificar` | gate → env → formato → lint → tipos → testes, nos três bindings |
 
 **Meta ao fim de todos os blocos:** ~64 regras, todas com caso, cobertura uniforme entre bindings.
 
@@ -63,12 +64,24 @@ formatador no template. Moldes reformatados.
 **Limite conhecido:** módulo extraído fica sem `.ruff.toml` até ser religado a um esqueleto. O piso
 do gate não cai (os limiares viajam em `ferramentas/gate/`); a A.3 fecha a janela.
 
-### A.2 — as regras que cobram a camada  ⟵ **próximo**
-- [ ] `verificacao-declarada` — o arquivo existe e conforma ao schema
-- [ ] `lint-derivado` — a config do linter deriva de `limiares.mjs`; divergência reprova
-      *(o `--conferir` do gerador já é o gancho)*
+### A.2 — as regras que cobram a camada  ✅ **concluído**
+- [x] `verificacao-declarada` — o arquivo existe, é JSON válido e conforma ao schema
+- [x] `lint-derivado` — a config na raiz é **alguma saída do gerador**; divergência reprova
+- [x] `ctx.projeto` — ponto próprio em `contexto.mjs`, memoizado por raiz (o dado é por projeto;
+      com 10 módulos, `carregarContexto` roda 10 vezes)
+- [x] Guarda `ehProjeto` — módulo extraído e ainda solto não é projeto, e não é cobrado
+- [x] Uma implementação só: a regra e o harness importam `saidaDe` do gerador
 
-### A.3 — config de lint **por módulo**, gerada do manifesto
+**Achado:** o `gate/README.md` afirmava "três regras globais" — são quatro desde `consome-contrato`.
+
+### A.3 — config de lint **por módulo**, gerada do manifesto  ⏸ **adiada, não pulada**
+
+> **Por que depois do Bloco B:** A.3 entrega **precisão** — `import-lateral`, `import-adapter`,
+> `sdk-fornecedor` e `env-fora-do-carregador` já funcionam no gate, e o eslint só resolveria melhor
+> alias, re-export e import dinâmico. O Bloco B entrega **cobertura**: invariantes de segurança que
+> hoje não existem em regra nenhuma. Cobertura antes de precisão.
+>
+> Retomar depois de B.2 e B.3.
 - [ ] `import-lateral`, `import-adapter`, `sdk-fornecedor`, `env-fora-do-carregador` no eslint,
       com os caminhos derivados de cada `modulo.json` — AST resolve alias, re-export e import
       dinâmico; regex não. **Continuam também no gate**, como piso de extração
@@ -77,16 +90,28 @@ do gate não cai (os limiares viajam em `ferramentas/gate/`); a A.3 fecha a jane
 
 ---
 
-## Bloco B — Segurança  *(8 regras)*
+## Bloco B — Segurança  *(3 de 8)*
 
-- [ ] `gitignore-segredo` — `.gitignore` cobre `.env` e `modulos/*/.env`
+### B.1 — segredo e RNG  ✅ **concluído**
+- [x] `gitignore-segredo` — `.gitignore` da raiz cobre `.env` e `modulos/*/.env`
+      *(o `.env` já versionado exige `git ls-files` → é passo de CI, estágio 0)*
+- [x] `segredo-em-publico` — valor secreto em variável de **prefixo público** (`VITE_`/`NEXT_PUBLIC_`),
+      que o bundler injeta no front. **A formulação óbvia é invertida**: chave *sem* prefixo não vaza,
+      porque o bundler não a expõe
+- [x] `random-inseguro` — RNG não-criptográfico gerando token/segredo **fora de `core/`**;
+      dentro de `core/` o dono é `determinismo`, e nunca acusam a mesma linha
+
+### B.2 — superfície HTTP e sessão  ⟵ **próximo**
 - [ ] `rota-publica-autenticada` — rota fora de `rotasPublicas` passa pelo middleware de auth
-- [ ] `segredo-no-front` — chave sem prefixo público (`NEXT_PUBLIC_`/`VITE_`) usada em `web/`
 - [ ] `entrada-allowlist` — update não aceita o corpo inteiro *(simétrico ao `saida-crua`)*
 - [ ] `cookie-seguro` — cookie de sessão com `HttpOnly`, `Secure`, `SameSite`
 - [ ] `token-em-armazenamento` — token de auth em `localStorage`/`sessionStorage`
-- [ ] `random-inseguro` — `Math.random`/`random` gerando token ou segredo
-- [ ] `sql-concatenado` — SQL montado por concatenação/interpolação
+
+### B.3 — `sql-concatenado`  *(precisa de decisão de escopo antes)*
+- [ ] O único adapter do template é `adapters/memoria/`; o módulo acessa banco por `core/portas/`
+      (e `import-adapter` proíbe importar adapter de dentro); o SQL do molde é só DDL em `database/`.
+      **Onde a query é montada é no adapter, que vive fora de `modulos/`** — e a unidade do gate é o
+      módulo. Decidir o escopo antes de escrever a regra
 
 ---
 
@@ -162,6 +187,11 @@ legítima — o molde do binding não tem a peça (`web/` no Python; mapeador Py
       não resolve e os testes do molde Python não rodam. O conserto é um arquivo vazio
 - [ ] §7.2 — registrar o limite do módulo extraído sem `.ruff.toml` *(hoje só no comentário do
       pyproject do molde)*
+- [ ] **Defeito de projeto repete uma mensagem por módulo sob `--todos`** — `verificacao-declarada`
+      e `lint-derivado` são fatos do projeto num gate cuja unidade de saída é o módulo. O conserto
+      é na **impressão** (`validar.mjs` colapsa pares `(regra, mensagem)` idênticos, mantendo a
+      contagem), nunca na regra: emitir só no primeiro contexto esconderia o defeito ao validar
+      outro módulo isolado
 - [ ] `plugin/sarak_routing_table.md` — regenera no próximo `sync_ide.py` *(ação do usuário)*
 
 ---
@@ -169,15 +199,24 @@ legítima — o molde do binding não tem a peça (`web/` no Python; mapeador Py
 ## Ordem de dependência
 
 ```
-A  fundação          ← obrigatoriamente primeiro
-B  segurança      ┐
-C  testes         ├ independentes entre si; leem a política de A
-D  campos órfãos  ┘
-E  cobertura        independente de tudo — antecipar rende
-F  insumos de CI    junto do pipeline, não antes
-G  hooks            depende de A
-H  dívidas          a qualquer momento
+FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce provada nos 3 bindings
+           A.1  a camada               limiares, política, eslint, formatador
+           A.2  as regras da camada    verificacao-declarada, lint-derivado
+           B.1  segredo e RNG
+
+AGORA      B.2  superfície HTTP e sessão
+           B.3  sql-concatenado        (decidir escopo antes)
+
+DEPOIS     C    testes                 3 regras
+           D    campos órfãos          3 regras
+           A.3  lint por módulo        precisão; fecha a janela do extraído
+           G    hooks no template      depende de A
+           F    insumos de CI          junto do pipeline, não antes
+           H    dívidas                a qualquer momento
 ```
+
+**A ordem mudou uma vez, de propósito:** A.3 saiu da frente do Bloco B porque entrega precisão sobre
+regras que já funcionam, enquanto B entrega cobertura que não existe. Está registrado na seção da A.3.
 
 ---
 

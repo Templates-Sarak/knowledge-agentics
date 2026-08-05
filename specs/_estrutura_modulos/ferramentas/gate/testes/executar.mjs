@@ -32,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 
 import { carregarContexto } from '../contexto.mjs';
 import { analisar } from '../motor.mjs';
+import { saidaDe } from '../../gerar-config-lint.mjs';
 import { CASOS } from './casos.mjs';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
@@ -48,6 +49,13 @@ const ALVOS = {
     typescript: 'api/src/routes/index.ts',
     javascript: 'api/src/routes/index.js',
     python: 'api/src/rotas.py',
+  },
+  // Sobe da pasta do módulo para a raiz do PROJETO: `verificacao-declarada` e `lint-derivado` são
+  // as duas regras cujo alvo mora lá, e não dentro do módulo.
+  lintRaiz: {
+    typescript: '../../eslint.config.js',
+    javascript: '../../eslint.config.js',
+    python: '../../.ruff.toml',
   },
   mapeadores: {
     typescript: 'api/src/mapeadores/index.ts',
@@ -127,6 +135,25 @@ function operacoes(raiz, binding) {
   };
 }
 
+/**
+ * A RAIZ do projeto temporário — `config/` e a config de lint gerada, como `criar-projeto.mjs` as
+ * instala.
+ *
+ * O fixture já tinha `modulos/`, e por isso era um projeto aos olhos do gate; só que um projeto
+ * INCOMPLETO, sem nada do que a raiz carrega. Enquanto nenhuma regra olhava para fora do módulo
+ * isso não aparecia — `verificacao-declarada` e `lint-derivado` olham, e acusariam em TODO caso.
+ * O conserto é o fixture ficar fiel ao projeto real, nunca a regra deixar de cobrar.
+ */
+function montarRaizDoProjeto(temporario, binding) {
+  const raiz = join(RAIZ_TEMPLATE, 'bindings', binding, 'raiz');
+  cpSync(join(raiz, 'config'), join(temporario, 'config'), { recursive: true });
+  const { nome } = saidaDe(binding);
+  cpSync(join(raiz, nome), join(temporario, nome));
+  // O `.gitignore` é da raiz e `gitignore-segredo` o lê: sem ele aqui, a regra acusaria em TODO
+  // caso — de novo o fixture sendo um projeto incompleto, não a regra estando errada.
+  cpSync(join(raiz, '.gitignore'), join(temporario, '.gitignore'));
+}
+
 /** Vizinho mínimo, para as regras globais (import lateral, tabela alheia, ciclo). */
 function criarVizinho(pastaModulos, molde, consome) {
   const raiz = join(pastaModulos, 'vizinho');
@@ -152,6 +179,7 @@ function rodarCaso(binding, caso) {
     const molde = join(RAIZ_TEMPLATE, 'bindings', binding, '_template');
     const alvo = join(modulos, '_template');
     cpSync(molde, alvo, { recursive: true });
+    montarRaizDoProjeto(temporario, binding);
 
     if (caso?.mutar !== undefined) caso.mutar(operacoes(alvo, binding));
 

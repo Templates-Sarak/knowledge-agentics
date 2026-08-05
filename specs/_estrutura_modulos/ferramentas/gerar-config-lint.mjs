@@ -24,7 +24,9 @@ import { fileURLToPath } from 'node:url';
 import { LIMIARES } from './gate/limiares.mjs';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
-const BINDINGS = ['typescript', 'javascript', 'python'];
+
+/** Exportado para a regra `lint-derivado` poder perguntar "isto e alguma saida minha?". */
+export const BINDINGS = ['typescript', 'javascript', 'python'];
 
 /**
  * Pastas que o linter do PROJETO não julga.
@@ -139,8 +141,15 @@ function ruffConfig() {
   ].join('\n');
 }
 
-/** Qual arquivo cada binding gera. */
-function saidaDe(binding) {
+/**
+ * Qual arquivo cada binding gera, e com que conteúdo. PURA: não toca disco, não lê argumento.
+ *
+ * É exportada porque a regra `lint-derivado` do gate precisa da MESMA resposta que o `--conferir`
+ * daqui. Uma segunda cópia da lógica seria uma segunda fonte da verdade — o defeito exato que este
+ * gerador existe para eliminar, reencenado um nível acima. Por isso o CLI abaixo só roda quando
+ * este arquivo é o entrypoint: importá-lo tem de ser inerte.
+ */
+export function saidaDe(binding) {
   if (binding === 'python') return { nome: '.ruff.toml', conteudo: ruffConfig() };
   return { nome: 'eslint.config.js', conteudo: eslintConfig(binding) };
 }
@@ -211,4 +220,9 @@ function principal() {
   return 0;
 }
 
-process.exit(principal());
+// Só executa quando ESTE arquivo é o entrypoint. Sem a guarda, `import { saidaDe }` de dentro do
+// gate escreveria arquivo e derrubaria o processo — e a regra `lint-derivado`, que precisa da
+// função pura, não teria como consumi-la sem duplicá-la.
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exit(principal());
+}
