@@ -38,7 +38,10 @@ function pedir(caminho: string, opcoes: RequestInit = {}) {
 }
 
 function autenticado(caminho: string, opcoes: RequestInit = {}) {
-  return pedir(caminho, { ...opcoes, headers: { authorization: `Bearer ${TOKEN}`, ...(opcoes.headers ?? {}) } });
+  return pedir(caminho, {
+    ...opcoes,
+    headers: { authorization: `Bearer ${TOKEN}`, ...(opcoes.headers ?? {}) },
+  });
 }
 
 describe('rotas obrigatorias', () => {

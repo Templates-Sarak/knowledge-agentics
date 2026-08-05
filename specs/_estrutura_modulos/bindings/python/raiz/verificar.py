@@ -7,9 +7,13 @@ Equivalente ao `npm run verificar` do binding TypeScript. Roda, nesta ordem:
 
     1. gate de conformidade em todos os modulos      (ferramentas/gate/validar.mjs --todos)
     2. .env.example em dia com os manifestos         (ferramentas/sincronizar-env.mjs --conferir)
-    3. limiares e idiomas                            (ruff)
-    4. tipos                                         (mypy)
-    5. testes de CADA modulo, a partir da pasta dele (pytest)
+    3. forma                                         (ruff format --check)
+    4. limiares e idiomas                            (ruff check)
+    5. tipos                                         (mypy)
+    6. testes de CADA modulo, a partir da pasta dele (pytest)
+
+Os limiares que o ruff cobra vem de `.ruff.toml`, GERADO de `ferramentas/gate/limiares.mjs` — a
+mesma fonte que o gate usa. Nenhum numero de limiar e escrito a mao neste projeto.
 
 O passo 5 roda modulo a modulo de proposito: testar a partir da pasta do modulo e o que prova que
 ele roda ISOLADO — a condicao pratica de "pronto para extracao" (specs/arquitetura/03-operacao.md §6).
@@ -28,6 +32,7 @@ de "nao verificou" — o defeito que este template inteiro existe para impedir.
 
 Sai com 0 se tudo passar; 1 no primeiro passo que falhar (`--rapido`) ou ao fim (padrao).
 """
+
 from __future__ import annotations
 
 import os
@@ -100,6 +105,8 @@ def main() -> int:
     passos: list[tuple[str, list[str], Path | None]] = [
         ("conformidade (gate)", ["node", "ferramentas/gate/validar.mjs", "--todos"], None),
         ("ambiente (.env.example)", ["node", "ferramentas/sincronizar-env.mjs", "--conferir"], None),
+        # `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.
+        ("formato (ruff format)", ["ruff", "format", "--check", "."], None),
         ("limiares (ruff)", ["ruff", "check", "."], None),
         ("tipos (mypy)", ["mypy", "."], None),
     ]

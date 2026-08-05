@@ -10,7 +10,13 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { criarAuditoria, criarAuthQueNega, criarGeradorId, criarRelogio, criarRepositorio } from '../adapters/memoria/index.js';
+import {
+  criarAuditoria,
+  criarAuthQueNega,
+  criarGeradorId,
+  criarRelogio,
+  criarRepositorio,
+} from '../adapters/memoria/index.js';
 import type { Auth } from '../packages/portas/index.js';
 
 export interface ManifestoDescoberto {
@@ -50,14 +56,19 @@ export function descobrirModulos(raiz: string): ManifestoDescoberto[] {
  * Porta declarada sem provedor conhecido derruba o boot — melhor falhar aqui que servir errado.
  */
 export function resolverDependencias(modulo: ManifestoDescoberto): Record<string, unknown> {
-  const escolhas = JSON.parse(readFileSync(join(modulo.pasta, 'config', 'portas.json'), 'utf8')) as Record<string, string>;
+  const escolhas = JSON.parse(readFileSync(join(modulo.pasta, 'config', 'portas.json'), 'utf8')) as Record<
+    string,
+    string
+  >;
   const dependencias: Record<string, unknown> = {};
 
   for (const porta of modulo.portas) {
     const provedor = escolhas[porta];
     const fabrica = FABRICAS[porta]?.[provedor ?? ''];
     if (fabrica === undefined) {
-      throw new Error(`[composicao] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`);
+      throw new Error(
+        `[composicao] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`,
+      );
     }
     dependencias[porta] = fabrica();
   }

@@ -15,16 +15,21 @@ describe('montarRegistro', () => {
   });
 
   it('remove espaco em volta do titulo', () => {
-    expect(montarRegistro({ titulo: '  Exemplo  ' }, STATUS_VALIDOS, '10001', INSTANTE).titulo).toBe('Exemplo');
+    expect(montarRegistro({ titulo: '  Exemplo  ' }, STATUS_VALIDOS, '10001', INSTANTE).titulo).toBe(
+      'Exemplo',
+    );
   });
 
   it('recusa titulo vazio', () => {
-    expect(() => montarRegistro({ titulo: '   ' }, STATUS_VALIDOS, '10001', INSTANTE)).toThrow(ErroDeValidacao);
+    expect(() => montarRegistro({ titulo: '   ' }, STATUS_VALIDOS, '10001', INSTANTE)).toThrow(
+      ErroDeValidacao,
+    );
   });
 
   it('recusa status fora do vocabulario de config/dominio.json', () => {
-    expect(() => montarRegistro({ titulo: 'X', status: 'inventado' }, STATUS_VALIDOS, '10001', INSTANTE))
-      .toThrow(ErroDeValidacao);
+    expect(() =>
+      montarRegistro({ titulo: 'X', status: 'inventado' }, STATUS_VALIDOS, '10001', INSTANTE),
+    ).toThrow(ErroDeValidacao);
   });
 
   it('nao inventa instante nem identificador — os dois vem de fora', () => {

@@ -10,6 +10,7 @@ Duas responsabilidades, e so estas:
 A consequencia aceita de proposito: campo novo exige tocar aqui TAMBEM. Esquecer faz o campo nao
 aparecer — falha silenciosa que o teste de contrato pega. O inverso, publicar por omissao, e pior.
 """
+
 from __future__ import annotations
 
 from typing import Any, Sequence

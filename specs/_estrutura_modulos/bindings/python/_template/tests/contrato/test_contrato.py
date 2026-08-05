@@ -3,6 +3,7 @@
 Cobre o que a lei exige (specs/arquitetura/03-operacao.md §5): rota declarada, auth NEGADA por padrao e
 payload malformado rejeitado. Roda com adapters de memoria — sem rede, sem banco.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -72,9 +73,7 @@ def test_cria_e_devolve_so_os_campos_da_projecao(cliente: TestClient) -> None:
 
 
 def test_rejeita_campo_desconhecido(cliente: TestClient) -> None:
-    resposta = cliente.post(
-        f"{ROTA_BASE}/registros", json={"titulo": "Novo", "admin": True}, headers=_auth()
-    )
+    resposta = cliente.post(f"{ROTA_BASE}/registros", json={"titulo": "Novo", "admin": True}, headers=_auth())
     assert resposta.status_code == 400
     assert resposta.json()["erro"]["codigo"] == "VALIDACAO"
 

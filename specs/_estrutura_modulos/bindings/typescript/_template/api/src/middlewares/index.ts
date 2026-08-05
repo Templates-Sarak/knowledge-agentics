@@ -104,7 +104,8 @@ export function autenticacao(auth: Auth, rotasPublicas: string[], rotaBase: stri
       next(new ErroApi('NAO_AUTENTICADO', 'token ausente'));
       return;
     }
-    auth.verificar(cabecalho.slice(7))
+    auth
+      .verificar(cabecalho.slice(7))
       .then((claims) => {
         if (claims === null) {
           next(new ErroApi('NAO_AUTENTICADO', 'token invalido'));
@@ -131,9 +132,10 @@ export function exigirPermissao(permissao: string): RequestHandler {
 /** Unico lugar que transforma excecao em resposta. Detalhe vai para o log, nunca para o cliente. */
 export function tratadorDeErro(logger: Logger) {
   return (erro: unknown, req: Request, res: Response, _next: NextFunction): void => {
-    const conhecido = erro instanceof ErroApi
-      ? erro
-      : new ErroApi('INTERNO', 'erro interno', erro instanceof Error ? erro.message : String(erro));
+    const conhecido =
+      erro instanceof ErroApi
+        ? erro
+        : new ErroApi('INTERNO', 'erro interno', erro instanceof Error ? erro.message : String(erro));
 
     logger.error('falha na requisicao', {
       requestId: req.requestId,

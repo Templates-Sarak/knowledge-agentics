@@ -3,6 +3,7 @@
 Fechada quer dizer: acrescentar codigo aqui e mudanca de contrato, nao improviso de rota.
 A mensagem ao cliente e generica e estavel; o detalhe vai so para o log, ligado pelo requestId.
 """
+
 from __future__ import annotations
 
 from typing import Any

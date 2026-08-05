@@ -5,6 +5,7 @@ Aqui mora o CONTRATO ("preciso de um repositorio"), nunca a implementacao ("falo
 Quem atende cada porta e decidido em config/portas.json, e o adapter e INJETADO no bootstrap.
 O modulo nunca importa adapter nem SDK de fornecedor — trocar de provedor e editar um JSON.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

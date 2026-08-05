@@ -39,8 +39,14 @@ export class ErroPorta extends Error {
 
 /** Nomes validos de porta. `config/portas.json` e `modulo.json:portas` usam este vocabulario. */
 export const PORTAS_CONHECIDAS = [
-  'repositorio', 'auditoria', 'relogio', 'geradorId',
-  'storage', 'auth', 'notificador', 'fila',
+  'repositorio',
+  'auditoria',
+  'relogio',
+  'geradorId',
+  'storage',
+  'auth',
+  'notificador',
+  'fila',
 ];
 
 /**

@@ -153,10 +153,15 @@ function principal() {
   process.stdout.write(`projeto criado em ${destino} (binding ${opcoes.binding}, escopo "${escopo}")\n`);
   process.stdout.write('  doutrina instalada em specs/arquitetura/ e specs/adr/000-decisoes-do-template.md\n');
   if (colisoes.length > 0) process.stdout.write(`  ATENCAO: sobrescrito por --forcar: ${colisoes.join(', ')}\n`);
+  const instalar = opcoes.binding === 'python' ? 'pip install -e ".[dev]"' : 'npm install';
+  const verificar = opcoes.binding === 'python' ? 'python verificar.py' : 'npm run verificar';
+  process.stdout.write('  linter e formatador instalados: a config do linter e GERADA de'
+    + ' ferramentas/gate/limiares.mjs (nao a edite a mao)\n');
   process.stdout.write('\nproximos passos:\n');
-  process.stdout.write('  1. node ferramentas/criar-modulo.mjs <id>\n');
-  process.stdout.write('  2. preencher o .env da raiz com os valores reais\n');
-  process.stdout.write('  3. node ferramentas/gate/validar.mjs --todos\n');
+  process.stdout.write(`  1. ${instalar}\n`);
+  process.stdout.write('  2. node ferramentas/criar-modulo.mjs <id>\n');
+  process.stdout.write('  3. preencher o .env da raiz com os valores reais\n');
+  process.stdout.write(`  4. ${verificar}   (gate, env, formato, lint, tipos, testes)\n`);
 }
 
 principal();

@@ -5,6 +5,7 @@ Deterministico significa: mesma entrada, saida byte a byte identica. Por isso o 
 identificador chegam prontos, de fora — `datetime.now()` e `random` sao proibidos aqui e o gate
 reprova (regra `determinismo`). E o que torna o motor testavel sem congelar relogio.
 """
+
 from __future__ import annotations
 
 import html

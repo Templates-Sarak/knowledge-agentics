@@ -28,6 +28,7 @@ Este modulo nasce sem gateway (`consome: []`). Para acrescentar um, crie
                 raise ErroDeGateway("financeiro", f"HTTP {resposta.status_code}")
             return float(resposta.json()["valor"])   # projete SO a fatia que declarou precisar
 """
+
 from __future__ import annotations
 
 

@@ -6,6 +6,7 @@ e verificavel e folclore (ADR-003, specs/adr/000-decisoes-do-template.md).
 
 Adapter NAO conhece dominio: nao existe `if modulo == "catalogo"` aqui dentro.
 """
+
 from __future__ import annotations
 
 import random
@@ -24,7 +25,7 @@ class RepositorioEmMemoria:
     async def listar(self, pagina: int, tamanho: int) -> Pagina:
         inicio = (pagina - 1) * tamanho
         return Pagina(
-            itens=self._registros[inicio:inicio + tamanho],
+            itens=self._registros[inicio : inicio + tamanho],
             pagina=pagina,
             tamanho=tamanho,
             total=len(self._registros),

@@ -1,0 +1,60 @@
+{
+  "$comentario": "Politica de VERIFICACAO do projeto — o que e de fato ajustavel, e nada alem. Lei dona: specs/arquitetura/04-regras.md §4.7. Limiar de escrita NAO entra aqui: 40/3/4 sao LEI, enunciados no §4.7 e com fonte unica em ferramentas/gate/limiares.mjs. Se o projeto pudesse reescreve-los, a lei afirmaria um numero que qualquer repositorio desmente — e o gate viaja dentro do modulo extraido, que sai sem este arquivo. A forma de `linguagens.*` repete de proposito: o validador nao suporta $ref (esquema.mjs), e inline e melhor que uma dependencia que ele nao le.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cobertura", "dependencias", "linguagens"],
+  "properties": {
+    "cobertura": {
+      "$comentario": "Alvo de cobertura de teste. E politica porque depende da maturidade e do risco do projeto, e porque o gate NAO a mede — rodar teste e do comando `verificar`, nunca do gate (§7.1).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minima"],
+      "properties": {
+        "minima": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "dependencias": {
+      "$comentario": "Piso de severidade que reprova numa auditoria de dependencia. E politica porque o corte aceitavel depende da exposicao do sistema, e porque o vocabulario e do ecossistema (npm/pip), nao da doutrina.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severidadeMinima"],
+      "properties": {
+        "severidadeMinima": { "type": "string", "enum": ["low", "moderate", "high", "critical"] }
+      }
+    },
+    "linguagens": {
+      "$comentario": "Qual ferramenta cobra o que, por binding. E politica porque a ESCOLHA da ferramenta e substituivel sem mudar uma virgula da lei — o que a lei fixa e o limiar, nunca quem o mede.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "typescript": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["linter", "formatador"],
+          "properties": {
+            "linter": { "type": "string", "minLength": 1 },
+            "formatador": { "type": "string", "minLength": 1 }
+          }
+        },
+        "javascript": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["linter", "formatador"],
+          "properties": {
+            "linter": { "type": "string", "minLength": 1 },
+            "formatador": { "type": "string", "minLength": 1 }
+          }
+        },
+        "python": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["linter", "formatador"],
+          "properties": {
+            "linter": { "type": "string", "minLength": 1 },
+            "formatador": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

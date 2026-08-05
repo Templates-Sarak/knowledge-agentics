@@ -9,10 +9,16 @@
  * O linter continua sendo a verificação PROFUNDA (complexidade ciclomática, tipos, regras de
  * idioma). Aqui ficam os quatro limiares que dá para medir por estrutura de bloco, de forma
  * conservadora: na dúvida, esta família não acusa.
+ *
+ * Os números vêm de `../limiares.mjs`, a fonte única — a config do linter é GERADA de lá. Enquanto
+ * cada lado guardava a sua cópia, o §7.2 mandava o linter vencer o gate numa divergência que
+ * ninguém tinha como notar.
  */
-const MAX_LINHAS_FUNCAO = 40;
-const MAX_ANINHAMENTO = 3;
-const MAX_PARAMETROS = 4;
+import { LIMIARES } from '../limiares.mjs';
+
+const MAX_LINHAS_FUNCAO = LIMIARES.linhasFuncao;
+const MAX_ANINHAMENTO = LIMIARES.aninhamento;
+const MAX_PARAMETROS = LIMIARES.parametros;
 
 const EXT_CHAVES = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 

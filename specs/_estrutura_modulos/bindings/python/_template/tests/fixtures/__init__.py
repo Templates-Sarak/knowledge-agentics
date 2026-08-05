@@ -7,6 +7,7 @@ esta mal desenhada ou falta o adapter de memoria.
 Relogio e geradorId sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar o
 relogio do sistema, e o que prova que o dominio nao chama `datetime.now()` escondido.
 """
+
 from __future__ import annotations
 
 from typing import Any, Sequence
@@ -24,7 +25,7 @@ class RepositorioEmMemoria:
     async def listar(self, pagina: int, tamanho: int) -> Pagina:
         inicio = (pagina - 1) * tamanho
         return Pagina(
-            itens=self._registros[inicio:inicio + tamanho],
+            itens=self._registros[inicio : inicio + tamanho],
             pagina=pagina,
             tamanho=tamanho,
             total=len(self._registros),

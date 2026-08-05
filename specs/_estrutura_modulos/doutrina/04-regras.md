@@ -295,3 +295,19 @@ regras de `ui` não são heurísticas — `ui-kit` lê import, e o modo `proprio
 
 `ferramentas/gate/testes/` mantém um módulo-fixture conforme e um fixture por regra violada. Regra nova sem
 teste não entra, e regressão no gate reprova sozinha — a mesma disciplina que o gate exige dos módulos.
+
+**Toda regra deste catálogo tem caso próprio**, e "próprio" é a palavra que importa: co-achado declarado em
+`tambem` é **teto, não obrigação** — a regra que só aparecia ali podia parar de acusar sem nada falhar. Um
+caso por regra é o que torna as duas coisas distinguíveis.
+
+**O caso roda nos três bindings, não naquele em que foi escrito.** Um caso que fixasse
+`api/src/routes/index.ts` provaria a regra só em TypeScript, embora ela valha nos três. Por isso o caso nomeia
+um **alvo lógico** (`rotas`, `mapeadores`), que o harness resolve para o caminho de cada binding, e declara o
+trecho por **família de sintaxe** — TS e JS registram rota do mesmo jeito, Python usa decorator. Resolver só o
+caminho seria pior que a lacuna: o caso deixaria de pular, o trecho não casaria com a linguagem, a regra não
+acharia nada e o autoteste anunciaria cobertura inexistente. Mutação agnóstica — manifesto, `config/*.json`,
+`openapi.yaml`, SQL — não precisa de nenhum dos dois.
+
+**O que não dá para portar continua aparecendo como SEM COBERTURA, com o motivo, nunca como aprovação.** Caso
+que muta `web/` não roda no molde Python, que nasce sem tela por desenho; inventar cobertura ali seria pior
+que declarar a ausência.

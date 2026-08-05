@@ -5,6 +5,7 @@ Regras que este arquivo materializa:
   - Cascata (ADR-004): processo > .env do modulo > .env apontado por ENV_RAIZ > default de tunable.
   - Falha rapida: env ou config ausente DERRUBA o boot. Nunca `os.getenv("X", "http://localhost")`.
 """
+
 from __future__ import annotations
 
 import json

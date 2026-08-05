@@ -8,6 +8,7 @@ O que este modulo faz:
 O que ele NAO faz: regra de negocio. Nenhum modulo importa daqui, e nada aqui conhece o dominio
 de modulo nenhum. Acrescentar um modulo nao pode exigir editar este arquivo.
 """
+
 from __future__ import annotations
 
 import json

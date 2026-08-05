@@ -4,6 +4,7 @@ O contrato manda: toda rota daqui existe em contrato/openapi.yaml, e o inverso t
 Regras cobradas aqui: valida na borda ANTES do dominio; exige permissao nomeada; monta a resposta
 pelo mapeador (nunca o registro cru); lanca ErroApi (nunca resposta de erro ad hoc).
 """
+
 from __future__ import annotations
 
 from typing import Any

@@ -24,7 +24,11 @@ export type CodigoErro = keyof typeof CODIGOS_DE_ERRO;
 
 /** Falha de porta. O adapter TRADUZ o erro do fornecedor para ca — o dominio nunca ve o SDK. */
 export class ErroPorta extends Error {
-  constructor(public readonly codigo: CodigoErro, mensagem: string, public readonly detalhe?: string) {
+  constructor(
+    public readonly codigo: CodigoErro,
+    mensagem: string,
+    public readonly detalhe?: string,
+  ) {
     super(mensagem);
     this.name = 'ErroPorta';
   }
@@ -32,8 +36,14 @@ export class ErroPorta extends Error {
 
 /** Nomes validos de porta. `config/portas.json` e `modulo.json:portas` usam este vocabulario. */
 export const PORTAS_CONHECIDAS = [
-  'repositorio', 'auditoria', 'relogio', 'geradorId',
-  'storage', 'auth', 'notificador', 'fila',
+  'repositorio',
+  'auditoria',
+  'relogio',
+  'geradorId',
+  'storage',
+  'auth',
+  'notificador',
+  'fila',
 ] as const;
 
 export type NomeDePorta = (typeof PORTAS_CONHECIDAS)[number];

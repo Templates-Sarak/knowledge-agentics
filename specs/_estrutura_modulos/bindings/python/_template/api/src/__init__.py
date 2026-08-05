@@ -4,6 +4,7 @@ REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria
 adapter nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
 config/portas.json. E o que permite trocar Postgres por outro banco editando um JSON.
 """
+
 from __future__ import annotations
 
 from fastapi import FastAPI

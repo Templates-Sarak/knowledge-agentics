@@ -6,7 +6,13 @@
 //
 // Relogio e geradorId sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar
 // o relogio do sistema, e o que prova que o dominio nao chama `new Date()` escondido.
-import type { Auditoria, DependenciasModulo, GeradorId, Relogio, Repositorio } from '../../core/portas/index.js';
+import type {
+  Auditoria,
+  DependenciasModulo,
+  GeradorId,
+  Relogio,
+  Repositorio,
+} from '../../core/portas/index.js';
 import type { Registro } from '../../core/dominio/index.js';
 import type { Auth } from '../../api/src/middlewares/index.js';
 

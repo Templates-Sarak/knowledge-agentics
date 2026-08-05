@@ -22,7 +22,10 @@ export interface NovoRegistro {
 
 /** Falha de validacao do dominio. A borda a traduz para VALIDACAO (400). */
 export class ErroDeValidacao extends Error {
-  constructor(public readonly campo: string, mensagem: string) {
+  constructor(
+    public readonly campo: string,
+    mensagem: string,
+  ) {
     super(mensagem);
     this.name = 'ErroDeValidacao';
   }

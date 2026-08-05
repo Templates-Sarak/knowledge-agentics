@@ -228,8 +228,50 @@ export const CASOS = [
     descricao: 'migration sem bloco de rollback',
     mutar: (m) => m.escrever('database/migrations/0002-cria-outra.sql', 'create table x (id uuid);\n'),
   },
+  {
+    regra: 'rls',
+    descricao: 'tabela declarada sem ENABLE ROW LEVEL SECURITY',
+    // `rls` e AVISO, e o harness coleta achado de qualquer nivel — `analisar` nao filtra por nivel
+    // e `verificarCaso` compara ids. Antes deste caso a regra so aparecia como `tambem` alheio, e
+    // `tambem` e TETO: se ela parasse de acusar, nada falharia.
+    //
+    // O ALTER sai dos DOIS arquivos: a regra le TODO o SQL do modulo junto (`ctx.sql`), entao
+    // apaga-lo so do `schema.sql` deixava a copia da migration responder por ele e a regra
+    // continuava — com razao — calada. Um so lugar nao e o defeito; o defeito e a tabela nao ter
+    // RLS em lugar nenhum, que e o esquecimento real que a regra persegue.
+    //
+    // Agnostico de binding: os dois arquivos sao identicos nos tres moldes. `migrations` segue
+    // calada — ela cobra nome e bloco de rollback, e nenhum dos dois muda aqui.
+    mutar: (m) => {
+      const alter = 'alter table "<escopo>"."<modulo>_auditoria" enable row level security;';
+      m.substituir('database/schema.sql', alter, '');
+      m.substituir('database/migrations/0001-cria-metadados.sql', alter, '');
+    },
+  },
 
   // --- Configuracao e ambiente ---------------------------------------------------------------
+  {
+    regra: 'config-valida',
+    descricao: 'config/*.json presente e com JSON quebrado',
+    // PRESENTE e ilegivel — as duas coisas ao mesmo tempo, que e o que separa esta regra da
+    // `estrutura` (que so cobra presenca). `schema-config` e `config-morta` pulam valor nulo de
+    // proposito, entao o defeito acusa UM id.
+    mutar: (m) => m.escrever('config/dominio.json', '{ "statusValidos": [\n'),
+  },
+  {
+    regra: 'config-morta',
+    descricao: 'chave de config declarada e nunca lida',
+    // `dominio` tem schema LIVRE por definicao, entao a chave nova nao trombra com `schema-config`.
+    mutar: (m) => m.config('dominio', (x) => ({ ...x, chaveNuncaLida: 'sem leitor' })),
+  },
+  {
+    regra: 'env-fora-do-carregador',
+    descricao: 'env lida fora do carregador de config',
+    // `process.env` NU: sem chave `<MODULO>_*` (senao acusaria `env-declarado`) e sem default
+    // literal (senao acusaria `fallback-silencioso`). Isola a regra, que ate aqui so vivia como
+    // `tambem` de casos alheios.
+    mutar: (m) => m.escrever('core/dominio/mau.ts', 'export const ambiente = process.env;\n'),
+  },
   {
     regra: 'schema-config',
     descricao: 'nivelLog fora do vocabulario',
@@ -389,7 +431,13 @@ export const CASOS = [
   {
     regra: 'contrato-sincronizado',
     descricao: 'rota no codigo e ausente do contrato',
-    mutar: (m) => m.acrescentar('api/src/routes/index.ts', "\nrouter.get('/nao-declarada', () => undefined);\n"),
+    // Alvo LOGICO + trecho por sintaxe: o caminho do arquivo de rotas muda por binding
+    // (`api/src/rotas.py` no Python) e a forma de registrar rota tambem (decorator). Fixar os dois
+    // deixava esta regra provada so em TypeScript.
+    mutar: (m) => m.acrescentarEm('rotas', {
+      js: "\nrouter.get('/nao-declarada', () => undefined);\n",
+      py: '\n\n@router.get("/nao-declarada")\ndef nao_declarada():\n    return {}\n',
+    }),
   },
   {
     regra: 'contrato-sincronizado',
@@ -437,10 +485,12 @@ export const CASOS = [
   {
     regra: 'payload-camelcase',
     descricao: 'campo snake_case na projecao de saida',
-    mutar: (m) => m.acrescentar(
-      'api/src/mapeadores/index.ts',
-      '\nexport function paraContratoErrado(r) {\n  return { hash: r.hash, criado_em: r.criadoEm };\n}\n',
-    ),
+    // `hash` esta declarado no contrato e `criado_em` fica fora do camelCase, entao
+    // `projecao-contrato` (que ignora chave nao-camelCase de proposito) segue calada: UM id.
+    mutar: (m) => m.acrescentarEm('mapeadores', {
+      js: '\nexport function paraContratoErrado(r) {\n  return { hash: r.hash, criado_em: r.criadoEm };\n}\n',
+      py: '\n\ndef para_contrato_errado(r):\n    return {"hash": r.hash, "criado_em": r.criado_em}\n',
+    }),
   },
   {
     regra: 'saida-sensivel',
@@ -480,7 +530,12 @@ export const CASOS = [
   {
     regra: 'saida-crua',
     descricao: 'devolve o registro cru na resposta',
-    mutar: (m) => m.acrescentar('api/src/routes/index.ts', '\nexport const cru = (res, registro) => res.json(registro);\n'),
+    // As duas metades do padrao, uma por sintaxe: `json(registro)` no lado Express, e o `return`
+    // direto do nome do lado do BANCO no lado FastAPI, que nao passa por `.json(...)`.
+    mutar: (m) => m.acrescentarEm('rotas', {
+      js: '\nexport const cru = (res, registro) => res.json(registro);\n',
+      py: '\n\ndef cru(linha):\n    return linha\n',
+    }),
   },
 
   // --- Operacao ------------------------------------------------------------------------------

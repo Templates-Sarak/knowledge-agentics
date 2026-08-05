@@ -4,6 +4,7 @@ Uma linha JSON por evento, com requestId. Campos de `camposSensiveis` sao redigi
 responsabilidade de quem chama lembrar. `print()` e proibido no modulo (regra `log`): a saida vai
 por `sys.stdout`, que e o unico canal do logger.
 """
+
 from __future__ import annotations
 
 import json

@@ -35,7 +35,10 @@ function pedir(caminho, opcoes = {}) {
 }
 
 function autenticado(caminho, opcoes = {}) {
-  return pedir(caminho, { ...opcoes, headers: { authorization: `Bearer ${TOKEN}`, ...(opcoes.headers ?? {}) } });
+  return pedir(caminho, {
+    ...opcoes,
+    headers: { authorization: `Bearer ${TOKEN}`, ...(opcoes.headers ?? {}) },
+  });
 }
 
 describe('rotas obrigatorias', () => {
@@ -80,7 +83,10 @@ describe('registros', () => {
   });
 
   it('cria e devolve so os campos da projecao', async () => {
-    const resposta = await autenticado('/registros', { method: 'POST', body: JSON.stringify({ titulo: 'Novo' }) });
+    const resposta = await autenticado('/registros', {
+      method: 'POST',
+      body: JSON.stringify({ titulo: 'Novo' }),
+    });
     expect(resposta.status).toBe(201);
     expect(Object.keys(await resposta.json()).sort()).toEqual(['criadoEm', 'hash', 'status', 'titulo']);
   });

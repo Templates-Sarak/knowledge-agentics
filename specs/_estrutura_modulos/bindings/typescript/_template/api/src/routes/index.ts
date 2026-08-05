@@ -25,7 +25,10 @@ function lerPaginacao(query: Record<string, unknown>, config: ConfiguracaoModulo
     throw new ErroApi('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
   }
   if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.paginaTamanhoMaximo) {
-    throw new ErroApi('VALIDACAO', `parametro "tamanho" deve estar entre 1 e ${config.api.paginaTamanhoMaximo}`);
+    throw new ErroApi(
+      'VALIDACAO',
+      `parametro "tamanho" deve estar entre 1 e ${config.api.paginaTamanhoMaximo}`,
+    );
   }
   return [pagina, tamanho];
 }
@@ -47,7 +50,8 @@ function rotasObrigatorias(router: Router, { deps, config }: Opcoes): void {
   const { manifesto } = config;
 
   router.get('/health', (_req, res, next) => {
-    deps.repositorio.contar()
+    deps.repositorio
+      .contar()
       .then(() => res.json({ ok: true, modulo: manifesto.id }))
       .catch(next);
   });
@@ -57,7 +61,8 @@ function rotasObrigatorias(router: Router, { deps, config }: Opcoes): void {
   });
 
   router.get('/resumo', (_req, res, next) => {
-    deps.repositorio.contar()
+    deps.repositorio
+      .contar()
       .then((total) => res.json({ total }))
       .catch(next);
   });
@@ -82,7 +87,9 @@ function rotasDeRegistros(router: Router, { deps, config }: Opcoes): void {
     Promise.resolve()
       .then(() => lerPaginacao(req.query as Record<string, unknown>, config))
       .then(([pagina, tamanho]) => deps.repositorio.listar(pagina, tamanho))
-      .then((resultado) => res.json(paraColecao(resultado.itens, resultado.pagina, resultado.tamanho, resultado.total)))
+      .then((resultado) =>
+        res.json(paraColecao(resultado.itens, resultado.pagina, resultado.tamanho, resultado.total)),
+      )
       .catch(next);
   });
 
@@ -92,7 +99,8 @@ function rotasDeRegistros(router: Router, { deps, config }: Opcoes): void {
       next(new ErroApi('VALIDACAO', 'hash ausente no caminho'));
       return;
     }
-    deps.repositorio.buscarPorHash(hash)
+    deps.repositorio
+      .buscarPorHash(hash)
       .then((registro) => {
         if (registro === null) throw new ErroApi('NAO_ENCONTRADO', 'registro nao encontrado');
         res.json(paraContrato(registro));
@@ -108,7 +116,12 @@ function rotasDeRegistros(router: Router, { deps, config }: Opcoes): void {
   });
 }
 
-async function criar(corpo: unknown, deps: DependenciasModulo, config: ConfiguracaoModulo, requestId: string) {
+async function criar(
+  corpo: unknown,
+  deps: DependenciasModulo,
+  config: ConfiguracaoModulo,
+  requestId: string,
+) {
   const entrada = lerCorpo(corpo);
   const registro = montarRegistro(
     entrada as { titulo: string; status?: string },

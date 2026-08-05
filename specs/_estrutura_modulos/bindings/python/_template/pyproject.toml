@@ -30,26 +30,25 @@ pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
-[tool.ruff]
-# Limiares de specs/arquitetura/04-regras.md §4.7. O gate cobre a arquitetura ENTRE arquivos;
-# o linter cobre a qualidade DENTRO do arquivo.
-line-length = 110
-target-version = "py311"
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "B", "C90", "T20", "ANN", "RET", "SIM", "PL"]
-ignore = ["ANN401"]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 10
-
-[tool.ruff.lint.pylint]
-max-args = 4
-max-statements = 40
-
-[tool.ruff.lint.per-file-ignores]
-# Teste pode usar assert, nao precisa de anotacao completa e nao tem limite de tamanho.
-"tests/**" = ["ANN", "PLR2004", "S101"]
+# NAO ha `[tool.ruff]` aqui, e a ausencia e DELIBERADA — ela e o que mantem a cobranca LIGADA.
+#
+# O ruff sobe a arvore procurando configuracao e IGNORA `pyproject.toml` que nao declare
+# `[tool.ruff]`. Sem a secao, quem governa os arquivos deste modulo e o `.ruff.toml` da raiz,
+# GERADO de `ferramentas/gate/limiares.mjs` — a mesma fonte unica que o gate usa, e a razao de o
+# numero 40 nao estar escrito em lugar nenhum deste arquivo.
+#
+# COM a secao, ela sombrearia a da raiz e os limiares voltariam ao DEFAULT do ruff (max-args 5,
+# max-statements 50). Declarar aqui DESLIGA o limiar em vez de liga-lo — o contrario do que a
+# intuicao diz, e o motivo de este comentario existir no lugar da secao.
+#
+# LIMITE CONHECIDO — o modulo EXTRAIDO. Ao virar repositorio proprio, ele sai sem o `.ruff.toml`
+# da raiz e fica sem limiar cobrado pelo LINTER ate ser religado a um esqueleto de projeto
+# (`ferramentas/criar-projeto.mjs`), que o traz de volta gerado da mesma fonte. A janela e estreita
+# e o piso nao cai nela: o gate viaja DENTRO do modulo e cobra os mesmos 40/3/4 por
+# `limiar-funcao`, `limiar-aninhamento` e `limiar-parametros`. Perde-se a verificacao PROFUNDA do
+# linter (complexidade, idiomas), nunca o piso. Fechar a janela com uma secao aqui seria pior:
+# compraria cobertura para o transitorio desligando-a no caso normal. Quem a fecha de vez e a
+# config POR MODULO gerada de cada `modulo.json`.
 
 [tool.mypy]
 python_version = "3.11"

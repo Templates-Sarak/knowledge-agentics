@@ -5,7 +5,15 @@
 // que nao e verificavel e folclore (ADR-003, specs/adr/000-decisoes-do-template.md).
 //
 // Adapter NAO conhece dominio: nao existe `if (modulo === 'catalogo')` aqui dentro.
-import type { Auditoria, Auth, EventoDeAuditoria, GeradorId, Pagina, Relogio, Repositorio } from '../../packages/portas/index.js';
+import type {
+  Auditoria,
+  Auth,
+  EventoDeAuditoria,
+  GeradorId,
+  Pagina,
+  Relogio,
+  Repositorio,
+} from '../../packages/portas/index.js';
 
 interface ComHash {
   hash: string;

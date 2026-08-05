@@ -5,6 +5,7 @@ Ordem obrigatoria, igual em todo modulo:
 
 Nenhuma rota monta erro a mao: quem transforma excecao em resposta e o tratador, no fim da cadeia.
 """
+
 from __future__ import annotations
 
 import time
@@ -27,7 +28,7 @@ def _caminho_relativo(caminho: str, rota_base: str) -> str:
     e /health, /meta e /resumo responderiam 401."""
     if not caminho.startswith(rota_base):
         return caminho
-    return caminho[len(rota_base):] or "/"
+    return caminho[len(rota_base) :] or "/"
 
 
 @dataclass(frozen=True)

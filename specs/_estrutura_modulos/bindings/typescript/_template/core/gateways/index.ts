@@ -33,7 +33,10 @@
 
 /** Falha ao falar com outro modulo. A borda a traduz para DEPENDENCIA_EXTERNA (502). */
 export class ErroDeGateway extends Error {
-  constructor(public readonly modulo: string, motivo: string) {
+  constructor(
+    public readonly modulo: string,
+    motivo: string,
+  ) {
     super(`gateway "${modulo}" indisponivel: ${motivo}`);
     this.name = 'ErroDeGateway';
   }

@@ -1,0 +1,18 @@
+# Companheiro do .prettierrc.json. O formatador cuida da FORMA, e forma nao e lei: os limiares
+# 40/3/4 sao (specs/arquitetura/04-regras.md §4.7) e vivem em ferramentas/gate/limiares.mjs.
+# O printWidth 110 acompanha o line-length do .ruff.toml, para os tres bindings medirem igual.
+
+# Ferramental VENDORIZADO da base Sarak: o dono e outro repositorio e a correcao vive la.
+ferramentas/
+.agents/
+.githooks/
+
+# Saida de maquina.
+node_modules/
+dist/
+build/
+coverage/
+gerados/
+
+# GERADO por ferramentas/gerar-config-lint.mjs — quem manda na forma dele e o gerador, nao o prettier.
+eslint.config.js

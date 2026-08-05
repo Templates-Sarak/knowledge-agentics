@@ -18,7 +18,10 @@ function lerPaginacao(query, config) {
     throw new ErroApi('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
   }
   if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.paginaTamanhoMaximo) {
-    throw new ErroApi('VALIDACAO', `parametro "tamanho" deve estar entre 1 e ${config.api.paginaTamanhoMaximo}`);
+    throw new ErroApi(
+      'VALIDACAO',
+      `parametro "tamanho" deve estar entre 1 e ${config.api.paginaTamanhoMaximo}`,
+    );
   }
   return [pagina, tamanho];
 }
@@ -49,7 +52,8 @@ function rotasObrigatorias(router, { deps, config }) {
   const { manifesto } = config;
 
   router.get('/health', (_req, res, next) => {
-    deps.repositorio.contar()
+    deps.repositorio
+      .contar()
       .then(() => res.json({ ok: true, modulo: manifesto.id }))
       .catch(next);
   });
@@ -59,7 +63,8 @@ function rotasObrigatorias(router, { deps, config }) {
   });
 
   router.get('/resumo', (_req, res, next) => {
-    deps.repositorio.contar()
+    deps.repositorio
+      .contar()
       .then((total) => res.json({ total }))
       .catch(next);
   });
@@ -77,7 +82,8 @@ function rotasDeRegistros(router, { deps, config }) {
   });
 
   router.get('/registros/:hash', exigirPermissao(ler), (req, res, next) => {
-    deps.repositorio.buscarPorHash(req.params.hash)
+    deps.repositorio
+      .buscarPorHash(req.params.hash)
       .then((registro) => {
         if (registro === null) throw new ErroApi('NAO_ENCONTRADO', 'registro nao encontrado');
         res.json(paraContrato(registro));

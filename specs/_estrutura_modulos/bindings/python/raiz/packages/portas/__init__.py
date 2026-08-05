@@ -8,6 +8,7 @@ Por que a interface canonica existe: um adapter generico precisa de uma forma co
 modulo inventasse a propria, nenhum adapter serviria a dois. O `core/portas/` do modulo ESPELHA
 o que esta aqui, e viaja com o modulo na extracao.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,8 +28,14 @@ CODIGOS_DE_ERRO: dict[str, int] = {
 }
 
 PORTAS_CONHECIDAS = (
-    "repositorio", "auditoria", "relogio", "geradorId",
-    "storage", "auth", "notificador", "fila",
+    "repositorio",
+    "auditoria",
+    "relogio",
+    "geradorId",
+    "storage",
+    "auth",
+    "notificador",
+    "fila",
 )
 
 

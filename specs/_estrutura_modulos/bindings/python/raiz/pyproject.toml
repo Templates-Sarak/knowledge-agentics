@@ -50,20 +50,10 @@ namespace_packages = true
 # Checar daqui misturaria os sys.path de todos os modulos — o oposto do isolamento.
 exclude = ["^modulos/"]
 
-[tool.ruff]
-line-length = 110
-target-version = "py311"
-# Ferramental de agente injetado no projeto (.agents/, .githooks/) e mantido na base Sarak, nao aqui.
-# Um linter nao julga codigo vendorizado: o dono dele e outro repositorio, e a correcao vive la.
-exclude = [".agents", ".githooks", ".venv"]
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "B", "C90", "T20", "ANN", "RET", "SIM", "PL"]
-ignore = ["ANN401"]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 10
-
-[tool.ruff.lint.pylint]
-max-args = 4
-max-statements = 40
+# A config do ruff mora em `.ruff.toml`, GERADA de `ferramentas/gate/limiares.mjs`, e NAO aqui.
+#
+# O motivo e de precedencia, nao de gosto: o ruff escolhe UM arquivo de configuracao, e o
+# `.ruff.toml` vence o `pyproject.toml` por inteiro — nao ha merge. Manter uma secao `[tool.ruff]`
+# aqui a deixaria silenciosamente morta, que e pior que duplicar: duas fontes, e a que o autor
+# edita nao e a que vale. Os limiares 40/3/4 sao LEI (specs/arquitetura/04-regras.md §4.7) e por
+# isso sao derivados, nunca escritos a mao — era este arquivo que os repetia antes.

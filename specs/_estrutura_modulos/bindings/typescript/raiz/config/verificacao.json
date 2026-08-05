@@ -1,0 +1,15 @@
+{
+  "_doc": "Politica de VERIFICACAO deste projeto. Schema: ferramentas/gate/schemas/verificacao.schema.json. NAO guarda limiar de escrita — 40/3/4 sao LEI (specs/arquitetura/04-regras.md §4.7), com fonte unica em ferramentas/gate/limiares.mjs, e o gate os leva junto quando o modulo e extraido.",
+  "cobertura": {
+    "_doc": "% minimo de cobertura de teste. Politica: depende da maturidade e do risco. O gate nao mede — rodar teste e do comando verificar (§7.1).",
+    "minima": 80
+  },
+  "dependencias": {
+    "_doc": "Piso de severidade que reprova numa auditoria de dependencia. Politica: o corte depende da exposicao do sistema.",
+    "severidadeMinima": "high"
+  },
+  "linguagens": {
+    "_doc": "Quem cobra o que. Politica: a ferramenta e substituivel sem mudar a lei — a lei fixa o limiar, nunca quem o mede.",
+    "typescript": { "linter": "eslint", "formatador": "prettier" }
+  }
+}

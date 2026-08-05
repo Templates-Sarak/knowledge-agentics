@@ -10,7 +10,13 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { criarAuditoria, criarAuthQueNega, criarGeradorId, criarRelogio, criarRepositorio } from '../adapters/memoria/index.js';
+import {
+  criarAuditoria,
+  criarAuthQueNega,
+  criarGeradorId,
+  criarRelogio,
+  criarRepositorio,
+} from '../adapters/memoria/index.js';
 
 /** Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so. */
 const FABRICAS = {
@@ -50,7 +56,9 @@ export function resolverDependencias(modulo) {
     const provedor = escolhas[porta];
     const fabrica = FABRICAS[porta]?.[provedor ?? ''];
     if (fabrica === undefined) {
-      throw new Error(`[composicao] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`);
+      throw new Error(
+        `[composicao] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`,
+      );
     }
     dependencias[porta] = fabrica();
   }

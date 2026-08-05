@@ -6,6 +6,7 @@ Regras desta camada:
     identificador chegam pelas portas `relogio` e `geradorId` (specs/arquitetura/01-modulo.md §5.1).
   - ZERO literal de vocabulario: os status validos vem de config/dominio.json.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict

@@ -1,4 +1,5 @@
 """Testes do dominio do modulo <modulo> — regras e validacao, sem I/O."""
+
 from __future__ import annotations
 
 import pytest
