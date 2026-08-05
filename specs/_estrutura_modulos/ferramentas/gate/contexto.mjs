@@ -15,11 +15,18 @@ import { basename, join, relative, sep } from 'node:path';
 // Gerado por ferramenta, nunca escrito por pessoa. Precisa cobrir TODO cache de linter e de
 // runner: sem `.ruff_cache` aqui, rodar o linter fazia o gate reprovar em seguida por
 // "entrada nao prevista" — a verificacao brigando com a verificacao.
-const IGNORAR = new Set([
+const NAO_PERCORRER = new Set([
   'node_modules', '.git', '.turbo', 'dist', 'build', 'coverage', 'gerados',
   '__pycache__', '.venv', 'venv', '.pytest_cache', '.ruff_cache', '.mypy_cache',
   '.eslintcache', '.vite', '.next',
 ]);
+
+// "Nao percorra o conteudo" e "nao conte como entrada da arvore" sao DUAS decisoes, e `gerados/` as
+// separa: o conteudo dela e saida de maquina — varre-lo faria `hardcode-url`, `limiar-funcao` e
+// `log` julgarem HTML gerado —, mas a PASTA e item declarado da arvore (`01-modulo.md` §2, "so se
+// geraArtefato") e ja consta de `ENTRADAS_PERMITIDAS`. Enquanto as duas decisoes eram uma so, a
+// pasta era invisivel ao gate: entrada permitida que nunca chegava a existir para regra nenhuma.
+const CONTEUDO_IGNORADO_MAS_ENTRADA = new Set(['gerados']);
 
 const EXT_CODIGO = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py']);
 const ID_SINTETICO_DO_MOLDE = 'molde';
@@ -36,7 +43,7 @@ function lerTexto(caminho) {
 /** Percorre a pasta do módulo, ignorando o que não é fonte. Devolve caminhos absolutos. */
 function percorrer(pasta, acumulado = []) {
   for (const entrada of readdirSync(pasta, { withFileTypes: true })) {
-    if (IGNORAR.has(entrada.name)) continue;
+    if (NAO_PERCORRER.has(entrada.name)) continue;
     const caminho = join(pasta, entrada.name);
     if (entrada.isDirectory()) {
       percorrer(caminho, acumulado);
@@ -173,9 +180,10 @@ export function carregarContexto(raiz, raizProjeto) {
     sql: arquivos.filter((a) => a.ext === '.sql'),
     // Artefato de build e cache de runtime nao contam como "entrada da arvore" — sao gerados,
     // nao escritos. Sem este filtro, `__pycache__` e `node_modules` reprovariam estrutura-estrita.
+    // `gerados/` e a excecao declarada: conteudo fora, presenca dentro (ver o Set acima).
     entradasRaiz: readdirSync(raiz, { withFileTypes: true })
       .map((e) => e.name)
-      .filter((nome) => !IGNORAR.has(nome)),
+      .filter((nome) => !NAO_PERCORRER.has(nome) || CONTEUDO_IGNORADO_MAS_ENTRADA.has(nome)),
   };
 }
 

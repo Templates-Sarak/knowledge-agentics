@@ -1,6 +1,7 @@
 /**
  * regras/estrutura.mjs — família "Estrutura" do catálogo (specs/arquitetura/04-regras.md §4.1).
- * ids: manifesto, schema-manifesto, estrutura, estrutura-estrita, web-declarado, testes
+ * ids: manifesto, schema-manifesto, estrutura, estrutura-estrita, web-declarado, artefato-declarado,
+ *      testes
  */
 import { carregarEsquema, validar } from '../esquema.mjs';
 
@@ -23,9 +24,31 @@ const ENTRADAS_PERMITIDAS = new Set([
 
 const CONFIGS = ['api', 'dominio', 'seguranca', 'portas', 'textos'];
 
+/**
+ * As três pastas que `geraArtefato` declara (01-modulo.md §2, "só se geraArtefato").
+ *
+ * `database/` fica DE FORA de propósito, embora o `criar-modulo.mjs --sem-artefato` também a
+ * descarte: quem declara banco é `dados.tabelas`, não `geraArtefato`. Módulo sem artefato COM
+ * tabela própria é o caso ordinário de domínio — cobrar `database/` aqui seria falso positivo
+ * garantido nele.
+ */
+const PASTAS_DE_ARTEFATO = ['core/motor/', 'core/templates/', 'gerados/'];
+
 /** Existe ao menos um arquivo sob o prefixo informado? */
 export function temArquivoEm(ctx, prefixo) {
   return ctx.arquivos.some((a) => a.rel.startsWith(prefixo));
+}
+
+/**
+ * A pasta de artefato está presente?
+ *
+ * `gerados/` se detecta pela ENTRADA da raiz, não por arquivo: o conteúdo dela é saída de máquina e
+ * fica fora de `ctx.arquivos` de propósito (varrê-lo faria as regras de código julgar HTML gerado).
+ * As outras duas são fonte escrita à mão, e ali o arquivo é a prova — pasta vazia não é `core/motor`.
+ */
+function temPastaDeArtefato(ctx, pasta) {
+  if (pasta !== 'gerados/') return temArquivoEm(ctx, pasta);
+  return ctx.entradasRaiz.includes('gerados');
 }
 
 function conferirIdentidade(manifesto, ctx) {
@@ -114,6 +137,32 @@ export default [
       const paginas = ctx.arquivos.filter((a) => a.rel.startsWith('web/src/pages/') && !a.eTeste);
       if (paginas.length === 0) return ['rotaWeb declarada mas web/src/pages nao tem pagina real'];
       return [];
+    },
+  },
+  {
+    id: 'artefato-declarado',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      // BIDIRECIONAL: `true` exige as tres, `false` proibe as tres. A doutrina autoriza os DOIS
+      // consertos ("Descartar e permitido; renomear, nao"), entao a mensagem nomeia os dois — dizer
+      // so um manda o autor criar pasta que ele decidiu, com razao, nao ter.
+      //
+      // Guarda de aplicabilidade primeiro: manifesto ausente ou ilegivel e do `manifesto`, e campo
+      // ausente ou de tipo errado e do `schema-manifesto`. So declaracao booleana de verdade entra.
+      if (typeof ctx.manifesto?.geraArtefato !== 'boolean') return [];
+
+      const divergentes = PASTAS_DE_ARTEFATO
+        .filter((pasta) => temPastaDeArtefato(ctx, pasta) !== ctx.manifesto.geraArtefato);
+      if (divergentes.length === 0) return [];
+
+      const todas = PASTAS_DE_ARTEFATO.join(', ');
+      if (ctx.manifesto.geraArtefato) {
+        return [`geraArtefato: true mas ${divergentes.join(', ')} ausente no modulo — crie o que falta, `
+          + `ou declare geraArtefato: false e descarte as tres (${todas}). Descartar e permitido; renomear, nao`];
+      }
+      return [`geraArtefato: false mas ${divergentes.join(', ')} presente no modulo — descarte o que sobra, `
+        + `ou declare geraArtefato: true e tenha as tres (${todas}). Descartar e permitido; renomear, nao`];
     },
   },
   {

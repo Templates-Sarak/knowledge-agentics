@@ -103,7 +103,7 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | `rotasPublicas` | string[] | rotas sem autenticação, no formato `"MÉTODO /caminho"` — **opt-in explícito** |
 | `camposSensiveis` | string[] | campos que nunca saem em resposta, log ou OpenAPI |
 | `navegacao` | objeto \| null | `{ label, icone, ordem }` — o que o conector monta no menu |
-| `exportaResumo` | boolean | se entra no dashboard cross-módulo |
+| `exportaResumo` | boolean | se entra no dashboard cross-módulo. `true` **obriga** o schema `200` de `GET /resumo` a declarar `total` (inteiro) — a forma mínima que o agregador lê sem conhecer o módulo ([[02-contrato-e-dados]] §2) |
 | `geraArtefato` | boolean | se possui `core/motor`, `core/templates` e `gerados/` |
 
 ## 3.2 O que o manifesto habilita
@@ -256,8 +256,10 @@ aqui para que a próxima fase não improvise.
 
 | modo | O que significa | O que o gate cobra |
 |---|---|---|
-| `proprio` | o módulo define suas primitivas em `web/src/components/` | proibido importar componente de **outro módulo** |
-| `kit` | a renderização vem de `packages/ui-kit` | nenhum módulo importa a biblioteca de UI bruta; zero literal de cor ou fonte fora de token |
+| `proprio` | o módulo define suas primitivas em `web/src/components/` | proibido importar componente de **outro módulo** — é a regra `import-lateral`, que já cobra isto para o módulo inteiro; não há regra específica de `ui` neste modo |
+| `kit` | a renderização vem de `packages/ui-kit` (nome canônico; `ui.pacote` declara outro) | `ui-kit` (erro): nenhum arquivo importa a biblioteca de UI bruta, e algo em `web/` importa o kit — kit declarado e nunca importado é declaração sem consequência. `ui-token` (aviso): zero literal de cor ou fonte em declaração de estilo |
+
+Módulo sem `web/` silencia nos dois modos: descartar a tela é permitido (§2).
 
 Nos dois modos a estrutura de pastas é idêntica, e um módulo migra de `proprio` para `kit` sem mover arquivo.
 

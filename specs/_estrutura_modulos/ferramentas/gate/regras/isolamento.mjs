@@ -1,17 +1,90 @@
 /**
  * regras/isolamento.mjs — família "Isolamento" do catálogo (specs/arquitetura/04-regras.md §4.2).
  * ids: import-lateral, import-adapter, sdk-fornecedor, gateway-http, gateway-declarado,
- *      consome-ciclo, consome-contrato
+ *      consome-ciclo, consome-contrato, ui-kit, ui-token
  *
  * É a família que sustenta a extraibilidade. Se ela passa, o módulo sai da pasta sem refactor.
+ *
+ * O `ui.modo` do manifesto tem duas cláusulas (01-modulo.md §7) e só UMA delas ganha regra própria:
+ * a do modo `proprio` ("proibido importar componente de outro módulo") **é** a `import-lateral`
+ * inteira — o import de `@<escopo>/<vizinho>` e o caminho relativo que sai da pasta. Escrever uma
+ * segunda regra para ela daria duas mensagens e um conserto só.
  */
 import { leiturasFalhas, normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
+import { temArquivoEm } from './estrutura.mjs';
 
 const SDKS_FORNECEDOR = [
   '@supabase/', 'pg', 'mysql', 'mysql2', 'aws-sdk', '@aws-sdk/', 'firebase',
   'firebase-admin', 'oracledb', 'mongodb', 'mongoose', 'openai', 'redis', 'ioredis',
   'psycopg2', 'boto3', 'sqlalchemy', 'pymongo',
 ];
+
+/**
+ * Bibliotecas de UI BRUTAS — exatamente o que `packages/ui-kit` existe para envolver, sendo ele o
+ * "ponto único de contato com a biblioteca de UI" (00-arquitetura.md §3.3). Inline como
+ * `SDKS_FORNECEDOR`, e pelo mesmo argumento: é vocabulário NORMATIVO fechado, parte da regra e não
+ * tunable de projeto — mudá-lo é mudar a lei, e a lei não mora em config.
+ *
+ * Critério de inclusão: o pacote RENDERIZA componente ou ESTILIZA. `react`, `vue` e afins ficam de
+ * fora de propósito — são o framework em que o próprio kit é escrito, não a biblioteca que ele
+ * envolve, e proibi-los tornaria o modo `kit` impossível de cumprir.
+ */
+const BIBLIOTECAS_DE_UI = [
+  '@mui/', '@material-ui/', 'antd', '@ant-design/', 'react-bootstrap', 'bootstrap',
+  '@chakra-ui/', '@mantine/', 'primereact', 'primevue', 'semantic-ui-react', '@fluentui/',
+  'vuetify', 'element-plus', 'quasar', '@radix-ui/', '@headlessui/',
+  'styled-components', '@emotion/',
+];
+
+/**
+ * Propriedades cujo valor é COR, e as de FONTE. Separadas porque o discriminador de literal é
+ * diferente em cada uma: cor tem forma própria (`#hex`, `rgb(`, `hsl(`), fonte só se distingue de
+ * um token por estar entre aspas (`fontFamily: 'Inter'` × `fontFamily: tokens.fonte`).
+ */
+const PROPRIEDADES_DE_COR = [
+  'color', 'backgroundColor', 'background-color', 'background', 'borderColor', 'border-color',
+  'border', 'outlineColor', 'outline-color', 'outline', 'boxShadow', 'box-shadow', 'fill', 'stroke',
+];
+const PROPRIEDADES_DE_FONTE = ['fontFamily', 'font-family', 'font'];
+
+/**
+ * O recorte que separa DECLARAÇÃO DE ESTILO de ATRIBUTO DE APRESENTAÇÃO, e é ele que elimina — não
+ * mitiga — o falso positivo do ícone SVG inline: estilo é sempre `propriedade **:** valor`
+ * (`color: '#fff'`, `style="fill:#000"`, template de CSS-in-JS), e atributo é sempre
+ * `atributo **=** "valor"` (`<path fill="#000">`). Exigir os dois-pontos deixa o ícone de fora por
+ * forma, não por lista de exceção.
+ *
+ * A janela até o literal não atravessa `;`, `{` nem `}`: é o que permite pegar
+ * `border: '1px solid #ccc'` sem escapar da declaração e alcançar um atributo vizinho —
+ * `style={{ color: tokens.a }} fill="#000"` para no `}`.
+ */
+const COR_LITERAL = new RegExp(
+  `\\b(?:${PROPRIEDADES_DE_COR.join('|')})\\s*:[^;\\n{}]{0,40}?`
+  + '(?:#[0-9a-fA-F]{3,8}\\b|(?:rgba?|hsla?)\\s*\\()',
+);
+const FONTE_LITERAL = new RegExp(`\\b(?:${PROPRIEDADES_DE_FONTE.join('|')})\\s*:\\s*['"\`]`);
+
+/**
+ * Folha de estilo entra na varredura, e não é detalhe: em `ui.modo: "kit"` ela é o lugar MAIS
+ * provável de a cor literal aparecer, e `ctx.codigo` é filtrado por extensão de linguagem — um
+ * `.css` nunca chegava aqui. A regra ficava limpa exatamente onde o defeito mora.
+ *
+ * `.module.css` entra por `.css`: `ext` é a última extensão do nome.
+ */
+const EXT_ESTILO = new Set(['.css', '.scss', '.sass', '.less']);
+
+/**
+ * A fonte em folha de estilo precisa de outro discriminador: CSS não usa aspas
+ * (`font-family: Inter`), então exigir aspas — o que separa literal de token no JS — deixaria
+ * passar a forma mais comum de todas. O que ocupa o lugar do token ali é a VARIÁVEL (`var(--x)`)
+ * e as palavras-chave da própria linguagem; qualquer outra coisa é a fonte escrita à mão.
+ */
+const FONTE_LITERAL_EM_ESTILO = /\b(?:font|font-family)\s*:\s*(?!var\(|inherit|initial|unset|revert)\S/i;
+
+function temLiteralVisual(texto, eEstilo) {
+  if (COR_LITERAL.test(texto)) return true;
+  return eEstilo ? FONTE_LITERAL_EM_ESTILO.test(texto) : FONTE_LITERAL.test(texto);
+}
 
 // Captura o alvo de `import ... from 'X'`, `require('X')`, `import('X')` e `from X import` (Python).
 const PADROES_IMPORT = [
@@ -53,6 +126,32 @@ function ehPacoteDeModulo(alvo, idsVizinhos) {
 function raizDoPacote(alvo) {
   if (alvo.startsWith('@')) return alvo.split('/').slice(0, 2).join('/');
   return alvo.split('/')[0].split('.')[0];
+}
+
+/**
+ * O pacote do kit deste módulo. É AQUI que `ui.pacote` ganha propósito: sem ele, o gate cobra o
+ * nome canônico da tabela de nomes (`@<escopo>/ui-kit`, 04-regras.md §3.1); com ele, o projeto que
+ * batizou o kit de outro jeito diz qual é, e continua verificável.
+ */
+function pacoteDoKit(ctx) {
+  return ctx.manifesto?.ui?.pacote ?? null;
+}
+
+function ehImportDoKit(ctx, alvo) {
+  const pacote = pacoteDoKit(ctx);
+  if (pacote !== null) return alvo === pacote || alvo.startsWith(`${pacote}/`);
+  return /^@[^/]+\/ui-kit(\/|$)/.test(alvo);
+}
+
+/**
+ * O modo `kit` se aplica a este módulo? Duas guardas, e as duas silenciam por DESENHO.
+ *
+ * Modo `proprio` não tem regra aqui (ver o cabeçalho). E módulo sem `web/` é o caso ordinário —
+ * descartar a tela é permitido (01-modulo.md §2) e é o que o molde Python faz: cobrar tela de quem
+ * decidiu não ter uma seria falso positivo garantido.
+ */
+function modoKitSeAplica(ctx) {
+  return ctx.manifesto?.ui?.modo === 'kit' && temArquivoEm(ctx, 'web/');
 }
 
 export default [
@@ -178,6 +277,57 @@ export default [
       for (const inicio of grafo.keys()) {
         const caminho = buscarCiclo(grafo, inicio);
         if (caminho !== null) achados.push({ modulo: inicio, mensagem: `ciclo em consome: ${caminho.join(' -> ')}` });
+      }
+      return achados;
+    },
+  },
+  {
+    id: 'ui-kit',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      if (!modoKitSeAplica(ctx)) return [];
+
+      // (a) Nenhum arquivo importa a biblioteca BRUTA — o kit e o unico ponto de contato com ela.
+      const achados = [];
+      for (const arquivo of ctx.codigo) {
+        for (const alvo of importesDe(arquivo)) {
+          const raiz = raizDoPacote(alvo);
+          if (BIBLIOTECAS_DE_UI.some((lib) => raiz === lib || alvo.startsWith(lib))) {
+            achados.push(`${arquivo.rel}: importa a biblioteca de UI bruta "${alvo}" — em ui.modo "kit" o unico ponto de contato com ela e o pacote do kit`);
+          }
+        }
+      }
+
+      // (b) Declaracao sem consequencia — a forma exata do `web-declarado`: o manifesto promete uma
+      // origem para os componentes visuais e nada em `web/` vai busca-la la.
+      const doWeb = ctx.codigo.filter((a) => a.rel.startsWith('web/') && !a.eTeste);
+      if (!doWeb.some((a) => importesDe(a).some((alvo) => ehImportDoKit(ctx, alvo)))) {
+        const esperado = pacoteDoKit(ctx) ?? '@<escopo>/ui-kit';
+        achados.push(`ui.modo "kit" declarado mas nenhum arquivo de web/ importa o kit ("${esperado}") — declaracao sem consequencia; importe o kit em web/, declare o nome dele em ui.pacote, ou volte a ui.modo "proprio"`);
+      }
+      return achados;
+    },
+  },
+  {
+    id: 'ui-token',
+    nivel: 'aviso',
+    escopo: 'modulo',
+    verificar(ctx) {
+      if (!modoKitSeAplica(ctx)) return [];
+      const achados = [];
+      const daTela = [...ctx.codigo, ...ctx.arquivos.filter((a) => EXT_ESTILO.has(a.ext))];
+      for (const arquivo of daTela) {
+        if (!arquivo.rel.startsWith('web/') || arquivo.eTeste) continue;
+        const eEstilo = EXT_ESTILO.has(arquivo.ext);
+        // `linhasCodigo`, nunca `conteudo`: a propria lei escrita num comentario ("nada de #fff
+        // aqui") viraria violacao dela mesma. Vale igual em folha de estilo: o extrator descarta
+        // `/* ... */`, de uma linha ou de varias, e a linha de continuacao iniciada por `*`.
+        for (const { numero, texto } of arquivo.linhasCodigo) {
+          if (temLiteralVisual(texto, eEstilo)) {
+            achados.push(`${arquivo.rel}:${numero}: literal de cor ou fonte em declaracao de estilo — em ui.modo "kit" cor e fonte vem de token do kit`);
+          }
+        }
       }
       return achados;
     },

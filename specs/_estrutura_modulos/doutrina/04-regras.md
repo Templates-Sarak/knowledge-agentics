@@ -102,6 +102,7 @@ misto acima é **decisão de cada projeto**, registrada em `specs/adr/` — o ga
 | `estrutura` | erro | `contrato/openapi.yaml`, `config/`, `api/` e `tests/` presentes; os cinco `config/*.json` presentes | módulo |
 | `estrutura-estrita` | erro | nenhuma entrada não prevista na raiz do módulo — a árvore é fechada | módulo |
 | `web-declarado` | erro | módulo que declara `rotaWeb` tem ao menos uma página real em `web/src/pages` | módulo |
+| `artefato-declarado` | erro | o `geraArtefato` do manifesto e a árvore concordam, **nos dois sentidos**: `true` exige `core/motor/`, `core/templates/` e `gerados/`; `false` proíbe as três. `database/` **não** entra — quem declara banco é `dados.tabelas` (§7.2) | módulo |
 | `testes` | erro | `tests/dominio/` não-vazio; `tests/contrato/` não-vazio em módulo com rota | módulo |
 
 ## 4.2 Isolamento
@@ -114,6 +115,8 @@ misto acima é **decisão de cada projeto**, registrada em `specs/adr/` — o ga
 | `gateway-http` | erro | arquivo em `core/gateways/` sem SQL, conexão ou acesso a tabela — só HTTP | módulo |
 | `gateway-declarado` | erro | todo arquivo em `core/gateways/` tem módulo correspondente em `consome`, e vice-versa | módulo |
 | `consome-ciclo` | erro | não há ciclo no grafo de `consome` | global |
+| `ui-kit` | erro | em `ui.modo: "kit"`, nenhum arquivo importa a biblioteca de UI **bruta** (vocabulário fechado — o kit é o ponto único de contato com ela, [[00-arquitetura]] §3.3), **e** algum arquivo de `web/` importa o kit (`@<escopo>/ui-kit`, ou o que `ui.pacote` declarar) — kit declarado e nunca importado é declaração sem consequência. Modo `proprio` e módulo sem `web/` silenciam (§7.2) | módulo |
+| `ui-token` | aviso | em `ui.modo: "kit"`, nenhum literal de cor ou de fonte em **declaração de estilo** (`propriedade: valor`) dentro de `web/` — em arquivo de código **e** em folha de estilo (`.css`, `.scss`, `.sass`, `.less`). Atributo de apresentação SVG (`fill="#000"`) fica de fora por forma, não por exceção (§7.2) | módulo |
 | `consome-contrato` | erro | toda entrada de `consome` aponta para um módulo que existe, e o `contrato/openapi.yaml` dele declara aquele caminho **e** aquele método. Dono sem spec é achado, não silêncio. Reportado no **consumidor** | global |
 
 ## 4.3 Dados
@@ -153,6 +156,7 @@ misto acima é **decisão de cada projeto**, registrada em `specs/adr/` — o ga
 | `payload-camelcase` | erro | toda chave da projeção de saída é camelCase, e nenhuma propriedade de schema de **resposta** no OpenAPI usa `snake_case` | módulo |
 | `saida-sensivel` | erro | nenhum campo de `camposSensiveis` aparece em schema de **resposta** do `openapi.yaml` | módulo |
 | `sensivel-em-saida` | erro | nenhum campo de `camposSensiveis` entra na projeção de saída nem é citado em chamada de log — citá-lo direto burla a redação automática do logger | módulo |
+| `resumo-exportado` | erro | módulo com `exportaResumo: true` declara `total` no schema `200` de `GET /resumo` — é a forma mínima que o agregador cross-módulo lê sem conhecer o módulo ([[02-contrato-e-dados]] §2). **Uma direção só**: `false` não proíbe nada. Lê o bloco daquela ROTA, seguindo `$ref` (§7.2) | módulo |
 | `saida-crua` | erro | nenhuma resposta devolve o registro cru (`json(registro)`, `json(linha)`, `json(row)`, `json(dados)`, `return linha`) | módulo |
 
 ## 4.6 Operação
@@ -252,7 +256,7 @@ Lê estrutura de bloco, não AST, e é **conservadora**: na dúvida, **não acus
 propósito; falso positivo, não. Onde o gate e o linter discordarem, o linter tem razão.
 
 **Extração de texto de spec e de mapeador** — `contrato`, `contrato-sincronizado`, `rota-nomenclatura`,
-`consome-contrato`, `projecao-contrato`. Faz o **oposto**: quando não consegue ler, **declara e reprova**.
+`consome-contrato`, `projecao-contrato`, `resumo-exportado`. Faz o **oposto**: quando não consegue ler, **declara e reprova**.
 Calar ali seria indistinguível de conformidade, que é a falha que este §7 inteiro existe para evitar.
 
 A contrapartida, e ela é dura: **"não consegui ler" nunca pode virar "não existe"**. Afirmar ausência do que
@@ -265,9 +269,20 @@ mesmo extrator de `projecao-contrato`, de quem herda o falso positivo. Ela não 
 não entra no silêncio de "spec ilegível" do parágrafo anterior. O falso positivo dela é o **mesmo** de
 `projecao-contrato` — herdado do mesmo extrator — e está descrito nas duas linhas.
 
+**`ui-token` é a única regra que não consegue honrar nenhuma das duas políticas**, e por isso é a única
+`aviso` desta seção. Ela lê declaração de estilo linha a linha: o recorte `propriedade: valor` elimina o falso
+positivo que importa — o ícone SVG inline, que usa `atributo="valor"` —, mas não elimina todos, e calar não é
+opção porque literal de cor é justamente o que o modo `kit` existe para não ter. Nível `aviso` é a forma
+honesta de dizer isso: reporta e deixa passar, até que exista um recorte que a promova a erro. As outras duas
+regras de `ui` não são heurísticas — `ui-kit` lê import, e o modo `proprio` é `import-lateral`.
+
 | Regra | Limite conhecido |
 |---|---|
 | `limiar-funcao`, `limiar-aninhamento`, `limiar-parametros` | assinatura fora do padrão comum pode não ser medida; nenhum falso positivo esperado, falso negativo é possível |
+| `ui-kit` | **não** verifica que `packages/ui-kit` existe no projeto, e isso é decisão, não lacuna: a unidade de verificação é o **módulo**, e o módulo extraído não enxerga a raiz do repositório de onde saiu (§1.1). O que ela cobra é a dependência **declarada de dentro do módulo** — o import. Vocabulário de biblioteca bruta é **fechado**, como o do `sdk-fornecedor`: biblioteca fora da lista passa (falso negativo assumido), e nenhum falso positivo é esperado. `react`/`vue` estão fora de propósito — são o framework em que o kit é escrito, não a biblioteca que ele envolve |
+| `ui-token` | é **aviso**, e a única cláusula heurística das três de `ui`. O recorte exige `propriedade **:** valor`, que é a forma de toda declaração de estilo, e deixa de fora `atributo **=** "valor"` — por isso o ícone SVG inline com `fill="#000"` **não** é acusado: fica fora por forma, não por lista de exceção. Lê **código e folha de estilo** (`.css`, `.scss`, `.sass`, `.less`) dentro de `web/` — a folha entra porque em `ui.modo: "kit"` ela é onde a cor literal mais vive, e restringir a regra a arquivo de código a deixava limpa justamente ali. Em folha de estilo a fonte usa outro discriminador, porque CSS não usa aspas: `font-family:` é literal a menos que o valor seja `var(…)` ou palavra-chave da linguagem. O que ainda escapa: cor montada por indireção (concatenação, `template literal` com variável) — falso negativo; regra CSS escrita numa linha só e iniciada por seletor de **id** (`#cabecalho { color: #fff; }`), que o extrator de linhas descarta por confundir o `#` inicial com comentário — falso negativo; e cor dentro de um objeto de props espalhado em elemento SVG (`{...{fill: '#000'}}`) — falso positivo residual, e a razão de o nível ser aviso e não erro |
+| `artefato-declarado` | verifica **presença**, nunca conteúdo: motor que não gera nada e template vazio passam. As duas pastas de fonte (`core/motor/`, `core/templates/`) são provadas por **arquivo** — pasta vazia conta como ausente, e deve. `gerados/` é provada pela **entrada da raiz**, porque o conteúdo dela é saída de máquina e fica fora da varredura de propósito (varrê-lo faria `hardcode-url`, `limiar-funcao` e `log` julgarem HTML gerado); a assimetria é deliberada — `gerados/` nasce vazia e só se enche em build. `database/` fica **fora**: o `criar-modulo.mjs --sem-artefato` também a descarta, mas quem declara banco é `dados.tabelas`, e cobrá-la aqui daria falso positivo garantido no módulo de domínio sem artefato e com tabela própria — o caso ordinário |
+| `resumo-exportado` | lê o bloco **daquela rota** dentro de `paths:` e segue o `$ref` até `components.schemas` — leitor por rota, não do arquivo inteiro, senão `total` declarado em `/registros` aprovaria `/resumo` por acidente. Verifica a **declaração do nome**, não o tipo: `total: { type: string }` passa, e essa metade é do teste de contrato, que exercita a resposta de verdade. **Uma direção só**: `exportaResumo: false` não proíbe nada. `/resumo` ausente é do `contrato`, e contrato ilegível também — nos dois casos ela silencia |
 | `hardcode-numero` | pega literal atribuído a nome de infraestrutura; número mágico com nome de negócio passa (e deve — o lugar dele é `config/dominio.json`) |
 | `contrato` | **dona** de "spec ilegível": o leitor é de bloco, sem dependência externa — é o que permite o gate viajar com o módulo extraído e rodar sem instalar nada. Detecta pelo **resultado** da leitura, nunca pela causa: *flow style* (`paths: {"/x": …}`) é a mais comum, mas `paths:` indentado com 4 espaços é bloco válido e cai pelo mesmo caminho — o leitor exige recuo **exatamente** 2 na rota e 4 no método. A mensagem nomeia **qual** seção falhou (`paths:`, `servers:` ou as duas) e a forma que o leitor aceita — nunca "a rota não existe". `servers:` ilegível não cega a checagem de nome das rotas, que só depende de `paths:` |
 | `contrato-sincronizado` | reconhece registro de rota em Express/FastAPI. Framework diferente faz a regra **declarar que não verificou**, em vez de passar calada. Do lado da spec ela silencia: contrato ilegível é do `contrato` |

@@ -57,6 +57,24 @@ export const CASOS = [
     },
   },
   {
+    regra: 'artefato-declarado',
+    descricao: 'geraArtefato false com as pastas de artefato presentes',
+    // Direcao "proibe": o molde nasce com as tres pastas, entao basta desligar a declaracao.
+    mutar: (m) => m.manifesto((x) => ({ ...x, geraArtefato: false })),
+  },
+  {
+    regra: 'artefato-declarado',
+    descricao: 'geraArtefato true com gerados/ ausente',
+    // Direcao "exige" — e de proposito e a pasta `gerados/`, cuja presenca so e visivel pela ENTRADA
+    // da raiz: o conteudo dela fica fora de `ctx.arquivos`, entao `temArquivoEm` nunca a acharia.
+    // Liga a condicao no proprio manifesto, como o `web-declarado`, para o caso nao depender do
+    // default do binding.
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, geraArtefato: true }));
+      m.removerPasta('gerados');
+    },
+  },
+  {
     regra: 'testes',
     descricao: 'tests/contrato vazio',
     mutar: (m) => m.removerPasta('tests/contrato'),
@@ -126,6 +144,64 @@ export const CASOS = [
       }));
     },
     exigeVizinho: true,
+  },
+
+  {
+    regra: 'ui-kit',
+    descricao: 'ui.modo kit importando biblioteca de UI bruta',
+    // Liga `ui.modo: "kit"` no manifesto: os moldes nascem `proprio`, entao depender do default
+    // deixaria as duas regras de UI sem exercicio nenhum.
+    //
+    // Um id so, e nao dois achados de ids diferentes: as DUAS clausulas do `ui-kit` disparam aqui
+    // (importa a bruta, e nada em `web/` importa o kit) — sao duas mensagens do mesmo defeito de
+    // declaracao, sob o mesmo id, e e assim que a regra foi escrita.
+    //
+    // No molde Python o arquivo estoura ENOENT (nao ha `web/`) e o runner marca SEM COBERTURA. E o
+    // correto: la a regra silencia por desenho, e "sem cobertura" nao e aprovacao.
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, ui: { ...x.ui, modo: 'kit' } }));
+      m.escrever(
+        'web/src/components/Bruto.tsx',
+        "import { Button } from '@mui/material';\nexport const Botao = Button;\n",
+      );
+    },
+  },
+  {
+    regra: 'ui-token',
+    descricao: 'literal de cor em declaracao de estilo, com o kit importado corretamente',
+    // O arquivo IMPORTA o kit de proposito: sem isso a clausula (b) do `ui-kit` acusaria junto e o
+    // caso deixaria de provar qual das duas regras esta viva. `<escopo>` e trocado em memoria pelo
+    // carregador do contexto, entao o import vale nos tres bindings.
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, ui: { ...x.ui, modo: 'kit' } }));
+      m.escrever(
+        'web/src/components/Cores.tsx',
+        "import { Caixa } from '@<escopo>/ui-kit';\n"
+        + 'export const Destaque = () => <Caixa style={{ color: \'#ff0000\' }} />;\n',
+      );
+    },
+  },
+
+  {
+    regra: 'ui-token',
+    descricao: 'literal de cor em folha de estilo (.css), que nao e arquivo de codigo',
+    // O `.css` nao entra em `ctx.codigo` (filtrado por extensao de linguagem), entao antes desta
+    // varredura ele nunca chegava a regra — e `color: #ff0000` em CSS e `propriedade: valor`, a
+    // forma exata que o recorte persegue. Ficava limpo onde, em `ui.modo: "kit"`, a cor mais vive.
+    //
+    // O `.tsx` importa o kit para a clausula (b) do `ui-kit` nao acusar junto: este caso emite UM id.
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, ui: { ...x.ui, modo: 'kit' } }));
+      m.escrever(
+        'web/src/components/DoKit.tsx',
+        "import { Caixa } from '@<escopo>/ui-kit';\nexport const C = Caixa;\n",
+      );
+      m.escrever(
+        'web/src/estilos.css',
+        '/* Nem #ffffff nem font-family: Inter num comentario contam — linhasCodigo descarta. */\n'
+        + '.botao {\n  color: #ff0000;\n}\n',
+      );
+    },
   },
 
   // --- Dados ---------------------------------------------------------------------------------
@@ -383,6 +459,22 @@ export const CASOS = [
       m.manifesto((x) => ({ ...x, camposSensiveis: ['segredoDeLog'] }));
       m.escrever('api/src/vaza.ts',
         'export function registrar(logger, segredoDeLog) {\n  logger.info("processado", segredoDeLog);\n}\n');
+    },
+  },
+  {
+    regra: 'resumo-exportado',
+    descricao: '/resumo sem "total" no schema 200, com o "total" de /registros INTACTO',
+    // O `total` de `/registros` fica de pe justamente para provar que a regra le a ROTA, e nao o
+    // arquivo: com um leitor de arquivo inteiro (`propriedadesDeResposta`) este caso NAO acusaria
+    // nada, e a regra teria aprovado por acidente. E essa a diferenca que o caso existe para
+    // demonstrar. Liga `exportaResumo` no manifesto para nao depender do default do binding.
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, exportaResumo: true }));
+      m.substituir(
+        'contrato/openapi.yaml',
+        '                type: object\n                properties:\n                  total: { type: integer }',
+        '                type: object',
+      );
     },
   },
   {

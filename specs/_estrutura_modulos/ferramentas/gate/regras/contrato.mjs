@@ -1,14 +1,16 @@
 /**
  * regras/contrato.mjs — família "Contrato" do catálogo (specs/arquitetura/04-regras.md §4.5).
  * ids: contrato, rota-nomenclatura, contrato-sincronizado, projecao-contrato, payload-camelcase,
- *      saida-sensivel, sensivel-em-saida, saida-crua
+ *      saida-sensivel, sensivel-em-saida, resumo-exportado, saida-crua
  *
  * O `contrato/openapi.yaml` é a FONTE. Estas regras existem para que ele não seja ficção: o que
  * está na spec existe no código, o que está no código existe na spec, e nada sensível vaza.
  *
  * A leitura da spec mora em `../spec.mjs`, compartilhada com `consome-contrato` (Isolamento).
  */
-import { leiturasFalhas, normalizar, rotasDaSpec, servidorDaSpec, specDe } from '../spec.mjs';
+import {
+  leiturasFalhas, normalizar, propriedadesDaResposta, rotasDaSpec, servidorDaSpec, specDe,
+} from '../spec.mjs';
 
 const OBRIGATORIAS = ['/health', '/meta', '/resumo'];
 
@@ -418,6 +420,29 @@ export default [
         }
       }
       return achados;
+    },
+  },
+  {
+    id: 'resumo-exportado',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      // UMA direcao so, como `projecao-contrato`: `false` nao proibe nada. O modulo que nao entra
+      // no dashboard pode ter `total` no `/resumo` dele sem que isso seja defeito de coisa alguma.
+      if (ctx.manifesto?.exportaResumo !== true) return [];
+
+      const spec = specDe(ctx);
+      // Spec ausente OU com `paths:` ilegivel e do `contrato`. Sem este silencio, "nao consegui ler"
+      // viraria "nao declara" — afirmar ausencia do que nao se leu manda apagar o que esta certo.
+      if (spec === null || leiturasFalhas(spec.conteudo).includes('paths')) return [];
+
+      const declaradas = propriedadesDaResposta(spec.conteudo, '/resumo', 'get', '200');
+      // `/resumo` ausente da spec e do `contrato`, que ja a cobra como rota obrigatoria.
+      if (declaradas === null || declaradas.has('total')) return [];
+      return ['exportaResumo: true mas o schema 200 de GET /resumo nao declara "total" — o agregador '
+        + 'cross-modulo compoe SEM lista fixa e so conhece a forma minima; sem ela, agregar exigiria '
+        + 'um caso por modulo dentro do conector. Declare "total" (inteiro) na resposta de /resumo, '
+        + 'ou exportaResumo: false'];
     },
   },
   {

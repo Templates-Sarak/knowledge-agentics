@@ -30,6 +30,15 @@ Esta lei define a forma do contrato, a identidade dos registros, a forma dos dad
 
 O conector consome **apenas** esses três — nunca endpoint específico de um módulo.
 
+**A forma mínima de `/resumo`, e por que ela existe.** O agregador cross-módulo compõe **sem lista fixa**
+([[01-modulo]] §3.2): ele varre `modulos/*/modulo.json` e não conhece módulo nenhum de antemão. Somar o que não
+se conhece exige uma forma **compartilhada** — por isso o módulo que declara `exportaResumo: true` deve declarar
+`total` (inteiro) no schema `200` de `GET /resumo`. Sem esse mínimo, agregar só seria possível com um caso por
+módulo dentro do conector: exatamente o acoplamento que "composição sem lista fixa" existe para proibir, e a
+razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do módulo continua livre ao lado do
+`total` — a lei fixa o **piso**, não o conjunto. Cobrado por `resumo-exportado`
+(`specs/arquitetura/04-regras.md` §4.5); `exportaResumo: false` não proíbe nada.
+
 > **Atenção de segurança.** `/meta` devolve topologia interna (nomes de tabelas, de variáveis e de permissões).
 > Enquanto o sistema não tiver autenticação, ela é rota pública por necessidade; assim que houver login, ela
 > deve sair de `rotasPublicas` ou passar a devolver uma projeção reduzida.
