@@ -21,6 +21,9 @@ import { carregarEsquema, validar } from '../esquema.mjs';
 // FIACAO, usado por quatro regras de raiz espalhadas por duas familias. Duas copias de um laco
 // divergiriam no primeiro filtro novo (`eTeste` foi exatamente esse filtro).
 import { PADRAO_CREDENCIAL, varrerRaiz } from './operacao.mjs';
+// `textoDeCodigo` remove comentario e docstring. Regra que julga CODIGO nao pode ler o texto cru:
+// a chave citada num comentario ("nunca leia MODULO_SEGREDO aqui") virava uso de verdade.
+import { textoDeCodigo } from './isolamento.mjs';
 // A MESMA função que o `--conferir` do gerador usa. Importar (e não reimplementar) é o que impede
 // a regra e o gerador de divergirem — o defeito que o gerador existe para eliminar, um nível acima.
 import { BINDINGS, saidaDe } from '../../gerar-config-lint.mjs';
@@ -333,7 +336,7 @@ export default [
       const padrao = new RegExp(`\\b(?:VITE_)?(${prefixo}_[A-Z0-9_]+)\\b`, 'g');
 
       for (const arquivo of ctx.codigo) {
-        for (const achado of arquivo.conteudo.matchAll(padrao)) usadas.add(achado[1]);
+        for (const achado of textoDeCodigo(arquivo).matchAll(padrao)) usadas.add(achado[1]);
       }
       return [...usadas]
         .filter((chave) => !declaradas.has(chave))
@@ -507,7 +510,7 @@ export default [
 
       const usadas = new Set();
       for (const arquivo of projeto.codigo) {
-        for (const achado of arquivo.conteudo.matchAll(CHAVE_DE_RAIZ)) usadas.add(achado[0]);
+        for (const achado of textoDeCodigo(arquivo).matchAll(CHAVE_DE_RAIZ)) usadas.add(achado[0]);
       }
 
       const achados = [...usadas]
@@ -575,7 +578,7 @@ export default [
     verificar(ctx) {
       return ctx.codigo
         .filter((a) => !a.eTeste && !ehCarregador(a.rel))
-        .filter((a) => /process\.env|os\.environ|os\.getenv/.test(a.conteudo))
+        .filter((a) => /process\.env|os\.environ|os\.getenv/.test(textoDeCodigo(a)))
         .map((a) => `${a.rel}: le env fora do carregador — so api/src/config.* toca o ambiente`);
     },
   },

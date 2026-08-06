@@ -1,7 +1,12 @@
 /**
  * regras/dados.mjs — família "Dados" do catálogo (specs/arquitetura/04-regras.md §4.3).
  * ids: schema-nao-public, tabela-prefixo, tabela-alheia, migrations, tabela-declarada, rls
+ *
+ * `migrations` le `conteudo` CRU de proposito — o `-- rollback` que ela procura E um comentario
+ * SQL. As demais, quando julgam codigo, leem `textoDeCodigo`.
  */
+import { textoDeCodigo } from './isolamento.mjs';
+
 const PADRAO_MIGRATION = /^\d{4}-[a-z][a-z0-9]*(-[a-z0-9]+)+\.sql$/;
 
 export default [
@@ -46,7 +51,7 @@ export default [
           if (arquivo.eTeste) continue;
           for (const outro of alheios) {
             const padrao = new RegExp(`\\b${outro.idPasta}_[a-z][a-z0-9_]*`, 'g');
-            for (const achado of new Set(arquivo.conteudo.match(padrao) ?? [])) {
+            for (const achado of new Set(textoDeCodigo(arquivo).match(padrao) ?? [])) {
               achados.push({
                 modulo: ctx.idPasta,
                 mensagem: `${arquivo.rel}: referencia a tabela de outro modulo ("${achado}") — o dado alheio vem pela api/ dele`,

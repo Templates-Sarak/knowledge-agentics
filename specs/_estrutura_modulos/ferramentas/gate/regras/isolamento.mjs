@@ -105,13 +105,47 @@ const PADROES_IMPORT = [
   /^\s*(?:from|import)\s+([A-Za-z0-9_.]+)/gm,
 ];
 
-/** Todos os alvos de import de um arquivo, sem duplicata. */
+/**
+ * Todos os alvos de import de um arquivo, sem duplicata.
+ *
+ * `linhasCodigo`, e NUNCA `conteudo` — o mesmo cuidado que `ui-token` e `sensivel-em-saida` já
+ * tomam, e pelo mesmo motivo: **a própria lei escrita num comentário viraria violação dela mesma**.
+ * Sobre o texto cru, um bloco que só documenta o que não se pode fazer —
+ *
+ *     // Como NAO fazer:
+ *     // import { X } from '@acme/fin';
+ *
+ * — produzia três acusações de uma vez (`import-lateral`, `import-adapter`, `sdk-fornecedor`) sobre
+ * código correto. Falso positivo é a direção de erro que o §7.2 declara que este gate não aceita.
+ *
+ * O recorte não é total, e o §7.2 registra o resto: `linhasCodigo` tira comentário e docstring, não
+ * string. `const exemplo = "import x from '@acme/y'"` continua sendo visto — é código de verdade, e
+ * separar literal de instrução exigiria AST.
+ *
+ * A junção por `\n` preserva o `^` do padrão de import do Python, que é ancorado por linha.
+ */
 export function importesDe(arquivo) {
   const alvos = new Set();
   for (const padrao of PADROES_IMPORT) {
-    for (const achado of arquivo.conteudo.matchAll(padrao)) alvos.add(achado[1]);
+    for (const achado of textoDeCodigo(arquivo).matchAll(padrao)) alvos.add(achado[1]);
   }
   return [...alvos];
+}
+
+/**
+ * O texto do arquivo **sem comentário nem docstring** — o que `conteudo` deveria ter sido em toda
+ * regra que julga CÓDIGO.
+ *
+ * Uma implementação, e ela existe porque o mesmo defeito apareceu em seis lugares: seis cópias de
+ * `.map((l) => l.texto).join('\n')` divergiriam no primeiro ajuste. Quem julga texto que NÃO é
+ * código — `migrations` procurando `-- rollback`, `lerParesEnv` sobre `.env.example`, os leitores de
+ * `openapi.yaml`, `juntarSql` — continua em `conteudo`, de propósito: ali o comentário é o dado.
+ *
+ * A junção por `\n` preserva os padrões ancorados por linha (`^`), e as linhas mantêm o número
+ * original, então a posição relatada ao autor continua certa.
+ */
+export function textoDeCodigo(arquivo) {
+  return arquivo.linhasCodigo.map((linha) => linha.texto).join('\n');
 }
 
 /** Um import relativo que sobe acima da raiz do módulo saiu da fronteira. */
@@ -305,7 +339,9 @@ export default [
     verificar(ctx) {
       const proibidos = new RegExp(`\\b(${SQL_FONTE}|createClient|new\\s+Pool|\\.query\\()`, 'i');
       return ctx.codigo
-        .filter((a) => a.rel.startsWith('core/gateways/') && proibidos.test(a.conteudo))
+        // `textoDeCodigo`, nao `conteudo`: o barril da pasta DOCUMENTA em comentario o que o
+        // gateway nao pode fazer, e sobre o texto cru essa documentacao virava a violacao dela mesma.
+        .filter((a) => a.rel.startsWith('core/gateways/') && proibidos.test(textoDeCodigo(a)))
         .map((a) => `${a.rel}: gateway fala com banco — gateway e HTTP sobre o contrato do outro modulo`);
     },
   },

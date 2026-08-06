@@ -114,7 +114,14 @@ export const CASOS = [
     descricao: 'gateway sem entrada em consome',
     // Cascata legitima: o gateway novo tambem nasce sem teste que o espelhe.
     tambem: ['testes-gateway'],
-    mutar: (m) => m.escrever('core/gateways/vizinho.ts', 'export async function f(u) { return fetch(u); }\n'),
+    // O SQL em COMENTARIO trava a nao-acusacao de `gateway-http`: o barril da pasta documenta em
+    // comentario o que o gateway nao pode fazer, e sobre o texto cru essa documentacao virava
+    // violacao dela mesma. Se a regra regredir, emite id nao declarado e este caso reprova.
+    mutar: (m) => m.escrever(
+      'core/gateways/vizinho.ts',
+      '// NAO faca aqui: select nome from vizinho_metadados\n'
+      + 'export async function f(u) { return fetch(u); }\n',
+    ),
   },
   {
     regra: 'consome-ciclo',
@@ -505,9 +512,14 @@ export const CASOS = [
     // a leitura; ler o ambiente e o oficio da composicao. O que esta regra proibe e o DEFAULT.
     mutar: (m) => {
       m.manifestoRaiz((x) => ({ ...x, envRequerido: [...x.envRequerido, 'RAIZ_PORTA'] }));
+      // A chave em COMENTARIO trava a nao-acusacao de `env-raiz-declarado`: se ela voltar a ler
+      // `conteudo` cru, acusa `RAIZ_SO_EM_COMENTARIO` como usada-e-nao-declarada, emite id nao
+      // declarado, e este caso reprova.
       m.acrescentarEm('composicaoRaiz', {
-        js: "\nexport const porta = process.env.RAIZ_PORTA ?? 'padrao';\n",
-        py: '\nimport os\n\nPORTA = os.environ.get("RAIZ_PORTA", "padrao")\n',
+        js: '\n// Exemplo, nao uso: process.env.RAIZ_SO_EM_COMENTARIO\n'
+          + "export const porta = process.env.RAIZ_PORTA ?? 'padrao';\n",
+        py: '\n# Exemplo, nao uso: os.environ["RAIZ_SO_EM_COMENTARIO"]\n'
+          + 'import os\n\nPORTA = os.environ.get("RAIZ_PORTA", "padrao")\n',
       });
     },
   },
@@ -854,6 +866,35 @@ export const CASOS = [
   },
 
   // --- Operacao ------------------------------------------------------------------------------
+  {
+    regra: 'log',
+    descricao: 'a lei escrita em COMENTARIO nao vira violacao dela mesma',
+    // O caso existe para travar uma NAO-acusacao, e o harness nao sabe afirmar isso: ele exige
+    // exatamente um id. O truque e o mesmo da I.2 (o SDK legitimo em `adapters/`) — o id esperado e
+    // de OUTRA regra, e as formas proibidas entram em COMENTARIO ao lado.
+    //
+    // Se `importesDe`, `env-declarado`, `env-fora-do-carregador` ou `tabela-alheia` voltarem a ler
+    // `conteudo` cru, cada uma emite um id NAO DECLARADO e este caso reprova na hora. Sem ele, a
+    // nao-acusacao ficaria garantida so por inspecao — a lacuna do harness registrada no Bloco H.
+    //
+    // O defeito de verdade e o `console.log`/`print`, e e o unico achado que pode sair daqui.
+    exigeVizinho: true,
+    mutar: (m) => m.acrescentarEm('rotas', {
+      js: '\n// A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
+        + "//   import { X } from '@<escopo>/vizinho';\n"
+        + "//   import { c } from '../../adapters/memoria/index.js';\n"
+        + "//   import pg from 'pg';\n"
+        + '//   const s = process.env.MOLDE_SEGREDO_DOC;\n'
+        + '//   select nome from vizinho_metadados\n'
+        + "export const gritar = () => console.log('este si e defeito');\n",
+      py: '\n\n# A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
+        + '#   from adapters.memoria import criar\n'
+        + '#   import psycopg2\n'
+        + '#   s = os.environ["MOLDE_SEGREDO_DOC"]\n'
+        + '#   select nome from vizinho_metadados\n'
+        + 'def gritar():\n    print("este si e defeito")\n',
+    }),
+  },
   {
     regra: 'log',
     descricao: 'saida direta em vez do logger',

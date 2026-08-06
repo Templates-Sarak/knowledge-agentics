@@ -46,7 +46,7 @@ e a **raiz** deixando de ser território sem verificador (Bloco I).
 
 ## Bloco A — Fundação
 
-> Destrava B, C, D e G. Nada lê limiar antes disto existir.
+> Destravou B, C, D e G. Nada lê limiar antes disto existir. *(A.3 cancelada — ver abaixo.)*
 >
 > **Decisões tomadas:** os limiares 40/3/4 são **lei**, não política — vivem em
 > `ferramentas/gate/limiares.mjs`, dentro do gate, e por isso viajam com o módulo extraído. O
@@ -67,8 +67,11 @@ e a **raiz** deixando de ser território sem verificador (Bloco I).
 **Achado:** 32 arquivos do molde Python e 20 de TS/JS estavam fora de formato — nunca houve
 formatador no template. Moldes reformatados.
 
-**Limite conhecido:** módulo extraído fica sem `.ruff.toml` até ser religado a um esqueleto. O piso
-do gate não cai (os limiares viajam em `ferramentas/gate/`); a A.3 fecha a janela.
+**Limite conhecido, e agora PERMANENTE:** módulo extraído fica sem `.ruff.toml` até ser religado a um
+esqueleto. O piso do gate não cai — os limiares viajam em `ferramentas/gate/`, e o gate roda sem
+instalar nada. A A.3 fecharia essa janela e foi **cancelada** (ver abaixo): o custo era uma config por
+módulo que precisa nascer e permanecer completa, senão os limiares voltam ao default do ruff **dentro**
+dos módulos. Fica declarado, não pendente.
 
 ### A.2 — as regras que cobram a camada  ✅ **concluído**
 - [x] `verificacao-declarada` — o arquivo existe, é JSON válido e conforma ao schema
@@ -80,21 +83,33 @@ do gate não cai (os limiares viajam em `ferramentas/gate/`); a A.3 fecha a jane
 
 **Achado:** o `gate/README.md` afirmava "três regras globais" — são quatro desde `consome-contrato`.
 
-### A.3 — config de lint **por módulo**, gerada do manifesto  ⟵ **AGORA**
+### A.3 — config de lint **por módulo**  ❌ **CANCELADA** *(a premissa era falsa)*
 
-> **Por que depois do Bloco B:** A.3 entrega **precisão** — `import-lateral`, `import-adapter`,
-> `sdk-fornecedor` e `env-fora-do-carregador` já funcionam no gate, e o eslint só resolveria melhor
-> alias, re-export e import dinâmico. O Bloco B entrega **cobertura**: invariantes de segurança que
-> hoje não existem em regra nenhuma. Cobertura antes de precisão.
->
-> Retomada: B, C, D e I estão fechados. É a vez dela.
-- [ ] `import-lateral`, `import-adapter`, `sdk-fornecedor`, `env-fora-do-carregador` no eslint,
-      com os caminhos derivados de cada `modulo.json` — AST resolve alias, re-export e import
-      dinâmico; regex não. **Continuam também no gate**, como piso de extração
-- [ ] Fecha a janela do módulo extraído: o módulo passa a carregar a própria config
-- [ ] Exige decidir se `.ruff.toml` entra em `ENTRADAS_PERMITIDAS` (`regras/estrutura.mjs`)
+> A investigação do Passo 0 mediu cinco coisas que desfizeram a justificativa. Fica registrada para
+> não voltar como ideia:
 
----
+| O que a plan prometia | O que a medição mostrou |
+|---|---|
+| AST alcança **import dinâmico** | o gate já alcança (`PADROES_IMPORT` inclui `import(…)`); o `no-restricted-imports` builtin **não** |
+| AST alcança **aritmética de caminho** | o gate já alcança (`saiDoModulo` conta profundidade); o builtin **não** |
+| AST resolve **alias** | **nenhum dos dois** — e o template não configura `paths` nem `baseUrl` em binding algum |
+| eslint flat **cascateia** | **não** (provado em v9.39.5). No v10 a config mais próxima vence **por inteiro**, sem merge |
+| config por módulo é inerte até a extração | **falso para o ruff**: ele já substitui a config da raiz numa rodada da raiz — provado, `PLR0913` desaparece |
+
+**E o quinto achado, que é defeito real:** `importesDe` lê `arquivo.conteudo`, então **o gate acusa
+import escrito em comentário** — falso positivo, a direção que o §7.2 proíbe. Era o último ganho
+honesto que sobrava para a A.3, e o conserto é uma linha **no gate**. Virou o Bloco J.
+
+**Dois riscos que ela trazia**, e que o cancelamento evita: `eslint-plugin-import` + resolver como
+devDependency permanente em todo projeto gerado, por um recurso que ninguém usa; e uma `.ruff.toml`
+por módulo que precisa nascer completa e **permanecer** completa para sempre, senão os limiares
+voltam ao default do ruff dentro dos módulos.
+
+**O que sobrava de valor, registrado como decisão sua e não como pendência:**
+- [ ] **feedback no editor** para violação de fronteira enquanto se digita — real, mas em v9 o editor
+      lê o config da **raiz**, então exigiria os blocos `files:` lá, derivados de todos os manifestos
+- [ ] **janela do extraído** — módulo copiado fica sem config de linter até ser religado. O **piso do
+      gate já cobre os limiares** lá, então o que se perde é a verificação profunda, não o piso
 
 ## Bloco B — Segurança  *(7 de 8)*
 
@@ -233,6 +248,44 @@ e `db.query(id + ' from x')` sem verbo na linha não acusa — família conserva
 
 ---
 
+## Bloco J — Falso positivo do extrator de import  ✅ **J.1 concluída**
+
+> Achado da investigação da A.3. `importesDe` (`regras/isolamento.mjs:109`) lê `arquivo.conteudo` —
+> texto cru —, então import escrito em **comentário** é acusado:
+>
+> ```
+> // import { X } from '@acme/fin';
+> x [import-lateral] core/dominio/doc.ts: importa o modulo "fin" ("@acme/fin")
+> ```
+>
+> Falso positivo, e o §7.2 declara que é a direção que o gate não aceita.
+
+- [x] `textoDeCodigo(arquivo)` extraída e exportada; `importesDe` e mais cinco leituras a consomem.
+      **7 regras** corrigidas de uma vez: `import-lateral`, `import-adapter`, `sdk-fornecedor`,
+      `ui-kit`, `portas-pura`, `adapter-isolado`, `composicao-descoberta` — mais `gateway-http`,
+      `env-declarado`, `env-raiz-declarado`, `env-fora-do-carregador` e `tabela-alheia`
+- [x] **Trava por máquina** em três casos (`log`, `gateway-declarado`, `fallback-raiz`), no padrão da
+      I.2. Revertendo o conserto: **85/88, 3 casos reprovados, 8 ids não declarados**
+- [x] Limite residual no §7.2: string literal continua sendo vista — é código de verdade, e separar
+      literal de instrução exigiria AST
+
+### J.2 — os dois extratores posicionais  *(pendente)*
+- [ ] `contrato.mjs:76` (registro de rota) e `:233` (`regioesDeProjecao`) **têm o mesmo falso
+      positivo**, provado: rota comentada vira rota fantasma; mapeador comentado acusa campo. Não
+      foram consertados porque são leitores **posicionais** — casamento multipartes e delimitação por
+      balanceamento de chaves —, com raio de **4 regras** (`contrato-sincronizado`,
+      `projecao-contrato`, `payload-camelcase`, `sensivel-em-saida`). Declarado no §7.2
+
+### Duas leituras cruas de direção OPOSTA — decisão, não conserto
+- [ ] `config-morta` e `rota-publica-autenticada` ficam mais **frouxas** ao ler cru: chave citada em
+      comentário conta como "lida", `rotasPublicas` em comentário satisfaz a cláusula. Torná-las
+      estritas é **mudança de comportamento**, e cada uma precisaria do caso que prova a acusação nova
+
+**Armadilha:** `dados.mjs:73` (`migrations`) procura `-- rollback`, que **é** comentário SQL de
+propósito. Trocar por `linhasCodigo` ali quebraria a regra.
+
+---
+
 ## Bloco C — Testes  ✅ **concluído** *(2 regras — a terceira não devia existir)*
 
 - [x] `testes-web` — módulo com `rotaWeb` tem `tests/web/` não-vazio. A mensagem oferece **os dois**
@@ -340,6 +393,11 @@ legítima — o molde do binding não tem a peça (`web/` no Python; mapeador Py
       se `segredo-em-log` acusasse `RAIZ_API_BASE_URL` por engano, sairia sob o mesmo id e o autoteste
       passaria. Em I.2 deu para travar via id não declarado; em I.3 não. Falta expressividade —
       afirmar *quantas vezes* ou *sobre o quê*, não só *quais regras*
+- [ ] **`import-adapter` não pega a forma pontilhada do Python.** `from adapters.memoria import X`
+      dentro de um módulo passa **limpo** — provado em projeto gerado. O `importesDe` **vê** o alvo
+      (`adapters.memoria`), mas o matcher da regra é `/(^|\/)adapters?\//` e exige barra. Em Python
+      `adapters` é importável como pacote de topo (`pythonpath = ["."]`), então a forma é real e
+      funcional. `sdk-fornecedor` pega `psycopg2` no mesmo arquivo — o buraco é só desta regra
 - [ ] **Vocabulário de chamada de log divergiu**: `segredo-em-log` reconhece `logging`, `warning`,
       `critical`, `exception`, `console.*`, `print(`; `sensivel-em-saida` reconhece menos. Unificar
       muda uma regra de módulo — decidir junto com a dívida do caso 2 (`schema-manifesto` × `manifesto`)
@@ -367,22 +425,29 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
 
            ══ o CATÁLOGO DE REGRAS está completo: 72 regras, 72 com caso ══
 
-AGORA      A.3  lint por módulo        precisão; fecha a janela do extraído
-           G    hooks no template      depende de A
+           A.3  lint por módulo        ❌ CANCELADA — premissa falsa, 5 achados
+
+           J.1  falso positivo do extrator  7 regras + 5 leituras, travado por máquina
+
+AGORA      G    hooks no template      depende de A
+           J.2  os dois extratores posicionais  (4 regras de raio)
            F    insumos de CI          junto do pipeline, não antes
            H    dívidas                a qualquer momento
            B.3  vetor residual de SQL no módulo — reavaliar depois de I.3
 ```
 
-**O que resta não é regra de gate.** A.3 é camada de lint; G é instalação; F é orquestração de CI;
-H é dívida. A meta de "~70 regras, todas com caso" foi cumprida com 72.
+**O que resta.** J é conserto de defeito real no gate; G é instalação; F é orquestração de CI; H é
+dívida. A meta de "~70 regras, todas com caso" foi cumprida com **72** — e o catálogo não cresce mais
+por este plano.
 
-**A ordem mudou duas vezes, e as duas estão registradas:**
+**A ordem mudou três vezes, e as três estão registradas:**
 
 1. **A.3 saiu da frente do Bloco B** — entrega precisão sobre regras que já funcionam, enquanto B
    entrega cobertura que não existe. *(seção da A.3)*
 2. **O Bloco I entrou na frente de C e D** — o escopo `raiz` estava descoberto por inteiro, e é
    onde a arquitetura concentra o risco de propósito. *(seção do Bloco I)*
+3. **A A.3 foi cancelada e virou o Bloco J** — o Passo 0 dela mediu que a premissa era falsa, e a
+   investigação revelou um falso positivo real no gate. *(seção da A.3)*
 
 ---
 
