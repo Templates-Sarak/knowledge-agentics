@@ -1,6 +1,6 @@
 /**
  * regras/configuracao.mjs — família "Configuração e ambiente" (specs/arquitetura/04-regras.md §4.4).
- * ids: config-valida, schema-config, config-morta, hardcode-url, hardcode-numero,
+ * ids: config-valida, schema-config, config-morta, porta-declarada, hardcode-url, hardcode-numero,
  *      fallback-silencioso, cors-aberto, env-declarado, env-exemplo, env-modulo,
  *      env-fora-do-carregador, gitignore-segredo, segredo-em-publico,
  *      verificacao-declarada, lint-derivado, env-raiz-declarado,
@@ -180,6 +180,47 @@ export default [
         // Ausente ou JSON quebrado ja foi reportado por `estrutura`/`config-valida`.
         if (!presente || valor === null) continue;
         achados.push(...validar(valor, carregarEsquema(`config-${assunto}`), `config/${assunto}.json`));
+      }
+      return achados;
+    },
+  },
+  {
+    /**
+     * As duas metades de UMA declaração: `modulo.json:portas` diz o que o módulo EXIGE,
+     * `config/portas.json` diz QUEM preenche cada exigência. Coincidem nos dois sentidos, como
+     * `env-exemplo` faz entre `envRequerido` e `.env.example`.
+     *
+     * O schema não podia cobrar isto e o `$comentario` dele afirmava que cobrava — schema nenhum
+     * enxerga o `modulo.json`. Com `additionalProperties: false` e sem `required`, as DUAS brechas
+     * passavam: configurar `storage` sem declará-lo (está no vocabulário) e declarar `storage` sem
+     * configurá-lo (não há campo obrigatório).
+     *
+     * As duas pontas têm consequências diferentes, e a mensagem diz qual: declarada e não
+     * configurada DERRUBA O BOOT — `resolverDependencias` não acha o provedor e lança; configurada
+     * e não declarada é config morta, um provedor escolhido para uma porta que ninguém exige.
+     */
+    id: 'porta-declarada',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      const declaradas = ctx.manifesto?.portas;
+      const { presente, valor } = ctx.configs.portas;
+      // Manifesto torto e do `schema-manifesto`; arquivo ausente ou ilegivel e da `estrutura` e do
+      // `config-valida`. Aqui so entra declaracao legivel dos dois lados.
+      if (!Array.isArray(declaradas) || !presente || valor === null) return [];
+
+      // Chave iniciada por `_` e comentario, pela mesma convencao do validador de schema.
+      const configuradas = Object.keys(valor).filter((chave) => !chave.startsWith('_'));
+      const achados = [];
+      for (const porta of declaradas) {
+        if (configuradas.includes(porta)) continue;
+        achados.push(`porta "${porta}" declarada em modulo.json:portas e ausente de`
+          + ' config/portas.json — a composicao nao acha o provedor e DERRUBA o boot');
+      }
+      for (const porta of configuradas) {
+        if (declaradas.includes(porta)) continue;
+        achados.push(`config/portas.json escolhe provedor para "${porta}", ausente de`
+          + ' modulo.json:portas — provedor para uma porta que o modulo nao exige e config morta');
       }
       return achados;
     },

@@ -280,9 +280,28 @@ export const CASOS = [
   {
     regra: 'tabela-prefixo',
     descricao: 'tabela declarada sem o prefixo do modulo',
-    // Cascata legitima: a tabela nova tambem nao tem ENABLE ROW LEVEL SECURITY no SQL.
-    tambem: ['rls'],
+    // Cascata legitima: a tabela nova nao existe no SQL do modulo.
+    //
+    // Este `tambem` era `['rls']`, e a troca REGISTRA a mudanca de dono: a tabela ausente do SQL
+    // caia no `rls` com a mensagem errada — "sem ENABLE ROW LEVEL SECURITY" —, quando o problema
+    // e que ela nao existe. Agora `rls` so pergunta de tabela que o SQL cria, e o achado tem a
+    // mensagem certa.
+    tambem: ['tabela-declarada'],
     mutar: (m) => m.manifesto((x) => ({ ...x, dados: { ...x.dados, tabelas: [...x.dados.tabelas, 'clientes'] } })),
+  },
+  {
+    regra: 'tabela-declarada',
+    descricao: 'tabela declarada em dados.tabelas e sem CREATE TABLE no SQL',
+    // O achado que a `artefato-declarado` pressupunha existir quando deixou `database/` de fora
+    // ("quem declara banco e dados.tabelas") e que nao existia.
+    //
+    // Com o PREFIXO certo, senao `tabela-prefixo` acusaria junto. E `rls` fica CALADA de proposito:
+    // e a prova de que a troca de dono funcionou — antes ela acusava esta mesma tabela dizendo
+    // "sem ENABLE ROW LEVEL SECURITY", que e a mensagem errada para uma tabela que nao existe.
+    mutar: (m) => m.manifesto((x) => ({
+      ...x,
+      dados: { ...x.dados, tabelas: [...x.dados.tabelas, '<modulo>_inexistente'] },
+    })),
   },
   {
     regra: 'tabela-alheia',
@@ -515,6 +534,46 @@ export const CASOS = [
           + '    logger.error("conferindo", os.environ["RAIZ_JWT_SECRET"], os.environ["RAIZ_API_BASE_URL"])\n',
       });
     },
+  },
+  {
+    regra: 'porta-declarada',
+    descricao: 'porta CONFIGURADA em config/portas.json e ausente do manifesto',
+    // A primeira das duas brechas que o `$comentario` do schema afirmava fechar e nao fechava:
+    // `storage` esta no vocabulario do schema, entao `schema-config` passa. O caso acusa UM id.
+    mutar: (m) => m.config('portas', (x) => ({ ...x, storage: 'disco' })),
+  },
+  {
+    regra: 'porta-declarada',
+    descricao: 'porta DECLARADA no manifesto e ausente de config/portas.json',
+    // A segunda brecha: o schema nao tem `required`, entao porta declarada e nunca configurada
+    // passava. `storage` esta no enum do modulo.schema.json, entao `schema-manifesto` tambem cala.
+    // Esta e a direcao que DERRUBA O BOOT — `resolverDependencias` nao acha o provedor e lanca.
+    mutar: (m) => m.manifesto((x) => ({ ...x, portas: [...x.portas, 'storage'] })),
+  },
+  {
+    regra: 'navegacao-declarada',
+    descricao: 'navegacao declarada com rotaWeb nula',
+    // Declara os DOIS lados no proprio caso, como o `web-declarado` faz: assim vale nos tres
+    // bindings, e nao depende de o molde daquele binding nascer com tela (o Python nao nasce).
+    //
+    // `web-declarado` e `testes-web` tem a mesma guarda `rotaWeb == null` e ficam caladas — e e
+    // justamente o que torna este achado necessario: com a tela zerada, ninguem mais notaria a
+    // entrada de menu apontando para o nada.
+    mutar: (m) => m.manifesto((x) => ({
+      ...x,
+      rotaWeb: null,
+      navegacao: { label: 'Molde', icone: 'Box', ordem: 100 },
+    })),
+  },
+  {
+    regra: 'permissao-literal',
+    descricao: 'permissao escrita como literal no argumento de exigirPermissao',
+    // Nao registra rota: um `router.get` novo violaria tambem `contrato-sincronizado`, e o caso
+    // deixaria de provar qual regra esta viva. So a chamada, com o literal que a regra persegue.
+    mutar: (m) => m.acrescentarEm('rotas', {
+      js: "\nexport const exigirLiteral = (req) => exigirPermissao('molde:ler')(req);\n",
+      py: '\n\ndef exigir_literal(request):\n    exigir_permissao(request, "molde:ler")\n',
+    }),
   },
   {
     regra: 'schema-config',

@@ -1,5 +1,5 @@
 {
-  "$comentario": "UNICO lugar do modulo onde o nome de um fornecedor aparece. Lei dona: specs/arquitetura/01-modulo.md §5. `additionalProperties: false` com o vocabulario de portas garante que ninguem invente uma porta aqui sem declara-la no manifesto.",
+  "$comentario": "UNICO lugar do modulo onde o nome de um fornecedor aparece. Lei dona: specs/arquitetura/01-modulo.md §5. `additionalProperties: false` fecha o vocabulario de portas: nome fora do catalogo do §5.1 reprova. O que ele NAO faz, e nao tem como fazer, e amarrar este arquivo ao manifesto — schema nao enxerga o modulo.json. Quem cobra a coincidencia nos DOIS sentidos e a regra `porta-declarada` (04-regras.md §4.4): porta configurada aqui e ausente do manifesto e config morta; porta declarada la e ausente daqui derruba o boot.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

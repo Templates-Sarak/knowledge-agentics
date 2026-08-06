@@ -1,7 +1,7 @@
 /**
  * regras/operacao.mjs — família "Operação" do catálogo (specs/arquitetura/04-regras.md §4.6).
  * ids: log, determinismo, gateway-credencial, random-inseguro, rota-publica-autenticada,
- *      cookie-seguro, token-em-armazenamento, sql-concatenado, segredo-em-log
+ *      cookie-seguro, token-em-armazenamento, permissao-literal, sql-concatenado, segredo-em-log
  *
  * As DUAS últimas são de escopo `raiz` e olham a fiação. Estão nesta família porque é a de
  * SEGURANÇA operacional — a mesma de `cookie-seguro` e `token-em-armazenamento` —, e porque o
@@ -140,6 +140,16 @@ function temContextoSecreto(texto) {
  * código. É a forma exata da lista de isenção hardcoded — a que desmente "a lista vem do manifesto".
  */
 const ROTA_LITERAL = /['"`](GET|POST|PUT|PATCH|DELETE)\s+\/[^'"`]*['"`]/;
+
+/**
+ * Permissão escrita como LITERAL no argumento de `exigirPermissao`. É a forma exata da autorização
+ * que desmente o manifesto: `modulo.json:permissoes` declara uma coisa, a rota exige outra, e nada
+ * muda quando o manifesto muda.
+ *
+ * `[^)]*` cobre as duas assinaturas dos moldes — `exigirPermissao(ler)` em TS/JS e
+ * `exigir_permissao(request, permissao)` em Python, onde o literal seria o SEGUNDO argumento.
+ */
+const PERMISSAO_LITERAL = /exigir_?[Pp]ermissao\s*\([^)]*['"`]/;
 
 /** Onde um cookie é definido, em Express/Fastify e em Python. */
 const DEFINE_COOKIE = /\bres(?:ponse)?\.cookie\(|set_cookie\(|['"`]Set-Cookie['"`]/i;
@@ -312,6 +322,33 @@ export default [
       // Sem `api/` nao ha cadeia de middleware para julgar — `estrutura` ja cobra a ausencia dela.
       if (daApi.length === 0) return [];
       return [...conferirOrigemDaLista(daApi), ...conferirRotasPublicasReais(ctx)];
+    },
+  },
+  {
+    /**
+     * A permissão em vigor é a DECLARADA — e é o análogo exato da cláusula (b) do
+     * `rota-publica-autenticada`, com o molde já demonstrando o padrão: *"As permissoes vem do
+     * manifesto, nunca de literal no codigo"*.
+     *
+     * Cobra UMA coisa, e o nome diz qual. A outra metade — "toda permissão declarada é exigida em
+     * alguma rota", o análogo do `config-morta` — foi DESCARTADA, e não por preguiça: ela é
+     * incompatível com esta. O molde consome as permissões por POSIÇÃO
+     * (`const [ler, escrever] = config.manifesto.permissoes`), então a string `<modulo>:ler` nunca
+     * aparece no código — e não pode aparecer, porque é exatamente o que esta regra proíbe.
+     * Procurá-la seria cobrar o oposto do que se cobra na linha de cima. Registrado no §7.1.
+     */
+    id: 'permissao-literal',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      return varrer(
+        ctx,
+        (arquivo) => arquivo.rel.startsWith('api/'),
+        PERMISSAO_LITERAL,
+        'permissao literal em exigirPermissao — a permissao em vigor vem de'
+        + ' modulo.json:permissoes, nunca do codigo: com o literal aqui, o manifesto declara uma'
+        + ' coisa e a rota exige outra, e mudar o manifesto nao muda nada',
+      );
     },
   },
   {

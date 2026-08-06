@@ -1,7 +1,7 @@
 /**
  * regras/estrutura.mjs — família "Estrutura" do catálogo (specs/arquitetura/04-regras.md §4.1).
  * ids: manifesto, schema-manifesto, estrutura, estrutura-estrita, web-declarado, artefato-declarado,
- *      testes, testes-web, testes-gateway, manifesto-raiz
+ *      navegacao-declarada, testes, testes-web, testes-gateway, manifesto-raiz
  *
  * `manifesto-raiz` é de escopo `raiz` e mora aqui porque a FAMÍLIA é a mesma — o manifesto é o
  * item estrutural que declara a unidade. Escopo e família são eixos independentes.
@@ -203,6 +203,32 @@ export default [
       const paginas = ctx.arquivos.filter((a) => a.rel.startsWith('web/src/pages/') && !a.eTeste);
       if (paginas.length === 0) return ['rotaWeb declarada mas web/src/pages nao tem pagina real'];
       return [];
+    },
+  },
+  {
+    /**
+     * `navegacao` não-nulo significa que o conector monta uma entrada de menu para este módulo
+     * (01-modulo.md §3.2, "o conector monta o menu a partir de `navegacao`"). Menu leva a uma tela,
+     * e quem declara a tela é `rotaWeb`: `navegacao` com `rotaWeb: null` é entrada apontando para o
+     * nada.
+     *
+     * UMA direção só, e a inversa é legítima de propósito: `rotaWeb` sem `navegacao` é a página
+     * alcançável por URL direta e fora do menu. A doutrina em lugar nenhum exige que toda tela
+     * esteja no menu — cobrar isso proibiria a tela de detalhe, que é o caso ordinário.
+     *
+     * `icone` não é verificável e não é tentado: não existe conjunto de ícones conhecido pelo
+     * template (§7.2).
+     */
+    id: 'navegacao-declarada',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      const navegacao = ctx.manifesto?.navegacao;
+      // Forma do objeto e do `schema-manifesto`; aqui so importa a declaracao existir.
+      if (navegacao == null) return [];
+      if (ctx.manifesto?.rotaWeb != null) return [];
+      return ['navegacao declarada mas rotaWeb e null — o conector monta o menu a partir de'
+        + ' navegacao, e a entrada apontaria para o nada. Declare rotaWeb, ou zere navegacao'];
     },
   },
   {

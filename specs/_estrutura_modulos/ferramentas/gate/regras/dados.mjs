@@ -1,6 +1,6 @@
 /**
  * regras/dados.mjs — família "Dados" do catálogo (specs/arquitetura/04-regras.md §4.3).
- * ids: schema-nao-public, tabela-prefixo, tabela-alheia, migrations, rls
+ * ids: schema-nao-public, tabela-prefixo, tabela-alheia, migrations, tabela-declarada, rls
  */
 const PADRAO_MIGRATION = /^\d{4}-[a-z][a-z0-9]*(-[a-z0-9]+)+\.sql$/;
 
@@ -82,12 +82,42 @@ export default [
     },
   },
   {
+    /**
+     * `dados.tabelas` é declaração, e até aqui nada a confrontava com o disco — o
+     * `artefato-declarado` chega a justificar deixar `database/` de fora dizendo que *"quem declara
+     * banco é `dados.tabelas`"*, o que só é verdade se alguém cobrar isso. Agora cobra.
+     *
+     * A metade "declara tabelas e não tem `database/migrations/`" já era do `migrations`, e continua
+     * dele: quando NÃO HÁ SQL nenhum, esta regra cala. Sem isso, um módulo com tabelas e sem banco
+     * receberia uma mensagem do `migrations` mais uma por tabela daqui — N+1 mensagens para um
+     * conserto só.
+     */
+    id: 'tabela-declarada',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      const tabelas = ctx.manifesto?.dados?.tabelas ?? [];
+      // Ausencia TOTAL de SQL e do `migrations` — um defeito, uma mensagem.
+      if (tabelas.length === 0 || ctx.sql.length === 0) return [];
+      const sql = juntarSql(ctx);
+      return tabelas
+        .filter((tabela) => !criaTabela(sql, tabela))
+        .map((tabela) => `tabela "${tabela}" declarada em dados.tabelas e sem CREATE TABLE no SQL do`
+          + ' modulo — declaracao sem consequencia: o schema real nao tem a tabela que o manifesto'
+          + ' promete. Crie a migration, ou remova a tabela da declaracao');
+    },
+  },
+  {
     id: 'rls',
     nivel: 'aviso',
     escopo: 'modulo',
     verificar(ctx) {
-      const sql = ctx.sql.map((a) => a.conteudo).join('\n').toLowerCase();
+      const sql = juntarSql(ctx);
       return (ctx.manifesto?.dados?.tabelas ?? [])
+        // Tabela que NAO EXISTE no SQL e do `tabela-declarada`, e a fronteira e explicita: sem
+        // isto, a tabela ausente caia aqui com a mensagem errada — "sem RLS", quando o problema e
+        // que ela nao existe. Um defeito, uma mensagem, e a mensagem certa.
+        .filter((tabela) => criaTabela(sql, tabela))
         .filter((tabela) => {
           const padrao = new RegExp(`alter\\s+table[^;]*${tabela}[^;]*enable\\s+row\\s+level\\s+security`, 's');
           return !padrao.test(sql);
@@ -96,3 +126,17 @@ export default [
     },
   },
 ];
+
+/** Todo o SQL do módulo, em minúsculas. Uma leitura, usada pelas duas regras que olham tabela. */
+function juntarSql(ctx) {
+  return ctx.sql.map((a) => a.conteudo).join('\n').toLowerCase();
+}
+
+/**
+ * O SQL do módulo CRIA esta tabela? `[^;(]*` prende a busca dentro do próprio `create table`: não
+ * atravessa o `;` do statement anterior nem entra na lista de colunas, então `create table x (…
+ * y_id …)` não conta como criação de `y`.
+ */
+function criaTabela(sql, tabela) {
+  return new RegExp(`create\\s+table[^;(]*${tabela}`, 's').test(sql);
+}

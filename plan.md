@@ -15,11 +15,11 @@ no §7.2 quando houver. Regra sem caso não entra.
 
 | Métrica | Valor |
 |---|---|
-| Regras no catálogo | **68** |
-| Regras com caso de teste próprio | **68** — cobertura total |
+| Regras no catálogo | **72** |
+| Regras com caso de teste próprio | **72** — cobertura total |
 | Bindings | `typescript` · `javascript` · `python` — gate verde nos três |
 | Escopos do gate | `modulo` · `global` · **`raiz`** (novo em I.1) |
-| Autoteste | `82/82` (TS) · `82/82` (JS) · `78/78` (PY) |
+| Autoteste | `87/87` (TS) · `87/87` (JS) · `83/83` (PY) |
 | Pipeline do `verificar` | gate → env → formato → lint → tipos → testes, nos três bindings |
 
 **Meta ao fim de todos os blocos:** ~70 regras, todas com caso, cobertura uniforme entre bindings —
@@ -80,14 +80,14 @@ do gate não cai (os limiares viajam em `ferramentas/gate/`); a A.3 fecha a jane
 
 **Achado:** o `gate/README.md` afirmava "três regras globais" — são quatro desde `consome-contrato`.
 
-### A.3 — config de lint **por módulo**, gerada do manifesto  ⏸ **adiada, não pulada**
+### A.3 — config de lint **por módulo**, gerada do manifesto  ⟵ **AGORA**
 
 > **Por que depois do Bloco B:** A.3 entrega **precisão** — `import-lateral`, `import-adapter`,
 > `sdk-fornecedor` e `env-fora-do-carregador` já funcionam no gate, e o eslint só resolveria melhor
 > alias, re-export e import dinâmico. O Bloco B entrega **cobertura**: invariantes de segurança que
 > hoje não existem em regra nenhuma. Cobertura antes de precisão.
 >
-> Retomar depois de B.2 e B.3.
+> Retomada: B, C, D e I estão fechados. É a vez dela.
 - [ ] `import-lateral`, `import-adapter`, `sdk-fornecedor`, `env-fora-do-carregador` no eslint,
       com os caminhos derivados de cada `modulo.json` — AST resolve alias, re-export e import
       dinâmico; regex não. **Continuam também no gate**, como piso de extração
@@ -253,16 +253,27 @@ exercite. Dois dos três lados aprovavam.
 
 ---
 
-## Bloco D — Campos do manifesto ainda órfãos  ⟵ **AGORA**
+## Bloco D — Campos do manifesto ainda órfãos  ✅ **concluído**
 
-- [ ] `permissoes` — declarada e nunca usada, e o inverso *(análogo ao `config-morta`)*
-- [ ] `navegacao` — toda entrada aponta para página real *(análogo ao `web-declarado`)*
+- [x] `porta-declarada` — `manifesto.portas` × chaves de `config/portas.json`, **nos dois sentidos**.
+      O `$comentario` do schema afirmava garantir isso e **não garantia** — schema não enxerga o
+      manifesto. Corrigido, e agora nomeia quem cobra
+- [x] `navegacao-declarada` — `navegacao` não-nula exige `rotaWeb`. **Uma direção só**: tela fora do
+      menu é legítima (página de detalhe). `icone` não é verificável — quem o resolve é o conector
+- [x] `permissao-literal` — argumento de `exigirPermissao` vem do manifesto, nunca de literal.
+      **Batizada pelo defeito, não pela invariante**: um id `-declarada` prometeria a metade que foi
+      descartada
+- [x] `tabela-declarada` — tabela em `dados.tabelas` tem `CREATE TABLE` no SQL. **`rls` ganhou filtro**
+      e parou de mandar acrescentar RLS a tabela que não existe. Fronteira tripla: sem SQL nenhum →
+      `migrations`; sem `CREATE TABLE` → `tabela-declarada`; criada e sem RLS → `rls` (aviso)
+- [x] **A outra metade das `permissoes` é INCOMPATÍVEL, não inverificável**: detectar "declarada e
+      usada" exigiria procurar `<modulo>:ler` no código — exatamente o que `permissao-literal`
+      proíbe. E o consumo é posicional, então a string nunca aparece. Registrado no §7.1
 - [ ] `portas` — verificar se o campo do **manifesto** tem verificador semântico
       *(as ocorrências encontradas são do `config/portas.json`, que é outra coisa)*
-- [ ] **Achado do Bloco C, sem regra:** ninguém cobra *"declarou `dados.tabelas` e não tem
-      `database/`"*. `artefato-declarado` exclui `database/` dizendo que quem o declara é
-      `dados.tabelas`, e `rls` (aviso) só acusa de raspão — módulo com tabelas e zero SQL recebe
-      **aviso**, não erro
+- [x] ~~Achado do Bloco C~~ — **resolvido por `tabela-declarada`**. A justificativa do
+      `artefato-declarado` (*"quem declara banco é `dados.tabelas`"*) só era verdade se algo cobrasse
+      `dados.tabelas` contra o disco. Agora cobra
 
 `rotasPublicas` está no Bloco B como `rota-publica-autenticada`.
 
@@ -352,14 +363,19 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
            I.3  segurança da fiação    Família 2 — Bloco I fechado
 
            C    testes                 2 regras — a terceira contradizia o §5
+           D    campos órfãos          4 regras
 
-AGORA      D    campos órfãos          3 regras
-           A.3  lint por módulo        precisão; fecha a janela do extraído
+           ══ o CATÁLOGO DE REGRAS está completo: 72 regras, 72 com caso ══
+
+AGORA      A.3  lint por módulo        precisão; fecha a janela do extraído
            G    hooks no template      depende de A
            F    insumos de CI          junto do pipeline, não antes
            H    dívidas                a qualquer momento
            B.3  vetor residual de SQL no módulo — reavaliar depois de I.3
 ```
+
+**O que resta não é regra de gate.** A.3 é camada de lint; G é instalação; F é orquestração de CI;
+H é dívida. A meta de "~70 regras, todas com caso" foi cumprida com 72.
 
 **A ordem mudou duas vezes, e as duas estão registradas:**
 
