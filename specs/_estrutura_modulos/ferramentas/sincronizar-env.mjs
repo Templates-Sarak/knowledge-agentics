@@ -6,9 +6,15 @@
  *   node ferramentas/sincronizar-env.mjs             regrava os .env.example
  *   node ferramentas/sincronizar-env.mjs --conferir  só verifica (para o gate/CI)
  *
- * A fonte é `modulo.json:envRequerido`: o `.env.example` de cada módulo documenta as chaves dele,
- * e o da raiz é a união de todos. Ninguém edita esses arquivos à mão — assim eles nunca divergem
- * do que o código realmente exige.
+ * São DUAS fontes, uma por unidade que declara: `modulo.json:envRequerido` para o `.env.example` de
+ * cada módulo, e `projeto.json:envRequerido` para as chaves da própria RAIZ (a fiação —
+ * `adapters/`, `src/`, `packages/`). O `.env.example` da raiz é a união das duas.
+ *
+ * Enquanto a raiz não declarava, o segredo dela nascia órfão: `JWT_SECRET`, `DATABASE_URL`, chave
+ * de provedor — todos fora do `.env.example`, todos invisíveis a `env-declarado` e `env-exemplo`,
+ * que são regras por módulo. O mais sensível do sistema era o único que ninguém documentava.
+ *
+ * Ninguém edita esses arquivos à mão — assim eles nunca divergem do que o código realmente exige.
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -18,10 +24,14 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 
 const CABECALHO_RAIZ = [
   '# .env da RAIZ — fonte UNICA de segredo do projeto (ADR-004).',
-  '# GERADO por `node ferramentas/sincronizar-env.mjs` a partir de modulo.json:envRequerido de',
-  '# cada modulo. NAO edite a mao: acrescente a chave no manifesto do modulo e rode o script.',
+  '# GERADO por `node ferramentas/sincronizar-env.mjs` a partir de projeto.json:envRequerido (as',
+  '# chaves da propria raiz) e de modulo.json:envRequerido de cada modulo. NAO edite a mao:',
+  '# acrescente a chave no manifesto que a EXIGE — projeto.json ou modulo.json — e rode o script.',
   '# Este arquivo e versionado (SEM segredo real); o .env real fica no .gitignore.',
 ];
+
+/** Cabecalho da secao da raiz. As chaves dela sao `RAIZ_*`; as de modulo, `<MODULO>_*`. */
+const SECAO_DA_RAIZ = '# --- RAIZ: a fiacao (adapters/, src/, packages/) — projeto.json ---';
 
 function acharRaizProjeto() {
   let atual = process.cwd();
@@ -82,8 +92,26 @@ function conteudoDoModulo({ manifesto }) {
   ].join('\n');
 }
 
-function conteudoDaRaiz(lista) {
+/**
+ * O manifesto da RAIZ. Ausente devolve `null` — projeto anterior ao template, e quem reprova isso é
+ * a regra `manifesto-raiz` do gate, não este script. JSON quebrado ESTOURA, como o `modulo.json`
+ * quebrado já estourava: gerar em cima de fonte ilegível daria um `.env.example` silenciosamente
+ * incompleto, que é pior que a parada.
+ */
+function lerManifestoDaRaiz(raizProjeto) {
+  const caminho = join(raizProjeto, 'projeto.json');
+  return existsSync(caminho) ? JSON.parse(lerTexto(caminho)) : null;
+}
+
+function conteudoDaRaiz(lista, envDaRaiz) {
   const linhas = [...CABECALHO_RAIZ, ''];
+  // A secao da raiz vem PRIMEIRO, e aparece mesmo vazia quando ha `projeto.json`: "a raiz nao exige
+  // nada" e uma afirmacao, e o operador precisa distingui-la de "ninguem perguntou".
+  if (envDaRaiz !== null) {
+    linhas.push(SECAO_DA_RAIZ);
+    linhas.push(...envDaRaiz.map((chave) => `${chave}=`));
+    linhas.push('');
+  }
   for (const { manifesto } of lista) {
     linhas.push(`# --- ${manifesto.nome} (${manifesto.rotaBase}) ---`);
     linhas.push(...(manifesto.envRequerido ?? []).map((chave) => `${chave}=`));
@@ -100,11 +128,17 @@ function montarAlvos(raizProjeto, lista) {
     conteudo: conteudoDoModulo(modulo),
   }));
 
-  // O `.env.example` da raiz é a união dos módulos REAIS. Um repositório que só tem moldes
-  // (o do próprio template) não ganha arquivo de raiz — não haveria chave nenhuma nele.
+  // O `.env.example` da raiz é a união dos módulos REAIS com as chaves da própria raiz. Um
+  // repositório que só tem moldes E cuja raiz não exige nada (o do próprio template, e o projeto
+  // recém-criado antes do primeiro módulo) não ganha arquivo de raiz — não haveria chave nenhuma
+  // nele. Basta a raiz declarar UMA chave para o arquivo passar a existir.
   const reais = lista.filter((m) => !m.eMolde);
-  if (reais.length === 0) return doModulo;
-  return [...doModulo, { caminho: join(raizProjeto, '.env.example'), conteudo: conteudoDaRaiz(reais) }];
+  const envDaRaiz = lerManifestoDaRaiz(raizProjeto)?.envRequerido ?? null;
+  if (reais.length === 0 && (envDaRaiz === null || envDaRaiz.length === 0)) return doModulo;
+  return [
+    ...doModulo,
+    { caminho: join(raizProjeto, '.env.example'), conteudo: conteudoDaRaiz(reais, envDaRaiz) },
+  ];
 }
 
 function principal() {

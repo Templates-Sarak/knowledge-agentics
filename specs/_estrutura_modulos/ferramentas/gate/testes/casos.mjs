@@ -48,7 +48,11 @@ export const CASOS = [
     descricao: 'rotaWeb declarada sem pagina real',
     // Cascata legitima: sem as paginas, as chaves de `config/textos.json` ficam sem leitor. So em
     // TS/JS — o molde Python nasce sem `web/`, e por isso `tambem` e teto, nao obrigacao.
-    tambem: ['config-morta'],
+    //
+    // `testes-web` e o co-achado inverso, e so no PYTHON: ligar `rotaWeb` num molde que nasce sem
+    // tela passa a exigir `tests/web/`, que ele nao tem. E defeito real do fixture mutado, nao
+    // ruido — tela declarada sem teste e exatamente o que a regra persegue.
+    tambem: ['config-morta', 'testes-web'],
     // Declara a rotaWeb no proprio caso: assim vale tambem para molde que nasce sem tela
     // (o binding Python), em vez de depender do default de um binding especifico.
     mutar: (m) => {
@@ -100,13 +104,16 @@ export const CASOS = [
   {
     regra: 'gateway-http',
     descricao: 'gateway falando com banco',
-    // Cascata legitima: o arquivo novo em `core/gateways/` nao tem entrada em `consome`.
-    tambem: ['gateway-declarado'],
+    // Cascata legitima: o arquivo novo em `core/gateways/` nao tem entrada em `consome` — nem teste
+    // que o espelhe. Sao os outros dois lados do triangulo `gateway <-> consome <-> teste`.
+    tambem: ['gateway-declarado', 'testes-gateway'],
     mutar: (m) => m.escrever('core/gateways/vizinho.ts', "export const q = 'select 1 from t';\nexport async function f(c) { return c.query(q); }\n"),
   },
   {
     regra: 'gateway-declarado',
     descricao: 'gateway sem entrada em consome',
+    // Cascata legitima: o gateway novo tambem nasce sem teste que o espelhe.
+    tambem: ['testes-gateway'],
     mutar: (m) => m.escrever('core/gateways/vizinho.ts', 'export async function f(u) { return fetch(u); }\n'),
   },
   {
@@ -133,6 +140,8 @@ export const CASOS = [
   {
     regra: 'consome-contrato',
     descricao: 'consome rota que o contrato do dono nao declara',
+    // Cascata legitima: o gateway que acompanha a entrada em `consome` nasce sem teste.
+    tambem: ['testes-gateway'],
     mutar: (m) => {
       // O gateway acompanha a entrada em `consome` (senao violaria tambem `gateway-declarado`),
       // e nada e acrescentado a `envRequerido` (senao violaria `env-exemplo`). Este caso acusa
@@ -146,6 +155,64 @@ export const CASOS = [
     exigeVizinho: true,
   },
 
+  {
+    regra: 'adapter-isolado',
+    descricao: 'adapter importando de modulos/',
+    // O defeito que mata a extraibilidade em silencio: no dia em que o adapter conhece um modulo,
+    // ele deixa de ser substituivel e o modulo deixa de sair da pasta — e ate aqui nada acusava.
+    mutar: (m) => m.acrescentarEm('adapterRaiz', {
+      js: "\nimport { algo } from '../../modulos/_template/core/dominio/index.js';\n",
+      py: '\nfrom modulos._template.core.dominio import algo\n',
+    }),
+  },
+  {
+    regra: 'adapter-isolado',
+    descricao: 'adapter importando da fiacao (src/)',
+    // A SEGUNDA clausula da regra, com caso proprio: sob um id so, ela poderia parar de acusar sem
+    // nada falhar. A fiacao INSTANCIA o adapter — depender dela inverte a direcao.
+    mutar: (m) => m.acrescentarEm('adapterRaiz', {
+      js: "\nimport { resolverAuth } from '../../src/composicao.js';\n",
+      py: '\nfrom src.composicao import resolver_auth\n',
+    }),
+  },
+  {
+    regra: 'portas-pura',
+    descricao: 'porta importando o adapter que deveria implementa-la',
+    // A inversao do vertice do diagrama: `adapters/ ──> packages/portas/` vira mao dupla, e a
+    // interface canonica passa a depender de uma implementacao.
+    mutar: (m) => m.acrescentarEm('portasRaiz', {
+      js: "\nimport { criarRepositorio } from '../../adapters/memoria/index.js';\n",
+      py: '\nfrom adapters.memoria import RepositorioEmMemoria\n',
+    }),
+  },
+  {
+    regra: 'portas-pura',
+    descricao: 'SDK de fornecedor na interface canonica, com o MESMO SDK legitimo no adapter',
+    // Duas afirmacoes num caso so, e a segunda e a que trava a regra contra si mesma:
+    //
+    //   (a) `pg` em `packages/portas/` REPROVA — `sdk-fornecedor` mantem o driver fora de cada
+    //       modulo, e a porta o devolveria a TODOS de uma vez, porque todo modulo importa a porta;
+    //   (b) o MESMO `pg` em `adapters/` NAO e acusado — e exatamente o lugar dele.
+    //
+    // (b) so vale como prova por causa da regra do harness: id nao declarado REPROVA. Se
+    // `adapter-isolado` algum dia passar a acusar dependencia externa, este caso falha na hora —
+    // e e o unico jeito de a nao-acusacao ficar coberta por maquina, e nao por inspecao.
+    mutar: (m) => {
+      m.acrescentarEm('portasRaiz', { js: "\nimport pg from 'pg';\n", py: '\nimport psycopg2\n' });
+      m.acrescentarEm('adapterRaiz', { js: "\nimport pg from 'pg';\n", py: '\nimport psycopg2\n' });
+    },
+  },
+  {
+    regra: 'composicao-descoberta',
+    descricao: 'composicao importando modulo em vez de descobri-lo',
+    // O par que separa DEPENDENCIA de DESCOBERTA: o mesmo arquivo, intocado, alcanca todos os
+    // modulos por `readdirSync` + `modulo.json` e passa limpo no caso "molde conforme"; com um
+    // IMPORT, acusa. Uma regra que procurasse a string `modulos` acusaria os dois.
+    mutar: (m) => m.acrescentarEm('composicaoRaiz', {
+      js: "\nimport { algo } from '../modulos/_template/core/dominio/index.js';\n",
+      py: '\nfrom modulos._template.core.dominio import algo\n',
+    }),
+  },
   {
     regra: 'ui-kit',
     descricao: 'ui.modo kit importando biblioteca de UI bruta',
@@ -324,6 +391,132 @@ export const CASOS = [
     }),
   },
   {
+    regra: 'testes-web',
+    descricao: 'rotaWeb declarada e tests/web/ apagada',
+    // Nao mexe no manifesto: o molde de TS/JS ja nasce com `rotaWeb`, e usar a declaracao REAL e o
+    // que faz o caso provar a condicional em vez de fabrica-la. `removerPastaEm` (e nao
+    // `removerPasta`) porque no Python o alvo nao existe: la o caso vira SEM COBERTURA declarada, e
+    // nao um "nenhum achado" que culparia a regra por um molde que nasce sem tela.
+    mutar: (m) => m.removerPastaEm('pastaTestesWeb'),
+  },
+  {
+    regra: 'testes-gateway',
+    descricao: 'gateway real e declarado, e sem teste que o espelhe',
+    // O terceiro lado do triangulo. Os outros dois ficam SATISFEITOS de proposito — o arquivo tem
+    // entrada em `consome` (cala `gateway-declarado`) e a rota existe na spec do vizinho (cala
+    // `consome-contrato`) —, entao o caso acusa UM id: a dependencia esta declarada, conforme, e
+    // sem uma linha de teste que a exercite. E exatamente o buraco que a regra fecha.
+    //
+    // Sem SQL nem URL literal no corpo, para `gateway-http` e `hardcode-url` tambem calarem.
+    mutar: (m) => {
+      m.escrever('core/gateways/vizinho.ts', 'export async function obter(u) { return fetch(u); }\n');
+      m.manifesto((x) => ({
+        ...x,
+        consome: [{ modulo: 'vizinho', contrato: 'GET /resumo', porQue: 'prova do triangulo' }],
+      }));
+    },
+    exigeVizinho: true,
+  },
+  {
+    regra: 'manifesto-raiz',
+    descricao: 'projeto sem projeto.json na raiz',
+    // A raiz e a unidade menos verificada e a que concentra o risco: o modulo e proibido de tocar
+    // banco, importar adapter e ler env fora do carregador, entao conexao, query e credencial
+    // acontecem todas la. Sem manifesto, nada disso e declarado.
+    //
+    // `env-raiz-declarado` cala de proposito quando o manifesto nao e legivel — um defeito, uma
+    // mensagem —, entao este caso acusa UM id.
+    mutar: (m) => m.remover('../../projeto.json'),
+  },
+  {
+    regra: 'manifesto-raiz',
+    descricao: 'campo nao previsto no manifesto da raiz',
+    // A trava contra o vicio desta base, em forma de teste: campo novo em `projeto.json` REPROVA
+    // ate que exista a regra que o cobra. `ui`, `exportaResumo` e `geraArtefato` ficaram anos
+    // declarados sem verificador porque nada impedia o campo de entrar sozinho.
+    mutar: (m) => m.manifestoRaiz((x) => ({ ...x, portas: ['repositorio'] })),
+  },
+  {
+    regra: 'env-raiz-declarado',
+    descricao: 'env da raiz usada na fiacao e ausente de projeto.json',
+    // O buraco que motivou o manifesto: ate aqui o `.env.example` da raiz saia so dos manifestos de
+    // MODULO, entao o `JWT_SECRET` do `resolverAuth()` nascia orfao — invisivel a `env-declarado` e
+    // a `env-exemplo`, que sao regras por modulo. O segredo mais sensivel era o unico sem dono.
+    //
+    // Alvo logico + trecho por sintaxe: a fiacao le env de forma diferente em cada binding.
+    mutar: (m) => m.acrescentarEm('composicaoRaiz', {
+      js: '\nexport const segredoJwt = process.env.RAIZ_JWT_SECRET;\n',
+      py: '\n\nSEGREDO_JWT = os.environ["RAIZ_JWT_SECRET"]\n',
+    }),
+  },
+  {
+    regra: 'env-raiz-declarado',
+    descricao: 'env declarada em projeto.json e sem leitor na fiacao',
+    // O sentido inverso, e ele nao e simetria decorativa: a chave declarada entra no `.env.example`
+    // e passa a EXIGIR do operador um valor que nada le. Mutacao agnostica de binding — so JSON.
+    mutar: (m) => m.manifestoRaiz((x) => ({ ...x, envRequerido: [...x.envRequerido, 'RAIZ_SEM_LEITOR'] })),
+  },
+  {
+    regra: 'sql-concatenado',
+    descricao: 'query montada por concatenacao no adapter',
+    // A raiz e o UNICO lugar onde esta pergunta cabe: o modulo nao pode ter driver
+    // (`sdk-fornecedor`) nem importar adapter (`import-adapter`), entao a query e montada aqui — e
+    // ate a I.1 nenhuma regra enxergava este arquivo. A regra veio da B.3 por este motivo.
+    mutar: (m) => m.acrescentarEm('adapterRaiz', {
+      js: "\nexport const buscar = (db, id) => db.query('select * from registros where hash = ' + id);\n",
+      py: '\n\ndef buscar(db, id):\n    return db.execute("select * from registros where hash = " + id)\n',
+    }),
+  },
+  {
+    regra: 'hardcode-url-raiz',
+    descricao: 'URL de infraestrutura literal na fiacao',
+    // O gemeo de `hardcode-url`, com a MESMA `URL_LITERAL`. O adapter e onde o endereco do
+    // fornecedor de verdade aparece, e e o territorio que o gemeo de modulo nunca alcancou.
+    mutar: (m) => m.acrescentarEm('adapterRaiz', {
+      js: "\nexport const base = 'https://api.exemplo.com';\n",
+      py: '\nBASE = "https://api.exemplo.com"\n',
+    }),
+  },
+  {
+    regra: 'fallback-raiz',
+    descricao: 'default silencioso de env na composicao',
+    // A chave e DECLARADA no manifesto da raiz de proposito: sem isso o caso acusaria tambem
+    // `env-raiz-declarado` (I.1), e deixaria de provar qual das duas esta viva. E a declaracao
+    // mostra que as duas nao brigam — `env-raiz-declarado` cobra a chave nao declarada e NAO proibe
+    // a leitura; ler o ambiente e o oficio da composicao. O que esta regra proibe e o DEFAULT.
+    mutar: (m) => {
+      m.manifestoRaiz((x) => ({ ...x, envRequerido: [...x.envRequerido, 'RAIZ_PORTA'] }));
+      m.acrescentarEm('composicaoRaiz', {
+        js: "\nexport const porta = process.env.RAIZ_PORTA ?? 'padrao';\n",
+        py: '\nimport os\n\nPORTA = os.environ.get("RAIZ_PORTA", "padrao")\n',
+      });
+    },
+  },
+  {
+    regra: 'segredo-em-log',
+    descricao: 'credencial declarada em projeto.json indo para o log, ao lado de chave inocente',
+    // O sinal vem de onde JA existe declaracao: `projeto.json:envRequerido` cruzado com o mesmo
+    // vocabulario fechado de sufixo de credencial de `gateway-credencial`. A raiz nao tem
+    // `camposSensiveis` — `projeto.schema.json` declara um campo so, com
+    // `additionalProperties: false` fechando a porta de proposito.
+    //
+    // As DUAS chaves entram na mesma linha de log: `RAIZ_JWT_SECRET` casa o sufixo de credencial e
+    // e acusada; `RAIZ_API_BASE_URL` nao casa e passa. Declarar as duas tambem cala
+    // `env-raiz-declarado`, nos dois sentidos — declaradas e usadas.
+    mutar: (m) => {
+      m.manifestoRaiz((x) => ({
+        ...x,
+        envRequerido: [...x.envRequerido, 'RAIZ_JWT_SECRET', 'RAIZ_API_BASE_URL'],
+      }));
+      m.acrescentarEm('composicaoRaiz', {
+        js: '\nexport const conferir = (logger) =>\n'
+          + "  logger.error('conferindo', process.env.RAIZ_JWT_SECRET, process.env.RAIZ_API_BASE_URL);\n",
+        py: '\nimport os\n\n\ndef conferir(logger):\n'
+          + '    logger.error("conferindo", os.environ["RAIZ_JWT_SECRET"], os.environ["RAIZ_API_BASE_URL"])\n',
+      });
+    },
+  },
+  {
     regra: 'schema-config',
     descricao: 'nivelLog fora do vocabulario',
     mutar: (m) => m.config('api', (x) => ({ ...x, nivelLog: 'gritante' })),
@@ -373,8 +566,10 @@ export const CASOS = [
     regra: 'contrato',
     descricao: 'contrato sem os endpoints obrigatorios',
     // Cascata legitima e inevitavel: a spec minima omite as rotas obrigatorias que o codigo
-    // registra, entao divergir do codigo e consequencia do proprio defeito sob teste.
-    tambem: ['contrato-sincronizado'],
+    // registra, entao divergir do codigo e consequencia do proprio defeito sob teste. E, pela mesma
+    // razao, as tres entradas de `rotasPublicas` deixam de apontar para rota que existe — defeito
+    // real, e nao ruido: uma spec sem `/health` faz "GET /health" isentar coisa nenhuma.
+    tambem: ['contrato-sincronizado', 'rota-publica-autenticada'],
     // O `servers:` e as `properties:` entram na spec minima de proposito: sem eles o caso acusaria
     // tambem `rota-nomenclatura` e `projecao-contrato`, e deixaria de provar a ausencia das rotas
     // OBRIGATORIAS, que e o dele. As propriedades sao as que o mapeador do molde projeta.
@@ -579,6 +774,16 @@ export const CASOS = [
     },
   },
   {
+    regra: 'entrada-allowlist',
+    descricao: 'corpo da requisicao espalhado direto numa entidade',
+    // A simetrica do `saida-crua`. Espalhar (`{...req.body}`) e a forma que o molde NAO tem: la o
+    // corpo atravessa `lerCorpo`, que rejeita campo desconhecido antes de virar entidade.
+    mutar: (m) => m.escrever(
+      'api/src/mau-entrada.ts',
+      'export const criar = (req, repositorio) => repositorio.inserir({ ...req.body });\n',
+    ),
+  },
+  {
     regra: 'saida-crua',
     descricao: 'devolve o registro cru na resposta',
     // As duas metades do padrao, uma por sintaxe: `json(registro)` no lado Express, e o `return`
@@ -599,6 +804,37 @@ export const CASOS = [
     regra: 'determinismo',
     descricao: 'nao-determinismo dentro de core/',
     mutar: (m) => m.escrever('core/dominio/mau.ts', 'export const agora = new Date();\n'),
+  },
+  {
+    regra: 'rota-publica-autenticada',
+    descricao: 'rotasPublicas declara rota que o contrato nao tem',
+    // Entrada com typo NAO isenta nada: o autor acredita que abriu a rota, a cadeia continua
+    // exigindo token, e o defeito so aparece em producao. A forma passa no JSON Schema
+    // (`^(GET|POST|PATCH|PUT|DELETE) /`), entao `schema-manifesto` cala e o caso acusa UM id.
+    mutar: (m) => m.manifesto((x) => ({
+      ...x,
+      rotasPublicas: [...x.rotasPublicas, 'GET /helth'],
+    })),
+  },
+  {
+    regra: 'cookie-seguro',
+    descricao: 'cookie de sessao sem HttpOnly, Secure e SameSite',
+    // CONDICIONAL: o molde nao tem cookie (a auth dele e `Authorization: Bearer`), entao o caso
+    // precisa criar a superficie para a regra ter o que cobrar.
+    mutar: (m) => m.escrever(
+      'api/src/mau-cookie.ts',
+      "export const logar = (res, valor) => res.cookie('session', valor);\n",
+    ),
+  },
+  {
+    regra: 'token-em-armazenamento',
+    descricao: 'token de auth guardado em localStorage',
+    // Em `web/` de proposito: `localStorage` so existe no navegador. No molde Python, que nasce sem
+    // `web/`, o caso estoura ENOENT e o runner marca SEM COBERTURA — correto, nao aprovacao.
+    mutar: (m) => m.escrever(
+      'web/src/api-client/sessao.ts',
+      "export const guardar = (valor) => localStorage.setItem('token', valor);\n",
+    ),
   },
   {
     regra: 'gateway-credencial',

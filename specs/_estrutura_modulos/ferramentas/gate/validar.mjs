@@ -17,8 +17,8 @@ import { existsSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acharRaizProjeto, carregarContexto, carregarExcecoes, listarModulos } from './contexto.mjs';
-import { analisar } from './motor.mjs';
+import { acharRaizProjeto, carregarContexto, carregarExcecoes, carregarProjeto, listarModulos } from './contexto.mjs';
+import { ALVO_RAIZ, analisar } from './motor.mjs';
 
 function aplicarExcecoes(achados, excecoes) {
   const perdoada = (a) => excecoes.validas.some((e) => e.modulo === a.modulo && e.regra === a.regra);
@@ -59,6 +59,22 @@ function lerArgumentos() {
   };
 }
 
+/**
+ * Os blocos que a saída imprime. A raiz entra como alvo próprio SEMPRE que houver projeto —
+ * inclusive com zero achado, e é de propósito: bloco ausente seria indistinguível de "a raiz não
+ * foi analisada", que é a confusão que este gate existe para impedir. Sem `modulos/` não há raiz de
+ * projeto a analisar (módulo solto), e aí o bloco não aparece porque não haveria o que afirmar.
+ *
+ * Em `--extracao` ele também não aparece: ali `analisar` filtra para `REGRAS_DE_EXTRACAO`, nenhuma
+ * regra de raiz sobrevive ao filtro, e um bloco vazio afirmaria uma verificação que não houve. A
+ * pergunta da extração é sobre o MÓDULO, não sobre a raiz que ele vai deixar para trás.
+ */
+function alvosDaSaida(opcoes, selecionados, raizProjeto) {
+  const modulos = selecionados.map((c) => c.idPasta);
+  const temRaiz = opcoes.extracao !== true && carregarProjeto(raizProjeto).ehProjeto;
+  return temRaiz ? [ALVO_RAIZ, ...modulos] : modulos;
+}
+
 function reportar(opcoes, contextos, selecionados, raizProjeto) {
   const excecoes = carregarExcecoes(raizProjeto);
   const achados = aplicarExcecoes(analisar(contextos, selecionados, opcoes), excecoes);
@@ -69,11 +85,15 @@ function reportar(opcoes, contextos, selecionados, raizProjeto) {
     return erros.length > 0 ? 1 : 0;
   }
 
-  imprimirHumano(achados, selecionados.map((c) => c.idPasta), excecoes.invalidas);
+  const alvos = alvosDaSaida(opcoes, selecionados, raizProjeto);
+  imprimirHumano(achados, alvos, excecoes.invalidas);
   const rotulo = opcoes.extracao ? 'extracao' : 'conformidade';
+  const unidades = alvos.length > selecionados.length
+    ? `${selecionados.length} modulo(s) + a raiz`
+    : `${selecionados.length} modulo(s)`;
   process.stdout.write(
     erros.length === 0
-      ? `\n${rotulo}: OK — ${selecionados.length} modulo(s), 0 erro(s)\n`
+      ? `\n${rotulo}: OK — ${unidades}, 0 erro(s)\n`
       : `\n${rotulo}: REPROVADO — ${erros.length} erro(s)\n`,
   );
   return erros.length > 0 ? 1 : 0;

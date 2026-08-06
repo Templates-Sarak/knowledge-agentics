@@ -50,17 +50,49 @@ const ALVOS = {
     javascript: 'api/src/routes/index.js',
     python: 'api/src/rotas.py',
   },
-  // Sobe da pasta do módulo para a raiz do PROJETO: `verificacao-declarada` e `lint-derivado` são
-  // as duas regras cujo alvo mora lá, e não dentro do módulo.
+  // Sobe da pasta do módulo para a raiz do PROJETO: é lá que moram os alvos das regras de escopo
+  // `raiz` (`verificacao-declarada`, `lint-derivado`, `manifesto-raiz`, `env-raiz-declarado`), e
+  // não dentro do módulo.
   lintRaiz: {
     typescript: '../../eslint.config.js',
     javascript: '../../eslint.config.js',
     python: '../../.ruff.toml',
   },
+  // A raiz de composição — o arquivo da FIAÇÃO onde a chave de ambiente da raiz é lida de verdade.
+  composicaoRaiz: {
+    typescript: '../../src/composicao.ts',
+    javascript: '../../src/composicao.js',
+    python: '../../src/composicao.py',
+  },
+  // As outras duas pontas do diagrama de dependência. O caso muta o arquivo REAL da fiação, e não
+  // um arquivo inventado ao lado: é o mesmo arquivo que o molde conforme mantém limpo, e é o que
+  // torna o par "conforme passa / violado acusa" uma afirmação sobre a MESMA peça.
+  adapterRaiz: {
+    typescript: '../../adapters/memoria/index.ts',
+    javascript: '../../adapters/memoria/index.js',
+    python: '../../adapters/memoria/__init__.py',
+  },
+  portasRaiz: {
+    typescript: '../../packages/portas/index.ts',
+    javascript: '../../packages/portas/index.js',
+    python: '../../packages/portas/__init__.py',
+  },
   mapeadores: {
     typescript: 'api/src/mapeadores/index.ts',
     javascript: 'api/src/mapeadores/index.js',
     python: 'api/src/mapeadores.py',
+  },
+  /**
+   * A pasta de teste de tela. **Não declarada para o Python de propósito**, e o silêncio é o ponto:
+   * aquele molde nasce sem `web/` e com `rotaWeb: null`, então `testes-web` é vacuamente satisfeita
+   * ali. Um caso que apenas apagasse a pasta (`removerPasta` usa `force`) não acharia nada no Python
+   * e REPROVARIA por "nenhum achado" — culpando a regra por um molde que não tem a peça. Sem o alvo,
+   * `removerPastaEm` estoura `SEM_COBERTURA` com o motivo, que é a verdade: ausência de cobertura,
+   * nunca aprovação.
+   */
+  pastaTestesWeb: {
+    typescript: 'tests/web',
+    javascript: 'tests/web',
   },
 };
 
@@ -124,8 +156,23 @@ function operacoes(raiz, binding) {
     },
     remover: (rel) => rmSync(join(raiz, rel), { force: true }),
     removerPasta: (rel) => rmSync(join(raiz, rel), { recursive: true, force: true }),
+    /**
+     * Remove uma pasta por alvo LÓGICO. Diferente de `removerPasta`, ela EXIGE que o binding declare
+     * o alvo: onde o molde não tem a peça, o caso vira SEM COBERTURA declarada em vez de apagar o
+     * nada e depois cobrar da regra um achado que não podia existir.
+     */
+    removerPastaEm: (alvo) => {
+      const rel = ALVOS[alvo]?.[binding];
+      if (rel === undefined) throw semCobertura(`o binding "${binding}" nao declara o alvo "${alvo}"`);
+      rmSync(join(raiz, rel), { recursive: true, force: true });
+    },
     manifesto: (transformar) => {
       const caminho = join(raiz, 'modulo.json');
+      gravarJson(caminho, transformar(lerJson(caminho)));
+    },
+    /** O manifesto da RAIZ (`projeto.json`), que fica dois níveis acima da pasta do módulo. */
+    manifestoRaiz: (transformar) => {
+      const caminho = join(raiz, '..', '..', 'projeto.json');
       gravarJson(caminho, transformar(lerJson(caminho)));
     },
     config: (assunto, transformar) => {
@@ -152,6 +199,14 @@ function montarRaizDoProjeto(temporario, binding) {
   // O `.gitignore` é da raiz e `gitignore-segredo` o lê: sem ele aqui, a regra acusaria em TODO
   // caso — de novo o fixture sendo um projeto incompleto, não a regra estando errada.
   cpSync(join(raiz, '.gitignore'), join(temporario, '.gitignore'));
+  // O manifesto da raiz, pelo mesmo motivo: `manifesto-raiz` o exige em todo projeto.
+  cpSync(join(raiz, 'projeto.json'), join(temporario, 'projeto.json'));
+  // A FIAÇÃO. Ela entra por duas razões, e a segunda é a que importa mais: `env-raiz-declarado`
+  // precisa de código de raiz para ter o que ler, E este é o único lugar onde se prova, caso a
+  // caso, que carregar o código da raiz NÃO fez regra de módulo nenhuma passar a enxergá-lo.
+  for (const pasta of ['adapters', 'src', 'packages']) {
+    cpSync(join(raiz, pasta), join(temporario, pasta), { recursive: true });
+  }
 }
 
 /** Vizinho mínimo, para as regras globais (import lateral, tabela alheia, ciclo). */

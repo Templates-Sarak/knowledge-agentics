@@ -1,0 +1,14 @@
+{
+  "$comentario": "Forma do projeto.json — o manifesto da RAIZ. Lei dona: specs/arquitetura/04-regras.md §4.1. Nasce MINIMO de proposito: campo so entra aqui junto com a regra que o cobra, senao repete o vicio de `ui`, `exportaResumo` e `geraArtefato`, declarados por anos sem verificador. Campo nao previsto REPROVA, como no modulo.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["envRequerido"],
+  "properties": {
+    "envRequerido": {
+      "$comentario": "Chaves de ambiente que a FIACAO (adapters/, src/, packages/) exige. Prefixo RAIZ_ reservado: e o que distingue chave da raiz de chave de modulo, que e <MODULO>_*. Cobrado por `env-raiz-declarado`.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^RAIZ_[A-Z0-9_]+$" }
+    }
+  }
+}

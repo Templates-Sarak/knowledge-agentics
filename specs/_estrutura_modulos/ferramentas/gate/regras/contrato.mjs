@@ -446,6 +446,39 @@ export default [
     },
   },
   {
+    id: 'entrada-allowlist',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      // A simetrica da `saida-crua`, na direcao da ENTRADA (02-contrato-e-dados §3.2: "allowlist de
+      // campos — payload com campo desconhecido e rejeitado, nao ignorado").
+      //
+      // NAO proibe o corpo de ser passado adiante: o molde faz `criar(req.body as unknown, ...)`, e
+      // a funcao chamada e justamente quem aplica a allowlist. Proibir a passagem acusaria o codigo
+      // CORRETO. O que se proibe e o corpo virar entidade sem passar por ninguem — as tres formas
+      // em que isso acontece.
+      const padroes = [
+        // 1. Espalhar o corpo dentro de um objeto/entidade: `{ ...req.body }`, `{**corpo}`.
+        /\{\s*\*{2}\s*(?:req(?:uest)?\.)?(?:body|corpo)\b|\.{3}\s*(?:req(?:uest)?\.)?(?:body|corpo)\b/,
+        // 2. Corpo direto ao repositorio: `repositorio.inserir(req.body)`.
+        /\b(?:repositorio|repository|repo)\.\w+\(\s*(?:req(?:uest)?\.)?(?:body|corpo)\s*[,)]/,
+        // 3. Atribuicao em massa sobre uma entidade ja existente.
+        /Object\.assign\([^,)]+,\s*(?:req(?:uest)?\.)?(?:body|corpo)\b/,
+      ];
+      const achados = [];
+      for (const arquivo of ctx.codigo) {
+        if (arquivo.eTeste) continue;
+        for (const { numero, texto } of arquivo.linhasCodigo) {
+          if (padroes.some((padrao) => padrao.test(texto))) {
+            achados.push(`${arquivo.rel}:${numero}: corpo da requisicao vira entidade sem allowlist`
+              + ' — monte a entrada campo a campo, e rejeite campo desconhecido em vez de ignora-lo');
+          }
+        }
+      }
+      return achados;
+    },
+  },
+  {
     id: 'saida-crua',
     nivel: 'erro',
     escopo: 'modulo',

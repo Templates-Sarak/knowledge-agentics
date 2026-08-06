@@ -15,13 +15,19 @@ no §7.2 quando houver. Regra sem caso não entra.
 
 | Métrica | Valor |
 |---|---|
-| Regras no catálogo | **53** |
-| Regras com caso de teste próprio | **53** — cobertura total |
+| Regras no catálogo | **68** |
+| Regras com caso de teste próprio | **68** — cobertura total |
 | Bindings | `typescript` · `javascript` · `python` — gate verde nos três |
-| Autoteste | `63/63` (TS) · `63/63` (JS) · `61/61` (PY) |
+| Escopos do gate | `modulo` · `global` · **`raiz`** (novo em I.1) |
+| Autoteste | `82/82` (TS) · `82/82` (JS) · `78/78` (PY) |
 | Pipeline do `verificar` | gate → env → formato → lint → tipos → testes, nos três bindings |
 
-**Meta ao fim de todos os blocos:** ~64 regras, todas com caso, cobertura uniforme entre bindings.
+**Meta ao fim de todos os blocos:** ~70 regras, todas com caso, cobertura uniforme entre bindings —
+e a **raiz** deixando de ser território sem verificador (Bloco I).
+
+> **Unidade de verificação.** Até aqui o gate cobre **o módulo**. O Bloco I acrescenta o escopo
+> **`raiz`** — `adapters/`, `src/`, `packages/` —, que nasce com o sistema, existe uma só, e é onde
+> a arquitetura concentra o risco de propósito.
 
 ---
 
@@ -90,7 +96,7 @@ do gate não cai (os limiares viajam em `ferramentas/gate/`); a A.3 fecha a jane
 
 ---
 
-## Bloco B — Segurança  *(3 de 8)*
+## Bloco B — Segurança  *(7 de 8)*
 
 ### B.1 — segredo e RNG  ✅ **concluído**
 - [x] `gitignore-segredo` — `.gitignore` da raiz cobre `.env` e `modulos/*/.env`
@@ -101,37 +107,162 @@ do gate não cai (os limiares viajam em `ferramentas/gate/`); a A.3 fecha a jane
 - [x] `random-inseguro` — RNG não-criptográfico gerando token/segredo **fora de `core/`**;
       dentro de `core/` o dono é `determinismo`, e nunca acusam a mesma linha
 
-### B.2 — superfície HTTP e sessão  ⟵ **próximo**
-- [ ] `rota-publica-autenticada` — rota fora de `rotasPublicas` passa pelo middleware de auth
-- [ ] `entrada-allowlist` — update não aceita o corpo inteiro *(simétrico ao `saida-crua`)*
-- [ ] `cookie-seguro` — cookie de sessão com `HttpOnly`, `Secure`, `SameSite`
-- [ ] `token-em-armazenamento` — token de auth em `localStorage`/`sessionStorage`
+### B.2 — superfície HTTP e sessão  ✅ **concluído**
+- [x] `rota-publica-autenticada` — a `api/` lê `modulo.json:rotasPublicas` e não escreve rota
+      literal; toda entrada declarada existe no contrato **com aquele método**.
+      *A cláusula "o middleware está na posição certa" foi **descartada**: o wiring é do bootstrap
+      em TS/JS e de `registrar_middlewares` no Python — matcher que só funciona em 2 de 3 bindings
+      é cobertura inventada. Declarado no §7.2*
+- [x] `entrada-allowlist` — spread do corpo, corpo direto ao repositório, `Object.assign` em massa.
+      *Passar o corpo para uma função é o caminho certo, não o defeito*
+- [x] `cookie-seguro` — cookie de **sessão** sem `HttpOnly`/`Secure`/`SameSite`. Vocabulário próprio,
+      **não** o de `random-inseguro`: aquele inclui `csrf`, e o cookie CSRF double-submit precisa ser
+      legível por JS
+- [x] `token-em-armazenamento` — token em `localStorage`/`sessionStorage`. O identificador
+      `sessionStorage` carrega "session", então ele é removido antes da busca por contexto secreto
 
-### B.3 — `sql-concatenado`  *(precisa de decisão de escopo antes)*
-- [ ] O único adapter do template é `adapters/memoria/`; o módulo acessa banco por `core/portas/`
-      (e `import-adapter` proíbe importar adapter de dentro); o SQL do molde é só DDL em `database/`.
-      **Onde a query é montada é no adapter, que vive fora de `modulos/`** — e a unidade do gate é o
-      módulo. Decidir o escopo antes de escrever a regra
-
----
-
-## Bloco C — Testes  *(3 regras)*
-
-- [ ] `testes-web` — módulo com `rotaWeb` tem `tests/web/` não-vazio
-- [ ] `testes-integracao` — módulo com `dados.tabelas` não-vazio tem `tests/integracao/` não-vazio
-- [ ] `testes-gateway` — todo arquivo em `core/gateways/` tem teste com mock derivado do contrato
-      *(fecha o triângulo `gateway ⟷ consome ⟷ teste`)*
-
-`tests/contrato/` = API interna **e** externa; externa com dados mockados.
+### B.3 — `sql-concatenado`  ↪ **movido para o Bloco I**
+Onde a query é montada é no **adapter**, que vive fora de `modulos/` — o módulo não pode nem ter
+driver (`sdk-fornecedor`) nem importar adapter (`import-adapter`). A regra pertence ao escopo `raiz`.
+Sobra no módulo um vetor residual — string SQL crua entregue a uma porta — a **reavaliar depois de
+I.3**: coberta a raiz, pode não valer uma regra.
 
 ---
 
-## Bloco D — Campos do manifesto ainda órfãos
+## Bloco I — Escopo `raiz`  ✅ **concluído**
+
+> **O problema.** `listarModulos` devolve só `modulos/*/` com `modulo.json`. `adapters/`, `src/` e
+> `packages/` **nunca são analisados** — 57 regras para o módulo, **zero** para a fiação.
+>
+> E não é periferia: a raiz **nasce com o sistema** (`criar-projeto` a cria, `criar-modulo` só
+> acrescenta módulos), existe **uma só** enquanto os módulos são N, e a arquitetura **empurra o
+> risco para ela de propósito** — o módulo é proibido de tocar banco, importar adapter e ler env
+> fora do carregador, então conexão, query, credencial e verificação de token acontecem todas ali.
+>
+> **Correção de fato:** o gate vive em `ferramentas/gate/`, na **raiz**, não dentro do módulo.
+> Extrair um módulo não leva o gate — o esqueleto novo o repõe, junto com `adapters/`, `src/` e
+> `packages/`. Regra de raiz sobrevive à extração como qualquer outra.
+>
+> **Já coberto ali:** desde a A.1 o eslint e o ruff rodam sobre o projeto inteiro — limiares,
+> `no-console` e exceção engolida **valem** em `adapters/`. O que falta é regra **arquitetural**.
+>
+> **Nomenclatura:** *adapter* ≠ *middleware*. Middleware intercepta a requisição e vive **dentro**
+> do módulo (`api/src/middlewares/`); adapter implementa uma **porta** que o módulo declara e vive
+> **fora** (`adapters/`). O módulo *tem* middlewares e *usa* adapters.
+
+### I.1 — manifesto de raiz  ✅ **concluído**
+
+**Decidido: a raiz ganha manifesto.** O motivo é concreto — `sincronizar-env.mjs` gera o
+`.env.example` da raiz **só a partir de `modulo.json:envRequerido`**. No dia em que a raiz precisar
+de segredo próprio (`JWT_SECRET` para `resolverAuth()`, `DATABASE_URL` do adapter real, chave de
+provedor), ele nasce **órfão**: fora do `.env.example`, invisível a `env-declarado` e a
+`env-exemplo`. O segredo mais sensível do sistema é o único que ninguém declara.
+
+- [x] **`projeto.json` na raiz** + `projeto.schema.json`. Nasce com **um** campo: `envRequerido`
+- [x] **Escopo `raiz`** no motor, na impressão e no autoteste — roda **uma vez por projeto**
+- [x] `ctx.projeto.codigo` — varre `adapters/`, `src/`, `packages/`; **nunca** entra em `ctx.codigo`
+- [x] Convenção `RAIZ_<ASSUNTO>`, com o limite da colisão declarado no §7.2
+- [x] `sincronizar-env.mjs` inclui as chaves da raiz; `CABECALHO_RAIZ` corrigido (era falso)
+- [x] `manifesto-raiz` — **um id, não dois**: o `manifesto` do módulo só existe além do schema por
+      cláusulas relacionais (`id` = nome da pasta, `rotaBase` derivada), e a raiz não tem nenhuma
+- [x] `env-raiz-declarado` — nos dois sentidos. **Sem** análogo de `env-exemplo`:
+      `sincronizar-env --conferir` já o faz e já roda no `verificar`
+
+> **A trava virou mecânica.** `additionalProperties: false` no schema — acrescentar `portas`
+> **reprova** até existir a regra que o cobre. Conselho vira invariante cobrado por máquina.
+
+**Provado:** `adapters/` com URL literal, `console.log`, `catch {}` vazio, SQL concatenado, 6
+parâmetros e 69 linhas → **zero** acusação das 57 regras de módulo; e o mesmo arquivo com
+`process.env.RAIZ_PROVA` → acusado pelo escopo `raiz`. Sem a contraprova, "0 erros" seria
+indistinguível de "não foi lido".
+
+### I.2 — direção de dependência *(Família 1)*  ✅ **concluído**
+
+O coração da arquitetura hexagonal, hoje sem verificador nenhum. Barata, leitura de import, zero
+heurística. Pega a classe de erro que corrói a arquitetura em silêncio: no dia em que um adapter
+importa de um módulo, a extraibilidade morreu e nada acusa.
+
+```
+modulos/  ──→  packages/portas/  ←──  adapters/
+                      ↑
+                    src/   composição: descobre módulos, injeta adapters, resolve auth
+```
+
+- [x] `portas-pura` — a porta não importa de `modulos/`, `adapters/` nem `src/`, **e** não carrega
+      SDK de fornecedor. *"`sdk-fornecedor` mantém o driver fora de cada módulo; um `pg` na porta o
+      devolveria a todos de uma vez, pela porta que eles importam"*
+- [x] `adapter-isolado` — nunca importa de `modulos/` nem de `src/`. **Dependência externa é
+      permitida**: o adapter é onde o SDK pertence, e a não-acusação é coberta por máquina
+- [x] `composicao-descoberta` — `src/` não importa de `modulos/`. A composição **descobre** lendo
+      `modulos/*/modulo.json`; import fixaria a lista em tempo de compilação
+- [x] **"`src/` não contém regra de negócio" descartada** — `FABRICAS[porta][provedor]` é fiação
+      legítima e um `if` sobre o papel do módulo é domínio vazando, e os dois são a mesma construção
+      da linguagem. Registrado no §7.1, com a revisão humana
+- *(o inverso — módulo importando adapter — já é `import-adapter`)*
+
+**Distinção import × leitura, por construção:** as três só veem o que `importesDe()` extrai.
+`readdirSync(join(raiz,'modulos'))` nunca chega à regra — não é lista de exceções.
+
+**Limite declarado:** a forma por nome de package (`@<escopo>/catalogo`) escapa — a raiz não conhece
+o escopo nem a lista de módulos, e `@<escopo>/x` é indistinguível de `@aws-sdk/x` por forma. Quem
+cobre essa forma é `import-lateral`, que tem os ids.
+
+### I.3 — segurança da fiação *(Família 2)*  ✅ **concluído**
+
+É aqui que moram os dados mais sensíveis. Em boa parte são **as mesmas leis com outro dono** — mas
+exigem texto próprio: os textos atuais dizem literalmente *"no código **do módulo**"*.
+
+- [x] `sql-concatenado` — placeholder (`$1`, `?`, `:nome`, `%s`) e valor por parâmetro. *Vocabulário
+      `SQL_FONTE` compartilhado com `gateway-http`; recorte próprio, porque a pergunta é outra*
+- [x] `segredo-em-log` — credencial citada em chamada de log. **Sem `camposSensiveis`**: o sinal é
+      `projeto.json:envRequerido` filtrado pelo `PADRAO_CREDENCIAL` da B.1 — uma declaração ganha um
+      segundo consumidor em vez de nascer um campo
+- [x] `hardcode-url-raiz` — reuso total do `URL_LITERAL`
+- [x] `fallback-raiz` — reuso total do `PADROES_DE_FALLBACK`. Ler `process.env` na composição
+      **segue permitido**: é o trabalho dela
+- [x] **`hardcode-numero` e `random-inseguro` NÃO foram portados**, e a decisão está no §7.2:
+      `LIMITE_EXCEDIDO: 429` da taxonomia canônica carrega `limite`, e `adapters/memoria/` gera hash
+      com `Math.random()`. Portar por simetria acusaria o código que **é** a doutrina
+
+**Implementação única:** `URL_LITERAL`, `PADROES_DE_FALLBACK`, `SQL_FONTE`, `SAIDA_DIRETA_FONTE`,
+`PADRAO_CREDENCIAL` e `varrerRaiz` — uma definição cada, consumidores nos dois escopos.
+
+**Limites declarados:** SQL em aspas triplas no Python escapa (o extrator de linhas de código as
+descarta — a mesma proteção que impede a lei escrita em comentário de virar violação dela mesma);
+e `db.query(id + ' from x')` sem verbo na linha não acusa — família conservadora.
+
+---
+
+## Bloco C — Testes  ✅ **concluído** *(2 regras — a terceira não devia existir)*
+
+- [x] `testes-web` — módulo com `rotaWeb` tem `tests/web/` não-vazio. A mensagem oferece **os dois**
+      consertos que a lei autoriza: criar o teste, ou descartar a tela zerando `rotaWeb`
+- [x] `testes-gateway` — **um teste por gateway**, casado por convenção de nome. Exclui barril
+      (`index`/`__init__`) reusando `gatewaysDe(ctx)`, agora compartilhada com `gateway-declarado`
+- [x] ~~`testes-integracao`~~ — **não escrita, e não por ser inverificável.** `03-operacao.md:76`:
+      *"Tudo roda com adapters de memória, sem rede e sem banco… Se um teste do módulo precisa de
+      infraestrutura, a porta está mal desenhada."* A regra faria o gate cobrar o que a doutrina
+      trata como **sintoma de defeito**. Registrada no §7.1. O teste com banco de verdade fica no
+      **Bloco F** (migrations executáveis contra banco efêmero), onde é CI e não contradiz nada
+- [x] *"mock derivado do contrato"* fica com a revisão humana — o mesmo objeto de mock serve às duas
+      origens, e nada no arquivo diz de qual delas veio. Registrado no §7.1
+
+**O terceiro lado do triângulo cobre algo real:** gateway declarado em `consome`, apontando para rota
+que o dono declara — `gateway-declarado` cala, `consome-contrato` cala — e sem uma linha que o
+exercite. Dois dos três lados aprovavam.
+
+---
+
+## Bloco D — Campos do manifesto ainda órfãos  ⟵ **AGORA**
 
 - [ ] `permissoes` — declarada e nunca usada, e o inverso *(análogo ao `config-morta`)*
 - [ ] `navegacao` — toda entrada aponta para página real *(análogo ao `web-declarado`)*
 - [ ] `portas` — verificar se o campo do **manifesto** tem verificador semântico
       *(as ocorrências encontradas são do `config/portas.json`, que é outra coisa)*
+- [ ] **Achado do Bloco C, sem regra:** ninguém cobra *"declarou `dados.tabelas` e não tem
+      `database/`"*. `artefato-declarado` exclui `database/` dizendo que quem o declara é
+      `dados.tabelas`, e `rls` (aviso) só acusa de raspão — módulo com tabelas e zero SQL recebe
+      **aviso**, não erro
 
 `rotasPublicas` está no Bloco B como `rota-publica-autenticada`.
 
@@ -187,12 +318,20 @@ legítima — o molde do binding não tem a peça (`web/` no Python; mapeador Py
       não resolve e os testes do molde Python não rodam. O conserto é um arquivo vazio
 - [ ] §7.2 — registrar o limite do módulo extraído sem `.ruff.toml` *(hoje só no comentário do
       pyproject do molde)*
-- [ ] **Defeito de projeto repete uma mensagem por módulo sob `--todos`** — `verificacao-declarada`
+- [x] ~~**Defeito de projeto repete uma mensagem por módulo sob `--todos`**~~ — **resolvido em
+      I.1**, na origem: o escopo `raiz` roda uma vez por projeto. Não foi preciso mexer na impressão — `verificacao-declarada`
       e `lint-derivado` são fatos do projeto num gate cuja unidade de saída é o módulo. O conserto
       é na **impressão** (`validar.mjs` colapsa pares `(regra, mensagem)` idênticos, mantendo a
       contagem), nunca na regra: emitir só no primeiro contexto esconderia o defeito ao validar
       outro módulo isolado
 - [ ] `plugin/sarak_routing_table.md` — regenera no próximo `sync_ide.py` *(ação do usuário)*
+- [ ] **O harness não consegue travar uma NÃO-acusação sob regra que dispara.** Ele compara **ids**:
+      se `segredo-em-log` acusasse `RAIZ_API_BASE_URL` por engano, sairia sob o mesmo id e o autoteste
+      passaria. Em I.2 deu para travar via id não declarado; em I.3 não. Falta expressividade —
+      afirmar *quantas vezes* ou *sobre o quê*, não só *quais regras*
+- [ ] **Vocabulário de chamada de log divergiu**: `segredo-em-log` reconhece `logging`, `warning`,
+      `critical`, `exception`, `console.*`, `print(`; `sensivel-em-saida` reconhece menos. Unificar
+      muda uma regra de módulo — decidir junto com a dívida do caso 2 (`schema-manifesto` × `manifesto`)
 
 ---
 
@@ -204,19 +343,30 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
            A.2  as regras da camada    verificacao-declarada, lint-derivado
            B.1  segredo e RNG
 
-AGORA      B.2  superfície HTTP e sessão
-           B.3  sql-concatenado        (decidir escopo antes)
+           B.2  superfície HTTP e sessão
 
-DEPOIS     C    testes                 3 regras
-           D    campos órfãos          3 regras
+           I.1  manifesto de raiz      escopo `raiz` + projeto.json
+
+           I.2  direção de dependência Família 1
+
+           I.3  segurança da fiação    Família 2 — Bloco I fechado
+
+           C    testes                 2 regras — a terceira contradizia o §5
+
+AGORA      D    campos órfãos          3 regras
            A.3  lint por módulo        precisão; fecha a janela do extraído
            G    hooks no template      depende de A
            F    insumos de CI          junto do pipeline, não antes
            H    dívidas                a qualquer momento
+           B.3  vetor residual de SQL no módulo — reavaliar depois de I.3
 ```
 
-**A ordem mudou uma vez, de propósito:** A.3 saiu da frente do Bloco B porque entrega precisão sobre
-regras que já funcionam, enquanto B entrega cobertura que não existe. Está registrado na seção da A.3.
+**A ordem mudou duas vezes, e as duas estão registradas:**
+
+1. **A.3 saiu da frente do Bloco B** — entrega precisão sobre regras que já funcionam, enquanto B
+   entrega cobertura que não existe. *(seção da A.3)*
+2. **O Bloco I entrou na frente de C e D** — o escopo `raiz` estava descoberto por inteiro, e é
+   onde a arquitetura concentra o risco de propósito. *(seção do Bloco I)*
 
 ---
 

@@ -32,6 +32,15 @@ const EXT_CODIGO = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py']
 const ID_SINTETICO_DO_MOLDE = 'molde';
 
 /**
+ * A FIACAO — o codigo que mora na raiz do projeto, fora de `modulos/`.
+ *
+ * Sao estas tres e mais nenhuma. `ferramentas/` fica de fora de proposito: e o gate, que o template
+ * instala e ninguem edita — varre-lo faria as regras de raiz julgarem o proprio verificador.
+ * `modulos/` fica de fora porque ja tem 57 regras suas.
+ */
+const PASTAS_DA_RAIZ = ['adapters', 'src', 'packages'];
+
+/**
  * Le texto removendo o BOM (U+FEFF).
  * Editor e shell do Windows gravam BOM por padrao, e `JSON.parse` rejeita — o manifesto ficaria
  * "invalido" por um caractere invisivel, MASCARANDO todas as regras que dependem dele.
@@ -164,6 +173,34 @@ const projetosLidos = new Map();
 /** Os nomes que o gerador pode produzir. Ler os dois é mais barato que descobrir o binding aqui. */
 const CONFIGS_DE_LINT = ['eslint.config.js', '.ruff.toml'];
 
+/** Lê o `projeto.json` da raiz. Ausência e JSON quebrado são estados declarados, não exceção. */
+function lerManifestoDaRaiz(raizProjeto) {
+  const caminho = join(raizProjeto, 'projeto.json');
+  if (!existsSync(caminho)) return { presente: false, valor: null, erro: null };
+  try {
+    return { presente: true, valor: JSON.parse(lerTexto(caminho)), erro: null };
+  } catch (causa) {
+    return { presente: true, valor: null, erro: String(causa) };
+  }
+}
+
+/**
+ * O código da FIAÇÃO, e ele NAO entra em `ctx.arquivos` nem em `ctx.codigo` — essas duas coleções
+ * são o material das regras de MODULO, cujos textos dizem literalmente "no código do módulo".
+ * Deixar `adapters/memoria/index.ts` cair ali faria `hardcode-url`, `log`, `limiar-funcao` e
+ * `saida-crua` acusarem em massa código correto, sob leis que não falam dele.
+ *
+ * Por isso o código da raiz mora aqui, num ponto do PROJETO, e só regra de escopo `raiz` o vê.
+ */
+function lerCodigoDaRaiz(raizProjeto) {
+  return PASTAS_DA_RAIZ
+    .map((pasta) => join(raizProjeto, pasta))
+    .filter((pasta) => existsSync(pasta))
+    .flatMap((pasta) => percorrer(pasta))
+    .map((absoluto) => montarArquivo(absoluto, raizProjeto, false))
+    .filter((arquivo) => EXT_CODIGO.has(arquivo.ext));
+}
+
 function lerProjeto(raizProjeto) {
   // "Raiz de projeto" é a pasta que tem `modulos/` — a mesma definição de `acharRaizProjeto`. Sem
   // ela não há projeto: é módulo solto (extraído e ainda não religado) ou fixture, e cobrar
@@ -189,7 +226,15 @@ function lerProjeto(raizProjeto) {
   const ignore = join(raizProjeto, '.gitignore');
   const gitignore = existsSync(ignore) ? lerTexto(ignore) : null;
 
-  return { ehProjeto, verificacao, configsDeLint, gitignore };
+  return {
+    raiz: raizProjeto,
+    ehProjeto,
+    manifesto: lerManifestoDaRaiz(raizProjeto),
+    verificacao,
+    configsDeLint,
+    gitignore,
+    codigo: lerCodigoDaRaiz(raizProjeto),
+  };
 }
 
 /** Config do projeto, memoizada por raiz. */

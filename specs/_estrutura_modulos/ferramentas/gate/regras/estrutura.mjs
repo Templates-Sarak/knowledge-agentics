@@ -1,7 +1,10 @@
 /**
  * regras/estrutura.mjs — família "Estrutura" do catálogo (specs/arquitetura/04-regras.md §4.1).
  * ids: manifesto, schema-manifesto, estrutura, estrutura-estrita, web-declarado, artefato-declarado,
- *      testes
+ *      testes, testes-web, testes-gateway, manifesto-raiz
+ *
+ * `manifesto-raiz` é de escopo `raiz` e mora aqui porque a FAMÍLIA é a mesma — o manifesto é o
+ * item estrutural que declara a unidade. Escopo e família são eixos independentes.
  */
 import { carregarEsquema, validar } from '../esquema.mjs';
 
@@ -37,6 +40,41 @@ const PASTAS_DE_ARTEFATO = ['core/motor/', 'core/templates/', 'gerados/'];
 /** Existe ao menos um arquivo sob o prefixo informado? */
 export function temArquivoEm(ctx, prefixo) {
   return ctx.arquivos.some((a) => a.rel.startsWith(prefixo));
+}
+
+/**
+ * Barril da pasta — `index` em TS/JS, `__init__` em Python. Ele DOCUMENTA o slot e não é um gateway:
+ * no molde ele exporta só `ErroDeGateway` e traz o gateway de verdade como exemplo comentado.
+ */
+const BARRIS_DE_PASTA = ['index', '__init__'];
+
+/**
+ * Os gateways REAIS do módulo, pelo nome do arquivo e sem os barris.
+ *
+ * UMA implementação, e as duas regras que a usam são as duas pontas do mesmo triângulo:
+ * `gateway-declarado` casa este nome com `modulo.json:consome`, e `testes-gateway` o casa com o
+ * teste que o espelha. Duas listas divergiriam no primeiro barril novo que alguém acrescentasse de
+ * um lado só — e a exclusão de barril é justamente a parte fácil de esquecer.
+ */
+export function gatewaysDe(ctx) {
+  return ctx.codigo
+    .filter((a) => a.rel.startsWith('core/gateways/'))
+    .map((a) => a.rel.split('/').pop().replace(/\.[^.]+$/, ''))
+    .filter((nome) => !BARRIS_DE_PASTA.includes(nome));
+}
+
+/**
+ * Existe teste que ESPELHA este alvo? A convenção é a da tabela canônica (§3.1, "Teste | espelha o
+ * alvo + `.test`"), e a leitura é liberal de propósito nas quatro formas que as três linguagens
+ * usam: a pergunta é se o teste EXISTE, não se o nome dele está canônico — nomenclatura de teste é
+ * assunto do §3.1 e não tem verificador. Ser liberal aqui só reduz falso positivo.
+ */
+function temTesteDe(ctx, nome) {
+  const formas = [`${nome}.test`, `${nome}.spec`, `test_${nome}`, `${nome}_test`];
+  return ctx.arquivos.some((a) => {
+    if (!a.eTeste) return false;
+    return formas.includes(a.rel.split('/').pop().replace(/\.[^.]+$/, ''));
+  });
 }
 
 /**
@@ -98,6 +136,34 @@ export default [
       // Sem manifesto legivel, a regra `manifesto` ja reprovou — nao empilhamos ruido em cima.
       if (ctx.manifesto === null) return [];
       return validar(ctx.manifesto, carregarEsquema('modulo'), 'modulo.json');
+    },
+  },
+  {
+    /**
+     * O manifesto da RAIZ — existência, JSON válido e forma, sob UM id só.
+     *
+     * O módulo tem dois ids para isto (`manifesto` e `schema-manifesto`), e a fronteira entre eles é
+     * dívida registrada: o `papel` inválido acusa nos dois. Aqui não se repete o erro, porque não há
+     * o que separar — tudo que o `projeto.json` afirma é FORMA, e forma é exatamente o que o schema
+     * expressa. O `manifesto` do módulo só existe além do schema por causa das cláusulas
+     * relacionais (`id` = nome da pasta, `rotaBase` derivada do `id`), e a raiz não tem nenhuma:
+     * ela não tem nome de pasta a casar nem rota a derivar.
+     */
+    id: 'manifesto-raiz',
+    nivel: 'erro',
+    escopo: 'raiz',
+    verificar(projeto) {
+      // Modulo solto (extraido e ainda nao religado) nao e projeto e nao tem raiz a declarar — a
+      // mesma guarda de `verificacao-declarada` e `lint-derivado`.
+      if (!projeto.ehProjeto) return [];
+      const { presente, valor, erro } = projeto.manifesto;
+      if (!presente) {
+        return ['projeto.json ausente na raiz do projeto — a raiz declara o que exige do ambiente'
+          + ' (schema em ferramentas/gate/schemas/projeto.schema.json). Sem ele, o segredo da'
+          + ' fiacao (JWT, banco, provedor) nasce fora do .env.example e ninguem o cobra'];
+      }
+      if (valor === null) return [`projeto.json nao e JSON valido — ${erro}`];
+      return validar(valor, carregarEsquema('projeto'), 'projeto.json');
     },
   },
   {
@@ -174,6 +240,53 @@ export default [
       if (!temArquivoEm(ctx, 'tests/dominio/')) achados.push('tests/dominio/ vazio ou ausente');
       if (!temArquivoEm(ctx, 'tests/contrato/')) achados.push('tests/contrato/ vazio ou ausente');
       return achados;
+    },
+  },
+  {
+    /**
+     * A terceira camada de teste do §5, com a MESMA guarda de `web-declarado`: quem declara a tela
+     * é `rotaWeb`, e módulo sem tela não tem o que testar. `criar-modulo.mjs --sem-web` remove
+     * `tests/web` E zera `rotaWeb`, então a condicional casa sozinha — a regra não cobra nada de
+     * quem decidiu, com razão, não ter tela.
+     *
+     * Verifica PRESENÇA, nunca conteúdo: o §5 pede os três estados (`loading`, `empty`, `error`) e
+     * isso não é decidível por máquina. A mensagem os cita para o conserto ser o certo, e a regra
+     * afirma só o que checa.
+     */
+    id: 'testes-web',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      if (ctx.manifesto?.rotaWeb == null) return [];
+      if (temArquivoEm(ctx, 'tests/web/')) return [];
+      return ['rotaWeb declarada mas tests/web/ vazio ou ausente — a tela declarada precisa de teste'
+        + ' (§5 pede os tres estados: loading, empty, error). Ou crie o teste, ou descarte a tela'
+        + ' zerando rotaWeb'];
+    },
+  },
+  {
+    /**
+     * O terceiro lado do triângulo `gateway ⟷ consome ⟷ teste`. Os outros dois já existiam:
+     * `gateway-declarado` liga o arquivo ao `consome`, e `consome-contrato` liga o `consome` ao
+     * contrato do dono. Faltava o teste — e sem ele uma dependência entre módulos podia existir,
+     * declarada e conforme, sem uma linha que a exercitasse.
+     *
+     * NÃO é "tem arquivo na pasta" com outro nome: `testes` cobra a PASTA (`tests/dominio/`,
+     * `tests/contrato/` não-vazias), e esta cobra UM teste POR gateway. Um módulo com três gateways
+     * e um teste passa naquela e cai nesta.
+     *
+     * A pasta do teste não é imposta: o §5 não tem camada `tests/gateways/`, então o teste vive onde
+     * couber (`tests/contrato/`, `tests/dominio/`) e o que se cobra é o NOME que espelha o gateway.
+     */
+    id: 'testes-gateway',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      return gatewaysDe(ctx)
+        .filter((nome) => !temTesteDe(ctx, nome))
+        .map((nome) => `core/gateways/${nome}: gateway sem teste — ele e uma dependencia de OUTRO`
+          + ' modulo, e dependencia entre modulos nao existe sem teste que a exercite. Crie um teste'
+          + ` que espelhe o nome (${nome}.test.* ou test_${nome}.*)`);
     },
   },
 ];

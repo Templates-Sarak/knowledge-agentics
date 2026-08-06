@@ -41,9 +41,11 @@ conformidade morreria exatamente no momento em que a arquitetura foi cobrada. Ve
 Só **quatro** regras precisam de visão global e por isso rodam apenas no `--todos`: `import-lateral`,
 `tabela-alheia`, `consome-ciclo` e `consome-contrato`.
 
-Regra sobre o **projeto** (`verificacao-declarada`, `lint-derivado`) **não** é global: ela precisa de UM
-contexto qualquer, não de todos, porque todos carregam a mesma `ctx.projeto`. Global só quem compara módulos
-entre si.
+Regra sobre o **projeto** não é global: ela tem escopo `raiz`, recebe `ctx.projeto` em vez de um contexto de
+módulo e roda **uma vez** por invocação — o fato é um só, e emiti-lo por módulo daria dez mensagens idênticas
+num repositório com dez módulos. O achado sai sob o alvo `(raiz)`. Quais são elas está no catálogo
+(`specs/arquitetura/04-regras.md`), na coluna **escopo** — enumerá-las aqui é uma lista que envelhece.
+Global só quem compara módulos entre si.
 
 ## Plugar num executor
 
@@ -82,7 +84,7 @@ Ative com `git config core.hooksPath .githooks`.
 {
   id: 'minha-regra',          // igual ao id no catálogo
   nivel: 'erro',              // 'erro' reprova; 'aviso' só reporta
-  escopo: 'modulo',           // 'modulo' recebe um ctx; 'global' recebe todos
+  escopo: 'modulo',           // 'modulo' recebe um ctx; 'global' recebe todos; 'raiz' recebe ctx.projeto
   verificar(ctx) {
     return ['mensagem acionável'];   // array vazio = conforme
   },
@@ -90,12 +92,14 @@ Ative com `git config core.hooksPath .githooks`.
 ```
 
 3. Regra de escopo `global` devolve `{ modulo, mensagem }` em vez de string, porque precisa dizer de quem é o
-   achado.
+   achado. Regra de escopo `raiz` devolve string: o alvo dela é sempre `(raiz)`.
 4. **Nenhuma regra lê disco.** Tudo vem do contexto (`ferramentas/gate/contexto.mjs`) — é o que as mantém
    rápidas e testáveis. O que é do **projeto**, e não do módulo, chega em `ctx.projeto`
    (`carregarProjeto`): a política de `config/verificacao.json` e a config do linter em disco. É lido uma vez
    por raiz e memoizado — dez módulos não custam dez leituras —, e `ctx.projeto.ehProjeto` diz se a raiz é
-   mesmo um projeto (tem `modulos/`) ou um módulo solto, caso em que regra de projeto silencia.
+   mesmo um projeto (tem `modulos/`) ou um módulo solto, caso em que regra de projeto silencia. O **código**
+   da raiz (`adapters/`, `src/`, `packages/`) chega em `ctx.projeto.codigo`, e NUNCA em `ctx.arquivos` ou
+   `ctx.codigo`: essas duas são o material das regras de módulo, cujos textos dizem "no código do módulo".
 5. **Leitura de `contrato/openapi.yaml` já existe** em `ferramentas/gate/spec.mjs` (`specDe`,
    `rotasDaSpec`, `operacoesDaSpec`, `normalizar`). Importe de lá — duas famílias a usam, e um segundo
    parser divergiria do primeiro sem ninguém notar.

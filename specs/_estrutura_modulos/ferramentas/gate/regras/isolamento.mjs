@@ -1,9 +1,14 @@
 /**
  * regras/isolamento.mjs — família "Isolamento" do catálogo (specs/arquitetura/04-regras.md §4.2).
  * ids: import-lateral, import-adapter, sdk-fornecedor, gateway-http, gateway-declarado,
- *      consome-ciclo, consome-contrato, ui-kit, ui-token
+ *      consome-ciclo, consome-contrato, ui-kit, ui-token,
+ *      portas-pura, adapter-isolado, composicao-descoberta
  *
  * É a família que sustenta a extraibilidade. Se ela passa, o módulo sai da pasta sem refactor.
+ *
+ * As TRÊS últimas são de escopo `raiz` e olham a **fiação**, não o módulo. Estão nesta família
+ * porque a pergunta é a mesma — quem pode depender de quem —, só que na direção que faltava:
+ * `import-lateral` e `import-adapter` cobram o módulo, e até aqui ninguém cobrava a raiz.
  *
  * O `ui.modo` do manifesto tem duas cláusulas (01-modulo.md §7) e só UMA delas ganha regra própria:
  * a do modo `proprio` ("proibido importar componente de outro módulo") **é** a `import-lateral`
@@ -11,7 +16,13 @@
  * segunda regra para ela daria duas mensagens e um conserto só.
  */
 import { leiturasFalhas, normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
-import { temArquivoEm } from './estrutura.mjs';
+// `gatewaysDe` e a derivacao dos gateways REAIS pelo nome do arquivo, sem os barris. UMA
+// implementacao, compartilhada com `testes-gateway` (§4.1) — as duas pontas do mesmo triangulo.
+import { gatewaysDe, temArquivoEm } from './estrutura.mjs';
+// Vocabulario de SQL: UMA lista, a de `sql-concatenado`. Aqui ela e COMPOSTA com o vocabulario de
+// conexao — a pergunta e "este gateway fala com banco?", nao "esta linha e SQL?" —, e e essa
+// composicao que permite as duas regras compartilharem os verbos sem compartilharem o recorte.
+import { SQL_FONTE } from './operacao.mjs';
 
 const SDKS_FORNECEDOR = [
   '@supabase/', 'pg', 'mysql', 'mysql2', 'aws-sdk', '@aws-sdk/', 'firebase',
@@ -129,6 +140,81 @@ function raizDoPacote(alvo) {
 }
 
 /**
+ * O SDK de fornecedor que este import traz, ou `undefined`. UMA implementação, usada por
+ * `sdk-fornecedor` (que o proíbe no módulo) e por `portas-pura` (que o proíbe na interface
+ * canônica) — duas leituras da mesma lista, que divergiriam no primeiro driver novo que alguém
+ * acrescentasse de um lado só.
+ */
+function sdkDe(alvo) {
+  const raiz = raizDoPacote(alvo);
+  return SDKS_FORNECEDOR.find((sdk) => raiz === sdk || alvo.startsWith(sdk));
+}
+
+/**
+ * As áreas da RAIZ, e a única pergunta que a direção de dependência faz: em qual delas este import
+ * cai? `packages/portas/` é distinguido do resto de `packages/` porque é o vértice do diagrama —
+ * `modulos/ ──→ packages/portas/ ←── adapters/`.
+ */
+const AREAS_DA_RAIZ = ['modulos', 'adapters', 'src', 'packages'];
+
+/**
+ * Resolve um import relativo contra o arquivo que o escreveu, devolvendo caminho a partir da raiz
+ * do projeto. `null` quando o caminho SOBE acima da raiz: ali ele deixou o projeto, e nenhuma área
+ * o descreve — afirmar área seria inventar.
+ */
+function resolverRelativo(arquivoRel, alvo) {
+  const pilha = arquivoRel.split('/').slice(0, -1);
+  for (const parte of alvo.split('/')) {
+    if (parte === '.' || parte === '') continue;
+    if (parte !== '..') {
+      pilha.push(parte);
+      continue;
+    }
+    if (pilha.length === 0) return null;
+    pilha.pop();
+  }
+  return pilha.join('/');
+}
+
+/**
+ * Em que área do projeto este import cai? `null` = fora dele (stdlib, pacote externo, alias que não
+ * dá para resolver) — e `null` NUNCA vira acusação, porque dependência externa é legítima em
+ * `adapters/` por desenho.
+ *
+ * **A distinção que sustenta estas três regras: IMPORT é dependência; leitura de arquivo é
+ * descoberta.** Só o que `importesDe` extrai chega aqui, e ele extrai forma de import — nunca
+ * `readdirSync(join(raiz, 'modulos'))`. É por isso que `src/composicao.*`, que alcança todos os
+ * módulos lendo o `modulo.json` de cada pasta, passa limpo: import amarra em tempo de compilação e mata a
+ * substituição; leitura de arquivo é o mecanismo que permite acrescentar módulo sem tocar na
+ * composição. Uma regra que procurasse a string `modulos` acusaria o próprio desenho que protege.
+ *
+ * Python chega pontilhado (`adapters.memoria`), JS por caminho ou por specifier — daí a troca de
+ * `.` por `/` antes de olhar o primeiro segmento.
+ */
+function areaDoImport(arquivoRel, alvo) {
+  const caminho = alvo.startsWith('.')
+    ? resolverRelativo(arquivoRel, alvo)
+    : alvo.replaceAll('.', '/');
+  if (caminho === null) return null;
+  const [primeiro, segundo] = caminho.split('/');
+  if (!AREAS_DA_RAIZ.includes(primeiro)) return null;
+  if (primeiro !== 'packages') return primeiro;
+  return segundo === 'portas' ? 'packages/portas' : 'packages';
+}
+
+/** Todos os imports dos arquivos de uma área da raiz, já com a área do alvo resolvida. */
+function importesDaArea(projeto, prefixo) {
+  const lista = [];
+  for (const arquivo of projeto.codigo) {
+    if (!arquivo.rel.startsWith(prefixo)) continue;
+    for (const alvo of importesDe(arquivo)) {
+      lista.push({ rel: arquivo.rel, alvo, area: areaDoImport(arquivo.rel, alvo) });
+    }
+  }
+  return lista;
+}
+
+/**
  * O pacote do kit deste módulo. É AQUI que `ui.pacote` ganha propósito: sem ele, o gate cobra o
  * nome canônico da tabela de nomes (`@<escopo>/ui-kit`, 04-regras.md §3.1); com ele, o projeto que
  * batizou o kit de outro jeito diz qual é, e continua verificável.
@@ -204,9 +290,7 @@ export default [
       const achados = [];
       for (const arquivo of ctx.codigo) {
         for (const alvo of importesDe(arquivo)) {
-          const raiz = raizDoPacote(alvo);
-          const casado = SDKS_FORNECEDOR.find((sdk) => raiz === sdk || alvo.startsWith(sdk));
-          if (casado !== undefined) {
+          if (sdkDe(alvo) !== undefined) {
             achados.push(`${arquivo.rel}: SDK de fornecedor "${alvo}" dentro do modulo — use uma porta`);
           }
         }
@@ -219,7 +303,7 @@ export default [
     nivel: 'erro',
     escopo: 'modulo',
     verificar(ctx) {
-      const proibidos = /\b(select\s+.*\bfrom\b|insert\s+into|update\s+\w+\s+set|delete\s+from|createClient|new\s+Pool|\.query\()/i;
+      const proibidos = new RegExp(`\\b(${SQL_FONTE}|createClient|new\\s+Pool|\\.query\\()`, 'i');
       return ctx.codigo
         .filter((a) => a.rel.startsWith('core/gateways/') && proibidos.test(a.conteudo))
         .map((a) => `${a.rel}: gateway fala com banco — gateway e HTTP sobre o contrato do outro modulo`);
@@ -230,13 +314,9 @@ export default [
     nivel: 'erro',
     escopo: 'modulo',
     verificar(ctx) {
-      // Barril da pasta (index.*/__init__.py) documenta o slot; nao e um gateway.
-      const BARRIS = ['index', '__init__'];
       const consumidos = (ctx.manifesto?.consome ?? []).map((c) => c.modulo);
-      const arquivos = ctx.codigo
-        .filter((a) => a.rel.startsWith('core/gateways/'))
-        .map((a) => a.rel.split('/').pop().replace(/\.[^.]+$/, ''))
-        .filter((nome) => !BARRIS.includes(nome));
+      // A exclusao de barril mora em `gatewaysDe` — ver o import no topo.
+      const arquivos = gatewaysDe(ctx);
 
       const achados = arquivos
         .filter((nome) => !consumidos.includes(nome))
@@ -307,6 +387,91 @@ export default [
         achados.push(`ui.modo "kit" declarado mas nenhum arquivo de web/ importa o kit ("${esperado}") — declaracao sem consequencia; importe o kit em web/, declare o nome dele em ui.pacote, ou volte a ui.modo "proprio"`);
       }
       return achados;
+    },
+  },
+  {
+    /**
+     * O vértice do diagrama. A porta é a interface CANÔNICA: quem implementa depende dela, e ela
+     * não depende de ninguém.
+     *
+     * "Não depende de nada" tem um recorte, e ele é obrigatório: `packages/portas/__init__.py`
+     * importa `dataclasses`, `typing` e `__future__` — é disto que uma interface é feita. Contar
+     * biblioteca-padrão acusaria um molde conforme. O que a regra proíbe são as DUAS dependências
+     * que destroem a interface: as outras áreas do sistema, e o fornecedor.
+     */
+    id: 'portas-pura',
+    nivel: 'erro',
+    escopo: 'raiz',
+    verificar(projeto) {
+      if (!projeto.ehProjeto) return [];
+      const achados = [];
+      for (const { rel, alvo, area } of importesDaArea(projeto, 'packages/portas/')) {
+        if (area !== null && area !== 'packages' && area !== 'packages/portas') {
+          achados.push(`${rel}: importa de ${area}/ ("${alvo}") — a porta e a interface CANONICA:`
+            + ' quem implementa depende DELA, nunca o contrario. Inverta a dependencia');
+        }
+        // O fornecedor na interface e o pior caso: `sdk-fornecedor` mantem o driver fora de CADA
+        // modulo, e um `pg` aqui o devolveria a TODOS de uma vez, pela porta que eles importam.
+        const sdk = sdkDe(alvo);
+        if (sdk !== undefined) {
+          achados.push(`${rel}: SDK de fornecedor "${alvo}" na interface canonica — a porta existe`
+            + ' para o modulo NAO conhecer o fornecedor; com o driver aqui, todo modulo que importa'
+            + ' a porta passa a conhece-lo. O driver mora em adapters/');
+        }
+      }
+      return achados;
+    },
+  },
+  {
+    /**
+     * O adapter implementa a porta e não conhece domínio nenhum — é o que o torna substituível e o
+     * que permite ao módulo sair da pasta.
+     *
+     * Dependência EXTERNA aqui é legítima e não é acusada: `adapters/` é exatamente o lugar do
+     * `pg`, do `@supabase/*` e do `boto3`. `sdk-fornecedor` proíbe isso no módulo; aqui é o
+     * contrário, e proibir inverteria a arquitetura.
+     */
+    id: 'adapter-isolado',
+    nivel: 'erro',
+    escopo: 'raiz',
+    verificar(projeto) {
+      if (!projeto.ehProjeto) return [];
+      const achados = [];
+      for (const { rel, alvo, area } of importesDaArea(projeto, 'adapters/')) {
+        if (area === 'modulos') {
+          achados.push(`${rel}: importa de modulos/ ("${alvo}") — o adapter implementa a PORTA e nao`
+            + ' conhece dominio nenhum. No dia em que ele conhece um modulo, o adapter deixa de ser'
+            + ' substituivel e o modulo deixa de sair da pasta');
+        }
+        if (area === 'src') {
+          achados.push(`${rel}: importa de src/ ("${alvo}") — a fiacao INSTANCIA o adapter; depender`
+            + ' dela inverte a direcao e o adapter deixa de viajar sozinho na extracao');
+        }
+      }
+      return achados;
+    },
+  },
+  {
+    /**
+     * A composição DESCOBRE os módulos, nunca os importa — e a diferença entre as duas é a regra.
+     *
+     * `src/composicao` alcança todos os módulos por `readdirSync(modulos/)` + `modulo.json`, e
+     * isso é a doutrina funcionando (00-arquitetura.md §3.4). Import é o oposto: fixa a lista em
+     * tempo de compilação, e acrescentar um módulo passaria a exigir editar este arquivo.
+     *
+     * Importar `adapters/` daqui é o OFÍCIO da composição — ela instancia e injeta — e não é
+     * acusado. Só `modulos/` é.
+     */
+    id: 'composicao-descoberta',
+    nivel: 'erro',
+    escopo: 'raiz',
+    verificar(projeto) {
+      if (!projeto.ehProjeto) return [];
+      return importesDaArea(projeto, 'src/')
+        .filter(({ area }) => area === 'modulos')
+        .map(({ rel, alvo }) => `${rel}: importa de modulos/ ("${alvo}") — a composicao DESCOBRE os`
+          + ' modulos lendo modulos/*/modulo.json, nunca por import: o import fixa a lista em tempo'
+          + ' de compilacao, e acrescentar um modulo passaria a exigir editar este arquivo');
     },
   },
   {
