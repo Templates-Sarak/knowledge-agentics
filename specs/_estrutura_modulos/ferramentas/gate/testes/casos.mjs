@@ -97,6 +97,14 @@ export const CASOS = [
     mutar: (m) => m.escrever('core/dominio/mau.ts', "import { criar } from '../../adapters/memoria/index.js';\nexport const y = criar;\n"),
   },
   {
+    regra: 'import-adapter',
+    descricao: 'importa adapter pela forma pontilhada do Python ("adapters.memoria")',
+    // `EXT_CODIGO` (contexto.mjs) e universal aos tres bindings, entao um `.py` cai em `ctx.codigo`
+    // mesmo dentro do molde TS/JS — o mesmo por que o caso acima usa `.ts` nos tres. Sem este caso,
+    // a forma pontilhada (`from adapters.memoria import x`) passava limpa pela regra inteira.
+    mutar: (m) => m.escrever('core/dominio/mau_pontilhado.py', 'from adapters.memoria import criar\n\ny = criar\n'),
+  },
+  {
     regra: 'sdk-fornecedor',
     descricao: 'SDK de fornecedor dentro do modulo',
     mutar: (m) => m.escrever('core/dominio/mau.ts', "import pg from 'pg';\nexport const y = pg;\n"),

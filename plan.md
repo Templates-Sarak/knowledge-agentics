@@ -463,8 +463,17 @@ feedback.
 - [ ] Caso 2 do autoteste: `schema-manifesto` × `manifesto` acusam o mesmo `papel` inválido.
       Declarado como par, não resolvido — decidir qual cala é definir a fronteira das duas
 - [ ] §7.2 — acrescentar *"ou rota obrigatória ausente"* ao parágrafo da exceção de silêncio
-- [ ] **`bindings/python/_template/tests/` não tem `__init__.py`** — `from tests.fixtures import …`
-      não resolve e os testes do molde Python não rodam. O conserto é um arquivo vazio
+- [ ] **`bindings/python/_template/tests/` não tem `__init__.py`** — o conserto é um arquivo vazio, e a
+      dívida estava certa **pelo motivo errado**. Sem `__init__.py`, `tests/` é *namespace package*
+      (PEP 420), e a regra de import do Python é que **qualquer pacote REGULAR chamado `tests` em
+      qualquer lugar do `sys.path` vence a porção de namespace local** — mesmo com o `cwd` primeiro.
+      Diagnosticado na revisão: nesta máquina existe
+      `…/Python314/site-packages/tests/__init__.py` (biblioteca que publicou a própria pasta de teste
+      por acidente de empacotamento — bug comum), e ele sequestra `from tests.fixtures import …`:
+      `no tests collected, 2 errors`. Ambiente limpo não reproduz, e o executor não conseguiu — mas
+      um template replicado N vezes não pode depender de nenhum consumidor ter esse pacote instalado.
+      **Provado:** `touch tests/__init__.py` → `tests.__path__` volta a apontar para a pasta local e
+      `19 passed`. Vale conferir se `tests/contrato/` e `tests/dominio/` também precisam
 - [ ] §7.2 — registrar o limite do módulo extraído sem `.ruff.toml` *(hoje só no comentário do
       pyproject do molde)*
 - [x] ~~**Defeito de projeto repete uma mensagem por módulo sob `--todos`**~~ — **resolvido em
@@ -478,11 +487,15 @@ feedback.
       se `segredo-em-log` acusasse `RAIZ_API_BASE_URL` por engano, sairia sob o mesmo id e o autoteste
       passaria. Em I.2 deu para travar via id não declarado; em I.3 não. Falta expressividade —
       afirmar *quantas vezes* ou *sobre o quê*, não só *quais regras*
-- [ ] **`import-adapter` não pega a forma pontilhada do Python.** `from adapters.memoria import X`
-      dentro de um módulo passa **limpo** — provado em projeto gerado. O `importesDe` **vê** o alvo
-      (`adapters.memoria`), mas o matcher da regra é `/(^|\/)adapters?\//` e exige barra. Em Python
-      `adapters` é importável como pacote de topo (`pythonpath = ["."]`), então a forma é real e
-      funcional. `sdk-fornecedor` pega `psycopg2` no mesmo arquivo — o buraco é só desta regra
+- [x] ~~**`import-adapter` não pega a forma pontilhada do Python**~~ — **resolvido**. `formaDeCaminho`
+      (uma normalização, compartilhada com `areaDoImport`) traz `adapters.memoria` para a forma com
+      barra, e `importaAdapter` decide a POSIÇÃO pelo tipo de import: **não relativo** só casa no
+      primeiro segmento — é o que faz `adapters.memoria` apontar para a pasta de topo que
+      `pythonpath=["."]` expõe **e** salva `opentelemetry.adapters.wsgi` (pacote externo com submódulo
+      `adapters`, falso positivo que a primeira tentativa introduziu); **relativo** casa em qualquer
+      segmento, porque `../../adapters/memoria` é posição de arquivo e não há pacote externo para
+      colidir. Travado por máquina nos dois sentidos: caso próprio para a detecção, chamariz em caso
+      de outra regra para as não-acusações
 - [ ] **Vocabulário de chamada de log divergiu**: `segredo-em-log` reconhece `logging`, `warning`,
       `critical`, `exception`, `console.*`, `print(`; `sensivel-em-saida` reconhece menos. Unificar
       muda uma regra de módulo — decidir junto com a dívida do caso 2 (`schema-manifesto` × `manifesto`)

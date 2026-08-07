@@ -185,12 +185,22 @@ export default [
     },
   },
   {
+    /**
+     * `*.egg-info/` é o análogo Python de `node_modules` — artefato de INSTALAÇÃO, não entrada
+     * escrita à mão —, e pelo mesmo motivo tolerado por forma em vez de nome fixo: o nome carrega
+     * o `name` do `pyproject.toml` (`acme-registros` → `acme_registros.egg-info`), então não cabe
+     * num `Set` de literais como `node_modules` cabe. `setuptools` grava esta pasta na ÁRVORE FONTE
+     * — editável ou não — sempre que o pacote é instalado a partir do próprio diretório; é
+     * comportamento do backend de build, não escolha deste template. É também o caso ORDINÁRIO do
+     * módulo extraído (§1.1): sem projeto ao redor para instalar as dependências pela raiz, instalar
+     * a partir da própria pasta do módulo é a única forma, e gera o mesmo artefato.
+     */
     id: 'estrutura-estrita',
     nivel: 'erro',
     escopo: 'modulo',
     verificar(ctx) {
       return ctx.entradasRaiz
-        .filter((nome) => !ENTRADAS_PERMITIDAS.has(nome))
+        .filter((nome) => !ENTRADAS_PERMITIDAS.has(nome) && !nome.endsWith('.egg-info'))
         .map((nome) => `entrada nao prevista na raiz do modulo: "${nome}" — a arvore e fechada`);
     },
   },

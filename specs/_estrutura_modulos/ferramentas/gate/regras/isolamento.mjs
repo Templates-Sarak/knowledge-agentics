@@ -198,6 +198,37 @@ function resolverRelativo(arquivoRel, alvo) {
 }
 
 /**
+ * A forma de CAMINHO de um import NÃO relativo: Python chega pontilhado (`adapters.memoria`), JS
+ * por caminho ou por specifier — a troca de `.` por `/` iguala as duas antes de olhar segmento.
+ *
+ * Import relativo (`alvo` começa com `.`) sai intacto: o chamador decide o que fazer com ele —
+ * `areaDoImport` resolve contra `arquivoRel`, `import-adapter` casa a forma com barra que já
+ * cobria `./adapters/x`. Aplicar a troca ali também não muda nada (relativo já usa barra em JS, e
+ * dotted-relativo de Python não alcança `adapters/`, que mora fora de qualquer pacote do módulo).
+ */
+function formaDeCaminho(alvo) {
+  return alvo.startsWith('.') ? alvo : alvo.replaceAll('.', '/');
+}
+
+/**
+ * `import-adapter` casa `adapters/` em duas posições, e a posição MUDA com o tipo de import:
+ *
+ * NÃO relativo: só no PRIMEIRO segmento. É o que faz `adapters.memoria` (Python, virando
+ * `adapters/memoria` via `formaDeCaminho`) apontar para a pasta de topo que `pythonpath=["."]`
+ * expõe — e é o que salva `opentelemetry.adapters.wsgi` (`opentelemetry/adapters/wsgi`, primeiro
+ * segmento `opentelemetry`) de ser confundido com ela: pacote externo com SUBMÓDULO chamado
+ * `adapters` é código correto, e casar em qualquer posição os igualava por acidente de nome.
+ *
+ * Relativo: em QUALQUER segmento. Caminho relativo é posição de ARQUIVO, não nome de pacote — não
+ * há pacote externo para colidir —, e é assim que `../../adapters/memoria/index.js` continua
+ * casando não importa a que profundidade o `../` termine.
+ */
+function importaAdapter(alvo) {
+  if (alvo.startsWith('.')) return /(^|\/)adapters?\//.test(alvo);
+  return /^adapters?(\/|$)/.test(formaDeCaminho(alvo));
+}
+
+/**
  * Em que área do projeto este import cai? `null` = fora dele (stdlib, pacote externo, alias que não
  * dá para resolver) — e `null` NUNCA vira acusação, porque dependência externa é legítima em
  * `adapters/` por desenho.
@@ -208,14 +239,11 @@ function resolverRelativo(arquivoRel, alvo) {
  * módulos lendo o `modulo.json` de cada pasta, passa limpo: import amarra em tempo de compilação e mata a
  * substituição; leitura de arquivo é o mecanismo que permite acrescentar módulo sem tocar na
  * composição. Uma regra que procurasse a string `modulos` acusaria o próprio desenho que protege.
- *
- * Python chega pontilhado (`adapters.memoria`), JS por caminho ou por specifier — daí a troca de
- * `.` por `/` antes de olhar o primeiro segmento.
  */
 function areaDoImport(arquivoRel, alvo) {
   const caminho = alvo.startsWith('.')
     ? resolverRelativo(arquivoRel, alvo)
-    : alvo.replaceAll('.', '/');
+    : formaDeCaminho(alvo);
   if (caminho === null) return null;
   const [primeiro, segundo] = caminho.split('/');
   if (!AREAS_DA_RAIZ.includes(primeiro)) return null;
@@ -295,7 +323,7 @@ export default [
         // Teste é a raiz de composição dele mesmo: montar o adapter de memória ali é legítimo.
         if (arquivo.eTeste) continue;
         for (const alvo of importesDe(arquivo)) {
-          if (/(^|\/)adapters?\//.test(alvo) || /^@[^/]+\/adapter-/.test(alvo)) {
+          if (importaAdapter(alvo) || /^@[^/]+\/adapter-/.test(alvo)) {
             achados.push(`${arquivo.rel}: importa adapter ("${alvo}") — o adapter e INJETADO, nunca importado`);
           }
         }
