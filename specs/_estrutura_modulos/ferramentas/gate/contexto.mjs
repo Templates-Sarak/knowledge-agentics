@@ -226,6 +226,12 @@ function lerProjeto(raizProjeto) {
   const ignore = join(raizProjeto, '.gitignore');
   const gitignore = existsSync(ignore) ? lerTexto(ignore) : null;
 
+  // O hook de pre-commit, cru. Quem interpreta é `pre-commit-instalado` — aqui só se lê, pelo mesmo
+  // motivo do `.gitignore` acima: regra nenhuma toca disco, então quem verifica a fiação do gate com
+  // o git precisa que o CONTEÚDO chegue pelo contexto, não por um `existsSync` dentro da regra.
+  const hook = join(raizProjeto, '.githooks', 'pre-commit');
+  const githooksPreCommit = existsSync(hook) ? lerTexto(hook) : null;
+
   return {
     raiz: raizProjeto,
     ehProjeto,
@@ -233,6 +239,7 @@ function lerProjeto(raizProjeto) {
     verificacao,
     configsDeLint,
     gitignore,
+    githooksPreCommit,
     codigo: lerCodigoDaRaiz(raizProjeto),
   };
 }

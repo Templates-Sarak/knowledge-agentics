@@ -201,6 +201,10 @@ function montarRaizDoProjeto(temporario, binding) {
   cpSync(join(raiz, '.gitignore'), join(temporario, '.gitignore'));
   // O manifesto da raiz, pelo mesmo motivo: `manifesto-raiz` o exige em todo projeto.
   cpSync(join(raiz, 'projeto.json'), join(temporario, 'projeto.json'));
+  // O hook de pre-commit, pelo mesmo motivo: `pre-commit-instalado` o exige em todo projeto, e sem
+  // copiá-lo aqui o fixture voltaria a ser um projeto incompleto — a mesma classe de defeito que as
+  // duas linhas acima já corrigiram para `.gitignore` e `projeto.json`.
+  cpSync(join(raiz, '.githooks'), join(temporario, '.githooks'), { recursive: true });
   // A FIAÇÃO. Ela entra por duas razões, e a segunda é a que importa mais: `env-raiz-declarado`
   // precisa de código de raiz para ter o que ler, E este é o único lugar onde se prova, caso a
   // caso, que carregar o código da raiz NÃO fez regra de módulo nenhuma passar a enxergá-lo.

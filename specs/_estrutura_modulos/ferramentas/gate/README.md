@@ -51,14 +51,27 @@ Global só quem compara módulos entre si.
 
 O template **não** traz pipeline, de propósito (ADR-005 (`specs/adr/000-decisoes-do-template.md`)). Plugá-lo é uma linha.
 
-**Hook de pre-commit** (`.githooks/pre-commit`):
+**Hook de pre-commit e pre-push** (`.githooks/pre-commit`, `.githooks/pre-push`) — o template **entrega os
+dois, prontos**, em `bindings/<binding>/raiz/.githooks/`. Cada um é duas linhas, idênticas nos três
+bindings, e delegam para `ferramentas/verificar-commit.mjs` — que roda o gate só nos módulos
+**afetados** pelo staged (`pre-commit`) ou pelo delta desde o upstream (`pre-push`), calculado por
+`ferramentas/afetados.mjs`. Ver `specs/arquitetura/03-operacao.md` §7.1 para a fiação completa das três
+camadas de custo, e a regra `pre-commit-instalado` (§4.4 do catálogo) para o que fica cobrado por
+máquina — o artefato existir e referenciar a cadeia, nunca a ativação:
 
 ```sh
 #!/bin/sh
-node ferramentas/gate/validar.mjs --todos || exit 1
+node ferramentas/verificar-commit.mjs pre-commit || exit 1
 ```
 
-Ative com `git config core.hooksPath .githooks`.
+Ative com `git config core.hooksPath .githooks` — é config **local**, não vem no `clone`: cada clone
+ativa o próprio. `--no-verify` fura o hook, por desenho do git; quem cobra sem esse furo é o CI, nunca
+o hook local (03-operacao.md §7.1).
+
+**Bit de execução, medido:** em Windows com `core.filemode=false` (comum), `git add` grava o hook
+**sem** o bit de execução — e um hook não-executável é **pulado em silêncio** por git no Linux/macOS,
+sem erro nenhum. No primeiro commit do projeto, rode `git update-index --chmod=+x .githooks/pre-commit
+.githooks/pre-push` uma vez (`criar-projeto.mjs` já imprime isso nos "próximos passos").
 
 **Qualquer CI** — o passo é o mesmo em qualquer provedor:
 

@@ -26,7 +26,9 @@ arquitetura de módulos instalada, o fluxo SDD montado, os primeiros módulos cr
 3. specs/ do fluxo SDD          00-contexto · 00-indice · 00-knowledge · prompts · _templates · plan/
 4. base da linguagem            specs/arquitetura/00-base-<binding>.md
 5. primeiros módulos            um por vez; o `conector` por último
-6. .agents/ + hook pre-commit   gate de segredos + auto-índice
+6. .agents/ + hooks de git      gate de segredos + auto-índice (script), COMPOSTO com o
+                                pre-commit/pre-push do template de módulos (§1 do gate) — nunca um
+                                substituindo o outro
 7. gate --todos                 não encerra vermelho
 ```
 
@@ -75,7 +77,43 @@ O próprio script roda `validar.mjs --todos` ao final. Rode também o comando co
 (`npm run verificar` ou `python verificar.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
 
 ### 6. Handoff
-1. Explique que o `pre-commit` mantém o índice de `.agents/` e barra segredo no staged.
+
+**Se rodou com `--binding`** (projeto modular): o passo 2 já instalou o `.githooks/pre-commit` e o
+`.githooks/pre-push` do TEMPLATE (a fiação das três camadas, `specs/arquitetura/03-operacao.md` §7.1) —
+mas o passo 6 do script (`instalar_hooks_git`) escreve o PRÓPRIO `.githooks/pre-commit` por cima
+(gate de segredos + auto-índice de `.agents/`), sobrescrevendo o do template sem mesclar. `.githooks/pre-push`
+não é tocado por ele e sobrevive intacto — só `pre-commit` colide. **Componha os dois, nunca deixe um
+substituir o outro** — a lei da skill é "só acrescenta ou mescla", e a varredura de segredo do passo 6
+não pode se perder:
+
+```bash
+python - <<'PY'
+from pathlib import Path
+import os
+caminho = Path("<alvo>/.githooks/pre-commit")
+texto = caminho.read_text(encoding="utf-8")
+if "verificar-commit.mjs" not in texto:
+    # Acrescenta a cadeia do template ANTES do "exit 0" final, depois do gate de segredos que ja
+    # esta ali — segredo primeiro (fail-closed), gate de conformidade depois.
+    texto = texto.replace(
+        "\nexit 0\n",
+        "\nnode ferramentas/verificar-commit.mjs pre-commit || exit 1\n\nexit 0\n",
+    )
+    caminho.write_text(texto, encoding="utf-8")
+    os.chmod(caminho, 0o755)
+PY
+```
+
+Confira o resultado lendo o arquivo: as duas partes devem estar presentes (`verificar_commit.py` do
+gate de segredos, **e** `verificar-commit.mjs` do gate de conformidade), nessa ordem, terminando em
+`exit 0`. Se o repositório já tem `core.filemode=false` (comum no Windows), o bit de execução do
+índice também precisa de `git update-index --chmod=+x .githooks/pre-commit` — sem commitar.
+
+**Sem `--binding`**: o passo 2 nunca rodou, não há hook de template para compor, e o `.githooks/pre-commit`
+que o script escreve já é o final — nada a fazer aqui.
+
+1. Explique que o `pre-commit` mantém o índice de `.agents/`, barra segredo no staged e — em projeto
+   modular — roda o gate nos módulos afetados; o `pre-push` (só em projeto modular) roda tipos e testes.
 2. Aponte os pendentes de HITL: `.env` da raiz, `specs/00-contexto.md`, ADRs do projeto.
 3. Engate o fluxo seguinte: **`spec-fundacao`** (entrevista dos ADRs) e, para módulos adicionais,
    **`code-modulo`**. O primeiro commit e o remoto são da **`git-commit-inicial`**.
@@ -98,6 +136,8 @@ O próprio script roda `validar.mjs --todos` ao final. Rode também o comando co
 - [ ] `specs/arquitetura/` com as 5 leis + a base da linguagem, e **nenhuma** pasta `doutrina/` na raiz?
 - [ ] `specs/adr/000-decisoes-do-template.md` presente?
 - [ ] Módulos criados, cada um com manifesto e contrato?
-- [ ] `.agents/` com `gerar_indice.py`, e `core.hooksPath` apontando para `.githooks`?
+- [ ] `.agents/` com `gerar_indice.py`, `core.hooksPath` apontando para `.githooks`, e — em projeto
+      modular — `.githooks/pre-commit` com o gate de segredos **e** `verificar-commit.mjs` do template
+      compostos (nunca um sobrescrevendo o outro), `.githooks/pre-push` intacto?
 - [ ] `validar.mjs --todos` verde?
 - [ ] Pendências de HITL comunicadas (`.env`, `00-contexto.md`, ADRs, primeiro commit)?

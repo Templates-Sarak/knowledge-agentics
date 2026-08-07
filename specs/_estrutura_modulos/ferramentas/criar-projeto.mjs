@@ -162,6 +162,14 @@ function principal() {
   process.stdout.write('  2. node ferramentas/criar-modulo.mjs <id>\n');
   process.stdout.write('  3. preencher o .env da raiz com os valores reais\n');
   process.stdout.write(`  4. ${verificar}   (gate, env, formato, lint, tipos, testes)\n`);
+  process.stdout.write('  5. git config core.hooksPath .githooks   (ativa pre-commit e pre-push;'
+    + ' e config LOCAL, cada clone ativa o proprio — ver specs/arquitetura/03-operacao.md §7.1)\n');
+  process.stdout.write('  6. no PRIMEIRO commit (so uma vez): git update-index --chmod=+x'
+    + ' .githooks/pre-commit .githooks/pre-push\n');
+  process.stdout.write('     (medido: em Windows com "core.filemode=false" — o default comum —'
+    + ' "git add" grava o hook SEM o bit de execucao. Sem ele, git no Linux/macOS PULA o hook em'
+    + ' silencio, sem erro nenhum: "verde" fica indistinguivel de "nao rodou". Rode uma vez e'
+    + ' o commit ja sai com o bit certo)\n');
 }
 
 principal();

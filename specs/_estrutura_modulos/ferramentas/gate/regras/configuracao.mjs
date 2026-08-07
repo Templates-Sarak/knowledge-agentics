@@ -4,9 +4,9 @@
  *      fallback-silencioso, cors-aberto, env-declarado, env-exemplo, env-modulo,
  *      env-fora-do-carregador, gitignore-segredo, segredo-em-publico,
  *      verificacao-declarada, lint-derivado, env-raiz-declarado,
- *      hardcode-url-raiz, fallback-raiz
+ *      hardcode-url-raiz, fallback-raiz, pre-commit-instalado
  *
- * As SEIS últimas são sobre o PROJETO, não sobre o módulo, e por isso têm `escopo: 'raiz'`:
+ * As SETE últimas são sobre o PROJETO, não sobre o módulo, e por isso têm `escopo: 'raiz'`:
  * recebem `ctx.projeto` em vez de um contexto de módulo e rodam UMA vez por invocação. Enquanto
  * eram `escopo: 'modulo'` com guarda, o resultado era certo e a saída não: um defeito de projeto
  * emitia uma mensagem por módulo — dez módulos, dez mensagens idênticas para um conserto só.
@@ -569,6 +569,48 @@ export default [
           + ' do ambiente e o segredo do sistema, e um default embutido vira o valor de producao no'
           + ' dia em que a chave falta, sem ninguem perceber';
       });
+    },
+  },
+  {
+    /**
+     * O artefato do hook de git existe e invoca a cadeia — regra 74 do catálogo.
+     *
+     * 03-operacao.md §7 prescreve três camadas de custo (milissegundos, segundos, dezenas de
+     * segundos) e o template as fia em `.githooks/pre-commit`/`pre-push`. Até esta regra, nada
+     * cobrava que o arquivo existisse: dois lugares documentavam um pre-commit
+     * (`ferramentas/gate/README.md`, o passo 6 de `meta-iniciar-repositorio`) e nenhum o entregava.
+     *
+     * O QUE ELA NÃO AFIRMA, e o limite tem precedente literal em `gitignore-segredo`: `core.hooksPath`
+     * é config LOCAL do git, não arquivo — provar que ele aponta para `.githooks` exigiria rodar
+     * `git config`, e o gate não roda git de propósito. Esta regra prova que o projeto não desmontou
+     * a rede; não prova que a rede está LIGADA (§7.2). Também não exige `pre-push`: as três camadas
+     * são desenho, e um projeto pode legitimamente só ter a primeira.
+     */
+    id: 'pre-commit-instalado',
+    nivel: 'erro',
+    escopo: 'raiz',
+    verificar(projeto) {
+      // Mesma guarda de `verificacao-declarada`/`lint-derivado`: módulo solto (extraído e ainda não
+      // religado a um esqueleto de projeto) não tem raiz de projeto a cobrar, e exigir o hook dele
+      // seria falso positivo garantido.
+      if (!projeto.ehProjeto) return [];
+      if (projeto.githooksPreCommit === null) {
+        return ['.githooks/pre-commit ausente na raiz do projeto — sem ele, o gate só roda quando'
+          + ' alguém lembra de chamar a mão (03-operacao.md §7). O template instala o hook pronto em'
+          + ' bindings/<binding>/raiz/.githooks/pre-commit; ative com'
+          + ' "git config core.hooksPath .githooks"'];
+      }
+      // "Invoca a cadeia" é TEXTUAL, não comportamental: a regra procura a referência ao gate ou ao
+      // script comum dos hooks, nunca executa o arquivo. Duas formas aceitas — chamada direta ao
+      // gate (o exemplo histórico do README) e a delegação ao script comum que o template instala.
+      const invocaACadeia = /ferramentas[\\/](gate[\\/]validar\.mjs|verificar-commit\.mjs)/
+        .test(projeto.githooksPreCommit);
+      if (!invocaACadeia) {
+        return ['.githooks/pre-commit existe mas não referencia ferramentas/gate/validar.mjs nem'
+          + ' ferramentas/verificar-commit.mjs — um hook que não invoca a cadeia é pior que nenhum'
+          + ' hook: ele passa a impressão de que há uma rede, e não há'];
+      }
+      return [];
     },
   },
   {

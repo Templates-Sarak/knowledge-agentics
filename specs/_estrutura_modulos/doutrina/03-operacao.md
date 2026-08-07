@@ -146,6 +146,40 @@ O que rodar onde é decisão de **custo**, não de importância:
 | Segundos (compila/testa) | build, testes, tipos | sob demanda no local, obrigatório na entrega |
 | Dezenas de segundos | integração, scan de dependência | só no executor de entrega |
 
+## 7.1 A fiação local das três camadas
+
+A tabela acima é custo; esta seção é **onde** cada custo roda localmente. `.githooks/pre-commit` e
+`.githooks/pre-push` — instalados pelo template em `bindings/<binding>/raiz/.githooks/` e ativados por
+`git config core.hooksPath .githooks` — são git, **não** provedor de CI: eles não se perdem ao trocar
+de GitHub Actions para outra coisa, e por isso não contradizem a decisão da ADR-005
+(`specs/adr/000-decisoes-do-template.md`). **"O template não traz pipeline de CI/CD" continua
+verdadeiro** — pipeline é config de provedor (o `.yml` de um GitHub Actions, o script de um GitLab CI);
+hook de git é mecanismo do próprio git, o mesmo `ferramentas/gate/README.md` já cita como exemplo de
+"plugar num executor em uma linha".
+
+A fiação, coluna a coluna da tabela de custo:
+
+| Custo | Hook | O que roda | Alimentado por |
+|---|---|---|---|
+| Milissegundos + segundos | `pre-commit` | gate (`validar.mjs`) nos módulos **afetados** pelo staged, `.env.example` em dia, formato, lint | `ferramentas/afetados.mjs` sobre `git diff --cached --name-only` |
+| Dezenas de segundos | `pre-push` | tipos e testes dos módulos **afetados** desde o upstream | `ferramentas/afetados.mjs --desde @{u}` (sem upstream: primeiro push do branch, verifica tudo) |
+
+A lógica de ambos os hooks mora num lugar só, `ferramentas/verificar-commit.mjs` — os arquivos
+`.githooks/pre-commit`/`.githooks/pre-push` são idênticos, byte a byte, nos três bindings, e só
+delegam para lá. É a mesma razão de o gate ter uma implementação e não três: seis arquivos de hook (três
+bindings × dois estágios) com lógica própria divergiriam no primeiro ajuste que alguém fizesse de um
+lado só, e nada verificaria que eles concordam.
+
+**O limite, declarado, não escondido.** `pre-commit`/`pre-push` são feedback **rápido e opt-in**: cada
+clone precisa rodar `git config core.hooksPath .githooks` para ativá-los (a config é local, não vem no
+`clone`), e `--no-verify` fura qualquer um dos dois, por desenho do próprio git — nenhum hook local
+impede isso. **Quem cobra sem esse furo é o CI**, nunca o hook local: instalar o hook não substitui
+pipeline, antecipa feedback — a mesma frase, e o mesmo motivo, do `hooks/README.md` da base para os
+hooks do agente ("Quem protege o repositório independente de quem edita é o CI"). O catálogo cobra o
+lado que É verificável sem rodar git: `pre-commit-instalado` (04-regras.md §4.4) prova que o artefato
+existe e referencia a cadeia; a regra 74. Ativação e furo ficam fora do que um verificador estático
+consegue afirmar (04-regras.md §7.2).
+
 # 8. Exceções
 
 `config/conformidade.json` na raiz do projeto aceita exceção **nominal**: módulo + regra + motivo + o link da

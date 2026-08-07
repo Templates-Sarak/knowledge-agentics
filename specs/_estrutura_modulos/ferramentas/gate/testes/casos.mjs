@@ -425,6 +425,17 @@ export const CASOS = [
     }),
   },
   {
+    regra: 'pre-commit-instalado',
+    descricao: 'projeto sem .githooks/pre-commit na raiz',
+    // `../../` sobe da pasta do modulo para a raiz do PROJETO, como nos demais casos de escopo raiz.
+    mutar: (m) => m.remover('../../.githooks/pre-commit'),
+  },
+  {
+    regra: 'pre-commit-instalado',
+    descricao: '.githooks/pre-commit existe mas nao invoca a cadeia de verificacao',
+    mutar: (m) => m.escrever('../../.githooks/pre-commit', '#!/bin/sh\necho "oi"\n'),
+  },
+  {
     regra: 'testes-web',
     descricao: 'rotaWeb declarada e tests/web/ apagada',
     // Nao mexe no manifesto: o molde de TS/JS ja nasce com `rotaWeb`, e usar a declaracao REAL e o

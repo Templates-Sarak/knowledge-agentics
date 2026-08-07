@@ -15,11 +15,13 @@ no §7.2 quando houver. Regra sem caso não entra.
 
 | Métrica | Valor |
 |---|---|
-| Regras no catálogo | **73** |
-| Regras com caso de teste próprio | **73** — cobertura total |
+| Regras no catálogo | **74** |
+| Regras com caso de teste próprio | **74** — cobertura total |
 | Bindings | `typescript` · `javascript` · `python` — gate verde nos três |
-| Escopos do gate | `modulo` · `global` · **`raiz`** (novo em I.1) |
-| Autoteste | `89/89` (TS) · `89/89` (JS) · `85/85` (PY) |
+| Escopos do gate | `modulo` · `global` · **`raiz`** (13 regras) |
+| Autoteste | `92/92` (TS) · `92/92` (JS) · `88/88` (PY) |
+| Ferramentas com autoteste próprio | `afetados.mjs` 19/19 · `verificar-commit.mjs` 6/6 |
+| Fiação local | `.githooks/pre-commit` + `pre-push`, donos do template, cobrados pela regra 74 |
 | Pipeline do `verificar` | gate → env → formato → lint → tipos → testes, nos três bindings |
 
 **Meta ao fim de todos os blocos:** ~70 regras, todas com caso, cobertura uniforme entre bindings —
@@ -432,18 +434,43 @@ a entrega. Dependência documentada sem artefato — a família de defeito que e
       cobre `adapter-isolado`). Mas quando o pipeline ganhar migrations contra banco efêmero e teste
       de integração pela composição real, mudança em adapter passa a afetar quem exercita aquele
       caminho, e o recorte precisa de outra resposta
-### F.2a — a escada  ⟵ **AGORA**  *(fia o que já existe)*
-- [ ] `.githooks/pre-commit` e `.githooks/pre-push` no esqueleto, **donos do template**. `criar-projeto.mjs`
-      já copia `bindings/<b>/raiz` inteiro com `cpSync recursive` — dotfile incluído —, então falta
-      **ativação** (`core.hooksPath`) e **bit de execução**, não cópia
-- [ ] Um hook, três bindings, **sem N cópias que precisam divergir** (o custo que cancelou a G.2)
-- [ ] `pre-commit` alimenta o `afetados.mjs` com `git diff --cached`; `(tudo)` roda tudo **e diz por quê**
-- [ ] **Regra 74** — escopo `raiz`: `.githooks/pre-commit` existe e chama a cadeia. Não afirma que o hook
-      ROBOU: `core.hooksPath` é config local e o gate não roda git de propósito — o mesmo limite que
-      `gitignore-segredo` já declara (*"não afirma que o `.env` está versionado"*)
-- [ ] `03-operacao.md` §7 ganha a fiação das três camadas; `04-regras.md` ganha a 74 + §7.2
-- [ ] `meta-iniciar-repositorio` deixa de inventar hook — instala e ativa o do template. A lei dela
-      (*"só acrescenta ou mescla"*) já garante que a parte de segredo + índice não se perde
+### F.2a — a escada  ✅ **CONCLUÍDO**
+- [x] `.githooks/pre-commit` e `.githooks/pre-push` nos três esqueletos, **byte a byte idênticos** —
+      blobs `d740deb5…` e `3b8f50bd…` iguais nos três, modo `100755`. Duas linhas de shell cada,
+      delegando a **`ferramentas/verificar-commit.mjs`**, que detecta o binding sozinho
+      (`package.json` × `pyproject.toml`). **Uma variante replicada, não três que precisam concordar** —
+      é a G.2 evitada em vez de repetida
+- [x] `.gitattributes` (`.githooks/* text eol=lf`) em cada esqueleto — sem ele, `core.autocrlf=true`
+      num clone Windows entrega hook em CRLF, que **não executa** (`bad interpreter`). Provado: num
+      `git add` de 170 arquivos, os `.githooks/*` foram os **únicos** sem aviso de conversão
+- [x] `pre-commit` alimenta o `afetados.mjs` com `git diff --cached`; `(tudo)` roda tudo **e imprime o
+      motivo**. `pre-push` usa `@{u}`; sem upstream, verifica tudo
+- [x] **Regra 74 — `pre-commit-instalado`** (escopo `raiz`, em `configuracao.mjs`): o arquivo existe e
+      referencia a cadeia. **Não afirma ativação** — `core.hooksPath` é config local e o gate não roda
+      git de propósito, o mesmo limite literal de `gitignore-segredo`. Guarda `ehProjeto` copiada de
+      `verificacao-declarada`. Não exige `pre-push`: as três camadas são desenho, não obrigação
+- [x] `03-operacao.md` §7.1 com a fiação, ligada à tabela de custo que já existia · `04-regras.md` com
+      a 74 e o limite no §7.2 · a frase *"o template não traz pipeline de CI/CD"* **intacta**
+- [x] `meta-iniciar-repositorio` instala e ativa o do template
+- [x] **`contexto.mjs` e `executar.mjs` autorizados retroativamente** (+7 e +4 linhas): regra de escopo
+      `raiz` só lê por `ctx.projeto`, e o fixture do autoteste tem de ser projeto completo. A
+      alternativa — `readFileSync` dentro da regra — quebraria "regra nenhuma toca disco"
+
+### F.2a.1 — o `shell: true` que a F.2a introduziu  ✅ **CONCLUÍDO**
+- [x] **Injeção de comando por nome de pasta, reproduzida.** `spawnSync(…, { shell: true })` concatena
+      `args` numa string sem citação, e o id do módulo vem de `readdirSync`. Uma pasta
+      `modulos/x&echo INJETADO/` executava o `echo` — **e o passo reportava `ok`**, porque com shell o
+      status é o do último comando da cadeia. "Verde indistinguível de não verificou", dentro do hook
+      que existe para cobrar isso
+- [x] Conserto: **a técnica que a G.1 já tinha inventado** — resolver o entrypoint JS pelo campo `bin`
+      do manifesto e rodar com `process.execPath` (`npm`, `tsc`), e `<python> -m <ferramenta>` para
+      `ruff`/`mypy`/`pytest`. Zero `shell: true`
+- [x] `rodar()` partido em `executar()` + `avaliarResultado()` (pura) + `reportar()`. As três formas de
+      "não rodou" — `error`, `status === null`, `status !== 0` — **reprovam**, nenhuma vira `ok`
+- [x] **Travado por máquina**, e a trava anda no mesmo `executar()` da produção: `--autoteste` 6/6, com
+      dois casos de payload adversarial. Revertendo para `shell: true`: **4/6**, exatamente os dois
+- [x] Lição de método registrada: **onde há concatenação, o caso de teste precisa de nome adversarial.**
+      A prova com nomes bem-comportados passava verde nos dois lados
 
 ### F.2b — os cinco comandos novos  *(depois da F.2a)*
 - [ ] Detector de breaking change de contrato *(precisa de baseline git — fora do gate por isso)*
@@ -653,8 +680,10 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
 
            F.1  `afetados.mjs`         grafo reverso de `consome`, erra para mais — 19 casos próprios
 
-AGORA      F.2a a escada             `.githooks/` dono do template + 3 camadas + regra 74
-           F.2b os cinco comandos    build, migrations, gitleaks, audit, breaking-change + relatório
+           F.2a a escada             `.githooks/` dono do template + 3 camadas + regra 74 (74 regras)
+           F.2a.1 sem `shell: true`  injeção por nome de pasta, travada com payload adversarial
+
+AGORA      F.2b os cinco comandos    build, migrations, gitleaks, audit, breaking-change + relatório
            H    dívidas              a qualquer momento
            CD   fora do plano        falta responder a unidade de release — é por projeto
 ```
