@@ -463,8 +463,8 @@ feedback.
 - [ ] Caso 2 do autoteste: `schema-manifesto` × `manifesto` acusam o mesmo `papel` inválido.
       Declarado como par, não resolvido — decidir qual cala é definir a fronteira das duas
 - [ ] §7.2 — acrescentar *"ou rota obrigatória ausente"* ao parágrafo da exceção de silêncio
-- [ ] **`bindings/python/_template/tests/` não tem `__init__.py`** — o conserto é um arquivo vazio, e a
-      dívida estava certa **pelo motivo errado**. Sem `__init__.py`, `tests/` é *namespace package*
+- [x] ~~**`bindings/python/_template/tests/` não tem `__init__.py`**~~ — **resolvido**, com UM arquivo,
+      e a dívida estava certa **pelo motivo errado**. Sem `__init__.py`, `tests/` é *namespace package*
       (PEP 420), e a regra de import do Python é que **qualquer pacote REGULAR chamado `tests` em
       qualquer lugar do `sys.path` vence a porção de namespace local** — mesmo com o `cwd` primeiro.
       Diagnosticado na revisão: nesta máquina existe
@@ -472,8 +472,12 @@ feedback.
       por acidente de empacotamento — bug comum), e ele sequestra `from tests.fixtures import …`:
       `no tests collected, 2 errors`. Ambiente limpo não reproduz, e o executor não conseguiu — mas
       um template replicado N vezes não pode depender de nenhum consumidor ter esse pacote instalado.
-      **Provado:** `touch tests/__init__.py` → `tests.__path__` volta a apontar para a pasta local e
-      `19 passed`. Vale conferir se `tests/contrato/` e `tests/dominio/` também precisam
+      **Conserto:** `tests/__init__.py` com o comentário que explica por que ele não é sobra. Um só —
+      medido: uma vez que `tests` é pacote regular, `tests.contrato` e `tests.dominio` são procurados
+      apenas dentro do `tests.__path__` já fixado, e nunca mais varrem o `sys.path`. Provado contra o
+      sequestrador **real** desta máquina, sem cenário simulado: `19 passed`, `tests.__path__` na pasta
+      local. TS/JS não têm análogo — importam fixture por caminho relativo, e Node não tem `sys.path`
+      para uma lib sequestrar por nome
 - [ ] §7.2 — registrar o limite do módulo extraído sem `.ruff.toml` *(hoje só no comentário do
       pyproject do molde)*
 - [x] ~~**Defeito de projeto repete uma mensagem por módulo sob `--todos`**~~ — **resolvido em
