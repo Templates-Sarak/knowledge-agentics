@@ -1,11 +1,13 @@
 /**
  * regras/operacao.mjs — família "Operação" do catálogo (specs/arquitetura/04-regras.md §4.6).
  * ids: log, determinismo, gateway-credencial, random-inseguro, rota-publica-autenticada,
- *      cookie-seguro, token-em-armazenamento, permissao-literal, sql-concatenado, segredo-em-log
+ *      cookie-seguro, token-em-armazenamento, permissao-literal, sql-concatenado, sql-no-modulo,
+ *      segredo-em-log
  *
- * As DUAS últimas são de escopo `raiz` e olham a fiação. Estão nesta família porque é a de
- * SEGURANÇA operacional — a mesma de `cookie-seguro` e `token-em-armazenamento` —, e porque o
- * vocabulário de credencial que `segredo-em-log` precisa já mora aqui.
+ * `sql-concatenado` e `segredo-em-log` são de escopo `raiz` e olham a fiação. Estão nesta família
+ * porque é a de SEGURANÇA operacional — a mesma de `cookie-seguro` e `token-em-armazenamento` —, e
+ * porque o vocabulário de credencial que `segredo-em-log` precisa já mora aqui. `sql-no-modulo` é a
+ * gêmea de escopo `modulo` da primeira, e as duas dividem o discriminador (`ehSqlInjetado`).
  *
  * Todas leem `arquivo.linhasCodigo`, nunca o conteúdo bruto: comentário e docstring não são
  * código, e a lei escrita num comentário não pode virar violação dela mesma. No molde isso não é
@@ -242,13 +244,33 @@ function conferirRotasPublicasReais(ctx) {
   return achados;
 }
 
-/** Percorre as linhas de código de cada arquivo do módulo que casa o filtro. */
+/**
+ * O discriminador de INJEÇÃO, e o único — `sql-concatenado` (raiz) e `sql-no-modulo` (módulo) fazem
+ * a mesma pergunta em coleções diferentes, e uma segunda cópia divergiria da primeira no primeiro
+ * padrão que alguém acrescentasse de um lado.
+ *
+ * Duas condições na MESMA linha: parece SQL, e o valor entra na string. É o recorte que deixa a
+ * forma correta passar — `db.query('… where hash = $1', [hash])` não interpola nada.
+ */
+function ehSqlInjetado(texto) {
+  if (!PADRAO_SQL.test(texto)) return false;
+  return INTERPOLACAO_EM_SQL.some((padrao) => padrao.test(texto));
+}
+
+/**
+ * Percorre as linhas de código de cada arquivo do módulo que casa o filtro.
+ *
+ * `padrao` aceita regex OU predicado: regra cuja decisão é de UMA forma passa o regex, e regra que
+ * cruza duas condições na mesma linha passa a função. Sem isso, a segunda precisaria do próprio laço
+ * — e um laço duplicado é onde `eTeste` deixa de ser pulado no dia em que alguém mexer só num deles.
+ */
 function varrer(ctx, filtrar, padrao, mensagem) {
+  const casa = typeof padrao === 'function' ? padrao : (texto) => padrao.test(texto);
   const achados = [];
   for (const arquivo of ctx.codigo) {
     if (arquivo.eTeste || !filtrar(arquivo)) continue;
     for (const { numero, texto } of arquivo.linhasCodigo) {
-      if (padrao.test(texto)) achados.push(`${arquivo.rel}:${numero}: ${mensagem}`);
+      if (casa(texto)) achados.push(`${arquivo.rel}:${numero}: ${mensagem}`);
     }
   }
   return achados;
@@ -403,25 +425,55 @@ export default [
   },
   {
     /**
-     * SQL parametrizado, nunca concatenado — e a raiz é o único lugar onde a pergunta cabe: o módulo
-     * não pode ter driver (`sdk-fornecedor`) nem importar adapter (`import-adapter`), então a query
-     * é montada em `adapters/`, que até a I.1 nenhuma regra enxergava.
+     * SQL parametrizado, nunca concatenado — na FIAÇÃO, que é onde a query nasce: o módulo não pode
+     * ter driver (`sdk-fornecedor`) nem importar adapter (`import-adapter`), então quem monta a query
+     * é `adapters/`, que até a I.1 nenhuma regra enxergava.
      *
-     * Duas condições na MESMA linha: parece SQL, e o valor entra na string. É o recorte que deixa a
-     * forma correta passar — `db.query('… where hash = $1', [hash])` não interpola nada.
+     * A gêmea de escopo `modulo` é `sql-no-modulo`, e as duas nunca acusam o mesmo arquivo: esta lê
+     * `projeto.codigo` (`adapters/`, `src/`, `packages/`), aquela lê `ctx.codigo` (a pasta do módulo),
+     * e `contexto.mjs` mantém as duas coleções disjuntas por construção.
      */
     id: 'sql-concatenado',
     nivel: 'erro',
     escopo: 'raiz',
     verificar(projeto) {
       if (!projeto.ehProjeto) return [];
-      return varrerRaiz(projeto, (texto) => {
-        if (!PADRAO_SQL.test(texto)) return null;
-        if (!INTERPOLACAO_EM_SQL.some((padrao) => padrao.test(texto))) return null;
-        return 'SQL montado por concatenacao ou interpolacao — o valor de fora entra na string e vira'
+      return varrerRaiz(projeto, (texto) => (ehSqlInjetado(texto)
+        ? 'SQL montado por concatenacao ou interpolacao — o valor de fora entra na string e vira'
           + ' COMANDO. Use placeholder ($1, ?, :nome, %s) e passe o valor como parametro: o driver'
-          + ' escapa, a string nunca';
-      });
+          + ' escapa, a string nunca'
+        : null));
+    },
+  },
+  {
+    /**
+     * O vetor que sobrava, e ele estava medido: SQL montado DENTRO do módulo.
+     *
+     * O `sql-concatenado` foi para a raiz porque quem fala com banco é o adapter, e isso continua
+     * certo. Só que "o módulo não fala com banco" é doutrina sem verificador na única forma que
+     * importa: a superfície canônica de `packages/portas/` é tipada por OPERAÇÃO — `listar`,
+     * `buscarPorHash`, `inserir`, `contar`, e nenhuma porta aceita comando —, mas o `core/portas/` do
+     * MÓDULO é escrito pelo autor do módulo e nada compara a forma dele com a canônica. Acrescentar
+     * `executarConsulta(sql: string)` ali é legal aos olhos do gate, e a partir daí a concatenação
+     * mora no módulo e a execução na raiz: `sql-concatenado` vê o `.query(sql)` do adapter e NÃO vê
+     * como a string nasceu. Medido — a mesma linha, acusada em `adapters/` e calada em `modulos/`.
+     *
+     * MESMO discriminador da gêmea, uma implementação só (`ehSqlInjetado`): parece SQL, e o valor
+     * entra na string. Divergir aqui faria uma das duas acusar o que a outra deixa passar.
+     */
+    id: 'sql-no-modulo',
+    nivel: 'erro',
+    escopo: 'modulo',
+    verificar(ctx) {
+      return varrer(
+        ctx,
+        () => true,
+        ehSqlInjetado,
+        'SQL montado no modulo — o modulo nao fala com banco: a query e do adapter, atras de uma porta'
+          + ' tipada por OPERACAO (buscarPorHash(hash)), nunca por COMANDO (executar(sql)). Nesta'
+          + ' fronteira o `sql-concatenado` da raiz nao ajuda: o adapter recebe a string ja montada e'
+          + ' nao ve como ela nasceu',
+      );
     },
   },
   {

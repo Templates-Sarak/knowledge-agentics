@@ -15,11 +15,11 @@ no §7.2 quando houver. Regra sem caso não entra.
 
 | Métrica | Valor |
 |---|---|
-| Regras no catálogo | **72** |
-| Regras com caso de teste próprio | **72** — cobertura total |
+| Regras no catálogo | **73** |
+| Regras com caso de teste próprio | **73** — cobertura total |
 | Bindings | `typescript` · `javascript` · `python` — gate verde nos três |
 | Escopos do gate | `modulo` · `global` · **`raiz`** (novo em I.1) |
-| Autoteste | `87/87` (TS) · `87/87` (JS) · `83/83` (PY) |
+| Autoteste | `89/89` (TS) · `89/89` (JS) · `85/85` (PY) |
 | Pipeline do `verificar` | gate → env → formato → lint → tipos → testes, nos três bindings |
 
 **Meta ao fim de todos os blocos:** ~70 regras, todas com caso, cobertura uniforme entre bindings —
@@ -136,11 +136,16 @@ voltam ao default do ruff dentro dos módulos.
 - [x] `token-em-armazenamento` — token em `localStorage`/`sessionStorage`. O identificador
       `sessionStorage` carrega "session", então ele é removido antes da busca por contexto secreto
 
-### B.3 — `sql-concatenado`  ↪ **movido para o Bloco I**
+### B.3 — `sql-concatenado`  ↪ movido para o Bloco I · **vetor residual fechado em F.0** ✅
 Onde a query é montada é no **adapter**, que vive fora de `modulos/` — o módulo não pode nem ter
 driver (`sdk-fornecedor`) nem importar adapter (`import-adapter`). A regra pertence ao escopo `raiz`.
-Sobra no módulo um vetor residual — string SQL crua entregue a uma porta — a **reavaliar depois de
-I.3**: coberta a raiz, pode não valer uma regra.
+
+O vetor residual **existia**, e foi medido em F.0: a superfície canônica de `packages/portas/` é
+tipada por operação e nenhuma porta aceita comando — mas o `core/portas/` do **módulo** é escrito
+pelo autor dele e nada compara as duas formas. Declarar `executarConsulta(sql: string)` ali é legal
+aos olhos do gate, e a partir daí a concatenação mora no módulo e a execução na raiz. A mesma linha:
+acusada em `adapters/`, calada em `modulos/`. Virou a regra **`sql-no-modulo`** (escopo `modulo`),
+gêmea de `sql-concatenado`, com o **mesmo** discriminador (`ehSqlInjetado`) e coleção disjunta.
 
 ---
 
@@ -369,7 +374,12 @@ legítima — o molde do binding não tem a peça (`web/` no Python; mapeador Py
 - [ ] `ferramentas/afetados.mjs` — arquivo alterado → módulo → consumidores transitivos.
       **Maior retorno da lista**: sem ele o CI roda tudo a cada commit
 - [ ] Detector de breaking change de contrato *(precisa de baseline git — fora do gate por isso)*
-- [ ] `dependencia-fixada` — lockfile presente *(reavaliar: talvez seja regra de gate)*
+- [ ] **`dependencia-fixada` é etapa de CI, não regra de gate** — decidido e medido em F.0, registrado
+      no §7.1 ("Deixaram de ser regra"). O passo é `npm ci`, que **falha sozinho** sem lockfile, com
+      mensagem melhor que a do gate. Motivo: lockfile é produto do `npm install`, e o gate promete
+      rodar **sem instalar nada** — é o que o faz viajar dentro do módulo extraído. Medido: projeto
+      recém-criado não tem lockfile em nenhum dos três bindings, e no Python o template não declara
+      arquivo de trava nenhum. Como regra, reprovaria todo projeto no minuto em que nasce
 - [ ] Passo de build — TS/JS não têm script `build`; `tsc --noEmit` não produz artefato
 - [ ] Migrations executáveis — sobem e descem contra banco efêmero
 - [ ] Estágio 0: `gitleaks` + `git ls-files` procurando `.env` versionado — **fail-closed**
@@ -499,6 +509,7 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
            D    campos órfãos          4 regras
 
            ══ o CATÁLOGO DE REGRAS está completo: 72 regras, 72 com caso ══
+                                             (73 depois da F.0 — ver abaixo)
 
            A.3  lint por módulo        ❌ CANCELADA — premissa falsa, 5 achados
 
@@ -509,18 +520,22 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
 
            J.2  os dois extratores posicionais  4 regras, travado por máquina — Bloco J fechado
 
-AGORA      F    insumos de CI          junto do pipeline, não antes
+           F.0  fechar o catálogo     B.3 virou regra (73) · `dependencia-fixada` virou CI
+
+AGORA      F.1  `afetados.mjs`         o único insumo de CI que não é pipeline
+           F.2  o pipeline             build, migrations, gitleaks, audit, breaking-change
            H    dívidas                a qualquer momento
-           B.3  vetor residual de SQL no módulo — reavaliar depois de I.3
 ```
 
-**O que resta.** F é orquestração de CI; H é dívida; B.3 é uma reavaliação. **Nenhum bloco de
-verificação está aberto.**
+**O que resta.** F.1 é insumo; F.2 é o pipeline; H é dívida. **Nenhuma pergunta de verificação está
+aberta** — a F.0 fechou as duas últimas, uma virando regra e a outra virando etapa de CI, e o número
+73 agora fecha por três caminhos independentes (objetos, ids distintos, regras com caso).
 J fechou: os extratores de import e de contrato leem `textoDeCodigo`, e o falso positivo do
 comentário está travado por máquina nos três bindings.
 G fechou: o hook deixou de carregar número próprio, e agora hook e `npm run lint` cobram a mesma
-config — que é derivada de `limiares.mjs`. A meta de "~70 regras, todas com caso" foi cumprida com **72** — e o catálogo não cresce mais
-por este plano.
+config — que é derivada de `limiares.mjs`. A meta de "~70 regras, todas com caso" foi cumprida com
+**73** — e o catálogo não cresce mais por este plano: a F.0 era a última pergunta que podia acrescentar
+uma regra, e ela acrescentou uma e recusou outra.
 
 **A ordem mudou três vezes, e as três estão registradas:**
 

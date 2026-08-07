@@ -485,13 +485,31 @@ export const CASOS = [
   {
     regra: 'sql-concatenado',
     descricao: 'query montada por concatenacao no adapter',
-    // A raiz e o UNICO lugar onde esta pergunta cabe: o modulo nao pode ter driver
-    // (`sdk-fornecedor`) nem importar adapter (`import-adapter`), entao a query e montada aqui — e
-    // ate a I.1 nenhuma regra enxergava este arquivo. A regra veio da B.3 por este motivo.
+    // A fiacao e onde a query NASCE: o modulo nao pode ter driver (`sdk-fornecedor`) nem importar
+    // adapter (`import-adapter`), entao quem fala com o banco e este arquivo — e ate a I.1 nenhuma
+    // regra o enxergava. A metade que sobrava (SQL montado DENTRO do modulo) e da `sql-no-modulo`,
+    // logo abaixo: a MESMA linha, na outra colecao, e nenhum arquivo cai nas duas.
     mutar: (m) => m.acrescentarEm('adapterRaiz', {
       js: "\nexport const buscar = (db, id) => db.query('select * from registros where hash = ' + id);\n",
       py: '\n\ndef buscar(db, id):\n    return db.execute("select * from registros where hash = " + id)\n',
     }),
+  },
+  {
+    regra: 'sql-no-modulo',
+    descricao: 'SQL montado dentro do modulo e entregue a uma porta',
+    // O vetor residual da B.3, medido: a superficie canonica de `packages/portas/` e tipada por
+    // OPERACAO e nao aceita comando, mas o `core/portas/` do MODULO e escrito pelo autor dele e
+    // ninguem compara as duas formas. Com um `executarConsulta(sql)` declarado la, a concatenacao
+    // fica no modulo e a execucao na raiz — e a `sql-concatenado` ve o `.query(sql)` do adapter sem
+    // ver como a string nasceu.
+    //
+    // `alguma_coisa` nao e tabela de modulo nenhum de proposito: com o nome de um vizinho o caso
+    // acusaria tambem `tabela-alheia` e deixaria de provar qual regra esta viva.
+    mutar: (m) => m.escrever(
+      'core/dominio/consulta-crua.ts',
+      'export const buscar = (deps, filtro) =>\n'
+        + "  deps.repositorio.executarConsulta('select hash from alguma_coisa where titulo = ' + filtro);\n",
+    ),
   },
   {
     regra: 'hardcode-url-raiz',
@@ -600,7 +618,16 @@ export const CASOS = [
   {
     regra: 'hardcode-url',
     descricao: 'URL literal no codigo',
-    mutar: (m) => m.escrever('core/dominio/mau.ts', "export const base = 'https://api.exemplo.com';\n"),
+    // A segunda linha trava uma NAO-acusacao, pela tecnica do caso do `log`: SQL PARAMETRIZADO
+    // dentro do modulo nao e defeito de `sql-no-modulo`, cujo recorte exige que o valor entre na
+    // string. Se ela perder o discriminador de injecao e passar a acusar "qualquer SQL", o id sai
+    // aqui como NAO declarado e o autoteste reprova na hora — que e a unica forma de o harness
+    // afirmar um silencio.
+    mutar: (m) => m.escrever(
+      'core/dominio/mau.ts',
+      "export const base = 'https://api.exemplo.com';\n"
+        + "export const consulta = 'select hash from alguma_coisa where titulo = $1';\n",
+    ),
   },
   {
     regra: 'hardcode-numero',
@@ -910,14 +937,14 @@ export const CASOS = [
           + "//   import { c } from '../../adapters/memoria/index.js';\n"
           + "//   import pg from 'pg';\n"
           + '//   const s = process.env.MOLDE_SEGREDO_DOC;\n'
-          + '//   select nome from vizinho_metadados\n'
+          + "//   select nome from vizinho_metadados where id = ' + id\n"
           + "//   router.get('/rota-desativada', listarLegado);\n"
           + "export const gritar = () => console.log('este si e defeito');\n",
         py: '\n\n# A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
           + '#   from adapters.memoria import criar\n'
           + '#   import psycopg2\n'
           + '#   s = os.environ["MOLDE_SEGREDO_DOC"]\n'
-          + '#   select nome from vizinho_metadados\n'
+          + '#   select nome from vizinho_metadados where id = " + id\n'
           + '#   @router.get("/rota-desativada")\n'
           + 'def gritar():\n    print("este si e defeito")\n',
       });
