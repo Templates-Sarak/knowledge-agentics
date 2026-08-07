@@ -1,0 +1,8 @@
+#!/bin/sh
+# Sarak — pre-commit (camada de SEGUNDOS, 03-operacao.md §7): gate nos modulos AFETADOS pelo staged,
+# .env.example em dia, formato e lint. Byte a byte igual nos tres bindings de proposito — a logica
+# inteira mora em ferramentas/verificar-commit.mjs, que detecta o binding sozinho. Ver o cabecalho
+# daquele arquivo para staged x working tree, --no-verify e o resto dos limites declarados.
+#
+# Ativa com: git config core.hooksPath .githooks
+node ferramentas/verificar-commit.mjs pre-commit || exit 1

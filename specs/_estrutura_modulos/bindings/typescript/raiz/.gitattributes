@@ -1,0 +1,4 @@
+# Hooks de git sao shell script — sem LF eles nao executam ("sh: bad interpreter"). Forca LF
+# independente do core.autocrlf de quem clona (Windows converte para CRLF por padrao quando
+# core.autocrlf=true e nao ha .gitattributes dizendo o contrario — e o defeito que esta linha evita).
+.githooks/* text eol=lf
