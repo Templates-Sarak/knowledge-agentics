@@ -364,15 +364,60 @@ legítima — o molde do binding não tem a peça (`web/` no Python; mapeador Py
 
 ---
 
-## Bloco G — Hooks dentro do template
+## Bloco G — Política dos hooks  ✅ **CONCLUÍDO** *(reformulado: a metade "copiar arquivos" foi cancelada)*
 
-- [ ] Os 5 hooks + `hooks.json` instalados pelo `criar-projeto.mjs`
-- [ ] Lendo `config/verificacao.json` do projeto, não `hooks/config.json` da base
+> **A premissa da plan original era falsa.** `hooks/hooks.json` diz *"Wiring NATIVO … **Ativo por
+> padrão ao instalar**"*, e `CLAUDE.md:33` confirma: com o plugin `sarak` instalado, o agente já roda
+> os cinco hooks em **qualquer** projeto, inclusive nos gerados. Copiar os arquivos para dentro do
+> projeto resolve um problema que não existe.
+>
+> **O que falta é a política ser lida do projeto** — e um defeito pior, achado na investigação.
+
+### G.1 — política resolvida por contexto, e o hook parando de injetar  ✅
+- [x] `loadConfig()` procura `<projeto>/config/verificacao.json` e só cai em `__dirname/config.json`
+      quando não achar. `projectRoot()` busca **o próprio arquivo de política**, não um marcador
+      indireto: `CLAUDE_PROJECT_DIR` primeiro, depois subindo do `cwd`
+- [x] `verificacao.json` + schema ganham `qualidade.modo` e `formatacao.ativo`
+- [x] **`padrao-limiares.js` deixou de INJETAR os números.** Roda o linter do projeto com a config do
+      projeto — sem `--no-eslintrc`, sem `--rule`, sem `--config`
+- [x] O `40` **saiu do hook**: zero em `hooks/**.js` e `**.json`; só prosa apontando para `limiares.mjs`
+- [x] Hook e `npm run lint` concordam **por construção** — provado palavra por palavra em `max-params`
+      e em `no-console`
+
+### G.1b — `proibir` fora, pelo mesmo argumento do `limiares`
+- [x] **`qualidade.proibir` NÃO entra.** A G.1 o promoveu a `required` no schema e isso reintroduzia o
+      defeito com o sinal trocado: `gerar-config-lint.mjs` emite `no-console`/`no-empty`/`T20`/`E`
+      **incondicionalmente**, sem ler política, então o campo nunca acrescentava cobertura — só
+      escondia do agente um erro que o `npm run lint` acusava. Reproduzido em modo `block`: lint
+      reprovava, hook calava
+- [x] `qualidade` ficou com `modo` e nada mais. `additionalProperties: false` barra `limiares` **e**
+      `proibir` pelo mesmo mecanismo
+- [x] A mensagem "sem config de linter" nomeia só caminho que existe, nos três casos (projeto do
+      template · a base · repositório fora do template)
+
+### G.2 — copiar os hooks para o projeto  ❌ **CANCELADA**
+
+O plugin já os entrega. As três saídas medidas, e por que nenhuma se paga:
+
+| Saída | Custo medido |
+|---|---|
+| (a) hooks dentro do template | **~620 linhas** de código executável em duas **variantes** (precisam divergir, porque leem política de lugares diferentes), e nada no escopo consegue verificar que não divergem além do previsto |
+| (b) `criar-projeto.mjs` sobe 3 níveis até a base | quebra o invariante verificado: **toda** referência sai de `RAIZ_TEMPLATE = join(AQUI, '..')`, nenhuma sobe. Template copiado para outro lugar deixaria de funcionar |
+| (c) hooks só no template, plugin reaponta | a mais limpa, mas toca **dois** FORA: `hooks/hooks.json` e `plugin/sync_ide.py:65,89`, que espelha `hooks` como diretório de topo |
+
+**A promessa, delimitada:** hook é guarda do **agente** — intercepta chamada de ferramenta do Claude
+Code. Quem clona o repositório sem Claude Code não ganha nada com ele. Quem protege o repositório
+independente de quem edita é o **CI** (Bloco F). Instalar hook não substitui pipeline: antecipa
+feedback.
 
 ---
-
 ## Bloco H — Dívidas registradas
 
+- [ ] **A base perdeu a cobrança de limiar sobre si mesma** (custo aceito na G.1, declarado no
+      `hooks/README.md`). `knowledge-agentics` não tem config de linter na raiz, então `padrao-limiares`
+      avisa e segue. Fechar exige gerar uma config na base — decisão à parte, e ela usa eslint 8
+- [ ] `cobertura.modo` e `dependencias.modo` ainda vêm da base. `cobertura.minima` e
+      `dependencias.severidadeMinima` já vêm do projeto; o **modo** dos dois, não. Uma linha em cada
 - [ ] `criar-modulo.mjs --sem-artefato` remove `core/motor` e deixa `tests/dominio` importando dele
       — módulo nasce com teste quebrado. O caso análogo `--sem-web` é tratado corretamente
 - [ ] Caso 2 do autoteste: `schema-manifesto` × `manifesto` acusam o mesmo `papel` inválido.
@@ -429,15 +474,18 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
 
            J.1  falso positivo do extrator  7 regras + 5 leituras, travado por máquina
 
-AGORA      G    hooks no template      depende de A
-           J.2  os dois extratores posicionais  (4 regras de raio)
+           G.1  política dos hooks     hook e lint concordam por construção
+           G.1b `proibir` fora         G.2 (copiar arquivos) CANCELADA — o plugin já os entrega
+
+AGORA      J.2  os dois extratores posicionais  (4 regras de raio)
            F    insumos de CI          junto do pipeline, não antes
            H    dívidas                a qualquer momento
            B.3  vetor residual de SQL no módulo — reavaliar depois de I.3
 ```
 
-**O que resta.** J é conserto de defeito real no gate; G é instalação; F é orquestração de CI; H é
-dívida. A meta de "~70 regras, todas com caso" foi cumprida com **72** — e o catálogo não cresce mais
+**O que resta.** J é conserto de defeito real no gate; F é orquestração de CI; H é dívida.
+G fechou: o hook deixou de carregar número próprio, e agora hook e `npm run lint` cobram a mesma
+config — que é derivada de `limiares.mjs`. A meta de "~70 regras, todas com caso" foi cumprida com **72** — e o catálogo não cresce mais
 por este plano.
 
 **A ordem mudou três vezes, e as três estão registradas:**

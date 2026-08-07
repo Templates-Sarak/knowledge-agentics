@@ -1,10 +1,9 @@
 {
-  "_doc": "Tunables não-secretos dos hooks de QUALIDADE. Cada projeto que importa a base ajusta aqui. Segurança (cyber-git-seguro) é fail-closed fixo e NÃO depende deste arquivo.",
+  "_doc": "Tunables não-secretos dos hooks de QUALIDADE — FALLBACK, usado só quando o projeto não tem config/verificacao.json. Projeto vindo do template de módulos declara a política DELE ali, e ela vence esta. Segurança (cyber-git-seguro) é fail-closed fixo e NÃO depende deste arquivo.",
   "qualidade": {
     "modo": "warn",
     "_modo_doc": "block = bloqueia/cobra correção | warn = só avisa o modelo | off = ignora",
-    "limiares": { "linhas": 40, "aninhamento": 3, "parametros": 4 },
-    "proibir": { "printConsole": true, "excecaoEngolida": true }
+    "_sem_limiares_nem_proibir_doc": "`qualidade` tem `modo` e nada mais. `limiares` saiu porque os limiares de escrita são LEI, com fonte única em ferramentas/gate/limiares.mjs, de onde a config do linter é gerada — enquanto o número morava aqui, ele VENCIA a config gerada. `proibir` saiu pelo mesmo argumento com o sinal trocado: o gerador emite no-console/no-empty/T20/E sem ler política nenhuma, então o campo nunca acrescentava cobertura, só escondia do agente um erro que o lint acusava."
   },
   "formatacao": { "ativo": true },
   "cobertura": {

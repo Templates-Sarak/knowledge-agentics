@@ -11,6 +11,17 @@ O conjunto serve a **quatro garantias** — nada além (hook só cobre o mecanic
 > O push é varrido **por delta** (`@{u}..HEAD`), não no histórico inteiro. Auditoria de dependências e
 > cobertura rodam **só no push**. Nada percorre todo o código a cada ação.
 
+## O que um hook é, e o que ele não é
+
+**Hook é guarda do AGENTE.** Ele intercepta chamada de ferramenta do Claude Code — `Write`, `Edit`,
+`Bash`. Quem clona o repositório e edita sem Claude Code não é interceptado por nada: o hook não existe
+para essa pessoa.
+
+**Quem protege o repositório independente de quem edita é o CI.** Instalar hook não substitui pipeline —
+**antecipa feedback**: o mesmo defeito que o CI reprovaria em minutos aparece no segundo em que o agente
+escreve a linha. As duas camadas cobram o mesmo padrão, e é por isso que o hook lê a config do projeto em
+vez de carregar números próprios: sem isso, agente e pipeline discordariam sobre o que é conforme.
+
 ## Garantia 1 — "Nada incorreto vai para o GitHub"  ·  **fail-closed (fixo)**
 
 | Hook | Evento | Garante |
@@ -26,10 +37,30 @@ Segurança não negocia: sem gitleaks, o commit/push é bloqueado. **Não** depe
 | `padrao-limiares.js` | PostToolUse(`Write/Edit`) | Função ≤N linhas, aninhamento ≤N, ≤N params; sem `print`/`console.log`; sem exceção engolida |
 | `padrao-format.js` | PostToolUse(`Write/Edit`) | Formatação consistente (formatter da linguagem) |
 
-Política em `config.json → qualidade.modo`: **block** (cobra correção) · **warn** (só avisa) · **off**.
+Política em `qualidade.modo`: **block** (cobra correção) · **warn** (só avisa) · **off**.
 `padrao-format` é best-effort (sem formatter, pula). Cobre **Python, JS/TS, Go e Java** — cada um pelo
-linter/formatter de `config.json → linguagens` (Java via `checkstyle` com config gerada dos `limiares`, e
-`google-java-format`).
+linter/formatter de `linguagens`.
+
+**O limiar não vem daqui, e isso é o desenho.** `padrao-limiares` roda o linter do projeto **com a config
+do projeto**, cujos 40/3/4 são derivados de `ferramentas/gate/limiares.mjs` — a fonte única da lei. Ele
+não injeta mais `--rule`/`--config`: enquanto injetava, o número vivia numa quarta cópia dentro de
+`hooks/` e essa cópia **vencia** a config gerada, então o hook e o `npm run lint` do mesmo repositório
+podiam cobrar valores diferentes. **Projeto sem config de linter** não tem limiar a aplicar: o hook
+sinaliza pelo `qualidade.modo` (em `warn`, avisa e segue) e nunca reprova por conta própria — inventar
+um número ali seria repor o defeito que a mudança removeu.
+
+**Não há `qualidade.proibir`**, e a ausência é decisão. O gerador emite `no-console`, `no-empty`, `T20`
+e `E` **incondicionalmente**, sem ler política: um campo que filtrasse essas regras no hook nunca
+acrescentaria cobertura — a única coisa que conseguiria fazer é **esconder do agente um erro que o
+`npm run lint` do mesmo repositório acusa**. Quem decide o que é cobrado é a config do projeto; o hook
+só decide *com que severidade avisar*, e isso é o `modo`.
+
+> **O custo desta base, declarado.** Como o repositório da base não tem config de linter na raiz, o
+> `padrao-limiares` aqui **não verifica limiar nenhum** — ele avisa e segue. Antes da mudança havia
+> verificação, porque o hook injetava os próprios números; ela foi trocada pela garantia de que hook e
+> lint nunca discordam. É custo aceito: editar `hooks/_lib.js` deixou de ser verificado por qualquer
+> coisa automática, e quem cobra o padrão nestes arquivos passa a ser a revisão. Projeto vindo do
+> template não paga esse preço — ele nasce com a config gerada.
 
 ## Garantia 3 — "Sem dependência vulnerável no GitHub"  ·  **configurável**
 
@@ -63,14 +94,30 @@ SRP, nomes descritivos, comentar o "porquê", testes na mesma entrega, encapsula
 convenções REST/camelCase, hardcoded de config **não-secreta** (porta/URL). Julgamento → skills
 `padrao-escrita`, `code-adequacao`, `git-revisao-diff`.
 
-## `config.json` — tunables (cada projeto-destino ajusta)
+## De onde vem a política
+
+Duas fontes, nesta ordem:
+
+1. **`config/verificacao.json` do projeto**, quando existe — projeto vindo do template de módulos declara
+   a política dele ali, e ela vence. O hook acha a raiz por `CLAUDE_PROJECT_DIR` e, na falta dela, subindo
+   do `cwd` até achar o arquivo.
+2. **`hooks/config.json`** desta base, como fallback — é o caso da própria base (que não tem
+   `config/verificacao.json`) e de projeto que não veio do template.
+
+O vocabulário difere de propósito entre os dois: o template nomeia **binding**
+(`typescript`/`javascript`/`python`) e usa `formatador`; os hooks nomeiam **área** (`js`/`python`) e usam
+`formatter`, porque é assim que a extensão do arquivo é mapeada. A tradução mora em `_lib.js`
+(`politicaDoProjeto`), num lugar só.
+
+## `config.json` — tunables (fallback; cada projeto-destino ajusta)
 
 ```jsonc
 {
   "qualidade": {
-    "modo": "warn",                  // block | warn | off
-    "limiares": { "linhas": 40, "aninhamento": 3, "parametros": 4 },
-    "proibir": { "printConsole": true, "excecaoEngolida": true }
+    // `modo` e so. `limiares` esta fora (40/3/4 sao LEI, fonte unica em
+    // ferramentas/gate/limiares.mjs) e `proibir` tambem (a config gerada ja emite
+    // no-console/no-empty sem ler politica — o campo so escondia erro que o lint acusa)
+    "modo": "warn"                   // block | warn | off
   },
   "formatacao": { "ativo": true },
   "cobertura": {

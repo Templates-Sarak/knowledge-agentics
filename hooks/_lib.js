@@ -73,13 +73,83 @@ function emit(obj) {
   process.exit(0);
 }
 
-/** Carrega hooks/config.json (tunables não-secretos). Nunca lança; mescla com defaults. */
+/**
+ * A raiz do PROJETO em que o agente está trabalhando, ou `null`.
+ *
+ * Procura o arquivo de política em si (`config/verificacao.json`), e não um marcador indireto como
+ * `modulos/`: se o alvo existe, a resposta é certa; se não existe em lugar nenhum, cai no
+ * `config.json` da base sem inventar raiz. É o que faz o hook rodar na PRÓPRIA base sem quebrar —
+ * ela não tem esse arquivo, então a busca falha e o fallback assume.
+ *
+ * `CLAUDE_PROJECT_DIR` primeiro porque é o contrato do ambiente de hook do Claude Code e é
+ * literalmente "o projeto em que o agente está" — o mesmo que `settings.template.json` já usa. `cwd`
+ * depois, porque o wiring do plugin declara que os scripts operam sobre o projeto-alvo por `cwd`, e
+ * porque o hook pode ser invocado à mão, sem a variável.
+ */
+function projectRoot() {
+  const partidas = [];
+  if (process.env.CLAUDE_PROJECT_DIR) partidas.push(process.env.CLAUDE_PROJECT_DIR);
+  partidas.push(process.cwd());
+  for (const partida of partidas) {
+    let atual = path.resolve(partida);
+    for (let nivel = 0; nivel < 8; nivel += 1) {
+      if (fs.existsSync(path.join(atual, "config", "verificacao.json"))) return atual;
+      const pai = path.dirname(atual);
+      if (pai === atual) break;
+      atual = pai;
+    }
+  }
+  return null;
+}
+
+/**
+ * Traduz `config/verificacao.json` (vocabulário do TEMPLATE) para o vocabulário interno dos hooks.
+ *
+ * Os dois arquivos falam línguas diferentes de propósito — o template nomeia BINDING
+ * (`typescript`/`javascript`/`python`) e usa `formatador`; os hooks nomeiam ÁREA (`js`/`python`) e
+ * usam `formatter`, porque `langOf` mapeia extensão para área. A ponte fica AQUI, num lugar só, e é
+ * o que permite os quatro hooks consumirem `cfg` sem saber de onde a política veio.
+ *
+ * `typescript` e `javascript` colapsam na mesma área `js`: quem linta `.ts` e `.js` no projeto é o
+ * mesmo eslint. `typescript` tem precedência quando os dois estão declarados.
+ */
+function politicaDoProjeto(raiz) {
+  const bruto = JSON.parse(fs.readFileSync(path.join(raiz, "config", "verificacao.json"), "utf8"));
+  const linguagens = {};
+  const doJs = bruto.linguagens?.typescript ?? bruto.linguagens?.javascript;
+  if (doJs) linguagens.js = { linter: doJs.linter, formatter: doJs.formatador };
+  if (bruto.linguagens?.python) {
+    linguagens.python = { linter: bruto.linguagens.python.linter, formatter: bruto.linguagens.python.formatador };
+  }
+  return {
+    qualidade: bruto.qualidade,
+    formatacao: bruto.formatacao,
+    cobertura: bruto.cobertura,
+    dependencias: bruto.dependencias,
+    linguagens: Object.keys(linguagens).length > 0 ? linguagens : undefined,
+  };
+}
+
+/**
+ * Carrega a política dos hooks. Nunca lança; mescla com defaults.
+ *
+ * DUAS fontes, e a ordem é a decisão: quando existe `config/verificacao.json` no projeto, a política
+ * é a DELE — o repositório que os hooks protegem é quem diz como quer ser protegido. Só na ausência
+ * dele vale o `config.json` da base, que é o caso da própria base e de projeto que não veio do
+ * template.
+ *
+ * `qualidade` tem `modo` e NADA MAIS. Nem `limiares` nem `proibir`: os limiares são LEI, com fonte única
+ * em `ferramentas/gate/limiares.mjs`. O hook não carrega mais número nenhum — ele roda o linter do
+ * projeto com a config do projeto, que é derivada daquela fonte. Enquanto o número morava aqui, ele
+ * VENCIA a config gerada, e o hook podia discordar do `npm run lint` do mesmo projeto. `proibir` saiu
+ * pelo mesmo argumento com o sinal trocado: o gerador emite `no-console`/`no-empty`/`T20`/`E` sem ler
+ * política nenhuma, então o campo nunca acrescentava cobertura — só escondia do agente um erro que o
+ * lint acusava.
+ */
 function loadConfig() {
   const defaults = {
     qualidade: {
       modo: "warn", // block | warn | off
-      limiares: { linhas: 40, aninhamento: 3, parametros: 4 },
-      proibir: { printConsole: true, excecaoEngolida: true },
     },
     formatacao: { ativo: true },
     cobertura: {
@@ -99,22 +169,31 @@ function loadConfig() {
       java: { linter: "checkstyle", formatter: "google-java-format" },
     },
   };
+  return mesclar(defaults, lerPolitica());
+}
+
+/** A política crua, do projeto quando houver, da base quando não. Nunca lança. */
+function lerPolitica() {
+  const raiz = projectRoot();
   try {
-    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
-    return {
-      qualidade: { ...defaults.qualidade, ...raw.qualidade,
-        limiares: { ...defaults.qualidade.limiares, ...(raw.qualidade?.limiares) },
-        proibir: { ...defaults.qualidade.proibir, ...(raw.qualidade?.proibir) } },
-      formatacao: { ...defaults.formatacao, ...raw.formatacao },
-      cobertura: { ...defaults.cobertura, ...raw.cobertura,
-        ferramentas: { ...defaults.cobertura.ferramentas, ...(raw.cobertura?.ferramentas) } },
-      dependencias: { ...defaults.dependencias, ...raw.dependencias,
-        ferramentas: { ...defaults.dependencias.ferramentas, ...(raw.dependencias?.ferramentas) } },
-      linguagens: { ...defaults.linguagens, ...raw.linguagens },
-    };
+    if (raiz !== null) return politicaDoProjeto(raiz);
+    return JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
   } catch {
-    return defaults;
+    return {};
   }
+}
+
+/** Mescla a política crua sobre os defaults, um nível abaixo onde a forma é aninhada. */
+function mesclar(defaults, raw) {
+  return {
+    qualidade: { ...defaults.qualidade, ...raw.qualidade },
+    formatacao: { ...defaults.formatacao, ...raw.formatacao },
+    cobertura: { ...defaults.cobertura, ...raw.cobertura,
+      ferramentas: { ...defaults.cobertura.ferramentas, ...(raw.cobertura?.ferramentas) } },
+    dependencias: { ...defaults.dependencias, ...raw.dependencias,
+      ferramentas: { ...defaults.dependencias.ferramentas, ...(raw.dependencias?.ferramentas) } },
+    linguagens: { ...defaults.linguagens, ...raw.linguagens },
+  };
 }
 
 /** Mapeia extensão de arquivo para a área de padrão. */
@@ -130,6 +209,7 @@ function langOf(file) {
 module.exports = {
   readInput,
   commandExists,
+  projectRoot,
   run,
   denyPreTool,
   askPreTool,

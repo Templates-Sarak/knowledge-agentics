@@ -2,8 +2,26 @@
   "$comentario": "Politica de VERIFICACAO do projeto — o que e de fato ajustavel, e nada alem. Lei dona: specs/arquitetura/04-regras.md §4.7. Limiar de escrita NAO entra aqui: 40/3/4 sao LEI, enunciados no §4.7 e com fonte unica em ferramentas/gate/limiares.mjs. Se o projeto pudesse reescreve-los, a lei afirmaria um numero que qualquer repositorio desmente — e o gate viaja dentro do modulo extraido, que sai sem este arquivo. A forma de `linguagens.*` repete de proposito: o validador nao suporta $ref (esquema.mjs), e inline e melhor que uma dependencia que ele nao le.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["cobertura", "dependencias", "linguagens"],
+  "required": ["qualidade", "formatacao", "cobertura", "dependencias", "linguagens"],
   "properties": {
+    "qualidade": {
+      "$comentario": "Severidade com que o hook `padrao-limiares` cobra o padrao de escrita. E politica porque a dureza depende do momento do projeto — legado em adequacao trabalha em `warn`, projeto novo em `block`. Tem `modo` e NADA MAIS — nem `limiares`, nem `proibir`, e `additionalProperties: false` faz declarar qualquer um dos dois REPROVAR. `limiares` esta fora porque os 40/3/4 sao LEI (§4.7), com fonte unica em ferramentas/gate/limiares.mjs. `proibir` (printConsole/excecaoEngolida) esta fora pelo mesmo argumento com o sinal trocado: gerar-config-lint.mjs emite no-console, no-empty, T20 e E INCONDICIONALMENTE, sem ler politica, entao o campo nunca acrescentava cobertura — so escondia do agente um erro que o proprio lint do projeto acusava.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modo"],
+      "properties": {
+        "modo": { "type": "string", "enum": ["block", "warn", "off"] }
+      }
+    },
+    "formatacao": {
+      "$comentario": "O hook `padrao-format` formata o arquivo editado. E politica porque um repositorio em migracao pode querer desligar a formatacao automatica sem desligar o resto. Best-effort por desenho: sem formatador instalado, o hook pula em silencio.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ativo"],
+      "properties": {
+        "ativo": { "type": "boolean" }
+      }
+    },
     "cobertura": {
       "$comentario": "Alvo de cobertura de teste. E politica porque depende da maturidade e do risco do projeto, e porque o gate NAO a mede — rodar teste e do comando `verificar`, nunca do gate (§7.1).",
       "type": "object",
