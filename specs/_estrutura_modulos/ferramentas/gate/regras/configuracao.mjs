@@ -23,7 +23,7 @@ import { carregarEsquema, validar } from '../esquema.mjs';
 import { PADRAO_CREDENCIAL, varrerRaiz } from './operacao.mjs';
 // `textoDeCodigo` remove comentario e docstring. Regra que julga CODIGO nao pode ler o texto cru:
 // a chave citada num comentario ("nunca leia MODULO_SEGREDO aqui") virava uso de verdade.
-import { textoDeCodigo } from './isolamento.mjs';
+import { textoDeCodigo } from '../texto.mjs';
 // A MESMA função que o `--conferir` do gerador usa. Importar (e não reimplementar) é o que impede
 // a regra e o gerador de divergirem — o defeito que o gerador existe para eliminar, um nível acima.
 import { BINDINGS, saidaDe } from '../../gerar-config-lint.mjs';

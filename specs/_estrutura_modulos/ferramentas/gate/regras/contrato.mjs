@@ -7,10 +7,17 @@
  * está na spec existe no código, o que está no código existe na spec, e nada sensível vaza.
  *
  * A leitura da spec mora em `../spec.mjs`, compartilhada com `consome-contrato` (Isolamento).
+ *
+ * Os dois extratores que julgam CODIGO — `rotasDoCodigo` e `chavesDaProjecao` — leem
+ * `textoDeCodigo`, nunca `arquivo.conteudo`. Sobre o texto cru, um comentario que DOCUMENTA a lei
+ * ("`paraContrato` nunca deve projetar `{ cpf }`") virava a violacao que ele proibe, e uma rota
+ * desativada citada em comentario virava rota fora do contrato. Quem le a SPEC continua em
+ * `spec.conteudo`, de proposito: em YAML nao ha comentario a descontar do que importa aqui.
  */
 import {
   leiturasFalhas, normalizar, propriedadesDaResposta, rotasDaSpec, servidorDaSpec, specDe,
 } from '../spec.mjs';
+import { textoDeCodigo } from '../texto.mjs';
 
 const OBRIGATORIAS = ['/health', '/meta', '/resumo'];
 
@@ -72,8 +79,9 @@ function rotasDoCodigo(ctx) {
   const rotas = new Set();
   for (const arquivo of ctx.codigo) {
     if (arquivo.eTeste || !/^api\//.test(arquivo.rel)) continue;
+    const texto = textoDeCodigo(arquivo);
     for (const padrao of padroes) {
-      for (const achado of arquivo.conteudo.matchAll(padrao)) rotas.add(normalizar(achado[2]));
+      for (const achado of texto.matchAll(padrao)) rotas.add(normalizar(achado[2]));
     }
   }
   return rotas;
@@ -183,8 +191,24 @@ function conferirSegmentos(rota) {
   return achados;
 }
 
-/** Janela entre o nome da projeção e a `{` que a abre — assinatura, tipos, docstring. */
+/** Janela entre o nome da projeção e a `{` que a abre — assinatura e tipos. */
 const JANELA_ATE_ABERTURA = 900;
+
+/**
+ * Fronteira de construção entre o nome e a `{`. Presente, o nome era uma REFERÊNCIA, não uma
+ * definição — e a `{` achada adiante pertence a outra coisa.
+ *
+ * `registros.map(paraContrato)` dentro de `paraColecao` casava o nome, não tinha `{` própria, e o
+ * `indexOf` caminhava até a abertura da função SEGUINTE: uma função que não publica nada — um
+ * `chaveDeCache` devolvendo `{ created_at }` — era lida como projeção e acusada por
+ * `payload-camelcase`. Falso positivo sobre código correto, que é a direção de erro que este gate
+ * não aceita, e a fonte da terceira cópia da mesma mensagem.
+ *
+ * O discriminador é `}` ou `;` no caminho, e ele não custa falso negativo: da assinatura à `{` do
+ * corpo não há nem um nem outro em nenhuma das três formas que a doutrina usa — `function f(a): T {`,
+ * `const f = (a) => ({`, `def f(a) -> dict:` + `return {`.
+ */
+const FIM_DE_CONSTRUCAO = /[};]/;
 
 /**
  * Fim (exclusivo) do trecho que abre em `inicio`, contando profundidade de chaves.
@@ -219,22 +243,38 @@ function regioesDeProjecao(conteudo) {
   for (const nome of conteudo.matchAll(/(?:paraContrato|para_contrato)\w*/g)) {
     const abertura = conteudo.indexOf('{', nome.index);
     if (abertura === -1 || abertura - nome.index > JANELA_ATE_ABERTURA) continue;
+    if (FIM_DE_CONSTRUCAO.test(conteudo.slice(nome.index, abertura))) continue;
     const fim = fimBalanceado(conteudo, abertura);
     if (fim !== -1) regioes.push(conteudo.slice(abertura, fim));
   }
   return regioes;
 }
 
-/** Chaves de objeto literal devolvidas pela projeção de saída do mapeador. */
+/**
+ * Chaves de objeto literal devolvidas pela projeção de saída do mapeador, **sem repetir o par
+ * (arquivo, chave)**.
+ *
+ * A mensagem das três consumidoras nomeia arquivo e campo, e mais nada — a região não guarda número
+ * de linha. Duas regiões que projetam o mesmo campo produziam, então, a MESMA frase duas vezes, e a
+ * segunda não dizia ao autor nada que a primeira já não dissesse: um defeito, uma mensagem. Um
+ * mapeador com projeção de detalhe e de resumo publicando o mesmo campo é o caso ordinário disso.
+ *
+ * Aqui, e não em cada regra: `divergenciasDaProjecao` já tinha o `vistos` dela, e as outras duas
+ * teriam de ganhar cópias — três guardas para um dado que nasce duplicado num lugar só.
+ */
 function chavesDaProjecao(ctx) {
+  const vistos = new Set();
   const chaves = [];
   for (const arquivo of ctx.codigo) {
     if (arquivo.eTeste || !/mapeador/i.test(arquivo.rel)) continue;
-    for (const regiao of regioesDeProjecao(arquivo.conteudo)) {
+    for (const regiao of regioesDeProjecao(textoDeCodigo(arquivo))) {
       // Chave apos `{` ou `,` — nao apenas no inicio da linha. Objeto escrito numa linha so
       // (`{ hash: x, criado_em: y }`) escapava inteiro quando a extracao exigia inicio de linha.
       // A regiao COMECA na `{`, entao a primeira chave tem o mesmo delimitador que as demais.
       for (const achado of regiao.matchAll(/[{,]\s*["']?([A-Za-z_]\w*)["']?\s*:/g)) {
+        const par = `${arquivo.rel}|${achado[1]}`;
+        if (vistos.has(par)) continue;
+        vistos.add(par);
         chaves.push({ chave: achado[1], arquivo: arquivo.rel });
       }
     }

@@ -23,6 +23,9 @@ import { gatewaysDe, temArquivoEm } from './estrutura.mjs';
 // conexao — a pergunta e "este gateway fala com banco?", nao "esta linha e SQL?" —, e e essa
 // composicao que permite as duas regras compartilharem os verbos sem compartilharem o recorte.
 import { SQL_FONTE } from './operacao.mjs';
+// O texto sem comentario nem docstring. Mora em `../texto.mjs` porque CINCO familias o usam, e
+// porque de dentro de `regras/` ele fechava um ciclo com `operacao.mjs` (ver o cabecalho de la).
+import { textoDeCodigo } from '../texto.mjs';
 
 const SDKS_FORNECEDOR = [
   '@supabase/', 'pg', 'mysql', 'mysql2', 'aws-sdk', '@aws-sdk/', 'firebase',
@@ -130,22 +133,6 @@ export function importesDe(arquivo) {
     for (const achado of textoDeCodigo(arquivo).matchAll(padrao)) alvos.add(achado[1]);
   }
   return [...alvos];
-}
-
-/**
- * O texto do arquivo **sem comentário nem docstring** — o que `conteudo` deveria ter sido em toda
- * regra que julga CÓDIGO.
- *
- * Uma implementação, e ela existe porque o mesmo defeito apareceu em seis lugares: seis cópias de
- * `.map((l) => l.texto).join('\n')` divergiriam no primeiro ajuste. Quem julga texto que NÃO é
- * código — `migrations` procurando `-- rollback`, `lerParesEnv` sobre `.env.example`, os leitores de
- * `openapi.yaml`, `juntarSql` — continua em `conteudo`, de propósito: ali o comentário é o dado.
- *
- * A junção por `\n` preserva os padrões ancorados por linha (`^`), e as linhas mantêm o número
- * original, então a posição relatada ao autor continua certa.
- */
-export function textoDeCodigo(arquivo) {
-  return arquivo.linhasCodigo.map((linha) => linha.texto).join('\n');
 }
 
 /** Um import relativo que sobe acima da raiz do módulo saiu da fronteira. */

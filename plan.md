@@ -248,7 +248,7 @@ e `db.query(id + ' from x')` sem verbo na linha não acusa — família conserva
 
 ---
 
-## Bloco J — Falso positivo do extrator de import  ✅ **J.1 concluída**
+## Bloco J — Falso positivo do extrator de import  ✅ **CONCLUÍDO** *(J.1 e J.2)*
 
 > Achado da investigação da A.3. `importesDe` (`regras/isolamento.mjs:109`) lê `arquivo.conteudo` —
 > texto cru —, então import escrito em **comentário** é acusado:
@@ -269,12 +269,25 @@ e `db.query(id + ' from x')` sem verbo na linha não acusa — família conserva
 - [x] Limite residual no §7.2: string literal continua sendo vista — é código de verdade, e separar
       literal de instrução exigiria AST
 
-### J.2 — os dois extratores posicionais  *(pendente)*
-- [ ] `contrato.mjs:76` (registro de rota) e `:233` (`regioesDeProjecao`) **têm o mesmo falso
-      positivo**, provado: rota comentada vira rota fantasma; mapeador comentado acusa campo. Não
-      foram consertados porque são leitores **posicionais** — casamento multipartes e delimitação por
-      balanceamento de chaves —, com raio de **4 regras** (`contrato-sincronizado`,
-      `projecao-contrato`, `payload-camelcase`, `sensivel-em-saida`). Declarado no §7.2
+### J.2 — os dois extratores posicionais  ✅
+- [x] `contrato.mjs:76` (registro de rota) e `:233` (`regioesDeProjecao`) tinham o mesmo falso
+      positivo, com raio de **4 regras** (`contrato-sincronizado`, `projecao-contrato`,
+      `payload-camelcase`, `sensivel-em-saida`). Os dois leem `textoDeCodigo`. O comentário que
+      DOCUMENTA a lei — *"`paraContrato` nunca deve projetar `{ cpf }`"* — deixou de ser a violação
+      que ele proíbe
+- [x] **`textoDeCodigo` subiu para `ferramentas/gate/texto.mjs`** — cinco famílias a consomem, e
+      enquanto morava em `regras/isolamento.mjs` a chegada de `operacao.mjs` fechava um **ciclo** que
+      funcionava por içamento. Precedente do `spec.mjs`, com argumento mais forte
+- [x] **Travado por máquina, e é a primeira vez neste arco.** A técnica: chamariz num caso cuja regra
+      esperada é OUTRA — o harness compara conjunto de ids (`executar.mjs:277-279`), então chamariz no
+      caso da própria regra não trava nada. Revertendo os extratores: `id NAO declarado:
+      contrato-sincronizado, projecao-contrato, payload-camelcase, sensivel-em-saida`, nos três bindings
+- [x] Dois consertos que não estavam no plano e se justificaram: `FIM_DE_CONSTRUCAO` (sítio de
+      referência lido como definição — FP sobre código correto, com trava própria) e dedup por
+      (arquivo, campo). Mais `rota-publica-autenticada` lendo `textoDeCodigo` — falso negativo que
+      **aprovava em silêncio**, classe diferente do `config-morta`, que só deixa de avisar
+- [x] O limite maior do extrator ficou **declarado, não consertado**: `{` na assinatura desvia a
+      leitura (8 formas medidas de 18, três guardas testadas e falsificadas). Bloco H
 
 ### Duas leituras cruas de direção OPOSTA — decisão, não conserto
 - [ ] `config-morta` e `rota-publica-autenticada` ficam mais **frouxas** ao ler cru: chave citada em
@@ -413,6 +426,23 @@ feedback.
 ---
 ## Bloco H — Dívidas registradas
 
+- [ ] **`{` na assinatura desvia o extrator de projeção inteiro** (medido na J.2, declarado no §7.2).
+      `regioesDeProjecao` abre na PRIMEIRA `{` depois do nome, não na do corpo: tipo de retorno inline,
+      tipo de parâmetro inline, `Array<{…}>`, genérico com objeto e default `= {}` fazem a região ser a
+      ANOTAÇÃO — nome de tipo acusado como campo publicado (**FP**) e o campo real sem verificação
+      nenhuma (**FN**: um `cpf` publicado escapa de `sensivel-em-saida`). **8 formas medidas de 18**;
+      molde imune (`): Record<string, unknown> {`), Python só pelo default mutável — que o `B006` do
+      ruff já proíbe. **Não tem guarda barata**: das três testadas, parêntese cega a arrow (`=> ({…})`)
+      e o objeto aninhado, olhar adiante da região cobre 2 de 8, e o lookahead de assinatura cai em dois
+      parâmetros com tipo inline. O conserto é a região passar a ser o **objeto literal em posição de
+      retorno** — redesenho com casos próprios, e mata junto o FP do objeto intermediário. Atenção para
+      quem pegar: `FIM_DE_CONSTRUCAO` é medido do NOME até a abertura, então qualquer pulo o dispara —
+      ele tem de valer só para o primeiro candidato
+- [ ] **`rota-publica-autenticada` foi endurecido sem caso** (J.2). A cláusula de origem passou a ler
+      `textoDeCodigo`, fechando um falso negativo que aprovava em silêncio. Travá-la exige um caso que
+      apague a leitura real de `rotasPublicas` da `api/`, e o arquivo difere por binding — a operação
+      portável é um ALVO lógico novo em `executar.mjs`. A direção perigosa (falso positivo) está coberta
+      pelos três moldes verdes; a nova estritura, não
 - [ ] **A base perdeu a cobrança de limiar sobre si mesma** (custo aceito na G.1, declarado no
       `hooks/README.md`). `knowledge-agentics` não tem config de linter na raiz, então `padrao-limiares`
       avisa e segue. Fechar exige gerar uma config na base — decisão à parte, e ela usa eslint 8
@@ -477,13 +507,17 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
            G.1  política dos hooks     hook e lint concordam por construção
            G.1b `proibir` fora         G.2 (copiar arquivos) CANCELADA — o plugin já os entrega
 
-AGORA      J.2  os dois extratores posicionais  (4 regras de raio)
-           F    insumos de CI          junto do pipeline, não antes
+           J.2  os dois extratores posicionais  4 regras, travado por máquina — Bloco J fechado
+
+AGORA      F    insumos de CI          junto do pipeline, não antes
            H    dívidas                a qualquer momento
            B.3  vetor residual de SQL no módulo — reavaliar depois de I.3
 ```
 
-**O que resta.** J é conserto de defeito real no gate; F é orquestração de CI; H é dívida.
+**O que resta.** F é orquestração de CI; H é dívida; B.3 é uma reavaliação. **Nenhum bloco de
+verificação está aberto.**
+J fechou: os extratores de import e de contrato leem `textoDeCodigo`, e o falso positivo do
+comentário está travado por máquina nos três bindings.
 G fechou: o hook deixou de carregar número próprio, e agora hook e `npm run lint` cobram a mesma
 config — que é derivada de `limiares.mjs`. A meta de "~70 regras, todas com caso" foi cumprida com **72** — e o catálogo não cresce mais
 por este plano.

@@ -5,7 +5,7 @@
  * `migrations` le `conteudo` CRU de proposito — o `-- rollback` que ela procura E um comentario
  * SQL. As demais, quando julgam codigo, leem `textoDeCodigo`.
  */
-import { textoDeCodigo } from './isolamento.mjs';
+import { textoDeCodigo } from '../texto.mjs';
 
 const PADRAO_MIGRATION = /^\d{4}-[a-z][a-z0-9]*(-[a-z0-9]+)+\.sql$/;
 

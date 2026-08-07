@@ -13,6 +13,7 @@
  * e sobre o conteúdo bruto ele viraria violação da própria regra que a docstring descreve.
  */
 import { leiturasFalhas, normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
+import { textoDeCodigo } from '../texto.mjs';
 
 /**
  * Sufixo que denuncia CREDENCIAL numa chave de env. Vocabulário fechado, e o ÚNICO — exportado
@@ -183,7 +184,13 @@ function contextoSecretoPerto(texto, anterior) {
  */
 function conferirOrigemDaLista(daApi) {
   const achados = [];
-  if (!daApi.some((a) => a.conteudo.includes('rotasPublicas'))) {
+  // `textoDeCodigo`, e nao `conteudo`: a clausula afirma que a `api/` LE o manifesto, e prosa nao le
+  // nada. Sobre o texto cru, a docstring que EXPLICA `rotasPublicas` — o molde tem tres — satisfazia
+  // a checagem, e um modulo que tivesse apagado a leitura de verdade passava calado por causa do
+  // comentario que a descreve. Falso negativo, e do tipo que aprova em silencio, que e o que o §7
+  // inteiro existe para evitar. Nos tres moldes a leitura real esta em codigo (`manifesto.rotasPublicas`,
+  // `manifesto["rotasPublicas"]`), entao fechar o buraco nao acusa nenhum deles.
+  if (!daApi.some((a) => textoDeCodigo(a).includes('rotasPublicas'))) {
     achados.push('api/ nunca le modulo.json:rotasPublicas — a isencao de autenticacao nao pode vir'
       + ' de outro lugar, senao o manifesto declara uma coisa e a cadeia aplica outra');
   }

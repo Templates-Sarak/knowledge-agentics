@@ -794,9 +794,16 @@ export const CASOS = [
     // Arquivo novo em `api/src/` cujo nome casa com /mapeador/i: vale nos tres bindings, sem
     // depender do caminho do mapeador de cada um (`mapeadores/index.ts` x `mapeadores.py`).
     // `hash` esta declarado em `Registro`; `campoFantasma` nao esta em resposta nenhuma.
+    //
+    // As duas ultimas linhas travam uma NAO-acusacao, pela tecnica do caso do `log`: `naoPublica`
+    // nao e projecao nenhuma, e `created_at` NAO pode ser acusado. Se o extrator voltar a aceitar
+    // REFERENCIA a `paraContrato*` como sitio de projecao, o `map(...)` engata na abertura da funcao
+    // seguinte, `payload-camelcase` acusa `created_at`, e o id extra reprova este caso na hora.
     mutar: (m) => m.escrever(
       'api/src/mapeador-extra.ts',
-      'export function paraContratoExtra(r) {\n  return { hash: r.hash, campoFantasma: r.fantasma };\n}\n',
+      'export function paraContratoExtra(r) {\n  return { hash: r.hash, campoFantasma: r.fantasma };\n}\n'
+        + 'export const paraContratoLista = (rs) => rs.map(paraContratoExtra);\n'
+        + 'export function naoPublica(r) {\n  return { created_at: r.criadoEm };\n}\n',
     ),
   },
   {
@@ -877,23 +884,44 @@ export const CASOS = [
     // `conteudo` cru, cada uma emite um id NAO DECLARADO e este caso reprova na hora. Sem ele, a
     // nao-acusacao ficaria garantida so por inspecao — a lacuna do harness registrada no Bloco H.
     //
+    // As DUAS ultimas linhas do bloco js e o `mapeador-doc` cobrem a familia Contrato, e cada um
+    // trava um extrator diferente de `contrato.mjs`: a rota comentada acusaria
+    // `contrato-sincronizado` (extrator `rotasDoCodigo`), e a projecao comentada acusaria
+    // `projecao-contrato`, `payload-camelcase` e `sensivel-em-saida` de uma vez (extrator
+    // `chavesDaProjecao`) — quatro ids NAO DECLARADOS na primeira volta ao texto cru.
+    //
     // O defeito de verdade e o `console.log`/`print`, e e o unico achado que pode sair daqui.
     exigeVizinho: true,
-    mutar: (m) => m.acrescentarEm('rotas', {
-      js: '\n// A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
-        + "//   import { X } from '@<escopo>/vizinho';\n"
-        + "//   import { c } from '../../adapters/memoria/index.js';\n"
-        + "//   import pg from 'pg';\n"
-        + '//   const s = process.env.MOLDE_SEGREDO_DOC;\n'
-        + '//   select nome from vizinho_metadados\n'
-        + "export const gritar = () => console.log('este si e defeito');\n",
-      py: '\n\n# A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
-        + '#   from adapters.memoria import criar\n'
-        + '#   import psycopg2\n'
-        + '#   s = os.environ["MOLDE_SEGREDO_DOC"]\n'
-        + '#   select nome from vizinho_metadados\n'
-        + 'def gritar():\n    print("este si e defeito")\n',
-    }),
+    mutar: (m) => {
+      // `cpf` sensivel e o que arma a metade `sensivel-em-saida` do chamariz do mapeador. Nao
+      // acusa `saida-sensivel`: campo nenhum chamado `cpf` aparece em schema do contrato do molde.
+      m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
+      // Arquivo cujo nome casa /mapeador/i e cujo conteudo e SO comentario: projecao nenhuma
+      // existe aqui, e nada pode ser acusado. Vale nos tres bindings — `linhasCodigo` descarta a
+      // linha `//` qualquer que seja a extensao.
+      m.escrever(
+        'api/src/mapeador-doc.ts',
+        '// A projecao, escrita como documentacao. NENHUMA destas chaves e publicada:\n'
+          + '//   export function paraContratoDoc(r) { return { cpf: r.cpf, criado_em: r.criadoEm }; }\n',
+      );
+      m.acrescentarEm('rotas', {
+        js: '\n// A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
+          + "//   import { X } from '@<escopo>/vizinho';\n"
+          + "//   import { c } from '../../adapters/memoria/index.js';\n"
+          + "//   import pg from 'pg';\n"
+          + '//   const s = process.env.MOLDE_SEGREDO_DOC;\n'
+          + '//   select nome from vizinho_metadados\n'
+          + "//   router.get('/rota-desativada', listarLegado);\n"
+          + "export const gritar = () => console.log('este si e defeito');\n",
+        py: '\n\n# A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
+          + '#   from adapters.memoria import criar\n'
+          + '#   import psycopg2\n'
+          + '#   s = os.environ["MOLDE_SEGREDO_DOC"]\n'
+          + '#   select nome from vizinho_metadados\n'
+          + '#   @router.get("/rota-desativada")\n'
+          + 'def gritar():\n    print("este si e defeito")\n',
+      });
+    },
   },
   {
     regra: 'log',

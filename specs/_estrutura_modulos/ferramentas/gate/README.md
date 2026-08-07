@@ -103,6 +103,10 @@ Ative com `git config core.hooksPath .githooks`.
 5. **Leitura de `contrato/openapi.yaml` já existe** em `ferramentas/gate/spec.mjs` (`specDe`,
    `rotasDaSpec`, `operacoesDaSpec`, `normalizar`). Importe de lá — duas famílias a usam, e um segundo
    parser divergiria do primeiro sem ninguém notar.
+6. **Regra que julga CÓDIGO lê `textoDeCodigo`** (`ferramentas/gate/texto.mjs`), nunca
+   `arquivo.conteudo`: comentário e docstring não são código, e a lei escrita num comentário viraria
+   violação dela mesma (`04-regras.md` §7.2). `conteudo` é para quem julga texto que **não** é código —
+   `-- rollback` numa migration, `.env.example`, o próprio `openapi.yaml`.
 
 ## O molde também é validado
 
