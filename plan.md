@@ -371,9 +371,85 @@ legítima — o molde do binding não tem a peça (`web/` no Python; mapeador Py
 
 > Construir **junto do pipeline**, não antes: o formato de saída é ditado pelo consumidor.
 
-- [ ] `ferramentas/afetados.mjs` — arquivo alterado → módulo → consumidores transitivos.
-      **Maior retorno da lista**: sem ele o CI roda tudo a cada commit
+### O desenho, decidido — e a ADR-005 **não** muda
+
+A **ADR-005** não proíbe conteúdo de CI no template; ela proíbe **config de provedor**, e manda o
+template trazer *"o contrato de acoplamento (argumentos, exit 0/1, saída JSON) para que qualquer
+executor o chame em uma linha"*. Hoje esse contrato existe para **um** dos seis verificadores — o gate.
+A lacuna real não é "falta pipeline": é **falta o contrato de acoplamento de cinco deles**.
+
+`.githooks/pre-commit` **é git, não é provedor** — não se perde ao trocar de CI. Entregá-lo é entregar
+contrato de acoplamento, exatamente o que a ADR pede. E o argumento empírico dela (*"num sistema real,
+a CI existia e não rodava, e o que segurou a conformidade foi o verificador local"*) empurra **para** o
+hook de git.
+
+O `03-operacao.md` §7 já prescreve três camadas de custo (milissegundos · segundos · dezenas de
+segundos) e o template não implementa a fiação de nenhuma. A F.2 é a doutrina saindo do papel:
+
+```
+pre-commit  (segundos)   gate nos módulos AFETADOS + env + formato + lint
+pre-push    (dezenas)    tipos + testes nos módulos afetados
+CI          (minutos)    tudo em tudo + os cinco comandos novos
+```
+
+**O `afetados.mjs` foi construído para o CI e o consumidor de maior valor dele é o hook de git** — sem
+seleção, `tsc` × N + `vitest` × N no pre-commit é hook desativado em duas semanas.
+
+**Liberdade de ferramenta = exit code + relatório legível por máquina.** Actions/GitLab/Jenkins querem
+exit code; SonarQube quer lcov, JUnit XML, SARIF/JSON — ele não roda o comando, ele **lê a saída**.
+Com os dois, o template nunca precisa saber nome de provedor nenhum.
+
+**Quatro decisões tomadas:** (a) **template dono** do `.githooks/`, a `meta-iniciar-repositorio` só
+instala e ativa · (b) **três camadas** · (c) **sim à regra 74** que verifica que o hook está no lugar ·
+(d) **relatório legível por máquina já agora**.
+
+**Limite a declarar, não esconder:** o hook de git é **opt-in por clone** (`core.hooksPath` é config
+local, não vem no `git clone`) e **`--no-verify` fura**. Pre-commit é feedback rápido; **CI é a única
+cobrança que não se fura** — a mesma frase que já está no `hooks/README.md` para os hooks do agente.
+
+### O defeito de coerência que a F.2 conserta
+
+Existem **dois `pre-commit` documentados em dois lugares, e nenhum roda a verificação**:
+
+| Onde | O que faz |
+|---|---|
+| `gate/README.md:54-61` | só `validar.mjs --todos` — e **o template não entrega o arquivo** |
+| `meta-iniciar-repositorio`, passo 6 | *"gate de segredos + auto-índice"* — não roda o gate nem a cadeia |
+
+E os configs de lint dos três bindings **já ignoram `.githooks/**`**: o template antecipa a pasta e não
+a entrega. Dependência documentada sem artefato — a família de defeito que este plano matou 4 vezes.
+
+- [x] ~~`ferramentas/afetados.mjs`~~ — **feito**. Caminhos alterados → módulos a reverificar, `(raiz)`,
+      ou `(tudo)`. **Princípio: erra para mais, nunca para menos** — caminho não reconhecido, módulo
+      apagado e `modulo.json` ilegível resolvem em `(tudo)`, porque selecionar de menos deixa código
+      não verificado passar com o pipeline verde. Cálculo **puro** (`calcularAfetados`,
+      `normalizarCaminho`) separado da única função que toca disco (`montarGrafo`), no precedente do
+      `spec.mjs` — é o que permite o `--autoteste` embutido provar 19 casos com fixture em memória.
+      `execFileSync` isolado em `caminhosAlteradosDesde` (o `--desde`), o único ponto que executa
+      comando. A propagação anda **ao contrário** de `consome`: se A consome B, mudança em B afeta A
+- [ ] **Revisitar o alcance de `adapters/` quando a F.2 entrar.** Hoje `adapters/x.ts` afeta só
+      `(raiz)` — correto para o gate (adapter é injetado, módulo não o importa, e o escopo `raiz`
+      cobre `adapter-isolado`). Mas quando o pipeline ganhar migrations contra banco efêmero e teste
+      de integração pela composição real, mudança em adapter passa a afetar quem exercita aquele
+      caminho, e o recorte precisa de outra resposta
+### F.2a — a escada  ⟵ **AGORA**  *(fia o que já existe)*
+- [ ] `.githooks/pre-commit` e `.githooks/pre-push` no esqueleto, **donos do template**. `criar-projeto.mjs`
+      já copia `bindings/<b>/raiz` inteiro com `cpSync recursive` — dotfile incluído —, então falta
+      **ativação** (`core.hooksPath`) e **bit de execução**, não cópia
+- [ ] Um hook, três bindings, **sem N cópias que precisam divergir** (o custo que cancelou a G.2)
+- [ ] `pre-commit` alimenta o `afetados.mjs` com `git diff --cached`; `(tudo)` roda tudo **e diz por quê**
+- [ ] **Regra 74** — escopo `raiz`: `.githooks/pre-commit` existe e chama a cadeia. Não afirma que o hook
+      ROBOU: `core.hooksPath` é config local e o gate não roda git de propósito — o mesmo limite que
+      `gitignore-segredo` já declara (*"não afirma que o `.env` está versionado"*)
+- [ ] `03-operacao.md` §7 ganha a fiação das três camadas; `04-regras.md` ganha a 74 + §7.2
+- [ ] `meta-iniciar-repositorio` deixa de inventar hook — instala e ativa o do template. A lei dela
+      (*"só acrescenta ou mescla"*) já garante que a parte de segredo + índice não se perde
+
+### F.2b — os cinco comandos novos  *(depois da F.2a)*
 - [ ] Detector de breaking change de contrato *(precisa de baseline git — fora do gate por isso)*
+- [ ] Relatório legível por máquina: lcov, JUnit XML, SARIF/JSON — o contrato que faz SonarQube
+      funcionar sem o template saber que ele existe
+- [ ] Exemplo de fiação de CI **como documentação** no `03-operacao.md`, nunca como artefato de provedor
 - [ ] **`dependencia-fixada` é etapa de CI, não regra de gate** — decidido e medido em F.0, registrado
       no §7.1 ("Deixaram de ser regra"). O passo é `npm ci`, que **falha sozinho** sem lockfile, com
       mensagem melhor que a do gate. Motivo: lockfile é produto do `npm install`, e o gate promete
@@ -384,6 +460,42 @@ legítima — o molde do binding não tem a peça (`web/` no Python; mapeador Py
 - [ ] Migrations executáveis — sobem e descem contra banco efêmero
 - [ ] Estágio 0: `gitleaks` + `git ls-files` procurando `.env` versionado — **fail-closed**
 - [ ] Audit de dependência — fail-open, severidade vinda da política
+
+> **Três dos cinco são precondição de CD, não CI por esporte:** sem **build** não há artefato para
+> publicar (e o `package.json` da raiz TS/JS **não tem** `build` — só o módulo tem `build:web`); sem
+> **migration executável nos dois sentidos** o `-- rollback` que a regra `migrations` já exige nunca
+> foi rodado, e rollback nunca executado é rollback que não existe; sem **detector de breaking change**
+> não se sabe se o deploy pode ser rolling ou precisa de `/api/v2/` convivendo com a v1
+> ([[02-contrato-e-dados]] §5). Os outros dois são o portão fail-closed antes de algo sair.
+
+---
+
+## Bloco CD — fora deste plano, e o motivo está na doutrina
+
+`00-arquitetura.md` §5: *"**Modularidade não é topologia de deploy.** A independência que importa é a de
+**código**, não a de deploy […] O dia em que um módulo precisar de infraestrutura própria, a mudança é
+de operação, não de código."*
+
+As três camadas da F.2 respondem *"isto está correto?"* — idempotentes e reversíveis. CD responde
+*"ponha isto na frente de gente"* — nem uma nem outra. Não é o quarto degrau: é o que **consome** a
+escada, e a costura é o **exit code** do CI.
+
+**O template já cobra propriedade de CD onde CD é código**, e vale ver quanto: `/health` e `/meta` são
+rotas **obrigatórias** (regra `contrato`) — são as probes que qualquer orquestrador chama; `fallback-raiz`,
+`fallback-silencioso` e `env-declarado` proíbem o default silencioso porque ele *"vira o valor de
+produção no dia em que a chave falta"* (§7.2); e `gate --extracao` responde literalmente *"este módulo
+está pronto para virar serviço?"*.
+
+**O que o template não pode possuir, com o motivo já registrado:** ambientes (o §5 acima, mais a decisão
+já tomada de **não** modelar estágio) · segredos de produção · gatilho e estratégia de release · o alvo
+(as skills `deploy-vercel` e `deploy-docker` são as donas, HITL porque publicar é externo e irreversível).
+
+- [ ] **A pergunta que precede qualquer pipeline de CD: qual é a unidade de release?** O repositório
+      inteiro, ou o módulo? O template deixa as duas possíveis de propósito — é o sentido do
+      `--extracao`. A resposta é **por projeto**, não por template: responder aqui seria escolher a
+      topologia que o §5 diz que o template não escolhe
+- [ ] Se algum dia CD entrar no template, a forma honesta é a mesma combinada para o CI:
+      **ADR novo + exemplo documentado**, nunca artefato de provedor
 
 ---
 
@@ -539,9 +651,12 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
 
            F.0  fechar o catálogo     B.3 virou regra (73) · `dependencia-fixada` virou CI
 
-AGORA      F.1  `afetados.mjs`         o único insumo de CI que não é pipeline
-           F.2  o pipeline             build, migrations, gitleaks, audit, breaking-change
-           H    dívidas                a qualquer momento
+           F.1  `afetados.mjs`         grafo reverso de `consome`, erra para mais — 19 casos próprios
+
+AGORA      F.2a a escada             `.githooks/` dono do template + 3 camadas + regra 74
+           F.2b os cinco comandos    build, migrations, gitleaks, audit, breaking-change + relatório
+           H    dívidas              a qualquer momento
+           CD   fora do plano        falta responder a unidade de release — é por projeto
 ```
 
 **O que resta.** F.1 é insumo; F.2 é o pipeline; H é dívida. **Nenhuma pergunta de verificação está
