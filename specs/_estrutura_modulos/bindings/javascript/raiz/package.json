@@ -18,6 +18,8 @@
     "//tipos": "raiz (fiacao e packages) MAIS cada modulo pelo jsconfig proprio dele — modulo que so passa no type-check junto do resto nao esta pronto para extracao. Em JS o contrato de tipo e JSDoc, cobrado por `checkJs`.",
     "tipos": "tsc --noEmit -p jsconfig.json && npm run tipos --workspaces --if-present",
     "verificar": "npm run validar && npm run validar:env && npm run formato && npm run lint && npm run tipos && npm test",
+    "//ci:contrato": "So CI: compara o contrato/openapi.yaml com o commit anterior e nomeia quem quebra. Custa git + comparar dois estados, por isso NAO entra no verificar local nem no pre-commit.",
+    "ci:contrato": "node ferramentas/contrato-compativel.mjs",
     "//formato": "Forma. `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.",
     "formato": "prettier --check \"**/*.{js,jsx,mjs,cjs}\"",
     "//lint": "Limiares e idiomas. A config e GERADA de ferramentas/gate/limiares.mjs — nao a edite a mao.",

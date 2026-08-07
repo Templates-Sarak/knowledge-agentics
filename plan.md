@@ -20,7 +20,7 @@ no §7.2 quando houver. Regra sem caso não entra.
 | Bindings | `typescript` · `javascript` · `python` — gate verde nos três |
 | Escopos do gate | `modulo` · `global` · **`raiz`** (13 regras) |
 | Autoteste | `92/92` (TS) · `92/92` (JS) · `88/88` (PY) |
-| Ferramentas com autoteste próprio | `afetados.mjs` 19/19 · `verificar-commit.mjs` 6/6 |
+| Ferramentas com autoteste próprio | `afetados.mjs` 19/19 · `verificar-commit.mjs` 6/6 · `contrato-compativel.mjs` 12/12 |
 | Fiação local | `.githooks/pre-commit` + `pre-push`, donos do template, cobrados pela regra 74 |
 | Pipeline do `verificar` | gate → env → formato → lint → tipos → testes, nos três bindings |
 
@@ -472,10 +472,59 @@ a entrega. Dependência documentada sem artefato — a família de defeito que e
 - [x] Lição de método registrada: **onde há concatenação, o caso de teste precisa de nome adversarial.**
       A prova com nomes bem-comportados passava verde nos dois lados
 
-### F.2b — os cinco comandos novos  *(depois da F.2a)*
-- [ ] Detector de breaking change de contrato *(precisa de baseline git — fora do gate por isso)*
-- [ ] Relatório legível por máquina: lcov, JUnit XML, SARIF/JSON — o contrato que faz SonarQube
-      funcionar sem o template saber que ele existe
+### F.2b — `contrato-compativel.mjs`  ✅ **CONCLUÍDO**
+> *"Mudança de contrato afeta quem declarou `consome` do seu módulo — **consulte o grafo antes**, não
+> depois"* ([[02-contrato-e-dados]] §5). A saída não é "há breaking change": é **"há breaking change, e
+> estes módulos consomem você"**.
+
+- [x] O item que o gate **não pode** cobrar — o §7.2 já declarava por quê na linha do `consome-contrato`
+      (*"a regra lê o caminho e o método, nunca o corpo"*). O gate compara **um** estado; isto compara
+      **dois**, e precisa de baseline git — que o gate não roda de propósito
+- [x] **Núcleo puro** (`compararContratos` e as quatro comparações) separado da casca; **um** ponto
+      executa git, `execFileSync` com array, **zero `shell: true`**. Zero dependência externa
+- [x] Reusa `gate/spec.mjs` em vez de criar um segundo parser — e o estendeu com `statusDaOperacao` e
+      `obrigatoriosDaRequisicao`, ambos puros
+- [x] **A direção invertida entre requisição e resposta, provada nos quatro sentidos**: campo de
+      resposta removido = breaking, acrescentado = compatível; campo de requisição que virou
+      obrigatório = breaking, que deixou de ser = compatível. Era o erro mais provável do bloco
+- [x] **Cegueira ≠ compatibilidade**: spec ilegível de qualquer lado devolve
+      `[ilegivel] … nao da para afirmar compatibilidade` e **exit 1**, nunca "compatível"
+- [x] Ref adversarial (`HEAD; echo X`, `$(echo X)`, `HEAD & echo X`) recusada **antes** de qualquer
+      comparação, sem efeito. Caminho com espaço provado (`/c/tmp/rev c`)
+- [x] `--json` no mesmo contrato do gate · `exit 0/1` · **12/12** no `--autoteste`, e invertendo a
+      direção de `compararRotas`: **9/12**, exatamente os três casos de rota
+- [x] É passo de **CI** (`ci:contrato` no `package.json` de TS/JS): não entra em `pre-commit` nem no
+      `verificar` local, pela tabela de custo do §7
+
+**Cobre 5 famílias de cláusula do §5** — rota, método, campo de resposta, campo obrigatório de
+requisição, `servers[0].url`. **Declara como limite no §7.2** — tipo alterado, validação apertada, enum
+que perdeu valor, semântica: o leitor de spec é *ciente de NOME*, não *ciente de FORMA* (sabe se a
+propriedade existe e se está em `required`, não o `type`/`enum`/`pattern`). Estendê-lo é redesenho do
+extrator. **Cinco provadas e quatro escritas, em vez de nove alegadas.**
+
+### F.2c — relatório legível por máquina  ⟵ **AGORA**
+- [ ] lcov (cobertura), JUnit XML (teste), SARIF/JSON (lint) — o gate já tem `--json`, o
+      `contrato-compativel` também. É o contrato que faz o **SonarQube** funcionar sem o template saber
+      que ele existe: ele não roda o comando, ele **lê a saída**
+- [ ] Onde os relatórios caem (pasta gitignorada), e se são opt-in por flag — escrever arquivo a cada
+      run local é ruído
+
+### F.2d — `ci:seguranca` + `ci:dependencias`
+- [ ] Estágio 0: `gitleaks` + `git ls-files` procurando `.env` versionado — **fail-closed**
+- [ ] Audit de dependência — severidade vinda de `verificacao.json`
+- [ ] **A decisão que os une:** política de ferramenta ausente. `cyber-git-seguro` na base é fail-closed
+      (*"sem gitleaks, o commit/push é bloqueado"*) e a lei 7 manda reprovar — mas num pre-commit isso
+      bloqueia todo commit em máquina sem gitleaks. E o `plan.md` dizia "audit fail-open", que contradiz
+      a lei 7. Resolver junto, não em dois lugares
+
+### F.2e — `build` + migrations contra banco efêmero
+- [ ] **`build` é decisão de arquitetura antes de ser script.** Medido: o `tsconfig.json` da raiz tem
+      `"noEmit": true`, não há bundler para a `api/`, e `dist/` está no `.gitignore` sem que nada
+      escreva nele — **o template não tem alvo de artefato desenhado**. O que é "o artefato" de um
+      monólito modular (um bundle por módulo? um `dist/` único? nada, e o deploy roda o fonte?) é
+      pergunta de arquitetura. **Conversar antes de escrever**
+- [ ] Migrations executáveis — sobem e descem contra banco efêmero. O único item onde o provedor
+      realmente entra (service container), e onde a fronteira da ADR-005 volta a ser testada
 - [ ] Exemplo de fiação de CI **como documentação** no `03-operacao.md`, nunca como artefato de provedor
 - [ ] **`dependencia-fixada` é etapa de CI, não regra de gate** — decidido e medido em F.0, registrado
       no §7.1 ("Deixaram de ser regra"). O passo é `npm ci`, que **falha sozinho** sem lockfile, com
@@ -683,7 +732,11 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
            F.2a a escada             `.githooks/` dono do template + 3 camadas + regra 74 (74 regras)
            F.2a.1 sem `shell: true`  injeção por nome de pasta, travada com payload adversarial
 
-AGORA      F.2b os cinco comandos    build, migrations, gitleaks, audit, breaking-change + relatório
+           F.2b `contrato-compativel`  5 cláusulas provadas, 4 declaradas como limite
+
+AGORA      F.2c relatório de máquina  lcov · JUnit · SARIF — o contrato do SonarQube
+           F.2d segurança + deps      a política de ferramenta ausente, resolvida num lugar
+           F.2e build + migrations     `build` precisa de conversa: não há alvo de artefato desenhado
            H    dívidas              a qualquer momento
            CD   fora do plano        falta responder a unidade de release — é por projeto
 ```

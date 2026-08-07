@@ -134,7 +134,74 @@ function comoLiteral(texto) {
 }
 
 /**
- * As linhas de UMA rota dentro de `paths:` — dela até a próxima chave de recuo 2.
+ * Os codigos de status declarados em `responses:` de UMA operacao — as chaves de recuo mais fundo
+ * sob `get:`/`post:`/etc., nao importa a que profundidade `responses:` mora (mesmo truque de
+ * `propriedadesDaResposta`: procura o PADRAO em vez de exigir o caminho exato ate ele — um `parameters:`
+ * antes de `responses:` nao muda nada). `null` quando a rota/metodo nao existe — mesma semantica de
+ * `propriedadesDaResposta`, para o chamador nao confundir "nao declarado" com "declarado sem status".
+ *
+ * Escrita para `ferramentas/contrato-compativel.mjs` comparar RESPOSTA por status entre duas specs —
+ * sem isto, ele teria que adivinhar quais status comparar, ou reescrever este parser.
+ */
+export function statusDaOperacao(yaml, rota, metodo) {
+  const daRota = linhasDaRota(yaml, rota);
+  if (daRota === null) return null;
+  const doMetodo = subBloco(daRota, new RegExp(`^\\s*${metodo.toLowerCase()}:\\s*$`));
+  const codigos = new Set();
+  for (const linha of doMetodo) {
+    const casado = linha.match(/^\s*['"]?(\d{3}|default)['"]?\s*:\s*$/);
+    if (casado !== null) codigos.add(casado[1]);
+  }
+  return codigos;
+}
+
+/**
+ * Os nomes em `required:` de UM schema — flow (`required: [a, b]`) ou bloco (`required:` seguido de
+ * `- a` em linhas indentadas). Generaliza porque a mesma forma serve para qualquer lista escalar sob
+ * uma chave; hoje so `obrigatoriosDaRequisicao` a usa, mas o parser nao e especifico de `required`.
+ */
+function valoresDeLista(linhas, chave) {
+  const flow = linhas.find((l) => new RegExp(`^\\s*${chave}:\\s*\\[[^\\]]*\\]\\s*$`).test(l));
+  if (flow !== undefined) {
+    const dentro = flow.match(/\[([^\]]*)\]/)[1];
+    return dentro.split(',').map((v) => semAspas(v.trim())).filter((v) => v !== '');
+  }
+  const bloco = subBloco(linhas, new RegExp(`^\\s*${chave}:\\s*$`));
+  return bloco
+    .map((l) => l.match(/^\s*-\s*(.+?)\s*$/))
+    .filter((m) => m !== null)
+    .map((m) => semAspas(m[1]));
+}
+
+/**
+ * Os campos OBRIGATORIOS do corpo de UMA requisicao — `required:` do schema em `requestBody`,
+ * seguindo `$ref` como `propriedadesDaResposta` ja faz para a resposta. `Set` vazio quando a
+ * rota/metodo existe e nao tem `requestBody` (nada pode ser obrigatorio onde nao ha corpo — GET, por
+ * exemplo); `null` so quando a propria rota/metodo nao existe.
+ *
+ * A direcao da compatibilidade AQUI e invertida em relacao a resposta, e por isso o leitor nao
+ * reaproveita `propriedadesDaResposta` como esta: aquele diz "todo nome presente", que basta para
+ * resposta (campo novo e aditivo); para requisicao o que importa e so o SUBCONJUNTO obrigatorio —
+ * campo opcional novo na entrada nao quebra ninguem, so o obrigatorio quebra. `requestBody: {
+ * required: true, ... }` e um BOOLEANO da OpenAPI (o corpo inteiro e obrigatorio) e nao uma lista —
+ * o regex de `valoresDeLista` exige colchete ou bloco `- item`, entao essa linha nao casa nunca.
+ */
+export function obrigatoriosDaRequisicao(yaml, rota, metodo) {
+  const daRota = linhasDaRota(yaml, rota);
+  if (daRota === null) return null;
+  const doMetodo = subBloco(daRota, new RegExp(`^\\s*${metodo.toLowerCase()}:\\s*$`));
+  const doCorpo = subBloco(doMetodo, /^\s*requestBody:\s*$/);
+  if (doCorpo.length === 0) return new Set();
+
+  const blocos = [doCorpo, ...refsDeSchema(doCorpo).map((n) => schemaDeComponente(yaml, n))];
+  const obrigatorios = new Set();
+  for (const bloco of blocos) {
+    for (const nome of valoresDeLista(bloco, 'required')) obrigatorios.add(nome);
+  }
+  return obrigatorios;
+}
+
+/** As linhas de UMA rota dentro de `paths:` — dela até a próxima chave de recuo 2.
  * `null` se a rota não aparece, para o chamador não confundir "não declarada" com "sem conteúdo".
  */
 function linhasDaRota(yaml, rota) {

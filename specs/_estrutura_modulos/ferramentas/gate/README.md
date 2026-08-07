@@ -88,6 +88,22 @@ sem erro nenhum. No primeiro commit do projeto, rode `git update-index --chmod=+
 | segundos | build, testes, tipos | local sob demanda; obrigatório na entrega |
 | dezenas de segundos | integração, scan de dependência | só na entrega |
 
+## O que o gate NÃO responde: mudei o contrato, quebrei alguém?
+
+O gate compara **um** estado — não pode dizer se a mudança de agora quebra quem consome (isso exige
+ler o `contrato/openapi.yaml` de ANTES, via git, e o gate não roda git de propósito). Quem responde é
+`ferramentas/contrato-compativel.mjs`, ferramenta separada (não regra, não conta para o catálogo):
+
+```
+node ferramentas/contrato-compativel.mjs [--desde <ref>] [<modulo>] [--json]
+```
+
+Sem argumento, compara com `HEAD~1` e descobre sozinho quais `contrato/openapi.yaml` mudaram. Acha
+incompatibilidade → nomeia **quem consome** o módulo (`modulo.json:consome`, um salto só, igual
+`consome-contrato`). É passo de **CI**, não de `pre-commit`/`verificar` local (custa git + comparação
+de dois estados). O que ele cobra e o que fica de fora: `specs/arquitetura/04-regras.md` §7.2, logo
+depois da tabela de precisão dos verificadores.
+
 ## Escrever uma regra nova
 
 1. **Escreva-a primeiro em `specs/arquitetura/04-regras.md`.** Regra que não está no catálogo não é regra.
