@@ -2,6 +2,9 @@
 """verificar.py — o comando composto de verificacao do projeto (binding Python).
 
     python verificar.py [--rapido]
+    python verificar.py --cobertura          so cobertura (dezenas de segundos por modulo) — CI,
+                                              nunca o `verificar` de cima: ver 03-operacao.md §7
+    python verificar.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
 
 Equivalente ao `npm run verificar` do binding TypeScript. Roda, nesta ordem:
 
@@ -35,7 +38,9 @@ Sai com 0 se tudo passar; 1 no primeiro passo que falhar (`--rapido`) ou ao fim 
 
 from __future__ import annotations
 
+import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -98,7 +103,98 @@ def _modulos() -> list[Path]:
     return [p for p in sorted(base.iterdir()) if not p.name.startswith("_") and (p / "modulo.json").exists()]
 
 
+def _minima_de_cobertura() -> int | None:
+    """`cobertura.minima` de `config/verificacao.json` — a MESMA politica que `hooks/test-cobertura.js`
+    le para o push, uma fonte so. Ausente ou ilegivel: sem piso (o gate, nao este comando, cobra a
+    ausencia da politica via `verificacao-declarada`)."""
+    caminho = RAIZ / "config" / "verificacao.json"
+    if not caminho.exists():
+        return None
+    try:
+        minima = json.loads(caminho.read_text(encoding="utf-8")).get("cobertura", {}).get("minima")
+    except (OSError, json.JSONDecodeError):
+        return None
+    return minima if isinstance(minima, int) else None
+
+
+def _relatorio_degenerado(pasta_modulo: Path) -> str | None:
+    """Motivo se o relatorio de cobertura for degenerado (ausente, vazio, ou com zero teste
+    registrado); `None` quando esta tudo certo. Lei 7 aplicada ao RELATORIO, nao so ao exit code do
+    pytest: uma ferramenta que 'passa' sem escrever nada de verdade nao pode contar como sucesso."""
+    lcov = pasta_modulo / "relatorios" / "cobertura" / "lcov.info"
+    junit = pasta_modulo / "relatorios" / "junit.xml"
+    if not lcov.exists():
+        return f"relatorio ausente: {lcov}"
+    if "SF:" not in lcov.read_text(encoding="utf-8"):
+        return f"relatorio degenerado (sem SF:): {lcov}"
+    if not junit.exists():
+        return f"relatorio ausente: {junit}"
+    texto_junit = junit.read_text(encoding="utf-8")
+    if "<testsuite" not in texto_junit:
+        return f"relatorio degenerado (sem <testsuite): {junit}"
+    casado = re.search(r'tests="(\d+)"', texto_junit)
+    if casado is None or int(casado.group(1)) == 0:
+        return "junit sem nenhum teste registrado — a suite nao rodou"
+    return None
+
+
+def _comando_de_cobertura(minima: int | None) -> list[str]:
+    comando = [
+        "pytest", "-q", "--cov=core", "--cov=api",
+        "--cov-report=term", "--cov-report=lcov:relatorios/cobertura/lcov.info",
+        "--junitxml=relatorios/junit.xml",
+    ]
+    if minima is not None:
+        comando.append(f"--cov-fail-under={minima}")
+    return comando
+
+
+def _rodar_cobertura() -> int:
+    """`--cobertura`: SO cobertura, por modulo — nao roda o resto do `verificar`. E o analogo do
+    `ci:cobertura` do package.json: comando proprio, custa dezenas de segundos por modulo
+    (03-operacao.md §7), por isso nao entra no `verificar` de cima nem no pre-commit/pre-push."""
+    minima = _minima_de_cobertura()
+    modulos = _modulos()
+    if not modulos:
+        _escrever("  !    nenhum modulo em modulos/ — nada para medir\n")
+        return 0
+
+    falhas = 0
+    for m in modulos:
+        ok = _rodar(f"cobertura: {m.name}", _comando_de_cobertura(minima), m)
+        if ok:
+            motivo = _relatorio_degenerado(m)
+            if motivo is not None:
+                ok = False
+                _escrever(f"  FALHA cobertura: {m.name} (relatorio degenerado — {motivo})\n")
+        falhas += 0 if ok else 1
+
+    _escrever(f"\ncobertura: {'OK' if falhas == 0 else f'REPROVADO — {falhas} modulo(s)'}\n")
+    return 1 if falhas > 0 else 0
+
+
+def _rodar_lint_relatorio() -> int:
+    """`--lint-relatorio`: o MESMO `ruff check .` do `verificar` — reprova nos MESMOS achados —, só
+    que também grava SARIF (formato nativo do ruff, zero dependência nova — medido antes de escrever
+    isto). Sem `--exit-zero` de propósito: medido que o ruff grava o arquivo mesmo saindo != 0 (achado
+    real), então o relatório continua disponível para o CI mesmo quando este passo reprova — nenhum
+    motivo para esconder achado atrás de um exit code artificialmente verde."""
+    Path("relatorios").mkdir(exist_ok=True)
+    comando = ["ruff", "check", ".", "--output-format=sarif", "--output-file=relatorios/lint.sarif"]
+    ok = _rodar("lint (ruff --output-format=sarif)", comando, None)
+    if not Path("relatorios/lint.sarif").exists():
+        _escrever("  FALHA lint (ruff --output-format=sarif): relatorio nao foi escrito\n")
+        ok = False
+    _escrever(f"\nlint-relatorio: {'OK' if ok else 'REPROVADO'}\n")
+    return 0 if ok else 1
+
+
 def main() -> int:
+    if "--cobertura" in sys.argv:
+        return _rodar_cobertura()
+    if "--lint-relatorio" in sys.argv:
+        return _rodar_lint_relatorio()
+
     parar_no_primeiro = "--rapido" in sys.argv
     # Anotado: sem isto o tipo e inferido dos quatro primeiros (pasta=None) e os passos de
     # teste, que carregam um Path, nao entram.

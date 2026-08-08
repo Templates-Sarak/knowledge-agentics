@@ -409,6 +409,33 @@ própria lei que inverte); `servers[0].url` alterado (breaking, muda o prefixo d
 Os quatro continuam sendo **revisão humana**, e dizer o contrário seria a mesma cegueira-fingida-de-
 -compatibilidade que a ferramenta existe para impedir do lado que ela DE FATO verifica.
 
+### Limite declarado — relatórios de cobertura e lint (formato de máquina)
+
+Não é regra, não tem id, não conta para o catálogo — é o comando `cobertura`/`--cobertura` e
+`ci:lint`/`--lint-relatorio` de cada binding (03-operacao.md §7.2), que emite lcov, JUnit e
+JSON/SARIF para ferramenta de qualidade externa (SonarQube e afins) ler.
+
+**Entregue, medido contra a versão PINADA de cada ferramenta** (não a documentação da mais recente):
+lcov (`vitest coverage.reporter: 'lcovonly'`; `pytest --cov-report=lcov:<caminho>`); JUnit
+(`vitest --reporter=junit`; `pytest --junitxml`, nativo — nem precisa do `pytest-cov`); JSON de lint
+(`eslint -f json`, embutido); **SARIF de lint no Python** (`ruff --output-format=sarif`, embutido na
+versão pinada `ruff>=0.7` — testado em `0.16.2`).
+
+**Não entregue, com a medição**: **SARIF de lint no TS/JS** — ESLint não embute formatador SARIF
+(`require.resolve` de um formatter interno falha com `ERR_PACKAGE_PATH_NOT_EXPORTED`); exigiria o
+pacote `@microsoft/eslint-formatter-sarif`, uma dependência nova só para trocar um formato que o
+mesmo consumidor (SonarQube) já lê nativamente em JSON — o custo não se paga. Entrega-se JSON.
+
+**A armadilha da pasta `coverage/` do vitest**: o reporter `'lcov'` (não `'lcovonly'`) grava, ALÉM do
+`lcov.info`, uma pasta `lcov-report/` com HTML e `.js` de navegação (`prettify.js`,
+`block-navigation.js`, `sorter.js`) — medido: esses arquivos caem dentro de `ctx.codigo` do módulo e
+`log`/`limiar-funcao` os acusam como se fossem código do autor. `'lcovonly'` não grava a pasta; é por
+isso que o template usa esse reporter e não o `'lcov'` mais comum na documentação do vitest.
+
+**Relatório degenerado não é sucesso**: o comando confere, depois de rodar, que `lcov.info` contém
+`SF:` e que `junit.xml` tem `<testsuite` com `tests="N"` (N > 0) — uma ferramenta que "passa" sem
+escrever nada de verdade REPROVA aqui, nunca fica indistinguível de cobertura zero medida (lei 7).
+
 ## 7.3 O gate se testa
 
 `ferramentas/gate/testes/` mantém um módulo-fixture conforme e um fixture por regra violada. Regra nova sem

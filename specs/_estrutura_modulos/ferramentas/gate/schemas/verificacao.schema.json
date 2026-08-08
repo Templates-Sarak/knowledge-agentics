@@ -23,7 +23,7 @@
       }
     },
     "cobertura": {
-      "$comentario": "Alvo de cobertura de teste. E politica porque depende da maturidade e do risco do projeto, e porque o gate NAO a mede — rodar teste e do comando `verificar`, nunca do gate (§7.1).",
+      "$comentario": "Alvo de cobertura de teste. E politica porque depende da maturidade e do risco do projeto. NEM o gate NEM o `verificar`/`verificar.py` local a medem — custa dezenas de segundos por modulo (03-operacao.md §7), e por isso e passo de CI (`ci:cobertura`/`--cobertura`), nunca do feedback rapido local.",
       "type": "object",
       "additionalProperties": false,
       "required": ["minima"],

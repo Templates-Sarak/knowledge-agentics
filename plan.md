@@ -502,12 +502,41 @@ que perdeu valor, semântica: o leitor de spec é *ciente de NOME*, não *ciente
 propriedade existe e se está em `required`, não o `type`/`enum`/`pattern`). Estendê-lo é redesenho do
 extrator. **Cinco provadas e quatro escritas, em vez de nove alegadas.**
 
-### F.2c — relatório legível por máquina  ⟵ **AGORA**
-- [ ] lcov (cobertura), JUnit XML (teste), SARIF/JSON (lint) — o gate já tem `--json`, o
-      `contrato-compativel` também. É o contrato que faz o **SonarQube** funcionar sem o template saber
-      que ele existe: ele não roda o comando, ele **lê a saída**
-- [ ] Onde os relatórios caem (pasta gitignorada), e se são opt-in por flag — escrever arquivo a cada
-      run local é ruído
+### F.2c — cobertura real + relatório de máquina  ✅ **CONCLUÍDO**
+> O bloco não era "emitir lcov". Era: **`cobertura.minima: 80` era declaração sem verificador** — o
+> `vitest.config` do molde declarava um bloco `coverage` sem o provider instalado, o molde Python não
+> tinha `pytest-cov`, e o `_doc` do campo dizia que quem media era o `verificar`, **que não media**.
+> Lei 9 quebrada dentro do arquivo de política do próprio template.
+
+- [x] **A cobertura passou a ser instalável e medida**: `@vitest/coverage-v8` (TS/JS) e `pytest-cov`
+      (Python, no molde **e** na raiz — `verificar.py --cobertura` roda no interpretador compartilhado)
+- [x] **O `_doc` deixou de mentir**, nos três `verificacao.json` e no schema: diz que nem o gate nem o
+      `verificar` medem, e nomeia quem mede
+- [x] **Decisão (b) — CI-only, decidida por medição**: `npm run cobertura` num módulo recém-gerado levou
+      **23,36s**, dos quais ~17s são piso de ambiente (jsdom + instrumentação v8) e ~0,3s são o teste.
+      Mesmo módulo trivial paga o piso, e isso estoura a promessa de "segundos" do `verificar` e das
+      "dezenas" do `pre-push` — cai na linha que o §7 já reservava para o executor de entrega
+- [x] **Formatos entregues**: lcov e JUnit nos dois ecossistemas · JSON de lint (eslint) · SARIF de lint
+      (ruff, nativo na versão pinada). **Não entregue e declarado no §7.2**: SARIF do ESLint — exigiria
+      `@microsoft/eslint-formatter-sarif`, dependência nova para um formato que o mesmo consumidor já lê
+      em JSON
+- [x] **Threshold pelas próprias ferramentas** (`coverage.thresholds` e `--cov-fail-under`), sem
+      reimplementar leitura de lcov. Com `minima: 95` contra 81,5% / 87,2% medidos, os dois reprovam
+- [x] **Relatório degenerado não conta como sucesso** — a lei 7 aplicada à camada de saída, que era o
+      defeito mais provável do bloco. Verifiquei os quatro caminhos: ausente · vazio sem `SF:` ·
+      `tests="0"` · sem `<testsuite`. Cada um reprova com mensagem própria e exit 1
+- [x] **`relatorios/` e `.coverage` tolerados em `estrutura-estrita`** — a armadilha que eu havia previsto
+      (a árvore do módulo é fechada e não tinha entrada para relatório). Gate segue `0/0` com
+      `relatorios/cobertura/lcov.info`, `relatorios/junit.xml` e `.coverage` presentes num módulo
+- [x] Achado de execução: o reporter `'lcov'` do vitest grava também `lcov-report/` com JS de navegação,
+      que `log`/`limiar-funcao` acusavam como código do autor. Trocado para **`'lcovonly'`** — resolveu
+      sem precisar tocar `contexto.mjs`
+
+**Nota de acoplamento, para quem pegar a F.2d/e:** a tolerância de `.coverage` em `estrutura-estrita` é
+**global aos três bindings**, mas o `.gitignore` que o cobre é só o do esqueleto **Python** — onde o
+`coverage.py` de fato roda. Um `.coverage` num projeto TS passaria no gate e seria versionável; é
+inalcançável hoje (um projeto tem um binding só), e some de vez se algum dia o `[tool.coverage.run]
+data_file` apontar para dentro de `relatorios/`, o que retiraria a entrada da árvore fechada.
 
 ### F.2d — `ci:seguranca` + `ci:dependencias`
 - [ ] Estágio 0: `gitleaks` + `git ls-files` procurando `.env` versionado — **fail-closed**
@@ -734,8 +763,9 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
 
            F.2b `contrato-compativel`  5 cláusulas provadas, 4 declaradas como limite
 
-AGORA      F.2c relatório de máquina  lcov · JUnit · SARIF — o contrato do SonarQube
-           F.2d segurança + deps      a política de ferramenta ausente, resolvida num lugar
+           F.2c cobertura real        `cobertura.minima` deixou de ser ficção · lcov · JUnit · SARIF
+
+AGORA      F.2d segurança + deps      a política de ferramenta ausente, resolvida num lugar
            F.2e build + migrations     `build` precisa de conversa: não há alvo de artefato desenhado
            H    dívidas              a qualquer momento
            CD   fora do plano        falta responder a unidade de release — é por projeto

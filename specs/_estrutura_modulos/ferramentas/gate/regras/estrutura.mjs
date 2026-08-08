@@ -22,6 +22,13 @@ const ENTRADAS_PERMITIDAS = new Set([
   '.env', '.env.example', '.gitignore', 'package-lock.json', 'node_modules',
   'tsconfig.json', 'jsconfig.json', 'vitest.config.ts', 'vitest.config.js',
   'eslint.config.mjs', 'eslint.config.js',
+  // `relatorios/` e onde `npm run cobertura`/`pytest --cov` escrevem lcov+junit — ela so existe
+  // depois de rodada, nunca escrita a mao, e e SEMPRE `relatorios/`, nos tres bindings (a config
+  // dita isso, nao o nome do pacote — diferente do `.egg-info`, que carrega o nome do pacote e por
+  // isso e tolerado por FORMA, nao por lista). `.gitignore` a cobre; aqui e so a arvore fechada.
+  // `.coverage` e o banco SQLite que o `coverage.py` (por baixo do pytest-cov) escreve na RAIZ do
+  // modulo, fora de `relatorios/` — nao e escolha nossa, e onde a ferramenta grava por padrao.
+  'relatorios', '.coverage',
   'contrato', 'config', 'core', 'api', 'web', 'database', 'tests', 'gerados',
 ]);
 

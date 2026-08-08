@@ -180,6 +180,36 @@ lado que É verificável sem rodar git: `pre-commit-instalado` (04-regras.md §4
 existe e referencia a cadeia; a regra 74. Ativação e furo ficam fora do que um verificador estático
 consegue afirmar (04-regras.md §7.2).
 
+## 7.2 Cobertura — por que fica de fora do local, e onde ela mora
+
+`config/verificacao.json:cobertura.minima` é política real, com verificador real — mas o verificador
+não é o gate, não é o `verificar`/`verificar.py`, e não é o hook local. É **CI**, e a decisão foi
+**medida**, não suposta: `npm run cobertura` de um módulo recém-gerado, do zero, levou **~23s** — e a
+fatia que domina não é rodar o teste (**~0,5s**), é subir o ambiente de cobertura (**~17s** de
+`environment`, istanbul instrumentando `v8`). Multiplicado por módulo, isso estoura em minutos a
+promessa de "segundos"/"dezenas de segundos" que `verificar` e os hooks locais fazem (§7, a tabela de
+custo) — cobertura entra na própria tabela, na linha "dezenas de segundos: só no executor de entrega",
+e é isso que este parágrafo fia.
+
+O comando, por binding:
+
+| Binding | Comando | O que mede | Onde |
+|---|---|---|---|
+| TS/JS | `npm run cobertura` (por módulo) / `npm run ci:cobertura` (todos, via workspaces) | `vitest run --coverage`, threshold em `coverage.thresholds.lines` lido de `config/verificacao.json` | CI |
+| Python | `python verificar.py --cobertura` | `pytest --cov`, piso em `--cov-fail-under` lido da mesma política | CI |
+
+Grava `relatorios/cobertura/lcov.info` (formato lcov, para SonarQube/Codecov/Coveralls) e
+`relatorios/junit.xml` (resultado de teste, formato JUnit). **Nunca** roda em `npm test`/`pytest -q`
+comuns — é opt-in por comando próprio, de propósito: relatório escrito a cada teste local é ruído, e
+`relatorios/` é `.gitignore`d nos três bindings. Abaixo do mínimo, a PRÓPRIA ferramenta reprova
+(threshold do vitest; `--cov-fail-under` do pytest-cov) — nenhuma reimplementação de leitura de lcov
+aqui. Ferramenta de cobertura ausente também reprova, nunca "ok" (lei 7 do gate, `verificar.py`).
+
+Lint em formato de máquina segue o mesmo desenho: `npm run ci:lint` (JSON, eslint) e
+`python verificar.py --lint-relatorio` (SARIF, ruff — nativo na versão pinada, testado). SARIF no
+eslint exigiria pacote externo (`@microsoft/eslint-formatter-sarif`); não entregue — ver 04-regras.md
+§7.2 pela medição completa.
+
 # 8. Exceções
 
 `config/conformidade.json` na raiz do projeto aceita exceção **nominal**: módulo + regra + motivo + o link da
