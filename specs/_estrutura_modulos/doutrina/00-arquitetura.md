@@ -85,10 +85,11 @@ Regra de negócio **nunca** entra aqui. Se dois módulos precisam da mesma regra
 ## 3.4 Raiz de composição — o wiring, e nada além
 
 `src/` é um entrypoint fino que **não é módulo**. Ele descobre os módulos lendo `modulos/*/modulo.json`,
-resolve as portas de cada um a partir do `config/portas.json` dele, **injeta** os adapters e monta cada `api/`
-sob a `rotaBase` do manifesto.
+resolve as portas de cada um a partir do `config/portas.json` dele, **injeta** os adapters, monta cada `api/`
+sob a `rotaBase` do manifesto e **sobe** — um processo, uma porta (§5) — servindo os módulos já montados.
 
-É só fiação. Nenhuma regra de negócio vive aqui, e nenhum módulo importa daqui.
+É só fiação. Nenhuma regra de negócio vive aqui, nenhum módulo importa daqui, e o front de nenhum módulo é
+servido por aqui: `web/` é build estático do próprio módulo, publicado por fora deste processo (§4.4).
 
 # 4. As fronteiras
 
@@ -132,6 +133,11 @@ isso, a porta está mal desenhada.
 
 O `web/` de um módulo consome **exclusivamente** `/api/v1/<modulo>`, por caminho relativo. Nunca o banco,
 nunca a API de outro módulo.
+
+Caminho relativo exige mesma origem — e a raiz de composição (§3.4) **não é** essa origem: ela só sobe a
+API (um processo, uma porta), nunca o build estático de `web/`. Quem publica o front sob a mesma origem da
+API é decisão de **deploy** (reverse proxy, host estático na frente, CDN com regra de rota), e deploy não é
+assunto desta doutrina (§5: *"modularidade não é topologia de deploy"*).
 
 Quando um módulo precisa de dado de outro, o acesso vive em `core/gateways/`, fala **exclusivamente HTTP**, e
 a dependência é declarada em `modulo.json:consome`. A pasta separada não é cosmética: *"falo com meu banco"* e

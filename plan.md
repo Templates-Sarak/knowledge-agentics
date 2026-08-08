@@ -612,7 +612,60 @@ por presença de `decisao`, e `validar.mjs:23-30` perdoa as válidas e denuncia 
       achados, exit 0**. E o segredo real continua pego, mascarado, com `gitleaks` confirmando
       independentemente
 
-### F.2e — `build` + migrations contra banco efêmero
+### F.2e — o entrypoint: fazer a §3.4 ser verdade  ✅ **CONCLUÍDO**
+
+> **O defeito, e era da lei 9 no nível da arquitetura.** `00-arquitetura.md` §3.4 dizia que `src/` é um
+> *entrypoint* que *"descobre … resolve … injeta … e **monta cada `api/` sob a `rotaBase`**"*. O código
+> fazia os três primeiros e **não o quarto**: `composicao.ts`/`.py` exportavam
+> `descobrirModulos`/`resolverDependencias`/`resolverAuth` e nada mais — não montavam app, não escutavam,
+> **ninguém as importava**, e não existia script `start`. O template tinha 74 regras, cinco ferramentas e
+> três autotestes verdes — e **nunca havia sido iniciado como processo**.
+
+- [x] `montarSistema`/`iniciarSistema` (e os equivalentes Python) **em cima** do que já existia — as três
+      funções foram reusadas, não reescritas. Um processo, uma porta (§5), `RAIZ_API_PORT` declarada em
+      `projeto.json:envRequerido` e sem default: a falta derruba o boot
+- [x] **Quatro defeitos reais que nenhuma varredura estática acharia**, e os quatro só apareceram porque
+      algo finalmente rodou:
+      **(1)** montar cada app em `"/"` fazia o middleware de auth do primeiro módulo **negar as rotas
+      públicas do segundo** — consertado montando cada um na própria `rotaBase`;
+      **(2)** no Python, `Mount` do Starlette **stripa** o prefixo antes de repassar e cada `criar_app`
+      já embute a própria `rotaBase` → 404 em cascata; resolvido com dispatcher ASGI que escolhe por
+      prefixo e repassa o `scope` intacto;
+      **(3)** `core.*`/`api.*` são pacotes com o **mesmo nome** em cada módulo — compor dois no mesmo
+      processo colide em `sys.modules`; resolvido isolando `sys.path`/cache por importação. É limite do
+      binding Python que TS/JS não têm (ESM resolve por caminho, não por nome);
+      **(4)** `resolver_dependencias` devolvia `dict` e `criar_app` esperava o dataclass
+      `DependenciasModulo` — nunca exercitados juntos até existir um entrypoint
+- [x] **O entrypoint NÃO serve o front.** O `vite.config` do molde afirmava que a raiz de composição
+      serve front+API na mesma origem; o §4.4 nunca disse isso. Corrigido nos dois lados: o §4.4 agora
+      diz que caminho relativo exige mesma origem **mas quem publica os dois juntos é decisão de deploy**
+      (§5, fora desta doutrina), e o comentário do molde deixou de afirmar o falso
+- [x] §3.4 e o código **concordam**: o quarto verbo entrou na doutrina e o entrypoint passou a cumpri-lo
+- [x] Puro + autoteste: `verificarRotasUnicas` 5/5 (TS/JS) · `verificar_rotas_unicas` +
+      `escolher_rota_base` 8/8 (Python). Descoberta, DI e boot são I/O — provados subindo o processo
+
+### F.2e.1 — o caminho documentado não subia  ✅ **CONCLUÍDO**
+- [x] **Projeto com dois módulos não subia pelo caminho documentado**, e a instrução do próprio arquivo
+      não consertava. `criar-modulo.mjs:garantirEnvDaRaiz` era `if (existsSync('.env')) return` — o `.env`
+      nascia no **primeiro** módulo e do segundo em diante as chaves nunca chegavam nele. O boot morria
+      em `variaveis ausentes: PEDIDOS_API_PORT, PEDIDOS_DB_URL`, e o cabeçalho do `.env` mandava rodar
+      `sincronizar-env.mjs`, que **só escreve `.env.example`** — mais uma declaração sem verificador
+- [x] Conserto **(b)**: o script passou a **mesclar** o `.env` real, e `garantirEnvDaRaiz` foi removida —
+      duas fontes para criar o mesmo arquivo, uma delas morta, é o que o resto da base evita
+- [x] **Nunca sobrescreve valor preenchido** (provado com `.env` populado + módulo novo) e **nunca apaga
+      chave em silêncio**: chave órfã vai para uma seção `ORFAS` **comentada**, valor preservado — some do
+      `process.env` sem sumir do arquivo, que é o recorte certo para credencial
+- [x] Os dois cabeçalhos deixaram de ser um só: o `.env.example` mantém *"NAO edite a mao"* (verdade, ele
+      nunca tem valor) e o `.env` real passou a dizer **chaves geradas, valores à mão**
+- [x] Provado nos três bindings, do zero, sem passo manual além de preencher valores: as três rotas
+      obrigatórias × dois módulos, `401` na não pública dos dois, `404` fora
+
+> **Nota de método, para todos os blocos seguintes.** Este bloco produziu **cinco** defeitos reais e
+> nenhum era alcançável por análise estática — todos apareceram porque algo executou. E o executor mediu
+> um risco de ambiente que vale vigiar: **editar arquivo pré-existente neste ambiente gerou CRLF**, onde
+> criar arquivo novo não. Confira bytes em arquivo **editado**, não só em arquivo criado.
+
+### F.2f — `build`
 - [ ] **`build` é decisão de arquitetura antes de ser script.** Medido: o `tsconfig.json` da raiz tem
       `"noEmit": true`, não há bundler para a `api/`, e `dist/` está no `.gitignore` sem que nada
       escreva nele — **o template não tem alvo de artefato desenhado**. O que é "o artefato" de um
@@ -834,7 +887,11 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
            F.2d segurança + deps      scanner próprio, exceção de CVE datada · F.2d.1 tirou o
                                       falso positivo sobre o próprio pacote
 
-AGORA      F.2e build + migrations    `build` precisa de conversa: não há alvo de artefato desenhado
+           F.2e o entrypoint         a §3.4 virou verdade · 5 defeitos que só a execução revelou
+           F.2e.1 o `.env` de todo módulo, não só do primeiro
+
+AGORA      F.2f build                precisa de conversa: não há alvo de artefato desenhado
+           F.2g migrations + exemplo de CI documentado
            H    dívidas              a qualquer momento
            CD   fora do plano        falta responder a unidade de release — é por projeto
 ```

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * sincronizar-env.mjs — gera os `.env.example` a partir dos MANIFESTOS.
+ * sincronizar-env.mjs — gera os `.env.example` e MESCLA o `.env` real, a partir dos MANIFESTOS.
  * Lei dona: specs/arquitetura/01-modulo.md §4.2
  *
- *   node ferramentas/sincronizar-env.mjs             regrava os .env.example
- *   node ferramentas/sincronizar-env.mjs --conferir  só verifica (para o gate/CI)
+ *   node ferramentas/sincronizar-env.mjs             regrava os .env.example, MESCLA o .env real
+ *   node ferramentas/sincronizar-env.mjs --conferir  só verifica os .env.example (para o gate/CI)
  *
  * São DUAS fontes, uma por unidade que declara: `modulo.json:envRequerido` para o `.env.example` de
  * cada módulo, e `projeto.json:envRequerido` para as chaves da própria RAIZ (a fiação —
@@ -14,7 +14,12 @@
  * de provedor — todos fora do `.env.example`, todos invisíveis a `env-declarado` e `env-exemplo`,
  * que são regras por módulo. O mais sensível do sistema era o único que ninguém documentava.
  *
- * Ninguém edita esses arquivos à mão — assim eles nunca divergem do que o código realmente exige.
+ * O `.env.example` nunca guarda valor real — regravá-lo por inteiro a cada chamada é seguro, e é
+ * o que mantém `chaves === manifesto` sem intervenção. O `.env` REAL é outra história: ele guarda
+ * segredo de verdade, preenchido à mão (é o único jeito de um segredo nunca virar texto versionado).
+ * Por isso este script MESCLA nele — nunca sobrescreve valor já preenchido, nunca apaga chave em
+ * silêncio (medido: `criar-modulo.mjs` do segundo módulo em diante não tinha como fazer a chave
+ * nova chegar ao `.env` real; só ao `.env.example`, que ninguém lê para subir o processo).
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -22,16 +27,36 @@ import { fileURLToPath } from 'node:url';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 
-const CABECALHO_RAIZ = [
-  '# .env da RAIZ — fonte UNICA de segredo do projeto (ADR-004).',
+/** `.env.example` — SEM valor, sempre. Regravado por inteiro; "nao edite a mao" e verdade aqui. */
+const CABECALHO_ENV_EXEMPLO = [
+  '# .env.example da RAIZ — fonte UNICA de segredo do projeto (ADR-004).',
   '# GERADO por `node ferramentas/sincronizar-env.mjs` a partir de projeto.json:envRequerido (as',
   '# chaves da propria raiz) e de modulo.json:envRequerido de cada modulo. NAO edite a mao:',
   '# acrescente a chave no manifesto que a EXIGE — projeto.json ou modulo.json — e rode o script.',
   '# Este arquivo e versionado (SEM segredo real); o .env real fica no .gitignore.',
 ];
 
+/**
+ * `.env` REAL — tem valor de verdade. As CHAVES sao geradas/mescladas por este script (mesma fonte
+ * do `.env.example`); os VALORES sao preenchidos A MAO, por design — e o unico jeito de um segredo
+ * nunca virar texto versionado. O script NUNCA sobrescreve valor ja preenchido, e NUNCA apaga chave
+ * em silencio: chave que nenhum manifesto exige mais vai para a secao ORFAS, comentada, no fim.
+ */
+const CABECALHO_ENV_REAL = [
+  '# .env da RAIZ — fonte UNICA de segredo do projeto (ADR-004). NAO versionado (.gitignore).',
+  '# As CHAVES sao geradas/mescladas por `node ferramentas/sincronizar-env.mjs`, a partir de',
+  '# projeto.json:envRequerido e de modulo.json:envRequerido de cada modulo — rode o script sempre',
+  '# que um manifesto mudar (criar-modulo.mjs ja roda por voce). Os VALORES sao preenchidos A MAO:',
+  '# e o unico jeito de um segredo real nunca virar texto versionado. O script NUNCA sobrescreve um',
+  '# valor ja preenchido, e NUNCA apaga chave em silencio — chave que nenhum manifesto exige mais',
+  '# vai para a secao "ORFAS", comentada, no fim: decida remover ou nao.',
+];
+
 /** Cabecalho da secao da raiz. As chaves dela sao `RAIZ_*`; as de modulo, `<MODULO>_*`. */
 const SECAO_DA_RAIZ = '# --- RAIZ: a fiacao (adapters/, src/, packages/) — projeto.json ---';
+
+/** Cabecalho da secao de chaves que nenhum manifesto exige mais. */
+const SECAO_ORFAS = '# --- ORFAS: nenhum manifesto exige mais. Comentadas, valor preservado — apague a mao se tiver certeza ---';
 
 function acharRaizProjeto() {
   let atual = process.cwd();
@@ -103,22 +128,65 @@ function lerManifestoDaRaiz(raizProjeto) {
   return existsSync(caminho) ? JSON.parse(lerTexto(caminho)) : null;
 }
 
-function conteudoDaRaiz(lista, envDaRaiz) {
-  const linhas = [...CABECALHO_RAIZ, ''];
+/** Chaves desejadas da raiz, na MESMA ordem/secao nos dois arquivos (.env.example e .env real). */
+function chavesDaRaizPorSecao(lista, envDaRaiz) {
+  const secoes = [];
+  if (envDaRaiz !== null) secoes.push({ titulo: SECAO_DA_RAIZ, chaves: envDaRaiz });
+  for (const { manifesto } of lista) {
+    secoes.push({ titulo: `# --- ${manifesto.nome} (${manifesto.rotaBase}) ---`, chaves: manifesto.envRequerido ?? [] });
+  }
+  return secoes;
+}
+
+function conteudoDaRaizExemplo(lista, envDaRaiz) {
+  const linhas = [...CABECALHO_ENV_EXEMPLO, ''];
   // A secao da raiz vem PRIMEIRO, e aparece mesmo vazia quando ha `projeto.json`: "a raiz nao exige
   // nada" e uma afirmacao, e o operador precisa distingui-la de "ninguem perguntou".
-  if (envDaRaiz !== null) {
-    linhas.push(SECAO_DA_RAIZ);
-    linhas.push(...envDaRaiz.map((chave) => `${chave}=`));
-    linhas.push('');
-  }
-  for (const { manifesto } of lista) {
-    linhas.push(`# --- ${manifesto.nome} (${manifesto.rotaBase}) ---`);
-    linhas.push(...(manifesto.envRequerido ?? []).map((chave) => `${chave}=`));
-    linhas.push('');
+  for (const { titulo, chaves } of chavesDaRaizPorSecao(lista, envDaRaiz)) {
+    linhas.push(titulo, ...chaves.map((chave) => `${chave}=`), '');
   }
   linhas.push('# --- Exposto ao browser: NUNCA chave, segredo ou token aqui ---');
   linhas.push('');
+  return linhas.join('\n');
+}
+
+/**
+ * Pares chave=valor de um `.env` REAL existente, para PRESERVAR ao mesclar. Ignora comentario e
+ * linha vazia; `Map` guarda a ORDEM de aparicao no arquivo — e o que da a ordem estavel das ORFAS.
+ */
+function lerParesDoEnvReal(conteudo) {
+  const pares = new Map();
+  for (const linhaBruta of conteudo.split(/\r?\n/)) {
+    const linha = linhaBruta.trim();
+    if (linha === '' || linha.startsWith('#') || !linha.includes('=')) continue;
+    const igual = linha.indexOf('=');
+    pares.set(linha.slice(0, igual).trim(), linha.slice(igual + 1).trim());
+  }
+  return pares;
+}
+
+/**
+ * MESCLA o `.env` real: mesma forma do `.env.example`, mas com o VALOR já preenchido preservado
+ * (nunca `${chave}=`, e sim `${chave}=${valorExistente}`), e as chaves que existiam no arquivo mas
+ * nenhum manifesto exige mais viram uma secao ORFAS, comentada — nunca somem em silencio.
+ */
+function conteudoDoEnvReal(lista, envDaRaiz, existente) {
+  const secoes = chavesDaRaizPorSecao(lista, envDaRaiz);
+  const desejadas = new Set(secoes.flatMap((secao) => secao.chaves));
+
+  const linhas = [...CABECALHO_ENV_REAL, ''];
+  for (const { titulo, chaves } of secoes) {
+    linhas.push(titulo, ...chaves.map((chave) => `${chave}=${existente.get(chave) ?? ''}`), '');
+  }
+  linhas.push('# --- Exposto ao browser: NUNCA chave, segredo ou token aqui ---');
+  linhas.push('');
+
+  const orfas = [...existente.keys()].filter((chave) => !desejadas.has(chave));
+  if (orfas.length > 0) {
+    linhas.push(SECAO_ORFAS);
+    linhas.push(...orfas.map((chave) => `# ${chave}=${existente.get(chave)}`));
+    linhas.push('');
+  }
   return linhas.join('\n');
 }
 
@@ -137,8 +205,24 @@ function montarAlvos(raizProjeto, lista) {
   if (reais.length === 0 && (envDaRaiz === null || envDaRaiz.length === 0)) return doModulo;
   return [
     ...doModulo,
-    { caminho: join(raizProjeto, '.env.example'), conteudo: conteudoDaRaiz(reais, envDaRaiz) },
+    { caminho: join(raizProjeto, '.env.example'), conteudo: conteudoDaRaizExemplo(reais, envDaRaiz) },
   ];
+}
+
+/**
+ * O alvo do `.env` REAL — `null` quando não há chave nenhuma de raiz a exigir (mesma guarda do
+ * `.env.example`). Só entra no MODO ESCRITA (nunca no `--conferir`): o `.env` tem valor de
+ * ambiente, e comparar por igualdade byte a byte reprovaria todo projeto com valor preenchido —
+ * o oposto do que essa mescla existe para permitir.
+ */
+function montarAlvoEnvReal(raizProjeto, lista) {
+  const reais = lista.filter((m) => !m.eMolde);
+  const envDaRaiz = lerManifestoDaRaiz(raizProjeto)?.envRequerido ?? null;
+  if (reais.length === 0 && (envDaRaiz === null || envDaRaiz.length === 0)) return null;
+
+  const caminho = join(raizProjeto, '.env');
+  const existente = existsSync(caminho) ? lerParesDoEnvReal(lerTexto(caminho)) : new Map();
+  return { caminho, conteudo: conteudoDoEnvReal(reais, envDaRaiz, existente) };
 }
 
 function principal() {
@@ -168,7 +252,23 @@ function principal() {
     process.stdout.write('corrija com: node ferramentas/sincronizar-env.mjs\n');
     return 1;
   }
-  if (conferir) process.stdout.write('.env.example em dia com os manifestos.\n');
+  if (conferir) {
+    process.stdout.write('.env.example em dia com os manifestos.\n');
+    return 0;
+  }
+
+  // MESCLA o `.env` real — só no modo escrita (o porquê está em `montarAlvoEnvReal`). Idempotente:
+  // sem chave nova nem manifesto mudado, o conteudo mesclado bate com o atual e nada e regravado.
+  const alvoEnvReal = montarAlvoEnvReal(raizProjeto, lista);
+  if (alvoEnvReal !== null) {
+    const existiaAntes = existsSync(alvoEnvReal.caminho);
+    const atual = existiaAntes ? readFileSync(alvoEnvReal.caminho, 'utf8') : '';
+    if (atual.replace(/\r\n/g, '\n') !== alvoEnvReal.conteudo) {
+      writeFileSync(alvoEnvReal.caminho, alvoEnvReal.conteudo, 'utf8');
+      const motivo = existiaAntes ? 'chaves mescladas, valores preservados' : 'criado, preencha os valores reais';
+      process.stdout.write(`atualizado: ${alvoEnvReal.caminho.replace(raizProjeto, '.')} (${motivo})\n`);
+    }
+  }
   return 0;
 }
 

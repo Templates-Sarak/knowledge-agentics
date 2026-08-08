@@ -31,7 +31,11 @@
     "//formato": "Forma. `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.",
     "formato": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs}\"",
     "//lint": "Limiares e idiomas. A config e GERADA de ferramentas/gate/limiares.mjs — nao a edite a mao.",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "//iniciar": "Sobe o monolito modular (specs/arquitetura/00-arquitetura.md §5): um processo, uma porta. `tsx` resolve em runtime os imports `.js` que apontam para irmao `.ts` — sem ele nao ha como `node` puro rodar src/composicao.ts nem os modulos que ele importa (nenhum dos dois passa por build; `tsc` aqui e so type-check, `noEmit: true`).",
+    "iniciar": "tsx src/composicao.ts",
+    "//iniciar:autoteste": "Prova a UNICA decisao pura do entrypoint (verificarRotasUnicas) sem subir processo nem tocar disco.",
+    "iniciar:autoteste": "tsx src/composicao.ts --autoteste"
   },
   "dependencies": {
     "express": "^4.19.2"
@@ -42,6 +46,7 @@
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^9.15.0",
     "prettier": "^3.3.3",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"
   }

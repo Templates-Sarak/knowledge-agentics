@@ -476,6 +476,30 @@ jeito: ela filtra **npm** (que relata `severity` por advisory); do lado **pip**,
 porque não há o que comparar contra o piso. Declarado na saída da ferramenta e aqui — não escondido
 atrás de "auditei e achei pouco".
 
+### Limite declarado — `src/composicao.*` sobe processo (não é regra deste catálogo)
+
+**"O entrypoint sobe e responde" não é verificável estaticamente.** O gate lê árvore e texto; nunca
+executa nada (§7.1 do catálogo em geral, e é por desenho — ferramenta que roda código de terceiro para
+validar seria a própria superfície de ataque que este template existe para reduzir). Nenhuma regra nova
+foi criada para isto — cobrar "existe um script `iniciar`" só provaria a *forma*, não que o processo
+sobe e as rotas respondem.
+
+O que prova a subida é reprodução manual/CI por comando colado, não o gate: gerar um projeto com dois
+módulos, instalar dependências reais e requisitar `/health`, `/meta`, `/resumo` de cada um sob a própria
+`rotaBase`, uma rota não pública negada sem token, e o boot derrubado com a porta ausente — os cinco
+provados nos três bindings no relatório desta tarefa. Isto é falso negativo **assumido**: um entrypoint
+que compila e tem o script certo, mas cujo processo trava ou serve a rota errada, passa pelo gate e só é
+pego nessa reprodução — a mesma política de `pre-commit-instalado` (prova que o arquivo existe e invoca
+a cadeia; não prova que o hook está ligado).
+
+**Medido durante este bloco**: montar dois `Express`/`FastAPI` de módulo no mesmo processo sem cada um
+responder SÓ pela própria `rotaBase` fazia o middleware do primeiro módulo montado (auth negando por
+padrão, sem escopo de caminho) interceptar a rota pública do segundo — 401 onde devia ser 200. A fixação
+foi montar cada app sob a própria `rotaBase` na raiz (nunca em `"/"`), com `criarApp` (TS/JS) ciente do
+modo composto para não reaplicar o prefixo por dentro, e um dispatcher ASGI por prefixo em Python (que
+nunca usa `Mount`, porque `Mount` tira o prefixo antes de repassar e cada sub-app já o tem embutido no
+próprio roteador). Sem essa reprodução real — só com o gate estático — este defeito passaria despercebido.
+
 ## 7.3 O gate se testa
 
 `ferramentas/gate/testes/` mantém um módulo-fixture conforme e um fixture por regra violada. Regra nova sem

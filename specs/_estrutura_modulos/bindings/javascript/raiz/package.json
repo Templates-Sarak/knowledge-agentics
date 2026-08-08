@@ -31,7 +31,11 @@
     "//formato": "Forma. `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.",
     "formato": "prettier --check \"**/*.{js,jsx,mjs,cjs}\"",
     "//lint": "Limiares e idiomas. A config e GERADA de ferramentas/gate/limiares.mjs — nao a edite a mao.",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "//iniciar": "Sobe o monolito modular (specs/arquitetura/00-arquitetura.md §5): um processo, uma porta.",
+    "iniciar": "node src/composicao.js",
+    "//iniciar:autoteste": "Prova a UNICA decisao pura do entrypoint (verificarRotasUnicas) sem subir processo nem tocar disco.",
+    "iniciar:autoteste": "node src/composicao.js --autoteste"
   },
   "dependencies": {
     "express": "^4.19.2"

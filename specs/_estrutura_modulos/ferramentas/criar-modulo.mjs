@@ -191,23 +191,14 @@ function principal() {
   finalizar(opcoes, raizProjeto);
 }
 
-/**
- * Garante o `.env` da raiz. Ele e gitignored, entao nao existe em projeto novo nem em clone
- * limpo — e sem ele o ponteiro ENV_RAIZ de todo modulo aponta para o vazio e o boot morre.
- * Nasce a partir do `.env.example` GERADO: as chaves certas, todas sem valor.
- */
-function garantirEnvDaRaiz(raizProjeto) {
-  const real = join(raizProjeto, '.env');
-  if (existsSync(real)) return;
-  const exemplo = join(raizProjeto, '.env.example');
-  if (!existsSync(exemplo)) return;
-  writeFileSync(real, lerTexto(exemplo), 'utf8');
-  process.stdout.write('criado: ./.env (a partir do .env.example — preencha os valores reais)\n');
-}
-
 function finalizar(opcoes, raizProjeto) {
+  // `sincronizar-env.mjs` (sem `--conferir`) MESCLA o `.env` real com as chaves de TODOS os
+  // manifestos, inclusive as deste modulo novo — nao so o `.env.example`. Ele nunca sobrescreve
+  // valor ja preenchido, entao chamar em todo `criar-modulo` (nao so no primeiro) e seguro; e o
+  // que faz o `.env` real acompanhar o segundo modulo em diante, o que uma criacao unica (so no
+  // primeiro modulo, com early-return se o arquivo ja existisse) nao fazia — medido: chave do
+  // segundo modulo nunca chegava ao `.env` real por esse caminho.
   process.stdout.write(rodar('sincronizar-env.mjs', [], raizProjeto));
-  garantirEnvDaRaiz(raizProjeto);
   process.stdout.write('validando...\n');
   try {
     process.stdout.write(rodar('gate/validar.mjs', [join('modulos', opcoes.id)], raizProjeto));
