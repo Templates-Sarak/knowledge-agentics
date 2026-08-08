@@ -436,6 +436,46 @@ isso que o template usa esse reporter e não o `'lcov'` mais comum na documenta�
 `SF:` e que `junit.xml` tem `<testsuite` com `tests="N"` (N > 0) — uma ferramenta que "passa" sem
 escrever nada de verdade REPROVA aqui, nunca fica indistinguível de cobertura zero medida (lei 7).
 
+### Limite declarado — `ferramentas/ci-seguranca.mjs` (não é regra deste catálogo)
+
+Vocabulário de VALOR de token **sem heurística de entropia**, de propósito — a lei 1 não aceita a
+direção de falso positivo que entropia carrega (hash de teste, UUID de fixture, base64 de imagem
+inline). Só nove formas com prefixo de fornecedor inequívoco ou cabeçalho de chave privada, cópia
+comentada do catálogo canônico de `skills/cyber-segredos/scripts/config.json`. **Deixadas de fora, com
+o motivo**:
+
+- **"Bearer Token"** (`bearer\s+[a-z0-9._-]{20,}`) — genérico, sem prefixo de fornecedor; um valor de
+  teste comprido (`Bearer eyJ...fixture...`) já cai no padrão de JWT quando é JWT de verdade, e quando
+  não é, este padrão não acrescenta sinal, só ruído;
+- **"Segredo atribuído"** (`(api_key|secret|token|...)\s*[:=]\s*['"][^'"]{8,}['"]`) — é exatamente o
+  vocabulário de NOME de chave (`PADRAO_CREDENCIAL`) com um sinal pior: sem o sufixo fechado, qualquer
+  identificador terminado em "token"/"secret" com um valor de 8+ caracteres acusa — inclusive uma
+  fixture de teste como `TOKEN = "token-de-teste"` (14 caracteres, acima do piso de 8). O vocabulário
+  entregue já cobre a MESMA pergunta com sufixo fechado (`CHAVE_CREDENCIAL_ATRIBUIDA`); a versão sem
+  sufixo só acrescentaria falso positivo, não cobertura nova;
+- **"String de conexão"** (`(postgres|mysql|mongodb)://user:pass@host`) — comum em EXEMPLO de
+  documentação com credencial fake (`postgres://usuario:senha@localhost/banco`), e o template tem
+  esse tipo de exemplo em comentário.
+
+**Medido contra os três moldes conformes**: zero achado nos nove padrões de valor entregues (varredura
+colada no relatório desta tarefa). O que este vocabulário **não** pega — as três formas acima, mais
+qualquer prefixo de fornecedor fora da lista — é falso negativo **assumido**, não escondido: é a
+mesma political de `sdk-fornecedor`/`gateway-credencial`, vocabulário fechado que erra para menos, não
+para mais.
+
+**Também não afirma**: que o histórico completo está limpo (isso é `git-especialista-repositorio`,
+skill separada — `ci-seguranca.mjs` só lê o DELTA desde uma ref) nem que a ausência do `gitleaks`
+compromete o veredito (ele é segunda opinião, bônus; a ausência dele nunca reprova sozinha).
+
+### Limite declarado — `ferramentas/ci-dependencias.mjs` (não é regra deste catálogo)
+
+**`pip-audit --format=json` não relata severidade nem CVSS** — medido (`pip-audit --help` não tem
+`--severity` nem `--cvss`; a saída real tem `id`/`fix_versions`/`aliases`/`description`, nada além).
+Isso derruba a premissa de que `dependencias.severidadeMinima` filtraria os dois ecossistemas do mesmo
+jeito: ela filtra **npm** (que relata `severity` por advisory); do lado **pip**, todo achado conta,
+porque não há o que comparar contra o piso. Declarado na saída da ferramenta e aqui — não escondido
+atrás de "auditei e achei pouco".
+
 ## 7.3 O gate se testa
 
 `ferramentas/gate/testes/` mantém um módulo-fixture conforme e um fixture por regra violada. Regra nova sem

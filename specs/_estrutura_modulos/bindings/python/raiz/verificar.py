@@ -5,6 +5,8 @@
     python verificar.py --cobertura          so cobertura (dezenas de segundos por modulo) — CI,
                                               nunca o `verificar` de cima: ver 03-operacao.md §7
     python verificar.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
+    python verificar.py --seguranca          .env versionado + segredo no delta — CI, fail-closed
+    python verificar.py --dependencias       pip-audit contra o piso de severidade — CI
 
 Equivalente ao `npm run verificar` do binding TypeScript. Roda, nesta ordem:
 
@@ -189,11 +191,23 @@ def _rodar_lint_relatorio() -> int:
     return 0 if ok else 1
 
 
+def _rodar_delegado(rotulo: str, script: str) -> int:
+    """Passos que já vivem em `ferramentas/` (Node, zero dependência) — este comando só delega, no
+    mesmo padrão do passo 1 ("conformidade (gate)"). Evita reimplementar o parser de `npm audit`/
+    `pip-audit` em Python: uma fonte só, chamada dos dois bindings."""
+    ok = _rodar(rotulo, ["node", f"ferramentas/{script}"], None)
+    return 0 if ok else 1
+
+
 def main() -> int:
     if "--cobertura" in sys.argv:
         return _rodar_cobertura()
     if "--lint-relatorio" in sys.argv:
         return _rodar_lint_relatorio()
+    if "--seguranca" in sys.argv:
+        return _rodar_delegado("seguranca", "ci-seguranca.mjs")
+    if "--dependencias" in sys.argv:
+        return _rodar_delegado("dependencias", "ci-dependencias.mjs")
 
     parar_no_primeiro = "--rapido" in sys.argv
     # Anotado: sem isto o tipo e inferido dos quatro primeiros (pasta=None) e os passos de

@@ -210,10 +210,46 @@ Lint em formato de máquina segue o mesmo desenho: `npm run ci:lint` (JSON, esli
 eslint exigiria pacote externo (`@microsoft/eslint-formatter-sarif`); não entregue — ver 04-regras.md
 §7.2 pela medição completa.
 
+## 7.3 Segurança e dependências — estágio 0 e o audit
+
+Duas ferramentas de CI, nenhuma delas o gate pode ser (o gate não roda git nem consulta registro
+externo, de propósito — é o que o mantém puro e chamável de dentro de um hook):
+
+| Comando | O que faz | Fail-closed? |
+|---|---|---|
+| `npm run ci:seguranca` / `python verificar.py --seguranca` | `.env` real versionado (`git ls-files`) + segredo reconhecido no delta desde `--desde` (default `HEAD~1`) | **Sim** — git mudo ou ref inválida REPROVA, nunca "sem problema" |
+| `npm run ci:dependencias` / `python verificar.py --dependencias` | `npm audit --json` / `pip-audit --format=json` contra `config/verificacao.json:dependencias.severidadeMinima` | Não no sentido de "furo" — ferramenta ausente é **parte do pacote** (npm embute audit; `pip-audit` é `optional-dependencies`), então "ausente" deixou de ser um caso a tolerar: reprova como qualquer outra ferramenta que falta (lei 7) |
+
+**"Ferramenta ausente REPROVA" matou o fail-open do audit.** A única válvula que sobra é uma exceção
+**nominal, ratificada E DATADA** — `config/conformidade.json:excecoesCve` (§8) — para o caso real que
+resta: um CVE novo sem correção disponível, que deixaria vermelho um build que ontem estava verde sem
+ninguém ter tocado em código.
+
+**Vocabulário fechado de segredo, sem entropia.** `ci-seguranca.mjs` reconhece nome de chave
+(`PADRAO_CREDENCIAL`, já usado por `gateway-credencial`/`segredo-em-publico`) atribuído a um literal, e
+valor de token com prefixo de fornecedor inequívoco (AWS, GitHub, Google, Slack, Stripe, npm, JWT,
+cabeçalho de chave privada) — cópia comentada do catálogo canônico de `skills/cyber-segredos`, sem as
+formas genéricas (heurística de entropia, "Bearer" solto, "segredo atribuído" sem sufixo fechado, string
+de conexão): essas produzem falso positivo, e a lei 1 não aceita essa direção. O que fica de fora está
+declarado em `04-regras.md` §7.2, não escondido — é falso negativo, tolerado porque declarado.
+
+**Nenhum dos dois entra em `pre-commit`/`pre-push`/`verificar` local**: `ci:seguranca` precisa de git
+(estado do repositório, não do arquivo em edição) e `ci:dependencias` precisa de rede/registro externo
+— o mesmo motivo, com sinal trocado, que já mantém `ci:contrato` e `ci:cobertura` fora da cadeia local.
+
 # 8. Exceções
 
-`config/conformidade.json` na raiz do projeto aceita exceção **nominal**: módulo + regra + motivo + o link da
-decisão que a ratificou em `specs/adr/000-decisoes-do-template.md`. **Sem esse link, o gate rejeita a própria exceção** — é
-o que impede a lista de virar depósito de dívida silenciosa.
+`config/conformidade.json` na raiz do projeto aceita exceção **nominal**, em duas listas com a mesma
+disciplina e donos diferentes:
 
-A lista começa **vazia**, e esse é o estado correto.
+- **`excecoes`** — ao catálogo do gate: módulo + regra + motivo + `decisao` (ADR).
+- **`excecoesCve`** — a `ferramentas/ci-dependencias.mjs` (não é regra, não roda no gate): id do
+  CVE/GHSA + motivo + `decisao` (ADR) **e `expira`** (`YYYY-MM-DD`). A exceção de CVE tem um jeito a
+  mais de não valer que a de regra: **expirada também não vale**, e volta a reprovar sozinha, sem
+  ninguém precisar editar nada — é o que impede um "risco aceito" de virar permanente por esquecimento.
+
+**Sem `decisao`, nenhuma das duas vale.** É o mesmo link para `specs/adr/000-decisoes-do-template.md`
+que impede a lista de virar depósito de dívida silenciosa — e a data malformada em `expira` **também**
+não vale (nunca "válida para sempre" por acidente de formato).
+
+As duas listas começam **vazias**, e esse é o estado correto.

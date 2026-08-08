@@ -16,6 +16,11 @@ dev = [
   "httpx>=0.27",
   "ruff>=0.7",
   "mypy>=1.13",
+  # "ferramenta que falta se instala" — `ci-dependencias.mjs` (ferramentas/) chama
+  # `python -m pip_audit`. So na RAIZ, nao no molde de modulo: os bindings Python compartilham UM
+  # venv (a mesma razao de `pytest-cov` estar so aqui), e o audit le o ambiente inteiro de qualquer
+  # pasta — instalar de novo por modulo so duplicaria o pacote no mesmo venv, sem cobrir nada a mais.
+  "pip-audit>=2.7",
 ]
 
 [build-system]

@@ -538,13 +538,79 @@ extrator. **Cinco provadas e quatro escritas, em vez de nove alegadas.**
 inalcançável hoje (um projeto tem um binding só), e some de vez se algum dia o `[tool.coverage.run]
 data_file` apontar para dentro de `relatorios/`, o que retiraria a entrada da árvore fechada.
 
-### F.2d — `ci:seguranca` + `ci:dependencias`
-- [ ] Estágio 0: `gitleaks` + `git ls-files` procurando `.env` versionado — **fail-closed**
-- [ ] Audit de dependência — severidade vinda de `verificacao.json`
-- [ ] **A decisão que os une:** política de ferramenta ausente. `cyber-git-seguro` na base é fail-closed
-      (*"sem gitleaks, o commit/push é bloqueado"*) e a lei 7 manda reprovar — mas num pre-commit isso
-      bloqueia todo commit em máquina sem gitleaks. E o `plan.md` dizia "audit fail-open", que contradiz
-      a lei 7. Resolver junto, não em dois lugares
+### F.2d — `ci:seguranca` + `ci:dependencias`  ✅ **CONCLUÍDO**
+
+**Decisão do usuário: ferramenta que falta, se instala — ela é parte do pacote.** Isso resolve a
+política de ausência e mata o motivo do "fail-open". Duas consequências, uma limpa e uma medida:
+
+- `pip-audit` entra em `optional-dependencies` como o `pytest-cov` da F.2c; `npm audit` é embutido.
+  Nada a decidir.
+- **`gitleaks` NÃO entra como dependência**, e o motivo é a doutrina batendo em si mesma: é binário Go,
+  os wrappers npm/pip **baixam release do GitHub num `postinstall`**, e a descrição da skill
+  `cyber-dependencias` lista exatamente *"typosquatting e **scripts de instalação**"* entre o que ela
+  audita. O portão estágio 0 seria instalado pelo padrão que a skill de segurança sinaliza.
+
+**O estágio 0 é ferramenta própria, e o template já tem metade dela:**
+- `operacao.mjs:25` exporta `PADRAO_CREDENCIAL` — vocabulário **fechado** de sufixo de credencial, já
+  base de `gateway-credencial` e `segredo-em-publico`. Uma lista, não duas;
+- o gate **não pode** fazer isto e a doutrina diz por quê — `gitignore-segredo` e `pre-commit-instalado`
+  compartilham a linha *"o gate não roda git de propósito — é o que o mantém puro e chamável de dentro
+  do próprio hook"* —, e a mesma linha já delega: *"o `.env` que já foi commitado é do passo de CI,
+  fail-closed"*. Então é **ferramenta**, como o `contrato-compativel`;
+- `gitleaks` presente no ambiente vale como **segunda opinião**, nunca como dependência.
+
+**E a contradição herdada não era o que parecia.** "Audit fail-open" escondia dois casos:
+
+| Situação | O que é | Resposta |
+|---|---|---|
+| ferramenta ausente | não verificou | **REPROVA** (lei 7) — e a decisão do usuário elimina o caso |
+| **CVE novo sem correção disponível** | verificou, e o mundo mudou | válvula **nominal e datada** |
+
+O segundo deixa vermelho o build que estava verde ontem **sem ninguém tocar em código**. Fail-open é
+interruptor; a resposta certa é o padrão que o template já tem — `03-operacao.md` §8: exceção nominal com
+`decisao` apontando ADR, *"sem esse link, o gate rejeita a própria exceção"*, lista começando **vazia**.
+Verificado que o mecanismo é real: `carregarExcecoes` (`contexto.mjs:314`) separa válidas de inválidas
+por presença de `decisao`, e `validar.mjs:23-30` perdoa as válidas e denuncia as inválidas. **Acrescentar
+`expira`** é o que falta: "sem patch hoje" tem prazo, "aceito para sempre" é outra frase.
+
+- [x] **`ferramentas/ci-seguranca.mjs`** — estágio 0 fail-closed. `.env` versionado (`git ls-files`) +
+      segredo no delta, com **dois** vocabulários fechados: `PADRAO_CREDENCIAL` reusado do gate (uma
+      lista, não duas) e 9 formas de valor com prefixo inequívoco, copiadas de
+      `skills/cyber-segredos` com a origem citada (skill não viaja para o projeto gerado).
+      **Sem heurística de entropia** — declarado no §7.2 como falso negativo assumido, porque entropia é
+      onde vive o falso positivo (hash de teste, UUID de fixture, base64 inline) e a lei 1 não o aceita
+- [x] **As três situações do fail-closed distintas na saída**: git mudo reprova · delta vazio passa com
+      linha própria (*"nada mudou"*, que não é *"não verifiquei"*) · `gitleaks` ausente **não** reprova,
+      é segunda opinião. E quando ele está presente, confirma de forma independente
+- [x] Achado **mascarado** (`AKIA...EY`), nunca o segredo inteiro no log de CI — o próprio autoteste o
+      travava
+- [x] **`ferramentas/ci-dependencias.mjs`** — `npm audit --json` / `pip-audit --format=json` contra
+      `dependencias.severidadeMinima`, sem chave nova. **Lei 10 provada**: sem lockfile o npm devolve
+      JSON bem-formado (`{"error":{"code":"ENOLOCK"}}`) e o passo **reprova** — "zero vulnerabilidade" e
+      "não auditei" não são a mesma saída
+- [x] **Exceção de CVE nominal + datada** em `config/conformidade.json:excecoesCve` — mesmo arquivo,
+      porque a disciplina do `decisao` já mora e já é testada ali. Quatro estados: sem `decisao` reprova ·
+      `expira` futuro perdoa · passado reprova como `expirada` · malformado reprova como
+      `expira-malformada` (não vira "válida para sempre")
+- [x] **`hojeISO` entra por parâmetro** no núcleo (`statusDaExcecao`, `avaliar`) — a casca consulta o
+      relógio. Sem isso o caso "expirada" passaria hoje e quebraria sozinho no calendário
+- [x] Delta **reusado**, não inventado: a mesma forma de `contrato-compativel.mjs`
+- [x] **Premissa derrubada pela medição:** `pip-audit` não reporta severidade/CVSS, então o piso só
+      filtra o npm — do lado pip todo achado conta. Declarado no §7.2, não escondido
+
+### F.2d.1 — o scanner acusava o próprio pacote  ✅ **CONCLUÍDO**
+- [x] **Falso positivo sobre o template conforme, achado na revisão.** As fixtures do `--autoteste` do
+      `ci-seguranca` eram literais no arquivo (`"AKIAIOSFODNN7EXAMPLE"`, `const STRIPE_API_KEY = …`), e
+      `criar-projeto.mjs:92` copia `ferramentas/` inteiro para dentro do projeto — então **todo projeto
+      gerado nascia com `ci:seguranca` vermelho**, apontando um arquivo que o template instalou. A
+      medição original tinha varrido só `bindings/**`; `ferramentas/` também viaja
+- [x] Conserto: fixtures montadas em tempo de execução (`montar('AKIA', 'IOSFODNN7', 'EXAMPLE')`) — o
+      literal deixa de existir no fonte e **`ferramentas/` continua sendo varrido**. A alternativa
+      (excluir `ferramentas/`, com o precedente do lint) foi recusada com o argumento certo: ponto cego
+      num **linter** é tolerável, num **scanner de segredo** é o defeito que ele existe para não ter
+- [x] Provado nos três bindings com delta = template inteiro (134 · 134 · 112 arquivos): **zero
+      achados, exit 0**. E o segredo real continua pego, mascarado, com `gitleaks` confirmando
+      independentemente
 
 ### F.2e — `build` + migrations contra banco efêmero
 - [ ] **`build` é decisão de arquitetura antes de ser script.** Medido: o `tsconfig.json` da raiz tem
@@ -765,8 +831,10 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
 
            F.2c cobertura real        `cobertura.minima` deixou de ser ficção · lcov · JUnit · SARIF
 
-AGORA      F.2d segurança + deps      a política de ferramenta ausente, resolvida num lugar
-           F.2e build + migrations     `build` precisa de conversa: não há alvo de artefato desenhado
+           F.2d segurança + deps      scanner próprio, exceção de CVE datada · F.2d.1 tirou o
+                                      falso positivo sobre o próprio pacote
+
+AGORA      F.2e build + migrations    `build` precisa de conversa: não há alvo de artefato desenhado
            H    dívidas              a qualquer momento
            CD   fora do plano        falta responder a unidade de release — é por projeto
 ```
