@@ -199,6 +199,19 @@ def _rodar_delegado(rotulo: str, script: str) -> int:
     return 0 if ok else 1
 
 
+def _rodar_migrations(resto: list[str]) -> int:
+    """`--migrations up|down|ciclo <modulo>` delega para `scripts/migrations.py` — script de
+    PROJETO, não ferramenta (03-operação.md §9.3): precisa de driver de Postgres, fora do
+    zero-dependência de `ferramentas/` (lei 3). Roda pelo interpretador ATUAL, não por `-m`
+    (`scripts/migrations.py` é arquivo solto, não módulo instalado) — mesmo motivo de `_resolver`
+    para os outros passos Python: um venv não ativado não aparece pelo PATH."""
+    if not resto:
+        _escrever("uso: python verificar.py --migrations up|down|ciclo <modulo>\n")
+        return 1
+    resultado = subprocess.run([sys.executable, "scripts/migrations.py", *resto], cwd=RAIZ, check=False)
+    return resultado.returncode
+
+
 def main() -> int:
     if "--cobertura" in sys.argv:
         return _rodar_cobertura()
@@ -208,6 +221,8 @@ def main() -> int:
         return _rodar_delegado("seguranca", "ci-seguranca.mjs")
     if "--dependencias" in sys.argv:
         return _rodar_delegado("dependencias", "ci-dependencias.mjs")
+    if "--migrations" in sys.argv:
+        return _rodar_migrations(sys.argv[sys.argv.index("--migrations") + 1 :])
 
     parar_no_primeiro = "--rapido" in sys.argv
     # Anotado: sem isto o tipo e inferido dos quatro primeiros (pasta=None) e os passos de

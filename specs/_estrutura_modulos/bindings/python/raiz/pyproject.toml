@@ -21,6 +21,9 @@ dev = [
   # venv (a mesma razao de `pytest-cov` estar so aqui), e o audit le o ambiente inteiro de qualquer
   # pasta — instalar de novo por modulo so duplicaria o pacote no mesmo venv, sem cobrir nada a mais.
   "pip-audit>=2.7",
+  # `scripts/migrations.py` (03-operacao.md §9.3) — NAO mora em ferramentas/ (zero dependencia,
+  # lei 3): precisa de driver de Postgres. `[binary]` evita compilar contra libpq no dev.
+  "psycopg[binary]>=3.2",
 ]
 
 [build-system]

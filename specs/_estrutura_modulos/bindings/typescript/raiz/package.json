@@ -39,7 +39,9 @@
     "//iniciar:autoteste": "Prova as decisoes puras do entrypoint (rotas unicas, escolha de entrypoint emitido x fonte) sem subir processo nem tocar disco.",
     "iniciar:autoteste": "tsx src/composicao.ts --autoteste",
     "//build": "Compila o backend (raiz + cada modulo, tsc -p tsconfig.build.json) e constroi o front de todo modulo com web/ (vite build) — 03-operacao.md §9. `node ferramentas/empacotar.mjs <destino>` faz o mesmo MAIS empacota um artefato backend autossuficiente em <destino>.",
-    "build": "node ferramentas/empacotar.mjs"
+    "build": "node ferramentas/empacotar.mjs",
+    "//migrations": "Aplica/reverte database/migrations/*.sql de UM modulo contra Postgres (03-operacao.md §9.3) — `<MODULO>_DB_URL` no .env da raiz. NAO mora em ferramentas/ (zero dependencia, lei 3): usa `pg`, devDependency de PROJETO. `-- up|down|ciclo <modulo>`: o `--` repassa o argumento ao script (sem ele, npm interpreta como flag do proprio npm).",
+    "migrations": "node scripts/migrations.mjs"
   },
   "dependencies": {
     "express": "^4.19.2"
@@ -49,6 +51,7 @@
     "@types/node": "^22.9.0",
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^9.15.0",
+    "pg": "^8.13.1",
     "prettier": "^3.3.3",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",

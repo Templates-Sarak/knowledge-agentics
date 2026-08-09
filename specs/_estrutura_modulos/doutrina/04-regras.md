@@ -518,6 +518,31 @@ bloco não instala `react` e sobe normalmente). O peso extra é só `npm install
 positivo perigoso, é imprecisão aceita: separar dependência de backend e de front exigiria mudar como
 `_template/package.json` declara as duas, mudança de estrutura do template, fora deste bloco.
 
+### Limite declarado — `scripts/migrations.{mjs,py}` (não é regra deste catálogo)
+
+**"O rollback funciona contra Postgres de verdade" não é verificável estaticamente**, mesmo motivo
+dos dois limites acima: provar exige um Postgres efêmero de verdade e o ciclo `up → down → up` —
+reprodução colada no relatório desta tarefa, não gate.
+
+**Sem controle de versão de migration.** `up`/`down` aplicam **todos** os arquivos de
+`database/migrations/` em ordem (crescente/decrescente pelo prefixo `NNNN`), sempre — não existe
+tabela `schema_migrations` marcando "já apliquei isto". Rodar `up` duas vezes sobre um banco já
+migrado falha (tabela já existe) **por desenho**, não por bug: é o próprio sinal de "este banco não
+está vazio". Decidido e medido contra o objetivo do bloco: provar que o `-- rollback` funciona não
+exige rastrear estado entre execuções, só que aplicar e reverter fecham o ciclo.
+
+**`database/schema.sql` continua não verificado contra o resultado real do `up`.** Ele se declara
+"um espelho, não a fonte" e nada confere que o espelho bate — medido antes de tentar: comparar
+exigiria um parser de `CREATE TABLE` (tipos, defaults com parênteses, arrays, constraints) com o
+mesmo rigor adversarial do resto desta base, escopo maior que "o rollback funciona". Não forçado —
+falso negativo **assumido**: schema.sql pode divergir da migration sem que nada acuse.
+
+**`scripts/` não é varrido pelas regras de raiz** (`hardcode-url-raiz`, `fallback-raiz`,
+`env-raiz-declarado`) — `gate/contexto.mjs:PASTAS_DA_RAIZ` é `['adapters', 'src', 'packages']`
+(fora de escopo deste bloco), e `scripts/` não está nessa lista. O runner segue a MESMA disciplina
+manualmente (zero URL/porta literal, falha nomeando a chave ausente em vez de default silencioso),
+mas o gate não cobra isso por máquina — falso negativo assumido, não escondido.
+
 `ferramentas/gate/testes/` mantém um módulo-fixture conforme e um fixture por regra violada. Regra nova sem
 teste não entra, e regressão no gate reprova sozinha — a mesma disciplina que o gate exige dos módulos.
 

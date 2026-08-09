@@ -148,6 +148,9 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
 - Numeração sequencial e imutável: `NNNN-verbo-objeto.sql`. **Migration publicada não se edita** — corrige-se
   com outra.
 - Toda migration é **reversível**: o bloco `-- rollback` acompanha, e o gate exige que ele exista.
+- **O bloco é executável, não decorativo.** Cada linha do rollback é a instrução comentada
+  (`-- drop table if exists ...`); `scripts/migrations.{mjs,py}` (03-operação.md §9.3) descomenta e roda
+  em ordem inversa. É contrato textual preciso — não prosa que alguém lê antes de agir a mão.
 - Mudança destrutiva usa **expand-contract**: adiciona → migra dado → passa a ler o novo → só então remove o
   antigo, em migrations separadas.
 - `schema.sql` reflete o estado alvo depois da última migration.

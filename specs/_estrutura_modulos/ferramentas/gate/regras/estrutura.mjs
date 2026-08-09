@@ -31,21 +31,14 @@ const ENTRADAS_PERMITIDAS = new Set([
   // As DUAS travadas por maquina: `gate/testes/casos.mjs`, caso "schema-manifesto — CHAMARIZ" —
   // regride a tolerancia de qualquer uma e `estrutura-estrita` acusa um id nao declarado ali.
   'relatorios', '.coverage',
-  // `dist/` e o EMITIDO por `tsc -p tsconfig.build.json` (TypeScript, specs/arquitetura/
-  // 03-operacao.md §9) — so existe depois de `npm run build`, nunca escrito a mao, e o `.gitignore`
-  // do esqueleto ja o ignora. Modulo JS/Python nunca tem esta pasta (nao emitem); tolerar por FORMA
-  // nao criaria um buraco por binding, porque so quem chama `tsc` a escreve.
-  //
-  // ESTA ENTRADA E REDUNDANTE, e fica declarado — medido, nao presumido: `gate/contexto.mjs`
-  // (FORA de escopo) tem `dist` em `NAO_PERCORRER`, e `entradasRaiz` filtra tudo que esta em
-  // `NAO_PERCORRER` ANTES desta lista ser consultada (unica excecao e `gerados`, via
-  // `CONTEUDO_IGNORADO_MAS_ENTRADA`). `dist` nunca chega a `ctx.entradasRaiz` — nenhum caso,
-  // chamariz ou nao, consegue fazer a tolerancia dela regredir de forma observavel (medido:
-  // removida daqui, os tres bindings continuam com a MESMA contagem de autoteste, sem nenhuma
-  // FALHA — ao contrario de `tsconfig.build.json`/`relatorios`/`.coverage`, que travam a suite
-  // ao serem removidas). Mantida por clareza de intencao e como rede caso `contexto.mjs` mude um
-  // dia a excecao de `dist` em `NAO_PERCORRER` — nao por precisar dela hoje.
-  'dist',
+  // `dist/` NAO esta aqui, de proposito — medido (nao presumido) que a entrada seria
+  // INALCANCAVEL: `gate/contexto.mjs:NAO_PERCORRER` (FORA de escopo) ja contem `'dist'`, e
+  // `entradasRaiz` filtra tudo que esta em `NAO_PERCORRER` ANTES desta lista ser consultada
+  // (unica excecao e `'gerados'`, via `CONTEUDO_IGNORADO_MAS_ENTRADA`) — `dist` nunca chega a
+  // `ctx.entradasRaiz`, entao uma entrada aqui nunca teria efeito nenhum. Lista normativa com
+  // item inalcancavel e declaracao sem efeito (o mesmo defeito que `'gerados'` teve nesta MESMA
+  // lista, antes de `CONTEUDO_IGNORADO_MAS_ENTRADA` existir — lá a saída foi TORNAR alcançável
+  // porque uma regra precisava; aqui nada precisa, entao a saída é não declarar).
   'contrato', 'config', 'core', 'api', 'web', 'database', 'tests', 'gerados',
 ]);
 

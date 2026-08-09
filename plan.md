@@ -710,7 +710,45 @@ por presença de `decisao`, e `validar.mjs:23-30` perdoa as válidas e denuncia 
       precisava; aqui nada precisa, então a entrada sai. Lista normativa com item inalcançável é
       declaração sem efeito
 
-### F.2g — migrations contra banco efêmero + exemplo de CI documentado
+### F.2g — migrations executáveis  ✅ **CONCLUÍDO** — *fecha o Bloco F*
+
+> **O `-- rollback` nunca tinha sido executado, e havia um motivo concreto: ele é SQL COMENTADO.** A
+> regra `migrations` exigia o bloco e o nome do arquivo, nada mais. Rodar o *down* exige **descomentar**
+> — separar o que vem depois de `-- rollback` e tirar o `-- ` de cada linha. Faltava o leitor.
+
+- [x] `scripts/migrations.{mjs,py}` aplica e reverte, provado com **ciclo up → down → up contra
+      Postgres real** (docker efêmero), nos dois módulos, nos dois ecossistemas. Se o *down* não
+      reverte, o *up* seguinte falha — é o que torna o teste real em vez de decorativo
+- [x] **`<MODULO>_DB_URL` finalmente tem consumidor.** Estava em `modulo.json:envRequerido` desde sempre
+      e era lida por ninguém — mais uma declaração órfã, agora fechada, com falha nomeando a chave
+- [x] Decisão **(b)**, medida: `pg`/`psycopg` como devDependency **de projeto**, em
+      `bindings/*/raiz/scripts/` — não em `ferramentas/` (zero-dep, lei 3) nem em `adapters/` (adapter é
+      troca de provedor em runtime; migration é operação, nunca importada por `composicao.*`). O `psql`
+      não existe nesta máquina e instalar um Postgres inteiro só pelo CLI seria desproporcional
+- [x] **Zero shell, zero subprocess**: fala TCP direto. A entrada adversarial (`; echo X`, `$(echo X)`,
+      `& echo X`) é rejeitada **por formato** (`^[a-z][a-z0-9-]*$`), não por escaping — não há superfície
+      onde injetar
+- [x] O parser do rollback provado contra os três casos difíceis: linha em branco, comentário que **não**
+      é rollback, e indentação preservada. Achado no caminho: a fixture do próprio teste tinha o valor
+      esperado errado, corrigida depois de medir a saída real
+- [x] **Exemplo de fiação de CI** no `03-operacao.md` §7.4, rotulado como de um provedor, ADR-005 citada
+      e **intacta**. Conferi: os **11** comandos citados existem todos — nada inventado
+- [x] `'dist'` **apagada** de `ENTRADAS_PERMITIDAS` (era inalcançável), com o comentário que registra a
+      medição para ninguém readicionar. `tsconfig.build.json` segue travado: removê-la derruba 92 casos
+- [x] **Declarado, não fingido**: sem controle de versão de migration (o bloco é "o rollback funciona",
+      não um framework) e `schema.sql` continua sem verificador contra o resultado real — comparar
+      exigiria um parser de `CREATE TABLE` com o mesmo rigor do resto, e isso é outro bloco
+- [x] **A dívida do `adapters/` no `afetados.mjs` não se materializou** — e a resposta é melhor que a
+      pergunta: as migrations não importam `adapters/`, porque este bloco manteve os dois caminhos
+      desacoplados por decisão (runtime via adapters, migration via driver direto)
+
+### F.2g.1 — o driver lazy  ✅ **CONCLUÍDO**
+- [x] O `--autoteste` do runner não rodava em TS/JS: `import pg from 'pg'` no topo fazia um teste que
+      **nunca toca banco** exigir o driver instalado. O irmão Python já importava dentro da função.
+      Mesma decisão, duas implementações — agora uma só. Os três rodam **da base**, sem install: 8/8
+- [x] Medido antes de aplicar: `pg` é CJS mas expõe `Client` como export **nomeado**, então
+      `const { Client } = await import('pg')` funciona sem `.default` — verificado contra um `pg` real
+
 - [ ] **`build` é decisão de arquitetura antes de ser script.** Medido: o `tsconfig.json` da raiz tem
       `"noEmit": true`, não há bundler para a `api/`, e `dist/` está no `.gitignore` sem que nada
       escreva nele — **o template não tem alvo de artefato desenhado**. O que é "o artefato" de um
@@ -936,7 +974,16 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
            F.2f a emissão            o artefato sobe sem a árvore de fonte, com `node` puro
            F.2f.1 tolerâncias travadas · `'dist'` em ENTRADAS_PERMITIDAS é entrada MORTA
 
-AGORA      F.2g migrations contra banco efêmero + exemplo de CI documentado — **última do Bloco F**
+           F.2g migrations           `-- rollback` deixou de ser comentário nunca lido
+           F.2g.1 driver lazy        os três `--autoteste` rodam da base
+
+           ═══ BLOCO F FECHADO — o objetivo enunciado está cumprido ═══
+           nasce verificado · hooks cobram antes do commit · o artefato sobe sozinho
+           · qualquer pipeline consome os mesmos comandos (exit code + relatório)
+
+AGORA      —    usar o template num sistema real; o que doer no uso vira a próxima lista
+           H    11 dívidas declaradas, nenhuma bloqueia
+           CD   fora do plano até haver alvo de deploy concreto
            H    dívidas              a qualquer momento
            CD   fora do plano        falta responder a unidade de release — é por projeto
 ```

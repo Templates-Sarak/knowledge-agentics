@@ -237,6 +237,47 @@ declarado em `04-regras.md` §7.2, não escondido — é falso negativo, tolerad
 (estado do repositório, não do arquivo em edição) e `ci:dependencias` precisa de rede/registro externo
 — o mesmo motivo, com sinal trocado, que já mantém `ci:contrato` e `ci:cobertura` fora da cadeia local.
 
+## 7.4 Exemplo de fiação de CI — de um provedor, não do template
+
+**A ADR-005 continua valendo:** o template não traz pipeline de CI/CD, traz o contrato (comando,
+exit 0/1) para que um executor o chame em uma linha. O que segue é **exemplo de um provedor**
+(GitHub Actions, GitLab CI, o que for) — nada aqui é arquivo que `criar-projeto.mjs` instala.
+
+Cada linha é um comando que **já existe** hoje, na ordem em que um pipeline razoável os chamaria —
+nada inventado, e onde a escada não tem passo, este exemplo não mostra um:
+
+```
+# 1. local, em segundos — o que roda em pre-commit/pre-push
+npm run validar          # gate --todos
+npm run validar:env      # sincronizar-env --conferir
+npm run formato
+npm run lint
+npm run tipos
+npm test
+
+# 2. selecao — so quando o pipeline quer escopar por commit, nao rodar tudo
+node ferramentas/afetados.mjs --desde origin/main
+
+# 3. so CI — custam rede, git de historico, ou dezenas de segundos
+npm run ci:contrato      # breaking change no contrato/openapi.yaml
+npm run ci:cobertura     # lcov + junit, por modulo
+npm run ci:seguranca     # estagio 0, fail-closed
+npm run ci:dependencias  # audit + excecao datada
+
+# 4. artefato — so no binding que emite (TypeScript; JS/Python nao tem este passo, §9)
+npm run build
+
+# 5. migrations — contra o Postgres efemero QUE O PROVEDOR sobe (services:, docker run — nunca
+#    o template), com <MODULO>_DB_URL apontando pra ele
+node scripts/migrations.mjs ciclo <modulo>
+```
+
+**O que este exemplo não mostra, de propósito:** subir o Postgres (`services:` do provedor,
+`docker run` local — decisão de infraestrutura, fora da ADR-005) e publicar o artefato (`dist/` +
+`web/dist/` para onde quer que o deploy vá — também infraestrutura, não contrato). Prometer esses
+dois aqui seria a lei 9 dentro de um arquivo de doutrina: declaração sem verificador, porque nenhum
+comando do template os cobre.
+
 # 8. Exceções
 
 `config/conformidade.json` na raiz do projeto aceita exceção **nominal**, em duas listas com a mesma
@@ -302,3 +343,32 @@ mescla `include`/`exclude`, substitui) para excluir `web/` e `tests/`: backend n
 teste não viaja com artefato nenhum. `npm run tipos` de cada módulo continua rodando pelo `tsconfig.json`
 de sempre (`noEmit: true`) — o módulo continua compilando **isolado**, a condição prática da extração
 (§6 deste documento); a emissão não move nem edita esse arquivo.
+
+## 9.3 Migrations executáveis
+
+`database/migrations/*.sql` (02-contrato-e-dados.md §6.3) não é só texto que o gate cobra a forma —
+`scripts/migrations.{mjs,py}` aplica o `up` e reverte o `down`, contra um Postgres de verdade:
+
+```
+node scripts/migrations.mjs up <modulo>       # ou: python scripts/migrations.py up <modulo>
+node scripts/migrations.mjs down <modulo>     # reverte em ordem INVERSA (bloco "-- rollback")
+node scripts/migrations.mjs ciclo <modulo>    # up -> down -> up — prova que o rollback fecha
+```
+
+**Não mora em `ferramentas/`.** Falar com Postgres exige driver, e `ferramentas/**` é zero
+dependência externa (§3 do catálogo). O runner é devDependency de **projeto** — `pg` (Node) /
+`psycopg[binary]` (Python), mesmo precedente de `tsx`/`@vitest/coverage-v8`/`pytest-cov` — e por
+isso viaja com o projeto (`scripts/`), não com a base. `adapters/` continua sendo só para o
+processo composto trocar de provedor em **runtime**; migration é ferramenta de **operação**, nunca
+importada por `composicao.*` — mudar `adapters/memoria` não afeta o caminho de migrations, e
+`ferramentas/afetados.mjs` não precisou mudar por isso (medido: o runner não importa `adapters/`
+em lugar nenhum).
+
+**A URL vem do ambiente, sempre `<MODULO>_DB_URL`** (já em `modulo.json:envRequerido` desde o
+molde) — o runner não sabe de onde ela veio nem como o Postgres subiu (ADR-005: o template traz o
+contrato, não o provedor). Ausente, o runner falha nomeando a chave exata, antes de tentar
+conectar.
+
+**Limite declarado** (04-regras.md §7.2): sem controle de versão de migration — `up`/`down`
+aplicam **todos** os arquivos em ordem; não há tabela `schema_migrations`. O bloco é "o rollback
+funciona", não "um framework de migração".
