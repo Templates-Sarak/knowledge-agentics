@@ -500,7 +500,23 @@ modo composto para não reaplicar o prefixo por dentro, e um dispatcher ASGI por
 nunca usa `Mount`, porque `Mount` tira o prefixo antes de repassar e cada sub-app já o tem embutido no
 próprio roteador). Sem essa reprodução real — só com o gate estático — este defeito passaria despercebido.
 
-## 7.3 O gate se testa
+### Limite declarado — `ferramentas/empacotar.mjs` (não é regra deste catálogo)
+
+**"O artefato roda sem o fonte" também não é verificável estaticamente**, pelo mesmo motivo do limite
+acima: provar exige empacotar de verdade, copiar para um diretório novo e subir sem `modulos/*/api/src/
+*.ts`, sem `src/composicao.ts`, sem `ferramentas/` — reprodução colada no relatório desta tarefa, não
+gate. Falso negativo **assumido**: um `dist/` que compila mas empacota incompleto (ativo novo que o
+runtime passou a ler e a convenção de cópia — `modulo.json` + `config/*.json` + `dist/` — não cobre)
+só aparece nessa reprodução, nunca no gate.
+
+**O `package.json` do artefato pode incluir dependência que o BACKEND não usa.** `mesclarDependencias`
+une o campo `dependencies` de cada `package.json` do workspace (raiz, módulos, adapters) mecanicamente —
+é o que a impede de envelhecer, mas o `package.json` de módulo declara backend E front no mesmo campo
+plano (`express` ao lado de `react`/`react-dom`). Medido: nenhum arquivo de backend (`api/`, `core/`,
+`adapters/`, `src/`) importa `react`; o artefato empacotado funciona sem ele instalado (a prova deste
+bloco não instala `react` e sobe normalmente). O peso extra é só `npm install` mais lento — não é falso
+positivo perigoso, é imprecisão aceita: separar dependência de backend e de front exigiria mudar como
+`_template/package.json` declara as duas, mudança de estrutura do template, fora deste bloco.
 
 `ferramentas/gate/testes/` mantém um módulo-fixture conforme e um fixture por regra violada. Regra nova sem
 teste não entra, e regressão no gate reprova sozinha — a mesma disciplina que o gate exige dos módulos.

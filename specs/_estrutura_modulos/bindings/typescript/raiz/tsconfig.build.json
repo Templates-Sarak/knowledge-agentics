@@ -1,0 +1,10 @@
+{
+  "//": "Emissao da RAIZ (src/, packages/, adapters/) — dist/. O tsconfig.json normal (noEmit) so tipa; este emite. `include`/`exclude` vem inteiros do base (nao redeclarados aqui): a mesma arvore que e tipada e a que e emitida, senao as duas divergiriam sozinhas.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "declaration": false,
+    "sourceMap": false
+  }
+}

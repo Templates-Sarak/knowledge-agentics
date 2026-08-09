@@ -20,7 +20,7 @@ const BINDINGS = ['typescript', 'javascript', 'python'];
 const ENTRADAS_PERMITIDAS = new Set([
   'modulo.json', 'package.json', 'pyproject.toml', 'requirements.txt', 'README.md',
   '.env', '.env.example', '.gitignore', 'package-lock.json', 'node_modules',
-  'tsconfig.json', 'jsconfig.json', 'vitest.config.ts', 'vitest.config.js',
+  'tsconfig.json', 'tsconfig.build.json', 'jsconfig.json', 'vitest.config.ts', 'vitest.config.js',
   'eslint.config.mjs', 'eslint.config.js',
   // `relatorios/` e onde `npm run cobertura`/`pytest --cov` escrevem lcov+junit — ela so existe
   // depois de rodada, nunca escrita a mao, e e SEMPRE `relatorios/`, nos tres bindings (a config
@@ -28,7 +28,24 @@ const ENTRADAS_PERMITIDAS = new Set([
   // isso e tolerado por FORMA, nao por lista). `.gitignore` a cobre; aqui e so a arvore fechada.
   // `.coverage` e o banco SQLite que o `coverage.py` (por baixo do pytest-cov) escreve na RAIZ do
   // modulo, fora de `relatorios/` — nao e escolha nossa, e onde a ferramenta grava por padrao.
+  // As DUAS travadas por maquina: `gate/testes/casos.mjs`, caso "schema-manifesto — CHAMARIZ" —
+  // regride a tolerancia de qualquer uma e `estrutura-estrita` acusa um id nao declarado ali.
   'relatorios', '.coverage',
+  // `dist/` e o EMITIDO por `tsc -p tsconfig.build.json` (TypeScript, specs/arquitetura/
+  // 03-operacao.md §9) — so existe depois de `npm run build`, nunca escrito a mao, e o `.gitignore`
+  // do esqueleto ja o ignora. Modulo JS/Python nunca tem esta pasta (nao emitem); tolerar por FORMA
+  // nao criaria um buraco por binding, porque so quem chama `tsc` a escreve.
+  //
+  // ESTA ENTRADA E REDUNDANTE, e fica declarado — medido, nao presumido: `gate/contexto.mjs`
+  // (FORA de escopo) tem `dist` em `NAO_PERCORRER`, e `entradasRaiz` filtra tudo que esta em
+  // `NAO_PERCORRER` ANTES desta lista ser consultada (unica excecao e `gerados`, via
+  // `CONTEUDO_IGNORADO_MAS_ENTRADA`). `dist` nunca chega a `ctx.entradasRaiz` — nenhum caso,
+  // chamariz ou nao, consegue fazer a tolerancia dela regredir de forma observavel (medido:
+  // removida daqui, os tres bindings continuam com a MESMA contagem de autoteste, sem nenhuma
+  // FALHA — ao contrario de `tsconfig.build.json`/`relatorios`/`.coverage`, que travam a suite
+  // ao serem removidas). Mantida por clareza de intencao e como rede caso `contexto.mjs` mude um
+  // dia a excecao de `dist` em `NAO_PERCORRER` — nao por precisar dela hoje.
+  'dist',
   'contrato', 'config', 'core', 'api', 'web', 'database', 'tests', 'gerados',
 ]);
 

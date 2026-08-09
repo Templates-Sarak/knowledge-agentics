@@ -110,14 +110,29 @@ export function verificarRotasUnicas(modulos: ManifestoDescoberto[]): void {
   throw new Error(`[composicao] rotaBase colidindo entre modulos: ${detalhe}`);
 }
 
-/** O que se espera de `api/src/index.ts` de um modulo — o mesmo `criarApp` que os testes de contrato usam. */
+/** O que se espera de `api/src/index.*` de um modulo — o mesmo `criarApp` que os testes de contrato usam. */
 interface ModuloApi {
   criarApp(opcoes: { deps: Record<string, unknown>; auth: Auth; raiz: string }): Express;
 }
 
+/**
+ * Escolhe qual entrypoint do modulo importar — PURO, dado que o EMITIDO existe ou nao (quem checa
+ * o disco e o chamador). "Convencao de caminho", nao variavel de ambiente nem tentativa-e-erro:
+ * prefere `dist/api/src/index.js` (emitido por `tsc -p tsconfig.build.json`) quando ele esta la, e
+ * cai para a fonte (`api/src/index.ts`, resolvida por `tsx` em dev) quando nao esta. Preco: um
+ * `dist/` desatualizado (fonte mudou, build nao rodou de novo) e servido sem aviso — mitigado por
+ * `ferramentas/empacotar.mjs` sempre recompilar do zero antes de copiar, nunca reusar `dist/` velho.
+ */
+export function escolherEntrypointDoModulo(pastaModulo: string, emitidoExiste: boolean): string {
+  return emitidoExiste
+    ? join(pastaModulo, 'dist', 'api', 'src', 'index.js')
+    : join(pastaModulo, 'api', 'src', 'index.ts');
+}
+
 /** Import dinamico do modulo, pelo CAMINHO — a mesma descoberta por declaracao, nunca por lista fixa. */
 async function importarApi(modulo: ManifestoDescoberto): Promise<ModuloApi> {
-  const caminho = join(modulo.pasta, 'api', 'src', 'index.ts');
+  const emitido = join(modulo.pasta, 'dist', 'api', 'src', 'index.js');
+  const caminho = escolherEntrypointDoModulo(modulo.pasta, existsSync(emitido));
   return (await import(pathToFileURL(caminho).href)) as ModuloApi;
 }
 
@@ -234,6 +249,23 @@ function casosDeRotasUnicas(): Array<{ nome: string; modulos: ManifestoDescobert
   ];
 }
 
+function casosDeEntrypoint(): Array<{ nome: string; pasta: string; emitidoExiste: boolean; esperado: string }> {
+  return [
+    {
+      nome: 'emitido existe: usa dist/api/src/index.js',
+      pasta: '/proj/modulos/catalogo',
+      emitidoExiste: true,
+      esperado: join('/proj/modulos/catalogo', 'dist', 'api', 'src', 'index.js'),
+    },
+    {
+      nome: 'emitido ausente: cai para a fonte api/src/index.ts',
+      pasta: '/proj/modulos/catalogo',
+      emitidoExiste: false,
+      esperado: join('/proj/modulos/catalogo', 'api', 'src', 'index.ts'),
+    },
+  ];
+}
+
 function rodarAutoteste(): number {
   let falhas = 0;
   const casos = casosDeRotasUnicas();
@@ -250,7 +282,19 @@ function rodarAutoteste(): number {
     if (!ok) falhas += 1;
   }
 
-  process.stdout.write(`\nautoteste: ${casos.length - falhas}/${casos.length} ok\n`);
+  const casosEntrypoint = casosDeEntrypoint();
+  for (const caso of casosEntrypoint) {
+    const obtido = escolherEntrypointDoModulo(caso.pasta, caso.emitidoExiste);
+    const ok = obtido === caso.esperado;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} escolherEntrypointDoModulo: ${caso.nome}\n`);
+    if (!ok) {
+      falhas += 1;
+      process.stdout.write(`       esperado: ${caso.esperado} obtido: ${obtido}\n`);
+    }
+  }
+
+  const total = casos.length + casosEntrypoint.length;
+  process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
   return falhas === 0 ? 0 : 1;
 }
 

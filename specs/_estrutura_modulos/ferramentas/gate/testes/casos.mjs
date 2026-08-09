@@ -44,6 +44,34 @@ export const CASOS = [
     mutar: (m) => m.escrever('lixo.txt', 'nao previsto'),
   },
   {
+    regra: 'schema-manifesto',
+    descricao: 'CHAMARIZ: campo nao previsto, com relatorios/ e .coverage tambem presentes',
+    // Prova, POR MAQUINA, que `relatorios` e `.coverage` continuam tolerados em
+    // `ENTRADAS_PERMITIDAS` (estrutura.mjs) — sem depender de olhar o `Set` a olho. A regra
+    // esperada aqui e OUTRA (schema-manifesto); se a tolerancia de qualquer uma das duas
+    // regredir, `estrutura-estrita` acusa TAMBEM, um id que este caso nao declara em `tambem`, e
+    // `executar.mjs` reprova com "id NAO declarado" — o mesmo chamariz de J.2/F.2a/F.2d.
+    //
+    // Sem pasta de verdade: o harness nao tem operacao de `mkdir` (so `escrever` grava ARQUIVO), e
+    // a regra `estrutura-estrita` julga so o NOME de topo (`ctx.entradasRaiz`, por `readdirSync`),
+    // nunca se e arquivo ou pasta — um arquivo chamado `relatorios` prova exatamente a mesma
+    // linha de codigo que uma pasta `relatorios/` provaria.
+    //
+    // Conteudo medido (nao presumido): nenhum dos dois nomes tem extensao que bata `EXT_CODIGO`
+    // (`.ts/.tsx/.js/.jsx/.mjs/.cjs/.py`, contexto.mjs) — nenhum vira `ctx.codigo`, nenhuma regra
+    // de conteudo (log, limiar-funcao, hardcode-url) os enxerga. `dist/` fica DE FORA deste
+    // chamariz de proposito: `contexto.mjs:NAO_PERCORRER` ja o exclui de `ctx.entradasRaiz`
+    // incondicionalmente (FORA de escopo, nao editado aqui) — nenhum caso, chamariz ou nao,
+    // consegue fazer a tolerancia dele regredir de forma observavel (medido: removida de
+    // `ENTRADAS_PERMITIDAS`, os tres bindings continuam 92/92 · 92/92 · 88/88, sem mudanca
+    // nenhuma — ao contrario de `tsconfig.build.json`, que TRAVA a suite inteira ao ser removida).
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, campoOutroChamariz: true }));
+      m.escrever('relatorios', 'lcov (fixture do chamariz — nunca lido como codigo)');
+      m.escrever('.coverage', 'sqlite (fixture do chamariz — nunca lido como codigo)');
+    },
+  },
+  {
     regra: 'web-declarado',
     descricao: 'rotaWeb declarada sem pagina real',
     // Cascata legitima: sem as paginas, as chaves de `config/textos.json` ficam sem leitor. So em

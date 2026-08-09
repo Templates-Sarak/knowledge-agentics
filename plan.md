@@ -297,7 +297,10 @@ e `db.query(id + ' from x')` sem verbo na linha não acusa — família conserva
       leitura (8 formas medidas de 18, três guardas testadas e falsificadas). Bloco H
 
 ### Duas leituras cruas de direção OPOSTA — decisão, não conserto
-- [ ] `config-morta` e `rota-publica-autenticada` ficam mais **frouxas** ao ler cru: chave citada em
+- [x] **Resolvido pela metade que importava:** `rota-publica-autenticada` passou a ler `textoDeCodigo`
+      na J.2 (era falso negativo que APROVAVA em silêncio); `config-morta` fica cru por decisão — é
+      `aviso`, e ali o falso negativo só deixa de avisar. Detalhe original abaixo
+- [x] `config-morta` e `rota-publica-autenticada` ficavam mais **frouxas** ao ler cru: chave citada em
       comentário conta como "lida", `rotasPublicas` em comentário satisfaz a cláusula. Torná-las
       estritas é **mudança de comportamento**, e cada uma precisaria do caso que prova a acusação nova
 
@@ -342,7 +345,8 @@ exercite. Dois dos três lados aprovavam.
 - [x] **A outra metade das `permissoes` é INCOMPATÍVEL, não inverificável**: detectar "declarada e
       usada" exigiria procurar `<modulo>:ler` no código — exatamente o que `permissao-literal`
       proíbe. E o consumo é posicional, então a string nunca aparece. Registrado no §7.1
-- [ ] `portas` — verificar se o campo do **manifesto** tem verificador semântico
+- [x] `portas` — **tem**: a regra `porta-declarada` (`configuracao.mjs:205`, escopo `modulo`), mais o
+      `resolverDependencias` do entrypoint, que derruba o boot se a porta declarada não tem fábrica
       *(as ocorrências encontradas são do `config/portas.json`, que é outra coisa)*
 - [x] ~~Achado do Bloco C~~ — **resolvido por `tabela-declarada`**. A justificativa do
       `artefato-declarado` (*"quem declara banco é `dados.tabelas`"*) só era verdade se algo cobrasse
@@ -665,7 +669,48 @@ por presença de `decisao`, e `validar.mjs:23-30` perdoa as válidas e denuncia 
 > um risco de ambiente que vale vigiar: **editar arquivo pré-existente neste ambiente gerou CRLF**, onde
 > criar arquivo novo não. Confira bytes em arquivo **editado**, não só em arquivo criado.
 
-### F.2f — `build`
+### F.2f — a emissão: o artefato existe  ✅ **CONCLUÍDO**
+
+> **O fato que decidiu:** o fonte já estava escrito como se houvesse build — todo import relativo
+> carrega `.js` (convenção NodeNext: a extensão do arquivo **emitido**), e o Node não resolve isso a
+> partir do fonte (`ERR_MODULE_NOT_FOUND`, medido em 24.10). O `tsx` cobria o buraco em dev. Emitir fez
+> o `.js` desses imports virar verdade.
+
+- [x] **Só o TypeScript emite** (`tsc -p tsconfig.build.json`, raiz + cada módulo, `outDir: dist`
+      espelhando a árvore 1:1 — imports relativos batem sem reescrita). JavaScript **já é** o artefato;
+      Python roda o fonte. **Nenhum `build` vazio por simetria** — comando que devolve 0 sem fazer nada
+      é a lei 10 com outra roupa
+- [x] **`tsc` emite código, não o projeto.** `ferramentas/empacotar.mjs` leva os ativos que o runtime lê
+      — medido por varredura: só `modulo.json` e `config/**/*.json`; `contrato/openapi.yaml`,
+      `core/templates/` e `database/` **não** são lidos em runtime e ficam fora de propósito. Cópia por
+      **convenção** (todo `.json` da pasta, `dependencies` unidas mecanicamente), nunca lista de nomes —
+      é o que impede a lista de envelhecer
+- [x] **O artefato sobe sem a árvore de fonte** — o teste que dava sentido à palavra: zero `.ts`, sem
+      `ferramentas/`, sem `tests/`, **sem `tsx`**, 73 pacotes contra 464, `node dist/src/composicao.js`.
+      Três rotas × dois módulos 200, 401 na não pública, 404 fora
+- [x] Os **dois** caminhos exercitados (lei 11): dev via `tsx` do fonte, produção via `node` do emitido,
+      a mesma `composicao.ts` nos dois. `escolherEntrypointDoModulo` é puro e prefere `dist/` quando
+      existe — com o preço declarado: `dist/` velho é servido sem aviso, mitigado por recompilar do zero
+- [x] Módulo **continua compilando isolado** (`tsc --noEmit` dentro dele) — a propriedade que sustenta a
+      extração não se perdeu. Gate `0/0` no projeto gerado **depois** do build; nada do artefato versionável
+- [x] Achado que só compilar de verdade acharia: `allowImportingTsExtensions: true`, herdado do tsconfig
+      de tipos, quebra a emissão com **TS5096**
+
+### F.2f.1 — travar as tolerâncias, e uma entrada morta  ✅ **CONCLUÍDO**
+- [x] **A premissa do revisor caiu, e a medição é melhor que ela.** Eu disse que `dist` estava
+      "destravado"; ele está **inalcançável**: `contexto.mjs:NAO_PERCORRER` já contém `'dist'`, e a única
+      exceção de `CONTEUDO_IGNORADO_MAS_ENTRADA` é `'gerados'` — `dist` nunca chega a `ctx.entradasRaiz`.
+      A entrada `'dist'` em `ENTRADAS_PERMITIDAS` é **morta**: removê-la não muda nada (93/93 · 93/93 ·
+      89/89). Nenhum caso em `casos.mjs` poderia travá-la, e o executor **reportou em vez de fingir**
+- [x] `relatorios` e `.coverage` (débito da F.2c) **travados** por chamariz num caso de OUTRA regra
+      (`schema-manifesto`) — a técnica da J.2/F.2a/F.2d. Removendo qualquer um:
+      `id NAO declarado: estrutura-estrita`, 92/93. Um caso trava os dois
+- [ ] **Sobrou uma linha:** apagar `'dist'` de `ENTRADAS_PERMITIDAS`. É o precedente da H1, onde
+      `'gerados'` foi achado morto na mesma lista — lá a saída foi torná-lo alcançável, porque uma regra
+      precisava; aqui nada precisa, então a entrada sai. Lista normativa com item inalcançável é
+      declaração sem efeito
+
+### F.2g — migrations contra banco efêmero + exemplo de CI documentado
 - [ ] **`build` é decisão de arquitetura antes de ser script.** Medido: o `tsconfig.json` da raiz tem
       `"noEmit": true`, não há bundler para a `api/`, e `dist/` está no `.gitignore` sem que nada
       escreva nele — **o template não tem alvo de artefato desenhado**. O que é "o artefato" de um
@@ -674,16 +719,14 @@ por presença de `decisao`, e `validar.mjs:23-30` perdoa as válidas e denuncia 
 - [ ] Migrations executáveis — sobem e descem contra banco efêmero. O único item onde o provedor
       realmente entra (service container), e onde a fronteira da ADR-005 volta a ser testada
 - [ ] Exemplo de fiação de CI **como documentação** no `03-operacao.md`, nunca como artefato de provedor
-- [ ] **`dependencia-fixada` é etapa de CI, não regra de gate** — decidido e medido em F.0, registrado
+- [x] **`dependencia-fixada` é etapa de CI, não regra de gate** — decidido e medido em F.0, registrado
       no §7.1 ("Deixaram de ser regra"). O passo é `npm ci`, que **falha sozinho** sem lockfile, com
       mensagem melhor que a do gate. Motivo: lockfile é produto do `npm install`, e o gate promete
       rodar **sem instalar nada** — é o que o faz viajar dentro do módulo extraído. Medido: projeto
       recém-criado não tem lockfile em nenhum dos três bindings, e no Python o template não declara
       arquivo de trava nenhum. Como regra, reprovaria todo projeto no minuto em que nasce
-- [ ] Passo de build — TS/JS não têm script `build`; `tsc --noEmit` não produz artefato
-- [ ] Migrations executáveis — sobem e descem contra banco efêmero
-- [ ] Estágio 0: `gitleaks` + `git ls-files` procurando `.env` versionado — **fail-closed**
-- [ ] Audit de dependência — fail-open, severidade vinda da política
+- [x] ~~Estágio 0 fail-closed~~ e ~~audit de dependência~~ — **feitos na F.2d**, e o "fail-open" do audit
+      foi revertido ali (ferramenta ausente REPROVA; a válvula é exceção nominal e datada)
 
 > **Três dos cinco são precondição de CD, não CI por esporte:** sem **build** não há artefato para
 > publicar (e o `package.json` da raiz TS/JS **não tem** `build` — só o módulo tem `build:web`); sem
@@ -890,8 +933,10 @@ FEITO      E    cobertura do gate      antecipado — toda regra nova já nasce 
            F.2e o entrypoint         a §3.4 virou verdade · 5 defeitos que só a execução revelou
            F.2e.1 o `.env` de todo módulo, não só do primeiro
 
-AGORA      F.2f build                precisa de conversa: não há alvo de artefato desenhado
-           F.2g migrations + exemplo de CI documentado
+           F.2f a emissão            o artefato sobe sem a árvore de fonte, com `node` puro
+           F.2f.1 tolerâncias travadas · `'dist'` em ENTRADAS_PERMITIDAS é entrada MORTA
+
+AGORA      F.2g migrations contra banco efêmero + exemplo de CI documentado — **última do Bloco F**
            H    dívidas              a qualquer momento
            CD   fora do plano        falta responder a unidade de release — é por projeto
 ```

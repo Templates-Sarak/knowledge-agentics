@@ -9,6 +9,8 @@
     "test": "vitest run",
     "test:observar": "vitest",
     "tipos": "tsc --noEmit",
+    "//build": "Emite SO o backend (api/ + core/) em dist/ — 03-operacao.md §9. `web/` e `tests/` ficam de fora de proposito: web e bundle a parte (build:web), tests nao viaja com artefato nenhum. Chamado por `ferramentas/empacotar.mjs`, nunca precisa rodar a mao.",
+    "build": "tsc -p tsconfig.build.json",
     "build:web": "vite build --config web/vite.config.ts",
     "validar": "node ../../ferramentas/gate/validar.mjs .",
     "validar:extracao": "node ../../ferramentas/gate/validar.mjs --extracao .",

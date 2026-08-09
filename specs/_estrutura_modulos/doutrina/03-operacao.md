@@ -253,3 +253,52 @@ que impede a lista de virar depósito de dívida silenciosa — e a data malform
 não vale (nunca "válida para sempre" por acidente de formato).
 
 As duas listas começam **vazias**, e esse é o estado correto.
+
+# 9. Build e artefato
+
+**`build` não significa a mesma coisa nos três bindings, e fingir que significa é a lei 10 com outra
+roupa** — comando que não faz nada e devolve `0` é tão falso quanto saída vazia contada como sucesso.
+
+| Binding | Backend | Front |
+|---|---|---|
+| TypeScript | **Emite** — `tsc -p tsconfig.build.json` (raiz e cada módulo) para `dist/`. Todo import já usa a convenção NodeNext (`./config.js` referenciando `config.ts`); sem emitir, só `tsx` resolve isso, e `tsx` nunca é a forma de rodar um artefato publicado | `vite build` por módulo com `web/` (já existia) |
+| JavaScript | **Nada** — o fonte já É o artefato; `node` roda `.js` direto, sem passo nenhum entre editar e rodar | idem |
+| Python | **Nada** — o processo roda o fonte por natureza da linguagem; não há "emitido" distinto do editado | módulo não tem `web/` neste binding |
+
+`node ferramentas/empacotar.mjs` (`npm run build`) orquestra os dois lados: compila o backend TS onde
+há `tsconfig.build.json` — e **diz que não emite**, sem erro, onde não há (JS/Python) — e constrói o
+front de todo módulo com `web/vite.config.*`, pulando em silêncio informativo quem não tem (nunca falha
+o passo por um módulo sem `web/` — Python molde nenhum, e qualquer módulo criado com `--sem-web`).
+
+## 9.1 O artefato backend é autossuficiente, e a prova é rodá-lo sem o fonte
+
+`node ferramentas/empacotar.mjs <destino>` copia, para um diretório **novo**, só o que o processo
+composto lê em runtime — nada de `.ts`, nada de `ferramentas/`, nada de `tests/`:
+
+- `modulo.json` de cada módulo — o único nome fixo, porque é o manifesto canônico;
+- `config/*.json` de cada módulo — **todo** `.json` sob `config/`, mecanicamente, nunca por nome
+  enumerado. Medido contra o runtime (`api/src/config.ts`): só esses cinco arquivos e `modulo.json`
+  são lidos fora de teste — `contrato/openapi.yaml`, `core/templates/*.html` e `database/**` **não**
+  são, e por isso ficam de fora do artefato (inchá-lo com o que ninguém lê rodando é o erro oposto);
+- `dist/` — o que `tsc` emitiu. A lista de arquivos `.ts` vira lista de ativos de graça: quem decide o
+  que compila é o `include` de `tsconfig.build.json`, nunca este script;
+- um `package.json` mínimo, com `dependencies` MESCLADAS (raiz + cada módulo + cada `adapters/*`) —
+  união mecânica de campos já declarados, não uma lista escrita à mão que envelhece;
+- `.env.example` (documentação das chaves) — **nunca `.env`**: segredo é por ambiente de implantação,
+  não um artefato de build que viaja para onde quer que o pacote seja publicado.
+
+**`importarApi` (raiz de composição) resolve por convenção de caminho, não por variável nem
+tentativa**: prefere `modulos/<id>/dist/api/src/index.js` quando ele existe, e cai para
+`modulos/<id>/api/src/index.ts` (resolvida por `tsx` em dev) quando não existe. O preço declarado: um
+`dist/` desatualizado — fonte mudou, ninguém rodou o build de novo — é servido sem aviso; mitigado por
+`empacotar.mjs` sempre recompilar do zero antes de copiar, nunca reaproveitar um `dist/` velho, e por
+dev tipicamente não ter `dist/` nenhum na árvore.
+
+## 9.2 O que a emissão não muda
+
+`tsconfig.build.json` (raiz e módulo) **estende** o `tsconfig.json` de tipos — a mesma árvore que é
+tipada é a que é emitida, exceto pelo `include` do módulo, que precisa ser redeclarado (`extends` não
+mescla `include`/`exclude`, substitui) para excluir `web/` e `tests/`: backend não carrega front, e
+teste não viaja com artefato nenhum. `npm run tipos` de cada módulo continua rodando pelo `tsconfig.json`
+de sempre (`noEmit: true`) — o módulo continua compilando **isolado**, a condição prática da extração
+(§6 deste documento); a emissão não move nem edita esse arquivo.

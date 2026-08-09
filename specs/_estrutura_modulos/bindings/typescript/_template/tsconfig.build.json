@@ -1,0 +1,14 @@
+{
+  "//": "Emissao do BACKEND do modulo (api/, core/) — dist/. So o que o processo composto roda: `web/` e bundle a parte (vite build, publicado por fora — 00-arquitetura.md §4.4) e `tests/` nao viaja com artefato nenhum. `include` PRECISA ser redeclarado (extends nao mescla include/exclude do base, substitui) — por isso o comentario aqui, nao lá: e a UNICA diferenca proposital em relacao ao tsconfig.json de tipos.",
+  "//allowImportingTsExtensions": "desligada abaixo: so vale com noEmit/emitDeclarationOnly (TS5025/TS5096, medido ao tentar emitir). Nenhum arquivo do molde importa por extensao .ts literal (todos usam .js, convencao NodeNext) — desligar nao muda o que compila, so o que o emissor aceita.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "declaration": false,
+    "sourceMap": false,
+    "allowImportingTsExtensions": false
+  },
+  "include": ["api", "core"],
+  "exclude": ["node_modules", "dist", "gerados"]
+}
