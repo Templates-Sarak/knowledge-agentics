@@ -717,7 +717,8 @@ export const CASOS = [
     tambem: ['contrato-sincronizado', 'rota-publica-autenticada'],
     // O `servers:` e as `properties:` entram na spec minima de proposito: sem eles o caso acusaria
     // tambem `rota-nomenclatura` e `projecao-contrato`, e deixaria de provar a ausencia das rotas
-    // OBRIGATORIAS, que e o dele. As propriedades sao as que o mapeador do molde projeta.
+    // OBRIGATORIAS, que e o dele. As propriedades sao TODAS as que os mapeadores do molde projetam
+    // (paraContrato, paraMeta, paraColecao — desde o N.2, os tres sao vistos, nao so o primeiro).
     mutar: (m) => m.escrever(
       'contrato/openapi.yaml',
       [
@@ -739,6 +740,18 @@ export const CASOS = [
         '                  titulo: { type: string }',
         '                  status: { type: string }',
         '                  criadoEm: { type: string }',
+        '                  id: { type: string }',
+        '                  nome: { type: string }',
+        '                  versao: { type: string }',
+        '                  papel: { type: string }',
+        '                  rotaBase: { type: string }',
+        '                  rotaWeb: { type: string }',
+        '                  navegacao: { type: object }',
+        '                  exportaResumo: { type: boolean }',
+        '                  itens: { type: array }',
+        '                  pagina: { type: integer }',
+        '                  tamanho: { type: integer }',
+        '                  total: { type: integer }',
         '',
       ].join('\n'),
     ),
@@ -880,6 +893,190 @@ export const CASOS = [
         + 'export function naoPublica(r) {\n  return { created_at: r.criadoEm };\n}\n',
     ),
   },
+  // --- N.2: as 18 formas do extrator de projecao (plan-2.md) ----------------------------------
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 1 — tipo de retorno inline desvia o extrator antigo',
+    // `): { hash: string; campoForma1: string } {` — sob o extrator antigo a primeira `{` depois
+    // do nome era a do TIPO, nao a do corpo. O separador `;` do tipo (nao `,`) e por isso que so
+    // "hash" as vezes escapava por acidente e "campoForma1" nunca era visto (medido no plano, com
+    // "cpf"). O extrator novo nunca olha a assinatura: procura `return {` direto.
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma1.ts',
+      'export function paraContratoForma1(r: { hash: string }): { hash: string; campoForma1: string } {\n'
+        + "  return { hash: r.hash, campoForma1: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 2 — um parametro com tipo inline',
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma2.ts',
+      'export function paraContratoForma2(o: { a: string }): Record<string, unknown> {\n'
+        + "  return { a: o.a, campoForma2: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 3 — dois parametros com tipo inline',
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma3.ts',
+      'export function paraContratoForma3(o: { a: string }, p: { b: string }): Record<string, unknown> {\n'
+        + "  return { a: o.a, b: p.b, campoForma3: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 4 — generico com objeto (<T extends { id: string }>)',
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma4.ts',
+      'export function paraContratoForma4<T extends { id: string }>(o: T): Record<string, unknown> {\n'
+        + "  return { id: o.id, campoForma4: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 5 — Array<{ … }> no retorno',
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma5.ts',
+      'export function paraContratoForma5(r: { hash: string }): Array<{ hash: string }> {\n'
+        + "  return { hash: r.hash, campoForma5: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 6 — Promise<{ … }> no retorno',
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma6.ts',
+      'export async function paraContratoForma6(r: { hash: string }): Promise<{ hash: string }> {\n'
+        + "  return { hash: r.hash, campoForma6: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 7 — default de parametro "= {}", nos tres bindings',
+    mutar: (m) => m.acrescentarEm('mapeadores', {
+      js: "\nexport function paraContratoForma7(opcoes: Record<string, unknown> = {}): Record<string, unknown> {\n"
+        + "  return { campoForma7: 'x' };\n}\n",
+      py: "\n\ndef para_contrato_forma7(opcoes=None):\n    return {\"campoForma7\": \"x\"}\n",
+    }),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 8 — tipo inline COM default',
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma8.ts',
+      "export function paraContratoForma8(o: { a: string } = { a: 'x' }): Record<string, unknown> {\n"
+        + "  return { campoForma8: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 9 — corpo canonico "): Record<string, unknown> {" nao pode regredir',
+    // E a forma que o proprio molde usa (paraContrato) — este caso trava que uma violacao SOB essa
+    // forma continua sendo pega, nao so que a forma boa passa.
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma9.ts',
+      "export function paraContratoForma9(r: { hash: string }): Record<string, unknown> {\n"
+        + "  return { hash: r.hash, campoForma9: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 11 — objeto aninhado dentro da projecao nao pode regredir',
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma11.ts',
+      "export function paraContratoForma11(r: { hash: string }): Record<string, unknown> {\n"
+        + "  return { hash: r.hash, aninhado: { campoForma11: 'x' } };\n}\n",
+    ),
+  },
+  {
+    regra: 'projecao-contrato',
+    descricao: 'N.2 forma 12 — dois "return" na mesma funcao rendem DUAS regioes',
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma12.ts',
+      "export function paraContratoForma12(r: { hash: string }, resumo: boolean): Record<string, unknown> {\n"
+        + "  if (resumo) {\n    return { campoForma12Resumo: 'x' };\n  }\n"
+        + "  return { hash: r.hash, campoForma12Detalhe: 'x' };\n}\n",
+    ),
+  },
+  {
+    regra: 'log',
+    descricao: 'N.2 forma 14 — "const interno = { … }" dentro da funcao NAO e projecao (chamariz)',
+    // O objeto intermediario nao esta em posicao de `return` nem de `=>`, entao nunca casa
+    // PADRAO_RETORNO_OBJETO — nenhuma guarda nova precisou existir para isso. `console.log` arma o
+    // chamariz: se `campoInterno` fosse (erradamente) visto como projetado, apareceria um id extra
+    // (`projecao-contrato`) NAO DECLARADO, e o caso reprovaria.
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-forma14.ts',
+      "export function paraContratoForma14(r: { hash: string }): Record<string, unknown> {\n"
+        + "  const interno = { campoInterno: 'nunca publicado' };\n"
+        + "  console.log(interno);\n"
+        + "  return { hash: r.hash };\n}\n",
+    ),
+  },
+  {
+    regra: 'sensivel-em-saida',
+    descricao: 'N.2 item 1(a) — "cpf" vazado em paraMeta, a rota SEM TOKEN (regressao que a N.1 fechou)',
+    // paraMeta serve /meta, rota sem token — o mesmo vazamento que a N.1 fechou. Sob a ancora de
+    // nome ESTREITA (so paraContrato*) a funcao inteira era invisivel ao extrator, e um campo
+    // sensivel acrescentado aqui nunca seria pego por regra nenhuma. Tenta os tres caminhos; so o
+    // do binding em teste existe, os outros dois viram ENOENT e sao ignorados aqui mesmo.
+    tambem: ['projecao-contrato'],
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
+      for (const caminho of ['api/src/mapeadores/index.ts', 'api/src/mapeadores/index.js']) {
+        try {
+          m.substituir(caminho, 'exportaResumo: manifesto.exportaResumo,', "exportaResumo: manifesto.exportaResumo,\n    cpf: 'x',");
+        } catch { /* binding errado para este caminho — ENOENT esperado */ }
+      }
+      try {
+        m.substituir(
+          'api/src/mapeadores.py',
+          '"exportaResumo": manifesto["exportaResumo"],',
+          '"exportaResumo": manifesto["exportaResumo"],\n        "cpf": "x",',
+        );
+      } catch { /* binding errado — ENOENT esperado */ }
+    },
+  },
+  {
+    regra: 'sensivel-em-saida',
+    descricao: 'N.2 item 1(a) — "cpf" vazado em paraColecao (pre-existente, nunca medido antes)',
+    tambem: ['projecao-contrato'],
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
+      for (const caminho of ['api/src/mapeadores/index.ts', 'api/src/mapeadores/index.js']) {
+        try {
+          m.substituir(
+            caminho,
+            'return { itens: registros.map(paraContrato), pagina, tamanho, total };',
+            "return { itens: registros.map(paraContrato), pagina, tamanho, total, cpf: 'x' };",
+          );
+        } catch { /* binding errado para este caminho — ENOENT esperado */ }
+      }
+      try {
+        m.substituir(
+          'api/src/mapeadores.py',
+          '"itens": [para_contrato(r) for r in registros],',
+          '"itens": [para_contrato(r) for r in registros],\n        "cpf": "x",',
+        );
+      } catch { /* binding errado — ENOENT esperado */ }
+    },
+  },
+  {
+    regra: 'log',
+    descricao: 'N.2 — "created_at" em linhaParaDominio/dominioParaLinha (direcao BANCO) NAO acusa (chamariz)',
+    // As duas funcoes de direcao BANCO usam "created_at" (campo do banco, snake_case) e nao devem
+    // ser lidas como projecao de SAIDA — o nome delas nao COMECA com "para" (comeca no MEIO:
+    // linhaParaDominio, dominioParaLinha). Ja estao no molde, sem mutacao nenhuma; o chamariz so
+    // precisa de um id esperado para o harness comparar. Se a ancora de nome regredir para "o
+    // arquivo inteiro", `payload-camelcase` acusa "created_at" e este caso reprova com id NAO
+    // declarado — e essa nao-acusacao vira verificacao, nao impressao.
+    mutar: (m) => m.escrever(
+      'api/src/mapeador-chamariz-banco.ts',
+      "export function logarChamariz() {\n  console.log('x');\n}\n",
+    ),
+  },
   {
     regra: 'payload-camelcase',
     descricao: 'campo snake_case na projecao de saida',
@@ -893,9 +1090,12 @@ export const CASOS = [
   {
     regra: 'saida-sensivel',
     descricao: 'campo sensivel citado em schema de resposta do OpenAPI',
-    // `total` e declarado em resposta e NUNCA projetado nem logado — isola o lado do CONTRATO.
-    // Com `status` (que o mapeador projeta) o caso acusava tambem `sensivel-em-saida`.
-    mutar: (m) => m.manifesto((x) => ({ ...x, camposSensiveis: ['total'] })),
+    // `modulo` e declarado na resposta de /health e NUNCA projetado nem logado — isola o lado do
+    // CONTRATO. Com `status` (que o mapeador projeta) o caso acusaria tambem `sensivel-em-saida`.
+    // NAO usar `total`: desde o N.2 (ancora de nome larga), `paraColecao` projeta `total` de
+    // verdade — o proprio campo que este caso precisa NUNCA estar projetado deixou de servir,
+    // porque o extrator novo enxerga exatamente o que antes era ponto cego.
+    mutar: (m) => m.manifesto((x) => ({ ...x, camposSensiveis: ['modulo'] })),
   },
   {
     regra: 'sensivel-em-saida',

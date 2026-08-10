@@ -45,7 +45,7 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
 > segredo em `envRequerido`, o vocabulário inteiro de `permissoes`, `rotasPublicas` (o que não exige token) e
 > `camposSensiveis` — o mapa de onde está a PII. A escolha feita foi a **projeção reduzida**, aplicada agora e
 > não adiada para quando houver login: `/meta` devolve só os oito campos da tabela acima, cobrados por
-> `saida-crua` (`04-regras.md` §4.5) e travados por caso em `casos.mjs`. O que sai da lista — `dados`,
+> `saida-crua` (`specs/arquitetura/04-regras.md` §4.5) e travados por caso em `casos.mjs`. O que sai da lista — `dados`,
 > `envRequerido`, `portas`, `permissoes`, `rotasPublicas`, `camposSensiveis`, `consome` — é reconhecimento do
 > módulo (o front precisa saber id/rota/navegação para se montar), nunca descoberta de superfície interna.
 > Sair de `rotasPublicas` quando houver login continua disponível como **endurecimento adicional**, não como
@@ -57,6 +57,13 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
   `api/src/mapeadores/`, nas duas direções.
 - **Projeção de saída é obrigatória:** a resposta é montada campo a campo por **allowlist**. Devolver o
   registro cru do banco é **proibido** — é o que impede vazar coluna nova, campo livre ou PII.
+- **Convenção de nome, e ela é NORMATIVA — não estilo.** Função de PROJEÇÃO DE SAÍDA (domínio/manifesto →
+  contrato) nomeia-se `para<Algo>` em TS/JS (`paraContrato`, `paraMeta`, `paraColecao` — `para` seguido de
+  maiúscula) ou `para_<algo>` em Python. Conversão para o BANCO nomeia-se na direção inversa —
+  `<algo>ParaLinha`/`linhaPara<Algo>` — nunca começando por `para`. `projecao-contrato`, `payload-camelcase`
+  e `sensivel-em-saida` **dependem** desta convenção para achar a função (`04-regras.md` §7.2): projeção
+  batizada fora dela — `montarResposta`, por exemplo — **escapa das três, inteira**, silenciosamente. Não é
+  detalhe de estilo: é o nome que a regra que protege PII na borda usa para saber onde olhar.
 - Campo listado em `modulo.json:camposSensiveis` nunca aparece em resposta, log ou OpenAPI.
 
 **Projeção dupla, quando o dado é sensível.** Uma projeção monta a listagem (sem o dado sensível) e outra monta

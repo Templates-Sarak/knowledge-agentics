@@ -260,25 +260,6 @@ function conferirSegmentos(rota) {
   return achados;
 }
 
-/** Janela entre o nome da projeção e a `{` que a abre — assinatura e tipos. */
-const JANELA_ATE_ABERTURA = 900;
-
-/**
- * Fronteira de construção entre o nome e a `{`. Presente, o nome era uma REFERÊNCIA, não uma
- * definição — e a `{` achada adiante pertence a outra coisa.
- *
- * `registros.map(paraContrato)` dentro de `paraColecao` casava o nome, não tinha `{` própria, e o
- * `indexOf` caminhava até a abertura da função SEGUINTE: uma função que não publica nada — um
- * `chaveDeCache` devolvendo `{ created_at }` — era lida como projeção e acusada por
- * `payload-camelcase`. Falso positivo sobre código correto, que é a direção de erro que este gate
- * não aceita, e a fonte da terceira cópia da mesma mensagem.
- *
- * O discriminador é `}` ou `;` no caminho, e ele não custa falso negativo: da assinatura à `{` do
- * corpo não há nem um nem outro em nenhuma das três formas que a doutrina usa — `function f(a): T {`,
- * `const f = (a) => ({`, `def f(a) -> dict:` + `return {`.
- */
-const FIM_DE_CONSTRUCAO = /[};]/;
-
 /**
  * Fim (exclusivo) do trecho que abre em `inicio`, contando profundidade de chaves.
  * `-1` quando o texto acaba sem fechar.
@@ -296,25 +277,74 @@ function fimBalanceado(texto, inicio) {
 }
 
 /**
- * O texto de cada projeção, delimitado por BALANCEAMENTO de chaves.
- *
- * Balancear, e não casar um terminador por regex, é o que mata a classe inteira de erro: o fim do
- * trecho passa a ser o fim REAL do objeto, e não "a próxima linha que termina em `}`". Enquanto o
- * regex exigia `\n\s*\}`, uma projeção que fechava na mesma linha (arrow de uma linha) não achava
- * terminador ali e a captura ATRAVESSAVA a função seguinte, colhendo chaves que nunca são
- * publicadas — falso positivo em `projecao-contrato` e em `sensivel-em-saida`, sobre código
- * correto. Agora não depende de como o autor quebrou a linha.
+ * O nome casado é um SÍTIO DE DEFINIÇÃO, nunca uma REFERÊNCIA — reconhecido por FORMA, olhando só o
+ * texto entre o início da linha e o nome. `registros.map(paraContrato)` não casa nenhuma das duas:
+ * não há `function|def|const|let|var` logo antes, e o nome não está no início da linha (há
+ * `registros.map(` antes dele) — deixa de ser candidato, em vez de precisar de guarda separada.
  */
-function regioesDeProjecao(conteudo) {
+function ehSitioDeDefinicao(conteudo, indice) {
+  const inicioLinha = conteudo.lastIndexOf('\n', indice - 1) + 1;
+  const antes = conteudo.slice(inicioLinha, indice).trim();
+  if (antes === '') return true; // início de linha lógica — método de objeto/classe
+  return /(?:^|[^.\w])(?:function|def|const|let|var)$/.test(antes);
+}
+
+/** Só os sítios de DEFINIÇÃO do nome, na ordem em que aparecem no arquivo. */
+function sitiosDeDefinicao(conteudo, padraoNome) {
+  const sitios = [];
+  for (const nome of conteudo.matchAll(padraoNome)) {
+    if (ehSitioDeDefinicao(conteudo, nome.index)) sitios.push(nome.index);
+  }
+  return sitios;
+}
+
+/** `return {`, `return ({` (TS/JS/Python) ou `=> ({` (arrow com retorno implícito de objeto). */
+const PADRAO_RETORNO_OBJETO = /\breturn\s*\(?\s*\{|=>\s*\(\s*\{/g;
+
+/**
+ * Início de QUALQUER definição de função/const/let/var no NÍVEL DO MÓDULO (coluna zero, sem recuo)
+ * — não só as que casam o nome da projeção. Fecha a janela na função VIZINHA, qualquer que seja o
+ * nome dela.
+ *
+ * Sem isto a janela não fecha nunca na ÚLTIMA função "para*" do arquivo: medido contra o próprio
+ * molde, `paraContrato` (sem nenhuma outra `paraContrato*` depois dele) varria até o fim do arquivo
+ * e engolia `paraMeta` e `paraColecao` inteiras — funções corretas, capturadas como se fossem a
+ * projeção de `paraContrato`. Exige coluna zero de propósito: a linha `hash: registro.hash,` dentro
+ * de um `return {` também casaria `identificador seguido de ':'` se a checagem não exigisse ausência
+ * de recuo, e a janela fecharia um passo depois de abrir.
+ */
+const PADRAO_DEFINICAO_DE_TOPO = /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\s+|def\s+|const\s+|let\s+|var\s+)[A-Za-z_]/gm;
+
+/** A próxima definição de topo estritamente depois de `apartirDe`, ou fim do arquivo. */
+function proximaDefinicaoDeTopo(conteudo, apartirDe) {
+  for (const m of conteudo.matchAll(PADRAO_DEFINICAO_DE_TOPO)) {
+    if (m.index > apartirDe) return m.index;
+  }
+  return conteudo.length;
+}
+
+/**
+ * O texto de cada projeção, por JANELA + BALANCEAMENTO — não mais "a primeira `{` depois do nome".
+ *
+ * Para cada sítio de definição, a janela de busca vai do nome até a PRÓXIMA definição de topo (ou
+ * fim do arquivo): não é preciso saber onde a função termina, só que a busca pare antes da função
+ * seguinte. Dentro da janela, cada `return {`/`return ({`/`=> ({` abre uma região balanceada — uma
+ * função de projeção com dois `return` (detalhe e resumo) rende DUAS regiões, de propósito.
+ *
+ * Mata de graça o falso positivo do objeto intermediário (`const interno = { … }` dentro da função):
+ * não está em posição de `return` nem de `=>`, então nunca casa `PADRAO_RETORNO_OBJETO` — nenhuma
+ * guarda nova precisou ser escrita para isso.
+ */
+function regioesDeProjecao(conteudo, padraoNome) {
   const regioes = [];
-  // matchAll, nao match: um mapeador tem mais de uma projecao (resumo e detalhe, por exemplo),
-  // e olhar so a primeira deixava as demais sem verificacao nenhuma.
-  for (const nome of conteudo.matchAll(/(?:paraContrato|para_contrato)\w*/g)) {
-    const abertura = conteudo.indexOf('{', nome.index);
-    if (abertura === -1 || abertura - nome.index > JANELA_ATE_ABERTURA) continue;
-    if (FIM_DE_CONSTRUCAO.test(conteudo.slice(nome.index, abertura))) continue;
-    const fim = fimBalanceado(conteudo, abertura);
-    if (fim !== -1) regioes.push(conteudo.slice(abertura, fim));
+  for (const inicioJanela of sitiosDeDefinicao(conteudo, padraoNome)) {
+    const fimJanela = proximaDefinicaoDeTopo(conteudo, inicioJanela);
+    const janela = conteudo.slice(inicioJanela, fimJanela);
+    for (const ocorrencia of janela.matchAll(PADRAO_RETORNO_OBJETO)) {
+      const abertura = inicioJanela + ocorrencia.index + ocorrencia[0].length - 1;
+      const fim = fimBalanceado(conteudo, abertura);
+      if (fim !== -1) regioes.push(conteudo.slice(abertura, fim));
+    }
   }
   return regioes;
 }
@@ -347,12 +377,21 @@ function chavesDaRegiao(arquivo, regiao, vistos) {
   return chaves;
 }
 
+/**
+ * O nome de uma função de PROJEÇÃO DE SAÍDA, pela convenção que a doutrina agora exige
+ * (02-contrato-e-dados.md §3): começa com `para` seguido de maiúscula (`paraContrato`, `paraMeta`,
+ * `paraColecao`) em TS/JS, ou `para_` em Python. Direção BANCO fica de fora por CONSTRUÇÃO, não por
+ * lista: `linhaParaDominio`/`dominioParaLinha` têm "Para"/"para" no MEIO do nome, nunca no início —
+ * `\b` garante que o casador não pare no meio de um identificador maior.
+ */
+const PADRAO_NOME_PROJECAO = /\bpara[A-Z]\w*|\bpara_\w+/g;
+
 function chavesDaProjecao(ctx) {
   const vistos = new Set();
   const chaves = [];
   for (const arquivo of ctx.codigo) {
     if (arquivo.eTeste || !/mapeador/i.test(arquivo.rel)) continue;
-    for (const regiao of regioesDeProjecao(textoDeCodigo(arquivo))) {
+    for (const regiao of regioesDeProjecao(textoDeCodigo(arquivo), PADRAO_NOME_PROJECAO)) {
       chaves.push(...chavesDaRegiao(arquivo, regiao, vistos));
     }
   }

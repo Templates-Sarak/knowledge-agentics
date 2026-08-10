@@ -34,12 +34,13 @@ Continua vigente a regra permanente do `plan.md`: **regra nova exige caso própr
 | Métrica | Valor | Confira com |
 |---|---|---|
 | Regras no catálogo | **74**, todas com caso | `node ferramentas/gate/testes/executar.mjs --binding <b>` |
-| Autoteste do gate | `96/96` (TS) · `96/96` (JS) · `92/92` (PY) *(era `93/93·93/93·89/89` antes do Bloco K/L/N.1 — casos novos de K.0/L.3/N.1, nenhuma regra nova)* | idem *(o `plan.md` §Estado ainda diz `92/92·92/92·88/88` — deriva, Bloco R)* |
+| Autoteste do gate | `111/111` (TS) · `111/111` (JS) · `107/107` (PY) *(era `96/96·96/96·92/92` antes do N.2 — 15 casos novos do N.2, nenhuma regra nova)* | idem *(o `plan.md` §Estado ainda diz `92/92·92/92·88/88` — deriva, Bloco R)* |
 | **Projeto novo passa em `verificar`?** | **SIM — nos três bindings** (Bloco K fechado) | `npm run autoteste:template` |
 | **Projeto novo passa em `ci:dependencias`?** | **NÃO — 2 critical + 1 high** | Bloco P |
 | **`build` seguido de `lint`?** | **SIM** — furo do dist consertado (Bloco L) | `npm run autoteste:template` |
 | Módulo pode perder `core/` inteiro e ficar verde? | **SIM** | Bloco M |
-| `GET /meta` público devolve o manifesto inteiro? | **NÃO — corrigido (N.1)**. *N.2/N.3/N.4 do Bloco N seguem abertos* | Bloco N |
+| `GET /meta` público devolve o manifesto inteiro? | **NÃO — corrigido (N.1)**. *N.3/N.4 do Bloco N seguem abertos* | Bloco N |
+| `paraMeta`/`paraColecao` visíveis a `projecao-contrato`/`sensivel-em-saida`? | **SIM — corrigido (N.2)**. Antes: invisíveis (âncora de nome estreita) | Bloco N |
 | `criar-modulo` com flag produz módulo conforme? | **NÃO — nas duas flags** | Bloco O |
 | Extração (copiar a pasta, nenhum import muda) | **funciona** — `tsc` 0, `24/24` verdes | `--extracao` + cópia manual |
 | Boot, build, migrations, gate | **funcionam** | `npm run iniciar · build · validar` |
@@ -398,22 +399,44 @@ projeto que já existe e evoluiu — quem cobra lá é o gate do próprio projet
       **PENDENTE:** a linha ainda não foi escrita em `doutrina/04-regras.md §7.2` — a referência aqui no
       plano existe, mas o documento normativo não foi tocado nesta rodada
 
-### N.2 — `{` na assinatura desvia o extrator de projeção  *(dívida H, promovida)*
+### N.2 — o extrator de projeção tinha DOIS âncoras errados, não um  *(dívida H, promovida)*
 
-- [ ] **Medido em módulo real do template**, não em fixture. Com `camposSensiveis: ["cpf"]`:
+> **Achado que ampliou o bloco.** O plano original só descrevia o âncora de REGIÃO (item 2 abaixo — o `{`
+> na assinatura). Medido pelo revisor antes de abrir esta rodada: o âncora de NOME também está errado, e é
+> **maior** — o extrator só reconhece `paraContrato`/`para_contrato` literais, então TODA outra função de
+> projeção do template (`paraMeta`, introduzida pela própria N.1, e `paraColecao`, pré-existente) é
+> **invisível** às três regras que dependem dele. Os dois itens têm de fechar juntos, e nesta ordem:
+> **primeiro o de região, depois o de nome** — alargar o nome antes de consertar a região multiplicaria o
+> defeito da região por três funções em vez de uma.
+
+#### ITEM 1 — o âncora de NOME
+
+- [x] **Medido num projeto gerado do zero**, com `camposSensiveis: ["cpf"]`:
       ```ts
-      export function paraContratoB(registro: Registro): { hash: string; cpf: string } {
-        return { hash: registro.hash, cpf: '222' };
+      export function paraMeta(manifesto): Record<string, unknown> {
+        return { id: ..., ..., exportaResumo: ..., cpf: '999' };
       }
       ```
-      → **`catalogo: 0 erro(s), 0 aviso(s)`**. A mesma função escrita `): Record<string, unknown> {`
-      acusa **duas** vezes (`projecao-contrato` + `sensivel-em-saida`)
-- [ ] **Tipo de retorno inline não é forma exótica** — é TypeScript idiomático. A única regra que protege
-      PII na borda é contornada por uma escolha de sintaxe que ninguém faz por malícia. **8 formas
-      medidas de 18** na J.2, com o molde imune por acidente (`): Record<string, unknown> {`)
-- [ ] **Não tem guarda barata** — as três testadas na J.2 falharam, e o registro está no §7.2.
+      → `sonda: 0 erro(s), 0 aviso(s)` — `paraMeta` serve a rota **`/meta`, SEM TOKEN**: a mesma
+      regressão que a N.1 se propôs a fechar. **Segunda medição, pré-existente e nunca vista por ninguém:**
+      o mesmo `cpf` acrescentado a `paraColecao` (`return { itens: ..., total, cpf: '999' }`) também produz
+      `0 erro(s)`
+- [x] **O âncora certo é a DIREÇÃO, que a convenção do molde já expressa e agora é NORMATIVA**
+      (`02-contrato-e-dados.md` §3): resposta → `paraContrato`/`paraColecao`/`paraMeta` (nome COMEÇA com
+      `para` + maiúscula, ou `para_` em Python); banco → `linhaParaDominio`/`dominioParaLinha` (`para`/`Para`
+      no MEIO do nome, nunca no início). **Não é "o arquivo inteiro"**: variar o extrator para ignorar nome
+      e ler o arquivo todo produz falso positivo garantido em `dominioParaLinha` (`created_at`, direção
+      BANCO, snake_case de propósito) — é exatamente por isso que um âncora de nome existe, e a N.2 só
+      corrige a LARGURA dele, não o remove
+- [x] **A consequência que não fica implícita: a regra agora depende de uma convenção de nome, e convenção
+      da qual uma regra depende tem de estar na LEI.** Declarada em `02-contrato-e-dados.md` §3 e no §7.2 de
+      `04-regras.md` (o que escapa: projeção fora da convenção). **Nenhuma regra nova** cobra a convenção
+      nesta rodada — isso é regra fora do catálogo aprovado — mas ela vira **candidata do Bloco M**
+      (ver a entrada nova lá)
+- [x] `PADRAO_NOME_PROJECAO = /\bpara[A-Z]\w*|\bpara_\w+/g`, aplicado só em sítio de DEFINIÇÃO (mesma
+      técnica do item 2)
 
-#### O algoritmo, e ele deixa de precisar achar o corpo
+#### ITEM 2 — o âncora de REGIÃO, como este documento já especificava
 
 O extrator de hoje (`contrato.mjs:239 regioesDeProjecao`) faz: acha o nome → **primeira `{` depois dele**
 → balanceia. Toda a fragilidade está no passo do meio: a primeira `{` depois do nome pode ser a da
@@ -421,30 +444,44 @@ assinatura. A saída **não é adivinhar melhor onde o corpo abre — é nunca p
 
 ```
 para cada SÍTIO DE DEFINIÇÃO de paraContrato*/para_contrato* no arquivo:
-    janela = do nome até o PRÓXIMO sítio de definição (ou fim do arquivo)
+    janela = do nome até a PRÓXIMA DEFINIÇÃO DE TOPO do arquivo (ou fim do arquivo)
     para cada ocorrência, dentro da janela, de:
           /\breturn\s*\(?\s*\{/          TS · JS · Python
           /=>\s*\(\s*\{/                 arrow com retorno implícito de objeto
         regiao = objeto balanceado a partir daquela `{`   (fimBalanceado, inalterado)
 ```
 
-- [ ] **`FIM_DE_CONSTRUCAO` é APAGADO, não ajustado.** Ele existia para separar referência de definição
+- [x] **DESVIO MEDIDO do texto original, registrado aqui porque mudou o comportamento.** O texto desta
+      seção dizia "até o PRÓXIMO sítio de definição" — lido como "próxima definição de `paraContrato*`". Essa
+      leitura literal **quebra o próprio molde, sem mutação nenhuma**: a última função `para*` de um arquivo
+      (`paraColecao`, hoje) não tem outra depois dela, então a janela ia até o FIM DO ARQUIVO e nada a
+      delimitava — no molde real, a janela de `paraContrato` (a primeira `para*`) ia até o fim do arquivo e
+      **engolia `paraMeta` e `paraColecao` inteiras**, produzindo `payload-camelcase`/`projecao-contrato`
+      falsos em cima de código correto. Medido reproduzindo a spec mínima do caso "contrato sem os endpoints
+      obrigatorios": com a janela por `paraContrato*`, esse caso (que não tem nada a ver com projeção) passou
+      a reprovar com `id NAO declarado: projecao-contrato`. **Conserto:** a janela fecha na próxima definição
+      de **QUALQUER** função de topo (coluna zero — `export`/`async`/`function`/`def`/`const`/`let`/`var`
+      seguido de identificador), não só a próxima `para*`. Com o conserto, os `96/96·96/96·92/92` de antes do
+      N.2 voltam a bater exatos
+- [x] **`FIM_DE_CONSTRUCAO` é APAGADO, não ajustado.** Ele existia para separar referência de definição
       medindo o trecho *do nome até a abertura* — e o alerta do `plan.md` (*"qualquer pulo o dispara"*)
       deixa de existir porque **não há mais trecho até a abertura**. No lugar dele, o sítio de definição
       é reconhecido por forma: `function|def|const|let|var` (com `export`/`async` opcionais à frente) ou
       método de objeto/classe (`nome(` no início de linha lógica). `registros.map(paraContrato)` não casa
       com nenhuma — deixa de ser descartado por heurística e passa a **nunca ser candidato**
-- [ ] **A janela substitui a delimitação do corpo.** Não é preciso saber onde a função termina: basta que
-      a região de busca acabe no próximo `paraContrato*`. Uma função de projeção com dois `return`
+- [x] **A janela substitui a delimitação do corpo.** Não é preciso saber onde a função termina: basta que
+      a região de busca acabe antes da função seguinte. Uma função de projeção com dois `return`
       (detalhe e resumo) passa a render **duas** regiões, que é o certo e é o que o `matchAll` da versão
       atual já queria
-- [ ] **Mata o falso positivo do objeto intermediário** — `const interno = { … }` dentro da função não
+- [x] **Mata o falso positivo do objeto intermediário** — `const interno = { … }` dentro da função não
       está em posição de `return` e some da conta, sem guarda nova
-- [ ] **Segue FN declarado, e o §7.2 não muda nessas três linhas:** projeção por indireção
+- [x] **Segue FN declarado, e o §7.2 não muda nessas três linhas:** projeção por indireção
       (`spread`/`Object.assign`), `}` dentro de string contando no balanceamento, e `return` de variável
       montada acima (que é justamente o que a **N.1** passa a acusar, do outro lado)
-- [ ] **Raio de 4 regras:** `projecao-contrato`, `payload-camelcase`, `sensivel-em-saida`,
-      `contrato-sincronizado`
+- [x] **Raio de 4 regras:** `projecao-contrato`, `payload-camelcase`, `sensivel-em-saida`,
+      `contrato-sincronizado` — a quarta (`contrato-sincronizado`) usa `rotasDoCodigo`, um extrator
+      DIFERENTE (não `chavesDaProjecao`), e não foi tocada nesta rodada; citada aqui porque a família
+      Contrato inteira compartilha a mesma lei-dona
 
 #### As 18 formas — a lista de casos, e nenhuma sai sem estar aqui
 
@@ -486,10 +523,70 @@ para cada SÍTIO DE DEFINIÇÃO de paraContrato*/para_contrato* no arquivo:
 | 17 | `{ ...registro }` / `Object.assign` | FN por indireção |
 | 18 | `{ rotulo: '}}', campoNovo: x }` | FN: `}` em string fecha o balanceamento |
 
-- [ ] **As 16 primeiras viram caso em `casos.mjs`**, nos bindings marcados. As duas últimas viram
-      **linha no §7.2** com a forma escrita — limite conhecido é aceitável, limite escondido não
-- [ ] **Trava por chamariz**, no padrão da J.2: um caso cuja regra esperada é OUTRA carrega a forma 1;
-      revertendo o extrator, o harness acusa `id NAO declarado: projecao-contrato, sensivel-em-saida`
+- [x] **As 16 primeiras viram caso em `casos.mjs`**, nos bindings marcados. As duas últimas viram
+      **linha no §7.2** com a forma escrita — limite conhecido é aceitável, limite escondido não.
+      Formas 10, 13, 15, 16 já tinham caso de rodadas anteriores (arrow de uma linha, `def` Python,
+      referência via `.map`, citação em comentário) — reconferidos verdes, não duplicados. Formas 1–9,
+      11, 12, 14 ganharam caso novo nesta rodada; mais dois casos para o item 1 (`cpf` em `paraMeta` e em
+      `paraColecao`, cada um nos três bindings) e um chamariz para `created_at` em
+      `linhaParaDominio`/`dominioParaLinha` não acusar
+- [x] **Trava por chamariz**, no padrão da J.2: casos cuja regra esperada é OUTRA (`log`) carregam as
+      formas 14 (objeto intermediário) e o "created_at" do item 1; revertendo o extrator, o harness acusa
+      id NÃO declarado nomeando exatamente a regra que voltou a disparar
+
+### N.2.1 — definição indentada nunca fecha janela  *(achado na revisão da N.2)*
+
+> **É o mesmo defeito que a N.2 consertou, deixado aberto para métodos.** A N.2 fechou a janela na
+> próxima **definição de topo** (`PADRAO_DEFINICAO_DE_TOPO`, coluna zero) — a decisão certa contra o
+> bug que ela mediu (a última `para*` do arquivo varrendo até o fim e engolindo as vizinhas). Mas
+> definição **indentada** não casa coluna zero, então **método nunca fecha janela**: dentro de uma
+> classe, tudo o que vem depois da primeira projeção é atribuído a ela.
+>
+> **Medido pelo revisor num projeto gerado do zero:**
+>
+> ```ts
+> export class Projecoes {
+>   paraAlfa(registro: Registro): Record<string, unknown> {
+>     return { hash: registro.hash };
+>   }
+>
+>   chaveDeCache(registro: Registro): Record<string, unknown> {
+>     return { created_at: registro.criadoEm, cpf: registro.hash };
+>   }
+> }
+> ```
+> ```
+> sonda: 3 erro(s)
+>   x [projecao-contrato]  campo "cpf" e projetado na saida e NAO esta declarado...
+>   x [payload-camelcase]  campo "created_at" na projecao nao e camelCase...
+>   x [sensivel-em-saida]  campo sensivel "cpf" na projecao de saida...
+> ```
+>
+> `chaveDeCache` **não publica nada**. Três falsos positivos sobre código correto — a direção que o
+> §7.2 chama de proibida.
+>
+> **E o §7.2 agrava em vez de declarar:** a linha nova do `projecao-contrato` lista *"método de
+> objeto/classe (início de linha lógica)"* entre os sítios de definição reconhecidos — ou seja, **a lei
+> afirma que classe funciona**, e ela produz FP. Lacuna contradita pela própria lei é pior que lacuna
+> escondida.
+
+- [ ] **A janela fecha na próxima definição de recuo MENOR OU IGUAL ao do sítio que a abriu**, em vez de
+      coluna zero. Generaliza em vez de abrir caso especial: coluna zero passa a ser o caso particular
+      de um sítio de topo
+- [ ] **A técnica já existe neste arquivo** — `achadosDeBordaPython` (N.1) delimita o corpo do handler
+      por `recuo <= recuoDecorador`. Os dois âncoras do `contrato.mjs` passam a operar sob a mesma
+      ideia, e é o argumento que dispensa inventar uma segunda
+- [ ] **Caso próprio:** classe com projeção seguida de método que **não** publica (`chaveDeCache`), nos
+      três bindings — no Python, `class` com dois métodos. Trava a **não-acusação**, que é o lado difícil
+- [ ] **Não pode regredir o que a N.2 fechou:** a última `para*` de topo continua fechando na função
+      vizinha. O caso que a N.2 salvou (`contrato sem os endpoints obrigatorios`, que passou a reprovar
+      com `projecao-contrato` sem ninguém tocá-lo) é a trava dessa direção
+- [ ] **§7.2 alinhado com o comportamento real**: hoje a linha promete método de classe e entrega FP.
+      Ou o conserto acima a torna verdadeira — e é o que este item faz —, ou a promessa sai da lei
+
+**Alcance:** o molde usa funções de topo, então **nenhum projeto gerado hoje esbarra nisto**. Entra
+porque o template é referência de vários sistemas e mapeador em classe é TypeScript ordinário — e
+porque a lei já o promete.
 
 ### N.3 — uma lista de chamada de log, não duas  *(dívida H)*
 
@@ -548,6 +645,17 @@ para cada SÍTIO DE DEFINIÇÃO de paraContrato*/para_contrato* no arquivo:
 - [ ] **`criar-projeto.mjs` para de copiar lixo.** `cpSync` leva `bindings/python/raiz/**/__pycache__`
       sem filtro — confirmado dentro de um `revpy` gerado. Não está versionado (clone limpo nasce
       limpo), mas o template é copiado **do disco de quem o roda**, e é ali que a garantia tem de valer
+- [ ] **CANDIDATA NOVA (do N.2): regra que cobra a convenção de nome do mapeador.**
+      `02-contrato-e-dados.md` §3 agora declara, como NORMA (não estilo): função de projeção de saída
+      nomeia-se `para<Algo>`/`para_<algo>`; conversão para o banco, `<algo>ParaLinha`/`linhaPara<algo>`.
+      `projecao-contrato`, `payload-camelcase` e `sensivel-em-saida` **dependem** dessa convenção para
+      achar a função — uma projeção batizada `montarResposta` escapa das três, inteira, em silêncio. Hoje
+      nada cobra a convenção em si (só o §7.2 a declara como limite conhecido). Regra candidata: por
+      arquivo que casa `/mapeador/i`, toda função em sítio de DEFINIÇÃO cujo corpo tem `return
+      {`/`return ({`/`=> ({` (a mesma detecção de região do N.2) e cujo nome não segue nenhuma das duas
+      formas da convenção **é suspeita** — aviso, não erro, até medir o falso positivo real (função
+      auxiliar dentro do mapeador que não é nem projeção nem conversão, ex.: uma função `validar` local).
+      **Fora do catálogo aprovado nesta rodada** — não implementar sem passar por `04-regras.md` primeiro
 
 **Os arquivos, um a um** — para o executor não ter de descobrir:
 
@@ -816,6 +924,7 @@ L   o esqueleto obedece à lei       consequência mecânica do K: formato, lint
 
 N   segurança                       /meta público · o extrator de projeção · uma lista de log
                                     · o furo do NODE_ENV=test
+                                    N.1 ✅ · N.2 ✅ · N.2.1 (janela por recuo) · N.3 · N.4
                                     ═ é a classe que o dono nomeou como inegociável ═
 
 M   a árvore fechada dos 2 lados    "todos os módulos com a mesma estrutura" deixa de ser convenção
