@@ -35,7 +35,11 @@ MANIFESTO_BASE = {
     "rotaWeb": None,
     "navegacao": None,
     "exportaResumo": False,
-    "dados": {"schema": "<escopo>", "prefixo": "<modulo>_", "tabelas": []},
+    "dados": {
+        "schema": "<escopo>",
+        "prefixo": "<modulo>_",
+        "tabelas": [],
+    },
     "envRequerido": [CHAVE],
     "portas": [],
     "permissoes": [],

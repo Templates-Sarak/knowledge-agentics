@@ -207,10 +207,15 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 | `storage` | gravar/ler arquivo |
 | `auth` | verificar token e devolver claims |
 | `notificador` | e-mail / mensagem |
-| `fila` | publicar/consumir evento |
 
 `relogio` e `geradorId` não são preciosismo: são o que torna o `core/` determinístico e testável. Sem elas,
 `new Date()` e `Math.random()` voltam para dentro do domínio e o motor deixa de ser reproduzível.
+
+Fonte NORMATIVA do vocabulário: `ferramentas/gate/vocabulario-portas.mjs`, na base — os dois schemas do
+gate são GERADOS dela (`ferramentas/gerar-schemas-portas.mjs --conferir`), e cada `packages/portas/index.*`
+por binding a espelha à mão (plan-2.md Bloco S). `fila` SAIU do catálogo: arrasta retry, *dead-letter*,
+idempotência e ordem de entrega — desenho de TOPOLOGIA, que [[00-arquitetura]] §5 diz que o template não
+escolhe. Volta no dia em que houver um projeto com a decisão tomada, e volta como ADR.
 
 ## 5.2 Regras
 
@@ -221,6 +226,9 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 - **O adapter não conhece domínio.** Não existe `if (modulo === 'catalogo')` dentro de adapter.
 - **Erro de fornecedor não vaza.** O adapter traduz a falha para a taxonomia fechada antes de devolver.
 - **Trocar de fornecedor é editar `config/portas.json`.** Se for preciso mais que isso, a porta está mal desenhada.
+- **Adapter novo nasce por `criar-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
+  `criar-modulo.mjs`: copia o molde (`adapters/_template`), substitui marcadores, registra a fábrica em
+  `src/composicao.*` e roda o gate antes de devolver o controle.
 
 # 6. Gateways — todo módulo alheio desacoplado
 

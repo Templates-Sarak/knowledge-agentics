@@ -73,3 +73,37 @@ export function criarAuthQueNega() {
     },
   };
 }
+
+/**
+ * `arquivos` exposto para o teste inspecionar o que foi salvo — mesmo padrao de `criarAuditoria`.
+ * @returns {import('../../packages/portas/index.js').Storage & { arquivos: Map<string, Buffer> }}
+ */
+export function criarStorageEmMemoria() {
+  const arquivos = new Map();
+  return {
+    arquivos,
+    async salvar(caminho, conteudo) {
+      arquivos.set(caminho, conteudo);
+    },
+    async buscar(caminho) {
+      return arquivos.get(caminho) ?? null;
+    },
+    async remover(caminho) {
+      arquivos.delete(caminho);
+    },
+  };
+}
+
+/**
+ * `enviados` exposto pelo mesmo motivo de `criarStorageEmMemoria`: o teste afirma o que saiu.
+ * @returns {import('../../packages/portas/index.js').Notificador & { enviados: Array<{destinatario: string, assunto: string, corpo: string}> }}
+ */
+export function criarNotificadorEmMemoria() {
+  const enviados = [];
+  return {
+    enviados,
+    async enviar(destinatario, assunto, corpo) {
+      enviados.push({ destinatario, assunto, corpo });
+    },
+  };
+}

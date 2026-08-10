@@ -51,7 +51,32 @@ import { fileURLToPath } from 'node:url';
 // ================================================================================================
 
 export const BINDINGS = ['typescript', 'javascript', 'python'];
-const ID_MODULO_SONDA = 'sonda';
+
+/**
+ * As QUATRO combinações de flag de `criar-modulo.mjs` (Bloco O, plan-2.md) — o invariante do bloco é
+ * *qualquer* combinação produz módulo que passa em `verificar`, e "qualquer" só vira prova rodando
+ * as quatro, não uma. Um id por combinação, para os quatro módulos conviverem no MESMO projeto (um
+ * só `npm install`/`pip install`, um só `verificar` cobrindo os quatro via workspace/descoberta) —
+ * repetir a cadeia inteira quatro vezes pagaria 4× o custo já medido no K.1 sem medir nada a mais.
+ */
+export const COMBINACOES_DE_MODULO = [
+  // SEM hifen de propósito: o id vira `dados.prefixo` do módulo (`<id>_`), que nomeia TABELA — e
+  // `schema-manifesto` exige `^[a-z][a-z0-9_]*$` para tabela (sem hífen), mais estrito que o do
+  // próprio id (`^[a-z][a-z0-9-]*$`, que aceita hífen). Medido: `sonda-padrao` reprovava
+  // `dados.tabelas[0]: "sonda-padrao_metadados" nao casa o padrao` — o id em si era válido, a
+  // tabela derivada dele não.
+  //
+  // CURTO de propósito, e é a SEGUNDA medição, não só a primeira: `<modulo>` entra em comentário de
+  // CABEÇALHO em vários arquivos do molde Python (`api/src/erros.py:1`, o mais apertado, tem só 13
+  // caracteres de folga antes de estourar os 110 do ruff). Ids mais longos ("sondasemartefato",
+  // 16 chars) reprovavam `ruff check` (E501) e `ruff format --check` num binding que nunca teve
+  // nada a ver com o Bloco O — o comprimento do id é que importava, não a flag. `sonda` (5) tinha
+  // folga; estes quatro (6–8) mantêm a mesma folga.
+  { id: 'sondapad', flags: [] },
+  { id: 'sondaart', flags: ['--sem-artefato'] },
+  { id: 'sondaweb', flags: ['--sem-web'] },
+  { id: 'sondaamb', flags: ['--sem-artefato', '--sem-web'] },
+];
 
 /**
  * Os passos de UM binding, em ordem — a decisão de "o que rodar" separada de "como rodar".
@@ -63,32 +88,54 @@ const ID_MODULO_SONDA = 'sonda';
  * Python não tem passo `build`/`lint` separado: o binding não empacota front-end (sem `web/` nos
  * módulos Python — medido, `bindings/python/_template` não tem pasta `web`), e `verificar.py` já
  * cobre forma + limiares + tipos + testes num só passo, como o `npm run verificar` do lado Node.
+ *
+ * `rapido`: só a combinação PADRÃO (sem flag) — medido, as quatro juntas custam ~70s (TS) / ~52s
+ * (JS), e o `--rapido` combinado (TS+JS) foi de ~25s para ~1m58s — bem em cima do teto de ~2min que
+ * o K.1 fixou para caber em pre-commit. Mesma solução que o binding Python já usa (`--rapido` pula
+ * Python inteiro, cobrindo-o só na agenda): a combinatória cara fica para o run COMPLETO (agenda),
+ * pre-commit continua rápido. Sem isso, o K.1 nasceria violado pelo próprio bloco que o cita.
+ *
+ * `ci-dependencias` é o ÚLTIMO passo, nos três — só entra AGORA que o Bloco P fechou (D2, plan-2.md:
+ * "`ci:dependencias` fica fora do K até o Bloco P fechar... quando P fechar, ele entra — e passa a
+ * ser o sensor de envelhecimento"). Antes disso, incluí-lo faria o K nascer vermelho por CVE de
+ * terceiro — um portão que nasce vermelho é um portão que se aprende a ignorar.
  */
-export function passosDoBinding(binding) {
+export function passosDoBinding(binding, { rapido = false } = {}) {
+  const combinacoes = rapido ? COMBINACOES_DE_MODULO.slice(0, 1) : COMBINACOES_DE_MODULO;
   const gerarProjeto = { nome: 'gerar-projeto', tipo: 'gerar-projeto' };
-  const criarModulo = { nome: 'criar-modulo', tipo: 'criar-modulo' };
-  // Depois de `criar-modulo`, antes de `verificar` (M.1): o passo em si só poda o disco — quem lê o
-  // resultado é o `verificar` que já vem a seguir no pipeline, nos dois bindings.
+  // As QUATRO combinações (Bloco O) — extensão do gerador do K, não do K em si (D2, plan-2.md): o K
+  // nasceu cobrindo só o módulo padrão, e esta lista é o que o Bloco O acrescenta a ela.
+  const passosDeModulo = combinacoes.map((combinacao) => ({
+    nome: `criar-modulo:${combinacao.id}`,
+    tipo: 'criar-modulo',
+    moduloId: combinacao.id,
+    flags: combinacao.flags,
+  }));
+  // Depois do ÚLTIMO `criar-modulo`, antes de `verificar` (M.1): o passo em si só poda o disco —
+  // quem lê o resultado é o `verificar` que já vem a seguir no pipeline, nos dois bindings.
   const cloneSimulado = { nome: 'clone-simulado', tipo: 'clone-simulado' };
 
   if (binding === 'python') {
     return [
       gerarProjeto,
       { nome: 'venv', tipo: 'venv' },
+      { nome: 'atualizar-pip', tipo: 'pip-upgrade' },
       { nome: 'instalar', tipo: 'pip-install' },
-      criarModulo,
+      ...passosDeModulo,
       cloneSimulado,
       { nome: 'verificar', tipo: 'verificar-py' },
+      { nome: 'ci-dependencias', tipo: 'ci-dependencias-py' },
     ];
   }
   return [
     gerarProjeto,
     { nome: 'instalar', tipo: 'npm-install' },
-    criarModulo,
+    ...passosDeModulo,
     cloneSimulado,
     { nome: 'verificar', tipo: 'npm-script', script: 'verificar' },
     { nome: 'build', tipo: 'npm-script', script: 'build' },
     { nome: 'lint', tipo: 'npm-script', script: 'lint' },
+    { nome: 'ci-dependencias', tipo: 'npm-script', script: 'ci:dependencias' },
   ];
 }
 
@@ -257,17 +304,33 @@ function executarPasso(passo, ctx) {
     case 'npm-install':
       return rodarNpm(['install', '--prefer-offline', '--no-audit', '--no-fund'], ctx.destino);
     case 'criar-modulo':
-      return rodarNode([CRIAR_MODULO, ID_MODULO_SONDA, '--binding', ctx.binding], ctx.destino);
+      return rodarNode([CRIAR_MODULO, passo.moduloId, '--binding', ctx.binding, ...passo.flags], ctx.destino);
     case 'clone-simulado':
       return simularClone(ctx.destino);
     case 'npm-script':
       return rodarNpm(['run', passo.script], ctx.destino);
     case 'venv':
       return rodarPython(ctx.pythonBase, ['-m', 'venv', ctx.venvDir], ctx.destino);
+    case 'pip-upgrade':
+      // O `pip` que `python -m venv` instala vem do INTERPRETADOR do sistema, nunca do template —
+      // e pode estar velho o bastante para ter CVE própria (Bloco P, plan-2.md: medido, pip 25.2
+      // tinha 6, corrigidas em 26.1+). `ci:dependencias` reprova nisso mesmo com toda dependência
+      // do projeto em dia, porque `pip-audit` audita o AMBIENTE inteiro, pip incluso.
+      return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['-m', 'pip', 'install', '--upgrade', 'pip'], ctx.destino);
     case 'pip-install':
       return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['-m', 'pip', 'install', '-e', '.[dev]'], ctx.destino);
     case 'verificar-py':
       return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verificar.py'], ctx.destino, { SARAK_NODE: NODE });
+    case 'ci-dependencias-py':
+      // `--dependencias` delega para `ci-dependencias.mjs` (Node), que por sua vez resolve UM
+      // interpretador Python para `pip_audit` via `SARAK_PYTHON` (ou PATH). Sem `SARAK_PYTHON`
+      // apontado para o venv desta rodada, ele cai no `python`/`python3` do PATH — que pode nem
+      // ter `pip_audit` instalado. Medido: sem isto, o passo reprova com "ferramenta de auditoria
+      // ausente", mesmo com tudo instalado no venv certo.
+      return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verificar.py', '--dependencias'], ctx.destino, {
+        SARAK_NODE: NODE,
+        SARAK_PYTHON: caminhoPythonDoVenv(ctx.venvDir),
+      });
     default:
       throw new Error(`passo desconhecido: ${passo.tipo}`);
   }
@@ -278,10 +341,10 @@ function executarPasso(passo, ctx) {
  * falhar (`primeiroFalho`). A pasta é sempre removida no `finally` — a MENOS que `--manter` peça
  * para preservar (uso: depurar um binding específico sem recriar o projeto do zero).
  */
-function executarBinding(binding, { manter }) {
+function executarBinding(binding, { manter, rapido }) {
   const destino = mkdtempSync(join(tmpdir(), `sarak-autoteste-template-${binding}-`));
   const ctx = { binding, destino, pythonBase: null, venvDir: join(destino, '.venv') };
-  const passos = passosDoBinding(binding);
+  const passos = passosDoBinding(binding, { rapido });
   const executados = [];
 
   try {
@@ -347,10 +410,12 @@ function lerOpcoes(argv) {
 }
 
 /**
- * `--rapido`: só os bindings Node (typescript, javascript) — medido em K.1, o binding python sozinho
- * leva ~2m40s (venv + pip install do zero), acima do teto de ~2min que a plan-2.md (K.1) fixa para
- * caber em pre-commit. Uso pretendido: pre-commit da base roda `--rapido`; a agenda (workflow) roda
- * sem essa flag, cobrindo os três — é o consumidor que paga o custo do Python.
+ * `--rapido` faz DUAS coisas, as duas para caber no teto de ~2min de pre-commit (K.1, plan-2.md):
+ * só os bindings Node (typescript, javascript) — o binding python sozinho leva ~2m40s (venv + pip
+ * install do zero) —, e só a combinação PADRÃO de `criar-modulo` (a extensão do Bloco O, com as
+ * quatro combinações, custa ~70s/~52s a mais). Uso pretendido: pre-commit da base roda `--rapido`;
+ * a agenda (workflow) roda sem essa flag, cobrindo os três bindings × as quatro combinações — é o
+ * consumidor que paga o custo cheio.
  */
 function bindingsAlvo(opcoes) {
   if (opcoes.binding !== null) return [opcoes.binding];
@@ -373,7 +438,7 @@ function principal() {
     process.stdout.write(`aviso: pulando ${pulados.join(', ')} (${opcoes.binding !== null ? '--binding' : '--rapido'}) — NAO foram medidos nesta rodada.\n`);
   }
 
-  const resultados = alvo.map((binding) => executarBinding(binding, { manter: opcoes.manter }));
+  const resultados = alvo.map((binding) => executarBinding(binding, { manter: opcoes.manter, rapido: opcoes.rapido }));
   for (const resultado of resultados) imprimirBinding(resultado);
 
   const falhos = resultados.filter((r) => !r.ok);
@@ -390,27 +455,53 @@ function principal() {
 
 function casosDeAutoteste() {
   return [
-    { nome: 'passosDoBinding(typescript): termina em build, depois lint (furo do L.2)', fn: () => {
+    { nome: 'passosDoBinding(typescript): build, depois lint, depois ci-dependencias por ULTIMO (furo do L.2 + Bloco P)', fn: () => {
       const nomes = passosDoBinding('typescript').map((p) => p.nome);
-      return nomes.at(-2) === 'build' && nomes.at(-1) === 'lint';
+      return nomes.at(-3) === 'build' && nomes.at(-2) === 'lint' && nomes.at(-1) === 'ci-dependencias';
     } },
     { nome: 'passosDoBinding(javascript): mesma forma do typescript', fn: () => {
       const nomes = passosDoBinding('javascript').map((p) => p.nome);
-      return nomes.at(-2) === 'build' && nomes.at(-1) === 'lint';
+      return nomes.at(-3) === 'build' && nomes.at(-2) === 'lint' && nomes.at(-1) === 'ci-dependencias';
     } },
-    { nome: 'passosDoBinding(python): sem build/lint separado (sem web/ nos modulos python)', fn: () => {
+    { nome: 'passosDoBinding(python): sem build/lint separado (sem web/ nos modulos python), ci-dependencias por ULTIMO', fn: () => {
       const nomes = passosDoBinding('python').map((p) => p.nome);
-      return !nomes.includes('build') && !nomes.includes('lint') && nomes.at(-1) === 'verificar';
+      return !nomes.includes('build') && !nomes.includes('lint') && nomes.at(-2) === 'verificar' && nomes.at(-1) === 'ci-dependencias';
     } },
-    { nome: 'passosDoBinding(python): venv e instalar ANTES de criar-modulo', fn: () => {
-      const nomes = passosDoBinding('python').map((p) => p.nome);
-      return nomes.indexOf('venv') < nomes.indexOf('criar-modulo') && nomes.indexOf('instalar') < nomes.indexOf('criar-modulo');
+    { nome: 'passosDoBinding(python): venv e instalar ANTES do PRIMEIRO criar-modulo', fn: () => {
+      const passos = passosDoBinding('python');
+      const iPrimeiroModulo = passos.findIndex((p) => p.tipo === 'criar-modulo');
+      const nomes = passos.map((p) => p.nome);
+      return nomes.indexOf('venv') < iPrimeiroModulo && nomes.indexOf('instalar') < iPrimeiroModulo;
     } },
-    { nome: 'passosDoBinding: clone-simulado entre criar-modulo e verificar, nos tres bindings (M.1)', fn: () => (
+    { nome: 'passosDoBinding: clone-simulado depois do ULTIMO criar-modulo e antes de verificar, nos tres bindings (M.1)', fn: () => (
       BINDINGS.every((binding) => {
-        const nomes = passosDoBinding(binding).map((p) => p.nome);
+        const passos = passosDoBinding(binding);
+        const nomes = passos.map((p) => p.nome);
+        const iUltimoModulo = passos.findLastIndex((p) => p.tipo === 'criar-modulo');
         const iClone = nomes.indexOf('clone-simulado');
-        return iClone !== -1 && iClone === nomes.indexOf('criar-modulo') + 1 && iClone === nomes.indexOf('verificar') - 1;
+        return iUltimoModulo !== -1 && iClone === iUltimoModulo + 1 && iClone === nomes.indexOf('verificar') - 1;
+      })
+    ) },
+    { nome: 'passosDoBinding: as QUATRO combinacoes de flag do Bloco O, nos tres bindings', fn: () => (
+      BINDINGS.every((binding) => {
+        const passosDeModulo = passosDoBinding(binding).filter((p) => p.tipo === 'criar-modulo');
+        if (passosDeModulo.length !== COMBINACOES_DE_MODULO.length) return false;
+        return COMBINACOES_DE_MODULO.every((c, i) => (
+          passosDeModulo[i].moduloId === c.id
+          && JSON.stringify(passosDeModulo[i].flags) === JSON.stringify(c.flags)
+        ));
+      })
+    ) },
+    { nome: 'COMBINACOES_DE_MODULO: ids unicos (workspaces/descoberta nao podem colidir)', fn: () => (
+      new Set(COMBINACOES_DE_MODULO.map((c) => c.id)).size === COMBINACOES_DE_MODULO.length
+    ) },
+    { nome: 'COMBINACOES_DE_MODULO: nenhum id tem hifen (viraria dados.tabelas invalido)', fn: () => (
+      COMBINACOES_DE_MODULO.every((c) => !c.id.includes('-'))
+    ) },
+    { nome: 'passosDoBinding(..., {rapido:true}): so a combinacao PADRAO, nos tres bindings', fn: () => (
+      BINDINGS.every((binding) => {
+        const passosDeModulo = passosDoBinding(binding, { rapido: true }).filter((p) => p.tipo === 'criar-modulo');
+        return passosDeModulo.length === 1 && passosDeModulo[0].moduloId === COMBINACOES_DE_MODULO[0].id;
       })
     ) },
     { nome: 'classificarPasso: status 0 e sem error -> ok', fn: () => classificarPasso({ error: undefined, status: 0 }).ok === true },

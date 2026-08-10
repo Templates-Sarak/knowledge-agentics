@@ -17,21 +17,21 @@
     "cobertura:conferir": "node -e \"const fs=require('fs');const alvos=[['relatorios/cobertura/lcov.info','SF:'],['relatorios/junit.xml','<testsuite']];for(const [p,marca] of alvos){if(!fs.existsSync(p)){console.error('relatorio ausente: '+p);process.exit(1)}const t=fs.readFileSync(p,'utf8');if(!t.includes(marca)){console.error('relatorio degenerado (sem '+marca+'): '+p);process.exit(1)}}const m=fs.readFileSync('relatorios/junit.xml','utf8').match(/tests=\\\"(\\d+)\\\"/);if(!m||Number(m[1])===0){console.error('junit sem nenhum teste registrado — a suite nao rodou');process.exit(1)}console.log('relatorios OK: lcov + junit presentes, nao degenerados, '+m[1]+' teste(s)')\""
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "express": "4.22.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.0.1",
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.9.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.3",
-    "@vitest/coverage-v8": "^2.1.4",
-    "jsdom": "^25.0.1",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.10",
-    "vitest": "^2.1.4"
+    "@testing-library/react": "16.3.2",
+    "@types/express": "4.17.25",
+    "@types/node": "22.20.1",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "6.0.5",
+    "@vitest/coverage-v8": "4.1.10",
+    "jsdom": "25.0.1",
+    "typescript": "5.9.3",
+    "vite": "8.2.1",
+    "vitest": "4.1.10"
   }
 }

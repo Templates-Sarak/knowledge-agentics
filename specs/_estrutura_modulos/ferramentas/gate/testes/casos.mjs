@@ -26,9 +26,10 @@ export const CASOS = [
   {
     regra: 'schema-manifesto',
     descricao: 'papel fora do vocabulario',
-    // O `papel` e cobrado pelo JSON Schema E pelo vocabulario fechado do `manifesto`: duas leituras
-    // do mesmo campo, e as duas mensagens ajudam. Declarado, nao silenciado.
-    tambem: ['manifesto'],
+    // DECIDIDO (plan-2.md Bloco R.2): `papel` e enum, e enum e o que o JSON Schema expressa — quem
+    // acusa e SO `schema-manifesto`, `manifesto` cala (conferirVocabulario, estrutura.mjs). Ate aqui
+    // o caso esperava as DUAS mensagens (`tambem: ['manifesto']`); a duplicacao saiu porque o
+    // precedente de `manifesto-raiz` ja era um id so com a mesma justificativa.
     mutar: (m) => m.manifesto((x) => ({ ...x, papel: 'inventado' })),
   },
   {
@@ -115,16 +116,27 @@ export const CASOS = [
   {
     regra: 'estrutura',
     descricao: 'Bloco M — core/dominio/ vazio ou ausente',
+    // `contem` (Bloco Q, plan-2.md): a familia `estrutura` tem QUATRO casos vizinhos sob o mesmo id
+    // ("core/dominio/", "core/portas/", "README.md", arquivo do binding) — sem isto, um extrator que
+    // confundisse pasta com pasta (ex.: acusasse so "core/portas/" quando quem sumiu foi
+    // "core/dominio/") passava calado, porque "acusou `estrutura`" ja bastava.
+    contem: 'core/dominio/ vazia ou ausente',
     mutar: (m) => m.removerPasta('core/dominio'),
   },
   {
     regra: 'estrutura',
     descricao: 'Bloco M — core/portas/ vazio ou ausente',
+    // Cascata legitima, so depois do Bloco S: `core/portas/index.*` e o UNICO lugar do modulo onde
+    // a palavra "notificador" aparece em codigo (a interface da porta) — sem a pasta, config-morta
+    // deixa de achar quem "le" a chave `notificador` de config/portas.json, e acusa TAMBEM.
+    tambem: ['config-morta'],
+    contem: 'core/portas/ vazia ou ausente',
     mutar: (m) => m.removerPasta('core/portas'),
   },
   {
     regra: 'estrutura',
     descricao: 'Bloco M — README.md ausente',
+    contem: 'README.md ausente',
     mutar: (m) => m.remover('README.md'),
   },
   {
@@ -133,6 +145,10 @@ export const CASOS = [
       + 'package.json em JS, pyproject.toml em PY)',
     // `remover` usa `force: true` — arquivo que o binding em teste nao tem (ex.: pyproject.toml num
     // molde TS) e um no-op silencioso, entao as tres chamadas cobrem os tres bindings de um caso so.
+    // `contem` sem `vezes`: a CONTAGEM varia por binding (TS perde dois arquivos, JS/PY perdem um so),
+    // mas o SUFIXO da mensagem e fixo nos tres — e o que prova que o achado e deste ramo, nao de
+    // "README.md ausente" ou de uma das pastas obrigatorias.
+    contem: 'ausente — arquivo obrigatorio do binding',
     mutar: (m) => {
       m.remover('tsconfig.json');
       m.remover('package.json');
@@ -898,6 +914,10 @@ export const CASOS = [
     // Escrito para o binding Python de proposito: e o unico em que a primeira chave nao tinha um
     // `{` sobrando antes dela, e por isso era invisivel ao extrator antigo. Com o extrator antigo
     // este caso NAO acusa nada — e a diferenca entre consertar de verdade e mover o sintoma.
+    // `contem` (Bloco Q, plan-2.md): afirma que a mensagem nomeia o CAMPO certo — sem isto, o caso
+    // passaria igual se a regra acusasse qualquer outro campo por engano, contanto que fosse a
+    // mesma regra.
+    contem: 'campoFantasma',
     mutar: (m) => m.substituir(
       'api/src/mapeadores.py',
       'mascarado.\n    """\n    return {\n        "hash": registro.hash,',
@@ -1033,6 +1053,10 @@ export const CASOS = [
   {
     regra: 'projecao-contrato',
     descricao: 'N.2 forma 12 — dois "return" na mesma funcao rendem DUAS regioes',
+    // `vezes: 2` (Bloco Q, plan-2.md): afirma que as DUAS regioes viram DUAS mensagens, nao uma —
+    // sem isto, um extrator que voltasse a enxergar só a primeira `return` passaria calado, porque
+    // "acusou `projecao-contrato`" já bastava para o caso antigo, não importa quantas vezes.
+    vezes: 2,
     mutar: (m) => m.escrever(
       'api/src/mapeador-forma12.ts',
       "export function paraContratoForma12(r: { hash: string }, resumo: boolean): Record<string, unknown> {\n"
@@ -1421,6 +1445,34 @@ export const CASOS = [
       ...x,
       rotasPublicas: [...x.rotasPublicas, 'GET /helth'],
     })),
+  },
+  {
+    regra: 'rota-publica-autenticada',
+    descricao: 'api/ para de ler rotasPublicas do manifesto: docstring que so EXPLICA nao basta (Python)',
+    // Fecha a estritura da J.2: a clausula de origem trocou `conteudo` por `textoDeCodigo`
+    // (linhasCodigo, sem comentario/docstring) porque um docstring que so EXPLICA `rotasPublicas`
+    // satisfazia a checagem mesmo com a leitura de verdade apagada — falso negativo que aprova em
+    // silencio. O molde Python tem UM UNICO site de codigo real (`middlewares.py:48`,
+    // `manifesto["rotasPublicas"]`); os outros dois usos sao docstring (linhas 26 e 119, ja fora de
+    // `linhasCodigo`). Substituir so essa linha por uma lista fixa apaga a ULTIMA ocorrencia em
+    // codigo, mantem as docstrings intocadas, e o achado tem que aparecer.
+    //
+    // TS/JS NAO tem equivalente minimo: `rotasPublicas` e nome de CAMPO de tipo (`api/src/config.ts`)
+    // e de PARAMETRO (`middlewares/index.ts`), presentes em codigo real em pelo menos dois arquivos
+    // alem do bootstrap (`index.ts`) — apagar so o bootstrap nao apaga o identificador de
+    // `linhasCodigo` em lugar nenhum, e apagar tambem o tipo/parametro deixa de ser mutacao minima
+    // (quebra a assinatura da funcao, nao so o comportamento sob teste). Limite declarado, nao
+    // lacuna: a mesma razao que torna o caso impossivel e a que faz a checagem sobrar redundante
+    // nesses dois bindings — o identificador sobrevive em codigo estrutural, nunca so em prosa.
+    // Sem `arquivo`: o achado desta clausula e por MODULO (`daApi.some(...)`), nunca por arquivo —
+    // nao ha `rel:numero` para casar, diferente do achado de `ROTA_LITERAL` logo abaixo dela.
+    contem: 'nunca le modulo.json:rotasPublicas',
+    vezes: 1,
+    mutar: (m) => m.substituir(
+      'api/src/middlewares.py',
+      'publicas = {rota.upper() for rota in manifesto["rotasPublicas"]}',
+      'publicas = {"SAUDE"}',
+    ),
   },
   {
     regra: 'cookie-seguro',

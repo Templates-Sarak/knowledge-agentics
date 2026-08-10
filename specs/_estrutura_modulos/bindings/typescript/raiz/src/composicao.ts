@@ -24,8 +24,10 @@ import {
   criarAuditoria,
   criarAuthQueNega,
   criarGeradorId,
+  criarNotificadorEmMemoria,
   criarRelogio,
   criarRepositorio,
+  criarStorageEmMemoria,
 } from '../adapters/memoria/index.js';
 import type { Auth } from '../packages/portas/index.js';
 
@@ -44,6 +46,8 @@ const FABRICAS: Record<string, Record<string, () => unknown>> = {
   auditoria: { memoria: () => criarAuditoria() },
   relogio: { sistema: () => criarRelogio() },
   geradorId: { padrao: () => criarGeradorId() },
+  storage: { memoria: () => criarStorageEmMemoria() },
+  notificador: { memoria: () => criarNotificadorEmMemoria() },
 };
 
 /** Le todos os manifestos. E a DESCOBERTA: o sistema conhece os modulos por declaracao, nao por import. */

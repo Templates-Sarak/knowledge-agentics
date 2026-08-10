@@ -3,5 +3,6 @@
   "repositorio": "memoria",
   "auditoria": "memoria",
   "relogio": "sistema",
-  "geradorId": "padrao"
+  "geradorId": "padrao",
+  "notificador": "memoria"
 }

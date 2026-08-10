@@ -56,15 +56,27 @@ class Auth(Protocol):
     async def verificar(self, token: str) -> dict[str, object] | None: ...
 
 
+class Notificador(Protocol):
+    """Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
+    modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1, plan-2.md Bloco S)."""
+
+    async def enviar(self, destinatario: str, assunto: str, corpo: str) -> None: ...
+
+
 @dataclass(frozen=True)
 class DependenciasModulo:
     """O conjunto que o bootstrap RECEBE.
 
     Cada nome aqui corresponde a uma chave de config/portas.json e a uma entrada de
     modulo.json:portas — o gate cobra que os tres concordem.
+
+    `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
+    fabrica (`FABRICAS["notificador"]`, src/composicao.py) e alcancada de verdade no boot, nao so
+    declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
     """
 
     repositorio: Repositorio
     auditoria: Auditoria
     relogio: Relogio
     geradorId: GeradorId
+    notificador: Notificador | None = None

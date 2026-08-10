@@ -22,8 +22,22 @@ const RAIZ_TEMPLATE = join(AQUI, '..');
 const BINDINGS = ['typescript', 'javascript', 'python'];
 /** Nome da decisao do template dentro de `specs/adr/` — a ancora das excecoes do gate. */
 const ADR_DO_TEMPLATE = '000-decisoes-do-template.md';
-/** Pastas que este script cria. Delimitam a substituicao de marcadores num destino ja povoado. */
-const PASTAS_INSTALADAS = ['modulos', 'ferramentas', 'specs', 'packages', 'adapters', 'src', 'config'];
+/**
+ * Pastas que delimitam a varredura de `<escopo>` num destino já povoado — SEM `ferramentas/`.
+ *
+ * Achado no Bloco O (plan-2.md), medido: `ferramentas/` é vendorizado — "ninguém edita" (a mesma
+ * razão de `gerar-config-lint.mjs:IGNORADOS` excluir `ferramentas/` do linter da base, Bloco L.3) —,
+ * mas antes ENTRAVA na varredura mesmo assim. `criar-modulo.mjs` (e este próprio arquivo) têm a
+ * string `<escopo>` na PRÓPRIA LÓGICA de substituição, não como marcador a preencher; varrer
+ * `ferramentas/` reescrevia essa busca para o VALOR do escopo. Reproduzido:
+ * `criar-projeto.mjs destino --escopo verif` deixava a cópia de `criar-modulo.mjs` com
+ * `.replaceAll('verif', escopo)` em vez de `.replaceAll('<escopo>', escopo)` — a ferramenta
+ * corrompia a PRÓPRIA lógica, e o próximo `criar-modulo.mjs <id>` rodado nesse projeto mutilava
+ * qualquer `<id>` que contivesse "verif" como substring (`"verificar"` virava `"destinoicar"` — o
+ * achado original de N.4/N.3, incidental, agora explicado). Nenhum arquivo de `ferramentas/` tem
+ * `<escopo>` como marcador de verdade — só como parte da lógica —, então excluí-la não perde nada.
+ */
+const PASTAS_COM_MARCADOR_ESCOPO = ['modulos', 'specs', 'packages', 'adapters', 'src', 'config'];
 
 function abortar(mensagem) {
   process.stderr.write(`erro: ${mensagem}\n`);
@@ -54,11 +68,12 @@ function percorrer(pasta, acumulado = []) {
 }
 
 /**
- * Só o que este script instalou. Percorrer o destino inteiro seria errado num repositório já
- * existente — `node_modules` e `.git` entrariam no laço.
+ * Só o que este script instalou e pode ter `<escopo>` como marcador de verdade — nunca
+ * `ferramentas/` (ver `PASTAS_COM_MARCADOR_ESCOPO`). Percorrer o destino inteiro seria errado num
+ * repositório já existente — `node_modules` e `.git` entrariam no laço.
  */
-function arquivosInstalados(destino) {
-  const deDentro = PASTAS_INSTALADAS.map((p) => join(destino, p)).filter(existsSync).flatMap((p) => percorrer(p));
+function arquivosComMarcadorEscopo(destino) {
+  const deDentro = PASTAS_COM_MARCADOR_ESCOPO.map((p) => join(destino, p)).filter(existsSync).flatMap((p) => percorrer(p));
   const daRaiz = readdirSync(destino, { withFileTypes: true })
     .filter((entrada) => entrada.isFile())
     .map((entrada) => join(destino, entrada.name));
@@ -108,6 +123,10 @@ function copiarTemplate(destino, binding) {
   cpSync(join(RAIZ_TEMPLATE, 'ferramentas'), join(destino, 'ferramentas'), semLixo);
   cpSync(join(RAIZ_TEMPLATE, 'bindings', binding, 'raiz'), destino, semLixo);
   cpSync(join(RAIZ_TEMPLATE, 'bindings', binding, '_template'), join(destino, 'modulos', '_template'), semLixo);
+  // `adapters/_template`: o molde que `criar-adapter.mjs` copia (Bloco S, plan-2.md). Markers só em
+  // comentário/string (nunca em posição de tipo/identificador) — o mesmo cuidado de `modulos/_template`
+  // —, então fica seguro parado dentro de `adapters/`, incluído por `tsconfig.json:include`.
+  cpSync(join(RAIZ_TEMPLATE, 'bindings', binding, '_adapter'), join(destino, 'adapters', '_template'), semLixo);
 }
 
 /**
@@ -164,12 +183,18 @@ function principal() {
   const gitignoreAnterior = lerGitignore(destino);
   copiarTemplate(destino, opcoes.binding);
   mesclarGitignore(destino, gitignoreAnterior);
-  aplicarEscopo(arquivosInstalados(destino), escopo);
+  aplicarEscopo(arquivosComMarcadorEscopo(destino), escopo);
 
   process.stdout.write(`projeto criado em ${destino} (binding ${opcoes.binding}, escopo "${escopo}")\n`);
   process.stdout.write('  doutrina instalada em specs/arquitetura/ e specs/adr/000-decisoes-do-template.md\n');
   if (colisoes.length > 0) process.stdout.write(`  ATENCAO: sobrescrito por --forcar: ${colisoes.join(', ')}\n`);
-  const instalar = opcoes.binding === 'python' ? 'pip install -e ".[dev]"' : 'npm install';
+  // O `pip` que `python -m venv` instala vem do interpretador do SISTEMA, nunca do template, e
+  // pode trazer CVE propria — medido (Bloco P, plan-2.md): pip 25.2 tinha 6, `ci:dependencias`
+  // reprovava com o projeto inteiro em dia. `--upgrade pip` entra no passo 1, antes do install de
+  // verdade, para o projeto nao nascer vermelho num passo que nem e dependencia DELE.
+  const instalar = opcoes.binding === 'python'
+    ? 'python -m venv .venv && .venv/Scripts/activate (ou source .venv/bin/activate) && pip install --upgrade pip && pip install -e ".[dev]"'
+    : 'npm install';
   const verificar = opcoes.binding === 'python' ? 'python verificar.py' : 'npm run verificar';
   process.stdout.write('  linter e formatador instalados: a config do linter e GERADA de'
     + ' ferramentas/gate/limiares.mjs (nao a edite a mao)\n');

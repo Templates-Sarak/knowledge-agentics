@@ -147,6 +147,11 @@ node ferramentas/criar-modulo.mjs catalogo
 # preencher os VALORES no .env  (as CHAVES já chegaram sozinhas)
 npm install                      # ou:  pip install -e ".[dev]"
 git config core.hooksPath .githooks
+
+# so no PRIMEIRO commit: sem isto, git em Linux/macOS PULA o hook em silencio quando o
+# clone vem de Windows com "core.filemode=false" (o default comum) — "git add" grava o
+# hook SEM o bit de execucao
+git update-index --chmod=+x .githooks/pre-commit .githooks/pre-push
 ```
 
 > **Sobre o `.env`:** as **chaves** são geradas e mescladas por `sincronizar-env.mjs` a partir dos
@@ -280,8 +285,12 @@ Mensagem do gate sempre nomeia **o arquivo, a linha e o conserto**. Se alguma n�
 node ferramentas/gate/validar.mjs --extracao modulos/<id>   # está pronto?
 ```
 
-Pronto significa: copiar a pasta e recortar as chaves `<MODULO>_*` do `.env`. **Nenhum import muda.**
-O gate viaja junto; o esqueleto novo repõe `ferramentas/`, `adapters/`, `packages/` e `src/`.
+Pronto significa: copiar a pasta, recortar as chaves `<MODULO>_*` do `.env` e **apagar a linha
+`ENV_RAIZ=` do `.env` do módulo extraído**, preenchendo os valores que ela apontava direto ali. Sem
+este passo o módulo morre no boot com `[config] ENV_RAIZ aponta para "…\.env", que nao existe` —
+medido; o comentário do próprio `.env` avisa (ADR-004), mas o passo tem que estar aqui também.
+**Nenhum import muda.** O gate viaja junto; o esqueleto novo repõe `ferramentas/`, `adapters/`,
+`packages/` e `src/`.
 
 ---
 

@@ -19,7 +19,7 @@ no §7.2 quando houver. Regra sem caso não entra.
 | Regras com caso de teste próprio | **74** — cobertura total |
 | Bindings | `typescript` · `javascript` · `python` — gate verde nos três |
 | Escopos do gate | `modulo` · `global` · **`raiz`** (13 regras) |
-| Autoteste | `92/92` (TS) · `92/92` (JS) · `88/88` (PY) |
+| Autoteste | `122/122` (TS) · `122/122` (JS) · `119/119` (PY) — plan-2.md manteve a métrica atualizada |
 | Ferramentas com autoteste próprio | `afetados.mjs` 19/19 · `verificar-commit.mjs` 6/6 · `contrato-compativel.mjs` 12/12 |
 | Fiação local | `.githooks/pre-commit` + `pre-push`, donos do template, cobrados pela regra 74 |
 | Pipeline do `verificar` | gate → env → formato → lint → tipos → testes, nos três bindings |
@@ -433,11 +433,14 @@ a entrega. Dependência documentada sem artefato — a família de defeito que e
       `spec.mjs` — é o que permite o `--autoteste` embutido provar 19 casos com fixture em memória.
       `execFileSync` isolado em `caminhosAlteradosDesde` (o `--desde`), o único ponto que executa
       comando. A propagação anda **ao contrário** de `consome`: se A consome B, mudança em B afeta A
-- [ ] **Revisitar o alcance de `adapters/` quando a F.2 entrar.** Hoje `adapters/x.ts` afeta só
+- [x] **Revisitar o alcance de `adapters/` quando a F.2 entrar.** Hoje `adapters/x.ts` afeta só
       `(raiz)` — correto para o gate (adapter é injetado, módulo não o importa, e o escopo `raiz`
       cobre `adapter-isolado`). Mas quando o pipeline ganhar migrations contra banco efêmero e teste
       de integração pela composição real, mudança em adapter passa a afetar quem exercita aquele
       caminho, e o recorte precisa de outra resposta
+      **Respondido na F.2g** (linha 741 abaixo): a dívida não se materializou — migrations falam com o
+      banco por driver direto, nunca importam `adapters/`, por decisão (os dois caminhos ficaram
+      desacoplados de propósito). `(raiz)` continua o recorte certo (plan-2.md Bloco R.1)
 ### F.2a — a escada  ✅ **CONCLUÍDO**
 - [x] `.githooks/pre-commit` e `.githooks/pre-push` nos três esqueletos, **byte a byte idênticos** —
       blobs `d740deb5…` e `3b8f50bd…` iguais nos três, modo `100755`. Duas linhas de shell cada,
@@ -705,10 +708,13 @@ por presença de `decisao`, e `validar.mjs:23-30` perdoa as válidas e denuncia 
 - [x] `relatorios` e `.coverage` (débito da F.2c) **travados** por chamariz num caso de OUTRA regra
       (`schema-manifesto`) — a técnica da J.2/F.2a/F.2d. Removendo qualquer um:
       `id NAO declarado: estrutura-estrita`, 92/93. Um caso trava os dois
-- [ ] **Sobrou uma linha:** apagar `'dist'` de `ENTRADAS_PERMITIDAS`. É o precedente da H1, onde
+- [x] **Sobrou uma linha:** apagar `'dist'` de `ENTRADAS_PERMITIDAS`. É o precedente da H1, onde
       `'gerados'` foi achado morto na mesma lista — lá a saída foi torná-lo alcançável, porque uma regra
       precisava; aqui nada precisa, então a entrada sai. Lista normativa com item inalcançável é
       declaração sem efeito
+      **Feito na F.2g** (linha 736 abaixo): `'dist'` apagada de `ENTRADAS_PERMITIDAS`, com comentário
+      registrando a medição. Caixa desta subseção ficou desmarcada por descuido — mesmo trabalho, mesma
+      linha, marcada agora (plan-2.md Bloco R.1)
 
 ### F.2g — migrations executáveis  ✅ **CONCLUÍDO** — *fecha o Bloco F*
 
@@ -749,14 +755,20 @@ por presença de `decisao`, e `validar.mjs:23-30` perdoa as válidas e denuncia 
 - [x] Medido antes de aplicar: `pg` é CJS mas expõe `Client` como export **nomeado**, então
       `const { Client } = await import('pg')` funciona sem `.default` — verificado contra um `pg` real
 
-- [ ] **`build` é decisão de arquitetura antes de ser script.** Medido: o `tsconfig.json` da raiz tem
+- [x] **`build` é decisão de arquitetura antes de ser script.** Medido: o `tsconfig.json` da raiz tem
       `"noEmit": true`, não há bundler para a `api/`, e `dist/` está no `.gitignore` sem que nada
       escreva nele — **o template não tem alvo de artefato desenhado**. O que é "o artefato" de um
       monólito modular (um bundle por módulo? um `dist/` único? nada, e o deploy roda o fonte?) é
       pergunta de arquitetura. **Conversar antes de escrever**
-- [ ] Migrations executáveis — sobem e descem contra banco efêmero. O único item onde o provedor
+      **Decidido e feito na F.2f** (linha 672 acima): só o TypeScript emite, `ferramentas/empacotar.mjs`
+      leva os ativos lidos em runtime, artefato sobe sem a árvore de fonte
+- [x] Migrations executáveis — sobem e descem contra banco efêmero. O único item onde o provedor
       realmente entra (service container), e onde a fronteira da ADR-005 volta a ser testada
-- [ ] Exemplo de fiação de CI **como documentação** no `03-operacao.md`, nunca como artefato de provedor
+      **Feito na F.2g** (linha 719 acima): ciclo up → down → up contra Postgres real, nos dois
+      ecossistemas
+- [x] Exemplo de fiação de CI **como documentação** no `03-operacao.md`, nunca como artefato de provedor
+      **Feito na F.2g** (linha 734 acima): §7.4, rotulado como de um provedor, ADR-005 citada e intacta —
+      os 11 comandos citados existem todos
 - [x] **`dependencia-fixada` é etapa de CI, não regra de gate** — decidido e medido em F.0, registrado
       no §7.1 ("Deixaram de ser regra"). O passo é `npm ci`, que **falha sozinho** sem lockfile, com
       mensagem melhor que a do gate. Motivo: lockfile é produto do `npm install`, e o gate promete
@@ -873,13 +885,28 @@ feedback.
 - [ ] **A base perdeu a cobrança de limiar sobre si mesma** (custo aceito na G.1, declarado no
       `hooks/README.md`). `knowledge-agentics` não tem config de linter na raiz, então `padrao-limiares`
       avisa e segue. Fechar exige gerar uma config na base — decisão à parte, e ela usa eslint 8
-- [ ] `cobertura.modo` e `dependencias.modo` ainda vêm da base. `cobertura.minima` e
+- [x] `cobertura.modo` e `dependencias.modo` ainda vêm da base. `cobertura.minima` e
       `dependencias.severidadeMinima` já vêm do projeto; o **modo** dos dois, não. Uma linha em cada
-- [ ] `criar-modulo.mjs --sem-artefato` remove `core/motor` e deixa `tests/dominio` importando dele
-      — módulo nasce com teste quebrado. O caso análogo `--sem-web` é tratado corretamente
-- [ ] Caso 2 do autoteste: `schema-manifesto` × `manifesto` acusam o mesmo `papel` inválido.
+      **Feito (plan-2.md Bloco R.2):** `modo` acrescentado às propriedades OPCIONAIS de `cobertura` e
+      `dependencias` em `verificacao.schema.json` — `hooks/_lib.js:politicaDoProjeto` já repassava os
+      dois objetos inteiros do projeto por cima do default da base, então a única peça que faltava era
+      o schema deixar de recusar o campo como "não previsto". Sanity check: schema aceita `modo`
+      ausente, aceita `modo` válido, rejeita `modo` fora do vocabulário — nos três casos
+- [x] `criar-modulo.mjs --sem-artefato` remove `core/motor` e deixa `tests/dominio` importando dele
+      — módulo nasce com teste quebrado. ~~O caso análogo `--sem-web` é tratado corretamente~~ **Falso,
+      medido no Bloco O (plan-2.md):** as duas flags estavam quebradas, de formas diferentes.
+      **Feito:** as duas consertadas em `criar-modulo.mjs` (`ajustarManifesto` para `--sem-web`,
+      `podarTesteDeArtefato*` para `--sem-artefato`), e o Bloco K passou a exercitar as quatro
+      combinações de flag (`COMBINACOES_DE_MODULO`) para não regredir em silêncio
+- [x] Caso 2 do autoteste: `schema-manifesto` × `manifesto` acusam o mesmo `papel` inválido.
       Declarado como par, não resolvido — decidir qual cala é definir a fronteira das duas
-- [ ] §7.2 — acrescentar *"ou rota obrigatória ausente"* ao parágrafo da exceção de silêncio
+      **Decidido (plan-2.md Bloco R.2):** `schema-manifesto` é dono da FORMA — `papel` é enum —, e
+      `manifesto` cala. Precedente: `manifesto-raiz` já era um id só com a mesma justificativa. Caso 2
+      de `casos.mjs` passou a esperar **um** id só; contraprova (revertendo a exclusão) confirmou que o
+      caso volta a FALHAR
+- [x] §7.2 — acrescentar *"ou rota obrigatória ausente"* ao parágrafo da exceção de silêncio
+      **Feito (plan-2.md Bloco R.1):** acrescentado ao parágrafo de `04-regras.md` §7.2 que declara
+      `contrato/openapi.yaml` ilegível como dono único de silêncio nas regras dependentes
 - [x] ~~**`bindings/python/_template/tests/` não tem `__init__.py`**~~ — **resolvido**, com UM arquivo,
       e a dívida estava certa **pelo motivo errado**. Sem `__init__.py`, `tests/` é *namespace package*
       (PEP 420), e a regra de import do Python é que **qualquer pacote REGULAR chamado `tests` em

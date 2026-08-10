@@ -59,14 +59,26 @@
  */
 
 /**
+ * Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
+ * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1, plan-2.md Bloco S).
+ * @typedef {object} Notificador
+ * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} enviar
+ */
+
+/**
  * O conjunto que o bootstrap RECEBE. Cada nome aqui corresponde a uma chave de
  * config/portas.json e a uma entrada de modulo.json:portas — o gate cobra que os tres concordem.
+ *
+ * `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
+ * fabrica (`FABRICAS.notificador`, src/composicao.js) e alcancada de verdade no boot, nao so
+ * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  *
  * @typedef {object} DependenciasModulo
  * @property {Repositorio} repositorio
  * @property {Auditoria} auditoria
  * @property {Relogio} relogio
  * @property {GeradorId} geradorId
+ * @property {Notificador} [notificador]
  */
 
 export {};

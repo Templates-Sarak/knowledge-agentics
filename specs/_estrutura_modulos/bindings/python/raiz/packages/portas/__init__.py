@@ -27,6 +27,12 @@ CODIGOS_DE_ERRO: dict[str, int] = {
     "INTERNO": 500,
 }
 
+# Fonte NORMATIVA: `ferramentas/gate/vocabulario-portas.mjs`, na base — os dois schemas do gate
+# (`config-portas.schema.json`, `modulo.schema.json:portas.items.enum`) sao GERADOS dela. Esta
+# lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
+# mantenha as duas iguais a mao (plan-2.md Bloco S). `fila` SAIU do vocabulario: arrasta retry,
+# dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz
+# que o template nao escolhe.
 PORTAS_CONHECIDAS = (
     "repositorio",
     "auditoria",
@@ -35,7 +41,6 @@ PORTAS_CONHECIDAS = (
     "storage",
     "auth",
     "notificador",
-    "fila",
 )
 
 
@@ -89,3 +94,22 @@ class GeradorId(Protocol):
 
 class Auth(Protocol):
     async def verificar(self, token: str) -> dict[str, object] | None: ...
+
+
+class Storage(Protocol):
+    """Guarda e recupera CONTEUDO por caminho — upload, o caso mais comum de quase todo projeto
+    real (plan-2.md Bloco S). Superficie MINIMA e tipada por operacao, no precedente de
+    `Repositorio`: nada de `executar(comando: str)` — o desenho que sustenta `sql-no-modulo` do
+    lado do banco."""
+
+    async def salvar(self, caminho: str, conteudo: bytes) -> None: ...
+
+    async def buscar(self, caminho: str) -> bytes | None: ...
+
+    async def remover(self, caminho: str) -> None: ...
+
+
+class Notificador(Protocol):
+    """Envia mensagem a um destinatario — e-mail, o outro caso mais comum (plan-2.md Bloco S)."""
+
+    async def enviar(self, destinatario: str, assunto: str, corpo: str) -> None: ...

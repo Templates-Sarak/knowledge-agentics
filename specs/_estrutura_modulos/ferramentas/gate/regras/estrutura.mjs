@@ -14,7 +14,6 @@ const CAMPOS_OBRIGATORIOS = [
   'rotasPublicas', 'camposSensiveis', 'navegacao', 'exportaResumo', 'geraArtefato',
 ];
 
-const PAPEIS = ['dominio', 'gateway', 'conector'];
 const BINDINGS = ['typescript', 'javascript', 'python'];
 
 const ENTRADAS_PERMITIDAS = new Set([
@@ -146,11 +145,15 @@ function conferirIdentidade(manifesto, ctx) {
   return achados;
 }
 
+/**
+ * `papel` NAO entra aqui — DECIDIDO (plan-2.md Bloco R.2). `papel` e enum, e enum e o que o
+ * JSON Schema expressa: quem acusa e `schema-manifesto`, e `manifesto` cala. O precedente e o
+ * proprio `manifesto-raiz`, que ja e um id so com a mesma justificativa ("tudo que o `projeto.json`
+ * afirma e FORMA"). `binding` fica de fora desta decisao — nenhum caso o cobre e o Bloco R.2 nao o
+ * revisitou — e continua checado aqui.
+ */
 function conferirVocabulario(manifesto) {
   const achados = [];
-  if (!PAPEIS.includes(manifesto.papel)) {
-    achados.push(`papel "${manifesto.papel}" fora do vocabulario (${PAPEIS.join(', ')})`);
-  }
   if (!BINDINGS.includes(manifesto.binding)) {
     achados.push(`binding "${manifesto.binding}" fora do vocabulario (${BINDINGS.join(', ')})`);
   }
@@ -184,12 +187,13 @@ export default [
     /**
      * O manifesto da RAIZ — existência, JSON válido e forma, sob UM id só.
      *
-     * O módulo tem dois ids para isto (`manifesto` e `schema-manifesto`), e a fronteira entre eles é
-     * dívida registrada: o `papel` inválido acusa nos dois. Aqui não se repete o erro, porque não há
-     * o que separar — tudo que o `projeto.json` afirma é FORMA, e forma é exatamente o que o schema
-     * expressa. O `manifesto` do módulo só existe além do schema por causa das cláusulas
-     * relacionais (`id` = nome da pasta, `rotaBase` derivada do `id`), e a raiz não tem nenhuma:
-     * ela não tem nome de pasta a casar nem rota a derivar.
+     * O módulo tem dois ids para isto (`manifesto` e `schema-manifesto`), e desde o Bloco R.2
+     * (plan-2.md) a fronteira entre eles deixou de ter par a resolver: `schema-manifesto` é dono da
+     * FORMA — inclusive `papel`, que é enum — e `manifesto` cala nela (`conferirVocabulario` acima).
+     * O `manifesto` do módulo só existe além do schema por causa das cláusulas RELACIONAIS
+     * (`id` = nome da pasta, `rotaBase` derivada do `id`), e a raiz não tem nenhuma: ela não tem
+     * nome de pasta a casar nem rota a derivar — por isso ela sempre foi um id só, e é o precedente
+     * que fechou o do módulo.
      */
     id: 'manifesto-raiz',
     nivel: 'erro',

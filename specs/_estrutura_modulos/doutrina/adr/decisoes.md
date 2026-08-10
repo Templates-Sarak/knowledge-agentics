@@ -138,3 +138,61 @@ standalone fina e opcional.
 **Consequências.** Um shell único que importa todos os módulos e um SPA por módulo funcionam sobre a mesma
 estrutura, e um módulo migra de `proprio` para `kit` sem mover arquivo. Custo: um `main.tsx` de poucas linhas
 por módulo, que só monta a raiz já exportada.
+
+---
+
+## ADR-008 — A cadeia de ferramentas do template é fixa, e quem a envelhece é o próprio template
+
+**Status:** 🟢 Aceito
+
+**Contexto.** Um projeto gerado *hoje* precisa nascer com a mesma cadeia de dependências que um gerado
+*daqui a seis meses*, ou dois times não conseguem comparar builds. Ao mesmo tempo, `^` (caret) deixa a versão
+resolvida depender do **relógio** do `npm install`: o mesmo `package.json`, instalado em datas diferentes, gera
+árvores diferentes — e uma delas pode trazer CVE nova sem ninguém ter decidido nada (medido, Bloco P,
+plan-2.md: `vitest`/`vite` presos a `^2`/`^5` chegaram a nascer com 1 critical + 1 high + 3 moderate, exigindo
+salto de major para sair — `npm audit fix` sozinho não resolve breaking change).
+
+**Decisão.** Toda dependência do esqueleto (`package.json` da raiz e do `_template`, `pyproject.toml`) é
+**pinada exata** — sem `^`, sem `>=`. A versão é decisão do padrão, tomada e datada, nunca do relógio.
+Quem sobe a versão é o **template**, nunca o projeto gerado: `ferramentas/gerar-schemas-portas.mjs` já
+estabeleceu o precedente de "gerado, não escrito à mão" para config mecânica; aqui a mesma disciplina vale
+para número de versão. O sensor de envelhecimento é `ci:dependencias`/`verificar.py --dependencias`, que
+agora roda **dentro do Bloco K** (D2, plan-2.md — só entrou depois que este ADR fechou a cadeia, para o K não
+nascer vermelho por CVE de terceiro): CVE nova em qualquer binding derruba o `knowledge-agentics` na sua
+própria agenda, nunca o projeto de quem já gerou o dele. A cadência é *quando o K acender*, não calendário —
+uma CVE que não afeta versão nenhuma do pin atual não exige nada.
+
+**O procedimento do bump**, sempre nesta ordem: `npm outdated`/`npm audit`/`pip-audit` apontam o alvo →
+sobe a versão fixada nos `package.json`/`pyproject.toml` do esqueleto → `npm run autoteste:template` (ou
+`node specs/_estrutura_modulos/testes/autoteste-template.mjs`) nos três bindings → **verde** vira commit datado
+aqui; **vermelho** e a versão não entra, com o motivo escrito na tentativa. É o que torna o salto de major
+barato o bastante para acontecer: sem essa contraprova, a única atualização segura era nenhuma — e foi
+exatamente por isso que a cadeia ficou presa a majors antigos até acumular CVE.
+
+**Dois limites, declarados:** pin exato prende o **topo** da árvore, não os transitivos (`esbuild` chega
+pelo `vite`, e uma CVE ali só é vista quando `npm audit` a relaciona a um pacote de topo) — quem prende
+transitivo é o **lockfile do projeto gerado**, e é por isso que ele é do projeto, não do template (D1,
+plan-2.md — sem `workspaces` resolvidos no momento da cópia, um lock copiado descreveria uma árvore que não
+é a do destino). E **o template nunca empurra atualização para projeto já criado**: a promessa é *"projeto
+novo nasce limpo"*, não *"projeto antigo se mantém limpo"* — a segunda exigiria o template ser dependência
+instalada, e ele é cópia por decisão de arquitetura (ADR-005).
+
+**Alternativa descartada.** Manter `^` e versionar lockfile no template. Cai no mesmo problema dos
+`workspaces` que ADR-005/D1 já registraram para o lockfile do projeto: o lock do template nasceria descrevendo
+uma árvore que ainda não existe no destino, e devolveria ao relógio uma decisão que é do padrão.
+
+**Consequências.** Dois projetos gerados com meses de distância recebem a mesma cadeia — e quando divergirem
+foi porque alguém decidiu e datou, não porque o `npm install` de terça foi diferente do de quinta. O custo:
+subir de major é trabalho de verdade (medido, Bloco P: `vitest` 2→4 exigiu trocar `environmentMatchGlobs`,
+removido no Vitest 3+, pela forma `// @vitest-environment jsdom` por arquivo — API antiga, config morta,
+sem aviso), mas é trabalho pago **uma vez**, pelo template, sob o K — nunca por cada projeto gerado
+separadamente. O `pip` que `python -m venv` instala fica de fora deste pin (não é dependência declarada, é o
+gerenciador que cria o ambiente): o conserto é `pip install --upgrade pip` como primeiro passo depois de criar
+o venv, documentado nos "próximos passos" que `criar-projeto.mjs` imprime.
+
+**Pendência registrada, fora desta rodada:** `typescript`, `express`, `eslint` e `react` têm majors mais
+novos que o pin atual (medido: ts 5→7, express 4→5, eslint 9→10, react 18→19), nenhum deles com CVE aberta —
+só `vitest`/`vite`/`@vitest/coverage-v8`/`@vitejs/plugin-react` tinham. Subir os quatro sem CVE é trabalho de
+compatibilização real (majors desse tamanho costumam trazer breaking change de verdade), não conserto de
+segurança, e fica para uma rodada dedicada — subir todos de uma vez só porque "dá para" contradiz o próprio
+critério de cadência deste ADR ("quando o K acender", não "porque o registry tem versão nova").

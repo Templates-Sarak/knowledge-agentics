@@ -85,3 +85,30 @@ class AuthQueNega:
 
     async def verificar(self, token: str) -> dict[str, object] | None:
         return None
+
+
+class StorageEmMemoria:
+    """`arquivos` exposto para o teste inspecionar o que foi salvo — mesmo padrao de
+    `AuditoriaEmMemoria`."""
+
+    def __init__(self) -> None:
+        self.arquivos: dict[str, bytes] = {}
+
+    async def salvar(self, caminho: str, conteudo: bytes) -> None:
+        self.arquivos[caminho] = conteudo
+
+    async def buscar(self, caminho: str) -> bytes | None:
+        return self.arquivos.get(caminho)
+
+    async def remover(self, caminho: str) -> None:
+        self.arquivos.pop(caminho, None)
+
+
+class NotificadorEmMemoria:
+    """`enviados` exposto pelo mesmo motivo de `StorageEmMemoria`: o teste afirma o que saiu."""
+
+    def __init__(self) -> None:
+        self.enviados: list[dict[str, str]] = []
+
+    async def enviar(self, destinatario: str, assunto: str, corpo: str) -> None:
+        self.enviados.append({"destinatario": destinatario, "assunto": assunto, "corpo": corpo})

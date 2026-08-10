@@ -43,13 +43,24 @@ export interface GeradorId {
   hash(): string;
 }
 
+/** Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
+ * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1, plan-2.md Bloco S). */
+export interface Notificador {
+  enviar(destinatario: string, assunto: string, corpo: string): Promise<void>;
+}
+
 /**
  * O conjunto que o bootstrap RECEBE. Cada nome aqui corresponde a uma chave de config/portas.json
  * e a uma entrada de modulo.json:portas — o gate cobra que os tres concordem.
+ *
+ * `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
+ * fabrica (`FABRICAS.notificador`, src/composicao.ts) e alcancada de verdade no boot, nao so
+ * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  */
 export interface DependenciasModulo {
   repositorio: Repositorio;
   auditoria: Auditoria;
   relogio: Relogio;
   geradorId: GeradorId;
+  notificador?: Notificador;
 }

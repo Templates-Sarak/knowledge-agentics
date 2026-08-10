@@ -23,7 +23,8 @@
     "repositorio",
     "auditoria",
     "relogio",
-    "geradorId"
+    "geradorId",
+    "notificador"
   ],
   "consome": [],
   "ui": {

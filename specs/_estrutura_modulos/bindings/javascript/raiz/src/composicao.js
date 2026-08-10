@@ -23,8 +23,10 @@ import {
   criarAuditoria,
   criarAuthQueNega,
   criarGeradorId,
+  criarNotificadorEmMemoria,
   criarRelogio,
   criarRepositorio,
+  criarStorageEmMemoria,
 } from '../adapters/memoria/index.js';
 
 /** Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so. */
@@ -33,6 +35,8 @@ const FABRICAS = {
   auditoria: { memoria: () => criarAuditoria() },
   relogio: { sistema: () => criarRelogio() },
   geradorId: { padrao: () => criarGeradorId() },
+  storage: { memoria: () => criarStorageEmMemoria() },
+  notificador: { memoria: () => criarNotificadorEmMemoria() },
 };
 
 function lerJson(caminho) {

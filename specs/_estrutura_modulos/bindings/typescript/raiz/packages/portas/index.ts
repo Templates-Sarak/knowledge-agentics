@@ -34,7 +34,16 @@ export class ErroPorta extends Error {
   }
 }
 
-/** Nomes validos de porta. `config/portas.json` e `modulo.json:portas` usam este vocabulario. */
+/**
+ * Nomes validos de porta. `config/portas.json` e `modulo.json:portas` usam este vocabulario.
+ *
+ * Fonte NORMATIVA: `ferramentas/gate/vocabulario-portas.mjs`, na base — os dois schemas do gate
+ * (`config-portas.schema.json`, `modulo.schema.json:portas.items.enum`) sao GERADOS dela. Esta
+ * lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
+ * mantenha as duas iguais a mao (plan-2.md Bloco S). `fila` SAIU do vocabulario: arrasta retry,
+ * dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz
+ * que o template nao escolhe.
+ */
 export const PORTAS_CONHECIDAS = [
   'repositorio',
   'auditoria',
@@ -43,7 +52,6 @@ export const PORTAS_CONHECIDAS = [
   'storage',
   'auth',
   'notificador',
-  'fila',
 ] as const;
 
 export type NomeDePorta = (typeof PORTAS_CONHECIDAS)[number];
@@ -84,4 +92,20 @@ export interface GeradorId {
 
 export interface Auth {
   verificar(token: string): Promise<{ permissoes: string[] } | null>;
+}
+
+/**
+ * Guarda e recupera CONTEUDO por caminho — upload, o caso mais comum de quase todo projeto real
+ * (plan-2.md Bloco S). Superficie MINIMA e tipada por operacao, no precedente de `Repositorio`:
+ * nada de `executar(comando: string)` — o desenho que sustenta `sql-no-modulo` do lado do banco.
+ */
+export interface Storage {
+  salvar(caminho: string, conteudo: Buffer): Promise<void>;
+  buscar(caminho: string): Promise<Buffer | null>;
+  remover(caminho: string): Promise<void>;
+}
+
+/** Envia mensagem a um destinatario — e-mail, o outro caso mais comum (plan-2.md Bloco S). */
+export interface Notificador {
+  enviar(destinatario: string, assunto: string, corpo: string): Promise<void>;
 }

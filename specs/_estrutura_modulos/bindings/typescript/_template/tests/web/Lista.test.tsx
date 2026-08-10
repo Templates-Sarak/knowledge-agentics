@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // Testes da listagem do modulo <modulo> — os TRES estados obrigatorios.
 // A lei exige cobrir carregando, vazio e erro (specs/arquitetura/03-operacao.md §5): tela que so trata o
 // caminho feliz e a origem mais comum de bug em producao.

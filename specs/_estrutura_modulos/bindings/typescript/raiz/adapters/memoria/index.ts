@@ -10,9 +10,11 @@ import type {
   Auth,
   EventoDeAuditoria,
   GeradorId,
+  Notificador,
   Pagina,
   Relogio,
   Repositorio,
+  Storage,
 } from '../../packages/portas/index.js';
 
 interface ComHash {
@@ -77,6 +79,40 @@ export function criarAuthQueNega(): Auth {
   return {
     async verificar(): Promise<{ permissoes: string[] } | null> {
       return null;
+    },
+  };
+}
+
+/** `arquivos` exposto para o teste inspecionar o que foi salvo — mesmo padrao de `criarAuditoria`. */
+export function criarStorageEmMemoria(): Storage & { arquivos: Map<string, Buffer> } {
+  const arquivos = new Map<string, Buffer>();
+  return {
+    arquivos,
+    async salvar(caminho: string, conteudo: Buffer): Promise<void> {
+      arquivos.set(caminho, conteudo);
+    },
+    async buscar(caminho: string): Promise<Buffer | null> {
+      return arquivos.get(caminho) ?? null;
+    },
+    async remover(caminho: string): Promise<void> {
+      arquivos.delete(caminho);
+    },
+  };
+}
+
+interface MensagemEnviada {
+  destinatario: string;
+  assunto: string;
+  corpo: string;
+}
+
+/** `enviados` exposto pelo mesmo motivo de `criarStorageEmMemoria`: o teste afirma o que saiu. */
+export function criarNotificadorEmMemoria(): Notificador & { enviados: MensagemEnviada[] } {
+  const enviados: MensagemEnviada[] = [];
+  return {
+    enviados,
+    async enviar(destinatario: string, assunto: string, corpo: string): Promise<void> {
+      enviados.push({ destinatario, assunto, corpo });
     },
   };
 }

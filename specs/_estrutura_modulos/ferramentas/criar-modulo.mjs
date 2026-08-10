@@ -117,7 +117,13 @@ function ajustarManifesto(destino, opcoes) {
     manifesto.geraArtefato = false;
     manifesto.dados.tabelas = [];
   }
-  if (opcoes.semWeb) manifesto.rotaWeb = null;
+  if (opcoes.semWeb) {
+    // As DUAS juntas (Bloco O, plan-2.md) — nao so `rotaWeb`. `navegacao` sozinha, sem `rotaWeb`,
+    // e uma entrada de menu apontando para o nada: `navegacao-declarada` reprova, e reprova com
+    // razao (o modulo pediu tela removida e deixou o menu para tras).
+    manifesto.rotaWeb = null;
+    manifesto.navegacao = null;
+  }
   writeFileSync(caminho, `${JSON.stringify(manifesto, null, 2)}\n`, 'utf8');
 }
 
@@ -129,6 +135,46 @@ function podarTextosDeTela(destino) {
   const textos = JSON.parse(lerTexto(caminho));
   for (const chave of TEXTOS_SO_DA_TELA) delete textos[chave];
   writeFileSync(caminho, `${JSON.stringify(textos, null, 2)}\n`, 'utf8');
+}
+
+/**
+ * O teste de domínio importa `core/motor` para exercitar `gerarArtefato` (Bloco O, plan-2.md).
+ * `--sem-artefato` apaga a PASTA e deixa o teste importando o nada — `tsc`/`import` reprova antes
+ * mesmo do `vitest` rodar. Poda o import E o bloco de teste, por binding; o teste de domínio
+ * (`montarRegistro`/`montar_registro`) fica intacto, porque não depende do motor.
+ */
+function podarTesteDeArtefatoTsJs(caminho) {
+  const conteudo = lerTexto(caminho);
+  const semImports = conteudo
+    .replace(/^import \{ gerarArtefato \} from '\.\.\/\.\.\/core\/motor\/index\.js';\n/m, '')
+    // `registroDeExemplo` so serve o bloco `gerarArtefato` — sem ele, o import fica sem leitor e
+    // `tsc --noEmit` reprova com TS6133 ("declared but its value is never read").
+    .replace(/^import \{ registroDeExemplo \} from '\.\.\/fixtures\/index\.js';\n/m, '');
+  const indice = semImports.indexOf("describe('gerarArtefato'");
+  if (indice === -1) return;
+  const inicioBloco = semImports.lastIndexOf('\n\n', indice) + 1;
+  writeFileSync(caminho, `${semImports.slice(0, inicioBloco).trimEnd()}\n`, 'utf8');
+}
+
+function podarTesteDeArtefatoPy(caminho) {
+  const conteudo = lerTexto(caminho);
+  const semImports = conteudo
+    .replace('from core.motor import gerar_artefato\n', '')
+    // Mesmo motivo do lado TS/JS: `registro_de_exemplo` sem leitor e F401 (ruff) reprova.
+    .replace('from tests.fixtures import registro_de_exemplo\n', '');
+  const indice = semImports.indexOf('TEMPLATE = ');
+  if (indice === -1) return;
+  const inicioBloco = semImports.lastIndexOf('\n\n', indice) + 1;
+  writeFileSync(caminho, `${semImports.slice(0, inicioBloco).trimEnd()}\n`, 'utf8');
+}
+
+function podarTesteDeArtefato(destino, binding) {
+  if (binding === 'python') {
+    podarTesteDeArtefatoPy(join(destino, 'tests', 'dominio', 'test_dominio.py'));
+    return;
+  }
+  const nome = binding === 'typescript' ? 'dominio.test.ts' : 'dominio.test.js';
+  podarTesteDeArtefatoTsJs(join(destino, 'tests', 'dominio', nome));
 }
 
 /** O `.env` do módulo só aponta para a raiz (ADR-004). Segredo real mora num lugar só. */
@@ -218,6 +264,7 @@ function principal() {
 
   if (opcoes.semArtefato) {
     for (const relativo of PASTAS_DE_ARTEFATO) rmSync(join(destino, relativo), { recursive: true, force: true });
+    podarTesteDeArtefato(destino, opcoes.binding);
   }
   if (opcoes.semWeb) {
     rmSync(join(destino, 'web'), { recursive: true, force: true });

@@ -263,6 +263,40 @@ function verificarConforme(binding) {
   };
 }
 
+/**
+ * O caso passa a poder afirmar mais que o id — `{ arquivo?, contem?, vezes? }`, os três opcionais
+ * (Bloco Q, plan-2.md). Sem eles, `null` sempre: nenhum caso existente muda de comportamento.
+ *
+ * O harness hoje só compara CONJUNTO DE IDS: se uma regra acusasse a linha errada, ou o arquivo
+ * errado, ou o número errado de vezes, ela sairia sob o MESMO id e o autoteste passaria do mesmo
+ * jeito — "verde" indistinguível de "verificou a coisa certa". `arquivo`/`contem` restringem QUAL
+ * achado, entre os de `caso.regra`, conta; `vezes` afirma QUANTOS — sem ele, um só já basta (a
+ * mesma tolerância de hoje).
+ */
+function verificarAfirmacaoFina(caso, achados) {
+  if (caso.arquivo === undefined && caso.contem === undefined && caso.vezes === undefined) return null;
+
+  const daRegra = achados.filter((a) => a.regra === caso.regra);
+  const casados = daRegra.filter((a) => (
+    (caso.arquivo === undefined || a.mensagem.includes(caso.arquivo))
+    && (caso.contem === undefined || a.mensagem.includes(caso.contem))
+  ));
+
+  if (casados.length === 0) {
+    const oQueFaltou = [
+      caso.arquivo !== undefined ? `arquivo "${caso.arquivo}"` : null,
+      caso.contem !== undefined ? `texto "${caso.contem}"` : null,
+    ].filter((x) => x !== null).join(' e ');
+    return `nenhum achado de "${caso.regra}" tem ${oQueFaltou} — achados da regra: `
+      + (daRegra.map((a) => a.mensagem).join(' | ') || '(nenhum)');
+  }
+  if (caso.vezes !== undefined && casados.length !== caso.vezes) {
+    return `esperava ${caso.vezes} achado(s) casando arquivo/contem, achou ${casados.length}: `
+      + casados.map((a) => a.mensagem).join(' | ');
+  }
+  return null;
+}
+
 function verificarCaso(binding, caso) {
   const rotulo = `${caso.regra} — ${caso.descricao}`;
   let achados;
@@ -297,6 +331,10 @@ function verificarCaso(binding, caso) {
         + '`tambem: [...]`; se nao for, o caso ou a regra e que precisa de conserto',
     };
   }
+
+  const semAfirmacaoFina = verificarAfirmacaoFina(caso, achados);
+  if (semAfirmacaoFina !== null) return { ok: false, rotulo, detalhe: semAfirmacaoFina };
+
   return { ok: true, rotulo };
 }
 

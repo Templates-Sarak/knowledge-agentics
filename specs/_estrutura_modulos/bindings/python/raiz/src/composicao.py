@@ -30,8 +30,10 @@ from adapters.memoria import (
     AuditoriaEmMemoria,
     AuthQueNega,
     GeradorPadrao,
+    NotificadorEmMemoria,
     RelogioDoSistema,
     RepositorioEmMemoria,
+    StorageEmMemoria,
 )
 
 # Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so.
@@ -40,6 +42,8 @@ FABRICAS: dict[str, dict[str, Callable[[], Any]]] = {
     "auditoria": {"memoria": AuditoriaEmMemoria},
     "relogio": {"sistema": RelogioDoSistema},
     "geradorId": {"padrao": GeradorPadrao},
+    "storage": {"memoria": StorageEmMemoria},
+    "notificador": {"memoria": NotificadorEmMemoria},
 }
 
 

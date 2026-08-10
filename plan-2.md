@@ -878,40 +878,66 @@ cabeçalho deste plano. Os itens acima são só os do executor.
 >
 > As três lacunas abaixo são a mesma lacuna vista de três ângulos.
 
-- [ ] **Não existe molde de adapter nem `criar-adapter`.** `adapters/` traz só `memoria`. Todo projeto
+- [x] **Não existe molde de adapter nem `criar-adapter`.** `adapters/` traz só `memoria`. Todo projeto
       real escreve o primeiro adapter (Postgres) à mão, sem molde: a promessa *"todos com a mesma
-      estrutura"* vale para módulo e **não vale para adapter**
-- [ ] **O vocabulário de portas mora em três lugares que precisam concordar, e nada verifica:**
+      estrutura"* vale para módulo e **não vale para adapter**.
+      *Feito: `bindings/{typescript,javascript,python}/_adapter/` (molde) + `ferramentas/criar-adapter.mjs`
+      — ver detalhe no item do `criar-adapter.mjs` abaixo*
+- [x] **O vocabulário de portas mora em três lugares que precisam concordar, e nada verifica:**
       `packages/portas/index.ts:PORTAS_CONHECIDAS` · `schemas/config-portas.schema.json:properties` ·
       `schemas/modulo.schema.json:portas.items.enum`. Hoje são **8 em cada e idênticos — por sorte**.
-      Acrescentar a nona editando dois dos três falha em silêncio numa direção
-- [ ] **Três dos oito nomes são só nomes.** `storage`, `notificador` e `fila` **não têm interface** em
+      Acrescentar a nona editando dois dos três falha em silêncio numa direção.
+      *Feito: ver o item "fonte única" abaixo — os dois schemas passam a ser GERADOS, e a terceira cópia
+      (por binding) é mantida à mão contra a mesma fonte, com o mecanismo de conferência do item*
+- [x] **Três dos oito nomes são só nomes.** `storage`, `notificador` e `fila` **não têm interface** em
       `packages/portas/`, **não têm adapter** e **não têm fábrica** (`FABRICAS` tem 4: repositório,
       auditoria, relógio, geradorId; `auth` vem por `resolverAuth`). Declarar `"storage"` passa no gate
       e **morre no boot** com *"sem fabrica registrada"* — falha honesta, mas o gate aprovou. E são
       justamente as três que quase todo projeto real precisa: upload, e-mail, job
-- [ ] **DECIDIDO — `storage` e `notificador` ganham substância; `fila` sai do vocabulário.**
+- [x] **DECIDIDO — `storage` e `notificador` ganham substância; `fila` sai do vocabulário.**
       Os dois primeiros aparecem em quase todo projeto (upload e e-mail), a interface é pequena e o
       adapter de memória é barato — implementá-los é fechar o vocabulário com conteúdo.
       **`fila` sai**: ela arrasta retry, *dead-letter*, idempotência e ordem de entrega, e isso é
       **desenho de topologia** — precisamente o que o `00-arquitetura.md` §5 diz que o template não
       escolhe. Nome sem interface é declaração sem efeito, o mesmo argumento que apagou `'dist'` de
       `ENTRADAS_PERMITIDAS` na F.2g. Ela volta no dia em que houver um projeto com a decisão tomada, e
-      volta como ADR
-- [ ] **`Storage` e `Notificador`, ponta a ponta**, nos três bindings: interface em `packages/portas/`,
+      volta como ADR.
+      *Feito: `fila` removida de `PORTAS_CONHECIDAS` nos três bindings e dos dois schemas gerados*
+- [x] **`Storage` e `Notificador`, ponta a ponta**, nos três bindings: interface em `packages/portas/`,
       adapter de memória, fábrica em `FABRICAS`, e um módulo do K declarando uma delas — porque porta com
       fábrica que ninguém exercita é a mesma classe de declaração órfã, só que mais bem escondida.
       **Superfície mínima e tipada por operação** (a propriedade que a F.0 mediu e que sustenta
-      `sql-no-modulo`): nada de `executar(comando: string)`
-- [ ] **DECIDIDO — fonte única do vocabulário, com os schemas DERIVADOS.** Uma lista, e os dois schemas
+      `sql-no-modulo`): nada de `executar(comando: string)`.
+      *Feito: `Storage` (`salvar`/`buscar`/`remover`) e `Notificador` (`enviar`) — interface +
+      `criar*EmMemoria`/`*EmMemoria` + entrada em `FABRICAS`, nos três bindings. O `_template` declara
+      `notificador` (manifesto + config/portas.json + `DependenciasModulo`, campo OPCIONAL para não
+      quebrar `criar_dependencias()`/fixtures existentes) — a fábrica é exercida de verdade no boot do
+      K. `Storage` fica implementada mas não wired no molde padrão ("uma delas", como o item pede) —
+      exercida pelo teste manual do `criar-adapter.mjs` (`storage s3`, ver abaixo). Cascata: o caso
+      `estrutura — Bloco M — core/portas/ vazio ou ausente` ganhou `tambem: ['config-morta']` — sem
+      `core/portas/index.ts`, a palavra "notificador" some do código do módulo e a chave de
+      `config/portas.json` fica sem leitor, aos olhos daquela regra*
+- [x] **DECIDIDO — fonte única do vocabulário, com os schemas DERIVADOS.** Uma lista, e os dois schemas
       gerados dela pelo `gerar-config-lint.mjs` (ou um irmão dele), com `--conferir` e exit 1 na
       divergência — no precedente exato do `lint-derivado`. *Recusada:* uma regra de escopo `raiz` que
       compara os três e acusa. **Impedir é melhor que acusar**, e o template já escolheu isso uma vez
-      quando fez a config do linter ser gerada em vez de conferida por regra
-- [ ] **`manifesto.versao` ganha consumidor: é o `/meta` projetado da N.1.** Ele entra na allowlist e
+      quando fez a config do linter ser gerada em vez de conferida por regra.
+      *Feito: `ferramentas/gate/vocabulario-portas.mjs` (fonte) + `ferramentas/gerar-schemas-portas.mjs`
+      (irmão do `gerar-config-lint.mjs`, `--conferir`). `config-portas.schema.json` é INTEIRO gerado
+      (byte a byte, como o eslint/ruff); `modulo.schema.json` só tem `portas.items.enum` tocado, por
+      SUBSTITUIÇÃO DE TEXTO — regenerá-lo inteiro tornaria o gerador dono de campos que não são de
+      porta nenhuma. O terceiro lugar (`packages/portas/index.*` por binding) continua hand-maintained
+      de propósito — é interface de linguagem, três sintaxes diferentes, não config mecânica — e cada
+      um ganhou um comentário apontando a fonte normativa. Rodado: `gerado: config-portas.schema.json,
+      modulo.schema.json (portas.items.enum)`, depois `--conferir` → OK*
+- [x] **`manifesto.versao` ganha consumidor: é o `/meta` projetado da N.1.** Ele entra na allowlist e
       passa a ter leitor — e a alternativa (tirá-lo do obrigatório) fica recusada porque versão de módulo
       é o dado que o consumidor de `consome` precisa quando o contrato muda ([[02-contrato-e-dados]] §5).
-      **Dependência explícita: este item fecha DEPOIS da N.1**
+      **Dependência explícita: este item fecha DEPOIS da N.1**.
+      *JÁ SATISFEITO pelo conserto da N.1: o `paraMeta`/`para_meta` dos três bindings já projeta
+      `versao: manifesto.versao`, e o schema de `/meta` no `openapi.yaml` do molde já declara
+      `versao: { type: string }`. Confirmado nos três bindings — nenhuma mudança nova precisou entrar
+      nesta rodada*
 
 **Os arquivos, um a um:**
 
@@ -925,9 +951,27 @@ cabeçalho deste plano. Os itens acima são só os do executor.
 | scaffold (novo) | `ferramentas/criar-adapter.mjs` |||
 | a lei | `doutrina/01-modulo.md` §5 (catálogo de portas) e `doutrina/00-arquitetura.md` §3 |||
 
-- [ ] **`criar-adapter.mjs <porta> <provedor>`** — copia o molde, substitui marcadores, registra a
+- [x] **`criar-adapter.mjs <porta> <provedor>`** — copia o molde, substitui marcadores, registra a
       fábrica e **roda o gate**. Mesma forma do `criar-modulo.mjs`, e sujeito ao mesmo aceite do Bloco O:
-      **qualquer combinação de argumentos produz artefato conforme**, ou o comando não existe
+      **qualquer combinação de argumentos produz artefato conforme**, ou o comando não existe.
+      *Feito, com um achado no caminho: o molde não pode ter `<porta>`/`<Porta>` em posição SINTÁTICA
+      (tipo, nome de função) — só em comentário/string, a mesma disciplina de `<modulo>` em
+      `modulos/_template`. Um molde inicial com `import type { <Porta> } from '...'` teria deixado
+      `adapters/_template` (persistente, nunca substituído no lugar) com sintaxe INVÁLIDA para sempre,
+      quebrando `tsc --noEmit`/`eslint` em TODO projeto gerado — mesmo em quem nunca rodasse
+      `criar-adapter`, porque `tsconfig.json:include` inclui `adapters` inteiro. Conserto: o molde
+      devolve um tipo genérico (`Record<string, unknown>` / `Record<string, unknown>` via JSDoc /
+      `AdapterPendente` com `__getattr__` levantando `NotImplementedError`) sob um nome FIXO
+      (`criarAdapter` TS/JS, `AdapterPendente` PY) — nunca marcado —, e o script troca esse nome pelo
+      do provedor só na CÓPIA, por `\bcriarAdapter\b`/`\bAdapterPendente\b`. `criar-projeto.mjs` ganhou
+      um quarto `cpSync` (`bindings/<b>/_adapter` → `adapters/_template`) — sem ele o molde nunca
+      chegava ao projeto gerado. Testado nos três bindings, um provedor por binding
+      (`storage s3` TS e PY, `notificador sendgrid` JS): import inserido, `FABRICAS` estendido na
+      MESMA linha da porta (ou linha nova, se a porta ainda não tinha entrada), gate limpo, e
+      `npm run verificar`/`verificar.py` completos verdes — tipos, lint, formato e testes, incluindo
+      mypy achando os 7 arquivos-fonte do binding Python sem problema. Não testado exaustivamente
+      (todas as combinações de porta×provedor×binding): a cobertura combinatorial é explicitamente do
+      Bloco O, como esta linha já dizia*
 
 ---
 
@@ -936,7 +980,7 @@ cabeçalho deste plano. Os itens acima são só os do executor.
 > `criar-modulo.mjs` roda o gate ao final e **imprime OK** — é a primeira coisa que um usuário novo vê,
 > e é onde a confiança no padrão nasce. Ela não pode aprovar o que não funciona.
 
-- [ ] **`--sem-artefato` gera módulo quebrado, e o gate diz verde.** Medido:
+- [x] **`--sem-artefato` gera módulo quebrado, e o gate diz verde.** Medido:
       ```
       node ferramentas/criar-modulo.mjs relatorio --sem-artefato
       → gate:   "relatorio: 0 erro(s), 0 aviso(s) — conformidade: OK"
@@ -944,8 +988,18 @@ cabeçalho deste plano. Os itens acima são só os do executor.
       → vitest: 1 failed
       → ci:cobertura: reprova o workspace inteiro
       ```
-      A flag remove `core/motor/` e deixa `tests/dominio/dominio.test.ts` importando dele
-- [ ] **`--sem-web` TAMBÉM está quebrado — a afirmação herdada era falsa.** O `plan.md` (Bloco H) diz
+      A flag remove `core/motor/` e deixa `tests/dominio/dominio.test.ts` importando dele.
+      *Feito: `podarTesteDeArtefato(destino, binding)` em `criar-modulo.mjs`, chamada quando
+      `--sem-artefato`. TS/JS: remove o `import { gerarArtefato } from '../../core/motor/index.js'`
+      e o bloco `describe('gerarArtefato', ...)` inteiro de `tests/dominio/dominio.test.*` (corta na
+      linha em branco anterior, por texto — o molde é conteúdo fixo, não entrada externa). Python:
+      remove `from core.motor import gerar_artefato` e, a partir de `TEMPLATE = `, tudo até o fim do
+      arquivo (`TEMPLATE` + os três `test_motor_*`). **Achado no caminho, nos dois lados:** depois de
+      remover o bloco, `registroDeExemplo`/`registro_de_exemplo` ficava importado e SEM LEITOR —
+      `montarRegistro`/`montar_registro` não o usa — e `tsc --noEmit` reprovava com TS6133
+      ("declared but its value is never read") / `ruff check` reprovaria com F401 (import não usado).
+      As duas remoções de import saem juntas da mesma função*
+- [x] **`--sem-web` TAMBÉM está quebrado — a afirmação herdada era falsa.** O `plan.md` (Bloco H) diz
       *"o caso análogo `--sem-web` é tratado corretamente"*. **Medido, e não é:**
       ```
       node ferramentas/criar-modulo.mjs painel --sem-web
@@ -957,8 +1011,9 @@ cabeçalho deste plano. Os itens acima são só os do executor.
       **As duas flags falham de formas diferentes, e a diferença importa:** `--sem-artefato` produz
       módulo quebrado **e diz OK** (mentira); `--sem-web` produz módulo não-conforme **e avisa** (defeito
       honesto). Só a primeira é da família "verde indistinguível de não verificou" — mas as duas violam
-      o mesmo invariante: *a ferramenta de entrada entrega artefato conforme, sempre*
-- [ ] **ACHADO NOVO (do N.4, incidental — não estava aqui): `--escopo` diverge entre `criar-projeto.mjs`
+      o mesmo invariante: *a ferramenta de entrada entrega artefato conforme, sempre*.
+      *Feito: `ajustarManifesto` zera `navegacao` junto com `rotaWeb` quando `--sem-web`*
+- [x] **ACHADO NOVO (do N.4, incidental — não estava aqui): `--escopo` diverge entre `criar-projeto.mjs`
       e `criar-modulo.mjs` no binding Python.** Medido: `criar-projeto.mjs destino --binding python
       --escopo verif` seguido de `criar-modulo.mjs sonda --binding python` (sem `--escopo`) gera
       `core/portas/__init__.py` **corrompido** — `resolverEscopo` de `criar-modulo.mjs` cai no fallback
@@ -968,19 +1023,68 @@ cabeçalho deste plano. Os itens acima são só os do executor.
       identificador `verificar` (sem marcador nenhum) virou `sarak-verif-n4pyicar` — a substring
       `verif` do meio da palavra colidiu com o escopo resolvido. **Não investigado a fundo, não
       corrigido nesta rodada** — fora do escopo de N.3/N.4. Reproduzir com escopos DIFERENTES nos dois
-      comandos antes de decidir o conserto
-- [ ] **DECIDIDO — podar, nas duas.** `--sem-artefato` remove também a parte do teste que depende do
+      comandos antes de decidir o conserto.
+      *Investigado a fundo — e a causa raiz NÃO é o que o achado suspeitava. Não é `resolverEscopo`
+      caindo num fallback diferente por si só: é `criar-projeto.mjs --escopo verif` varrendo
+      `ferramentas/` (dentro de `PASTAS_INSTALADAS`) e substituindo `<escopo>` por "verif" TAMBÉM
+      dentro do CÓDIGO-FONTE das próprias ferramentas copiadas — `criar-modulo.mjs` tem a string
+      literal `'<escopo>'` como parte da PRÓPRIA LÓGICA de substituição (`.replaceAll('<escopo>',
+      escopo)`), não como marcador a preencher. A varredura reescrevia essa linha, na CÓPIA, para
+      `.replaceAll('verif', escopo)` — a ferramenta corrompia a própria busca. No próximo
+      `criar-modulo.mjs <id>` desse projeto, QUALQUER `<id>` que contivesse "verif" como substring
+      (`"verificar"` → `"destinoicar"`, exatamente o achado original) saía mutilado, porque o
+      `.replaceAll` estava procurando "verif" (o valor antigo do escopo) em vez de `<escopo>` (o
+      marcador). Bisseccionado por instrumentação: `substituir()` isolada com os mesmos argumentos
+      não reproduzia — só reproduzia rodando a CÓPIA dentro do projeto, nunca a fonte; a diferença
+      era exatamente o arquivo executado, não os argumentos.
+      **Conserto:** `criar-projeto.mjs` ganhou `PASTAS_COM_MARCADOR_ESCOPO` (as mesmas de
+      `PASTAS_INSTALADAS`, SEM `ferramentas/`) e `arquivosComMarcadorEscopo`, substituindo
+      `arquivosInstalados` como fonte de `aplicarEscopo`. `ferramentas/` nunca teve marcador
+      `<escopo>` de verdade — só como parte de lógica —, então excluí-la não perde nada; é o mesmo
+      argumento que já vale para `gerar-config-lint.mjs:IGNORADOS` excluir `ferramentas/` do linter
+      da base (Bloco L.3, "vendorizado, ninguém edita"). Contraprova: com o `--escopo verif` +
+      `criar-modulo.mjs verificar` do achado original, `id` saía `"destinoicar"` antes do conserto e
+      `"verificar"` depois — confirmado nos dois lados (fonte E cópia). TS/JS reconferidos com
+      `--escopo acme`: `package.json:name` continua `"@acme/<modulo>"` corretamente*
+- [x] **DECIDIDO — podar, nas duas.** `--sem-artefato` remove também a parte do teste que depende do
       motor; `--sem-web` zera `navegacao` junto com `rotaWeb`.
       *Recusada:* aposentar as flags (módulo sem artefato se faz zerando `geraArtefato` e apagando as
       três pastas, que `artefato-declarado` já cobra nos dois sentidos). Elas são úteis e o conserto é
       pequeno; aposentar seria trocar um defeito de duas linhas por trabalho manual em todo projeto
-- [ ] **O invariante que passa a valer, e é o aceite do bloco:** *qualquer* combinação de flags de
+- [x] **O invariante que passa a valer, e é o aceite do bloco:** *qualquer* combinação de flags de
       `criar-modulo.mjs` produz módulo que passa em `verificar`. Hoje são 4 combinações
-      (nenhuma · `--sem-artefato` · `--sem-web` · as duas) × 3 papéis
-- [ ] **O Bloco O ESTENDE o gerador do K** para as 4 combinações (nenhuma flag · `--sem-artefato` ·
+      (nenhuma · `--sem-artefato` · `--sem-web` · as duas) × 3 papéis.
+      *Confirmado: as 4 combinações × papel `dominio` rodam permanentemente no K (item abaixo). As
+      8 combinações restantes (`gateway`/`conector` × as 4 flags) foram verificadas manualmente no
+      binding TypeScript — `0 erro(s)` no gate para as 8, e `npm run verificar` (tipos + lint +
+      formato + testes) limpo para o lote inteiro. Não entraram no K permanente: `papel` não altera
+      NENHUMA regra de estrutura (a única regra condicionada por `papel` é `gateway-credencial`, que
+      só FROUXA a exigência para `papel: gateway`, nunca aperta) — rodar as 12 permanentemente
+      pagaria 3× o custo do K sem medir defeito novo nenhum. Se isso mudar (uma regra nova passar a
+      exigir algo condicionado por papel), o K precisa crescer com ela, não antes*
+- [x] **O Bloco O ESTENDE o gerador do K** para as 4 combinações (nenhuma flag · `--sem-artefato` ·
       `--sem-web` · as duas) e roda a cadeia em cada uma. A extensão é **aceite do O**, não do K — o
-      K nasceu cobrindo só o módulo padrão (D2: "o K cresce com os blocos")
-- [ ] **A pergunta que fica registrada:** o gate aprovar um módulo que não compila é falha do gate ou
+      K nasceu cobrindo só o módulo padrão (D2: "o K cresce com os blocos").
+      *Feito: `COMBINACOES_DE_MODULO` em `autoteste-template.mjs`, quatro módulos (`sondapad`,
+      `sondaart`, `sondaweb`, `sondaamb`) criados no MESMO projeto (um só install, um só `verificar`
+      cobrindo os quatro via workspace/descoberta — repetir a cadeia inteira 4× pagaria 4× o custo
+      do K.1 sem medir nada a mais). Dois achados no caminho, os dois sobre COMPRIMENTO de id:
+      **(1)** ids com hífen (`sonda-padrao`) reprovavam `schema-manifesto` — `dados.tabelas[0]`
+      herda o hífen do id e o padrão de nome de tabela (`^[a-z][a-z0-9_]*$`) não aceita hífen, mais
+      estrito que o do id (`^[a-z][a-z0-9-]*$`, que aceita); **(2)** ids longos
+      (`sondasemartefato`, 16 chars) reprovavam `ruff format`/`ruff check` (E501) no binding Python
+      — vários cabeçalhos do molde têm `<modulo>` numa linha de comentário já perto do limite de 110
+      colunas (`api/src/erros.py:1`, o mais apertado, sobra só 13 caracteres), e a combinação de um
+      id longo com um escopo longo (o `--rapido`/K usa pasta temporária como escopo, um nome
+      comprido) estourava também `tests/contrato/test_config.py`'s `MANIFESTO_BASE` (dict de uma
+      linha só). Consertos: ids curtos sem hífen (6–8 chars, a mesma folga que "sonda" já tinha) e
+      `test_config.py` do molde Python reformatado para dict multi-linha (robusto a qualquer id/
+      escopo razoável, não só aos específicos medidos). `--rapido` usa só a combinação padrão — as
+      quatro juntas custam ~70s(TS)/~52s(JS) a mais, e o `--rapido` combinado foi de ~25s para
+      ~1m58s, quase estourando o teto de ~2min do K.1; com a poda, voltou a ~1m24s. Contraprova:
+      revertido o conserto do `--sem-web` acima, o K reprova nomeando exatamente
+      `criar-modulo:sondaweb`; restaurado, volta a verde nos três bindings (10/10 · 10/10 · 9/9)*
+- [x] **A pergunta que fica registrada:** o gate aprovar um módulo que não compila é falha do gate ou
       fronteira dele? A resposta honesta é **fronteira** — o gate é estático e não executa, de propósito
       (é o que o faz viajar). Então o conserto é na **ferramenta**, não na regra; e o Bloco K é quem
       cobre a classe inteira, porque ele executa
@@ -992,25 +1096,74 @@ cabeçalho deste plano. Os itens acima são só os do executor.
 > **Projeto novo nasce vermelho num passo de CI que o próprio template entrega.** É a mesma classe da
 > F.2d.1 — a ferramenta acusando o pacote que a instalou —, só que a origem agora é externa.
 
-- [ ] **Medido num projeto recém-gerado**, sem uma linha minha:
+- [x] **Medido num projeto recém-gerado**, sem uma linha minha:
       ```
       npm audit  → 6 vulnerabilidades (2 critical, 1 high, 3 moderate)
       npm run ci:dependencias → x vite (high) · x vitest (critical) — REPROVA, exit 1
       ```
-      E a correção **exige salto de major** (`vitest 4.1.10`, `vite 8.2.1`): não sai com `audit fix`
-- [ ] **Enquanto isso, o único caminho verde é escrever exceção de CVE datada num projeto que nasceu
+      E a correção **exige salto de major** (`vitest 4.1.10`, `vite 8.2.1`): não sai com `audit fix`.
+      *Remedido nesta rodada (números já tinham deslizado com o tempo, como o próprio D1 antecipa):
+      **5** vulnerabilidades (1 critical, 1 high, 3 moderate), mesma cadeia (esbuild→vite→vitest),
+      mesmos alvos de bump (`vitest 4.1.10`, `vite 8.2.1` — exatos, `npm audit fix --force` resolveu
+      para eles). **Achado a mais, no binding Python:** `pip_audit` acusava 6 vulnerabilidades no
+      `pip` 25.2 do próprio venv (não é dependência declarada — é o instalador). Mesma classe de
+      defeito ("projeto novo nasce vermelho"), binding diferente — ver item do `pip` abaixo*
+- [x] **Enquanto isso, o único caminho verde é escrever exceção de CVE datada num projeto que nasceu
       hoje** — o que corrói exatamente a disciplina que a F.2d montou. Exceção existe para *"o mundo
       mudou depois"*, não para *"nasceu assim"*
-- [ ] **Bump da cadeia inteira**, nos três bindings: `vitest`, `vite`, `@vitest/coverage-v8`, `eslint`,
+- [x] **Bump da cadeia inteira**, nos três bindings: `vitest`, `vite`, `@vitest/coverage-v8`, `eslint`,
       `typescript`, `express`, `react`, `jsdom`, `prettier`, `ruff`, `mypy`, `pytest`. **Sob o K** — é
-      ele que torna o salto de major barato, e é a primeira vez que ele paga o próprio custo
-- [ ] **Pin exato substitui `^` em todo o esqueleto** (D1), nos três bindings
-- [ ] **ADR novo — "a cadeia de ferramentas do template"**: por que fixa, quem decide o bump, com que
-      cadência, e o limite de que projeto já criado não recebe atualização
-- [ ] **`ci:dependencias` entra no K** (D2) e vira o sensor de envelhecimento
-- [ ] **Limite já conhecido, que segue valendo:** `pip-audit` não reporta severidade, então o piso de
+      ele que torna o salto de major barato, e é a primeira vez que ele paga o próprio custo.
+      *ESCOPO FECHADO COM O USUÁRIO antes de tocar código: só a cadeia com CVE aberta
+      (`vitest`→4.1.10, `vite`→8.2.1, `@vitest/coverage-v8`→4.1.10, `@vitejs/plugin-react`→6.0.5, o
+      último por exigência de peer dep do `vite` 8) foi de fato SUBIDA de major. `eslint`/`typescript`/
+      `express`/`react` têm majors bem mais novos no registry (medido: ts 5→7, express 4→5,
+      eslint 9→10, react 18→19) mas SEM CVE — ficam pinados na versão atual (não bump) e registrados
+      como pendência explícita no ADR-008, não bumpados às cegas só "porque o registry tem". `ruff`/
+      `mypy`/`pytest` (Python): pinados na versão atual, sem CVE nenhuma nos três.
+      **Achado no caminho, real regressão de teste:** `vitest` 2→4 quebrou `tests/web/**` com
+      "document is not defined" — `environmentMatchGlobs` (a forma de ligar jsdom por PASTA) foi
+      REMOVIDO no Vitest 3+ (confirmado: a string não existe em nenhum `.js`/`.d.ts` do pacote
+      instalado), config morta sem aviso. Conserto: cada teste de `tests/web/**` liga o próprio
+      ambiente com `// @vitest-environment jsdom` na primeira linha — testado empiricamente antes de
+      trocar, continua funcionando no Vitest 4 — e `vitest.config.{ts,js}` perdeu a linha morta*
+- [x] **Pin exato substitui `^` em todo o esqueleto** (D1), nos três bindings.
+      *Feito nos dois lados: TS/JS (`^` → versão exata nos quatro `package.json` — raiz e `_template`
+      dos dois bindings) e Python (`>=` → `==` nas dependências de `pyproject.toml`, mesmo princípio,
+      sintaxe do binding). Versões pinadas na resolução ATUAL medida (não a mão): as com CVE, no
+      alvo do bump; as sem CVE, no que `npm install`/`pip install` resolveu limpo numa instalação
+      fresca — não um chute*
+- [x] **ADR novo — "a cadeia de ferramentas do template"**: por que fixa, quem decide o bump, com que
+      cadência, e o limite de que projeto já criado não recebe atualização.
+      *Feito: ADR-008 em `doutrina/adr/decisoes.md`. Cobre os quatro pontos pedidos mais os dois
+      limites que D1 já declarava (pin exato não prende transitivo; template nunca empurra update
+      para projeto já criado) e a pendência explícita dos quatro majors sem CVE (ver item acima)*
+- [x] **`ci:dependencias` entra no K** (D2) e vira o sensor de envelhecimento.
+      *Feito: passo `ci-dependencias` por ÚLTIMO no pipeline dos três bindings
+      (`autoteste-template.mjs`) — `npm run ci:dependencias` (TS/JS), `verificar.py --dependencias`
+      (Python). **Achado no caminho, Python:** o passo reprovava com "ferramenta de auditoria
+      ausente" mesmo com tudo instalado certo — `ci-dependencias.mjs` resolve o interprete Python via
+      `SARAK_PYTHON`/PATH, e o processo filho (Node, chamado por `verificar.py --dependencias`) não
+      herdava `SARAK_PYTHON` apontando para o venv da rodada; caía no `python`/`python3` do PATH, que
+      não tem `pip_audit`. Conserto: o passo do K passa `SARAK_PYTHON` explícito. Contraprova:
+      revertido `vitest` para `2.1.4` (deixando `vite`/`@vitejs/plugin-react`/`@vitest/coverage-v8`
+      nas versões novas, peer-incompatíveis) — `npm install` reprova com ERESOLVE antes mesmo do
+      audit, provando que o conjunto pinado é interdependente e o K não é cego a uma reversão
+      parcial; restaurado, volta a `VERDE (11/11)` nos três bindings*
+- [x] **Limite já conhecido, que segue valendo:** `pip-audit` não reporta severidade, então o piso de
       `severidadeMinima` só filtra o npm — declarado no §7.2 desde a F.2d, e a mudança de versão não o
-      altera
+      altera.
+      *Confirmado: `pip-audit --format=json` continua sem campo de severidade nesta versão também —
+      nenhuma mudança de comportamento a declarar*
+- [x] **ACHADO NOVO, fora do checklist original — `pip` do venv com CVE própria.** Medido: `pip`
+      25.2 (o que `python -m venv` instala do interpretador do SISTEMA, nunca gerenciado pelo
+      template) tinha 6 vulnerabilidades conhecidas — `pip_audit` reprovava um projeto Python
+      recém-gerado com TODA dependência declarada em dia. Não é `pyproject.toml` — `pip` não é
+      dependência declarada, é o instalador.
+      *Conserto: `pip install --upgrade pip` como passo `atualizar-pip`, entre `venv` e `instalar`,
+      no K dos três — e a mesma instrução entra nos "próximos passos" que `criar-projeto.mjs` imprime
+      para o binding Python, para quem gera um projeto de verdade (não só o K) ver a mesma orientação.
+      Confirmado: `pip` 25.2 → 26.2.1, `pip_audit` passa a "No known vulnerabilities found"*
 
 ---
 
@@ -1023,17 +1176,57 @@ cabeçalho deste plano. Os itens acima são só os do executor.
 > Enquanto isso valer, **toda trava dos outros blocos é mais fraca do que parece** — inclusive as deste
 > plano. Por isso ele vem depois dos consertos e antes de fechar a conta.
 
-- [ ] **O caso passa a poder afirmar mais que o id**: `{ id, arquivo?, contem?, vezes? }`. Não é um
+- [x] **O caso passa a poder afirmar mais que o id**: `{ id, arquivo?, contem?, vezes? }`. Não é um
       framework de asserção — são três campos opcionais, e o caso que não os usa continua valendo
       exatamente como hoje (compatibilidade para trás é requisito, não bônus)
-- [ ] **Destrava a dívida H de `rota-publica-autenticada`**, endurecido na J.2 **sem caso**: a cláusula
+      **Feito:** `verificarAfirmacaoFina(caso, achados)` em `executar.mjs`, chamada em `verificarCaso`
+      logo antes do `return { ok: true }`. Sem os três campos, `return null` (no-op) — todo caso
+      pré-existente continua avaliado só por id, confirmado pela suíte cheia (`122/122 · 122/122 ·
+      118/118` → `119/119` depois que este bloco acrescentou casos) permanecendo verde sem tocar em
+      nenhum outro caso.
+- [x] **Destrava a dívida H de `rota-publica-autenticada`**, endurecido na J.2 **sem caso**: a cláusula
       de origem passou a ler `textoDeCodigo` e nada trava a estritura nova. A operação portável é um
       **ALVO lógico novo** em `executar.mjs` (o arquivo da `api/` difere por binding) — mesmo trabalho,
       mesmo bloco
-- [ ] **Travado por si mesmo:** um caso que afirma `contem` e outro que afirma `vezes`, cada um
+      **Feito:** novo caso em `casos.mjs` (regra `rota-publica-autenticada`) via `m.substituir` em
+      `api/src/middlewares.py`, trocando a ÚNICA linha de código real que lê `manifesto["rotasPublicas"]`
+      por uma lista fixa — as duas docstrings que só EXPLICAM o campo (linhas 26 e 119) ficam intocadas,
+      fora de `linhasCodigo`. `contem: 'nunca le modulo.json:rotasPublicas'` + `vezes: 1` provam que o
+      achado é o certo. Contraprova: revertendo `textoDeCodigo(a)` para `a.conteudo` em `operacao.mjs`,
+      o caso vira FALHA (`119/119` → `118/119`); restaurado, volta a `119/119`.
+      **Limite declarado, TS/JS sem equivalente:** `rotasPublicas` é nome de CAMPO de tipo
+      (`api/src/config.ts`) e de PARÂMETRO (`middlewares/index.ts`), presentes em código real em pelo
+      menos dois arquivos além do bootstrap (`index.ts`) — apagar só o bootstrap não apaga o
+      identificador de `linhasCodigo` em lugar nenhum nesses dois bindings, e apagar também o
+      tipo/parâmetro deixaria de ser mutação mínima (quebraria a assinatura da função, não só o
+      comportamento sob teste). O caso roda só contra `api/src/middlewares.py`: em TS/JS o `m.substituir`
+      estoura ENOENT e o runner marca SEM COBERTURA — o mesmo idioma já usado em
+      `token-em-armazenamento` para "molde deste binding não tem a peça", não uma lacuna de aprovação.
+- [x] **Travado por si mesmo:** um caso que afirma `contem` e outro que afirma `vezes`, cada um
       reprovando quando a afirmação é violada — provado revertendo, no padrão do resto do plano
-- [ ] **Reconferir as travas dos blocos K–S com a expressividade nova**, e registrar quais ficaram mais
+      **Feito:** `contem: 'campoFantasma'` no caso "PRIMEIRA chave da projeção não declarada (molde
+      Python)" — contraprova trocando a chave nomeada no achado de `contrato.mjs:448` por um nome
+      fixo (`outroNome`): o caso vira FALHA, restaurado volta a `ok`. `vezes: 2` no caso "N.2 forma 12
+      — dois return" — contraprova inserindo um `break` na segunda ocorrência de
+      `regioesDeProjecao` (só a PRIMEIRA região de cada janela passa a contar): o caso vira FALHA
+      (`esperava 2 achado(s), achou 1`), restaurado volta a `ok`. As duas reversões, os três bindings
+      voltam a `122/122 · 122/122 · 119/119`.
+- [x] **Reconferir as travas dos blocos K–S com a expressividade nova**, e registrar quais ficaram mais
       fortes. É a razão de este bloco não ser o último
+      **Feito:** levantamento em `casos.mjs` por referência a "Bloco [K-S]" mostrou que só o Bloco M
+      registra casos rotulados nesta faixa (K é o autoteste-template, O/P/S mexem em ferramentas e
+      `package.json`/`pyproject.toml`, sem caso de regra correspondente). Os quatro casos `estrutura`
+      do Bloco M (`core/dominio/`, `core/portas/`, `README.md`, arquivo do binding) compartilhavam o
+      MESMO id sem distinguir qual achado disparou — um extrator que confundisse "core/dominio/" com
+      "core/portas/" passava calado, porque "acusou `estrutura`" já bastava. Os quatro ganharam `contem`
+      (o do arquivo-por-binding sem `vezes`: a contagem varia por binding — TS perde dois arquivos,
+      JS/PY um só —, mas o sufixo da mensagem é fixo nos três). Contraprova no primeiro: trocando o
+      `achados.push` de `estrutura.mjs` para sempre nomear "core/portas/" (nunca a `pasta` real), o
+      caso de "core/dominio/" vira FALHA; restaurado, os três bindings voltam a `122/122 · 122/122 ·
+      119/119`. As demais famílias com casos vizinhos sob o mesmo id (as 18 formas de N.2, por
+      exemplo) já tinham `contem`/`vezes` nos dois pontos de maior risco de confusão (item anterior);
+      o resto da família distingue por ARQUIVO onde escreve (um arquivo novo por forma), o que já é
+      uma trava equivalente sem precisar do campo novo.
 
 ---
 
@@ -1044,32 +1237,53 @@ cabeçalho deste plano. Os itens acima são só os do executor.
 
 ### R.1 — deriva de documento, medida
 
-- [ ] **`plan.md` §Estado** diz `92/92 · 92/92 · 88/88`; o real é **`93/93 · 93/93 · 89/89`**
-- [ ] **Seis caixas do `plan.md` desmarcadas para trabalho que foi feito**: `'dist'` de
+- [x] **`plan.md` §Estado** diz `92/92 · 92/92 · 88/88`; o real é **`93/93 · 93/93 · 89/89`**
+      **Feito:** atualizado para `122/122 · 122/122 · 119/119` — o número real no momento em que este
+      item foi fechado, depois dos Blocos M–Q terem acrescentado casos. Nota, para não reabrir por
+      confusão: entre o `93/93 · 93/93 · 89/89` medido quando este item foi escrito e agora, os Blocos
+      M–Q acrescentaram casos de teste — a métrica **cresceu**, não divergiu
+- [x] **Seis caixas do `plan.md` desmarcadas para trabalho que foi feito**: `'dist'` de
       `ENTRADAS_PERMITIDAS` (F.2f.1 → apagada na F.2g), o alcance de `adapters/` no `afetados.mjs`
       (F.2g respondeu que não se materializou), e os três do fim da F.2 (`build`, migrations executáveis,
       exemplo de fiação de CI — todos entregues na F.2f/F.2g). **Marcar, não reabrir**
-- [ ] **`plan.md` Bloco H afirma que `--sem-web` "é tratado corretamente" — e não é** (medido, Bloco O).
+      **Feito, com uma correção:** contadas de novo, são **cinco** caixas, não seis — `'dist'` (1) +
+      `adapters/` (1) + as três do fim da F.2 (3) = 5. Todas marcadas `[x]` em `plan.md`, cada uma com
+      nota apontando para a linha `[x]` irmã que já registrava o trabalho (F.2f/F.2g)
+- [x] **`plan.md` Bloco H afirma que `--sem-web` "é tratado corretamente" — e não é** (medido, Bloco O).
       Corrigir a linha: as duas flags estão quebradas, de formas diferentes. Afirmação de plano que
       envelheceu para o lado do "está tudo bem" é a mais cara de todas, porque ninguém vai conferir
-- [ ] **`funcionamento-esperado.md` §4.1 omite o passo 6** que a própria `criar-projeto.mjs` imprime —
+      **Feito:** linha corrigida em `plan.md` (Bloco H), com nota apontando para o conserto das duas
+      flags em `criar-modulo.mjs` e para o Bloco K exercitando as quatro combinações
+- [x] **`funcionamento-esperado.md` §4.1 omite o passo 6** que a própria `criar-projeto.mjs` imprime —
       `git update-index --chmod=+x .githooks/*`. É justamente o passo cuja falta faz o hook ser **pulado
       em silêncio** no Linux/macOS: verde indistinguível de não rodou, na peça que existe para evitar isso
-- [ ] **`funcionamento-esperado.md` §5.4 sub-especifica a extração.** *"Copiar a pasta e recortar as
+      **Feito:** passo 6 acrescentado ao bloco de comandos do §4.1, com o mesmo motivo que
+      `criar-projeto.mjs` imprime (Windows `core.filemode=false` grava o hook sem bit de execução)
+- [x] **`funcionamento-esperado.md` §5.4 sub-especifica a extração.** *"Copiar a pasta e recortar as
       chaves"* não basta: é preciso **apagar a linha `ENV_RAIZ`** de `modulos/<id>/.env`. Sem isso o
       módulo extraído morre em `[config] ENV_RAIZ aponta para "…\.env", que nao existe` — medido. O
       comentário do `.env` diz; o documento de conjunto, não
-- [ ] **§7.2 do extrator de projeção vira subseção com âncora própria.** É o limite mais grave do
+      **Feito:** §5.4 passou a nomear o passo explicitamente, com a mensagem de erro exata que a
+      ausência dele produz
+- [x] **§7.2 do extrator de projeção vira subseção com âncora própria.** É o limite mais grave do
       sistema inteiro e vive dentro de uma **célula de tabela de ~600 palavras** — o texto mais
       importante do template e o mais difícil de achar e de citar. `§7.2.1 — o extrator de projeção`,
       para que uma regra aponte para âncora e não para linha de tabela
-- [ ] **§7.2** — acrescentar *"ou rota obrigatória ausente"* ao parágrafo da exceção de silêncio
-- [ ] **§7.2** — registrar o limite do módulo extraído sem `.ruff.toml` *(hoje só no comentário do
+      **Feito:** conteúdo movido para `### 7.2.1 — O extrator de projeção`, logo depois da tabela; a
+      célula de `projecao-contrato` na tabela virou um ponteiro de uma linha com âncora
+      (`#721--o-extrator-de-projecao`). A referência cruzada em `sensivel-em-saida` também atualizada
+- [x] **§7.2** — acrescentar *"ou rota obrigatória ausente"* ao parágrafo da exceção de silêncio
+      **Feito:** acrescentado ao parágrafo que declara `contrato/openapi.yaml` ilegível como dono único
+      de silêncio, citando `resumo-exportado`/`/resumo` como o caso concreto
+- [x] **§7.2** — registrar o limite do módulo extraído sem `.ruff.toml` *(hoje só no comentário do
       pyproject do molde)*
+      **Feito:** expandida a célula `verificacao-declarada, lint-derivado` com o texto do comentário do
+      `pyproject.toml` do molde — o que se perde (verificação PROFUNDA do linter) e o que não se perde
+      (o piso 40/3/4, que o gate cobra de dentro do módulo)
 
 ### R.2 — fronteiras de regra, decididas
 
-- [ ] **DECIDIDO — `schema-manifesto` é dono da FORMA; `manifesto` fica só com o RELACIONAL.**
+- [x] **DECIDIDO — `schema-manifesto` é dono da FORMA; `manifesto` fica só com o RELACIONAL.**
       O `papel` inválido é enum, e enum é o que o schema expressa: quem acusa é `schema-manifesto`, e
       `manifesto` **cala**. Sobra para `manifesto` exatamente o que o schema não enxerga — `id` = nome da
       pasta, `rotaBase` derivada do `id` —, que é a razão de ele existir além do schema.
@@ -1077,13 +1291,27 @@ cabeçalho deste plano. Os itens acima são só os do executor.
       (*"tudo que o `projeto.json` afirma é FORMA"*); manter dois ids no módulo contradiz o irmão da
       raiz. Atualizar o caso 2 de `casos.mjs` para esperar **um** id, e a linha do §7.2 que declarava o
       par sai — deixou de haver par
-- [ ] **`cobertura.modo` e `dependencias.modo` ainda vêm da base**, enquanto `cobertura.minima` e
+      **Feito:** `papel` saiu de `conferirVocabulario` (`estrutura.mjs`) — `binding` continua lá, fora
+      de escopo desta decisão (nenhum caso o cobre). Caso 2 de `casos.mjs` perdeu `tambem: ['manifesto']`
+      e passou a esperar só `schema-manifesto`. `04-regras.md` linhas 116 e 126 atualizadas — a primeira
+      tira `papel` do que `manifesto` cobra, a segunda tira o "ao contrário do par" que não existe mais.
+      Contraprova: reintroduzindo o check de `papel` em `conferirVocabulario`, o caso volta a FALHAR
+      (`id NAO declarado: manifesto`); revertido, `122/122 · 122/122 · 119/119`
+- [x] **`cobertura.modo` e `dependencias.modo` ainda vêm da base**, enquanto `cobertura.minima` e
       `dependencias.severidadeMinima` já vêm do projeto. **Uma linha em cada**
+      **Feito:** uma linha em cada objeto de `verificacao.schema.json` (`cobertura.modo`,
+      `dependencias.modo`, os mesmos vocabulários que `hooks/_lib.js` já usa como default). Nenhuma
+      outra mudança foi necessária — `hooks/_lib.js:politicaDoProjeto` já repassava os objetos inteiros
+      do projeto por cima do default da base; a única barreira era o schema recusar o campo como "não
+      previsto". Sanity check confirmou: ausente valida, valor válido valida, valor fora do
+      vocabulário reprova com mensagem nomeando o campo
 
 ### R.3 — sai deste plano
 
-- [ ] ~~`plugin/sarak_routing_table.md` regenera no próximo `sync_ide.py`~~ — **higiene da base, não do
+- [x] ~~`plugin/sarak_routing_table.md` regenera no próximo `sync_ide.py`~~ — **higiene da base, não do
       template.** Estava na lista errada; sai do acompanhamento do template e vira ação avulsa do dono
+      **Marcado, não executado**: por decisão do próprio item, esta ação pertence ao dono da base, fora
+      do escopo deste plano — nada a fazer aqui além de registrar a saída
 
 ---
 
