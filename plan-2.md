@@ -24,6 +24,18 @@ para matar.
 > fica registrada com o motivo, no formato dos blocos cancelados do `plan.md`. Se o executor discordar de
 > uma decisão, ele **para e pergunta** — não escolhe sozinho.
 
+> **Quem marca ITEM é o executor; quem marca BLOCO é o revisor.** O executor marca `- [x]` no que
+> executou e reporta. O status de **bloco** — o `✅ FECHADO` do diagrama, a tabela de Estado, a linha
+> de resumo — só o revisor escreve, depois de conferir **no disco**. E um bloco fecha quando **todos**
+> os itens dele fecharam, **inclusive os que entraram depois que ele começou**.
+>
+> *Por que a regra existe:* na rodada N.3/N.4 a subseção N.2.1 estava no HEAD recebido pelo executor,
+> com item aberto e menção própria no diagrama; ela foi pulada, a menção foi **removida** da linha do
+> diagrama e o bloco foi marcado `✅ FECHADO` — enquanto o defeito continuava reproduzindo. Relatório
+> errado se corrige lendo o disco; **edição no documento que governa o trabalho persiste**, e o que
+> some é justamente o rastro do que ficou aberto. É o *"verde indistinguível de não verificou"* deste
+> plano, aplicado ao próprio plano.
+
 Continua vigente a regra permanente do `plan.md`: **regra nova exige caso próprio** em
 `ferramentas/gate/testes/casos.mjs` e linha no catálogo (§4.x), mais o limite conhecido no §7.2.
 
@@ -34,13 +46,15 @@ Continua vigente a regra permanente do `plan.md`: **regra nova exige caso própr
 | Métrica | Valor | Confira com |
 |---|---|---|
 | Regras no catálogo | **74**, todas com caso | `node ferramentas/gate/testes/executar.mjs --binding <b>` |
-| Autoteste do gate | `111/111` (TS) · `111/111` (JS) · `107/107` (PY) *(era `96/96·96/96·92/92` antes do N.2 — 15 casos novos do N.2, nenhuma regra nova)* | idem *(o `plan.md` §Estado ainda diz `92/92·92/92·88/88` — deriva, Bloco R)* |
+| Autoteste do gate | `112/112` (TS) · `112/112` (JS) · `108/108` (PY) *(era `93/93·93/93·89/89` antes do Bloco K — +19 casos ao longo de K.0/L.3/N.1/N.2/N.3, nenhuma regra nova)* | idem *(o `plan.md` §Estado ainda diz `92/92·92/92·88/88` — deriva, Bloco R)* |
 | **Projeto novo passa em `verificar`?** | **SIM — nos três bindings** (Bloco K fechado) | `npm run autoteste:template` |
 | **Projeto novo passa em `ci:dependencias`?** | **NÃO — 2 critical + 1 high** | Bloco P |
 | **`build` seguido de `lint`?** | **SIM** — furo do dist consertado (Bloco L) | `npm run autoteste:template` |
 | Módulo pode perder `core/` inteiro e ficar verde? | **SIM** | Bloco M |
-| `GET /meta` público devolve o manifesto inteiro? | **NÃO — corrigido (N.1)**. *N.3/N.4 do Bloco N seguem abertos* | Bloco N |
+| `GET /meta` público devolve o manifesto inteiro? | **NÃO — corrigido (N.1)** | Bloco N |
 | `paraMeta`/`paraColecao` visíveis a `projecao-contrato`/`sensivel-em-saida`? | **SIM — corrigido (N.2)**. Antes: invisíveis (âncora de nome estreita) | Bloco N |
+| `sensivel-em-saida` reconhece `logging`/`warning`/`critical`/`exception`? | **SIM — corrigido (N.3)**. Antes: só `logger`/`log` com 4 verbos | Bloco N |
+| Bloco N (segurança) — itens marcados pelo executor | N.1 ✓ · N.2 ✓ · N.3 ✓ · N.4 ✓ · N.2.1 ✓ (todos os itens da seção marcados; status do BLOCO é do revisor) | `node ferramentas/gate/testes/executar.mjs --binding <b>` |
 | `criar-modulo` com flag produz módulo conforme? | **NÃO — nas duas flags** | Bloco O |
 | Extração (copiar a pasta, nenhum import muda) | **funciona** — `tsc` 0, `24/24` verdes | `--extracao` + cópia manual |
 | Boot, build, migrations, gate | **funcionam** | `npm run iniciar · build · validar` |
@@ -570,43 +584,121 @@ para cada SÍTIO DE DEFINIÇÃO de paraContrato*/para_contrato* no arquivo:
 > afirma que classe funciona**, e ela produz FP. Lacuna contradita pela própria lei é pior que lacuna
 > escondida.
 
-- [ ] **A janela fecha na próxima definição de recuo MENOR OU IGUAL ao do sítio que a abriu**, em vez de
+- [x] **A janela fecha na próxima definição de recuo MENOR OU IGUAL ao do sítio que a abriu**, em vez de
       coluna zero. Generaliza em vez de abrir caso especial: coluna zero passa a ser o caso particular
-      de um sítio de topo
-- [ ] **A técnica já existe neste arquivo** — `achadosDeBordaPython` (N.1) delimita o corpo do handler
+      de um sítio de topo.
+      **Achado no caminho, fora do texto original:** a lista de palavras-chave do detector genérico
+      não tinha `class` — sem ela, `export class X { … }` era invisível ao detector, e a janela de uma
+      função de TOPO anterior a uma classe (ex.: `paraColecao` seguida de `export class Projecoes`)
+      atravessava a classe inteira até o fim do arquivo. Medido antes de escrever caso: `class` entrou
+      na mesma lista de `function|def|const|let|var`
+- [x] **A técnica já existe neste arquivo** — `achadosDeBordaPython` (N.1) delimita o corpo do handler
       por `recuo <= recuoDecorador`. Os dois âncoras do `contrato.mjs` passam a operar sob a mesma
       ideia, e é o argumento que dispensa inventar uma segunda
-- [ ] **Caso próprio:** classe com projeção seguida de método que **não** publica (`chaveDeCache`), nos
-      três bindings — no Python, `class` com dois métodos. Trava a **não-acusação**, que é o lado difícil
-- [ ] **Não pode regredir o que a N.2 fechou:** a última `para*` de topo continua fechando na função
+- [x] **Caso próprio:** classe com projeção seguida de método que **não** publica (`chaveDeCache`), nos
+      três bindings — no Python, `class` com dois métodos. Trava a **não-acusação**, que é o lado difícil.
+      Mais um caso travando que um método `para*` POSTERIOR na mesma classe continua acusando de
+      verdade — a janela fecha, mas não cega a regra
+- [x] **Não pode regredir o que a N.2 fechou:** a última `para*` de topo continua fechando na função
       vizinha. O caso que a N.2 salvou (`contrato sem os endpoints obrigatorios`, que passou a reprovar
-      com `projecao-contrato` sem ninguém tocá-lo) é a trava dessa direção
-- [ ] **§7.2 alinhado com o comportamento real**: hoje a linha promete método de classe e entrega FP.
+      com `projecao-contrato` sem ninguém tocá-lo) é a trava dessa direção — reconferido, continua verde
+- [x] **§7.2 alinhado com o comportamento real**: hoje a linha promete método de classe e entrega FP.
       Ou o conserto acima a torna verdadeira — e é o que este item faz —, ou a promessa sai da lei
 
 **Alcance:** o molde usa funções de topo, então **nenhum projeto gerado hoje esbarra nisto**. Entra
 porque o template é referência de vários sistemas e mapeador em classe é TypeScript ordinário — e
 porque a lei já o promete.
 
+### N.2.2 — um reconhecedor de definição, não dois  *(achado na revisão da N.2.1)*
+
+> **Terceira instância do mesmo defeito, e é hora de parar de acrescentar forma.** Medido pelo revisor
+> num projeto gerado do zero **depois** do conserto da N.2.1:
+>
+> ```ts
+> export const mapa = {
+>   paraGama: (registro: Registro) => ({ hash: registro.hash }),
+>   chaveDeCache: (registro: Registro) => ({ created_at: registro.criadoEm, cpf: registro.hash }),
+> };
+> ```
+> ```
+> sonda: 3 erro(s)
+>   x [projecao-contrato]  campo "cpf" ...
+>   x [payload-camelcase]  campo "created_at" ...
+>   x [sensivel-em-saida]  campo sensivel "cpf" ...
+> ```
+>
+> `chaveDeCache` não publica nada — os **mesmos três** falsos positivos da N.2.1, uma forma de sintaxe
+> adiante.
+>
+> **A causa raiz não é a lista: são duas listas.** Existem dois reconhecedores de *"isto é uma
+> definição"*, e eles não concordam:
+>
+> | | Onde | Aceita |
+> |---|---|---|
+> | **sítio** (âncora de nome) | `contrato.mjs:286 ehSitioDeDefinicao` | palavra-chave **ou** nome no **início de linha lógica** — qualquer forma |
+> | **fechador** (âncora de região) | `contrato.mjs:332 PADRAO_QUALQUER_DEFINICAO` | palavra-chave **ou** `identificador(` |
+>
+> O sítio é **mais largo** que o fechador, e **toda forma que um aceita e o outro não vira este FP**.
+> Já aconteceu três vezes — função de topo (N.2), método de classe (N.2.1), propriedade-arrow (agora).
+> A quarta virá, e não se sabe qual é. `paraGama: (r) => ({…})` **é** sítio reconhecido (nome em início
+> de linha lógica) e **não é** fechador reconhecido (há `:` entre o nome e o `(`).
+
+- [ ] **Um reconhecedor só, consumido pelos dois.** `ehSitioDeDefinicao` e o fechador passam a chamar a
+      **mesma** função. As formas deixam de ser enumeradas em dois lugares que precisam concordar, e as
+      que faltam passam a vir de graça
+- [ ] **O precedente é desta campanha, duas vezes:** a **N.3** fez `segredo-em-log` e `sensivel-em-saida`
+      compartilharem uma lista de verbos em vez de duas; o **Bloco S** vai dar ao vocabulário de portas
+      uma fonte com schemas derivados. Mesmo defeito, mesma cura — *uma definição, consumidores nos dois
+      lados*, que é a frase que a I.3 já usou para `URL_LITERAL` e `PADRAO_CREDENCIAL`
+- [ ] **O guarda de recuo já protege o corpo, e é por isso que unificar é seguro.** A linha
+      `hash: registro.hash,` também começa linha lógica, mas está **sempre** mais indentada que o sítio,
+      e `recuo <= recuoMaximo` a descarta. Provar isso com caso, não com argumento: um `return` de
+      objeto multilinha cujas chaves não fecham a própria janela
+- [ ] **A exclusão de controle de fluxo (`if`/`for`/`while`/…) da N.2.1 continua valendo** e migra para o
+      reconhecedor único — ela é do fechador, não do sítio, e a unificação não pode perdê-la
+- [ ] **Casos:** propriedade-arrow que **não** publica → CALA; `cpf` de verdade em propriedade-arrow →
+      ACUSA. Nos três bindings; no Python, o análogo é atribuição no nível do módulo
+      (`para_gama = lambda r: {...}`) e o dicionário de funções
+- [ ] **§7.2 passa a descrever por FORMA RECONHECIDA, não por enumeração.** Hoje a linha lista as formas
+      que funcionam — e lista de forma envelhece a cada instância deste defeito. Ela deve dizer *o que é
+      um sítio de definição* uma vez, e que o fechador usa **o mesmo** critério
+
+**Alcance:** o molde usa funções de topo; nenhum projeto gerado hoje esbarra nisto. Entra porque
+mapeador como objeto literal de arrows é TypeScript ordinário — e porque, com um reconhecedor só, esta
+é a **última** rodada desta família em vez da terceira de N.
+
 ### N.3 — uma lista de chamada de log, não duas  *(dívida H)*
 
-- [ ] `segredo-em-log` reconhece `logging`, `warning`, `critical`, `exception`, `console.*`, `print(`;
+- [x] `segredo-em-log` reconhece `logging`, `warning`, `critical`, `exception`, `console.*`, `print(`;
       `sensivel-em-saida` reconhece **menos**. As duas cobrem a mesma classe de vazamento em escopos
       diferentes, e a divergência está declarada no §7.2 como dívida
-- [ ] **Uma constante compartilhada**, no padrão de `URL_LITERAL`/`PADRAO_CREDENCIAL`. Se a diferença
+- [x] **Uma constante compartilhada**, no padrão de `URL_LITERAL`/`PADRAO_CREDENCIAL`. Se a diferença
       precisar existir (na raiz não há regra proibindo `console`; ali quem cobra é o linter), ela vira
-      um **filtro nomeado sobre a lista única**, nunca duas listas
-- [ ] Muda o comportamento de `sensivel-em-saida` (regra de módulo) → **caso próprio para a acusação
-      nova**, nos três bindings
+      um **filtro nomeado sobre a lista única**, nunca duas listas.
+      Feito: `CHAMADA_DE_LOG_VERBOS` exportada de `operacao.mjs` (os sete verbos, sem a saída direta);
+      `segredo-em-log` compõe ela + `SAIDA_DIRETA`; `sensivel-em-saida` (`contrato.mjs`) importa só os
+      verbos — a saída direta já tem dono no módulo (regra `log`), e compor as duas duplicaria a
+      mensagem para o mesmo `console.log`
+- [x] Muda o comportamento de `sensivel-em-saida` (regra de módulo) → **caso próprio para a acusação
+      nova**, nos três bindings. Medido antes/depois: `logging.warning(cpf)` não era vista pela lista
+      antiga (nem "logging" nem "warning" estavam nela) e passa a ser
 
 ### N.4 — o furo do `NODE_ENV === 'test'`
 
-- [ ] `conferirEnvRequerido` (`api/src/config.ts:120`) **pula a verificação inteira** quando
-      `NODE_ENV === 'test'`. Pragmático — sem isso nenhum teste roda sem `.env` —, mas significa que
-      **suíte verde não prova fiação de ambiente**, e não achei isso declarado no §7.2
-- [ ] Fechar **ou** declarar. A saída provável é declarar com precisão: os testes usam dublês, o boot
-      real é que cobra, e o `--autoteste` do entrypoint já prova o caminho. Mas *"verde tem de significar
-      verificou"* exige que a exceção esteja escrita
+- [x] `conferirEnvRequerido` (`api/src/config.ts:120`, e os equivalentes em JS/Python) **pula a
+      verificação inteira** quando `NODE_ENV === 'test'` (`PYTEST_CURRENT_TEST` em Python). Pragmático
+      — sem isso nenhum teste roda sem `.env` —, mas significa que **suíte verde não prova fiação de
+      ambiente**, e não estava declarado
+- [x] **DECLARAR, e a suposição do texto original estava errada — medida, não corrigida de memória.**
+      O texto dizia *"o `--autoteste` do entrypoint já prova o caminho"*: medido, `--autoteste` de
+      `composicao.ts` só prova "decisões puras do entrypoint" (rota única, escolha de emitido × fonte)
+      — nunca chama `conferirEnvRequerido`. **Conserto real, não só declaração:** a função virou
+      exportada nos três bindings, e um teste direto (`tests/contrato/config.test.ts`/`.js`/
+      `test_config.py`) chama ela com a flag de teste removida do ambiente, de propósito, e afirma que
+      ela lança quando falta variável. Documentado em `03-operacao.md` §5. **Achado no caminho, em
+      Python:** `PYTEST_CURRENT_TEST` removido numa fixture (fase "setup") não basta — o pytest
+      RE-ESCREVE a variável na fronteira para a fase "call", e o teste tem de remover DENTRO do próprio
+      corpo, não numa fixture
 
 ---
 
@@ -768,6 +860,17 @@ já tem)*:
       módulo quebrado **e diz OK** (mentira); `--sem-web` produz módulo não-conforme **e avisa** (defeito
       honesto). Só a primeira é da família "verde indistinguível de não verificou" — mas as duas violam
       o mesmo invariante: *a ferramenta de entrada entrega artefato conforme, sempre*
+- [ ] **ACHADO NOVO (do N.4, incidental — não estava aqui): `--escopo` diverge entre `criar-projeto.mjs`
+      e `criar-modulo.mjs` no binding Python.** Medido: `criar-projeto.mjs destino --binding python
+      --escopo verif` seguido de `criar-modulo.mjs sonda --binding python` (sem `--escopo`) gera
+      `core/portas/__init__.py` **corrompido** — `resolverEscopo` de `criar-modulo.mjs` cai no fallback
+      `raizProjeto.split(/[\\/]/).pop().toLowerCase()` (basename da pasta) porque Python não tem
+      `package.json` para ler o nome; TS/JS não sofrem disso porque `criar-projeto.mjs` grava o escopo
+      em `package.json:name`, e `criar-modulo.mjs` o lê de lá por padrão. Resultado observado: o
+      identificador `verificar` (sem marcador nenhum) virou `sarak-verif-n4pyicar` — a substring
+      `verif` do meio da palavra colidiu com o escopo resolvido. **Não investigado a fundo, não
+      corrigido nesta rodada** — fora do escopo de N.3/N.4. Reproduzir com escopos DIFERENTES nos dois
+      comandos antes de decidir o conserto
 - [ ] **DECIDIDO — podar, nas duas.** `--sem-artefato` remove também a parte do teste que depende do
       motor; `--sem-web` zera `navegacao` junto com `rotaWeb`.
       *Recusada:* aposentar as flags (módulo sem artefato se faz zerando `geraArtefato` e apagando as
@@ -924,7 +1027,11 @@ L   o esqueleto obedece à lei       consequência mecânica do K: formato, lint
 
 N   segurança                       /meta público · o extrator de projeção · uma lista de log
                                     · o furo do NODE_ENV=test
-                                    N.1 ✅ · N.2 ✅ · N.2.1 (janela por recuo) · N.3 · N.4
+                                    N.1 ✅ · N.2 ✅ (âncora de nome + região, janela por definição
+                                    de topo) · N.2.1 ✅ (janela por recuo, classe e método) ·
+                                    N.2.2 (UM reconhecedor de definição, não dois) ·
+                                    N.3 ✅ (lista única de verbos) · N.4 ✅ (teste direto, 3 bindings)
+                                    N.2.2 é a ÚLTIMA da família: unifica em vez de acrescentar forma
                                     ═ é a classe que o dono nomeou como inegociável ═
 
 M   a árvore fechada dos 2 lados    "todos os módulos com a mesma estrutura" deixa de ser convenção

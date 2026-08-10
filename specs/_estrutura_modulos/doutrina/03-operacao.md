@@ -88,6 +88,18 @@ número é peso morto.
 O gate cobra o que **é** estruturalmente verificável: `tests/dominio/` e `tests/contrato/` existem e não estão
 vazios (regra `testes`).
 
+**O bypass de `envRequerido` sob teste, e por que ele não é silencioso (plan-2.md N.4).**
+`api/src/config.ts:conferirEnvRequerido` (TS/JS) e `api/src/config.py:_conferir_env_requerido` (Python)
+pulam a checagem de variável obrigatória quando o processo está sob teste (`NODE_ENV === 'test'`,
+`PYTEST_CURRENT_TEST` definido) — sem isso, todo `it()`/`def test_` cairia antes de rodar, porque nenhum
+`.env` real existe em CI nem no ambiente de quem escreve o módulo. **A consequência aceita:** `npm
+test`/`pytest` verde, sozinho, **não prova** que a fiação de ambiente do módulo está correta — só o boot
+real (`npm run iniciar`, `python verificar.py` via boot de verdade) prova isso fim a fim. **O que fecha a
+lacuna:** `tests/contrato/config.test.ts`/`.js`/`test_config.py` chama a função **diretamente**, com a
+flag de teste removida do ambiente só durante a chamada, e afirma que ela DE FATO lança quando falta
+variável — a mesma disciplina de "declaração sem verificador não é lei" (`04-regras.md` §1) aplicada ao
+código do template, não a uma regra do gate.
+
 # 6. Extração — a prova que justifica tudo
 
 ```

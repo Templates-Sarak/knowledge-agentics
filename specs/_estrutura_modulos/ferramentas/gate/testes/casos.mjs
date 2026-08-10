@@ -1016,6 +1016,64 @@ export const CASOS = [
     ),
   },
   {
+    regra: 'log',
+    descricao: 'N.2.1 — metodo de classe que NAO publica, DEPOIS de um metodo que publica (chamariz)',
+    // O defeito que so aparece com METODO: sem recuo na janela, tudo depois da primeira projecao (o
+    // metodo `para*`) era atribuido a ela — `chaveDeCache`, que devolve so campo de BANCO
+    // (`created_at`) e nao e projecao nenhuma, tinha seu `return` inteiro somado a projecao do
+    // metodo anterior. `console.log` arma o chamariz: se `created_at` fosse (erradamente) visto
+    // como projetado, apareceria `payload-camelcase` NAO DECLARADO e o caso reprovaria.
+    mutar: (m) => m.acrescentarEm('mapeadores', {
+      js: '\nexport class ProjecoesN21 {\n  paraGama(registro) {\n    console.log("x");\n'
+        + '    return { hash: registro.hash };\n  }\n\n'
+        + '  chaveDeCache(registro) {\n    return { created_at: registro.criadoEm };\n  }\n}\n',
+      py: '\n\nclass ProjecoesN21:\n    def para_gama(self, registro):\n        print("x")\n'
+        + '        return {"hash": registro["hash"]}\n\n'
+        + '    def chave_de_cache(self, registro):\n        return {"created_at": registro["criado_em"]}\n',
+    }),
+  },
+  {
+    regra: 'log',
+    descricao: 'N.2.1 — "cpf" num metodo de classe que NAO publica nada continua CALADO (sensivel-em-saida)',
+    // A reproducao exata do revisor: `chaveDeCache` devolve "created_at" E "cpf", e nenhum dos dois
+    // pode ser visto como projetado — o metodo nao e "para*", entao nunca e sitio. Se a janela
+    // regredisse, `sensivel-em-saida` apareceria NAO DECLARADO ao lado de `log` e o caso reprovaria.
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
+      m.acrescentarEm('mapeadores', {
+        js: '\nexport class ProjecoesN21b {\n  paraDelta(registro) {\n    console.log("x");\n'
+          + '    return { hash: registro.hash };\n  }\n\n'
+          + '  chaveDeCache(registro) {\n    return { created_at: registro.criadoEm, cpf: registro.hash };\n  }\n}\n',
+        py: '\n\nclass ProjecoesN21b:\n    def para_delta(self, registro):\n        print("x")\n'
+          + '        return {"hash": registro["hash"]}\n\n'
+          + '    def chave_de_cache(self, registro):\n'
+          + '        return {"created_at": registro["criado_em"], "cpf": registro["hash"]}\n',
+      });
+    },
+  },
+  {
+    regra: 'sensivel-em-saida',
+    descricao: 'N.2.1 — "cpf" publicado DE VERDADE num metodo de classe continua ACUSANDO',
+    // O outro lado do conserto: a janela fecha, mas nao cega a regra. Um SEGUNDO metodo "para*" na
+    // mesma classe, depois do que nao publica, e a projecao dele publica cpf de verdade.
+    tambem: ['projecao-contrato'],
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
+      m.acrescentarEm('mapeadores', {
+        js: '\nexport class ProjecoesN21c {\n  paraEpsilon(registro) {\n'
+          + '    return { hash: registro.hash };\n  }\n\n'
+          + '  chaveDeCache(registro) {\n    return { created_at: registro.criadoEm };\n  }\n\n'
+          + '  paraZeta(registro) {\n    return { hash: registro.hash, cpf: registro.cpf };\n  }\n}\n',
+        py: '\n\nclass ProjecoesN21c:\n    def para_epsilon(self, registro):\n'
+          + '        return {"hash": registro["hash"]}\n\n'
+          + '    def chave_de_cache(self, registro):\n'
+          + '        return {"created_at": registro["criado_em"]}\n\n'
+          + '    def para_zeta(self, registro):\n'
+          + '        return {"hash": registro["hash"], "cpf": registro["cpf"]}\n',
+      });
+    },
+  },
+  {
     regra: 'sensivel-em-saida',
     descricao: 'N.2 item 1(a) — "cpf" vazado em paraMeta, a rota SEM TOKEN (regressao que a N.1 fechou)',
     // paraMeta serve /meta, rota sem token — o mesmo vazamento que a N.1 fechou. Sob a ancora de
@@ -1107,6 +1165,18 @@ export const CASOS = [
       m.manifesto((x) => ({ ...x, camposSensiveis: ['segredoDeLog'] }));
       m.escrever('api/src/vaza.ts',
         'export function registrar(logger, segredoDeLog) {\n  logger.info("processado", segredoDeLog);\n}\n');
+    },
+  },
+  {
+    regra: 'sensivel-em-saida',
+    descricao: 'N.3 — verbo "warning" (lista unificada com segredo-em-log) nao escapa mais',
+    // Antes da N.3, sensivel-em-saida so reconhecia logger|log com debug|info|warn|error —
+    // "logging.warning(...)" nao casava (nem o objeto "logging" nem o verbo "warning" estavam na
+    // lista estreita). Agora usa CHAMADA_DE_LOG_VERBOS, a mesma fonte de segredo-em-log.
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, camposSensiveis: ['segredoDeLog'] }));
+      m.escrever('api/src/vaza-warning.ts',
+        'export function registrar(logging, segredoDeLog) {\n  logging.warning("processado", segredoDeLog);\n}\n');
     },
   },
   {

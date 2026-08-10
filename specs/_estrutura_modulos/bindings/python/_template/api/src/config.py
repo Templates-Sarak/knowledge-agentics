@@ -99,6 +99,13 @@ def env_obrigatoria(chave: str) -> str:
 
 
 def _conferir_env_requerido(manifesto: dict[str, Any]) -> None:
+    """Importada direto pelo teste (plan-2.md N.4, `api.src.config._conferir_env_requerido`): sem
+    `.env` real, TODA a suite rodaria sob `PYTEST_CURRENT_TEST` sem uma unica variavel de
+    `envRequerido` preenchida — sem o bypass abaixo, `carregar_configuracao()` derrubaria a suite
+    inteira antes do primeiro teste. O preco declarado: "suite verde" nunca prova, por si so, que a
+    fiacao de ambiente esta correta — quem prova isso e o boot real (`python verificar.py`, boot de
+    verdade) ou o teste direto, chamando esta funcao com `PYTEST_CURRENT_TEST` removido de proposito.
+    """
     faltando = [c for c in manifesto["envRequerido"] if os.environ.get(c) is None]
     if faltando and os.environ.get("PYTEST_CURRENT_TEST") is None:
         raise RuntimeError(

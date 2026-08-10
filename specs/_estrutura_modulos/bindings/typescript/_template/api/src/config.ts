@@ -122,7 +122,15 @@ export function envObrigatoria(chave: string): string {
   return valor;
 }
 
-function conferirEnvRequerido(manifesto: Manifesto): void {
+/**
+ * Exportada só para o teste direto (plan-2.md N.4): sem `.env` real, TODO teste rodaria sob
+ * `NODE_ENV=test` sem uma unica variavel de `envRequerido` preenchida — e sem o bypass abaixo,
+ * `carregarConfiguracao()` derrubaria a suite inteira antes do primeiro `it()`. O preco declarado:
+ * "suite verde" nunca prova, por si so, que a fiacao de ambiente esta correta — quem prova isso e o
+ * boot real (`npm run iniciar`) ou este mesmo teste, chamando a funcao com `NODE_ENV` diferente de
+ * `test` de proposito.
+ */
+export function conferirEnvRequerido(manifesto: Manifesto): void {
   const faltando = manifesto.envRequerido.filter((chave) => process.env[chave] === undefined);
   if (faltando.length > 0 && process.env['NODE_ENV'] !== 'test') {
     throw new Error(`[config] ${manifesto.id}: variaveis ausentes no ambiente: ${faltando.join(', ')}`);

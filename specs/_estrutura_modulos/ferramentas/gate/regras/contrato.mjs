@@ -18,6 +18,7 @@ import {
   leiturasFalhas, normalizar, propriedadesDaResposta, rotasDaSpec, servidorDaSpec, specDe,
 } from '../spec.mjs';
 import { textoDeCodigo } from '../texto.mjs';
+import { CHAMADA_DE_LOG_VERBOS } from './operacao.mjs';
 
 const OBRIGATORIAS = ['/health', '/meta', '/resumo'];
 
@@ -279,14 +280,14 @@ function fimBalanceado(texto, inicio) {
 /**
  * O nome casado é um SÍTIO DE DEFINIÇÃO, nunca uma REFERÊNCIA — reconhecido por FORMA, olhando só o
  * texto entre o início da linha e o nome. `registros.map(paraContrato)` não casa nenhuma das duas:
- * não há `function|def|const|let|var` logo antes, e o nome não está no início da linha (há
+ * não há `function|def|const|let|var|class` logo antes, e o nome não está no início da linha (há
  * `registros.map(` antes dele) — deixa de ser candidato, em vez de precisar de guarda separada.
  */
 function ehSitioDeDefinicao(conteudo, indice) {
   const inicioLinha = conteudo.lastIndexOf('\n', indice - 1) + 1;
   const antes = conteudo.slice(inicioLinha, indice).trim();
   if (antes === '') return true; // início de linha lógica — método de objeto/classe
-  return /(?:^|[^.\w])(?:function|def|const|let|var)$/.test(antes);
+  return /(?:^|[^.\w])(?:function|def|const|let|var|class)$/.test(antes);
 }
 
 /** Só os sítios de DEFINIÇÃO do nome, na ordem em que aparecem no arquivo. */
@@ -302,23 +303,50 @@ function sitiosDeDefinicao(conteudo, padraoNome) {
 const PADRAO_RETORNO_OBJETO = /\breturn\s*\(?\s*\{|=>\s*\(\s*\{/g;
 
 /**
- * Início de QUALQUER definição de função/const/let/var no NÍVEL DO MÓDULO (coluna zero, sem recuo)
- * — não só as que casam o nome da projeção. Fecha a janela na função VIZINHA, qualquer que seja o
- * nome dela.
+ * Início de QUALQUER definição de função/método/const/let/var, em QUALQUER recuo — não só as que
+ * casam o nome da projeção, e não só coluna zero. Fecha a janela na definição VIZINHA de recuo IGUAL
+ * OU MENOR ao do sítio que a abriu — coluna zero (nível de módulo) é o caso particular de um sítio de
+ * topo (plan-2.md N.2, N.2.1).
  *
  * Sem isto a janela não fecha nunca na ÚLTIMA função "para*" do arquivo: medido contra o próprio
  * molde, `paraContrato` (sem nenhuma outra `paraContrato*` depois dele) varria até o fim do arquivo
- * e engolia `paraMeta` e `paraColecao` inteiras — funções corretas, capturadas como se fossem a
- * projeção de `paraContrato`. Exige coluna zero de propósito: a linha `hash: registro.hash,` dentro
- * de um `return {` também casaria `identificador seguido de ':'` se a checagem não exigisse ausência
- * de recuo, e a janela fecharia um passo depois de abrir.
+ * e engolia `paraMeta` e `paraColecao` inteiras. E sem o recuo (só coluna zero, a versão anterior),
+ * a janela de um MÉTODO de classe nunca fechava: medido, `chaveDeCache` (que não publica nada) tinha
+ * seu `return` inteiro atribuído à projeção do método anterior, `paraAlfa` — três falsos positivos
+ * sobre código correto (N.2.1).
+ *
+ * Duas formas de sítio, a mesma dos nomeados (`ehSitioDeDefinicao`): `function|def|const|let|var|class`
+ * (com `export`/`default`/`async` opcionais à frente), ou identificador no INÍCIO de linha lógica
+ * seguido de `(` — método de objeto/classe. `class` entra na lista de palavras-chave e não só na de
+ * método: sem ela, uma `class` inteira era invisível ao detector genérico, e a janela de uma função
+ * de topo ANTES da classe (ex.: `paraColecao` seguida de `export class Projecoes { … }`) atravessava
+ * a declaração de classe inteira, sem nada em recuo zero para fechá-la antes do fim do arquivo —
+ * medido, e é o mesmo defeito da N.2 reencenado por uma peça de sintaxe que faltou na lista.
+ * A segunda forma exclui palavras de CONTROLE DE FLUXO (`if`, `for`, `while`, …): sem a exclusão,
+ * `if (condicao) {` DENTRO do próprio corpo da função fecharia a janela um passo depois de abrir —
+ * `if`/`for`/`while` têm exatamente a forma "identificador seguido de `(`" que distingue um método.
  */
-const PADRAO_DEFINICAO_DE_TOPO = /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\s+|def\s+|const\s+|let\s+|var\s+)[A-Za-z_]/gm;
+const PALAVRAS_DE_CONTROLE = new Set([
+  'if', 'for', 'while', 'switch', 'catch', 'do', 'else', 'elif', 'try', 'except', 'finally', 'with', 'return',
+]);
+const PADRAO_QUALQUER_DEFINICAO =
+  /^([ \t]*)(?:(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\s+|def\s+|const\s+|let\s+|var\s+|class\s+)[A-Za-z_]|([A-Za-z_]\w*)\s*\()/gm;
 
-/** A próxima definição de topo estritamente depois de `apartirDe`, ou fim do arquivo. */
-function proximaDefinicaoDeTopo(conteudo, apartirDe) {
-  for (const m of conteudo.matchAll(PADRAO_DEFINICAO_DE_TOPO)) {
-    if (m.index > apartirDe) return m.index;
+/** Indentação (em caracteres) da linha em que `indice` cai. */
+function recuoDaLinha(conteudo, indice) {
+  const inicioLinha = conteudo.lastIndexOf('\n', indice - 1) + 1;
+  let fim = inicioLinha;
+  while (fim < conteudo.length && (conteudo[fim] === ' ' || conteudo[fim] === '\t')) fim += 1;
+  return fim - inicioLinha;
+}
+
+/** A próxima definição (qualquer nome) de recuo `<= recuoMaximo`, estritamente depois de
+ * `apartirDe`, ou fim do arquivo. */
+function proximaDefinicaoNoRecuo(conteudo, apartirDe, recuoMaximo) {
+  for (const m of conteudo.matchAll(PADRAO_QUALQUER_DEFINICAO)) {
+    if (m.index <= apartirDe) continue;
+    if (m[2] !== undefined && PALAVRAS_DE_CONTROLE.has(m[2])) continue;
+    if (m[1].length <= recuoMaximo) return m.index;
   }
   return conteudo.length;
 }
@@ -326,10 +354,11 @@ function proximaDefinicaoDeTopo(conteudo, apartirDe) {
 /**
  * O texto de cada projeção, por JANELA + BALANCEAMENTO — não mais "a primeira `{` depois do nome".
  *
- * Para cada sítio de definição, a janela de busca vai do nome até a PRÓXIMA definição de topo (ou
- * fim do arquivo): não é preciso saber onde a função termina, só que a busca pare antes da função
- * seguinte. Dentro da janela, cada `return {`/`return ({`/`=> ({` abre uma região balanceada — uma
- * função de projeção com dois `return` (detalhe e resumo) rende DUAS regiões, de propósito.
+ * Para cada sítio de definição, a janela de busca vai do nome até a PRÓXIMA definição de recuo igual
+ * ou menor (ou fim do arquivo): não é preciso saber onde a função termina, só que a busca pare antes
+ * da definição vizinha — de topo para função de módulo, de método para método de classe. Dentro da
+ * janela, cada `return {`/`return ({`/`=> ({` abre uma região balanceada — uma função de projeção com
+ * dois `return` (detalhe e resumo) rende DUAS regiões, de propósito.
  *
  * Mata de graça o falso positivo do objeto intermediário (`const interno = { … }` dentro da função):
  * não está em posição de `return` nem de `=>`, então nunca casa `PADRAO_RETORNO_OBJETO` — nenhuma
@@ -338,7 +367,8 @@ function proximaDefinicaoDeTopo(conteudo, apartirDe) {
 function regioesDeProjecao(conteudo, padraoNome) {
   const regioes = [];
   for (const inicioJanela of sitiosDeDefinicao(conteudo, padraoNome)) {
-    const fimJanela = proximaDefinicaoDeTopo(conteudo, inicioJanela);
+    const recuoSitio = recuoDaLinha(conteudo, inicioJanela);
+    const fimJanela = proximaDefinicaoNoRecuo(conteudo, inicioJanela, recuoSitio);
     const janela = conteudo.slice(inicioJanela, fimJanela);
     for (const ocorrencia of janela.matchAll(PADRAO_RETORNO_OBJETO)) {
       const abertura = inicioJanela + ocorrencia.index + ocorrencia[0].length - 1;
@@ -579,7 +609,7 @@ export default [
       for (const arquivo of ctx.codigo) {
         if (arquivo.eTeste) continue;
         for (const { numero, texto } of arquivo.linhasCodigo) {
-          if (!/\b(logger|log)\.(debug|info|warn|error)\(/.test(texto)) continue;
+          if (!CHAMADA_DE_LOG_VERBOS.test(texto)) continue;
           achados.push(...achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis));
         }
       }

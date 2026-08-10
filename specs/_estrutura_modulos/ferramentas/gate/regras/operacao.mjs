@@ -63,22 +63,25 @@ const INTERPOLACAO_EM_SQL = [
 ];
 
 /**
- * Onde um valor sai do processo e vai para o log. Duas metades:
+ * Onde um valor sai do processo e vai para o log. Duas peças, uma fonte cada, compostas de dois
+ * jeitos diferentes por escopo (plan-2.md N.3 — a lista deixou de ser duas):
  *
- *   - o LOGGER estruturado, que é o certo em toda linguagem;
+ *   - o LOGGER estruturado (`CHAMADA_DE_LOG_VERBOS_FONTE`), que é o certo em toda linguagem — os
+ *     SETE verbos (`logger|log|logging` × `debug|info|warn|warning|error|critical|exception`) são
+ *     a lista ÚNICA, exportada, e tanto a raiz quanto o módulo a usam sem cópia própria;
  *   - a SAÍDA DIRETA (`console.*`, `print(`), compartilhada com a regra `log` — que a proíbe no
- *     módulo, enquanto aqui ela é apenas uma das formas de a credencial vazar. Uma fonte só.
+ *     módulo, enquanto aqui (raiz) ela é apenas uma das formas de a credencial vazar.
  *
- * Ela é PROPOSITADAMENTE mais larga que a de `sensivel-em-saida`, e a diferença está declarada no
- * §7.2: aquela cobre `logger|log`, esta cobre também `logging`, `warning`, `critical`, `exception`
- * e a saída direta, porque na raiz não há regra que proíba `console` — quem o cobra ali é o linter.
+ * A RAIZ (`segredo-em-log`) compõe as duas: não há regra de módulo `log` cobrindo a raiz, então
+ * `console`/`print` ali só seria pego aqui. O MÓDULO (`sensivel-em-saida`) usa só os verbos — a
+ * saída direta já tem dono (`log`), e compor as duas duplicaria a mensagem para o mesmo `console.log`.
+ * A diferença agora é um FILTRO NOMEADO sobre a lista única, nunca uma segunda lista mantida à mão.
  */
+const CHAMADA_DE_LOG_VERBOS_FONTE = '\\b(?:logger|log|logging)\\.(?:debug|info|warn|warning|error|critical|exception)\\(';
+export const CHAMADA_DE_LOG_VERBOS = new RegExp(CHAMADA_DE_LOG_VERBOS_FONTE);
 const SAIDA_DIRETA_FONTE = '\\bconsole\\.\\w+\\(|(?:^|[^.\\w])print\\(';
 const SAIDA_DIRETA = new RegExp(SAIDA_DIRETA_FONTE);
-const CHAMADA_DE_LOG = new RegExp(
-  '\\b(?:logger|log|logging)\\.(?:debug|info|warn|warning|error|critical|exception)\\('
-  + `|${SAIDA_DIRETA_FONTE}`,
-);
+const CHAMADA_DE_LOG = new RegExp(`${CHAMADA_DE_LOG_VERBOS_FONTE}|${SAIDA_DIRETA_FONTE}`);
 
 /**
  * Geradores NÃO-criptográficos. `Math.random` e o módulo `random` do Python são previsíveis por
