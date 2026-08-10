@@ -278,75 +278,76 @@ function fimBalanceado(texto, inicio) {
 }
 
 /**
- * O nome casado é um SÍTIO DE DEFINIÇÃO, nunca uma REFERÊNCIA — reconhecido por FORMA, olhando só o
- * texto entre o início da linha e o nome. `registros.map(paraContrato)` não casa nenhuma das duas:
- * não há `function|def|const|let|var|class` logo antes, e o nome não está no início da linha (há
- * `registros.map(` antes dele) — deixa de ser candidato, em vez de precisar de guarda separada.
- */
-function ehSitioDeDefinicao(conteudo, indice) {
-  const inicioLinha = conteudo.lastIndexOf('\n', indice - 1) + 1;
-  const antes = conteudo.slice(inicioLinha, indice).trim();
-  if (antes === '') return true; // início de linha lógica — método de objeto/classe
-  return /(?:^|[^.\w])(?:function|def|const|let|var|class)$/.test(antes);
-}
-
-/** Só os sítios de DEFINIÇÃO do nome, na ordem em que aparecem no arquivo. */
-function sitiosDeDefinicao(conteudo, padraoNome) {
-  const sitios = [];
-  for (const nome of conteudo.matchAll(padraoNome)) {
-    if (ehSitioDeDefinicao(conteudo, nome.index)) sitios.push(nome.index);
-  }
-  return sitios;
-}
-
-/** `return {`, `return ({` (TS/JS/Python) ou `=> ({` (arrow com retorno implícito de objeto). */
-const PADRAO_RETORNO_OBJETO = /\breturn\s*\(?\s*\{|=>\s*\(\s*\{/g;
-
-/**
- * Início de QUALQUER definição de função/método/const/let/var, em QUALQUER recuo — não só as que
- * casam o nome da projeção, e não só coluna zero. Fecha a janela na definição VIZINHA de recuo IGUAL
- * OU MENOR ao do sítio que a abriu — coluna zero (nível de módulo) é o caso particular de um sítio de
- * topo (plan-2.md N.2, N.2.1).
- *
- * Sem isto a janela não fecha nunca na ÚLTIMA função "para*" do arquivo: medido contra o próprio
- * molde, `paraContrato` (sem nenhuma outra `paraContrato*` depois dele) varria até o fim do arquivo
- * e engolia `paraMeta` e `paraColecao` inteiras. E sem o recuo (só coluna zero, a versão anterior),
- * a janela de um MÉTODO de classe nunca fechava: medido, `chaveDeCache` (que não publica nada) tinha
- * seu `return` inteiro atribuído à projeção do método anterior, `paraAlfa` — três falsos positivos
- * sobre código correto (N.2.1).
- *
- * Duas formas de sítio, a mesma dos nomeados (`ehSitioDeDefinicao`): `function|def|const|let|var|class`
- * (com `export`/`default`/`async` opcionais à frente), ou identificador no INÍCIO de linha lógica
- * seguido de `(` — método de objeto/classe. `class` entra na lista de palavras-chave e não só na de
- * método: sem ela, uma `class` inteira era invisível ao detector genérico, e a janela de uma função
- * de topo ANTES da classe (ex.: `paraColecao` seguida de `export class Projecoes { … }`) atravessava
- * a declaração de classe inteira, sem nada em recuo zero para fechá-la antes do fim do arquivo —
- * medido, e é o mesmo defeito da N.2 reencenado por uma peça de sintaxe que faltou na lista.
- * A segunda forma exclui palavras de CONTROLE DE FLUXO (`if`, `for`, `while`, …): sem a exclusão,
- * `if (condicao) {` DENTRO do próprio corpo da função fecharia a janela um passo depois de abrir —
- * `if`/`for`/`while` têm exatamente a forma "identificador seguido de `(`" que distingue um método.
+ * Palavras que têm a FORMA de um sítio de definição sem definir nada — controle de fluxo (JS/PY) e
+ * o próprio `return`. A exclusão mora aqui, dentro do reconhecedor único (plan-2.md N.2.2): antes só
+ * o fechador precisava dela — o sítio nomeado nunca busca controle de fluxo, porque nenhuma dessas
+ * palavras casa `PADRAO_NOME_PROJECAO`. Com os dois lados lendo a MESMA lista de candidatos, ela só
+ * precisa existir uma vez.
  */
 const PALAVRAS_DE_CONTROLE = new Set([
-  'if', 'for', 'while', 'switch', 'catch', 'do', 'else', 'elif', 'try', 'except', 'finally', 'with', 'return',
+  'if', 'for', 'while', 'switch', 'case', 'default', 'catch', 'do', 'else', 'elif', 'try',
+  'except', 'finally', 'with', 'return',
 ]);
-const PADRAO_QUALQUER_DEFINICAO =
-  /^([ \t]*)(?:(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\s+|def\s+|const\s+|let\s+|var\s+|class\s+)[A-Za-z_]|([A-Za-z_]\w*)\s*\()/gm;
 
-/** Indentação (em caracteres) da linha em que `indice` cai. */
-function recuoDaLinha(conteudo, indice) {
-  const inicioLinha = conteudo.lastIndexOf('\n', indice - 1) + 1;
-  let fim = inicioLinha;
-  while (fim < conteudo.length && (conteudo[fim] === ' ' || conteudo[fim] === '\t')) fim += 1;
-  return fim - inicioLinha;
+/**
+ * UM reconhecedor de "sítio de definição" — plan-2.md N.2.2. Antes existiam DOIS: o SÍTIO nomeado
+ * (confirmar que um nome casado, `paraGama`, é definição e não referência) e o FECHADOR (achar
+ * QUALQUER definição vizinha para fechar a janela). Os dois quase concordavam, e "quase" já rendeu
+ * três defeitos — um por forma de sintaxe nova: função de topo (N.2), método de classe (N.2.1),
+ * propriedade-arrow (N.2.2). O sítio era LARGO (identificador no início de linha lógica, sem olhar o
+ * que vem depois) e o fechador ESTREITO (exigia `identificador(` depois) — toda forma que o primeiro
+ * aceitava e o segundo não virava falso positivo sobre código correto. Consumido nos dois lados
+ * agora, a divergência deixa de ser possível por CONSTRUÇÃO, em vez de precisar ser notada de novo a
+ * cada sintaxe nova.
+ *
+ * Um candidato casa de duas formas, sem olhar o que vem DEPOIS do nome:
+ *   - precedido de palavra-chave (`function`/`def`/`const`/`let`/`var`/`class`, com `export`/
+ *     `default`/`async` opcionais antes dela);
+ *   - identificador no INÍCIO da linha lógica (nada antes dele na linha, além de espaço).
+ * A segunda forma é a LARGA: aceita, da mesma maneira, método de objeto/classe (`nome(...)`),
+ * propriedade-arrow (`nome: (...) => ({…})`) e atribuição de módulo em Python
+ * (`nome = lambda r: {...}`) — é o que agora fecha a janela num `nome: (...)` que antes só o sítio
+ * enxergava. `class` entra na lista de palavras-chave: sem ela, `export class X { … }` era invisível
+ * ao reconhecedor, e a janela de uma função de topo ANTES da classe atravessava a declaração inteira
+ * sem nada em recuo zero para fechá-la (N.2.1).
+ *
+ * O guarda de RECUO (na chamadora, `proximaDefinicaoNoRecuo`) é o que torna a largura segura: uma
+ * chave de objeto devolvido em várias linhas (`hash: registro.hash,`) também casa a forma larga, mas
+ * está SEMPRE mais indentada que o sítio que abriu a janela — nunca fecha nada.
+ */
+const PADRAO_SITIO_DEFINICAO =
+  /^([ \t]*)(?:(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|def|const|let|var|class)\s+)?([A-Za-z_]\w*)/gm;
+
+/** Todo candidato a sítio de definição do arquivo, na ordem em que aparece — a fonte única que
+ * `sitiosDeDefinicao` (filtra por NOME) e `proximaDefinicaoNoRecuo` (filtra por RECUO) consomem. */
+function candidatosDeDefinicao(conteudo) {
+  const candidatos = [];
+  for (const m of conteudo.matchAll(PADRAO_SITIO_DEFINICAO)) {
+    const nome = m[2];
+    if (PALAVRAS_DE_CONTROLE.has(nome)) continue;
+    candidatos.push({ indice: m.index + m[1].length, recuo: m[1].length, nome });
+  }
+  return candidatos;
 }
+
+/** Só os candidatos cujo NOME casa `padraoNome` (ex.: `PADRAO_NOME_PROJECAO`) — os sítios de
+ * DEFINIÇÃO da projeção, nunca uma referência: `registros.map(paraContrato)` nunca é candidato,
+ * porque o nome não está no início da linha lógica ali. */
+function sitiosDeDefinicao(conteudo, padraoNome) {
+  const casaNome = new RegExp(padraoNome.source);
+  return candidatosDeDefinicao(conteudo).filter((c) => casaNome.test(c.nome));
+}
+
+/** `return {`, `return ({` (TS/JS/Python), `=> ({` (arrow com retorno implícito de objeto) ou
+ * `lambda ...: {` — o mesmo retorno implícito, forma Python (plan-2.md N.2.2). */
+const PADRAO_RETORNO_OBJETO = /\breturn\s*\(?\s*\{|=>\s*\(\s*\{|\blambda\b[^:{}]*:\s*\{/g;
 
 /** A próxima definição (qualquer nome) de recuo `<= recuoMaximo`, estritamente depois de
  * `apartirDe`, ou fim do arquivo. */
 function proximaDefinicaoNoRecuo(conteudo, apartirDe, recuoMaximo) {
-  for (const m of conteudo.matchAll(PADRAO_QUALQUER_DEFINICAO)) {
-    if (m.index <= apartirDe) continue;
-    if (m[2] !== undefined && PALAVRAS_DE_CONTROLE.has(m[2])) continue;
-    if (m[1].length <= recuoMaximo) return m.index;
+  for (const candidato of candidatosDeDefinicao(conteudo)) {
+    if (candidato.indice <= apartirDe) continue;
+    if (candidato.recuo <= recuoMaximo) return candidato.indice;
   }
   return conteudo.length;
 }
@@ -366,8 +367,7 @@ function proximaDefinicaoNoRecuo(conteudo, apartirDe, recuoMaximo) {
  */
 function regioesDeProjecao(conteudo, padraoNome) {
   const regioes = [];
-  for (const inicioJanela of sitiosDeDefinicao(conteudo, padraoNome)) {
-    const recuoSitio = recuoDaLinha(conteudo, inicioJanela);
+  for (const { indice: inicioJanela, recuo: recuoSitio } of sitiosDeDefinicao(conteudo, padraoNome)) {
     const fimJanela = proximaDefinicaoNoRecuo(conteudo, inicioJanela, recuoSitio);
     const janela = conteudo.slice(inicioJanela, fimJanela);
     for (const ocorrencia of janela.matchAll(PADRAO_RETORNO_OBJETO)) {

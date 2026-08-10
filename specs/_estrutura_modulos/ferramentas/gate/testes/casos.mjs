@@ -111,6 +111,46 @@ export const CASOS = [
     descricao: 'tests/contrato vazio',
     mutar: (m) => m.removerPasta('tests/contrato'),
   },
+  // --- Bloco M: a arvore fechada por baixo (plan-2.md) ----------------------------------------
+  {
+    regra: 'estrutura',
+    descricao: 'Bloco M — core/dominio/ vazio ou ausente',
+    mutar: (m) => m.removerPasta('core/dominio'),
+  },
+  {
+    regra: 'estrutura',
+    descricao: 'Bloco M — core/portas/ vazio ou ausente',
+    mutar: (m) => m.removerPasta('core/portas'),
+  },
+  {
+    regra: 'estrutura',
+    descricao: 'Bloco M — README.md ausente',
+    mutar: (m) => m.remover('README.md'),
+  },
+  {
+    regra: 'estrutura',
+    descricao: 'Bloco M — arquivo obrigatorio do binding ausente (tsconfig.json/package.json em TS, '
+      + 'package.json em JS, pyproject.toml em PY)',
+    // `remover` usa `force: true` — arquivo que o binding em teste nao tem (ex.: pyproject.toml num
+    // molde TS) e um no-op silencioso, entao as tres chamadas cobrem os tres bindings de um caso so.
+    mutar: (m) => {
+      m.remover('tsconfig.json');
+      m.remover('package.json');
+      m.remover('pyproject.toml');
+    },
+  },
+  {
+    regra: 'schema-manifesto',
+    descricao: 'Bloco M — CHAMARIZ: campo nao previsto, com core/gateways/ ausente (opcional, NAO acusa)',
+    // Prova, POR MAQUINA, que `core/gateways/` continua FORA do conjunto obrigatorio: modulo sem
+    // `consome` legitimamente nao tem gateway nenhum, e cobra-lo em `estrutura` seria falso positivo
+    // garantido. Se a exclusao regredir, `estrutura` acusa TAMBEM — um id que este caso nao declara
+    // em `tambem` — e `executar.mjs` reprova com "id NAO declarado".
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, campoChamarizM: true }));
+      m.removerPasta('core/gateways');
+    },
+  },
 
   // --- Isolamento ----------------------------------------------------------------------------
   {
@@ -1070,6 +1110,45 @@ export const CASOS = [
           + '        return {"created_at": registro["criado_em"]}\n\n'
           + '    def para_zeta(self, registro):\n'
           + '        return {"hash": registro["hash"], "cpf": registro["cpf"]}\n',
+      });
+    },
+  },
+  {
+    regra: 'log',
+    descricao: 'N.2.2 — propriedade-arrow que NAO publica, DEPOIS de propriedade-arrow que publica (chamariz)',
+    // O defeito que so aparece em objeto literal de arrows: o FECHADOR antigo exigia `identificador(`
+    // depois do nome, e `chaveDeCache: (r) => (...)` tem `:` entre os dois — nunca fechava a janela
+    // de `paraGama`. `console.log`/`print` arma o chamariz: se "created_at" fosse (erradamente) visto
+    // como projetado por `paraGama`, apareceria `payload-camelcase` NAO DECLARADO e o caso reprovaria.
+    // No Python o analogo e a atribuicao de modulo (`nome = lambda r: {...}`, sem `def` nem `class`):
+    // `chave_de_cache` bare, seguida de "=" (nao "("), era invisivel ao fechador antigo pelo MESMO
+    // motivo.
+    mutar: (m) => m.acrescentarEm('mapeadores', {
+      js: "\nexport const ProjecoesN22 = {\n  paraGama: (registro) => {\n    console.log('x');\n"
+        + '    return { hash: registro.hash };\n  },\n\n'
+        + '  chaveDeCache: (registro) => ({ created_at: registro.criadoEm }),\n};\n',
+      py: '\n\ndef para_gama(registro):\n    print("x")\n'
+        + '    return {"hash": registro["hash"]}\n\n\n'
+        + 'chave_de_cache = lambda registro: {"created_at": registro["criado_em"]}\n',
+    }),
+  },
+  {
+    regra: 'sensivel-em-saida',
+    descricao: 'N.2.2 — "cpf" publicado DE VERDADE numa propriedade-arrow DEPOIS de uma que nao publica',
+    // O outro lado do conserto, no padrao da N.2.1: a janela fecha, mas nao cega a regra. Uma
+    // TERCEIRA entrada "para*" no mesmo objeto/modulo, depois da que nao publica, projeta cpf de
+    // verdade — se a janela da primeira regredisse e engolisse a segunda, "created_at" apareceria
+    // como `payload-camelcase` NAO DECLARADO e o caso reprovaria antes mesmo de chegar no cpf.
+    tambem: ['projecao-contrato'],
+    mutar: (m) => {
+      m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
+      m.acrescentarEm('mapeadores', {
+        js: '\nexport const ProjecoesN22c = {\n  paraEpsilon: (registro) => ({ hash: registro.hash }),\n\n'
+          + '  chaveDeCache: (registro) => ({ created_at: registro.criadoEm }),\n\n'
+          + '  paraZeta: (registro) => ({ hash: registro.hash, cpf: registro.cpf }),\n};\n',
+        py: '\n\npara_epsilon = lambda registro: {"hash": registro["hash"]}\n\n'
+          + 'chave_de_cache = lambda registro: {"created_at": registro["criado_em"]}\n\n'
+          + 'para_zeta = lambda registro: {"hash": registro["hash"], "cpf": registro["cpf"]}\n',
       });
     },
   },

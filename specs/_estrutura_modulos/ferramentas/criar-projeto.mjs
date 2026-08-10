@@ -87,11 +87,27 @@ function instalarDoutrina(destino) {
   cpSync(join(origem, 'adr', 'decisoes.md'), join(adr, ADR_DO_TEMPLATE));
 }
 
+/**
+ * Cache de ferramenta que a execução LOCAL do binding Python deixa dentro da própria árvore fonte
+ * (`ruff`, `pytest`, `mypy`, o interpretador) — nunca versionado (o `.gitignore` do binding já o
+ * cobre), mas o template é copiado do DISCO de quem roda `criar-projeto.mjs`, não de um clone limpo,
+ * e é ali que a garantia "projeto novo nasce limpo" tem de valer (Bloco M, plan-2.md). Medido dentro
+ * de um `_template` gerado localmente: `__pycache__/` viajava sem filtro nenhum.
+ */
+const LIXO_DE_EXECUCAO = new Set(['__pycache__', '.ruff_cache', '.pytest_cache', '.mypy_cache']);
+
+/** `filter` de `cpSync`: `false` pula a entrada (e, em pasta, tudo dentro dela). */
+function naoELixoDeExecucao(origem) {
+  const nome = basename(origem);
+  return !LIXO_DE_EXECUCAO.has(nome) && !nome.endsWith('.pyc');
+}
+
 function copiarTemplate(destino, binding) {
   instalarDoutrina(destino);
-  cpSync(join(RAIZ_TEMPLATE, 'ferramentas'), join(destino, 'ferramentas'), { recursive: true });
-  cpSync(join(RAIZ_TEMPLATE, 'bindings', binding, 'raiz'), destino, { recursive: true });
-  cpSync(join(RAIZ_TEMPLATE, 'bindings', binding, '_template'), join(destino, 'modulos', '_template'), { recursive: true });
+  const semLixo = { recursive: true, filter: naoELixoDeExecucao };
+  cpSync(join(RAIZ_TEMPLATE, 'ferramentas'), join(destino, 'ferramentas'), semLixo);
+  cpSync(join(RAIZ_TEMPLATE, 'bindings', binding, 'raiz'), destino, semLixo);
+  cpSync(join(RAIZ_TEMPLATE, 'bindings', binding, '_template'), join(destino, 'modulos', '_template'), semLixo);
 }
 
 /**

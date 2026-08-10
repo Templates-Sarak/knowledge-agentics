@@ -54,7 +54,7 @@ Continua vigente a regra permanente do `plan.md`: **regra nova exige caso própr
 | `GET /meta` público devolve o manifesto inteiro? | **NÃO — corrigido (N.1)** | Bloco N |
 | `paraMeta`/`paraColecao` visíveis a `projecao-contrato`/`sensivel-em-saida`? | **SIM — corrigido (N.2)**. Antes: invisíveis (âncora de nome estreita) | Bloco N |
 | `sensivel-em-saida` reconhece `logging`/`warning`/`critical`/`exception`? | **SIM — corrigido (N.3)**. Antes: só `logger`/`log` com 4 verbos | Bloco N |
-| Bloco N (segurança) — itens marcados pelo executor | N.1 ✓ · N.2 ✓ · N.3 ✓ · N.4 ✓ · N.2.1 ✓ (todos os itens da seção marcados; status do BLOCO é do revisor) | `node ferramentas/gate/testes/executar.mjs --binding <b>` |
+| Bloco N (segurança) — itens marcados pelo executor | N.1 ✓ · N.2 ✓ · N.3 ✓ · N.4 ✓ · N.2.1 ✓ · N.2.2 ✓ (todos os itens da seção marcados; status do BLOCO é do revisor) | `node ferramentas/gate/testes/executar.mjs --binding <b>` |
 | `criar-modulo` com flag produz módulo conforme? | **NÃO — nas duas flags** | Bloco O |
 | Extração (copiar a pasta, nenhum import muda) | **funciona** — `tsc` 0, `24/24` verdes | `--extracao` + cópia manual |
 | Boot, build, migrations, gate | **funcionam** | `npm run iniciar · build · validar` |
@@ -643,25 +643,42 @@ porque a lei já o promete.
 > A quarta virá, e não se sabe qual é. `paraGama: (r) => ({…})` **é** sítio reconhecido (nome em início
 > de linha lógica) e **não é** fechador reconhecido (há `:` entre o nome e o `(`).
 
-- [ ] **Um reconhecedor só, consumido pelos dois.** `ehSitioDeDefinicao` e o fechador passam a chamar a
+- [x] **Um reconhecedor só, consumido pelos dois.** `ehSitioDeDefinicao` e o fechador passam a chamar a
       **mesma** função. As formas deixam de ser enumeradas em dois lugares que precisam concordar, e as
-      que faltam passam a vir de graça
-- [ ] **O precedente é desta campanha, duas vezes:** a **N.3** fez `segredo-em-log` e `sensivel-em-saida`
+      que faltam passam a vir de graça.
+      *Feito: `PADRAO_SITIO_DEFINICAO` + `candidatosDeDefinicao(conteudo)` em `contrato.mjs`, fonte única
+      consumida por `sitiosDeDefinicao` (filtra por NOME) e `proximaDefinicaoNoRecuo` (filtra por
+      RECUO). A forma larga (identificador no início de linha lógica, sem exigir `(` nem `:` depois)
+      passou a valer nos dois lados — antes só o sítio nomeado a tinha*
+- [x] **O precedente é desta campanha, duas vezes:** a **N.3** fez `segredo-em-log` e `sensivel-em-saida`
       compartilharem uma lista de verbos em vez de duas; o **Bloco S** vai dar ao vocabulário de portas
       uma fonte com schemas derivados. Mesmo defeito, mesma cura — *uma definição, consumidores nos dois
       lados*, que é a frase que a I.3 já usou para `URL_LITERAL` e `PADRAO_CREDENCIAL`
-- [ ] **O guarda de recuo já protege o corpo, e é por isso que unificar é seguro.** A linha
+- [x] **O guarda de recuo já protege o corpo, e é por isso que unificar é seguro.** A linha
       `hash: registro.hash,` também começa linha lógica, mas está **sempre** mais indentada que o sítio,
       e `recuo <= recuoMaximo` a descarta. Provar isso com caso, não com argumento: um `return` de
-      objeto multilinha cujas chaves não fecham a própria janela
-- [ ] **A exclusão de controle de fluxo (`if`/`for`/`while`/…) da N.2.1 continua valendo** e migra para o
-      reconhecedor único — ela é do fechador, não do sítio, e a unificação não pode perdê-la
-- [ ] **Casos:** propriedade-arrow que **não** publica → CALA; `cpf` de verdade em propriedade-arrow →
+      objeto multilinha cujas chaves não fecham a própria janela.
+      *Confirmado pelo caso de `paraColecao`/`linhaParaDominio`/`dominioParaLinha` do molde de
+      referência (chaves do `return` em várias linhas, `verificarConforme` continua zero erro nos três
+      bindings) — nenhum caso novo dedicado foi necessário porque o molde já exercita a forma*
+- [x] **A exclusão de controle de fluxo (`if`/`for`/`while`/…) da N.2.1 continua valendo** e migra para o
+      reconhecedor único — ela é do fechador, não do sítio, e a unificação não pode perdê-la.
+      *Feito: `PALAVRAS_DE_CONTROLE` migrou para dentro de `candidatosDeDefinicao`, com `case`/`default`
+      acrescentadas (a forma "identificador seguido de `:`" agora também casa rótulo de `switch`)*
+- [x] **Casos:** propriedade-arrow que **não** publica → CALA; `cpf` de verdade em propriedade-arrow →
       ACUSA. Nos três bindings; no Python, o análogo é atribuição no nível do módulo
-      (`para_gama = lambda r: {...}`) e o dicionário de funções
-- [ ] **§7.2 passa a descrever por FORMA RECONHECIDA, não por enumeração.** Hoje a linha lista as formas
+      (`para_gama = lambda r: {...}`) e o dicionário de funções.
+      *Feito: dois casos novos em `casos.mjs` (`N.2.2 — propriedade-arrow que NAO publica...` e
+      `N.2.2 — "cpf" publicado DE VERDADE numa propriedade-arrow...`), verdes nos três bindings
+      (117/117 · 117/117 · 113/113). Contraprova rodada: exigindo `(` depois do identificador na forma
+      larga (o fechador antigo), os dois casos novos REPROVAM nos três bindings — confirma que eles
+      exercitam o defeito, não passam por acidente. `PADRAO_RETORNO_OBJETO` ganhou uma terceira forma,
+      `\blambda\b[^:{}]*:\s*\{`, para o Python ter um equivalente real ao retorno implícito do arrow —
+      sem ela `lambda r: {...}` era invisível ao extrator e o caso Python não provaria nada*
+- [x] **§7.2 passa a descrever por FORMA RECONHECIDA, não por enumeração.** Hoje a linha lista as formas
       que funcionam — e lista de forma envelhece a cada instância deste defeito. Ela deve dizer *o que é
-      um sítio de definição* uma vez, e que o fechador usa **o mesmo** critério
+      um sítio de definição* uma vez, e que o fechador usa **o mesmo** critério.
+      *Feito: `04-regras.md` §7.2, linha de `projecao-contrato` reescrita em torno do reconhecedor único*
 
 **Alcance:** o molde usa funções de topo; nenhum projeto gerado hoje esbarra nisto. Entra porque
 mapeador como objeto literal de arrows é TypeScript ordinário — e porque, com um reconhecedor só, esta
@@ -717,26 +734,44 @@ mapeador como objeto literal de arrows é TypeScript ordinário — e porque, co
 >
 > É exatamente a promessa *"todos os módulos com a mesma estrutura"*, cobrada só numa direção.
 
-- [ ] **`estrutura` passa a exigir o conjunto obrigatório do molde**, por binding: `core/dominio/`,
+- [x] **`estrutura` passa a exigir o conjunto obrigatório do molde**, por binding: `core/dominio/`,
       `core/portas/`, `README.md`, `modulo.json`, e o arquivo de tipos quando o binding o tem
-      (`tsconfig.json` em TS). **Uma mensagem por entrada faltante**, nomeando o conserto
-- [ ] **A fronteira com quem já cobra**, para não haver duas mensagens para um defeito: `contrato/` é do
+      (`tsconfig.json` em TS). **Uma mensagem por entrada faltante**, nomeando o conserto.
+      *Feito: `estrutura.mjs` — `PASTAS_OBRIGATORIAS` (`core/dominio/`, `core/portas/`), `README.md` e
+      `ARQUIVOS_OBRIGATORIOS_POR_BINDING` (`tsconfig.json`+`package.json` TS, `package.json` JS,
+      `pyproject.toml` PY), resolvido por `ctx.manifesto?.binding`. `modulo.json` NÃO ganhou checagem
+      nova — já é dono do `manifesto` (`ctx.manifestoErro`), e a fronteira abaixo proíbe repetir*
+- [x] **A fronteira com quem já cobra**, para não haver duas mensagens para um defeito: `contrato/` é do
       id `contrato`; `web/` é do `web-declarado`; `core/motor`, `core/templates` e `gerados/` são do
       `artefato-declarado` (bidirecional por `geraArtefato`); `database/` é do `migrations`, ligado a
       `dados.tabelas`. **O bloco não repete nenhum deles** — só cobre o que hoje não tem dono
-- [ ] **`core/gateways/` fica de fora**: módulo sem `consome` legitimamente não tem gateway, e cobrá-lo
-      seria falso positivo garantido — a direção proibida
-- [ ] **Caso de teste por entrada obrigatória**: apagar cada uma reprova com **id próprio**, e a
-      não-acusação das opcionais fica travada por chamariz em caso de outra regra (a técnica da J.2)
-- [ ] **`gerados/` entra no `.gitignore` da raiz.** A pasta existe com `.gitkeep` nos três bindings, o
+- [x] **`core/gateways/` fica de fora**: módulo sem `consome` legitimamente não tem gateway, e cobrá-lo
+      seria falso positivo garantido — a direção proibida.
+      *Feito: travado por chamariz (`schema-manifesto` + `core/gateways/` removido) em `casos.mjs`*
+- [x] **Caso de teste por entrada obrigatória**: apagar cada uma reprova com **id próprio**, e a
+      não-acusação das opcionais fica travada por chamariz em caso de outra regra (a técnica da J.2).
+      *Feito: 4 casos novos (`core/dominio/`, `core/portas/`, `README.md`, arquivo por binding) + o
+      chamariz de `core/gateways/`, verdes nos três bindings (122/122 · 122/122 · 118/118). Contraprova
+      rodada: com as checagens novas desligadas em `estrutura.mjs`, os 4 casos REPROVAM nos três
+      bindings (118/122 · 118/122 · 114/118) — confirma que exercitam o conserto*
+- [x] **`gerados/` entra no `.gitignore` da raiz.** A pasta existe com `.gitkeep` nos três bindings, o
       gate ignora o conteúdo, o linter ignora — **e o git versiona**. Toda saída de máquina do módulo
-      vai para o repositório hoje
-- [ ] **`.coverage` entra no `.gitignore` de TS/JS.** A F.2c já registrou a nota de acoplamento — a
+      vai para o repositório hoje.
+      *Feito: `gerados/` acrescentado aos três `.gitignore` (`bindings/{typescript,javascript,python}/raiz/.gitignore`)*
+- [x] **`.coverage` entra no `.gitignore` de TS/JS.** A F.2c já registrou a nota de acoplamento — a
       tolerância em `estrutura-estrita` é global aos três bindings, mas o `.gitignore` que a cobre é só
-      o do Python. Fechar a assimetria
-- [ ] **`criar-projeto.mjs` para de copiar lixo.** `cpSync` leva `bindings/python/raiz/**/__pycache__`
+      o do Python. Fechar a assimetria.
+      *Feito: `.coverage` acrescentado a `bindings/typescript/raiz/.gitignore` e
+      `bindings/javascript/raiz/.gitignore` (o do Python já tinha)*
+- [x] **`criar-projeto.mjs` para de copiar lixo.** `cpSync` leva `bindings/python/raiz/**/__pycache__`
       sem filtro — confirmado dentro de um `revpy` gerado. Não está versionado (clone limpo nasce
-      limpo), mas o template é copiado **do disco de quem o roda**, e é ali que a garantia tem de valer
+      limpo), mas o template é copiado **do disco de quem o roda**, e é ali que a garantia tem de valer.
+      *Feito: `copiarTemplate` (`criar-projeto.mjs`) ganhou `filter: naoELixoDeExecucao` nos três
+      `cpSync`, cobrindo `__pycache__`, `.ruff_cache`, `.pytest_cache`, `.mypy_cache` e `*.pyc` — as
+      duas últimas não estavam no texto original desta linha, acrescentadas por serem a MESMA classe
+      de cache que `contexto.mjs:NAO_PERCORRER` já trata como lixo. Sanidade confirmada com `cpSync`
+      isolado (pasta de origem com `__pycache__`/`.ruff_cache` fabricados, destino só recebe o
+      arquivo real) — não mexi na árvore fonte de verdade para testar isto*
 - [ ] **CANDIDATA NOVA (do N.2): regra que cobra a convenção de nome do mapeador.**
       `02-contrato-e-dados.md` §3 agora declara, como NORMA (não estilo): função de projeção de saída
       nomeia-se `para<Algo>`/`para_<algo>`; conversão para o banco, `<algo>ParaLinha`/`linhaPara<algo>`.
@@ -768,6 +803,69 @@ já tem)*:
 | `tsconfig.json` | ✔ | — | — |
 | `package.json` | ✔ | ✔ | — |
 | `pyproject.toml` | — | — | ✔ |
+
+### M.1 — `gerados/` é estrutura, não saída *(achado pelo revisor após o commit de M)*
+
+> **O efeito colateral que só aparece depois de um `git clone`.** `gerados/` entrou nos três
+> `.gitignore` (item acima) e isso **anula o `.gitkeep`** que o molde entrega — o arquivo existe
+> exatamente para a pasta vazia sobreviver ao git:
+>
+> ```
+> git check-ignore -v modulos/sonda/gerados/.gitkeep
+>   → .gitignore:17:gerados/   modulos/sonda/gerados/.gitkeep
+> git add -A && git ls-files | grep -c gerados      →  0
+> ```
+>
+> A pasta não é versionada — **num clone limpo ela não existe**. E `gerados/` é exigida por
+> `artefato-declarado` quando `geraArtefato: true`, o default do molde. Projeto gerado, clone
+> simulado, nada mais tocado:
+>
+> ```
+> sonda: 1 erro(s)   x [artefato-declarado] geraArtefato: true mas gerados/ ausente no modulo
+> molde: 1 erro(s)   x [artefato-declarado] geraArtefato: true mas gerados/ ausente no modulo
+> ```
+>
+> **O raciocínio que inverteu:** o comentário escrito no `.gitignore` fazia a pergunta certa
+> ("nasce vazia, só se enche em build"), mas a pasta é **declarada** por `geraArtefato` e
+> **cobrada** por `artefato-declarado` — logo ela é ESTRUTURA. Quem é saída de máquina é o
+> CONTEÚDO dela, não a pasta.
+
+- [x] **O conserto, nos três `.gitignore`.** `gerados/*` seguido de `!gerados/.gitkeep` **não
+      funciona**: git não desce em diretório excluído, então a negação nunca é avaliada. A forma
+      certa exclui o CONTEÚDO (`gerados/*`), não o diretório, para a negação valer.
+      **DESVIO MEDIDO do texto original desta rodada, e é a razão de esta linha existir**: o
+      snippet como pedido (`gerados/*` / `!gerados/.gitkeep`, sem `**/`) foi tentado primeiro e
+      **também não funciona** — `gerados/` mora dentro de `modulos/<modulo>/`, nunca na raiz, e um
+      padrão com `/` no MEIO (não só no fim) ancora na pasta do `.gitignore` por semântica gitignore,
+      casando só `<raiz>/gerados/*`. Medido com `git check-ignore -v`: sem o prefixo `**/`,
+      `modulos/sonda/gerados/lixo.pdf` não era ignorado NENHUM — o mesmo defeito que este item existe
+      para consertar, só que no sentido oposto (conteúdo vazando em vez de estrutura sumindo). Forma
+      final, nos três `bindings/*/raiz/.gitignore`: `**/gerados/*` + `!**/gerados/.gitkeep`.
+      `.coverage` não foi tocado — é arquivo, não estrutura, e já estava correto
+- [x] **O passo novo do K — `clone-simulado`**, em `specs/_estrutura_modulos/testes/autoteste-template.mjs`,
+      entre `criar-modulo` e `verificar`, nos três bindings: `git init` + `git add -A` + `git ls-files`
+      na própria pasta temporária (sem rede, sem remoto — D3), depois apaga do disco, DENTRO de
+      `modulos/`, todo ARQUIVO que não ficou rastreado. Quem lê o resultado é o `verificar` que já vem
+      a seguir no pipeline — o passo em si não chama o gate.
+      **Achado só pela contraprova, não previsto no texto original**: a primeira versão apagava só
+      ARQUIVO e deixava a pasta vazia no disco — e o K continuava VERDE mesmo com o `.gitignore`
+      revertido para o `gerados/` antigo, porque `artefato-declarado` (`temPastaDeArtefato`) julga a
+      ENTRADA da raiz (`readdirSync`, que lista nome de pasta vazia ou não), não o conteúdo. A poda
+      passou a remover, em pós-ordem, toda pasta que fica vazia depois de apagar o que não é
+      rastreado — é a mesma ausência que um clone de verdade produz (git não materializa diretório
+      sem arquivo dentro), e sem ela a contraprova do item seguinte não reprovava
+- [x] **Sem `shell: true`.** `rodarGit` é o mesmo despachante `executarPasso` que já existe, um
+      `spawnSync('git', args, { shell: false })`. Git ausente do PATH vira `error` no resultado, e
+      `classificarPasso` já reprova isso — não pula (lei 7)
+- [x] **Contraprova, nos dois sentidos.** Revertido `bindings/typescript/raiz/.gitignore` para o
+      `gerados/` antigo: o K reprova no passo `verificar`, nomeando `[artefato-declarado] geraArtefato:
+      true mas gerados/ ausente no modulo` em `sonda` e em `molde`. Restaurado, volta a
+      `VERDE (7/7 passos rodados chegaram a ok)` — bit a bit igual ao `.gitignore` do commit
+- [x] **Autoteste do gate inalterado**: `122/122 · 122/122 · 118/118`, 74 regras — nenhuma regra do
+      gate mudou nesta rodada, só `.gitignore` e o script do K
+
+**Não marcado aqui**: fechamento de Bloco (M ou N) — quem marca bloco é o revisor, regra do
+cabeçalho deste plano. Os itens acima são só os do executor.
 
 ---
 

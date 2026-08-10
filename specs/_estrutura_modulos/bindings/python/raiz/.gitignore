@@ -14,3 +14,16 @@ build/
 *.egg-info/
 relatorios/
 .coverage
+
+# gerados/ e ESTRUTURA, nao saida: `geraArtefato: true` DECLARA a pasta e `artefato-declarado` a
+# COBRA — clone limpo sem ela reprova o gate. So o CONTEUDO e saida de maquina. Por isso ignora-se
+# so o conteudo (`gerados/*`) e desisenta-se o `.gitkeep` que faz a pasta VAZIA sobreviver ao git —
+# `gerados/` sozinho excluiria o diretorio inteiro, e a negacao nunca seria avaliada (git nao desce
+# em diretorio excluido). O prefixo `**/` e OBRIGATORIO nos dois: `gerados/` mora dentro de
+# `modulos/<modulo>/`, nunca na raiz — e um padrao com `/` no MEIO (nao so no fim) ancora na pasta
+# do .gitignore por semantica gitignore, casando so `<raiz>/gerados/*`. Medido com
+# `git check-ignore -v`: sem o `**/`, `modulos/sonda/gerados/lixo.pdf` NAO era ignorado nenhum —
+# a mesma classe de erro que este item existe para consertar, so que no sentido oposto.
+# M.1, plan-2.md.
+**/gerados/*
+!**/gerados/.gitkeep

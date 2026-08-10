@@ -54,6 +54,31 @@ const CONFIGS = ['api', 'dominio', 'seguranca', 'portas', 'textos'];
  */
 const PASTAS_DE_ARTEFATO = ['core/motor/', 'core/templates/', 'gerados/'];
 
+/**
+ * O conjunto obrigatório do molde que hoje NÃO TEM DONO — plan-2.md Bloco M. A árvore era fechada
+ * por CIMA (`estrutura-estrita` reprova entrada não prevista) e aberta por BAIXO: um módulo podia
+ * perder o domínio inteiro, as portas, o banco e a config de tipos, e o gate dizia "conforme".
+ *
+ * A fronteira com quem já cobra, para não haver duas mensagens para um defeito: `contrato/` é do
+ * `contrato`; `web/` é do `web-declarado`; `core/motor`, `core/templates` e `gerados/` são do
+ * `artefato-declarado`; `database/` é do `migrations`; `modulo.json` é do `manifesto`
+ * (`ctx.manifestoErro`). Nada disso se repete aqui. `core/gateways/` também fica de fora, de
+ * propósito: módulo sem `consome` legitimamente não tem gateway nenhum, e cobrá-lo seria falso
+ * positivo garantido.
+ */
+const PASTAS_OBRIGATORIAS = ['core/dominio/', 'core/portas/'];
+
+/**
+ * O arquivo de manifesto/tipos que só o binding declarado exige (a tabela do plan-2.md Bloco M).
+ * `requirements.txt` fica de fora: `pyproject.toml` já é o manifesto de dependência do binding
+ * Python, e exigir os dois seria redundância sem verificador que a justifique.
+ */
+const ARQUIVOS_OBRIGATORIOS_POR_BINDING = {
+  typescript: ['tsconfig.json', 'package.json'],
+  javascript: ['package.json'],
+  python: ['pyproject.toml'],
+};
+
 /** Existe ao menos um arquivo sob o prefixo informado? */
 export function temArquivoEm(ctx, prefixo) {
   return ctx.arquivos.some((a) => a.rel.startsWith(prefixo));
@@ -197,6 +222,18 @@ export default [
       if (!temArquivoEm(ctx, 'tests/')) achados.push('tests/ ausente');
       for (const assunto of CONFIGS) {
         if (!ctx.configs[assunto].presente) achados.push(`config/${assunto}.json ausente`);
+      }
+      for (const pasta of PASTAS_OBRIGATORIAS) {
+        if (!temArquivoEm(ctx, pasta)) achados.push(`${pasta} vazia ou ausente`);
+      }
+      if (!ctx.entradasRaiz.includes('README.md')) achados.push('README.md ausente');
+      // Manifesto ilegivel e do `manifesto` (`ctx.manifestoErro`) — sem binding para consultar, o
+      // conjunto por binding fica de fora, nao acusado duas vezes pelo mesmo defeito.
+      const binding = ctx.manifesto?.binding;
+      for (const nome of ARQUIVOS_OBRIGATORIOS_POR_BINDING[binding] ?? []) {
+        if (!ctx.entradasRaiz.includes(nome)) {
+          achados.push(`${nome} ausente — arquivo obrigatorio do binding "${binding}"`);
+        }
       }
       return achados;
     },

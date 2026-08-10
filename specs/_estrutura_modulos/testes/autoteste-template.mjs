@@ -28,11 +28,22 @@
  *
  * LIMPEZA: a pasta temporária de cada binding é removida no `finally`, e uma falha de limpeza NUNCA
  * troca o exit code da verificação pelo da faxina (ela só avisa em stderr e seque adiante).
+ *
+ * `clone-simulado` (M.1, plan-2.md) — o passo que prova a outra metade da promessa. Até aqui o K só
+ * media "o projeto NASCE verde"; nunca "o projeto CONTINUA verde depois de CLONADO", porque este
+ * script gera, verifica e apaga — nunca clona. O revisor mediu o furo: `gerados/` entrou no
+ * `.gitignore` da raiz (Bloco M) do jeito que anula o `.gitkeep` do molde, e um projeto clonado de
+ * verdade nasce SEM a pasta que `artefato-declarado` exige. Sem rede nem remoto (o script não pode
+ * depender de nenhum dos dois): `git init` + `git add -A` + `git ls-files` na própria pasta
+ * temporária, e então apaga do disco, DENTRO de `modulos/`, tudo que não ficou rastreado — é a
+ * simulação mínima de "o que sobrevive a um clone", sem virar um projeto git de verdade. O passo
+ * `verificar`, que já vem a seguir no pipeline, é quem lê o resultado: se o `.gitignore` comeu
+ * estrutura, ele reprova ali, não aqui.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { platform, tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // ================================================================================================
@@ -56,6 +67,9 @@ const ID_MODULO_SONDA = 'sonda';
 export function passosDoBinding(binding) {
   const gerarProjeto = { nome: 'gerar-projeto', tipo: 'gerar-projeto' };
   const criarModulo = { nome: 'criar-modulo', tipo: 'criar-modulo' };
+  // Depois de `criar-modulo`, antes de `verificar` (M.1): o passo em si só poda o disco — quem lê o
+  // resultado é o `verificar` que já vem a seguir no pipeline, nos dois bindings.
+  const cloneSimulado = { nome: 'clone-simulado', tipo: 'clone-simulado' };
 
   if (binding === 'python') {
     return [
@@ -63,6 +77,7 @@ export function passosDoBinding(binding) {
       { nome: 'venv', tipo: 'venv' },
       { nome: 'instalar', tipo: 'pip-install' },
       criarModulo,
+      cloneSimulado,
       { nome: 'verificar', tipo: 'verificar-py' },
     ];
   }
@@ -70,6 +85,7 @@ export function passosDoBinding(binding) {
     gerarProjeto,
     { nome: 'instalar', tipo: 'npm-install' },
     criarModulo,
+    cloneSimulado,
     { nome: 'verificar', tipo: 'npm-script', script: 'verificar' },
     { nome: 'build', tipo: 'npm-script', script: 'build' },
     { nome: 'lint', tipo: 'npm-script', script: 'lint' },
@@ -173,6 +189,66 @@ function rodarPython(executavel, args, cwd, envExtra = {}) {
   return spawnSync(executavel, args, { cwd, encoding: 'utf8', shell: false, env: { ...process.env, ...envExtra } });
 }
 
+/** ÚNICO ponto que roda `git` de verdade — resolvido do PATH, nunca `shell: true`. Ausência de git
+ * vira `error` no resultado, e `classificarPasso` já reprova isso (lei 7 — não pula). */
+function rodarGit(args, cwd) {
+  return spawnSync('git', args, { cwd, encoding: 'utf8', shell: false });
+}
+
+/** Caminho de `absoluto` relativo a `raiz`, na forma que `git ls-files` usa (barra, sempre). */
+function caminhoNoFormatoGit(absoluto, raiz) {
+  return relative(raiz, absoluto).split(sep).join('/');
+}
+
+/**
+ * Apaga, recursivamente, todo ARQUIVO sob `pasta` cujo caminho (relativo a `raizProjeto`, no
+ * formato do git) não está em `rastreados` — e, na volta da recursão (pós-ordem), remove a própria
+ * pasta se ela ficou vazia.
+ *
+ * A remoção da pasta vazia NÃO é cosmética — é a correção de uma primeira versão que a deixava no
+ * disco e por isso não pegava nada: `artefato-declarado` (`temPastaDeArtefato`, para `gerados/`)
+ * julga a ENTRADA da raiz (`ctx.entradasRaiz`, um `readdirSync` que lista nome de pasta, vazia ou
+ * não), não o conteúdo. Medido revertendo o `.gitignore` para o `gerados/` antigo (a contraprova
+ * deste item): com a pasta vazia sobrevivendo no disco, o K continuava VERDE — a poda tinha comido
+ * o `.gitkeep`, mas `gerados` ainda aparecia como entrada, e a regra nunca via a ausência. Git, num
+ * clone de verdade, não materializa diretório sem arquivo rastreado dentro — é essa ausência que
+ * precisa ser reproduzida, não só a do arquivo.
+ */
+function podarNaoRastreado(pasta, raizProjeto, rastreados) {
+  if (!existsSync(pasta)) return;
+  for (const entrada of readdirSync(pasta, { withFileTypes: true })) {
+    const caminho = join(pasta, entrada.name);
+    if (entrada.isDirectory()) {
+      podarNaoRastreado(caminho, raizProjeto, rastreados);
+      continue;
+    }
+    if (!rastreados.has(caminhoNoFormatoGit(caminho, raizProjeto))) rmSync(caminho, { force: true });
+  }
+  if (readdirSync(pasta).length === 0) rmSync(pasta, { recursive: true, force: true });
+}
+
+/**
+ * `git init` + `git add -A` + `git ls-files`, e então poda `modulos/` do que não ficou rastreado —
+ * a simulação mínima de "sobreviveu a um clone" (M.1, plan-2.md). Cada comando git que falhar
+ * devolve o resultado dele mesmo, sem seguir adiante — é o `classificarPasso` de quem chamou que
+ * decide se aquilo é falha (e decide que sim: `error`/`status` não-zero nunca vira `ok`).
+ */
+function simularClone(destino) {
+  const init = rodarGit(['init', '-q'], destino);
+  if (classificarPasso(init).ok !== true) return init;
+
+  const add = rodarGit(['add', '-A'], destino);
+  if (classificarPasso(add).ok !== true) return add;
+
+  const lsFiles = rodarGit(['ls-files'], destino);
+  if (classificarPasso(lsFiles).ok !== true) return lsFiles;
+
+  const rastreados = new Set(lsFiles.stdout.split(/\r?\n/).filter((linha) => linha !== ''));
+  podarNaoRastreado(join(destino, 'modulos'), destino, rastreados);
+
+  return { error: null, status: 0, stdout: '', stderr: '' };
+}
+
 /** Despacha UM passo para a execução real. Único ponto que sabe mapear `tipo` -> processo. */
 function executarPasso(passo, ctx) {
   switch (passo.tipo) {
@@ -182,6 +258,8 @@ function executarPasso(passo, ctx) {
       return rodarNpm(['install', '--prefer-offline', '--no-audit', '--no-fund'], ctx.destino);
     case 'criar-modulo':
       return rodarNode([CRIAR_MODULO, ID_MODULO_SONDA, '--binding', ctx.binding], ctx.destino);
+    case 'clone-simulado':
+      return simularClone(ctx.destino);
     case 'npm-script':
       return rodarNpm(['run', passo.script], ctx.destino);
     case 'venv':
@@ -328,6 +406,13 @@ function casosDeAutoteste() {
       const nomes = passosDoBinding('python').map((p) => p.nome);
       return nomes.indexOf('venv') < nomes.indexOf('criar-modulo') && nomes.indexOf('instalar') < nomes.indexOf('criar-modulo');
     } },
+    { nome: 'passosDoBinding: clone-simulado entre criar-modulo e verificar, nos tres bindings (M.1)', fn: () => (
+      BINDINGS.every((binding) => {
+        const nomes = passosDoBinding(binding).map((p) => p.nome);
+        const iClone = nomes.indexOf('clone-simulado');
+        return iClone !== -1 && iClone === nomes.indexOf('criar-modulo') + 1 && iClone === nomes.indexOf('verificar') - 1;
+      })
+    ) },
     { nome: 'classificarPasso: status 0 e sem error -> ok', fn: () => classificarPasso({ error: undefined, status: 0 }).ok === true },
     { nome: 'classificarPasso: error definido -> nao ok, mesmo com status 0', fn: () => classificarPasso({ error: new Error('ENOENT'), status: 0 }).ok === false },
     { nome: 'classificarPasso: status null (matado por sinal) -> nao ok', fn: () => classificarPasso({ error: undefined, status: null }).ok === false },
