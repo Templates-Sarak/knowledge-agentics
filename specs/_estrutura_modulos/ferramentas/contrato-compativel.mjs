@@ -104,6 +104,19 @@ function compararServidor(antes, depois) {
  * presentes nos DOIS lados — rota/método removidos já viraram achado em `compararRotas`, e status
  * code que desapareceu é uma pergunta diferente desta cláusula (não coberta, ver cabeçalho do arquivo).
  */
+/** O laco de `status` isolado do de `compararRespostas` — so por isso o aninhamento de UM cai
+ * dentro do limiar (04-regras.md §4.7): a mesma tecnica que separa `compararCamposDaResposta`.
+ * `{ antes, depois }` e `{ rota, metodo }` agrupados: os dois pares sempre viajam juntos, e sem
+ * agrupar a extracao trocaria um limiar (aninhamento) por outro (parametros). */
+function achadosDeStatusNaResposta(specs, operacao, statusAntes, statusDepois) {
+  const achados = [];
+  for (const status of statusAntes) {
+    if (!statusDepois.has(status)) continue;
+    achados.push(...compararCamposDaResposta(specs.antes, specs.depois, { ...operacao, status }));
+  }
+  return achados;
+}
+
 function compararRespostas(antes, depois) {
   const achados = [];
   for (const [rota, metodos] of operacoesDaSpec(antes)) {
@@ -113,16 +126,16 @@ function compararRespostas(antes, depois) {
       if (!metodosDepois.has(metodo)) continue;
       const statusAntes = statusDaOperacao(antes, rota, metodo) ?? new Set();
       const statusDepois = statusDaOperacao(depois, rota, metodo) ?? new Set();
-      for (const status of statusAntes) {
-        if (!statusDepois.has(status)) continue;
-        achados.push(...compararCamposDaResposta(antes, depois, rota, metodo, status));
-      }
+      achados.push(...achadosDeStatusNaResposta({ antes, depois }, { rota, metodo }, statusAntes, statusDepois));
     }
   }
   return achados;
 }
 
-function compararCamposDaResposta(antes, depois, rota, metodo, status) {
+/** `{ rota, metodo, status }` em vez de tres parametros soltos — o limiar de 4 parametros
+ * (04-regras.md §4.7) que este arquivo tambem cobra do codigo do usuario. */
+function compararCamposDaResposta(antes, depois, operacao) {
+  const { rota, metodo, status } = operacao;
   const propsAntes = propriedadesDaResposta(antes, rota, metodo, status) ?? new Set();
   const propsDepois = propriedadesDaResposta(depois, rota, metodo, status) ?? new Set();
   const achados = [];
@@ -143,6 +156,21 @@ function compararCamposDaResposta(antes, depois, rota, metodo, status) {
  * a própria lei que a inverte (acrescentar é compatível na resposta, mas obrigar é que quebra na
  * requisição). Mesma guarda de rota/método presentes nos dois lados que `compararRespostas`.
  */
+/** O laco de `campo` isolado do de `compararRequisicoes` — mesma tecnica de
+ * `achadosDeStatusNaResposta`, para o aninhamento caber no limiar (04-regras.md §4.7). */
+function achadosDeCampoNaRequisicao(rota, metodo, antesObrig, depoisObrig) {
+  const achados = [];
+  for (const campo of depoisObrig) {
+    if (!antesObrig.has(campo)) {
+      achados.push({
+        tipo: 'campo-obrigatorio-acrescentado',
+        mensagem: `${metodo} "${rota}": campo "${campo}" passou a ser OBRIGATORIO na requisicao — quem consome sem enviar esse campo passa a ser rejeitado`,
+      });
+    }
+  }
+  return achados;
+}
+
 function compararRequisicoes(antes, depois) {
   const achados = [];
   for (const [rota, metodos] of operacoesDaSpec(antes)) {
@@ -152,14 +180,7 @@ function compararRequisicoes(antes, depois) {
       if (!metodosDepois.has(metodo)) continue;
       const antesObrig = obrigatoriosDaRequisicao(antes, rota, metodo) ?? new Set();
       const depoisObrig = obrigatoriosDaRequisicao(depois, rota, metodo) ?? new Set();
-      for (const campo of depoisObrig) {
-        if (!antesObrig.has(campo)) {
-          achados.push({
-            tipo: 'campo-obrigatorio-acrescentado',
-            mensagem: `${metodo} "${rota}": campo "${campo}" passou a ser OBRIGATORIO na requisicao — quem consome sem enviar esse campo passa a ser rejeitado`,
-          });
-        }
-      }
+      achados.push(...achadosDeCampoNaRequisicao(rota, metodo, antesObrig, depoisObrig));
     }
   }
   return achados;

@@ -12,6 +12,7 @@
 // seria pior.
 
 import type { Registro } from '../../../core/dominio/index.js';
+import type { Manifesto } from '../config.js';
 
 /** Linha crua do banco. Nunca sai desta camada. */
 export interface LinhaRegistro {
@@ -51,6 +52,24 @@ export function paraContrato(registro: Registro): Record<string, unknown> {
     titulo: registro.titulo,
     status: registro.status,
     criadoEm: registro.criadoEm,
+  };
+}
+
+/**
+ * manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`rotasPublicas`): o que nao
+ * esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
+ * `permissoes`, `rotasPublicas` e `camposSensiveis` nunca saem por esta rota (plan-2.md N.1).
+ */
+export function paraMeta(manifesto: Manifesto): Record<string, unknown> {
+  return {
+    id: manifesto.id,
+    nome: manifesto.nome,
+    versao: manifesto.versao,
+    papel: manifesto.papel,
+    rotaBase: manifesto.rotaBase,
+    rotaWeb: manifesto.rotaWeb,
+    navegacao: manifesto.navegacao,
+    exportaResumo: manifesto.exportaResumo,
   };
 }
 

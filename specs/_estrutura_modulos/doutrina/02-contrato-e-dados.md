@@ -25,7 +25,7 @@ Esta lei define a forma do contrato, a identidade dos registros, a forma dos dad
 | Rota | Papel |
 |---|---|
 | `GET <rotaBase>/health` | vivo? portas resolvidas? |
-| `GET <rotaBase>/meta` | ecoa o `modulo.json` — é por aqui que o sistema descobre o módulo |
+| `GET <rotaBase>/meta` | metadados PÚBLICOS do módulo, por **allowlist** — `id`, `nome`, `versao`, `papel`, `rotaBase`, `rotaWeb`, `navegacao`, `exportaResumo`, e nada além. Nunca `dados` (schema/prefixo/tabelas), `envRequerido`, `portas`, `permissoes`, `rotasPublicas`, `camposSensiveis` nem `consome` — o que falta é reconhecimento, não descoberta |
 | `GET <rotaBase>/resumo` | contagem e indicadores que o conector agrega |
 
 O conector consome **apenas** esses três — nunca endpoint específico de um módulo.
@@ -39,9 +39,17 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
 `total` — a lei fixa o **piso**, não o conjunto. Cobrado por `resumo-exportado`
 (`specs/arquitetura/04-regras.md` §4.5); `exportaResumo: false` não proíbe nada.
 
-> **Atenção de segurança.** `/meta` devolve topologia interna (nomes de tabelas, de variáveis e de permissões).
-> Enquanto o sistema não tiver autenticação, ela é rota pública por necessidade; assim que houver login, ela
-> deve sair de `rotasPublicas` ou passar a devolver uma projeção reduzida.
+> **Decisão de segurança, tomada.** `/meta` é rota pública por necessidade — o sistema descobre módulo antes de
+> autenticar, e não há login no template ([[00-arquitetura]] §3). A saída óbvia, "ecoar o manifesto inteiro",
+> vazava topologia interna a quem perguntasse sem token: schema e prefixo do banco, os NOMES das chaves de
+> segredo em `envRequerido`, o vocabulário inteiro de `permissoes`, `rotasPublicas` (o que não exige token) e
+> `camposSensiveis` — o mapa de onde está a PII. A escolha feita foi a **projeção reduzida**, aplicada agora e
+> não adiada para quando houver login: `/meta` devolve só os oito campos da tabela acima, cobrados por
+> `saida-crua` (`04-regras.md` §4.5) e travados por caso em `casos.mjs`. O que sai da lista — `dados`,
+> `envRequerido`, `portas`, `permissoes`, `rotasPublicas`, `camposSensiveis`, `consome` — é reconhecimento do
+> módulo (o front precisa saber id/rota/navegação para se montar), nunca descoberta de superfície interna.
+> Sair de `rotasPublicas` quando houver login continua disponível como **endurecimento adicional**, não como
+> pendência: a projeção reduzida já fecha o vazamento sem depender de autenticação existir.
 
 # 3. Caixa e projeção
 

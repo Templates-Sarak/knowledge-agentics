@@ -165,7 +165,9 @@ function urlObrigatoria(idDoModulo) {
   const chave = chaveDeAmbiente(idDoModulo);
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
-    throw new Error(`[migrations] variavel obrigatoria ausente: ${chave} (declare em modulo.json:envRequerido e no .env da raiz)`);
+    throw new Error(
+      `[migrations] variavel obrigatoria ausente: ${chave} (declare em modulo.json:envRequerido e no .env da raiz)`,
+    );
   }
   return valor;
 }
@@ -229,7 +231,10 @@ async function rodarCiclo(idDoModulo) {
 // Postgres (relatorio do bloco), nao por fixture em memoria.
 // ================================================================================================
 
-function casosDeSepararUpDown() {
+/** Os dois casos de bloco preenchido — a forma do molde e a adversarial (linha em branco, comentario
+ * que nao e rollback, indentacao). Separado de `casosDeSepararUpDownVazios` so a funcao caber no
+ * limiar de 40 linhas — o mesmo limiar que este arquivo existe para fazer valer no codigo do usuario. */
+function casosDeSepararUpDownPreenchidos() {
   return [
     {
       nome: 'bloco simples (o molde de verdade)',
@@ -265,6 +270,12 @@ function casosDeSepararUpDown() {
         ].join('\n'),
       },
     },
+  ];
+}
+
+/** Os dois casos SEM bloco de rollback (ausente / presente e vazio) — ver o motivo do split acima. */
+function casosDeSepararUpDownVazios() {
+  return [
     {
       nome: 'sem bloco de rollback: down vazio, up e o arquivo inteiro',
       entrada: 'create table "acme"."x" (id uuid);',
@@ -276,6 +287,10 @@ function casosDeSepararUpDown() {
       esperado: { up: 'create table "acme"."x" (id uuid);', down: '' },
     },
   ];
+}
+
+function casosDeSepararUpDown() {
+  return [...casosDeSepararUpDownPreenchidos(), ...casosDeSepararUpDownVazios()];
 }
 
 function casosDeOrdenacao() {
@@ -348,8 +363,8 @@ async function principal() {
 
   if (!['up', 'down', 'ciclo'].includes(comando) || alvo === undefined) {
     process.stderr.write(
-      'uso: node scripts/migrations.mjs up|down|ciclo <modulo>\n'
-      + '     node scripts/migrations.mjs --autoteste\n',
+      'uso: node scripts/migrations.mjs up|down|ciclo <modulo>\n' +
+        '     node scripts/migrations.mjs --autoteste\n',
     );
     return 1;
   }
@@ -366,4 +381,6 @@ async function principal() {
   }
 }
 
-principal().then((codigo) => { process.exitCode = codigo; });
+principal().then((codigo) => {
+  process.exitCode = codigo;
+});

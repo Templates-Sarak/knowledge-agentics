@@ -10,7 +10,7 @@ import type { DependenciasModulo } from '../../../core/portas/index.js';
 import { ErroDeValidacao, montarRegistro } from '../../../core/dominio/index.js';
 import { ErroApi } from '../erros.js';
 import { exigirPermissao } from '../middlewares/index.js';
-import { paraColecao, paraContrato } from '../mapeadores/index.js';
+import { paraColecao, paraContrato, paraMeta } from '../mapeadores/index.js';
 
 interface Opcoes {
   deps: DependenciasModulo;
@@ -57,7 +57,7 @@ function rotasObrigatorias(router: Router, { deps, config }: Opcoes): void {
   });
 
   router.get('/meta', (_req, res) => {
-    res.json(manifesto);
+    res.json(paraMeta(manifesto));
   });
 
   router.get('/resumo', (_req, res, next) => {

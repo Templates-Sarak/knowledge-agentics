@@ -136,7 +136,9 @@ def _importar_api_do_modulo(modulo: dict[str, Any]) -> Any:
     modulo pode reusar os MESMOS nomes sem colidir com o anterior.
     """
     pasta = str(modulo["pasta"])
-    for nome in [n for n in sys.modules if n == "core" or n.startswith("core.") or n == "api" or n.startswith("api.")]:
+    prefixos = ("core.", "api.")
+    nomes_do_modulo = [n for n in sys.modules if n in ("core", "api") or n.startswith(prefixos)]
+    for nome in nomes_do_modulo:
         del sys.modules[nome]
 
     sys.path.insert(0, pasta)
@@ -243,14 +245,18 @@ def _env_obrigatoria_da_raiz(chave: str) -> str:
     """Le uma variavel obrigatoria da RAIZ. Ausente = boot morre com mensagem acionavel."""
     valor = os.environ.get(chave)
     if valor is None or valor == "":
-        raise RuntimeError(f"[composicao] variavel obrigatoria ausente: {chave} (declare em projeto.json:envRequerido)")
+        raise RuntimeError(f"[composicao] variavel obrigatoria ausente: {chave} (declare em projeto.json)")
     return valor
 
 
 def iniciar_sistema(raiz: Path) -> None:
     """Sobe o processo: um app ASGI, uma porta (specs/arquitetura/00-arquitetura.md §5). A porta
     vem do ambiente — nenhum literal aqui — e a falta dela DERRUBA o boot, nomeando a chave."""
-    import uvicorn
+    # Lazy DE PROPOSITO: uvicorn e servidor ASGI, so preciso para SUBIR o processo de verdade.
+    # `--autoteste` (composicao.py) e os testes importam este modulo sem nunca chamar
+    # iniciar_sistema — import no topo pagaria o custo desse import em todo caminho que so quer
+    # montar_sistema()/verificar_rotas_unicas(), nunca boot real.
+    import uvicorn  # noqa: PLC0415
 
     _carregar_env_da_raiz(raiz)
     porta = int(_env_obrigatoria_da_raiz("RAIZ_API_PORT"))
@@ -290,8 +296,18 @@ def _casos_de_escolha_de_rota() -> list[dict[str, Any]]:
     rotas = ["/api/v1/catalogo", "/api/v1/pedidos"]
     return [
         {"nome": "casa exato", "rotas": rotas, "caminho": "/api/v1/catalogo", "esperado": "/api/v1/catalogo"},
-        {"nome": "casa sub-caminho", "rotas": rotas, "caminho": "/api/v1/catalogo/health", "esperado": "/api/v1/catalogo"},
-        {"nome": "NAO casa prefixo parcial", "rotas": rotas, "caminho": "/api/v1/catalogo-x/health", "esperado": None},
+        {
+            "nome": "casa sub-caminho",
+            "rotas": rotas,
+            "caminho": "/api/v1/catalogo/health",
+            "esperado": "/api/v1/catalogo",
+        },
+        {
+            "nome": "NAO casa prefixo parcial",
+            "rotas": rotas,
+            "caminho": "/api/v1/catalogo-x/health",
+            "esperado": None,
+        },
         {"nome": "sem match", "rotas": rotas, "caminho": "/nada", "esperado": None},
     ]
 

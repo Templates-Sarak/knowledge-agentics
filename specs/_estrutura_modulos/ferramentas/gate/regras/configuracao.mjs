@@ -161,6 +161,18 @@ function ehCarregador(rel) {
   return ARQUIVOS_CARREGADORES.includes(rel) || /vite\.config|next\.config/.test(rel);
 }
 
+/** O laco de `chave` isolado do de `segredo-em-publico.verificar` — mesma tecnica das outras
+ * regras desta familia, para o aninhamento caber no limiar (04-regras.md §4.7). */
+function achadosDeChavePublicaNaLinha(arquivo, numero, texto) {
+  const achados = [];
+  for (const chave of texto.match(CHAVE_PUBLICA) ?? []) {
+    if (!ehPublicaComCredencial(chave)) continue;
+    achados.push(`${arquivo.rel}:${numero}: "${chave}" tem prefixo PUBLICO e nome de`
+      + ' credencial — esse valor vai para o bundle do front');
+  }
+  return achados;
+}
+
 export default [
   {
     id: 'config-valida',
@@ -418,11 +430,7 @@ export default [
       for (const arquivo of ctx.codigo) {
         if (arquivo.eTeste) continue;
         for (const { numero, texto } of arquivo.linhasCodigo) {
-          for (const chave of texto.match(CHAVE_PUBLICA) ?? []) {
-            if (!ehPublicaComCredencial(chave)) continue;
-            achados.push(`${arquivo.rel}:${numero}: "${chave}" tem prefixo PUBLICO e nome de`
-              + ' credencial — esse valor vai para o bundle do front');
-          }
+          achados.push(...achadosDeChavePublicaNaLinha(arquivo, numero, texto));
         }
       }
       return achados;

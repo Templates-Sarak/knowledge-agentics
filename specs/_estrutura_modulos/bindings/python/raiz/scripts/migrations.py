@@ -29,11 +29,14 @@ bug a esconder.
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 RAIZ = Path(__file__).resolve().parent.parent
+MINIMO_DE_ARGUMENTOS = 2
 
 # ====================================================================================================
 # NUCLEO PURO — nunca toca disco nem rede. E a metade que --autoteste prova.
@@ -45,7 +48,9 @@ RAIZ = Path(__file__).resolve().parent.parent
 # chave de ambiente.
 ID_DE_MODULO_VALIDO = re.compile(r"^[a-z][a-z0-9-]*$")
 
-VERBOS_DE_REVERSAO = re.compile(r"^(drop|alter|delete|truncate|revoke|grant|create|insert|update)\b", re.IGNORECASE)
+VERBOS_DE_REVERSAO = re.compile(
+    r"^(drop|alter|delete|truncate|revoke|grant|create|insert|update)\b", re.IGNORECASE
+)
 
 MARCADOR_ROLLBACK = re.compile(r"^\s*--\s*rollback\s*$", re.IGNORECASE)
 
@@ -127,8 +132,6 @@ def _ler_pares_env(caminho: Path) -> list[tuple[str, str]]:
 def _carregar_env_da_raiz() -> None:
     """Carrega o `.env` UNICO da raiz no processo, sem sobrescrever o que ja veio de fora — mesma
     precedencia de `src/composicao.py:_carregar_env_da_raiz` (ADR-004)."""
-    import os
-
     caminho = RAIZ / ".env"
     if not caminho.exists():
         return
@@ -140,7 +143,7 @@ def _pasta_do_modulo(id_do_modulo: str) -> Path:
     """`<modulo>` valido E dentro de `modulos/` — nunca escapa por `..` nem separador. Falha
     nomeando a entrada recusada, nunca silenciosa."""
     if not ID_DE_MODULO_VALIDO.match(id_do_modulo):
-        raise RuntimeError(f'[migrations] "{id_do_modulo}" nao e um id de modulo valido (kebab-case minusculo)')
+        raise RuntimeError(f'[migrations] "{id_do_modulo}" nao e kebab-case minusculo valido')
     base = (RAIZ / "modulos").resolve()
     pasta = (base / id_do_modulo).resolve()
     if base not in pasta.parents:
@@ -160,18 +163,17 @@ def _listar_migrations(pasta_modulo: Path) -> list[str]:
 def _url_obrigatoria(id_do_modulo: str) -> str:
     """Le uma variavel obrigatoria. Ausente = falha nomeando a chave (lei 7 do catalogo, mesmo
     padrao de `api/src/config.py:env_obrigatoria`)."""
-    import os
-
     chave = chave_de_ambiente(id_do_modulo)
     valor = os.environ.get(chave)
     if not valor:
         raise RuntimeError(
-            f"[migrations] variavel obrigatoria ausente: {chave} (declare em modulo.json:envRequerido e no .env da raiz)"
+            f"[migrations] variavel obrigatoria ausente: {chave}"
+            " (declare em modulo.json:envRequerido e no .env da raiz)"
         )
     return valor
 
 
-def _aplicar(conexao, pasta_modulo: Path, direcao: str) -> None:
+def _aplicar(conexao: Any, pasta_modulo: Path, direcao: str) -> None:
     nomes = ordenar_migrations(_listar_migrations(pasta_modulo), direcao)
     with conexao.cursor() as cursor:
         for nome in nomes:
@@ -180,15 +182,18 @@ def _aplicar(conexao, pasta_modulo: Path, direcao: str) -> None:
             sql = down if direcao == "down" else up
             if sql == "":
                 verbo = "reverter" if direcao == "down" else "aplicar"
-                print(f"  {nome}: nada a {verbo}")
+                sys.stdout.write(f"  {nome}: nada a {verbo}\n")
                 continue
-            print(f"  {direcao} {nome}...")
+            sys.stdout.write(f"  {direcao} {nome}...\n")
             cursor.execute(sql)
     conexao.commit()
 
 
-def _conectar(url: str):
-    import psycopg
+def _conectar(url: str) -> Any:
+    # Lazy DE PROPOSITO (nao top-level): `psycopg` e optional-dependency `dev` (docstring do
+    # modulo, DECISAO). `--autoteste` prova so o nucleo puro e precisa rodar mesmo sem `[dev]`
+    # instalado — import no topo quebraria isso so por causa de uma funcao que autoteste nunca chama.
+    import psycopg  # noqa: PLC0415
 
     return psycopg.connect(url)
 
@@ -208,13 +213,13 @@ def rodar_down(id_do_modulo: str) -> None:
 
 
 def rodar_ciclo(id_do_modulo: str) -> None:
-    print(f"[migrations] {id_do_modulo}: up")
+    sys.stdout.write(f"[migrations] {id_do_modulo}: up\n")
     rodar_up(id_do_modulo)
-    print(f"[migrations] {id_do_modulo}: down")
+    sys.stdout.write(f"[migrations] {id_do_modulo}: down\n")
     rodar_down(id_do_modulo)
-    print(f"[migrations] {id_do_modulo}: up (de novo — prova que o rollback fechou o ciclo)")
+    sys.stdout.write(f"[migrations] {id_do_modulo}: up (de novo — prova que o rollback fechou o ciclo)\n")
     rodar_up(id_do_modulo)
-    print(f"[migrations] {id_do_modulo}: ciclo up -> down -> up OK")
+    sys.stdout.write(f"[migrations] {id_do_modulo}: ciclo up -> down -> up OK\n")
 
 
 # ====================================================================================================
@@ -223,7 +228,7 @@ def rodar_ciclo(id_do_modulo: str) -> None:
 # ====================================================================================================
 
 
-def _casos_de_separar_up_down():
+def _casos_de_separar_up_down() -> list[dict[str, Any]]:
     return [
         {
             "nome": "bloco simples (o molde de verdade)",
@@ -242,7 +247,7 @@ def _casos_de_separar_up_down():
             ),
         },
         {
-            "nome": "ADVERSARIAL: linha em branco, comentario que NAO e rollback, e indentacao dentro do bloco",
+            "nome": "ADVERSARIAL: linha em branco, comentario que NAO e rollback, indentacao no bloco",
             "entrada": "\n".join(
                 [
                     'create table "acme"."x" (id uuid);',
@@ -278,7 +283,7 @@ def _casos_de_separar_up_down():
     ]
 
 
-def _casos_de_ordenacao():
+def _casos_de_ordenacao() -> list[dict[str, Any]]:
     return [
         {
             "nome": "up: ordem crescente",
@@ -295,7 +300,7 @@ def _casos_de_ordenacao():
     ]
 
 
-def _casos_de_chave_de_ambiente():
+def _casos_de_chave_de_ambiente() -> list[dict[str, Any]]:
     return [
         {"nome": "simples", "id": "catalogo", "esperado": "CATALOGO_DB_URL"},
         {"nome": "com hifen", "id": "linha-de-producao", "esperado": "LINHA_DE_PRODUCAO_DB_URL"},
@@ -308,31 +313,31 @@ def _rodar_autoteste() -> int:
 
     for caso in _casos_de_separar_up_down():
         total += 1
-        obtido = separar_up_down(caso["entrada"])
-        ok = obtido == caso["esperado"]
-        print(f"  {'ok   ' if ok else 'FALHA'} separar_up_down: {caso['nome']}")
+        up_down_obtido = separar_up_down(caso["entrada"])
+        ok = up_down_obtido == caso["esperado"]
+        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} separar_up_down: {caso['nome']}\n")
         if not ok:
             falhas += 1
-            print(f"       esperado: {caso['esperado']!r}")
-            print(f"       obtido:   {obtido!r}")
+            sys.stdout.write(f"       esperado: {caso['esperado']!r}\n")
+            sys.stdout.write(f"       obtido:   {up_down_obtido!r}\n")
 
     for caso in _casos_de_ordenacao():
         total += 1
-        obtido = ordenar_migrations(caso["nomes"], caso["direcao"])
-        ok = obtido == caso["esperado"]
-        print(f"  {'ok   ' if ok else 'FALHA'} ordenar_migrations: {caso['nome']}")
+        ordem_obtida = ordenar_migrations(caso["nomes"], caso["direcao"])
+        ok = ordem_obtida == caso["esperado"]
+        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} ordenar_migrations: {caso['nome']}\n")
         if not ok:
             falhas += 1
 
     for caso in _casos_de_chave_de_ambiente():
         total += 1
-        obtido = chave_de_ambiente(caso["id"])
-        ok = obtido == caso["esperado"]
-        print(f"  {'ok   ' if ok else 'FALHA'} chave_de_ambiente: {caso['nome']}")
+        chave_obtida = chave_de_ambiente(caso["id"])
+        ok = chave_obtida == caso["esperado"]
+        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} chave_de_ambiente: {caso['nome']}\n")
         if not ok:
             falhas += 1
 
-    print(f"\nautoteste: {total - falhas}/{total} ok")
+    sys.stdout.write(f"\nautoteste: {total - falhas}/{total} ok\n")
     return 0 if falhas == 0 else 1
 
 
@@ -346,7 +351,7 @@ def main() -> int:
     if "--autoteste" in argv:
         return _rodar_autoteste()
 
-    if len(argv) < 2 or argv[0] not in ("up", "down", "ciclo"):
+    if len(argv) < MINIMO_DE_ARGUMENTOS or argv[0] not in ("up", "down", "ciclo"):
         sys.stderr.write(
             "uso: python scripts/migrations.py up|down|ciclo <modulo>\n"
             "     python scripts/migrations.py --autoteste\n"

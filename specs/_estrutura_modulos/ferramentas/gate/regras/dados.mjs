@@ -9,6 +9,21 @@ import { textoDeCodigo } from '../texto.mjs';
 
 const PADRAO_MIGRATION = /^\d{4}-[a-z][a-z0-9]*(-[a-z0-9]+)+\.sql$/;
 
+/** O laco de `achado` isolado do de `tabela-alheia.verificar` — so por isso o aninhamento cabe no
+ * limiar que esta propria regra e as irmas do §4.7 cobram do codigo do usuario. Mensagem intacta:
+ * o autoteste (`93/93` etc.) compara ids, e o texto e o conserto que o autor le. */
+function achadosDeReferenciaAlheia(ctx, arquivo, outro) {
+  const achados = [];
+  const padrao = new RegExp(`\\b${outro.idPasta}_[a-z][a-z0-9_]*`, 'g');
+  for (const achado of new Set(textoDeCodigo(arquivo).match(padrao) ?? [])) {
+    achados.push({
+      modulo: ctx.idPasta,
+      mensagem: `${arquivo.rel}: referencia a tabela de outro modulo ("${achado}") — o dado alheio vem pela api/ dele`,
+    });
+  }
+  return achados;
+}
+
 export default [
   {
     id: 'schema-nao-public',
@@ -49,15 +64,7 @@ export default [
         const alheios = contextos.filter((outro) => outro.idPasta !== ctx.idPasta);
         for (const arquivo of [...ctx.codigo, ...ctx.sql]) {
           if (arquivo.eTeste) continue;
-          for (const outro of alheios) {
-            const padrao = new RegExp(`\\b${outro.idPasta}_[a-z][a-z0-9_]*`, 'g');
-            for (const achado of new Set(textoDeCodigo(arquivo).match(padrao) ?? [])) {
-              achados.push({
-                modulo: ctx.idPasta,
-                mensagem: `${arquivo.rel}: referencia a tabela de outro modulo ("${achado}") — o dado alheio vem pela api/ dele`,
-              });
-            }
-          }
+          for (const outro of alheios) achados.push(...achadosDeReferenciaAlheia(ctx, arquivo, outro));
         }
       }
       return achados;

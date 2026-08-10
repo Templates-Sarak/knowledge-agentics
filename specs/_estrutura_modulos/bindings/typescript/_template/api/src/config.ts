@@ -23,7 +23,12 @@ export interface ConfigSeguranca {
 export interface Manifesto {
   id: string;
   nome: string;
+  versao: string;
+  papel: string;
   rotaBase: string;
+  rotaWeb: string | null;
+  navegacao: { label: string; icone: string; ordem: number } | null;
+  exportaResumo: boolean;
   dados: { schema: string; prefixo: string; tabelas: string[] };
   envRequerido: string[];
   portas: string[];

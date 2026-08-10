@@ -289,6 +289,22 @@ function modoKitSeAplica(ctx) {
   return ctx.manifesto?.ui?.modo === 'kit' && temArquivoEm(ctx, 'web/');
 }
 
+/** O laco de `alvo` isolado do de `import-lateral.verificar` — mesma tecnica das outras familias,
+ * para o aninhamento caber no limiar que esta propria regra cobra do codigo do usuario (04-regras.md §4.7). */
+function achadosDeImportesDoArquivo(ctx, arquivo, ids) {
+  const achados = [];
+  for (const alvo of importesDe(arquivo)) {
+    const vizinho = ehPacoteDeModulo(alvo, ids.filter((id) => id !== ctx.idPasta));
+    if (vizinho !== null) {
+      achados.push({ modulo: ctx.idPasta, mensagem: `${arquivo.rel}: importa o modulo "${vizinho}" ("${alvo}")` });
+    }
+    if (saiDoModulo(arquivo.rel, alvo)) {
+      achados.push({ modulo: ctx.idPasta, mensagem: `${arquivo.rel}: caminho relativo sai da pasta do modulo ("${alvo}")` });
+    }
+  }
+  return achados;
+}
+
 export default [
   {
     id: 'import-lateral',
@@ -299,15 +315,7 @@ export default [
       const achados = [];
       for (const ctx of contextos) {
         for (const arquivo of ctx.codigo) {
-          for (const alvo of importesDe(arquivo)) {
-            const vizinho = ehPacoteDeModulo(alvo, ids.filter((id) => id !== ctx.idPasta));
-            if (vizinho !== null) {
-              achados.push({ modulo: ctx.idPasta, mensagem: `${arquivo.rel}: importa o modulo "${vizinho}" ("${alvo}")` });
-            }
-            if (saiDoModulo(arquivo.rel, alvo)) {
-              achados.push({ modulo: ctx.idPasta, mensagem: `${arquivo.rel}: caminho relativo sai da pasta do modulo ("${alvo}")` });
-            }
-          }
+          achados.push(...achadosDeImportesDoArquivo(ctx, arquivo, ids));
         }
       }
       return achados;

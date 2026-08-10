@@ -6,12 +6,12 @@
 import parserTs from '@typescript-eslint/parser';
 
 export default [
-  { ignores: ['node_modules/**', 'dist/**', 'build/**', 'coverage/**', 'gerados/**', '.venv/**', '.agents/**', '.githooks/**', 'ferramentas/**'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/coverage/**', '**/gerados/**', '**/.venv/**', '**/.agents/**', '**/.githooks/**', '**/ferramentas/**'] },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'],
     languageOptions: {
       parser: parserTs,
-      ecmaVersion: 2023,
+      ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
     },

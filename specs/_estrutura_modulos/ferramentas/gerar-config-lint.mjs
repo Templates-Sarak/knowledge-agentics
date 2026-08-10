@@ -68,7 +68,11 @@ const CABECALHO = [
 
 /** Flat config do ESLint. TypeScript precisa de parser proprio; JavaScript, so de JSX ligado. */
 function eslintConfig(binding) {
-  const ignores = IGNORADOS.map((p) => `'${p}/**'`).join(', ');
+  // `'${p}/**'` (sem o `**/` na frente) ancora na RAIZ do config — so casa `<raiz>/dist/**`, nunca
+  // `modulos/*/web/dist/**`. Medido (plan-2.md Bloco L.2): `npm run build` gera bundle minificado em
+  // `modulos/*/web/dist/`, e sem o prefixo o eslint lintava esse bundle — 419 problemas, 1 real.
+  // `.prettierignore` ja usava semantica gitignore (casa em qualquer nivel); so o eslint tinha o furo.
+  const ignores = IGNORADOS.map((p) => `'**/${p}/**'`).join(', ');
   const partes = [CABECALHO, ''];
 
   if (binding === 'typescript') {
@@ -82,7 +86,11 @@ function eslintConfig(binding) {
     : "    files: ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'],");
   partes.push('    languageOptions: {');
   if (binding === 'typescript') partes.push('      parser: parserTs,');
-  partes.push('      ecmaVersion: 2023,');
+  // 'latest', nao um ano fixo: o molde JS usa `import ... with { type: 'json' }` (atributos de
+  // import) em web/src/pages/*.jsx e tests/web/*.test.jsx — medido (Bloco L), `ecmaVersion: 2023`
+  // fazia o espree (parser default, sem @typescript-eslint) rejeitar essa sintaxe com "Unexpected
+  // token with". O binding TypeScript nao pegava o mesmo erro porque usa outro parser.
+  partes.push("      ecmaVersion: 'latest',");
   partes.push("      sourceType: 'module',");
   partes.push('      parserOptions: { ecmaFeatures: { jsx: true } },');
   partes.push('    },');
@@ -118,7 +126,10 @@ function ruffConfig() {
     '',
     'line-length = 110',
     'target-version = "py311"',
-    `exclude = [${IGNORADOS.filter((p) => p.startsWith('.') || p === 'ferramentas').map((p) => `"${p}"`).join(', ')}]`,
+    // MESMA lista do eslint (IGNORADOS inteiro), sem filtro — uma fonte unica produzindo duas listas
+    // diferentes e a fonte unica desmentida (medido, Bloco L.2): o filtro anterior (so `.` ou
+    // `ferramentas`) deixava `dist`/`build`/`coverage`/`gerados`/`node_modules` de fora do ruff.
+    `exclude = [${IGNORADOS.map((p) => `"${p}"`).join(', ')}]`,
     '',
     '[lint]',
     'select = ["E", "F", "W", "B", "C90", "T20", "ANN", "RET", "SIM", "PL"]',

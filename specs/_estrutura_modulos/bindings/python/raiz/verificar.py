@@ -142,8 +142,12 @@ def _relatorio_degenerado(pasta_modulo: Path) -> str | None:
 
 def _comando_de_cobertura(minima: int | None) -> list[str]:
     comando = [
-        "pytest", "-q", "--cov=core", "--cov=api",
-        "--cov-report=term", "--cov-report=lcov:relatorios/cobertura/lcov.info",
+        "pytest",
+        "-q",
+        "--cov=core",
+        "--cov=api",
+        "--cov-report=term",
+        "--cov-report=lcov:relatorios/cobertura/lcov.info",
         "--junitxml=relatorios/junit.xml",
     ]
     if minima is not None:

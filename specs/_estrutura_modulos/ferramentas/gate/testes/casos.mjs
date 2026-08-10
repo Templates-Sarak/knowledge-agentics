@@ -937,12 +937,67 @@ export const CASOS = [
   },
   {
     regra: 'saida-crua',
-    descricao: 'devolve o registro cru na resposta',
+    descricao: 'devolve o registro cru na resposta (metade MAPEADOR, vocabulario fechado)',
     // As duas metades do padrao, uma por sintaxe: `json(registro)` no lado Express, e o `return`
     // direto do nome do lado do BANCO no lado FastAPI, que nao passa por `.json(...)`.
     mutar: (m) => m.acrescentarEm('rotas', {
       js: '\nexport const cru = (res, registro) => res.json(registro);\n',
       py: '\n\ndef cru(linha):\n    return linha\n',
+    }),
+  },
+  {
+    regra: 'saida-crua',
+    descricao: 'devolve "manifesto" cru — a metade BORDA, sem lista de isentos (plan-2.md N.1)',
+    // Trava o defeito que a N.1 mediu de verdade: `res.json(<identificador>)` acusa SEMPRE, sem
+    // vocabulario. Se a borda regredir para o vocabulario fechado antigo, "manifesto" volta a
+    // escapar e este caso reprova.
+    mutar: (m) => m.acrescentarEm('rotas', {
+      js: '\nexport const meta2 = (res, manifesto) => res.json(manifesto);\n',
+    }),
+  },
+  {
+    regra: 'saida-crua',
+    descricao: 'Python: return <acesso.pontilhado> DENTRO de handler roteado (a borda do FastAPI)',
+    // Python nao tem `.json(...)`: a borda E o `return` do handler. So conta DENTRO de uma funcao
+    // decorada com `@router.<verbo>` — e por isso o trecho inclui o decorator, nao so a linha.
+    // `contrato-sincronizado` e co-achado LEGITIMO: a rota sintetica "/sonda-meta" nao existe no
+    // openapi.yaml de proposito — o caso testa `saida-crua`, nao `contrato-sincronizado`.
+    tambem: ['contrato-sincronizado'],
+    mutar: (m) => m.acrescentarEm('rotas', {
+      py: '\n\n@router.get("/sonda-meta")\nasync def sonda_meta():\n    return config.manifesto\n',
+    }),
+  },
+  {
+    regra: 'saida-crua',
+    descricao: 'return "linha" sem chamada, nos TRES bindings — prova que a metade MAPEADOR nao regrediu',
+    // O padrao do mapeador (`return (linha|linhas|row|rows)$`) nao muda com a N.1. Trava isso nos
+    // tres bindings, nao so no Python que o caso acima ja cobre.
+    mutar: (m) => m.acrescentarEm('rotas', {
+      js: '\nexport function outraRota(linha) {\n  return linha\n}\n',
+      py: '\n\ndef outra_rota(linha):\n    return linha\n',
+    }),
+  },
+  {
+    regra: 'log',
+    descricao: 'saida-crua CALA: objeto literal e chamada de projecao nao sao "cru" (chamariz de log)',
+    // `res.json({ total })` e `res.json(paraContrato(x))` NUNCA casam o padrao da borda — o proximo
+    // caractere depois do identificador nao e `)`. O chamariz (`console.log`, regra `log`) prova que
+    // saida-crua ficou muda: se a borda regredir para aceitar chamada/objeto, este id aparece
+    // NAO DECLARADO e o caso reprova.
+    mutar: (m) => m.acrescentarEm('rotas', {
+      js: '\nexport const chamarizObjeto = (res) => {\n  console.log("x");\n'
+        + '  res.json({ total: 1 });\n  return res.json(paraContrato({}));\n};\n',
+    }),
+  },
+  {
+    regra: 'log',
+    descricao: 'Python: saida-crua CALA fora de handler roteado e em chamada (chamariz de log)',
+    // `return router` (fim de `criar_rotas`, MESMO recuo do ultimo decorator) e `return
+    // para_contrato(...)` (chamada, nao identificador puro) sao os dois casos que a formulacao por
+    // "qualquer return" acusava errado e a formulacao por indentacao/decorator cala corretamente.
+    // Ambos ja existem no molde conforme; o chamariz aqui e so para o caso ter um id esperado.
+    mutar: (m) => m.acrescentarEm('rotas', {
+      py: '\n\ndef _fora_de_handler():\n    print("x")\n    return None\n',
     }),
   },
 

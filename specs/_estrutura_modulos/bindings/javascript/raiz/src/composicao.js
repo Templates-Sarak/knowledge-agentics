@@ -161,7 +161,9 @@ export async function montarSistema(raiz) {
 function envObrigatoriaDaRaiz(chave) {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
-    throw new Error(`[composicao] variavel obrigatoria ausente: ${chave} (declare em projeto.json:envRequerido)`);
+    throw new Error(
+      `[composicao] variavel obrigatoria ausente: ${chave} (declare em projeto.json:envRequerido)`,
+    );
   }
   return valor;
 }
@@ -242,7 +244,8 @@ function rodarAutoteste() {
 // CLI — so quando executado diretamente (`node src/composicao.js`), nunca quando importado por teste.
 // ================================================================================================
 
-const ehExecucaoDireta = process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
+const ehExecucaoDireta =
+  process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
 
 if (ehExecucaoDireta) {
   if (process.argv.includes('--autoteste')) {

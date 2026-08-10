@@ -14,7 +14,7 @@ from fastapi import APIRouter, Request
 from core.dominio import ErroDeValidacao, Registro, montar_registro
 from core.portas import DependenciasModulo
 from .erros import ErroApi
-from .mapeadores import para_colecao, para_contrato
+from .mapeadores import para_colecao, para_contrato, para_meta
 from .middlewares import exigir_permissao
 
 _CAMPOS_PERMITIDOS = {"titulo", "status"}
@@ -65,7 +65,7 @@ def criar_rotas(deps: DependenciasModulo, config: Any) -> APIRouter:
 
     @router.get("/meta")
     async def meta() -> dict[str, Any]:
-        return config.manifesto
+        return para_meta(config.manifesto)
 
     @router.get("/resumo")
     async def resumo() -> dict[str, Any]:

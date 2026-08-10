@@ -153,6 +153,48 @@ function rodar(script, argumentos, raizProjeto) {
   });
 }
 
+/**
+ * O entrypoint JS do `npm` pelo campo `bin` de `node_modules/npm/package.json`, ao lado do `node`
+ * atual — nunca pelo `PATH`. Mesma técnica de `ci-dependencias.mjs:entrypointDoNpm` (que por sua vez
+ * cita `verificar-commit.mjs:entrypointDoNpm`); copiada, não importada — cada ferramenta de
+ * `ferramentas/` roda isolada, e um `import` cruzado entre elas viraria dependência que a árvore
+ * vendorizada num projeto gerado não garante resolver na mesma ordem.
+ */
+function entrypointDoNpm() {
+  const raizNode = dirname(process.execPath);
+  for (const candidato of [raizNode, join(raizNode, '..', 'lib')]) {
+    const pasta = join(candidato, 'node_modules', 'npm');
+    try {
+      const { bin } = JSON.parse(readFileSync(join(pasta, 'package.json'), 'utf8'));
+      const relativo = typeof bin === 'string' ? bin : bin?.npm;
+      const alvo = relativo && join(pasta, relativo);
+      if (alvo && existsSync(alvo)) return alvo;
+    } catch {
+      // candidato seguinte
+    }
+  }
+  return null;
+}
+
+/**
+ * `npm install` de novo, DEPOIS do módulo entrar no workspace. Sem isto, as dependências que o
+ * `package.json` do módulo novo declara (`react`, `@testing-library/react`, `@vitejs/plugin-react`,
+ * ...) nunca são baixadas — `npm install` só liga membro de workspace na hora em que roda, e o único
+ * install documentado (`criar-projeto.mjs`, passo 1) acontece ANTES do primeiro módulo existir.
+ * Medido: `npm run verificar` de um módulo recém-criado reprovava `tipos` com ~20 erros TS2307
+ * ("Cannot find module 'react'") seguindo exatamente os passos que `criar-projeto.mjs` imprime.
+ * Só TS/JS: o binding Python não tem manifesto de dependência por módulo (venv único da raiz).
+ */
+function instalarDependencias(raizProjeto, binding) {
+  if (binding === 'python') return;
+  const entrada = entrypointDoNpm();
+  if (entrada === null) abortar('npm nao encontrado ao lado do node atual — nao foi possivel instalar as dependencias do modulo novo');
+  process.stdout.write(execFileSync(process.execPath, [entrada, 'install', '--prefer-offline', '--no-audit', '--no-fund'], {
+    encoding: 'utf8',
+    cwd: raizProjeto,
+  }));
+}
+
 function validarOpcoes(opcoes) {
   if (opcoes.id === undefined) abortar('uso: criar-modulo.mjs <id> [--binding b] [--papel p] [--sem-artefato]');
   if (!/^[a-z][a-z0-9-]*$/.test(opcoes.id)) abortar(`id "${opcoes.id}" invalido — use kebab-case minusculo`);
@@ -199,6 +241,8 @@ function finalizar(opcoes, raizProjeto) {
   // primeiro modulo, com early-return se o arquivo ja existisse) nao fazia — medido: chave do
   // segundo modulo nunca chegava ao `.env` real por esse caminho.
   process.stdout.write(rodar('sincronizar-env.mjs', [], raizProjeto));
+  process.stdout.write('instalando dependencias do modulo novo...\n');
+  instalarDependencias(raizProjeto, opcoes.binding);
   process.stdout.write('validando...\n');
   try {
     process.stdout.write(rodar('gate/validar.mjs', [join('modulos', opcoes.id)], raizProjeto));

@@ -70,6 +70,75 @@ const VERBOS_PROIBIDOS = new Set([
   'salvar', 'gravar', 'alterar', 'cadastrar', 'inserir', 'enviar', 'gerar',
 ]);
 
+/**
+ * `saida-crua` (plan-2.md N.1) — duas metades, duas âncoras. Uma primeira formulação invertia as
+ * DUAS ("qualquer identificador em `return`, em qualquer lugar") e falhou o próprio critério de
+ * reversão do bloco: medida contra o molde de referência SEM MUTAÇÃO NENHUMA, produziu 14
+ * identificadores exigindo isenção — muito acima do teto de ~6. A causa é a âncora, não o raio:
+ * `return <id>` sem escopo casa qualquer função que devolve uma variável, não só resposta HTTP.
+ *
+ * MAPEADOR — vocabulário fechado, INTACTO desde antes do N.1. Nunca teve queixa; não muda.
+ */
+const PADRAO_MAPEADOR_RETURN = /return\s+(linha|linhas|row|rows)\s*$/;
+
+/**
+ * BORDA, TS/JS — `.json(<identificador>)` acusa SEMPRE, sem lista de isentos. Seguro por
+ * construção: só existe onde uma resposta HTTP está de fato sendo montada, e a captura exige um
+ * identificador PURO — `res.json({ total })` (objeto literal) e `res.json(paraContrato(x))`
+ * (chamada de projeção) não casam porque o próximo caractere não é `)`.
+ */
+const PADRAO_BORDA_JSON = /\.json\(\s*([A-Za-z_]\w*)\s*\)/;
+
+/** BORDA, Python — só dentro de handler decorado (`@router.<verbo>`). Python não tem `.json(...)`:
+ * a borda É o `return` do handler, e só a indentação separa "dentro do handler" de "fora dele"
+ * (`return router`, ao fim de `criar_rotas`, está no MESMO recuo do decorator — precisa calar). */
+const PADRAO_DECORATOR_ROUTER = /^(\s*)@router\.(get|post|put|patch|delete)\(/;
+const PADRAO_RETURN_IDENTIFICADOR = /^\s*return\s+([A-Za-z_][\w.]*)\s*$/;
+
+function achadosDeBordaPython(arquivo) {
+  const linhas = arquivo.linhasCodigo;
+  const achados = [];
+  for (let i = 0; i < linhas.length; i += 1) {
+    const decorador = PADRAO_DECORATOR_ROUTER.exec(linhas[i].texto);
+    if (decorador === null) continue;
+    const recuoDecorador = decorador[1].length;
+    // a linha seguinte nao-branca e a assinatura (`async def ...:`), no MESMO recuo do decorator —
+    // o corpo do handler so comeca depois dela.
+    let inicioCorpo = i + 1;
+    while (inicioCorpo < linhas.length && linhas[inicioCorpo].texto.trim() === '') inicioCorpo += 1;
+    inicioCorpo += 1;
+    for (let j = inicioCorpo; j < linhas.length; j += 1) {
+      const { numero, texto } = linhas[j];
+      if (texto.trim() === '') continue;
+      const recuo = texto.length - texto.trimStart().length;
+      if (recuo <= recuoDecorador) break; // dedent: saiu do corpo do handler
+      if (PADRAO_MAPEADOR_RETURN.test(texto)) continue; // ja contado pelo mapeador, nao duplicar
+      const retorno = PADRAO_RETURN_IDENTIFICADOR.exec(texto);
+      if (retorno === null) continue;
+      achados.push(`${arquivo.rel}:${numero}: devolve "${retorno[1]}" cru na resposta — monte a `
+        + 'saida no mapeador, por allowlist (objeto literal ou chamada de projecao)');
+    }
+  }
+  return achados;
+}
+
+function achadosSaidaCruaDoArquivo(arquivo) {
+  const achados = [];
+  for (const { numero, texto } of arquivo.linhasCodigo) {
+    const borda = PADRAO_BORDA_JSON.exec(texto);
+    if (borda !== null) {
+      achados.push(`${arquivo.rel}:${numero}: devolve "${borda[1]}" cru na resposta — monte a `
+        + 'saida no mapeador, por allowlist (objeto literal ou chamada de projecao)');
+      continue;
+    }
+    if (PADRAO_MAPEADOR_RETURN.test(texto)) {
+      achados.push(`${arquivo.rel}:${numero}: devolve registro cru — monte a saida no mapeador, por allowlist`);
+    }
+  }
+  if (arquivo.rel.endsWith('.py')) achados.push(...achadosDeBordaPython(arquivo));
+  return achados;
+}
+
 /** Rotas registradas no código, em qualquer binding. Normaliza `:hash` e `{hash}` para `{}`. */
 function rotasDoCodigo(ctx) {
   const padroes = [
@@ -262,21 +331,29 @@ function regioesDeProjecao(conteudo) {
  * Aqui, e não em cada regra: `divergenciasDaProjecao` já tinha o `vistos` dela, e as outras duas
  * teriam de ganhar cópias — três guardas para um dado que nasce duplicado num lugar só.
  */
+/** O laco de `achado` isolado do de `chavesDaProjecao` — so por isso o aninhamento cabe no limiar
+ * que esta propria regra cobra do codigo do usuario (04-regras.md §4.7). */
+function chavesDaRegiao(arquivo, regiao, vistos) {
+  const chaves = [];
+  // Chave apos `{` ou `,` — nao apenas no inicio da linha. Objeto escrito numa linha so
+  // (`{ hash: x, criado_em: y }`) escapava inteiro quando a extracao exigia inicio de linha.
+  // A regiao COMECA na `{`, entao a primeira chave tem o mesmo delimitador que as demais.
+  for (const achado of regiao.matchAll(/[{,]\s*["']?([A-Za-z_]\w*)["']?\s*:/g)) {
+    const par = `${arquivo.rel}|${achado[1]}`;
+    if (vistos.has(par)) continue;
+    vistos.add(par);
+    chaves.push({ chave: achado[1], arquivo: arquivo.rel });
+  }
+  return chaves;
+}
+
 function chavesDaProjecao(ctx) {
   const vistos = new Set();
   const chaves = [];
   for (const arquivo of ctx.codigo) {
     if (arquivo.eTeste || !/mapeador/i.test(arquivo.rel)) continue;
     for (const regiao of regioesDeProjecao(textoDeCodigo(arquivo))) {
-      // Chave apos `{` ou `,` — nao apenas no inicio da linha. Objeto escrito numa linha so
-      // (`{ hash: x, criado_em: y }`) escapava inteiro quando a extracao exigia inicio de linha.
-      // A regiao COMECA na `{`, entao a primeira chave tem o mesmo delimitador que as demais.
-      for (const achado of regiao.matchAll(/[{,]\s*["']?([A-Za-z_]\w*)["']?\s*:/g)) {
-        const par = `${arquivo.rel}|${achado[1]}`;
-        if (vistos.has(par)) continue;
-        vistos.add(par);
-        chaves.push({ chave: achado[1], arquivo: arquivo.rel });
-      }
+      chaves.push(...chavesDaRegiao(arquivo, regiao, vistos));
     }
   }
   return chaves;
@@ -300,6 +377,18 @@ function divergenciasDaProjecao(projetadas, declaradas) {
     if (declaradas.has(chave) || vistos.has(chave)) continue;
     vistos.add(chave);
     achados.push(`${arquivo}: campo "${chave}" e projetado na saida e NAO esta declarado em nenhum schema de RESPOSTA do openapi.yaml`);
+  }
+  return achados;
+}
+
+/** O laco de `campo` isolado do de `sensivel-em-saida.verificar` — mesma tecnica de
+ * `chavesDaRegiao`, para o aninhamento caber no limiar (04-regras.md §4.7). */
+function achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis) {
+  const achados = [];
+  for (const campo of sensiveis) {
+    if (new RegExp(`\\b${campo}\\b`).test(texto)) {
+      achados.push(`${arquivo.rel}:${numero}: campo sensivel "${campo}" citado em chamada de log`);
+    }
   }
   return achados;
 }
@@ -452,11 +541,7 @@ export default [
         if (arquivo.eTeste) continue;
         for (const { numero, texto } of arquivo.linhasCodigo) {
           if (!/\b(logger|log)\.(debug|info|warn|error)\(/.test(texto)) continue;
-          for (const campo of sensiveis) {
-            if (new RegExp(`\\b${campo}\\b`).test(texto)) {
-              achados.push(`${arquivo.rel}:${numero}: campo sensivel "${campo}" citado em chamada de log`);
-            }
-          }
+          achados.push(...achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis));
         }
       }
       return achados;
@@ -523,18 +608,10 @@ export default [
     nivel: 'erro',
     escopo: 'modulo',
     verificar(ctx) {
-      // `linha`/`row` sao os nomes do lado do BANCO no mapeador — devolve-los e vazamento direto.
-      // `registro` e o tipo de DOMINIO: circula entre camadas legitimamente e so vira resposta
-      // depois da projecao, entao so acusamos quando ele vai cru para o corpo da resposta.
-      const padrao = /\.json\(\s*(registro|registros|linha|linhas|row|rows|dados)\s*\)|return\s+(linha|linhas|row|rows)\s*$/;
       const achados = [];
       for (const arquivo of ctx.codigo) {
         if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          if (padrao.test(texto)) {
-            achados.push(`${arquivo.rel}:${numero}: devolve registro cru — monte a saida no mapeador, por allowlist`);
-          }
-        }
+        achados.push(...achadosSaidaCruaDoArquivo(arquivo));
       }
       return achados;
     },

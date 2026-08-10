@@ -53,6 +53,27 @@ export function paraContrato(registro) {
   };
 }
 
+/**
+ * manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`rotasPublicas`): o que nao
+ * esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
+ * `permissoes`, `rotasPublicas` e `camposSensiveis` nunca saem por esta rota (plan-2.md N.1).
+ *
+ * @param {{ id: string, nome: string, versao: string, papel: string, rotaBase: string,
+ *   rotaWeb: string|null, navegacao: object|null, exportaResumo: boolean }} manifesto
+ */
+export function paraMeta(manifesto) {
+  return {
+    id: manifesto.id,
+    nome: manifesto.nome,
+    versao: manifesto.versao,
+    papel: manifesto.papel,
+    rotaBase: manifesto.rotaBase,
+    rotaWeb: manifesto.rotaWeb,
+    navegacao: manifesto.navegacao,
+    exportaResumo: manifesto.exportaResumo,
+  };
+}
+
 /** Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1). */
 export function paraColecao(registros, pagina, tamanho, total) {
   return { itens: registros.map(paraContrato), pagina, tamanho, total };

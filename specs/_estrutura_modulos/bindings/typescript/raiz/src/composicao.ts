@@ -192,7 +192,9 @@ export async function montarSistema(raiz: string): Promise<Express> {
 function envObrigatoriaDaRaiz(chave: string): string {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
-    throw new Error(`[composicao] variavel obrigatoria ausente: ${chave} (declare em projeto.json:envRequerido)`);
+    throw new Error(
+      `[composicao] variavel obrigatoria ausente: ${chave} (declare em projeto.json:envRequerido)`,
+    );
   }
   return valor;
 }
@@ -249,7 +251,12 @@ function casosDeRotasUnicas(): Array<{ nome: string; modulos: ManifestoDescobert
   ];
 }
 
-function casosDeEntrypoint(): Array<{ nome: string; pasta: string; emitidoExiste: boolean; esperado: string }> {
+function casosDeEntrypoint(): Array<{
+  nome: string;
+  pasta: string;
+  emitidoExiste: boolean;
+  esperado: string;
+}> {
   return [
     {
       nome: 'emitido existe: usa dist/api/src/index.js',
@@ -302,7 +309,8 @@ function rodarAutoteste(): number {
 // CLI — so quando executado diretamente (`tsx src/composicao.ts`), nunca quando importado por teste.
 // ================================================================================================
 
-const ehExecucaoDireta = process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
+const ehExecucaoDireta =
+  process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
 
 if (ehExecucaoDireta) {
   if (process.argv.includes('--autoteste')) {

@@ -4,11 +4,11 @@
 // este arquivo existe para impedir.
 
 export default [
-  { ignores: ['node_modules/**', 'dist/**', 'build/**', 'coverage/**', 'gerados/**', '.venv/**', '.agents/**', '.githooks/**', 'ferramentas/**'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/coverage/**', '**/gerados/**', '**/.venv/**', '**/.agents/**', '**/.githooks/**', '**/ferramentas/**'] },
   {
     files: ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'],
     languageOptions: {
-      ecmaVersion: 2023,
+      ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
     },

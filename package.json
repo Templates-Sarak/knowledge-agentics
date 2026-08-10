@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "description": "Sarak Global Environment (Node Tools)",
   "private": true,
+  "scripts": {
+    "//autoteste:template": "Bloco K (plan-2.md): prova que o template gera projeto que passa na propria cadeia que ele prescreve. Gera projeto + modulo em pasta temporaria, para CADA binding (custa minutos — o python sozinho mede ~2m40s). Fora de ferramentas/ de proposito (D3): nao viaja para projeto gerado.",
+    "autoteste:template": "node specs/_estrutura_modulos/testes/autoteste-template.mjs",
+    "//autoteste:template:rapido": "So os bindings Node (typescript, javascript) — cabe em pre-commit. O python roda so na agenda (workflow), nunca aqui.",
+    "autoteste:template:rapido": "node specs/_estrutura_modulos/testes/autoteste-template.mjs --rapido"
+  },
   "dependencies": {
     "eslint": "^8.54.0",
     "prettier": "^3.1.0",

@@ -52,6 +52,23 @@ def para_contrato(registro: Registro) -> dict[str, Any]:
     }
 
 
+def para_meta(manifesto: dict[str, Any]) -> dict[str, Any]:
+    """manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`rotasPublicas`): o que
+    nao esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
+    `permissoes`, `rotasPublicas` e `camposSensiveis` nunca saem por esta rota (plan-2.md N.1).
+    """
+    return {
+        "id": manifesto["id"],
+        "nome": manifesto["nome"],
+        "versao": manifesto["versao"],
+        "papel": manifesto["papel"],
+        "rotaBase": manifesto["rotaBase"],
+        "rotaWeb": manifesto["rotaWeb"],
+        "navegacao": manifesto["navegacao"],
+        "exportaResumo": manifesto["exportaResumo"],
+    }
+
+
 def para_colecao(registros: Sequence[Registro], pagina: int, tamanho: int, total: int) -> dict[str, Any]:
     """Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1)."""
     return {

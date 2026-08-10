@@ -29,7 +29,7 @@ paths:
 
   /meta:
     get:
-      summary: Ecoa o manifesto — e por aqui que o sistema descobre o modulo
+      summary: Metadados PUBLICOS do modulo, por allowlist — nunca o manifesto inteiro (N.1)
       responses:
         '200':
           description: ok
@@ -37,6 +37,15 @@ paths:
             application/json:
               schema:
                 type: object
+                properties:
+                  id: { type: string }
+                  nome: { type: string }
+                  versao: { type: string }
+                  papel: { type: string }
+                  rotaBase: { type: string }
+                  rotaWeb: { type: [string, 'null'] }
+                  navegacao: { type: [object, 'null'] }
+                  exportaResumo: { type: boolean }
 
   /resumo:
     get:

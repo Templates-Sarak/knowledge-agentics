@@ -1,0 +1,27 @@
+name: Autoteste do template (Bloco K)
+
+# Sensor de envelhecimento da D1 (plan-2.md): prova, a cada rodada, que `criar-projeto.mjs` ainda
+# gera projeto que passa na propria cadeia que o template prescreve — gate, formato, lint, tipos,
+# testes, build, nos tres bindings. CVE novo ou breakage de major deixa este workflow vermelho,
+# NUNCA o projeto de quem ja usou o template (o template e copia, nao dependencia — ADR-005).
+#
+# So agenda + manual: o `--rapido` (so typescript/javascript) e quem cabe em pre-commit; o binding
+# python sozinho mede ~2m40s (K.1) e por isso so roda aqui, nao no pre-commit da base.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # toda segunda, 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  autoteste-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm run autoteste:template

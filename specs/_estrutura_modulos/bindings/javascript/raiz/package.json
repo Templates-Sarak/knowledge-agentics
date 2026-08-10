@@ -32,6 +32,8 @@
     "formato": "prettier --check \"**/*.{js,jsx,mjs,cjs}\"",
     "//lint": "Limiares e idiomas. A config e GERADA de ferramentas/gate/limiares.mjs — nao a edite a mao.",
     "lint": "eslint .",
+    "//build": "Constroi o front de todo modulo com web/ (vite build) — 03-operacao.md §9. Backend JS ja e o artefato (nada para compilar): `empacotar.mjs` pula esse passo sozinho (sem tsconfig.build.json, so avisa). `node ferramentas/empacotar.mjs <destino>` faz o mesmo MAIS empacota um artefato backend autossuficiente em <destino>.",
+    "build": "node ferramentas/empacotar.mjs",
     "//iniciar": "Sobe o monolito modular (specs/arquitetura/00-arquitetura.md §5): um processo, uma porta.",
     "iniciar": "node src/composicao.js",
     "//iniciar:autoteste": "Prova a UNICA decisao pura do entrypoint (verificarRotasUnicas) sem subir processo nem tocar disco.",

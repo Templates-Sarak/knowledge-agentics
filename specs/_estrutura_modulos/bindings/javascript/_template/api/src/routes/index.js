@@ -8,7 +8,7 @@ import { Router } from 'express';
 import { ErroDeValidacao, montarRegistro } from '../../../core/dominio/index.js';
 import { ErroApi } from '../erros.js';
 import { exigirPermissao } from '../middlewares/index.js';
-import { paraColecao, paraContrato } from '../mapeadores/index.js';
+import { paraColecao, paraContrato, paraMeta } from '../mapeadores/index.js';
 
 /** Paginacao validada na borda, com padrao e teto vindos de config/api.json. */
 function lerPaginacao(query, config) {
@@ -59,7 +59,7 @@ function rotasObrigatorias(router, { deps, config }) {
   });
 
   router.get('/meta', (_req, res) => {
-    res.json(manifesto);
+    res.json(paraMeta(manifesto));
   });
 
   router.get('/resumo', (_req, res, next) => {
