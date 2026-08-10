@@ -154,7 +154,7 @@ O que rodar onde é decisão de **custo**, não de importância:
 
 | Custo | Exemplos | Quando |
 |---|---|---|
-| Milissegundos (lê arquivo) | manifesto, nomenclatura, import lateral, prefixo de tabela, env | toda invocação |
+| Milissegundos (lê arquivo) | manifesto, nomenclatura, import lateral, prefixo de tabela, env, schemas de portas | toda invocação |
 | Segundos (compila/testa) | build, testes, tipos | sob demanda no local, obrigatório na entrega |
 | Dezenas de segundos | integração, scan de dependência | só no executor de entrega |
 
@@ -173,7 +173,7 @@ A fiação, coluna a coluna da tabela de custo:
 
 | Custo | Hook | O que roda | Alimentado por |
 |---|---|---|---|
-| Milissegundos + segundos | `pre-commit` | gate (`validar.mjs`) nos módulos **afetados** pelo staged, `.env.example` em dia, formato, lint | `ferramentas/afetados.mjs` sobre `git diff --cached --name-only` |
+| Milissegundos + segundos | `pre-commit` | gate (`validar.mjs`) nos módulos **afetados** pelo staged, `.env.example` em dia, schemas de portas em dia, formato, lint | `ferramentas/afetados.mjs` sobre `git diff --cached --name-only` |
 | Dezenas de segundos | `pre-push` | tipos e testes dos módulos **afetados** desde o upstream | `ferramentas/afetados.mjs --desde @{u}` (sem upstream: primeiro push do branch, verifica tudo) |
 
 A lógica de ambos os hooks mora num lugar só, `ferramentas/verificar-commit.mjs` — os arquivos

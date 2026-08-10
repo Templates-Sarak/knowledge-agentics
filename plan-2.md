@@ -973,6 +973,91 @@ cabeçalho deste plano. Os itens acima são só os do executor.
       (todas as combinações de porta×provedor×binding): a cobertura combinatorial é explicitamente do
       Bloco O, como esta linha já dizia*
 
+### S.1 — o verificador que existe e não roda
+
+> Achado do revisor, na reprodução do S: `gerar-schemas-portas.mjs --conferir` funciona — quebrado de
+> propósito (`"fila"` acrescentada ao enum de `modulo.schema.json`), ele reagia com `REPROVADO` e
+> `EXIT=1`. Mas nada da cadeia o chamava: `verificar` era `validar && validar:env && formato && lint &&
+> tipos && test`, e `grep -rn "gerar-schemas-portas"` só achava dois comentários citando o nome. A
+> decisão "impedir em vez de acusar" estava tomada e a derivação estava feita, mas sem o `--conferir` na
+> cadeia nada impedia — quem editasse `modulo.schema.json` à mão divergia em silêncio, o defeito exato
+> que o bloco existia para matar. Escopo estritamente de fiação: uma linha por binding, mais o hook —
+> nenhuma regra, nenhum schema, nenhuma ferramenta nova.
+
+- [x] **Os quatro pontos de fiação**, seguindo o precedente exato de `validar:env`/`sincronizar-env.mjs`
+      (mesma forma `--conferir`, mesmo custo, mesmo lugar na cadeia):
+      1. `bindings/typescript/raiz/package.json` — script `validar:schemas` novo, encadeado em
+         `verificar` logo depois de `validar:env`
+      2. `bindings/javascript/raiz/package.json` — idem
+      3. `bindings/python/raiz/verificar.py` — passo `("schemas de portas", ["node",
+         "ferramentas/gerar-schemas-portas.mjs", "--conferir"], None)` acrescentado logo depois de
+         `("ambiente (.env.example)", ...)`, mesmo formato (é Node nos três bindings, como o
+         `sincronizar-env` já é)
+      4. `ferramentas/verificar-commit.mjs` — nova função `rodarSchemasDePortas()`, mesma forma de
+         `rodarSincronizarEnv()` (Node direto, fora de `formatoELint()`), encadeada em `preCommit()`
+         logo depois de `rodarSincronizarEnv()`
+      Rótulo do passo em todos os quatro pontos: **"schemas de portas"** — o que ele confere, não o
+      nome do arquivo, seguindo o padrão dos rótulos vizinhos (`"env (.env.example)"`,
+      `"ambiente (.env.example)"`)
+- [x] **Documentação — onde a decisão "impedir em vez de acusar" registra o executor.**
+      `doutrina/01-modulo.md` §5.1 (onde o Bloco S registrou a decisão — não em `04-regras.md` §7.1,
+      que não tem entrada para esta classe de decisão) só afirmava a decisão e citava o comando; não
+      dizia onde ele roda. Passou a nomear os dois lugares (`validar:schemas` dentro de `verificar`,
+      `rodarSchemasDePortas()` dentro do `pre-commit`) e a chamar `sincronizar-env.mjs --conferir`
+      de precedente explícito
+      `doutrina/03-operacao.md` §7 — a tabela de custo abstrata ganhou "schemas de portas" na linha
+      "Milissegundos (lê arquivo)", ao lado de "env" (mesma classe de custo: lê arquivo, string-compara,
+      não instala nada). A tabela de fiação do §7.1 ganhou "schemas de portas em dia" na coluna "O que
+      roda" da linha `pre-commit`. **Nota de leitura:** a rodada pedia a entrada na linha "segundos" —
+      medido que o custo real é milissegundos (mesma ordem de grandeza do `sincronizar-env`, sem
+      compilar/instalar nada), e a linha de fiação do `pre-commit` já é rotulada "Milissegundos +
+      segundos" (combinada), então a entrada nova cabe sem precisar reclassificar nada. Registrado aqui
+      para o revisor corrigir se a intenção era outra
+      *Não tocado, fora do que a rodada pediu:* `03-operacao.md` §7.4 (o exemplo de fiação de CI) e a
+      contagem "11 comandos" que `ADR-008` (Bloco P) cita sobre aquele exemplo — adicionar
+      `validar:schemas` ali tornaria a contagem 12 e é uma terceira edição de doc não pedida nesta
+      rodada. Fica registrado para quem decidir se `S` reabre ou se isso é debt separada
+- [x] **CONTRAPROVA — `npm run verificar`/`python verificar.py`, os três bindings.** `"fila"`
+      acrescentada ao enum de `portas` em `modulo.schema.json`, três projetos gerados do zero
+      (`criar-projeto.mjs`, escopo `s1`), `.env` sincronizado uma vez (passo manual de projeto recém-nascido,
+      não relacionado a este achado). Os três reprovam, nomeando o arquivo divergente, e o passo
+      **para a cadeia** antes de formato/lint/tipos/test:
+      ```
+      TS  → validar:schemas
+        gerar-schemas-portas: REPROVADO — divergente(s): modulo.schema.json (portas.items.enum).
+          rode: node ferramentas/gerar-schemas-portas.mjs
+      JS  → validar:schemas  (mensagem idêntica à TS)
+      PY  → verificar.py
+        gerar-schemas-portas: REPROVADO — divergente(s): modulo.schema.json (portas.items.enum).
+          rode: node ferramentas/gerar-schemas-portas.mjs
+          FALHA schemas de portas
+        (verificar.py roda a lista inteira, não para no primeiro — reprovou 2 passos: `schemas de
+        portas` e `tipos (mypy)`, este último por `mypy` não instalado no ambiente de teste, sem
+        relação com o achado)
+      ```
+      Restaurado o schema (enum original), os três voltam a `ok`/`OK — os dois schemas em dia com
+      vocabulario-portas.mjs`. Os três projetos de teste foram gerados no scratchpad e descartados —
+      não tocaram a árvore fonte
+- [x] **CONTRAPROVA — pre-commit.** Mesmo schema quebrado, `node ferramentas/verificar-commit.mjs
+      pre-commit` (o comando que `.githooks/pre-commit` chama) num projeto TS recém-gerado:
+      ```
+      gerar-schemas-portas: REPROVADO — divergente(s): modulo.schema.json (portas.items.enum).
+        rode: node ferramentas/gerar-schemas-portas.mjs
+        ! schemas de portas: saiu com codigo 1
+        FALHA schemas de portas
+      ...
+      verificar-commit: REPROVADO — 3 passo(s)
+      ```
+      `EXIT=1` confirmado (formato/lint também reprovaram, por prettier/eslint não instalados no
+      ambiente de teste — sem relação com o achado; o ponto sob prova, `schemas de portas`, reprova
+      corretamente ANTES desses dois). Restaurado o schema, `node ferramentas/verificar-commit.mjs
+      pre-commit` volta a mostrar `ok schemas de portas` e `EXIT=0` para este passo
+- [x] **Autoteste inalterado**: `122/122 · 122/122 · 119/119`, 74 regras — confirmado antes e depois
+      de todas as edições de fiação. Nenhum caso de `casos.mjs` tocado, nenhuma regra tocada
+- [x] **Bloco K verde nos 3 bindings** (`node testes/autoteste-template.mjs`, sem `--rapido`): TS e JS
+      11/11 passos, Python 11/11 passos — incluindo `verificar` já carregando o passo novo em todas as
+      quatro combinações de módulo geradas
+
 ---
 
 ## Bloco O — a ferramenta de entrada não mente verde

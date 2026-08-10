@@ -294,7 +294,7 @@ function formatoELint() {
 function preCommit() {
   const resultado = calcularAfetadosDe(caminhosStaged());
   escrever('[pre-commit] gate nos modulos afetados\n');
-  const passos = [() => rodarGate(resultado), () => rodarSincronizarEnv()];
+  const passos = [() => rodarGate(resultado), () => rodarSincronizarEnv(), () => rodarSchemasDePortas()];
   passos.push(...formatoELint());
   return concluir(passos);
 }
@@ -302,6 +302,12 @@ function preCommit() {
 /** `sincronizar-env.mjs` é sempre Node, nos dois bindings — não passa por `formatoELint`. */
 function rodarSincronizarEnv() {
   return rodar('env (.env.example)', NODE, [join('ferramentas', 'sincronizar-env.mjs'), '--conferir']);
+}
+
+/** `gerar-schemas-portas.mjs` é sempre Node, nos dois bindings — mesma forma de `rodarSincronizarEnv`,
+ * não passa por `formatoELint`. */
+function rodarSchemasDePortas() {
+  return rodar('schemas de portas', NODE, [join('ferramentas', 'gerar-schemas-portas.mjs'), '--conferir']);
 }
 
 /** Tipos e testes de UM módulo Node, escopados pelo workspace — nunca o repositório inteiro. */

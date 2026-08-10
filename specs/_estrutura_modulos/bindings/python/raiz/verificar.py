@@ -234,6 +234,7 @@ def main() -> int:
     passos: list[tuple[str, list[str], Path | None]] = [
         ("conformidade (gate)", ["node", "ferramentas/gate/validar.mjs", "--todos"], None),
         ("ambiente (.env.example)", ["node", "ferramentas/sincronizar-env.mjs", "--conferir"], None),
+        ("schemas de portas", ["node", "ferramentas/gerar-schemas-portas.mjs", "--conferir"], None),
         # `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.
         ("formato (ruff format)", ["ruff", "format", "--check", "."], None),
         ("limiares (ruff)", ["ruff", "check", "."], None),

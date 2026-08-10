@@ -13,11 +13,12 @@
   "scripts": {
     "validar": "node ferramentas/gate/validar.mjs --todos",
     "validar:env": "node ferramentas/sincronizar-env.mjs --conferir",
+    "validar:schemas": "node ferramentas/gerar-schemas-portas.mjs --conferir",
     "criar-modulo": "node ferramentas/criar-modulo.mjs",
     "test": "npm run test --workspaces --if-present",
     "//tipos": "raiz (fiacao e packages) MAIS cada modulo pelo jsconfig proprio dele — modulo que so passa no type-check junto do resto nao esta pronto para extracao. Em JS o contrato de tipo e JSDoc, cobrado por `checkJs`.",
     "tipos": "tsc --noEmit -p jsconfig.json && npm run tipos --workspaces --if-present",
-    "verificar": "npm run validar && npm run validar:env && npm run formato && npm run lint && npm run tipos && npm test",
+    "verificar": "npm run validar && npm run validar:env && npm run validar:schemas && npm run formato && npm run lint && npm run tipos && npm test",
     "//ci:contrato": "So CI: compara o contrato/openapi.yaml com o commit anterior e nomeia quem quebra. Custa git + comparar dois estados, por isso NAO entra no verificar local nem no pre-commit.",
     "ci:contrato": "node ferramentas/contrato-compativel.mjs",
     "//ci:cobertura": "So CI (03-operacao.md §7): roda cobertura de CADA modulo com relatorio lcov+junit, e reprova se algum vier ausente/degenerado. Custa dezenas de segundos por modulo — por isso NAO entra no `verificar` local nem no pre-commit/pre-push.",

@@ -212,10 +212,15 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 `new Date()` e `Math.random()` voltam para dentro do domínio e o motor deixa de ser reproduzível.
 
 Fonte NORMATIVA do vocabulário: `ferramentas/gate/vocabulario-portas.mjs`, na base — os dois schemas do
-gate são GERADOS dela (`ferramentas/gerar-schemas-portas.mjs --conferir`), e cada `packages/portas/index.*`
-por binding a espelha à mão (plan-2.md Bloco S). `fila` SAIU do catálogo: arrasta retry, *dead-letter*,
-idempotência e ordem de entrega — desenho de TOPOLOGIA, que [[00-arquitetura]] §5 diz que o template não
-escolhe. Volta no dia em que houver um projeto com a decisão tomada, e volta como ADR.
+gate são GERADOS dela, e cada `packages/portas/index.*` por binding a espelha à mão (plan-2.md Bloco S).
+A decisão foi **impedir a divergência em vez de acusá-la** — nenhuma regra de raiz compara os três
+lugares; quem impede é `ferramentas/gerar-schemas-portas.mjs --conferir`, que roda dentro do `verificar`
+de cada binding (script `validar:schemas`, logo depois de `validar:env`) e do `pre-commit`
+(`ferramentas/verificar-commit.mjs`, plan-2.md Bloco S.1) — o mesmo lugar e a mesma forma de
+`sincronizar-env.mjs --conferir`, o precedente que este mecanismo segue. `fila` SAIU do catálogo: arrasta
+retry, *dead-letter*, idempotência e ordem de entrega — desenho de TOPOLOGIA, que [[00-arquitetura]] §5
+diz que o template não escolhe. Volta no dia em que houver um projeto com a decisão tomada, e volta como
+ADR.
 
 ## 5.2 Regras
 
