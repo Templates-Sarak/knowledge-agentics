@@ -99,9 +99,9 @@ está o comando que o imprime.
 |---|---|---|
 | **Gate** | **74 regras**, escopos `modulo` · `global` · `raiz`, 7 famílias. Estático, zero dependência, **nunca executa** — por isso viaja dentro do módulo extraído | `node ferramentas/gate/validar.mjs --todos` |
 | **Autoteste do gate** | prova o verificador: o molde conforme dá **zero** erro, e cada mutação produz **exatamente** o id esperado. Id extra reprova | `node ferramentas/gate/testes/executar.mjs --binding <b>` |
-| **Coerência do gerado** | `.env.example` × manifestos; config do linter derivada de `limiares.mjs`, byte a byte | `--conferir` nas duas ferramentas |
+| **Coerência do gerado** | `.env.example` × manifestos; schemas de portas; config do linter derivada de `limiares.mjs`, byte a byte | `--conferir` nas três ferramentas |
 | **Linguagem** | formatador · linter (config **gerada** da lei) · tipos · testes por módulo | `npm run verificar` |
-| **A cadeia** | gate → env → formato → lint → tipos → testes. **Ferramenta ausente REPROVA** | idem |
+| **A cadeia** | gate → env → schemas → formato → lint → tipos → testes. **Ferramenta ausente REPROVA** | idem |
 | **Seleção** | o que mudou → quais módulos reverificar. **Erra para mais, nunca para menos** | `node ferramentas/afetados.mjs` |
 | **Hooks de git** | `pre-commit` (segundos) · `pre-push` (dezenas de segundos) | `git config core.hooksPath .githooks` |
 | **Hooks do agente** | cinco, entregues pelo plugin `sarak`, guardando o Claude Code | `hooks/README.md` |
@@ -195,7 +195,7 @@ regra não pode morar num lugar que se perde ao trocar de provedor. O que ele tr
 acoplamento** — *exit code* e *relatório legível por máquina*:
 
 ```sh
-npm run validar · validar:env · formato · lint · tipos · test
+npm run validar · validar:env · validar:schemas · formato · lint · tipos · test
 node ferramentas/afetados.mjs        # seleção do que reverificar
 npm run ci:contrato                  # breaking change vs baseline git
 npm run ci:cobertura                 # lcov + JUnit
@@ -326,6 +326,7 @@ esconde a própria lacuna é pior que uma lacuna conhecida.**
 
 | Pergunta | Documento |
 |---|---|
+| **O mapa — qual seção responde a qual pergunta, sem abrir a lei inteira** | `doutrina/README.md` |
 | Como um módulo é por dentro? Como crio? Como altero? | `doutrina/01-modulo.md` |
 | Qual a forma da API, do erro, do schema, da migration? | `doutrina/02-contrato-e-dados.md` |
 | Segurança, log, erro, teste, extração, camadas de custo | `doutrina/03-operacao.md` |
@@ -335,4 +336,4 @@ esconde a própria lacuna é pior que uma lacuna conhecida.**
 | O contrato do gate (argumentos, exit code, `--json`) | `ferramentas/gate/README.md` |
 | Os hooks do agente e a política deles | `hooks/README.md` (na base) |
 
-No projeto gerado, tudo de `doutrina/` está em `specs/arquitetura/`.
+No projeto gerado, tudo de `doutrina/` está em `specs/arquitetura/` — inclusive o mapa (`README.md`).

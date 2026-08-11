@@ -120,10 +120,12 @@ revisor VERIFICA diretamente (não confia no resumo do executor)
 usuário commita
       ↓
 periodicamente: spec-atualizar sintetiza as plans 🟢 de plan/executadas/ nas specs
-fixas (adr/ · arquitetura/ · specs/) e as marca ⚪ — nenhuma plan é apagada
+fixas (adr/ · arquitetura/ · specs/) e REMOVE a plan (arquivo + linha do índice) —
+a spec fixa passa a ser a única fonte viva dessa verdade
 ```
 
-**`specs/plan/`** é a fila **ativa**; **`specs/plan/executadas/`** é o histórico (aprovadas e sintetizadas).
+**`specs/plan/`** é a fila **ativa**; **`specs/plan/executadas/`** é a fila de **espera de síntese** — só
+`🟢 Aprovada`, esvaziada a cada rodada de `spec-atualizar`.
 
 | Papel | Spec de entrada | Pode escrever | Nunca faz |
 |---|---|---|---|

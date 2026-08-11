@@ -115,6 +115,12 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
   // quem lê o resultado é o `verificar` que já vem a seguir no pipeline, nos dois bindings.
   const cloneSimulado = { nome: 'clone-simulado', tipo: 'clone-simulado' };
 
+  // Depois de `verificar`, nos dois bindings — o mapa instalado (plan-2.1.md Bloco U) é doutrina, não
+  // código do módulo, então não precisa esperar o `clone-simulado`: entra assim que o projeto existe.
+  // "Entra no Bloco K" É esta linha — sem ela, `verificar-mapa.mjs --conferir` seria um `--conferir`
+  // que existe e ninguém chama (a mesma lacuna que a S.1 do plan-2.md já corrigiu uma vez).
+  const mapaInstalado = { nome: 'mapa', tipo: 'mapa-instalado' };
+
   if (binding === 'python') {
     return [
       gerarProjeto,
@@ -124,6 +130,7 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
       ...passosDeModulo,
       cloneSimulado,
       { nome: 'verificar', tipo: 'verificar-py' },
+      mapaInstalado,
       { nome: 'ci-dependencias', tipo: 'ci-dependencias-py' },
     ];
   }
@@ -133,6 +140,7 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
     ...passosDeModulo,
     cloneSimulado,
     { nome: 'verificar', tipo: 'npm-script', script: 'verificar' },
+    mapaInstalado,
     { nome: 'build', tipo: 'npm-script', script: 'build' },
     { nome: 'lint', tipo: 'npm-script', script: 'lint' },
     { nome: 'ci-dependencias', tipo: 'npm-script', script: 'ci:dependencias' },
@@ -176,6 +184,7 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ_TEMPLATE = join(AQUI, '..');
 const CRIAR_PROJETO = join(RAIZ_TEMPLATE, 'ferramentas', 'criar-projeto.mjs');
 const CRIAR_MODULO = join(RAIZ_TEMPLATE, 'ferramentas', 'criar-modulo.mjs');
+const VERIFICAR_MAPA = join(AQUI, 'verificar-mapa.mjs');
 const NODE = process.execPath;
 
 /** ÚNICO ponto que roda um script Node de verdade. Array de argumentos, NUNCA `shell: true`. */
@@ -307,6 +316,8 @@ function executarPasso(passo, ctx) {
       return rodarNode([CRIAR_MODULO, passo.moduloId, '--binding', ctx.binding, ...passo.flags], ctx.destino);
     case 'clone-simulado':
       return simularClone(ctx.destino);
+    case 'mapa-instalado':
+      return rodarNode([VERIFICAR_MAPA, '--conferir', join(ctx.destino, 'specs', 'arquitetura')], RAIZ_TEMPLATE);
     case 'npm-script':
       return rodarNpm(['run', passo.script], ctx.destino);
     case 'venv':
@@ -465,7 +476,7 @@ function casosDeAutoteste() {
     } },
     { nome: 'passosDoBinding(python): sem build/lint separado (sem web/ nos modulos python), ci-dependencias por ULTIMO', fn: () => {
       const nomes = passosDoBinding('python').map((p) => p.nome);
-      return !nomes.includes('build') && !nomes.includes('lint') && nomes.at(-2) === 'verificar' && nomes.at(-1) === 'ci-dependencias';
+      return !nomes.includes('build') && !nomes.includes('lint') && nomes.at(-3) === 'verificar' && nomes.at(-2) === 'mapa' && nomes.at(-1) === 'ci-dependencias';
     } },
     { nome: 'passosDoBinding(python): venv e instalar ANTES do PRIMEIRO criar-modulo', fn: () => {
       const passos = passosDoBinding('python');
@@ -480,6 +491,12 @@ function casosDeAutoteste() {
         const iUltimoModulo = passos.findLastIndex((p) => p.tipo === 'criar-modulo');
         const iClone = nomes.indexOf('clone-simulado');
         return iUltimoModulo !== -1 && iClone === iUltimoModulo + 1 && iClone === nomes.indexOf('verificar') - 1;
+      })
+    ) },
+    { nome: 'passosDoBinding: mapa (Bloco U, plan-2.1.md) roda logo depois de verificar, nos tres bindings', fn: () => (
+      BINDINGS.every((binding) => {
+        const nomes = passosDoBinding(binding).map((p) => p.nome);
+        return nomes.indexOf('mapa') === nomes.indexOf('verificar') + 1;
       })
     ) },
     { nome: 'passosDoBinding: as QUATRO combinacoes de flag do Bloco O, nos tres bindings', fn: () => (

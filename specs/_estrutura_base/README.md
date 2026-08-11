@@ -31,7 +31,7 @@ O modelo é **SDD (Spec-Driven Development)**: **toda e qualquer alteração nas
 | `arquitetura/` | O **COMO** — design estrutural, stack, banco, contratos | `00-base-python.md`, `04-regras.md` | Documento vivo |
 | `adr/` | O **POR QUÊ** — decisões técnicas com trade-off | `000-decisoes-do-template.md`, `001-escolha-do-postgres.md` | **Imutável** — decisão nova = ADR novo |
 | `plan/` | O **COMO CHEGAR LÁ** — plans **ativas** | `plan-01-extrair-validacao.md` | Fila de execução |
-| `plan/executadas/` | O que já terminou — plans aprovadas e sintetizadas | `plan-01-extrair-validacao.md` | Rastro auditável permanente |
+| `plan/executadas/` | O que já terminou e ainda **não** foi sintetizado | `plan-01-extrair-validacao.md` | Fila de espera — esvaziada a cada síntese, não é arquivo permanente |
 
 Moldes de todos eles em `_templates/`.
 
@@ -67,22 +67,29 @@ Uma **plan** é a unidade de trabalho do ciclo: `plan/plan-NN-<slug>.md`, escrit
 executada pelo **agente executor**. Ela contém descrição, escopo, referências, instruções, o **prompt de
 execução** e o **destino da síntese**.
 
-Plans são **versionadas e preservadas**. Elas não são rascunho: são o histórico de por que o repositório é
-como é, e o registro de cada veredito de revisão. **Nenhuma plan é apagada, nunca.**
+Enquanto está ativa ou aguardando síntese, uma plan é **versionada e preservada**: é o histórico de por que o
+repositório é como é, e o registro de cada veredito de revisão. **Nenhuma plan é apagada antes de sintetizada
+— e nenhuma sai da fila de espera sem que sua verdade já esteja na spec fixa correspondente.**
+
+Depois de sintetizada, a plan **é removida**: seu conteúdo virou verdade consolidada em `specs/`, `arquitetura/`
+ou `adr/`, e o rastro de como se chegou lá passa a viver no histórico do Git, não como arquivo do repositório.
 
 Para a fila não virar depósito, o volume é separado por pasta — e a pasta espelha o estado:
 
 | Pasta | Status | O que é |
 |---|---|---|
 | `plan/` | 🔴 🟡 🟠 🔵 ⛔ | **Fila ativa** — o que está em jogo agora. Curta e legível |
-| `plan/executadas/` | 🟢 ⚪ | **Histórico** — aprovadas (aguardando síntese) e já sintetizadas. Cresce para sempre |
+| `plan/executadas/` | 🟢 | **Fila de espera** — aprovadas, aguardando síntese. Esvaziada a cada rodada de `spec-atualizar` |
 
-O arquivo muda de pasta **uma única vez**, no momento da aprovação, movido pelo revisor com `git mv` — na mesma
-ação em que a linha migra da §1 para a §4 do `00-indice`. A síntese (`spec-atualizar`) só muda o status para
-`⚪`; o arquivo fica onde está.
+O arquivo muda de pasta **uma única vez** antes de sumir: no momento da aprovação, movido pelo revisor com
+`git mv` — na mesma ação em que a linha migra da §1 para a §4 do `00-indice`. A síntese (`spec-atualizar`)
+acrescenta o bloco `## Síntese` e o status `⚪` e, na mesma passada, **remove o arquivo** (`git rm`) e a linha
+da §4 — não existe um estado `⚪` residente em disco nem no índice.
 
-> Numeração é **monotônica e definitiva**: `plan-07` é `plan-07` para sempre, e o próximo número livre considera
-> as duas pastas. A ordem de execução se muda na coluna `#` do `00-indice`, nunca renomeando o arquivo.
+> Numeração é **monotônica e definitiva**: `plan-07` é `plan-07` para sempre, mesmo depois de removida. O
+> próximo número livre **não** vem de escanear as pastas (uma plan sintetizada some das duas) — vem do campo
+> `proximo_numero_plan` no frontmatter do `00-indice`. A ordem de execução se muda na coluna `#` do
+> `00-indice`, nunca renomeando o arquivo.
 
 ---
 
@@ -99,7 +106,8 @@ ação em que a linha migra da §1 para a §4 do `00-indice`. A síntese (`spec-
                     do 00-indice
 6. USUÁRIO commita
 7. periodicamente: usuário dispara a skill `spec-atualizar` → as 🟢 de plan/executadas/
-   são sintetizadas em specs/ · arquitetura/ · adr/ e viram ⚪ Sintetizada (sem sair da pasta)
+   são sintetizadas em specs/ · arquitetura/ · adr/ e então REMOVIDAS (arquivo + linha
+   do 00-indice) — a spec fixa passa a ser a única fonte viva dessa verdade
 ```
 
 | Papel | Prompt de entrada | Pode escrever | Nunca faz |
@@ -120,7 +128,7 @@ ação em que a linha migra da §1 para a §4 do `00-indice`. A síntese (`spec-
 | Registrar regra de negócio consolidada | `specs/NN-<nome>.md` — via `spec-atualizar`, não à mão |
 | Registrar design/stack consolidados | `arquitetura/NN-<nome>.md` — idem |
 | Registrar uma decisão com trade-off | `adr/NNN-<nome>.md` — idem |
-| Consultar por que algo foi feito assim | `plan/executadas/` — veredito e escopo de cada execução |
+| Consultar por que algo foi feito assim | Ainda aguardando síntese → `plan/executadas/`. Já sintetizada → a spec fixa de destino (verdade atual) ou `git log --diff-filter=D` no path da plan (veredito e escopo originais) |
 | Contextualizar um agente novo | ele lê `00-contexto.md` — você não explica nada no chat |
 
 > As specs fixas são atualizadas **pela síntese das plans** (skill `spec-atualizar`, com HITL), não por edição

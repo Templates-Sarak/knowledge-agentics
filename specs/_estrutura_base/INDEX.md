@@ -22,13 +22,14 @@
 - 📁 **`adr/`**: decisões imutáveis (O POR QUÊ). Decisão nova = ADR novo.
 - 📁 **`plan/`**: as plans **ativas** (`plan-NN-<slug>.md`) — a fila de execução. É por elas que toda
   alteração do repositório passa.
-  - 📁 **`plan/executadas/`**: as plans aprovadas (🟢) e já sintetizadas (⚪). **Versionadas e permanentes** —
-    rastro auditável, nunca apagado. É aqui que se descobre *por que* algo foi feito assim.
+  - 📁 **`plan/executadas/`**: as plans aprovadas (🟢), **aguardando síntese**. Fila de espera, não arquivo
+    permanente — a skill `spec-atualizar` remove cada plan assim que a transporta para a spec fixa de
+    destino. Depois de removida, o rastro fica no histórico do Git, não nesta pasta.
 - 📁 **`_templates/`**: moldes (`template-spec`, `template-arquitetura`, `template-adr`, `template-plan`).
 
 ## O ciclo em uma linha
 
 `revisor escreve plan` → `executor executa (worktree, sem commit)` → `revisor verifica, aprova e move para
-plan/executadas/` → `usuário commita` → `spec-atualizar sintetiza nas specs fixas`
+plan/executadas/` → `usuário commita` → `spec-atualizar sintetiza nas specs fixas e remove a plan`
 
 Detalhe em [`README.md`](README.md).

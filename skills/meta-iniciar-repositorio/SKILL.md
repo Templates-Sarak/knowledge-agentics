@@ -76,38 +76,27 @@ Essa decisão é do usuário, nunca sua.
 O próprio script roda `validar.mjs --todos` ao final. Rode também o comando composto do binding
 (`npm run verificar` ou `python verificar.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
 
+Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito — o passo 6 do script
+(`instalar_hooks_git`) já compõe sozinho via `compor_pre_commit` (núcleo puro, provado por
+`python init_repo.py --autoteste`), então isto é conferência, não ação manual:
+
+```bash
+grep -c "^node ferramentas/verificar-commit.mjs" <alvo>/.githooks/pre-commit    # == 1: gate de conformidade do template
+grep -c "^\"\$PY\" .githooks/verificar_commit.py" <alvo>/.githooks/pre-commit   # == 1: gate de segredos
+```
+
+Ancorado na **invocação**, não em qualquer menção ao nome do arquivo — o hook também comenta
+`ferramentas/verificar-commit.mjs` em prosa, e um `grep` sem âncora conta o comentário junto. Os dois
+têm de dar exatamente 1 — zero é hook não composto; mais de 1 é hook duplicado (composição rodou mais
+de uma vez sobre o mesmo arquivo).
+
 ### 6. Handoff
 
 **Se rodou com `--binding`** (projeto modular): o passo 2 já instalou o `.githooks/pre-commit` e o
-`.githooks/pre-push` do TEMPLATE (a fiação das três camadas, `specs/arquitetura/03-operacao.md` §7.1) —
-mas o passo 6 do script (`instalar_hooks_git`) escreve o PRÓPRIO `.githooks/pre-commit` por cima
-(gate de segredos + auto-índice de `.agents/`), sobrescrevendo o do template sem mesclar. `.githooks/pre-push`
-não é tocado por ele e sobrevive intacto — só `pre-commit` colide. **Componha os dois, nunca deixe um
-substituir o outro** — a lei da skill é "só acrescenta ou mescla", e a varredura de segredo do passo 6
-não pode se perder:
-
-```bash
-python - <<'PY'
-from pathlib import Path
-import os
-caminho = Path("<alvo>/.githooks/pre-commit")
-texto = caminho.read_text(encoding="utf-8")
-if "verificar-commit.mjs" not in texto:
-    # Acrescenta a cadeia do template ANTES do "exit 0" final, depois do gate de segredos que ja
-    # esta ali — segredo primeiro (fail-closed), gate de conformidade depois.
-    texto = texto.replace(
-        "\nexit 0\n",
-        "\nnode ferramentas/verificar-commit.mjs pre-commit || exit 1\n\nexit 0\n",
-    )
-    caminho.write_text(texto, encoding="utf-8")
-    os.chmod(caminho, 0o755)
-PY
-```
-
-Confira o resultado lendo o arquivo: as duas partes devem estar presentes (`verificar_commit.py` do
-gate de segredos, **e** `verificar-commit.mjs` do gate de conformidade), nessa ordem, terminando em
-`exit 0`. Se o repositório já tem `core.filemode=false` (comum no Windows), o bit de execução do
-índice também precisa de `git update-index --chmod=+x .githooks/pre-commit` — sem commitar.
+`.githooks/pre-push` do TEMPLATE (a fiação das três camadas, `specs/arquitetura/03-operacao.md` §7.1), e
+o passo 6 do script (`instalar_hooks_git`) já os **compôs** com o próprio (gate de segredos + auto-índice
+de `.agents/`) via `compor_pre_commit` — segredo primeiro (fail-closed), conformidade depois, idempotente.
+Nenhuma ação manual aqui: o passo 5 já confirmou as duas marcas presentes.
 
 **Sem `--binding`**: o passo 2 nunca rodou, não há hook de template para compor, e o `.githooks/pre-commit`
 que o script escreve já é o final — nada a fazer aqui.

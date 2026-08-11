@@ -89,8 +89,34 @@ function aplicarEscopo(arquivos, escopo) {
   }
 }
 
-/** A doutrina entra como spec de arquitetura; as decisões do template, como o ADR 000 do projeto. */
-function instalarDoutrina(destino) {
+/**
+ * Comando por binding — a ÚNICA coisa que diverge no mapa (`README.md` da doutrina). Node
+ * (typescript/javascript) roda pelos scripts do `package.json`; Python tem o próprio comando
+ * composto (`verificar.py`) e sobe pelo módulo `src.composicao` (plan-2.1.md Bloco U).
+ */
+const MARCADORES_DE_COMANDO = {
+  typescript: { '<comando-verificar>': 'npm run verificar', '<comando-iniciar>': 'npm run iniciar' },
+  javascript: { '<comando-verificar>': 'npm run verificar', '<comando-iniciar>': 'npm run iniciar' },
+  python: { '<comando-verificar>': 'python verificar.py', '<comando-iniciar>': 'python -m src.composicao' },
+};
+
+/** Substitui os marcadores de comando do mapa pelo comando real do binding — precedente de `<modulo>`
+ * em `criar-modulo.mjs`: uma fonte só, marcador substituído na instalação. */
+function aplicarComandosDoMapa(caminhoReadme, binding) {
+  if (!existsSync(caminhoReadme)) return;
+  let conteudo = readFileSync(caminhoReadme, 'utf8');
+  for (const [marcador, comando] of Object.entries(MARCADORES_DE_COMANDO[binding])) {
+    conteudo = conteudo.replaceAll(marcador, comando);
+  }
+  writeFileSync(caminhoReadme, conteudo, 'utf8');
+}
+
+/**
+ * A doutrina entra como spec de arquitetura; as decisões do template, como o ADR 000 do projeto.
+ * `README.md` (o mapa, plan-2.1.md Bloco U) viaja junto — é um arquivo comum dentro de `doutrina/`,
+ * copiado pelo mesmo laço dos outros cinco, e só ele carrega marcador de comando por binding.
+ */
+function instalarDoutrina(destino, binding) {
   const origem = join(RAIZ_TEMPLATE, 'doutrina');
   const arquitetura = join(destino, 'specs', 'arquitetura');
   const adr = join(destino, 'specs', 'adr');
@@ -100,6 +126,7 @@ function instalarDoutrina(destino) {
     if (entrada.isFile()) cpSync(join(origem, entrada.name), join(arquitetura, entrada.name));
   }
   cpSync(join(origem, 'adr', 'decisoes.md'), join(adr, ADR_DO_TEMPLATE));
+  aplicarComandosDoMapa(join(arquitetura, 'README.md'), binding);
 }
 
 /**
@@ -118,7 +145,7 @@ function naoELixoDeExecucao(origem) {
 }
 
 function copiarTemplate(destino, binding) {
-  instalarDoutrina(destino);
+  instalarDoutrina(destino, binding);
   const semLixo = { recursive: true, filter: naoELixoDeExecucao };
   cpSync(join(RAIZ_TEMPLATE, 'ferramentas'), join(destino, 'ferramentas'), semLixo);
   cpSync(join(RAIZ_TEMPLATE, 'bindings', binding, 'raiz'), destino, semLixo);

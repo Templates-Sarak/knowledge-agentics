@@ -15,10 +15,10 @@ Suponha `specs/plan/executadas/` com 5 plans:
 | `plan-05-tabela-sessions.md` | 🟢 Aprovada | `arquitetura/04-dados.md` + `adr/003-jwt-vs-sessao.md` |
 | `plan-06-tela-login.md` | 🟢 Aprovada | `specs/02-auth.md` |
 | `plan-07-corrigir-lcp-home.md` | 🟢 Aprovada | `—` |
-| `plan-03-extrair-validador.md` | ⚪ Sintetizada | — |
 
-Entram no lote: **04, 05, 06, 07**. A `plan-03` já foi processada e é ignorada. Nada da raiz de `plan/` é
-tocado — aquelas ainda estão em execução.
+Entram no lote: **04, 05, 06, 07**. Não há `plan-03` nesta pasta — foi sintetizada numa rodada anterior e,
+como toda plan sintetizada, já foi removida (§6.3); se for preciso consultá-la, é `git log`, não este
+diretório. Nada da raiz de `plan/` é tocado — aquelas ainda estão em execução.
 
 ## Passo 3: Particionamento em blocos
 
@@ -81,7 +81,7 @@ Não pede confirmação de escrita — não há spec a alterar. Informe e siga:
 ### 📦 Bloco 5 de 5 — `plan-07-corrigir-lcp-home.md` — sem destino de síntese
 
 Otimização de LCP sem mudança de regra documentada. Nada a transportar.
-Apenas marco a plan como ⚪ Sintetizada e completo a linha no `00-indice`.
+Marco a plan como ⚪ Sintetizada, removo o arquivo (`git rm`) e apago a linha no `00-indice`.
 ```
 
 ---
@@ -102,7 +102,7 @@ presente**, não a obra:
 
 ## Passo 6: fechamento de cada plan
 
-Bloco acrescentado ao **final** da plan (nada é removido):
+Primeiro, bloco acrescentado ao **final** da plan (append-only, nada do que já existia é removido):
 
 ```markdown
 ## Síntese — 2026-08-01
@@ -112,13 +112,28 @@ Observações: a tabela `sessions` e seus índices foram para a spec de dados; a
 virou ADR. O script de migration em si não foi transportado (é código, vive no repositório).
 ```
 
-Frontmatter: `status: "⚪ Sintetizada"`. **O arquivo permanece em `specs/plan/executadas/`.**
+Frontmatter: `status: "⚪ Sintetizada"`.
 
-E a linha no `specs/00-indice.md`, no histórico, completada:
+Em seguida, na **mesma passada**, o arquivo é removido:
 
-```markdown
-| [plan-05-tabela-sessions](plan/executadas/plan-05-tabela-sessions.md) | 2026-07-28 | 2026-08-01 | `arquitetura/04-dados.md` · `adr/003-jwt-vs-sessao.md` |
+```bash
+git rm specs/plan/executadas/plan-05-tabela-sessions.md
 ```
+
+Esse bloco `## Síntese` nunca é lido como arquivo do repositório — sua única sobrevida é como conteúdo do
+diff no commit que remove o arquivo (`git show <commit> -- specs/plan/executadas/plan-05-tabela-sessions.md`
+mostra o texto completo como linhas removidas). É por isso que ele continua sendo escrito mesmo sabendo que o
+arquivo será apagado a seguir: é o que garante que a "justificativa da síntese" fique legível para quem um dia
+precisar investigar via `git log`.
+
+E a linha correspondente no `specs/00-indice.md` §4 (Aguardando síntese) é **removida**, não completada:
+
+```diff
+- | [plan-05-tabela-sessions](plan/executadas/plan-05-tabela-sessions.md) | 🟢 | 2026-07-28 | `arquitetura/04-dados.md` · `adr/003-jwt-vs-sessao.md` |
+```
+
+Nada substitui essa linha. A spec fixa de destino (`arquitetura/04-dados.md`, `adr/003-jwt-vs-sessao.md`) é
+agora a única fonte viva dessa verdade.
 
 ---
 
@@ -127,25 +142,32 @@ E a linha no `specs/00-indice.md`, no histórico, completada:
 ```markdown
 ✅ Síntese concluída.
 
-**Plans sintetizadas (4):** plan-04, plan-05, plan-06, plan-07
+**Plans sintetizadas e removidas (4):** plan-04, plan-05, plan-06, plan-07
 **Specs atualizadas (3):** `arquitetura/03-api.md`, `arquitetura/04-dados.md`, `specs/02-auth.md`
 **Specs criadas (1):** `adr/003-jwt-vs-sessao.md`
-**Índice:** 4 linhas completadas no histórico.
+**Índice:** 4 linhas removidas da §4 (Aguardando síntese).
 
-As alterações estão no worktree, sem commit.
+As alterações — incluindo os `git rm` das plans — estão no worktree, sem commit.
 ```
 
 Se alguma plan `🟢` ficou de fora, diga qual e o que falta decidir. Silêncio sobre plan pulada é falha —
-ela ficaria pendente para sempre sem ninguém saber.
+ela ficaria pendente para sempre sem ninguém saber, e continuaria ocupando `plan/executadas/` até a próxima
+rodada.
 
 ---
 
 ## Sobre "limpar" a pasta plan
 
-Não existe limpeza por deleção neste ciclo. A separação física resolve o volume:
+A pasta é esvaziada em duas camadas, cada uma com seu próprio dono:
 
-- `specs/plan/` → fila **ativa** (🔴 🟡 🟠 🔵 ⛔). É o que está em jogo agora.
-- `specs/plan/executadas/` → 🟢 aguardando síntese e ⚪ já sintetizadas. Cresce indefinidamente, e deve.
+- `specs/plan/` → fila **ativa** (🔴 🟡 🟠 🔵 ⛔). É o que está em jogo agora. Não é tocada por esta skill.
+- `specs/plan/executadas/` → só `🟢` aguardando síntese. Ao sintetizar, esta skill **remove** o arquivo — não
+  existe estado `⚪` residente no disco; ele existe só entre os passos 6.1–6.2, dentro da mesma passada.
 
-Plan apagada é decisão perdida: o veredito, o escopo negociado, a suposição registrada pelo executor. Se o
-usuário insistir em apagar, explique o que se perde e confirme explicitamente antes de qualquer remoção.
+Plan removida **depois de sintetizada** não é decisão perdida: o veredito, o escopo negociado e as suposições
+do executor já cumpriram seu papel (formar a spec fixa) e continuam recuperáveis via `git log
+--diff-filter=D -- specs/plan/executadas/plan-NN-*.md`. O que se perde é a **conveniência** de encontrá-los
+com um `ls` — não o conteúdo, que o Git preserva.
+
+Isto só vale **depois** da síntese aplicada. Uma plan `🟢` ainda não processada, ou qualquer plan na fila
+ativa, segue com a mesma proteção de sempre: nunca apagada, nunca renomeada, fora desta rotina.

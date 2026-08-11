@@ -1,6 +1,6 @@
 ---
 name: spec-atualizar
-description: Sintetiza as plans aprovadas de specs/plan/executadas/ nas especificações definitivas (adr, arquitetura, specs) com HITL por bloco, marcando o status e atualizando o 00-indice. Use APENAS quando o usuário solicitar explicitamente a síntese das plans. NÃO acione proativamente.
+description: Sintetiza as plans aprovadas de specs/plan/executadas/ nas especificações definitivas (adr, arquitetura, specs) com HITL por bloco e, uma vez sintetizada, remove a plan (arquivo + linha do 00-indice). Use APENAS quando o usuário solicitar explicitamente a síntese das plans. NÃO acione proativamente.
 ---
 
 # Skill: Sintetizar as Plans nas Specs Definitivas
@@ -11,7 +11,8 @@ Passo final do ciclo SDD. Esta skill é a **ponte** entre as plans já executada
 
 O objetivo é manter a **convergência**: as specs fixas devem refletir a realidade exata do repositório, de
 modo que qualquer agente se contextualize lendo apenas elas. Cada plan aprovada carrega um pedaço dessa
-verdade — esta skill a transporta.
+verdade — esta skill a transporta e, feito isso, **remove a plan**: a spec fixa passa a ser a única fonte
+viva; o arquivo da plan não fica retido como arquivo morto.
 
 > **Dependência:** o formato final das specs é regido por `spec-write`. Consulte-a em caso de dúvida sobre
 > frontmatter, seções ou nomenclatura.
@@ -26,8 +27,7 @@ verdade — esta skill a transporta.
 
 | Local | Status | Papel |
 |---|---|---|
-| `specs/plan/executadas/` | `🟢 Aprovada` | **A entrada desta skill** — plans verificadas, pendentes de síntese |
-| `specs/plan/executadas/` | `⚪ Sintetizada` | Já processadas. **Ignore** (só consulte se precisar de histórico) |
+| `specs/plan/executadas/` | `🟢 Aprovada` | **A entrada desta skill** — plans verificadas, pendentes de síntese. É a **única** coisa que existe nessa pasta: plans já sintetizadas são removidas (§6), não há `⚪` para "ignorar" |
 | `specs/plan/` (raiz) | `🔴 🟡 🟠 🔵 ⛔` | Fila **ativa**. **Nunca** sintetize daqui — a execução não terminou |
 | `specs/00-indice.md` | — | Índice a atualizar no fechamento |
 | `specs/adr/` · `arquitetura/` · `specs/` | — | Os destinos |
@@ -40,7 +40,7 @@ verdade — esta skill a transporta.
 - Se não houver nenhuma, **pare** e informe: nada a sintetizar. Não invente trabalho.
 - De cada plan selecionada, leia: o campo `destino_sintese` do frontmatter, a seção **Destino da síntese**, o
   **Resumo da execução** e o **Veredito** do revisor.
-- Leia `specs/00-indice.md` para localizar a linha de cada plan no histórico.
+- Leia `specs/00-indice.md` §4 (Aguardando síntese) para localizar a linha de cada plan.
 
 ### 2. Roteamento pelo destino declarado
 
@@ -87,16 +87,20 @@ Exemplos de formulação em `references/workflow.md`.
 
 Para cada plan sintetizada, na mesma passada:
 
-1. **Acrescente** ao final da plan (append-only, nada é removido):
+1. **Acrescente** ao final da plan (append-only — isto ainda vale, mesmo que o arquivo seja removido em
+   seguida: é o que fica registrado no diff do commit de remoção, a única cópia legível que sobrevive):
    ```markdown
    ## Síntese — AAAA-MM-DD
    Sintetizada em: `<spec fixa atualizada/criada>`
    Observações: <o que foi transportado, o que foi deliberadamente deixado de fora>
    ```
 2. Mude o frontmatter para `status: "⚪ Sintetizada"`.
-3. **Mantenha o arquivo onde está** — em `specs/plan/executadas/`. A plan é rastro auditável permanente.
-4. No `specs/00-indice.md`, complete a linha da plan no histórico com a **data absoluta** da síntese e a spec
-   fixa atualizada. Não remova a linha.
+3. **Remova o arquivo** de `specs/plan/executadas/` (`git rm`, sem commit — quem commita é o usuário, como
+   sempre). A plan sintetizada não fica retida: seu conteúdo virou verdade consolidada na spec fixa; o rastro
+   de como se chegou lá passa a viver só no histórico do Git (`git log --diff-filter=D`), recuperável mas não
+   mais um arquivo do repositório.
+4. No `specs/00-indice.md`, **remova a linha da plan** da §4 (Aguardando síntese) — não a complete, apague-a.
+   A §4 só contém plans ainda não sintetizadas; a linha não sobrevive à síntese.
 
 ### 7. Entrega
 
@@ -106,11 +110,12 @@ Para cada plan sintetizada, na mesma passada:
 
 ## Regras e limites
 
-- **NUNCA apague, mova ou renomeie uma plan.** Plans são versionadas e permanentes — são o histórico de por que
-  o repositório é como é, com os vereditos de revisão. A "limpeza" do diretório é feita pela subpasta
-  `executadas/`, não por deleção. Se o usuário pedir para apagar, explique o custo e confirme explicitamente
-  antes.
-- **NUNCA** sintetize plan da raiz de `plan/` (ativa) nem plan já `⚪ Sintetizada`.
+- **NUNCA remova uma plan antes do HITL do bloco correspondente ter sido aprovado e aplicado.** A remoção
+  (§6.3) só acontece **depois** de a spec fixa já ter a verdade transportada — nessa ordem, sempre. Remover
+  antes é perda de informação sem contrapartida.
+- **NUNCA renomeie nem reaproveite o número de uma plan removida.** A numeração continua vindo de
+  `proximo_numero_plan` em `00-indice.md` — a remoção do arquivo não libera o `NN` para reuso.
+- **NUNCA** sintetize plan da raiz de `plan/` (ativa) — a execução não terminou.
 - **NUNCA** sobrescreva spec definitiva sem o HITL do bloco correspondente.
 - **NUNCA** edite um ADR existente — decisão nova é ADR novo.
 - **NUNCA** commite, e nunca adicione co-autoria.
@@ -125,9 +130,10 @@ Para cada plan sintetizada, na mesma passada:
 - [ ] `destino_sintese` respeitado em todas; ambiguidade levada ao usuário.
 - [ ] Um HITL por bloco, com resumo do que muda, aprovado antes de escrever.
 - [ ] Specs fixas no formato de `spec-write`, descrevendo o estado atual do sistema.
-- [ ] Toda plan do lote: bloco `## Síntese` acrescentado + `status: ⚪ Sintetizada`.
-- [ ] `00-indice.md` com data absoluta e spec de destino em cada linha do histórico.
-- [ ] Nenhuma plan apagada, movida ou renomeada. Nenhum commit.
+- [ ] Toda plan do lote: bloco `## Síntese` acrescentado + `status: ⚪ Sintetizada` **antes** da remoção.
+- [ ] Arquivo de cada plan sintetizada removido (`git rm`) de `specs/plan/executadas/`.
+- [ ] `00-indice.md` com a linha correspondente **removida** da §4 — nenhuma sobra `⚪`.
+- [ ] Nenhuma plan removida sem HITL do bloco já aplicado. Nenhum commit.
 
 ## Referências
 

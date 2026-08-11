@@ -292,10 +292,21 @@ O script copia o molde do binding, substitui os marcadores (`<modulo>` → id, `
 **Ninguém cria módulo à mão.** Módulo manual nasce com nome divergente e sem manifesto — as duas coisas que
 quebram o gate e que o gate não consegue consertar sozinho.
 
-Depois do scaffold, a ordem de preenchimento é: `core/dominio` → `contrato/openapi.yaml` → `api/src/routes` →
-`api/src/mapeadores` → `database/` → `web/src/pages` → `tests/`. O contrato antes do código é deliberado.
+Depois do scaffold, a ordem de preenchimento é: `contrato/openapi.yaml` → `core/dominio` → `api/src/routes` →
+`api/src/mapeadores` → `database/` → `web/src/pages` → `tests/`. O contrato antes do código é deliberado: é a
+**fronteira que outros consomem** (`modulo.json:consome`), o gate cobra rota do código × rota da spec **nos
+dois sentidos** (`contrato-sincronizado`), e `contrato-compativel.mjs` compara o contrato contra o baseline
+git. Escrever código primeiro faz a spec ser redigida **para descrever o código** — e aí a fonte de verdade
+inverte sem ninguém decidir isso.
 
-A skill **`code-modulo`** do ecossistema Sarak conduz esse fluxo com HITL.
+**Recusada, com o motivo:** domínio primeiro. O argumento — *"a regra de negócio não deve ser moldada pelo
+transporte"* — é real, e continua valendo **dentro** do passo: `core/dominio` não importa nada da `api/`, e
+o gate cobra isso. O que esta ordem fixa é a **ordem de escrita**, não a direção da dependência, que já era
+e continua sendo domínio ← borda.
+
+A skill **`code-modulo`** do ecossistema Sarak conduz esse fluxo com HITL. Sem o plugin `sarak` (repositório
+gerado, sem a skill), a ordem acima e as sete sub-seções de alteração em §9 bastam — `code-modulo` só
+acrescenta o HITL.
 
 # 9. Alterar um módulo existente
 

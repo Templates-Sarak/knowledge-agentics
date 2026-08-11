@@ -34,10 +34,12 @@ Antes de escrever ou julgar **qualquer coisa**, leia — nesta ordem, integralme
 3. **`specs/00-indice.md`** — fila de execução e estado de cada plan.
 4. **`specs/00-prompt-executor.md`** — o que exatamente o executor faz e não faz (você escreve *para* ele).
 5. **Todas as specs fixas**: `specs/adr/`, `specs/arquitetura/`, `specs/specs/`.
-6. **Todas as plans** — a fila ativa em `specs/plan/` **e** o histórico em `specs/plan/executadas/`, inclusive
-   as `⚪ Sintetizada`: elas contêm as decisões, vereditos e correções que explicam o estado atual. Se o
-   histórico for grande, priorize as mais recentes e as que tocam a área da demanda atual — mas nunca emita
-   veredito sobre área cujo histórico você não leu.
+6. **As plans que ainda existem em disco** — a fila ativa em `specs/plan/` **e** as `🟢 Aprovada` aguardando
+   síntese em `specs/plan/executadas/`. Plans já sintetizadas **não estão mais lá** — foram removidas pela
+   skill `spec-atualizar`, e a decisão que elas carregavam já é a própria spec fixa (`adr/`, `arquitetura/`,
+   `specs/`) que você lê no passo 5. Não é preciso "escavar" `git log` por elas para formar contexto de rotina
+   — as specs fixas já refletem essa verdade; recorra ao histórico do Git só para investigar um caso
+   pontual (ex.: entender por que uma decisão antiga foi tomada de um jeito específico).
 7. **`CLAUDE.md`** da raiz — os inegociáveis sempre-ativos.
 
 Só então declare-se pronto. **Não existe "revisar rápido sem ler".** Se o repositório for grande, leia por
@@ -91,11 +93,13 @@ do repositório; enquanto não refletirem, todo agente que as ler será enganado
                     da §1 para a §4 do 00-indice → avisa o usuário que pode commitar
 6. usuário commita
 7. periodicamente: usuário dispara `spec-atualizar`; as 🟢 de plan/executadas/ são
-   sintetizadas nas specs fixas e viram ⚪ (o arquivo fica onde está)
+   sintetizadas nas specs fixas e então REMOVIDAS (arquivo + linha do 00-indice) — não
+   viram ⚪ permanente, a spec fixa é que passa a valer
 ```
 
-**Duas pastas, dois estados:** `specs/plan/` é a fila **ativa** (🔴 🟡 🟠 🔵 ⛔); `specs/plan/executadas/` é o
-histórico (🟢 e ⚪). Nenhuma plan é apagada, nunca — a subpasta é o que mantém a fila legível.
+**Duas pastas, dois estados:** `specs/plan/` é a fila **ativa** (🔴 🟡 🟠 🔵 ⛔); `specs/plan/executadas/` é a
+fila de **espera de síntese** (só 🟢). Nenhuma plan é apagada **antes** de sintetizada — depois, a remoção é
+esperada e é o que mantém a fila legível.
 
 Você é o dono dos passos **2** e **5**. Nunca execute o passo **4**, mesmo que pareça trivial e mais rápido.
 
@@ -106,8 +110,10 @@ Você é o dono dos passos **2** e **5**. Nunca execute o passo **4**, mesmo que
 Uma plan é aprovada quando um executor **sem nenhum contexto prévio desta conversa** consegue realizá-la
 lendo apenas a plan e o que ela aponta. Escreva para esse leitor.
 
-**Arquivo:** `specs/plan/plan-NN-<slug-kebab>.md`, na **raiz** de `plan/` — `NN` é o **próximo número livre**
-considerando `plan/` **e** `plan/executadas/` (nunca reaproveitado, nunca renumerado). Molde:
+**Arquivo:** `specs/plan/plan-NN-<slug-kebab>.md`, na **raiz** de `plan/` — `NN` é o valor do campo
+`proximo_numero_plan` no frontmatter de `00-indice.md` (**não** escaneie as pastas: uma plan já sintetizada
+foi removida das duas, então o maior arquivo em disco pode ser menor que o próximo número real). Use o valor
+e **incremente-o** na mesma ação. Nunca reaproveitado, nunca renumerado. Molde:
 `specs/_templates/template-plan.md`.
 
 ## 5.1 Conteúdo obrigatório
@@ -223,8 +229,9 @@ Na mesma ação, sem deixar pendência:
 2. `status: "🟢 Aprovada"` no frontmatter da plan.
 3. **Mova o arquivo** para `specs/plan/executadas/` — `git mv specs/plan/plan-NN-<slug>.md
    specs/plan/executadas/`. O `git mv` preserva o histórico do arquivo.
-4. No `00-indice`: **retire a linha da §1** (fila) e **crie-a na §4** (histórico), com status `🟢`, a data
-   absoluta em *Aprovada em*, o link já apontando para `plan/executadas/…` e as colunas de síntese em `—`.
+4. No `00-indice`: **retire a linha da §1** (fila) e **crie-a na §4** (aguardando síntese), com status `🟢`, a
+   data absoluta em *Aprovada em*, o link já apontando para `plan/executadas/…` e o `destino_sintese` da plan
+   na coluna *Destino declarado*.
 5. Mensagem ao usuário: o que mudou, arquivos tocados, evidência das verificações, **destino da síntese** e a
    frase clara de liberação — *pode commitar*. Você não commita.
 
@@ -264,8 +271,11 @@ O ciclo repete até aprovação. **Não existe "aprovado com ressalvas"**: ou a 
 3. **Não aprove pelo resumo.** Verificação direta no worktree ou nada.
 4. **Não sintetize spec fixa por iniciativa própria** — declare o destino e espere `spec-atualizar`.
 5. **Não deixe status divergente** entre plan, pasta e `00-indice` — os três andam juntos.
-6. **Não renumere nem apague plan.** Numeração é definitiva; abandono vira `⛔ Bloqueada` com motivo.
-   `plan/executadas/` **nunca** é limpa: é histórico permanente, não depósito temporário.
+6. **Não renumere nem apague plan por conta própria.** Numeração é definitiva (vem de `proximo_numero_plan`
+   em `00-indice.md`, nunca reaproveitada); abandono vira `⛔ Bloqueada` com motivo. Você **nunca** remove um
+   arquivo de `plan/executadas/` — essa remoção só acontece dentro da skill `spec-atualizar`, depois da
+   síntese aplicada e do HITL do bloco correspondente. `plan/executadas/` é fila de espera, não depósito
+   permanente — mas quem a esvazia é a síntese, não o revisor.
 7. **Não duplique conteúdo** de skill ou spec fixa dentro de uma plan.
 8. **Não emita plan sem prompt de execução e sem destino da síntese.**
 
