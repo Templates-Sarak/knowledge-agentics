@@ -35,15 +35,22 @@ from adapters.memoria import (
     RepositorioEmMemoria,
     StorageEmMemoria,
 )
+from adapters.postgres import AuditoriaPostgres, RepositorioPostgres
 
 # Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so.
-FABRICAS: dict[str, dict[str, Callable[[], Any]]] = {
-    "repositorio": {"memoria": RepositorioEmMemoria},
-    "auditoria": {"memoria": AuditoriaEmMemoria},
-    "relogio": {"sistema": RelogioDoSistema},
-    "geradorId": {"padrao": GeradorPadrao},
-    "storage": {"memoria": StorageEmMemoria},
-    "notificador": {"memoria": NotificadorEmMemoria},
+#
+# Toda fabrica recebe o manifesto do modulo que esta compondo (`dict`, o mesmo formato de
+# `descobrir_modulos`) — `memoria` ignora (nao precisa saber QUEM a chamou, por isso os `lambda`
+# descartam o argumento), `postgres` usa (`modulo["id"]` para a chave de ambiente,
+# `modulo["pasta"]` para ler `dados.schema`/`dados.prefixo` do proprio manifesto). Sem isto, um
+# adapter que precisa de contexto por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
+FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {
+    "repositorio": {"memoria": lambda modulo: RepositorioEmMemoria(), "postgres": RepositorioPostgres},
+    "auditoria": {"memoria": lambda modulo: AuditoriaEmMemoria(), "postgres": AuditoriaPostgres},
+    "relogio": {"sistema": lambda modulo: RelogioDoSistema()},
+    "geradorId": {"padrao": lambda modulo: GeradorPadrao()},
+    "storage": {"memoria": lambda modulo: StorageEmMemoria()},
+    "notificador": {"memoria": lambda modulo: NotificadorEmMemoria()},
 }
 
 
@@ -85,7 +92,7 @@ def resolver_dependencias(modulo: dict[str, Any]) -> dict[str, Any]:
                 f'[composicao] {identificador}: porta "{porta}" com provedor '
                 f'"{provedor}" sem fabrica registrada'
             )
-        dependencias[porta] = fabrica()
+        dependencias[porta] = fabrica(modulo)
     return dependencias
 
 

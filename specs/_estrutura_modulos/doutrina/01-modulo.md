@@ -234,6 +234,13 @@ ADR.
 - **Adapter novo nasce por `criar-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
   `criar-modulo.mjs`: copia o molde (`adapters/_template`), substitui marcadores, registra a fábrica em
   `src/composicao.*` e roda o gate antes de devolver o controle.
+- **`postgres` (`repositorio`/`auditoria`) já vem PRONTO, ao lado de `memoria`** (plan-2.2.md
+  Bloco Z) — não nasce por `criar-adapter.mjs`, porque já existe: materializa a forma que
+  `criar-modulo.mjs` já cria (`<prefixo>metadados`/`<prefixo>auditoria`). `memoria` continua o
+  DEFAULT de todo módulo; trocar é a mesma linha de `config/portas.json`, agora verdadeira nos dois
+  sentidos. A fábrica recebe o **manifesto do módulo** (`ManifestoDescoberto`/`dict`), não zero
+  argumentos — é o que permite um adapter genérico saber `dados.schema`/`dados.prefixo`/`<MODULO>_DB_URL`
+  de quem o está chamando; `memoria` ignora o argumento.
 
 # 6. Gateways — todo módulo alheio desacoplado
 
@@ -370,6 +377,12 @@ nunca o cite em schema de resposta.
 2. Migration + `schema.sql`.
 3. Acesso pela porta `repositorio`; nada de SQL de fornecedor dentro do módulo.
 4. **Nunca** referencie tabela de outro módulo — o dado alheio vem pela `api/` dele.
+
+**Nada a fazer por conta do controle de estado.** `<modulo>_migrations` (§2, criada pela migration
+`0001` do molde) registra sozinha o que já rodou — `scripts/migrations.{mjs,py} up` aplica só as
+migrations pendentes, `down` reverte só a última aplicada. Uma migration nova não pede nenhum passo
+a mais aqui: ela só precisa existir em `database/migrations/`, na ordem (`NNNN-verbo-objeto.sql`),
+como qualquer outra ([[02-contrato-e-dados]] §6.3).
 
 ## 9.7 Tela nova
 

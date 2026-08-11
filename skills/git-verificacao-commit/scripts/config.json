@@ -1,5 +1,5 @@
 {
-  "_fonte": "Derivado do catalogo canonico de cyber-segredos (skills/cyber-segredos/scripts/config.json). Manter em sincronia.",
+  "_fonte": "GERADO por gerar_config.py a partir do catalogo canonico de cyber-segredos (skills/cyber-segredos/scripts/config.json) — nao edite este arquivo a mao; rode 'python gerar_config.py' depois de mudar o canonico.",
   "padroes": {
     "AWS Access Key": "AKIA[0-9A-Z]{16}",
     "GitHub Token": "gh[pousr]_[A-Za-z0-9]{36,}",
@@ -15,9 +15,26 @@
     "String de conexao": "(?i)(postgres|postgresql|mysql|mongodb)(\\+srv)?://[^\\s'\"]+:[^\\s'\"]+@"
   },
   "arquivos_sensiveis": [
-    ".env", ".env.*", "*.pem", "*.key", "id_rsa", "id_dsa", "id_ecdsa",
-    "*.p12", "*.pfx", "*.ppk", "*.keystore", "*.jks", "credentials.json",
-    ".npmrc", "service-account*.json"
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "id_rsa",
+    "id_dsa",
+    "id_ecdsa",
+    "*.p12",
+    "*.pfx",
+    "*.ppk",
+    "*.keystore",
+    "*.jks",
+    "credentials.json",
+    ".npmrc",
+    "service-account*.json"
   ],
-  "arquivos_permitidos": [".env.example", ".env.sample", ".env.template", ".env.dist"]
+  "arquivos_permitidos": [
+    ".env.example",
+    ".env.sample",
+    ".env.template",
+    ".env.dist"
+  ]
 }

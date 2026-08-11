@@ -363,8 +363,9 @@ de sempre (`noEmit: true`) — o módulo continua compilando **isolado**, a cond
 
 ```
 node scripts/migrations.mjs up <modulo>       # ou: python scripts/migrations.py up <modulo>
-node scripts/migrations.mjs down <modulo>     # reverte em ordem INVERSA (bloco "-- rollback")
-node scripts/migrations.mjs ciclo <modulo>    # up -> down -> up — prova que o rollback fecha
+node scripts/migrations.mjs down <modulo>     # reverte so a ULTIMA aplicada (bloco "-- rollback")
+node scripts/migrations.mjs ciclo <modulo>    # up -> down -> up — prova que o rollback fecha,
+                                               # de qualquer estado inicial
 ```
 
 **Não mora em `ferramentas/`.** Falar com Postgres exige driver, e `ferramentas/**` é zero
@@ -381,6 +382,7 @@ molde) — o runner não sabe de onde ela veio nem como o Postgres subiu (ADR-00
 contrato, não o provedor). Ausente, o runner falha nomeando a chave exata, antes de tentar
 conectar.
 
-**Limite declarado** (04-regras.md §7.2): sem controle de versão de migration — `up`/`down`
-aplicam **todos** os arquivos em ordem; não há tabela `schema_migrations`. O bloco é "o rollback
-funciona", não "um framework de migração".
+**Estado por módulo** (02-contrato-e-dados.md §6.3, plan-2.2.md Bloco Y): a migration `0001` do
+molde cria `<schema>.<prefixo>migrations` — `up` aplica só as pendentes, `down` reverte só a
+última. Continua **não** sendo um framework de migração completo (sem *dry-run*, sem migração de
+dado automática, sem *lock* multi-processo) — os limites que restam estão em 04-regras.md §7.2.

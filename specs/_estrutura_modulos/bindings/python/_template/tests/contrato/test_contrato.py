@@ -13,20 +13,20 @@ from api.src import criar_app
 from tests.fixtures import AuthDeTeste, criar_dependencias, registro_de_exemplo
 
 ROTA_BASE = "/api/v1/<modulo>"
-TOKEN = "token-de-teste"
+CREDENCIAL_DE_TESTE = "token-de-teste"
 
 
 @pytest.fixture()
 def cliente() -> TestClient:
     app = criar_app(
         deps=criar_dependencias([registro_de_exemplo()]),
-        auth=AuthDeTeste(["<modulo>:ler", "<modulo>:escrever"], TOKEN),
+        auth=AuthDeTeste(["<modulo>:ler", "<modulo>:escrever"], CREDENCIAL_DE_TESTE),
     )
     return TestClient(app)
 
 
 def _auth() -> dict[str, str]:
-    return {"authorization": f"Bearer {TOKEN}"}
+    return {"authorization": f"Bearer {CREDENCIAL_DE_TESTE}"}
 
 
 def test_health_responde_sem_token(cliente: TestClient) -> None:

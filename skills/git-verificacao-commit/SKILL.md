@@ -13,8 +13,10 @@ primeira linha de defesa — rápida (sem varrer histórico). O check-up profund
 `git-especialista-repositorio`.
 
 > Escopo deliberadamente estreito: **apenas o commit atual**. Os padrões de segredo e nomes sensíveis em
-> `scripts/config.json` **derivam do catálogo canônico** da skill `cyber-segredos` (fonte única do ecossistema —
-> manter em sincronia). Princípios globais em `CLAUDE.md`.
+> `scripts/config.json` são **GERADOS** do catálogo canônico da skill `cyber-segredos` (fonte única do
+> ecossistema) por `scripts/gerar_config.py` — nunca editados à mão. Depois de mudar o catálogo canônico,
+> rode `python scripts/gerar_config.py`; `--conferir` prova que os dois não divergiram (plan-2.2.md
+> Bloco X). Princípios globais em `CLAUDE.md`.
 
 ## Quando usar
 - Para **instalar/configurar** o gate num repositório (hook + script).
@@ -53,4 +55,5 @@ primeira linha de defesa — rápida (sem varrer histórico). O check-up profund
 
 ## Referências (Camada 3 — leia sob demanda)
 - `scripts/verificar_commit.py` + `scripts/config.json` — gate do staged (segredos + arquivos sensíveis; exit 1 bloqueia).
+- `scripts/gerar_config.py` — gera `config.json` do catálogo canônico de `cyber-segredos`; `--conferir` prova que estão em sincronia.
 - `assets/pre-commit` — hook `pre-commit` que chama o script (instalado pela `git-commit-inicial`).

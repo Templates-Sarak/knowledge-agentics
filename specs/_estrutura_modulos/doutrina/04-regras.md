@@ -503,15 +503,16 @@ o motivo**:
 - **"Bearer Token"** (`bearer\s+[a-z0-9._-]{20,}`) — genérico, sem prefixo de fornecedor; um valor de
   teste comprido (`Bearer eyJ...fixture...`) já cai no padrão de JWT quando é JWT de verdade, e quando
   não é, este padrão não acrescenta sinal, só ruído;
-- **"Segredo atribuído"** (`(api_key|secret|token|...)\s*[:=]\s*['"][^'"]{8,}['"]`) — é exatamente o
-  vocabulário de NOME de chave (`PADRAO_CREDENCIAL`) com um sinal pior: sem o sufixo fechado, qualquer
-  identificador terminado em "token"/"secret" com um valor de 8+ caracteres acusa — inclusive uma
-  fixture de teste como `TOKEN = "token-de-teste"` (14 caracteres, acima do piso de 8). O vocabulário
-  entregue já cobre a MESMA pergunta com sufixo fechado (`CHAVE_CREDENCIAL_ATRIBUIDA`); a versão sem
-  sufixo só acrescentaria falso positivo, não cobertura nova;
-- **"String de conexão"** (`(postgres|mysql|mongodb)://user:pass@host`) — comum em EXEMPLO de
-  documentação com credencial fake (`postgres://usuario:senha@localhost/banco`), e o template tem
-  esse tipo de exemplo em comentário.
+- **"Segredo atribuído"** (identificador do vocabulário de credencial seguido de `[:=]` e um literal
+  entre aspas de 8+ caracteres) — é exatamente o vocabulário de NOME de chave (`PADRAO_CREDENCIAL`) com
+  um sinal pior: sem o sufixo fechado, qualquer identificador terminado em "token"/"secret" com um
+  valor de 8+ caracteres acusa — inclusive uma fixture de teste com a constante `TOKEN` valendo
+  `token-de-teste` (14 caracteres, acima do piso de 8). O vocabulário entregue já cobre a MESMA
+  pergunta com sufixo fechado (`CHAVE_CREDENCIAL_ATRIBUIDA`); a versão sem sufixo só acrescentaria
+  falso positivo, não cobertura nova;
+- **"String de conexão"** (esquema de banco literal seguido de `://usuario:senha@host`) — comum em
+  EXEMPLO de documentação com credencial fake (`<esquema>://<usuario>:<senha>@<host>/<banco>`), e o
+  template tem esse tipo de exemplo em comentário.
 
 **Medido contra os três moldes conformes**: zero achado nos nove padrões de valor entregues (varredura
 colada no relatório desta tarefa). O que este vocabulário **não** pega — as três formas acima, mais
@@ -580,12 +581,14 @@ positivo perigoso, é imprecisão aceita: separar dependência de backend e de f
 dos dois limites acima: provar exige um Postgres efêmero de verdade e o ciclo `up → down → up` —
 reprodução colada no relatório desta tarefa, não gate.
 
-**Sem controle de versão de migration.** `up`/`down` aplicam **todos** os arquivos de
-`database/migrations/` em ordem (crescente/decrescente pelo prefixo `NNNN`), sempre — não existe
-tabela `schema_migrations` marcando "já apliquei isto". Rodar `up` duas vezes sobre um banco já
-migrado falha (tabela já existe) **por desenho**, não por bug: é o próprio sinal de "este banco não
-está vazio". Decidido e medido contra o objetivo do bloco: provar que o `-- rollback` funciona não
-exige rastrear estado entre execuções, só que aplicar e reverter fecham o ciclo.
+**Controle de versão de migration, com limite declarado (plan-2.2.md Bloco Y).** `up`/`down`
+rastreiam o aplicado em `<schema>.<prefixo>migrations` (criada pela migration `0001` do molde) —
+`up` pula o que já rodou, `down` reverte só o último. O que isto **não** é: não há *dry-run* (ver o
+SQL antes de rodar), não há migração de **dado** automática (só DDL — dado é `expand-contract`
+manual, §6.3), e não há *lock* entre processos concorrentes — dois `up` simultâneos contra o mesmo
+banco podem tentar aplicar a mesma migration ao mesmo tempo; a chave primária de `arquivo` faz o
+segundo falhar por violação de unicidade em vez de aplicar duas vezes **silenciosamente**, mas
+"falhar barulhento" não é "coordenar" — é fail-closed, não um agendador.
 
 **`database/schema.sql` continua não verificado contra o resultado real do `up`.** Ele se declara
 "um espelho, não a fonte" e nada confere que o espelho bate — medido antes de tentar: comparar

@@ -2,7 +2,7 @@
 
     python init_repo.py --target <caminho> [--binding typescript] [--escopo acme]
                         [--modulos catalogo conector] [--name "Meu Sistema"]
-                        [--git-init] [--time-provider clockify --time-project-id 123]
+                        [--git-init]
     python init_repo.py --autoteste   prova compor_pre_commit com fixtures em memoria (sem --target)
 
 Monta, nesta ordem:
@@ -23,7 +23,6 @@ Regras (CLAUDE.md): uma responsabilidade por funcao, zero hardcoded de caminho d
 (resolvido em tempo de execucao a partir deste arquivo), nunca sobrescreve trabalho alheio.
 """
 import argparse
-import json
 import os
 import shutil
 import subprocess
@@ -243,9 +242,18 @@ def get_args():
     parser.add_argument("--modulos", nargs="*", default=[], help="Primeiros modulos a criar")
     parser.add_argument("--git-init", action="store_true", help="Roda git init se nao houver .git")
     parser.add_argument("--forcar", action="store_true", help="Sobrescreve arquivos de raiz existentes")
-    parser.add_argument("--time-provider", help="Provedor de apontamento de horas (ex: clockify)")
-    parser.add_argument("--time-project-id", help="ID do projeto no provedor de horas")
     return parser.parse_args()
+
+
+def _motivo_alvo_perigoso(target: Path) -> str | None:
+    """`None` quando o alvo e seguro para criar; senao, o motivo para a mensagem de erro nomear
+    (plan-2.2.md Bloco AA — o mesmo cuidado que a skill ja exige na entrevista HITL: nunca raiz do
+    SO, nunca HOME, so pasta especifica confirmada)."""
+    if target.parent == target:
+        return "raiz do sistema de arquivos"
+    if target == Path.home():
+        return "pasta HOME do usuario"
+    return None
 
 
 def raiz_da_base() -> Path:
@@ -358,18 +366,7 @@ def instalar_estrutura_agents(target: Path, xskills_root: Path) -> Path:
     return agents_dir
 
 
-def configurar_time_tracking(agents_dir: Path, provedor: str, projeto_id: str) -> str:
-    """Grava a config de apontamento de horas e devolve o reforco para o CLAUDE.md."""
-    config = {"time_tracking": {"provider": provedor, "project_id": projeto_id}}
-    (agents_dir / "config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
-    print("[OK] Time Tracking configurado em .agents/config.json")
-    return (
-        "> **Regra de Ouro (Time Tracking):** Este projeto possui apontamento de horas. SEMPRE inicie o "
-        "cronometro via MCP (skill `time-tracking`) em background *antes* de executar tarefas.\n"
-    )
-
-
-def escrever_entrypoint(target: Path, reforco: str, modular: bool) -> None:
+def escrever_entrypoint(target: Path, modular: bool) -> None:
     """Passo 6b: o ponteiro sempre-ativo do CLAUDE.md do projeto-alvo."""
     texto = (
         "\n\n> **Atencao (IA):** Sou um projeto Sarak. Antes de codificar, leia as regras de negocio "
@@ -381,7 +378,6 @@ def escrever_entrypoint(target: Path, reforco: str, modular: bool) -> None:
             "normativo) e e cobrada por maquina: `node ferramentas/gate/validar.mjs --todos`. "
             "Modulo novo so pela skill `code-modulo` — nunca copiando pasta a mao.\n"
         )
-    texto += reforco
     claude_md = target / "CLAUDE.md"
     with open(claude_md, "a" if claude_md.exists() else "w", encoding="utf-8") as arquivo:
         arquivo.write(texto)
@@ -451,9 +447,19 @@ def main() -> int:
 
     args = get_args()
     target = Path(args.target).resolve()
-    if not target.exists():
-        print(f"[ERRO] Diretorio alvo nao existe: {target}")
+
+    perigo = _motivo_alvo_perigoso(target)
+    if perigo is not None:
+        print(f"[ERRO] Alvo recusado ({perigo}): {target}. Confirme um caminho especifico, nunca este.")
         return 1
+
+    if not target.exists():
+        try:
+            target.mkdir(parents=True)
+        except OSError as erro:
+            print(f"[ERRO] Nao foi possivel criar o diretorio alvo {target}: {erro}")
+            return 1
+        print(f"[OK] Diretorio alvo criado: {target}")
 
     xskills_root = raiz_da_base()
     template = caminho_do_template(xskills_root)
@@ -475,11 +481,8 @@ def main() -> int:
     if args.binding and args.modulos:
         criar_modulos(target, template, args.modulos, args.binding)
 
-    agents_dir = instalar_estrutura_agents(target, xskills_root)
-    reforco = ""
-    if args.time_provider and args.time_project_id:
-        reforco = configurar_time_tracking(agents_dir, args.time_provider, args.time_project_id)
-    escrever_entrypoint(target, reforco, modular)
+    instalar_estrutura_agents(target, xskills_root)
+    escrever_entrypoint(target, modular)
     instalar_hooks_git(target, xskills_root)
 
     if modular:

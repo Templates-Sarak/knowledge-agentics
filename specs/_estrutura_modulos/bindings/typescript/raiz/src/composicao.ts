@@ -29,6 +29,7 @@ import {
   criarRepositorio,
   criarStorageEmMemoria,
 } from '../adapters/memoria/index.js';
+import { criarPostgresAuditoria, criarPostgresRepositorio } from '../adapters/postgres/index.js';
 import type { Auth } from '../packages/portas/index.js';
 
 export interface ManifestoDescoberto {
@@ -40,10 +41,17 @@ export interface ManifestoDescoberto {
   pasta: string;
 }
 
-/** Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so. */
-const FABRICAS: Record<string, Record<string, () => unknown>> = {
-  repositorio: { memoria: () => criarRepositorio() },
-  auditoria: { memoria: () => criarAuditoria() },
+/**
+ * Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so.
+ *
+ * Recebe o `ManifestoDescoberto` do modulo que esta compondo — `memoria` ignora (nao precisa saber
+ * QUEM a chamou), `postgres` usa (`modulo.id` para a chave de ambiente, `modulo.pasta` para ler
+ * `dados.schema`/`dados.prefixo` do proprio manifesto). Sem isto, um adapter que precisa de contexto
+ * por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
+ */
+const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {
+  repositorio: { memoria: () => criarRepositorio(), postgres: (modulo) => criarPostgresRepositorio(modulo) },
+  auditoria: { memoria: () => criarAuditoria(), postgres: (modulo) => criarPostgresAuditoria(modulo) },
   relogio: { sistema: () => criarRelogio() },
   geradorId: { padrao: () => criarGeradorId() },
   storage: { memoria: () => criarStorageEmMemoria() },
@@ -84,7 +92,7 @@ export function resolverDependencias(modulo: ManifestoDescoberto): Record<string
         `[composicao] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`,
       );
     }
-    dependencias[porta] = fabrica();
+    dependencias[porta] = fabrica(modulo);
   }
   return dependencias;
 }

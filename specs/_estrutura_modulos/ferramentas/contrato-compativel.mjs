@@ -260,14 +260,34 @@ function git(args) {
   return execFileSync('git', args, { cwd: RAIZ, encoding: 'utf8' });
 }
 
-/** A ref existe? Verificado ANTES de qualquer comparação — ref hostil/inválida REPROVA, nunca vira "nada mudou". */
+/**
+ * O hash da ÁRVORE VAZIA — constante do Git, válida em todo repositório sem precisar ser alcançável
+ * por commit nenhum. Comparar contra ela faz todo `contrato/openapi.yaml` existente contar como
+ * "novo, sem baseline" — nunca "não verificado" (plan-2.2.md Bloco AA, mesmo raciocínio de
+ * `ci-seguranca.mjs`).
+ */
+const ARVORE_VAZIA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+
+/** A ref existe? Verificado ANTES de qualquer comparação — ref hostil/inválida REPROVA, nunca vira
+ * "nada mudou". A árvore vazia é a única exceção: não é commit, e é sempre válida por definição. */
 function refValida(ref) {
+  if (ref === ARVORE_VAZIA) return true;
   try {
     git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Repositório com um commit só não tem `HEAD~1` — sem isto, o primeiro pipeline de todo repositório
+ * Sarak nasceria vermelho aqui. `--desde` explícito nunca é substituído em silêncio: só o DEFAULT cai
+ * para a árvore vazia quando não resolve.
+ */
+function refEfetiva(desde) {
+  if (desde !== null) return desde;
+  return refValida(REF_PADRAO) ? REF_PADRAO : ARVORE_VAZIA;
 }
 
 /** Conteúdo de um arquivo NAQUELE ref — `null` se não existir ali (git falha por design, não exceção nossa). */
@@ -323,7 +343,8 @@ function compararModulo(ref, grafo, id) {
 // ================================================================================================
 
 function imprimirHumano(ref, resultados) {
-  process.stdout.write(`contrato-compativel: comparando com --desde ${ref}\n`);
+  const rotuloRef = ref === ARVORE_VAZIA ? `${ref} (arvore vazia — sem HEAD~1, repositorio novo)` : ref;
+  process.stdout.write(`contrato-compativel: comparando com --desde ${rotuloRef}\n`);
   if (resultados.length === 0) {
     process.stdout.write('  nenhum contrato/openapi.yaml mudou nesta area\n');
     return;
@@ -381,7 +402,7 @@ function principal() {
   const opcoes = lerOpcoes(process.argv.slice(2));
   if (opcoes.autoteste) return rodarAutoteste();
 
-  const ref = opcoes.desde ?? REF_PADRAO;
+  const ref = refEfetiva(opcoes.desde);
   if (!refValida(ref)) {
     process.stderr.write(`erro: ref invalida ou inexistente: "${ref}" — nao da para afirmar compatibilidade sem baseline\n`);
     return 1;

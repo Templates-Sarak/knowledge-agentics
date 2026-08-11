@@ -4,6 +4,13 @@
 
 create schema if not exists "<escopo>";
 
+create table "<escopo>"."<modulo>_migrations" (
+  arquivo      text        primary key,
+  aplicada_em  timestamptz not null default now()
+);
+
+alter table "<escopo>"."<modulo>_migrations" enable row level security;
+
 create table "<escopo>"."<modulo>_metadados" (
   id          uuid primary key default gen_random_uuid(),
   hash        text        not null unique,

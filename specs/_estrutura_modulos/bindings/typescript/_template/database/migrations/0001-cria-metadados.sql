@@ -7,8 +7,17 @@
 --   - RLS ligada: defesa em profundidade (o controle primario e a autorizacao na api/).
 --   - trilha append-only de verdade: o REVOKE e o que torna real a promessa do codigo.
 --   - migration publicada NAO se edita — corrige-se com outra.
+--   - <modulo>_migrations e a tabela de CONTROLE do runner (scripts/migrations.{mjs,py}): registra
+--     o que ja foi aplicado, para "up" pular o que ja rodou e "down" saber qual foi o ultimo.
 
 create schema if not exists "<escopo>";
+
+create table "<escopo>"."<modulo>_migrations" (
+  arquivo      text        primary key,
+  aplicada_em  timestamptz not null default now()
+);
+
+alter table "<escopo>"."<modulo>_migrations" enable row level security;
 
 create table "<escopo>"."<modulo>_metadados" (
   id          uuid primary key default gen_random_uuid(),
@@ -44,3 +53,4 @@ revoke update, delete on "<escopo>"."<modulo>_auditoria" from public;
 -- rollback
 -- drop table if exists "<escopo>"."<modulo>_auditoria";
 -- drop table if exists "<escopo>"."<modulo>_metadados";
+-- drop table if exists "<escopo>"."<modulo>_migrations";

@@ -43,7 +43,7 @@
  *       com PREFIXO INEQUÍVOCO de fornecedor e o cabeçalho de chave privada — nenhuma delas requer
  *       entropia. Deliberadamente FORA (declarado, não esquecido): "Bearer Token" (`bearer\s+...`,
  *       genérico, sem prefixo de fornecedor), "Segredo atribuído" (`key\s*[:=]\s*'...'`, é
- *       exatamente o vocabulário (1) com sinal pior) e "String de conexão" (`postgres://user:pass@`,
+ *       exatamente o vocabulário (1) com sinal pior) e "String de conexão" (`<esquema>://<usuario>:<senha>@`,
  *       comum em EXEMPLO de documentação com credencial fake). Medido contra os três moldes
  *       conformes: zero achado nos nove padrões vendor-specific (varredura colada no relatório).
  */
@@ -159,13 +159,35 @@ function arquivosRastreados() {
   }
 }
 
+/**
+ * O hash da ÁRVORE VAZIA — constante do Git, igual em todo repositório que existe (não precisa ser
+ * alcançável por nenhum commit para funcionar como base de `git diff`). Comparar contra ela faz TODO
+ * arquivo rastreado contar como delta — é "tudo", não "nada" (plan-2.2.md Bloco AA: mais verificação
+ * nunca fere o fail-closed, menos verificação sim).
+ */
+const ARVORE_VAZIA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+
+/** A árvore vazia não é um commit — `^{commit}` reprovaria uma constante que é sempre válida por
+ * definição, então ela nunca passa pela verificação normal. */
 function refValida(ref) {
+  if (ref === ARVORE_VAZIA) return true;
   try {
     git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Repositório com um commit só não tem `HEAD~1` — sem isto, o PRIMEIRO pipeline de todo repositório
+ * Sarak nasceria vermelho aqui (medido no teste real, plan-2.2.md Bloco AA). `--desde` explícito
+ * NUNCA é substituído em silêncio: só o DEFAULT cai para a árvore vazia quando não resolve — uma ref
+ * que o usuário escolheu errada continua reprovando, para não esconder o erro dele.
+ */
+function refEfetiva(desde) {
+  if (desde !== null) return desde;
+  return refValida(REF_PADRAO) ? REF_PADRAO : ARVORE_VAZIA;
 }
 
 /** `null` quando a ref não resolve. Mesma forma de `contrato-compativel.mjs` — não um terceiro mecanismo. */
@@ -259,7 +281,8 @@ function imprimirHumano(r) {
     process.stdout.write(`  x ref invalida ou inexistente: "${r.ref}" — FAIL-CLOSED: sem baseline nao ha o que comparar\n`);
     return;
   }
-  process.stdout.write(`ci-seguranca: comparando com --desde ${r.ref}\n`);
+  const rotuloRef = r.ref === ARVORE_VAZIA ? `${r.ref} (arvore vazia — sem HEAD~1, repositorio novo)` : r.ref;
+  process.stdout.write(`ci-seguranca: comparando com --desde ${rotuloRef}\n`);
   if (r.situacao === 'delta-vazio') {
     process.stdout.write('  delta vazio — nada mudou nesta execucao (diferente de "nao verifiquei": o git respondeu, e a resposta foi "nada")\n');
   }
@@ -306,7 +329,7 @@ function principal() {
   const opcoes = lerOpcoes(process.argv.slice(2));
   if (opcoes.autoteste) return rodarAutoteste();
 
-  const resultado = analisar(opcoes.desde ?? REF_PADRAO);
+  const resultado = analisar(refEfetiva(opcoes.desde));
   if (opcoes.json) imprimirJson(resultado);
   else {
     imprimirHumano(resultado);

@@ -62,6 +62,10 @@ do repositório; enquanto não refletirem, todo agente que as ler será enganado
 ## 3.1 Você PODE (e deve)
 
 - Criar e editar specs: `specs/plan/plan-NN-*.md`, `specs/00-contexto.md`, `specs/00-indice.md`.
+- **Toda vez que criar ou editar qualquer spec — plan, `00-contexto`, ou spec fixa sob pedido do usuário —
+  atualizar o campo `status` do frontmatter dela, na mesma ação.** Conteúdo que mudou e status que ficou
+  parado é spec mentindo sobre o próprio estado; um agente que só lê o frontmatter (`00-knowledge`, buscas
+  rápidas) é enganado por isso.
 - **Mover** uma plan aprovada de `specs/plan/` para `specs/plan/executadas/` (preferencialmente com `git mv`).
   É a única movimentação de arquivo do ciclo, e é sua.
 - Editar as specs fixas (`adr/`, `arquitetura/`, `specs/`) **quando o usuário pedir explicitamente** ou ao
@@ -277,13 +281,16 @@ O ciclo repete até aprovação. **Não existe "aprovado com ressalvas"**: ou a 
 3. **Não aprove pelo resumo.** Verificação direta no worktree ou nada.
 4. **Não sintetize spec fixa por iniciativa própria** — declare o destino e espere `spec-atualizar`.
 5. **Não deixe status divergente** entre plan, pasta e `00-indice` — os três andam juntos.
-6. **Não renumere nem apague plan por conta própria.** Numeração é definitiva (vem de `proximo_numero_plan`
+6. **Não deixe o status de nenhuma spec desatualizado.** Editou o conteúdo? O `status` do frontmatter muda
+   junto, na mesma ação — vale para plan, `00-contexto` e qualquer spec fixa que você tocar sob pedido do
+   usuário. Spec com status parado é spec mentindo sobre o próprio estado.
+7. **Não renumere nem apague plan por conta própria.** Numeração é definitiva (vem de `proximo_numero_plan`
    em `00-indice.md`, nunca reaproveitada); abandono vira `⛔ Bloqueada` com motivo. Você **nunca** remove um
    arquivo de `plan/executadas/` — essa remoção só acontece dentro da skill `spec-atualizar`, depois da
    síntese aplicada e do HITL do bloco correspondente. `plan/executadas/` é fila de espera, não depósito
    permanente — mas quem a esvazia é a síntese, não o revisor.
-7. **Não duplique conteúdo** de skill ou spec fixa dentro de uma plan.
-8. **Não emita plan sem prompt de execução e sem destino da síntese.**
+8. **Não duplique conteúdo** de skill ou spec fixa dentro de uma plan.
+9. **Não emita plan sem prompt de execução e sem destino da síntese.**
 
 ---
 
@@ -299,6 +306,7 @@ O ciclo repete até aprovação. **Não existe "aprovado com ressalvas"**: ou a 
 - [ ] Prompt de execução literal e autossuficiente.
 - [ ] Linha criada no `00-indice`; dependências resolvidas.
 - [ ] Nenhum arquivo de código foi tocado por você.
+- [ ] `status` do frontmatter de toda spec criada/editada nesta ação reflete a realidade atual.
 
 **Ao dar veredito:**
 - [ ] `git status` + `git diff` lidos integralmente.

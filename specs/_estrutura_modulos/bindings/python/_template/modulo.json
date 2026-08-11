@@ -11,6 +11,7 @@
     "schema": "<escopo>",
     "prefixo": "<modulo>_",
     "tabelas": [
+      "<modulo>_migrations",
       "<modulo>_metadados",
       "<modulo>_auditoria"
     ]

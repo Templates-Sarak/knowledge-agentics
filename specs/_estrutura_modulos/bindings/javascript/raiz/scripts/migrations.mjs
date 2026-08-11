@@ -2,10 +2,11 @@
 // Runner de migrations — aplica e reverte database/migrations/*.sql de um modulo contra Postgres.
 // Lei dona: specs/arquitetura/02-contrato-e-dados.md §6.3.
 //
-//   node scripts/migrations.mjs up <modulo>       aplica em ordem, sobre banco vazio ou existente
-//   node scripts/migrations.mjs down <modulo>     reverte em ordem INVERSA (bloco "-- rollback")
-//   node scripts/migrations.mjs ciclo <modulo>    up -> down -> up — prova que o rollback fecha
-//   node scripts/migrations.mjs --autoteste       prova interna (parser, ordem, chave de ambiente)
+//   node scripts/migrations.mjs up <modulo>       aplica as PENDENTES, em ordem — pula o que ja foi
+//   node scripts/migrations.mjs down <modulo>     reverte so o ULTIMO aplicado (bloco "-- rollback")
+//   node scripts/migrations.mjs ciclo <modulo>    up -> down -> up — prova que o rollback fecha,
+//                                                  de qualquer estado inicial (vazio ou ja migrado)
+//   node scripts/migrations.mjs --autoteste       prova interna (parser, ordem, pendentes/ultimo)
 //
 // NAO MORA em ferramentas/ (zero dependencia externa, lei 3 da base) — precisa de driver de
 // Postgres, e ferramentas/ so usa node:*. `pg` e devDependency do PROJETO (mesmo precedente de
@@ -19,23 +20,31 @@
 // e dificil de reverter — desproporcional para um cliente. `pg` como devDependency e comum, escopada
 // ao projeto, instalada pelo MESMO `npm install` que ja instala tudo mais, sem tocar o sistema.
 //
-// LIMITE DECLARADO (specs/arquitetura/04-regras.md §7.2): sem controle de versao de migration
-// (tabela `schema_migrations` e afins) — o bloco e "o rollback funciona", nao "um framework de
-// migracao". `up`/`down` aplicam TODOS os arquivos em ordem, sempre; rodar `up` duas vezes sobre um
-// banco ja migrado falha (tabela ja existe) POR DESENHO — e o proprio sinal de "banco nao esta
-// vazio", nao um bug a esconder.
+// ESTADO POR MODULO (plan-2.2.md Bloco Y) — o limite que o plan.md original declarava ("sem
+// controle de versao de migration") mordeu em uso real: um projeto com tres migrations e dois
+// ambientes nao consegue rodar `up` a segunda vez. A tabela `<schema>.<prefixo>migrations`
+// (`arquivo text primary key`, `aplicada_em timestamptz`) e criada pela PRIMEIRA migration do
+// molde — nao pelo runner: o runner so LE e ESCREVE nela, nunca decide a forma dela por fora do
+// SQL versionado. `up` aplica só o que falta; `down` reverte só o ÚLTIMO aplicado (nunca "tudo de
+// uma vez" — é o comportamento padrão de runner de migration, e o que faz `ciclo` funcionar de
+// QUALQUER estado inicial, não só de banco vazio).
+//
+// ORDEM DENTRO DE CADA MIGRATION, POR TRANSACAO: `up` roda o SQL da migration e SÓ DEPOIS insere a
+// linha de controle (a tabela pode ter acabado de nascer NAQUELE up); `down` faz o INVERSO — apaga
+// a linha de controle ANTES de rodar o SQL de reversão, porque reverter a migration 0001 apaga a
+// própria tabela de controle, e não dá para `DELETE` de uma tabela que acabou de sumir. As duas
+// operações (bookkeeping + DDL) vivem na MESMA transação: se uma falhar, a outra não fica pela
+// metade — Postgres roda DDL transacional, ao contrário de outros bancos.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 // `pg` e LAZY, de proposito — mesma forma do `psycopg` em migrations.py (importado dentro da funcao
-// que conecta, nunca no topo). O nucleo puro (separarUpDown, ordenarMigrations, chaveDeAmbiente) e o
-// que `--autoteste` prova, e ele nunca toca banco: um import de topo faria um teste que nao usa
-// banco nenhum exigir o driver instalado, e `--autoteste` deixaria de rodar "de qualquer lugar"
-// (medido: sem isto, `node migrations.mjs --autoteste` rodado da BASE do template — sem `npm
-// install` — falha com ERR_MODULE_NOT_FOUND antes de chegar no nucleo puro). Medido tambem (nao
-// presumido) o formato do `await import('pg')`: o pacote e CJS, mas expoe `Client` como export
-// NOMEADO tambem (alem de `.default.Client`) — desestruturar direto do resultado do import
-// dinamico funciona, sem precisar de `.default`.
+// que conecta, nunca no topo). O nucleo puro (separarUpDown, ordenarMigrations, chaveDeAmbiente,
+// pendentes, ultimoAplicado) e o que `--autoteste` prova, e ele nunca toca banco: um import de topo
+// faria um teste que nao usa banco nenhum exigir o driver instalado, e `--autoteste` deixaria de
+// rodar "de qualquer lugar". Medido tambem (nao presumido) o formato do `await import('pg')`: o
+// pacote e CJS, mas expoe `Client` como export NOMEADO tambem (alem de `.default.Client`) —
+// desestruturar direto do resultado do import dinamico funciona, sem precisar de `.default`.
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ = resolve(AQUI, '..');
 
@@ -105,6 +114,18 @@ export function chaveDeAmbiente(idDoModulo) {
   return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
 
+/** Os nomes (ja ordenados por 'up') que NAO estao em `aplicados` — em ordem, o que falta aplicar. */
+export function pendentes(nomesOrdenadosUp, aplicados) {
+  return nomesOrdenadosUp.filter((nome) => !aplicados.has(nome));
+}
+
+/** O ULTIMO nome (na ordem 'up') que esta em `aplicados` — `null` se nenhum esta. E o alvo do `down`:
+ * reverter um passo, nunca a lista inteira, e por isso `ciclo` funciona de qualquer estado. */
+export function ultimoAplicado(nomesOrdenadosUp, aplicados) {
+  const feitos = nomesOrdenadosUp.filter((nome) => aplicados.has(nome));
+  return feitos.length > 0 ? feitos.at(-1) : null;
+}
+
 // ================================================================================================
 // CASCA — todo I/O nomeado e isolado aqui. Nucleo puro acima nunca e chamado por ela sem passar
 // pelos pontos nomeados (leitura de arquivo, rede) explicitamente.
@@ -159,6 +180,17 @@ function listarMigrations(pastaModulo) {
   return readdirSync(base).filter((nome) => nome.endsWith('.sql'));
 }
 
+/** `dados.schema`/`dados.prefixo` do manifesto — a MESMA fonte que declara as tabelas do módulo,
+ * nunca um terceiro lugar para o nome da tabela de controle. Devolve `{ schema, tabela, nome }` —
+ * `nome` já qualificado (`"schema"."tabela"`), para as funções abaixo passarem UM parâmetro em vez
+ * de dois (limiar de 4 parâmetros). */
+function tabelaDeControle(pastaModulo) {
+  const manifesto = JSON.parse(lerTexto(join(pastaModulo, 'modulo.json')));
+  const schema = manifesto.dados.schema;
+  const tabela = `${manifesto.dados.prefixo}migrations`;
+  return { schema, tabela, nome: `"${schema}"."${tabela}"` };
+}
+
 /** Le uma variavel obrigatoria. Ausente = falha nomeando a chave (lei 7 do catalogo, mesmo padrao
  * de `api/src/config.ts:envObrigatoria`). */
 function urlObrigatoria(idDoModulo) {
@@ -179,27 +211,83 @@ async function conectar(url) {
   return cliente;
 }
 
-async function aplicar(cliente, pastaModulo, direcao) {
-  const nomes = ordenarMigrations(listarMigrations(pastaModulo), direcao);
-  for (const nome of nomes) {
-    const conteudo = lerTexto(join(pastaModulo, 'database', 'migrations', nome));
-    const { up, down } = separarUpDown(conteudo);
-    const sql = direcao === 'down' ? down : up;
-    if (sql === '') {
-      process.stdout.write(`  ${nome}: nada a ${direcao === 'down' ? 'reverter' : 'aplicar'}\n`);
-      continue;
-    }
-    process.stdout.write(`  ${direcao} ${nome}...\n`);
-    await cliente.query(sql);
+/** `Set` dos `arquivo` já registrados — vazio (nunca erro) quando a tabela de controle ainda não
+ * existe, o estado normal do PRIMEIRO `up` de um banco novo. */
+async function migracoesAplicadas(cliente, schema, tabela) {
+  const existe = await cliente.query(
+    'select 1 from information_schema.tables where table_schema = $1 and table_name = $2',
+    [schema, tabela],
+  );
+  if (existe.rowCount === 0) return new Set();
+  const linhas = await cliente.query(`select arquivo from "${schema}"."${tabela}"`);
+  return new Set(linhas.rows.map((linha) => linha.arquivo));
+}
+
+/** UMA migration, dentro de UMA transação: roda o SQL, depois grava a linha de controle — nessa
+ * ordem, porque a migration 0001 CRIA a tabela de controle no próprio SQL que acabou de rodar.
+ * `tabelaControle` já vem qualificada (`{ nome }` de `tabelaDeControle`) — um parâmetro, não dois. */
+async function aplicarUma(cliente, pastaModulo, nome, tabelaControle) {
+  const conteudo = lerTexto(join(pastaModulo, 'database', 'migrations', nome));
+  const { up } = separarUpDown(conteudo);
+  process.stdout.write(`  up ${nome}...\n`);
+  await cliente.query('begin');
+  try {
+    if (up !== '') await cliente.query(up);
+    await cliente.query(`insert into ${tabelaControle} (arquivo) values ($1)`, [nome]);
+    await cliente.query('commit');
+  } catch (causa) {
+    await cliente.query('rollback');
+    throw causa;
   }
+}
+
+/** UMA migration revertida, dentro de UMA transação: apaga a linha de controle ANTES do SQL de
+ * reversão — a ordem inversa de `aplicarUma`, pelo motivo simétrico: reverter 0001 apaga a própria
+ * tabela de controle, e não há como `DELETE` dela depois que ela sumiu. */
+async function reverterUma(cliente, pastaModulo, nome, tabelaControle) {
+  const conteudo = lerTexto(join(pastaModulo, 'database', 'migrations', nome));
+  const { down } = separarUpDown(conteudo);
+  process.stdout.write(`  down ${nome}...\n`);
+  await cliente.query('begin');
+  try {
+    await cliente.query(`delete from ${tabelaControle} where arquivo = $1`, [nome]);
+    if (down !== '') await cliente.query(down);
+    await cliente.query('commit');
+  } catch (causa) {
+    await cliente.query('rollback');
+    throw causa;
+  }
+}
+
+async function aplicarPendentes(cliente, pastaModulo) {
+  const { schema, tabela, nome: tabelaControle } = tabelaDeControle(pastaModulo);
+  const nomesUp = ordenarMigrations(listarMigrations(pastaModulo), 'up');
+  const aplicados = await migracoesAplicadas(cliente, schema, tabela);
+  const faltam = pendentes(nomesUp, aplicados);
+  if (faltam.length === 0) {
+    process.stdout.write('  nada pendente — todas as migrations ja estao aplicadas\n');
+    return;
+  }
+  for (const nome of faltam) await aplicarUma(cliente, pastaModulo, nome, tabelaControle);
+}
+
+async function reverterUltimo(cliente, pastaModulo) {
+  const { schema, tabela, nome: tabelaControle } = tabelaDeControle(pastaModulo);
+  const nomesUp = ordenarMigrations(listarMigrations(pastaModulo), 'up');
+  const aplicados = await migracoesAplicadas(cliente, schema, tabela);
+  const alvo = ultimoAplicado(nomesUp, aplicados);
+  if (alvo === null) {
+    process.stdout.write('  nada aplicado — nada a reverter\n');
+    return;
+  }
+  await reverterUma(cliente, pastaModulo, alvo, tabelaControle);
 }
 
 async function rodarUp(idDoModulo) {
   const pastaModulo = pastaDoModulo(idDoModulo);
-  const url = urlObrigatoria(idDoModulo);
-  const cliente = await conectar(url);
+  const cliente = await conectar(urlObrigatoria(idDoModulo));
   try {
-    await aplicar(cliente, pastaModulo, 'up');
+    await aplicarPendentes(cliente, pastaModulo);
   } finally {
     await cliente.end();
   }
@@ -207,21 +295,20 @@ async function rodarUp(idDoModulo) {
 
 async function rodarDown(idDoModulo) {
   const pastaModulo = pastaDoModulo(idDoModulo);
-  const url = urlObrigatoria(idDoModulo);
-  const cliente = await conectar(url);
+  const cliente = await conectar(urlObrigatoria(idDoModulo));
   try {
-    await aplicar(cliente, pastaModulo, 'down');
+    await reverterUltimo(cliente, pastaModulo);
   } finally {
     await cliente.end();
   }
 }
 
 async function rodarCiclo(idDoModulo) {
-  process.stdout.write(`[migrations] ${idDoModulo}: up\n`);
+  process.stdout.write(`[migrations] ${idDoModulo}: up (aplica pendentes)\n`);
   await rodarUp(idDoModulo);
-  process.stdout.write(`[migrations] ${idDoModulo}: down\n`);
+  process.stdout.write(`[migrations] ${idDoModulo}: down (reverte o ultimo aplicado)\n`);
   await rodarDown(idDoModulo);
-  process.stdout.write(`[migrations] ${idDoModulo}: up (de novo — prova que o rollback fechou o ciclo)\n`);
+  process.stdout.write(`[migrations] ${idDoModulo}: up (reaplica o que o down reverteu)\n`);
   await rodarUp(idDoModulo);
   process.stdout.write(`[migrations] ${idDoModulo}: ciclo up -> down -> up OK\n`);
 }
@@ -317,6 +404,57 @@ function casosDeChaveDeAmbiente() {
   ];
 }
 
+/** `pendentes`/`ultimoAplicado` contra os TRES estados que `ciclo` atravessa: banco vazio (nada
+ * aplicado), banco parcialmente migrado, e banco totalmente migrado (o caso que travava `up`
+ * antes deste bloco — medido no teste real, plan-2.2.md Bloco Y). */
+function casosDeEstado() {
+  const nomes = ['0001-cria-metadados.sql', '0002-acrescenta-status.sql', '0003-cria-indice.sql'];
+  return [
+    {
+      nome: 'pendentes: banco vazio -> as tres, em ordem',
+      fn: () => JSON.stringify(pendentes(nomes, new Set())) === JSON.stringify(nomes),
+    },
+    {
+      nome: 'pendentes: banco ja migrado por completo -> nenhuma (isto e o que travava antes)',
+      fn: () => pendentes(nomes, new Set(nomes)).length === 0,
+    },
+    {
+      nome: 'pendentes: so a primeira aplicada -> falta a segunda e a terceira, em ordem',
+      fn: () =>
+        JSON.stringify(pendentes(nomes, new Set([nomes[0]]))) === JSON.stringify([nomes[1], nomes[2]]),
+    },
+    {
+      nome: 'ultimoAplicado: nenhuma aplicada -> null (down nao tem o que reverter)',
+      fn: () => ultimoAplicado(nomes, new Set()) === null,
+    },
+    {
+      nome: 'ultimoAplicado: todas aplicadas -> a TERCEIRA (maior prefixo), nunca a primeira',
+      fn: () => ultimoAplicado(nomes, new Set(nomes)) === nomes[2],
+    },
+    {
+      nome: 'ultimoAplicado: aplicadas fora de ordem no Set -> ainda assim a de MAIOR prefixo',
+      fn: () => ultimoAplicado(nomes, new Set([nomes[2], nomes[0]])) === nomes[2],
+    },
+  ];
+}
+
+/** Isolado de `rodarAutoteste` só para a função caber no limiar de 40 linhas — o mesmo limiar que
+ * este arquivo existe para fazer valer no código do usuário. */
+function rodarCasosDeEstado() {
+  let falhas = 0;
+  for (const caso of casosDeEstado()) {
+    let ok;
+    try {
+      ok = caso.fn() === true;
+    } catch {
+      ok = false;
+    }
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
+    if (!ok) falhas += 1;
+  }
+  return falhas;
+}
+
 function rodarAutoteste() {
   let falhas = 0;
   let total = 0;
@@ -348,6 +486,9 @@ function rodarAutoteste() {
     process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} chaveDeAmbiente: ${caso.nome}\n`);
     if (!ok) falhas += 1;
   }
+
+  total += casosDeEstado().length;
+  falhas += rodarCasosDeEstado();
 
   process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
   return falhas === 0 ? 0 : 1;

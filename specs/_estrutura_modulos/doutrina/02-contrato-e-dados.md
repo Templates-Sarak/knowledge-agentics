@@ -164,8 +164,13 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
   com outra.
 - Toda migration é **reversível**: o bloco `-- rollback` acompanha, e o gate exige que ele exista.
 - **O bloco é executável, não decorativo.** Cada linha do rollback é a instrução comentada
-  (`-- drop table if exists ...`); `scripts/migrations.{mjs,py}` (03-operação.md §9.3) descomenta e roda
-  em ordem inversa. É contrato textual preciso — não prosa que alguém lê antes de agir a mão.
+  (`-- drop table if exists ...`); `scripts/migrations.{mjs,py}` (03-operação.md §9.3) descomenta e roda.
+  É contrato textual preciso — não prosa que alguém lê antes de agir a mão.
+- **Estado por módulo:** a migration `0001` do molde cria `<schema>.<prefixo>migrations`
+  (`arquivo text primary key`, `aplicada_em timestamptz`) — o registro do que já rodou. `up` aplica só
+  as migrations **pendentes** (nunca falha por rodar duas vezes sobre um banco já migrado); `down`
+  reverte só a **última aplicada**, uma de cada vez — nunca a lista inteira. É o que faz `ciclo`
+  (`up → down → up`) funcionar a partir de **qualquer** estado inicial, não só de banco vazio.
 - Mudança destrutiva usa **expand-contract**: adiciona → migra dado → passa a ler o novo → só então remove o
   antigo, em migrations separadas.
 - `schema.sql` reflete o estado alvo depois da última migration.

@@ -39,6 +39,15 @@
  * simulação mínima de "o que sobrevive a um clone", sem virar um projeto git de verdade. O passo
  * `verificar`, que já vem a seguir no pipeline, é quem lê o resultado: se o `.gitignore` comeu
  * estrutura, ele reprova ali, não aqui.
+ *
+ * `primeiro-commit` (plan-2.2.md Bloco X) — a EXCEÇÃO deliberada de fronteira deste arquivo: é o
+ * único passo do K que sai de `specs/_estrutura_modulos/` e chama `skills/git-verificacao-commit/
+ * scripts/verificar_commit.py`, na BASE. Todo o resto deste script só toca o TEMPLATE (ferramentas/,
+ * bindings/) porque só ele decide se um projeto gerado nasce verde; mas "o repositório nasce
+ * COMMITÁVEL?" é uma pergunta sobre o template **e** o gate de segredos **compostos** — e a base é
+ * dona dos dois. Medir isso sem sair da base seria fingir medir. Roda sobre o STAGED que
+ * `clone-simulado` acabou de produzir (`git init` + `git add -A`) e exige ZERO achado — nenhuma
+ * allowlist, nenhum `--no-verify`: achado aqui é o template instalando o próprio vazamento.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -115,6 +124,15 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
   // quem lê o resultado é o `verificar` que já vem a seguir no pipeline, nos dois bindings.
   const cloneSimulado = { nome: 'clone-simulado', tipo: 'clone-simulado' };
 
+  // Logo depois do `clone-simulado` (plan-2.2.md Bloco X) — a pergunta "este repositório nasce
+  // commitável?" só faz sentido sobre o STAGED de um `git init` + `git add -A` reais, que é
+  // exatamente o que `clone-simulado` acabou de produzir. Roda ANTES de `verificar`/`build`/`lint`
+  // de propósito: se o repositório não commita, nada do resto importa — é o próprio impedimento que
+  // o Bloco X descreve. Alcança a skill `git-verificacao-commit` (fora de `ferramentas/`, fora do
+  // template) — deliberado: a pergunta só tem sentido com o template e o gate de segredos COMPOSTOS,
+  // e a base é dona dos dois (declarado aqui, exceção ao D3 do cabeçalho deste arquivo).
+  const primeiroCommit = { nome: 'primeiro-commit', tipo: 'primeiro-commit' };
+
   // Depois de `verificar`, nos dois bindings — o mapa instalado (plan-2.1.md Bloco U) é doutrina, não
   // código do módulo, então não precisa esperar o `clone-simulado`: entra assim que o projeto existe.
   // "Entra no Bloco K" É esta linha — sem ela, `verificar-mapa.mjs --conferir` seria um `--conferir`
@@ -129,6 +147,7 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
       { nome: 'instalar', tipo: 'pip-install' },
       ...passosDeModulo,
       cloneSimulado,
+      primeiroCommit,
       { nome: 'verificar', tipo: 'verificar-py' },
       mapaInstalado,
       { nome: 'ci-dependencias', tipo: 'ci-dependencias-py' },
@@ -139,6 +158,7 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
     { nome: 'instalar', tipo: 'npm-install' },
     ...passosDeModulo,
     cloneSimulado,
+    primeiroCommit,
     { nome: 'verificar', tipo: 'npm-script', script: 'verificar' },
     mapaInstalado,
     { nome: 'build', tipo: 'npm-script', script: 'build' },
@@ -185,6 +205,11 @@ const RAIZ_TEMPLATE = join(AQUI, '..');
 const CRIAR_PROJETO = join(RAIZ_TEMPLATE, 'ferramentas', 'criar-projeto.mjs');
 const CRIAR_MODULO = join(RAIZ_TEMPLATE, 'ferramentas', 'criar-modulo.mjs');
 const VERIFICAR_MAPA = join(AQUI, 'verificar-mapa.mjs');
+// A ÚNICA referência deste arquivo a `skills/` (fora do template) — ver o parágrafo "primeiro-commit"
+// no cabeçalho, a exceção de fronteira que o Bloco X declara por escrito.
+const RAIZ_BASE = join(RAIZ_TEMPLATE, '..', '..');
+const VERIFICAR_COMMIT_PY = join(RAIZ_BASE, 'skills', 'git-verificacao-commit', 'scripts', 'verificar_commit.py');
+const CONFIG_SEGREDOS = join(RAIZ_BASE, 'skills', 'git-verificacao-commit', 'scripts', 'config.json');
 const NODE = process.execPath;
 
 /** ÚNICO ponto que roda um script Node de verdade. Array de argumentos, NUNCA `shell: true`. */
@@ -316,6 +341,14 @@ function executarPasso(passo, ctx) {
       return rodarNode([CRIAR_MODULO, passo.moduloId, '--binding', ctx.binding, ...passo.flags], ctx.destino);
     case 'clone-simulado':
       return simularClone(ctx.destino);
+    case 'primeiro-commit': {
+      const python = ctx.pythonBase ?? resolverPythonBase();
+      return rodarPython(
+        python,
+        [VERIFICAR_COMMIT_PY, '--raiz', ctx.destino, '--config', CONFIG_SEGREDOS],
+        RAIZ_BASE,
+      );
+    }
     case 'mapa-instalado':
       return rodarNode([VERIFICAR_MAPA, '--conferir', join(ctx.destino, 'specs', 'arquitetura')], RAIZ_TEMPLATE);
     case 'npm-script':
@@ -484,13 +517,20 @@ function casosDeAutoteste() {
       const nomes = passos.map((p) => p.nome);
       return nomes.indexOf('venv') < iPrimeiroModulo && nomes.indexOf('instalar') < iPrimeiroModulo;
     } },
-    { nome: 'passosDoBinding: clone-simulado depois do ULTIMO criar-modulo e antes de verificar, nos tres bindings (M.1)', fn: () => (
+    { nome: 'passosDoBinding: clone-simulado depois do ULTIMO criar-modulo, nos tres bindings (M.1)', fn: () => (
       BINDINGS.every((binding) => {
         const passos = passosDoBinding(binding);
         const nomes = passos.map((p) => p.nome);
         const iUltimoModulo = passos.findLastIndex((p) => p.tipo === 'criar-modulo');
         const iClone = nomes.indexOf('clone-simulado');
-        return iUltimoModulo !== -1 && iClone === iUltimoModulo + 1 && iClone === nomes.indexOf('verificar') - 1;
+        return iUltimoModulo !== -1 && iClone === iUltimoModulo + 1;
+      })
+    ) },
+    { nome: 'passosDoBinding: primeiro-commit logo depois de clone-simulado e antes de verificar, nos tres bindings (Bloco X, plan-2.2.md)', fn: () => (
+      BINDINGS.every((binding) => {
+        const nomes = passosDoBinding(binding).map((p) => p.nome);
+        const iCommit = nomes.indexOf('primeiro-commit');
+        return iCommit === nomes.indexOf('clone-simulado') + 1 && iCommit === nomes.indexOf('verificar') - 1;
       })
     ) },
     { nome: 'passosDoBinding: mapa (Bloco U, plan-2.1.md) roda logo depois de verificar, nos tres bindings', fn: () => (

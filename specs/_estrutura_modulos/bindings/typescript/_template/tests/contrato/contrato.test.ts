@@ -8,7 +8,7 @@ import { criarApp } from '../../api/src/index.js';
 import { criarAuth, criarDependencias, registroDeExemplo } from '../fixtures/index.js';
 
 const ROTA_BASE = '/api/v1/<modulo>';
-const TOKEN = 'token-de-teste';
+const CREDENCIAL_DE_TESTE = 'token-de-teste';
 
 let servidor: Server;
 let base: string;
@@ -16,7 +16,7 @@ let base: string;
 beforeAll(async () => {
   const app = criarApp({
     deps: criarDependencias([registroDeExemplo()]),
-    auth: criarAuth(['<modulo>:ler', '<modulo>:escrever'], TOKEN),
+    auth: criarAuth(['<modulo>:ler', '<modulo>:escrever'], CREDENCIAL_DE_TESTE),
   });
   servidor = await new Promise<Server>((resolver) => {
     const criado = app.listen(0, () => resolver(criado));
@@ -40,7 +40,7 @@ function pedir(caminho: string, opcoes: RequestInit = {}) {
 function autenticado(caminho: string, opcoes: RequestInit = {}) {
   return pedir(caminho, {
     ...opcoes,
-    headers: { authorization: `Bearer ${TOKEN}`, ...(opcoes.headers ?? {}) },
+    headers: { authorization: `Bearer ${CREDENCIAL_DE_TESTE}`, ...(opcoes.headers ?? {}) },
   });
 }
 

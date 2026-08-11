@@ -71,6 +71,11 @@ e-mail ou um LLM. Fica **fora** do módulo, e por dois motivos:
 `adapters/memoria/` é **obrigatório** em todo projeto: é ele que permite os testes rodarem sem rede. Sem
 variante de memória para cada porta, o desacoplamento não é verificável — e o que não é verificável é folclore.
 
+`adapters/postgres/` também vem pronto (plan-2.2.md Bloco Z), para as portas `repositorio` e `auditoria` —
+`memoria` continua sendo o que `config/portas.json` escolhe por padrão. Cobre a forma que `criar-modulo.mjs`
+já cria (`<prefixo>metadados`/`<prefixo>auditoria`); módulo com tabela de outra forma escreve o próprio
+adapter, do mesmo jeito que sempre escreveu para qualquer outro fornecedor (01-modulo.md §5.2).
+
 ## 3.3 Packages — a exceção mínima
 
 `packages/` só aceita o que é **interface, contrato ou design, sem lógica de negócio**:

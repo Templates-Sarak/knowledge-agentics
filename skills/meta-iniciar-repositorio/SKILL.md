@@ -46,33 +46,32 @@ Se você vir uma pasta `doutrina/` na raiz do alvo, algo rodou errado.
 | **Binding**: `typescript` \| `javascript` \| `python` | **não há binding para Go/Java** — ver Limites |
 | Escopo dos packages (`@acme`) | derive do nome do sistema e confirme |
 | Primeiros módulos e o papel de cada um | mínimo um `dominio`; `conector` se houver mais de um módulo com tela |
-| Apontamento de horas via MCP? | se sim, provedor (`clockify` \| `toggl`) |
 
 **Sem binding** (repositório que não é um sistema modular — um site, uma lib, uma base de conhecimento):
 rode sem `--binding`. O script instala só `specs/` e `.agents/`, e o Nível 1 não se aplica.
 
-### 2. Projeto de horas (se aplicável)
-Acione o MCP correspondente (`clockify-sarak` / `toggl-sarak`) com `create_project`, `name` = nome do
-sistema. Guarde o `project_id` retornado.
-
-### 3. HITL — plano
+### 2. HITL — plano
 Apresente: alvo, binding, escopo, módulos com papel, **o que será criado** e **o que não será tocado**.
 → "⚠️ Confirma a inicialização de `<alvo>`?" **Aguarde.**
 
-### 4. Executar
+### 3. Executar
 ```bash
 python skills/meta-iniciar-repositorio/scripts/init_repo.py \
   --target "<caminho-alvo>" --name "<nome>" \
   --binding <typescript|javascript|python> --escopo <escopo> \
-  --modulos <id> [<id>...] --git-init \
-  [--time-provider <p> --time-project-id <id>]
+  --modulos <id> [<id>...] --git-init
 ```
+
+O script **cria o diretório-alvo** se ele ainda não existir (plan-2.2.md Bloco AA) — não precisa de
+`mkdir` manual antes. Ele mesmo recusa (`[ERRO] Alvo recusado`) raiz do sistema de arquivos e a pasta
+HOME, como backstop do que a entrevista já confirmou — mas essa checagem mecânica nunca substitui a
+confirmação HITL do passo 1, que continua obrigatória.
 
 **Se o script abortar por colisão** (`o destino ja tem package.json, ...`): **pare e pergunte**. `--forcar`
 sobrescreve o manifesto de pacote do projeto — o `.gitignore` é mesclado, mas o `package.json` **não**.
 Essa decisão é do usuário, nunca sua.
 
-### 5. Verificar
+### 4. Verificar
 O próprio script roda `validar.mjs --todos` ao final. Rode também o comando composto do binding
 (`npm run verificar` ou `python verificar.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
 
@@ -90,7 +89,7 @@ Ancorado na **invocação**, não em qualquer menção ao nome do arquivo — o 
 têm de dar exatamente 1 — zero é hook não composto; mais de 1 é hook duplicado (composição rodou mais
 de uma vez sobre o mesmo arquivo).
 
-### 6. Handoff
+### 5. Handoff
 
 **Se rodou com `--binding`** (projeto modular): o passo 2 já instalou o `.githooks/pre-commit` e o
 `.githooks/pre-push` do TEMPLATE (a fiação das três camadas, `specs/arquitetura/03-operacao.md` §7.1), e

@@ -28,11 +28,19 @@ import {
   criarRepositorio,
   criarStorageEmMemoria,
 } from '../adapters/memoria/index.js';
+import { criarPostgresAuditoria, criarPostgresRepositorio } from '../adapters/postgres/index.js';
 
-/** Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so. */
+/**
+ * Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so.
+ *
+ * Recebe o manifesto do modulo que esta compondo — `memoria` ignora (nao precisa saber QUEM a
+ * chamou), `postgres` usa (`modulo.id` para a chave de ambiente, `modulo.pasta` para ler
+ * `dados.schema`/`dados.prefixo` do proprio manifesto). Sem isto, um adapter que precisa de
+ * contexto por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
+ */
 const FABRICAS = {
-  repositorio: { memoria: () => criarRepositorio() },
-  auditoria: { memoria: () => criarAuditoria() },
+  repositorio: { memoria: () => criarRepositorio(), postgres: (modulo) => criarPostgresRepositorio(modulo) },
+  auditoria: { memoria: () => criarAuditoria(), postgres: (modulo) => criarPostgresAuditoria(modulo) },
   relogio: { sistema: () => criarRelogio() },
   geradorId: { padrao: () => criarGeradorId() },
   storage: { memoria: () => criarStorageEmMemoria() },
@@ -73,7 +81,7 @@ export function resolverDependencias(modulo) {
         `[composicao] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`,
       );
     }
-    dependencias[porta] = fabrica();
+    dependencias[porta] = fabrica(modulo);
   }
   return dependencias;
 }

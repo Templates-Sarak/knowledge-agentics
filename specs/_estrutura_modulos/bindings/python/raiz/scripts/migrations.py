@@ -3,10 +3,11 @@
 
 Lei dona: specs/arquitetura/02-contrato-e-dados.md §6.3.
 
-    python scripts/migrations.py up <modulo>       aplica em ordem, sobre banco vazio ou existente
-    python scripts/migrations.py down <modulo>     reverte em ordem INVERSA (bloco "-- rollback")
-    python scripts/migrations.py ciclo <modulo>    up -> down -> up — prova que o rollback fecha
-    python scripts/migrations.py --autoteste       prova interna (parser, ordem, chave de ambiente)
+    python scripts/migrations.py up <modulo>       aplica as PENDENTES, em ordem — pula o que ja foi
+    python scripts/migrations.py down <modulo>     reverte so o ULTIMO aplicado (bloco "-- rollback")
+    python scripts/migrations.py ciclo <modulo>    up -> down -> up — prova que o rollback fecha, de
+                                                    qualquer estado inicial (vazio ou ja migrado)
+    python scripts/migrations.py --autoteste       prova interna (parser, ordem, pendentes/ultimo)
 
 NAO MORA em ferramentas/ (zero dependencia externa, lei 3 da base) — precisa de driver de Postgres,
 e ferramentas/ so usa node:*/stdlib. `psycopg` e optional-dependency do PROJETO (mesmo grupo `dev`
@@ -20,15 +21,23 @@ nao um cliente isolado). Instalar um Postgres inteiro no sistema so para ter o C
 dificil de reverter — desproporcional para um cliente. `psycopg` como optional-dependency e comum,
 escopada ao projeto, instalada pelo MESMO `pip install -e ".[dev]"` que ja instala tudo mais.
 
-LIMITE DECLARADO (specs/arquitetura/04-regras.md §7.2): sem controle de versao de migration (tabela
-`schema_migrations` e afins) — o bloco e "o rollback funciona", nao "um framework de migracao".
-`up`/`down` aplicam TODOS os arquivos em ordem, sempre; rodar `up` duas vezes sobre um banco ja
-migrado falha (tabela ja existe) POR DESENHO — e o proprio sinal de "banco nao esta vazio", nao um
-bug a esconder.
+ESTADO POR MODULO (plan-2.2.md Bloco Y) — o limite que este arquivo declarava ("sem controle de
+versao de migration") mordeu em uso real: um projeto com tres migrations e dois ambientes nao
+conseguia rodar `up` a segunda vez. A tabela `<schema>.<prefixo>migrations` (`arquivo text primary
+key`, `aplicada_em timestamptz`) e criada pela PRIMEIRA migration do molde — nao por este runner: o
+runner so LE e ESCREVE nela, nunca decide a forma dela por fora do SQL versionado. `up` aplica so o
+que falta; `down` reverte so o ULTIMO aplicado (nunca "tudo de uma vez" — e o comportamento padrao
+de runner de migration, e o que faz `ciclo` funcionar de QUALQUER estado inicial).
+
+ORDEM DENTRO DE CADA MIGRATION, POR TRANSACAO: `up` roda o SQL da migration e SO DEPOIS insere a
+linha de controle (a tabela pode ter acabado de nascer NAQUELE up); `down` faz o INVERSO — apaga a
+linha de controle ANTES de rodar o SQL de reversao, porque reverter a migration 0001 apaga a propria
+tabela de controle, e nao da para `DELETE` de uma tabela que acabou de sumir.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -109,6 +118,18 @@ def chave_de_ambiente(id_do_modulo: str) -> str:
     return f"{id_do_modulo.upper().replace('-', '_')}_DB_URL"
 
 
+def pendentes(nomes_ordenados_up: list[str], aplicados: set[str]) -> list[str]:
+    """Os nomes (ja ordenados por 'up') que NAO estao em `aplicados` — em ordem, o que falta aplicar."""
+    return [nome for nome in nomes_ordenados_up if nome not in aplicados]
+
+
+def ultimo_aplicado(nomes_ordenados_up: list[str], aplicados: set[str]) -> str | None:
+    """O ULTIMO nome (na ordem 'up') que esta em `aplicados` — `None` se nenhum esta. E o alvo do
+    `down`: reverter um passo, nunca a lista inteira, e por isso `ciclo` funciona de qualquer estado."""
+    feitos = [nome for nome in nomes_ordenados_up if nome in aplicados]
+    return feitos[-1] if feitos else None
+
+
 # ====================================================================================================
 # CASCA — todo I/O nomeado e isolado aqui.
 # ====================================================================================================
@@ -160,6 +181,18 @@ def _listar_migrations(pasta_modulo: Path) -> list[str]:
     return [p.name for p in base.iterdir() if p.suffix == ".sql"]
 
 
+def _tabela_de_controle(pasta_modulo: Path) -> tuple[str, str, str]:
+    """`dados.schema`/`dados.prefixo` do manifesto — a MESMA fonte que declara as tabelas do
+    modulo, nunca um terceiro lugar para o nome da tabela de controle. Devolve `(schema, tabela,
+    qualificada)` — `qualificada` (`"schema"."tabela"`) permite as funcoes abaixo passarem UM
+    parametro em vez de dois (limiar de 4 parametros)."""
+    manifesto = json.loads(_ler_texto(pasta_modulo / "modulo.json"))
+    dados = manifesto["dados"]
+    schema = dados["schema"]
+    tabela = f"{dados['prefixo']}migrations"
+    return schema, tabela, f'"{schema}"."{tabela}"'
+
+
 def _url_obrigatoria(id_do_modulo: str) -> str:
     """Le uma variavel obrigatoria. Ausente = falha nomeando a chave (lei 7 do catalogo, mesmo
     padrao de `api/src/config.py:env_obrigatoria`)."""
@@ -173,22 +206,6 @@ def _url_obrigatoria(id_do_modulo: str) -> str:
     return valor
 
 
-def _aplicar(conexao: Any, pasta_modulo: Path, direcao: str) -> None:
-    nomes = ordenar_migrations(_listar_migrations(pasta_modulo), direcao)
-    with conexao.cursor() as cursor:
-        for nome in nomes:
-            conteudo = _ler_texto(pasta_modulo / "database" / "migrations" / nome)
-            up, down = separar_up_down(conteudo)
-            sql = down if direcao == "down" else up
-            if sql == "":
-                verbo = "reverter" if direcao == "down" else "aplicar"
-                sys.stdout.write(f"  {nome}: nada a {verbo}\n")
-                continue
-            sys.stdout.write(f"  {direcao} {nome}...\n")
-            cursor.execute(sql)
-    conexao.commit()
-
-
 def _conectar(url: str) -> Any:
     # Lazy DE PROPOSITO (nao top-level): `psycopg` e optional-dependency `dev` (docstring do
     # modulo, DECISAO). `--autoteste` prova so o nucleo puro e precisa rodar mesmo sem `[dev]`
@@ -198,26 +215,99 @@ def _conectar(url: str) -> Any:
     return psycopg.connect(url)
 
 
+def _migracoes_aplicadas(conexao: Any, schema: str, tabela: str) -> set[str]:
+    """`set` dos `arquivo` ja registrados — vazio (nunca erro) quando a tabela de controle ainda
+    nao existe, o estado normal do PRIMEIRO `up` de um banco novo."""
+    with conexao.cursor() as cursor:
+        cursor.execute(
+            "select 1 from information_schema.tables where table_schema = %s and table_name = %s",
+            (schema, tabela),
+        )
+        if cursor.fetchone() is None:
+            return set()
+        cursor.execute(f'select arquivo from "{schema}"."{tabela}"')
+        return {linha[0] for linha in cursor.fetchall()}
+
+
+def _aplicar_uma(conexao: Any, pasta_modulo: Path, nome: str, tabela_controle: str) -> None:
+    """UMA migration, dentro de UMA transacao: roda o SQL, depois grava a linha de controle —
+    nessa ordem, porque a migration 0001 CRIA a tabela de controle no proprio SQL que acabou de
+    rodar. `tabela_controle` ja vem qualificada (`_tabela_de_controle`) — um parametro, nao dois."""
+    conteudo = _ler_texto(pasta_modulo / "database" / "migrations" / nome)
+    up, _ = separar_up_down(conteudo)
+    sys.stdout.write(f"  up {nome}...\n")
+    try:
+        with conexao.cursor() as cursor:
+            if up:
+                cursor.execute(up)
+            cursor.execute(f"insert into {tabela_controle} (arquivo) values (%s)", (nome,))
+        conexao.commit()
+    except Exception:
+        conexao.rollback()
+        raise
+
+
+def _reverter_uma(conexao: Any, pasta_modulo: Path, nome: str, tabela_controle: str) -> None:
+    """UMA migration revertida, dentro de UMA transacao: apaga a linha de controle ANTES do SQL de
+    reversao — a ordem inversa de `_aplicar_uma`, pelo motivo simetrico: reverter 0001 apaga a
+    propria tabela de controle."""
+    conteudo = _ler_texto(pasta_modulo / "database" / "migrations" / nome)
+    _, down = separar_up_down(conteudo)
+    sys.stdout.write(f"  down {nome}...\n")
+    try:
+        with conexao.cursor() as cursor:
+            cursor.execute(f"delete from {tabela_controle} where arquivo = %s", (nome,))
+            if down:
+                cursor.execute(down)
+        conexao.commit()
+    except Exception:
+        conexao.rollback()
+        raise
+
+
+def _aplicar_pendentes(conexao: Any, pasta_modulo: Path) -> None:
+    schema, tabela, tabela_controle = _tabela_de_controle(pasta_modulo)
+    nomes_up = ordenar_migrations(_listar_migrations(pasta_modulo), "up")
+    aplicados = _migracoes_aplicadas(conexao, schema, tabela)
+    faltam = pendentes(nomes_up, aplicados)
+    if not faltam:
+        sys.stdout.write("  nada pendente — todas as migrations ja estao aplicadas\n")
+        return
+    for nome in faltam:
+        _aplicar_uma(conexao, pasta_modulo, nome, tabela_controle)
+
+
+def _reverter_ultimo(conexao: Any, pasta_modulo: Path) -> None:
+    schema, tabela, tabela_controle = _tabela_de_controle(pasta_modulo)
+    nomes_up = ordenar_migrations(_listar_migrations(pasta_modulo), "up")
+    aplicados = _migracoes_aplicadas(conexao, schema, tabela)
+    alvo = ultimo_aplicado(nomes_up, aplicados)
+    if alvo is None:
+        sys.stdout.write("  nada aplicado — nada a reverter\n")
+        return
+    _reverter_uma(conexao, pasta_modulo, alvo, tabela_controle)
+
+
 def rodar_up(id_do_modulo: str) -> None:
     pasta_modulo = _pasta_do_modulo(id_do_modulo)
     url = _url_obrigatoria(id_do_modulo)
     with _conectar(url) as conexao:
-        _aplicar(conexao, pasta_modulo, "up")
+        _aplicar_pendentes(conexao, pasta_modulo)
 
 
 def rodar_down(id_do_modulo: str) -> None:
     pasta_modulo = _pasta_do_modulo(id_do_modulo)
     url = _url_obrigatoria(id_do_modulo)
     with _conectar(url) as conexao:
-        _aplicar(conexao, pasta_modulo, "down")
+        _reverter_ultimo(conexao, pasta_modulo)
 
 
 def rodar_ciclo(id_do_modulo: str) -> None:
-    sys.stdout.write(f"[migrations] {id_do_modulo}: up\n")
+    sys.stdout.write(f"[migrations] {id_do_modulo}: up (aplica pendentes)\n")
     rodar_up(id_do_modulo)
-    sys.stdout.write(f"[migrations] {id_do_modulo}: down\n")
+    sys.stdout.write(f"[migrations] {id_do_modulo}: down (reverte o ultimo aplicado)\n")
     rodar_down(id_do_modulo)
-    sys.stdout.write(f"[migrations] {id_do_modulo}: up (de novo — prova que o rollback fechou o ciclo)\n")
+    sys.stdout.write(f"[migrations] {id_do_modulo}: up (reaplica o que o down reverteu)\n")
     rodar_up(id_do_modulo)
     sys.stdout.write(f"[migrations] {id_do_modulo}: ciclo up -> down -> up OK\n")
 
@@ -307,6 +397,39 @@ def _casos_de_chave_de_ambiente() -> list[dict[str, Any]]:
     ]
 
 
+def _casos_de_estado() -> list[dict[str, Any]]:
+    """`pendentes`/`ultimo_aplicado` contra os TRES estados que `ciclo` atravessa: banco vazio,
+    parcialmente migrado, e totalmente migrado (o caso que travava `up` antes deste bloco — medido
+    no teste real, plan-2.2.md Bloco Y)."""
+    nomes = ["0001-cria-metadados.sql", "0002-acrescenta-status.sql", "0003-cria-indice.sql"]
+    return [
+        {
+            "nome": "pendentes: banco vazio -> as tres, em ordem",
+            "fn": lambda: pendentes(nomes, set()) == nomes,
+        },
+        {
+            "nome": "pendentes: banco ja migrado por completo -> nenhuma (isto e o que travava antes)",
+            "fn": lambda: pendentes(nomes, set(nomes)) == [],
+        },
+        {
+            "nome": "pendentes: so a primeira aplicada -> falta a segunda e a terceira, em ordem",
+            "fn": lambda: pendentes(nomes, {nomes[0]}) == [nomes[1], nomes[2]],
+        },
+        {
+            "nome": "ultimo_aplicado: nenhuma aplicada -> None (down nao tem o que reverter)",
+            "fn": lambda: ultimo_aplicado(nomes, set()) is None,
+        },
+        {
+            "nome": "ultimo_aplicado: todas aplicadas -> a TERCEIRA (maior prefixo), nunca a primeira",
+            "fn": lambda: ultimo_aplicado(nomes, set(nomes)) == nomes[2],
+        },
+        {
+            "nome": "ultimo_aplicado: aplicadas fora de ordem no set -> ainda assim a de MAIOR prefixo",
+            "fn": lambda: ultimo_aplicado(nomes, {nomes[2], nomes[0]}) == nomes[2],
+        },
+    ]
+
+
 def _rodar_autoteste() -> int:
     falhas = 0
     total = 0
@@ -334,6 +457,16 @@ def _rodar_autoteste() -> int:
         chave_obtida = chave_de_ambiente(caso["id"])
         ok = chave_obtida == caso["esperado"]
         sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} chave_de_ambiente: {caso['nome']}\n")
+        if not ok:
+            falhas += 1
+
+    for caso in _casos_de_estado():
+        total += 1
+        try:
+            ok = caso["fn"]() is True
+        except Exception:
+            ok = False
+        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} {caso['nome']}\n")
         if not ok:
             falhas += 1
 
