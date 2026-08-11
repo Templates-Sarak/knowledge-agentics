@@ -98,6 +98,11 @@ presente**, não a obra:
 | "Refatoramos `auth.ts` em três módulos" | (nada — refactor sem mudança de regra tem destino `—`) |
 | "O cliente pediu para trocar o roxo pelo teal" | "Cor primária: teal 500 (`#14B8A6`)" |
 
+**Bug corrigido nunca vira menção na spec fixa** — nem o defeito ("aceitava e-mail sem `@`"), nem o ato de
+corrigir ("corrigimos"). A spec descreve a regra vigente, ponto. Se a correção carrega uma decisão que vale
+registrar — por que validar assim, por que essa lib e não outra, o trade-off aceito — isso é **ADR**
+(destino adicional, roteado no passo 2), não um parágrafo a mais em `arquitetura/` ou `specs/`.
+
 ---
 
 ## Passo 6: fechamento de cada plan

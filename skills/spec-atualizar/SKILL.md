@@ -50,7 +50,7 @@ A plan **já declara** para onde vai — não adivinhe. Agrupe por `destino_sint
 |---|---|
 | `arquitetura/NN-*.md` | Atualiza (ou cria) o documento de arquitetura |
 | `specs/NN-*.md` | Atualiza (ou cria) a spec de funcionalidade |
-| `adr/NNN-*.md` | **Cria** o ADR. ADR é **imutável** — se a decisão substitui outra, preencha `substitui`/`substituido_por`, sem editar o ADR antigo |
+| `adr/NNN-*.md` | **Cria** o ADR. ADR é **imutável** — se a decisão substitui outra, preencha `substitui`/`substituido_por`, sem editar o ADR antigo. É o destino certo para a narrativa/justificativa (o "porquê" de um bug ou de uma escolha) — nunca a arquitetura/specs |
 | `00-contexto.md` | Atualiza a spec de contexto (regra inegociável, stack, roteamento) |
 | `—` | **Nada a sintetizar.** Vai direto ao passo 6 (só muda status e índice) |
 
@@ -80,6 +80,11 @@ Exemplos de formulação em `references/workflow.md`.
 - Escreva a spec fixa no formato de `spec-write`, com o frontmatter completo do molde correspondente.
 - Transporte **verdade consolidada**, não narrativa de execução: a spec fixa descreve como o sistema **é**,
   não o que foi feito na terça. "Adicionamos o campo X" → "O cadastro exige o campo X".
+- **Foque em funcionalidade, especificação e parte técnica — nunca em "corrigiu o bug X".** A spec fixa não é
+  changelog: registra o comportamento e o contrato **atuais**, não o defeito que existia antes nem a história
+  de como foi resolvido. Se por trás da correção houver uma decisão de design com trade-off que vale
+  preservar (por que assim e não de outro jeito), esse conteúdo é **ADR**, não arquitetura/specs — trate como
+  um destino adicional, não como algo a descartar.
 - Preserve o que continua válido na spec de destino. Sobrescrever seção inteira sem necessidade apaga história.
 - Atualize `status` e `relacionados` do destino quando fizer sentido (ex.: `🔴 A Implementar` → `🟢 Implementado`).
 
