@@ -1,0 +1,10 @@
+{
+  "_comentario": "Lista FECHADA de nomes que a campanha de idioma (plan-3 Bloco AC) renomeia. Consumida por verificar-citacoes.mjs --antes/--depois. Mesma disciplina de config/conformidade.json: comeca vazia, e esse e o estado correto ate o plan-3 Bloco AC definir o conteudo real. Entrada sem 'antigo'+'novo'+'tipo' nao e valida.",
+  "_exemplo": {
+    "antigo": "doutrina",
+    "novo": "TBD",
+    "tipo": "pasta",
+    "_tiposValidos": ["pasta", "arquivo", "chave", "simbolo"]
+  },
+  "itens": []
+}

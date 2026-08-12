@@ -387,6 +387,22 @@ regras de `ui` não são heurísticas — `ui-kit` lê import, e o modo `proprio
 | `rota-nomenclatura` | lê `servers:` e `paths:` linha a linha; contrato ilegível é do `contrato`, e aqui ela silencia. O verbo sai de vocabulário fechado (PT e EN): verbo fora da lista passa, e substantivo homógrafo de verbo acusa. **Plural não é verificado** (§3.1) |
 | `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor) passa — a regra lê o caminho e o método, nunca o corpo. Contrato compatível na rota e incompatível no payload continua sendo trabalho de revisão **na maior parte** — `ferramentas/contrato-compativel.mjs` (FERRAMENTA, não regra: compara DOIS estados via git, o gate compara um só) cobre uma fatia do payload desde que passou a existir; o parágrafo logo abaixo da tabela lista exatamente o que ela cobre e o que continua sendo revisão humana. Spec do **dono** ilegível não acusa no consumidor: o defeito é do dono, e o `contrato` dele o reporta |
 
+**`verificar-citacoes.mjs` (fora do gate — ferramenta de manutenção da base, `testes/`) não é regra, e o
+limite dela é da mesma família: não tenta decidir por FORMA se um caminho/identificador em prosa de
+doutrina É uma citação sobre o template. Medido (Rodada AB): classificar por forma — caminho com barra,
+kebab-case perto da palavra "regra", identificador com maiúscula interna — e resolver contra disco/
+catálogo/corpus de código achou **360** ocorrências nesta doutrina, **nenhuma órfã real**. As 360 caem em
+três categorias, sem exceção: **vocabulário externo** (termo HTTP como `Retry-After`, nome de nó de AST
+de terceiro como `CallExpression`, chave de config de outra ferramenta como `environmentMatchGlobs` do
+vitest); **contraexemplo deliberado** (proposta de regra recusada e discutida em tabela de ADR, como
+`dependencia-fixada`; API citada só pra dizer que não é usada); e **instância hipotética** (nome de
+campo/arquivo de um exemplo ilustrativo — módulo fictício `catalogo`, arquivo `motor.test.ts` — que a
+doutrina inventa pra explicar uma regra, nunca existiu de verdade). Por isso ela não confere prosa
+aberta: confere só o INVENTÁRIO FECHADO que o plan-3 Bloco AC declara em
+`testes/inventario-renomeacao.json` — `--antes`/`--depois` provam que um rename não deixa nome antigo
+pra trás nem cita nome novo que não existe, e nada além disso. Falso positivo sobre prosa legítima
+continuaria sendo a direção proibida se a ferramenta tentasse ir além do inventário.**
+
 ### 7.2.1 — O extrator de projeção
 
 > Movido para fora da tabela do §7.2 (plan-2.md Bloco R.1): era o texto mais importante desta seção
