@@ -196,3 +196,80 @@ só `vitest`/`vite`/`@vitest/coverage-v8`/`@vitejs/plugin-react` tinham. Subir o
 compatibilização real (majors desse tamanho costumam trazer breaking change de verdade), não conserto de
 segurança, e fica para uma rodada dedicada — subir todos de uma vez só porque "dá para" contradiz o próprio
 critério de cadência deste ADR ("quando o K acender", não "porque o registry tem versão nova").
+
+---
+
+## ADR-009 — O idioma do template: vocabulário técnico em inglês, vocabulário de domínio em português
+
+**Status:** 🟢 Aceito
+
+**Contexto.** O `04-regras.md` §3 já prometia "inglês onde a linguagem ou o framework impõem" — mas o
+template usava português em oito pastas estruturais (`modulos`, `ferramentas`, `dominio`, `portas`, `motor`,
+`contrato`, `gerados`, `mapeadores`) onde nada na linguagem ou no framework impunha nada: são vocabulário
+**estrutural** do próprio padrão Sarak, não do negócio. A pergunta que abriu esta decisão (plan-3.md) —
+*"o correto, segundo as boas práticas, não seria em inglês?"* — nasceu olhando `api/src/routes` e
+`api/src/mapeadores` lado a lado na mesma pasta: a mesma árvore misturando os dois vocabulários sem critério
+explícito. Uma varredura completa do disco, feita ao redigir esta decisão, achou mais quatro pastas na mesma
+situação que a lista inicial não citava: `ferramentas/gate/regras/`, `testes/` (em dois lugares) e
+`adapters/memoria/` — a mesma categoria, só não tinham sido contadas.
+
+**A boa prática não é "tudo em inglês".** É a distinção clássica: **vocabulário técnico em inglês,
+vocabulário de domínio no idioma do negócio**. O erro do template não era usar português — era usá-lo sem
+critério, deixando a fronteira implícita e por isso arbitrária.
+
+**O princípio que resolve a fronteira inteira, numa frase:** **a árvore de arquivos é inglês; o conteúdo
+dela é português.** "Árvore" é pasta, nome de arquivo, chave de manifesto/config, símbolo do esqueleto —
+tudo que é **estrutura** que o padrão Sarak impõe. "Conteúdo" é o que um módulo real guarda dentro dessa
+estrutura — texto de negócio, nome de tabela, rota, mensagem ao usuário. `doutrina/`/`specs/arquitetura/` é
+a **única exceção** ao princípio (decisão 2 abaixo): não é conteúdo de módulo, é documentação do próprio
+padrão, mas o nome é vocabulário do fluxo SDD compartilhado com `_estrutura_base` — renomear sai do escopo
+deste template.
+
+**Decisão.** A fronteira, artefato por artefato — onze categorias, cada uma com decisão explícita para que
+nenhuma fique arbitrária por analogia:
+
+| # | Artefato | Decisão | Motivo |
+|---|---|---|---|
+| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados→generated` `mapeadores→mappers` `modulos→modules` `raiz→root` `regras→rules` `testes→tests` `memoria→memory` | é a árvore — o que se lê em cada import. Lista fechada pela varredura completa do disco, não pelos oito exemplos originais do plan-3.md |
+| 2 | `doutrina/` / `specs/arquitetura/` | **português** — **única exceção ao princípio** | é a **documentação**, não conteúdo de módulo nem árvore de código; o nome é vocabulário do fluxo SDD, compartilhado com `_estrutura_base` — renomear sai do template |
+| 3 | Funções do **esqueleto** (`bindings/**`) | **inglês** | é o código que o dev escreve todo dia |
+| 4 | Símbolos (funções/variáveis) **dentro de** `ferramentas/` (→ `tools/`) | **português** | ferramental vendorizado — o dono é outro repositório. Por isso já é **isento do linter** no projeto gerado: a porta em inglês, a sala em português, e a sala é declarada como não-sua. Vale só para o SÍMBOLO — o arquivo que o contém segue a linha 5 |
+| 5 | Nomes de arquivo dentro de `ferramentas/` (→ `tools/`), os ~29 `.mjs` | **inglês** — `criar-projeto→create-project` `validar→validate` `sincronizar-env→sync-env` `escrita→writing` `isolamento→isolation` `contexto→context` … (lista completa no inventário) | é a árvore (linha 1 do princípio), não o conteúdo — a mesma pasta não pode ficar meio inglês, meio português um nível abaixo do que a linha 1 já resolveu. É a superfície de CLI que o dev digita |
+| 6 | Ids das 74 regras do catálogo | **português** | id de regra é nome de artigo de lei, e a lei é portuguesa — citado muito mais em prosa (§4.x, §7.2) que em código |
+| 7 | Mensagens do gate e erros de runtime | **português** | documentação entregue por código; é a UX do template |
+| 8 | Chaves do manifesto (`modulo.json`, `projeto.json`) e nome do arquivo | **inglês** — `name` `data` `ports` `requiredEnv` `basePath` … | é config lida por código — árvore, não conteúdo. Enum de valor estrutural (`papel: dominio\|gateway\|conector` → `role: domain\|gateway\|connector`) segue a mesma tradução da pasta homônima (linha 1) — é o mesmo conceito, não uma exceção |
+| 9 | Chaves de ambiente | **inglês** — `ROOT_API_PORT`, `<MODULE>_DB_URL` | convenção universal de env |
+| 10 | Rotas (`/registros`) e banco (`titulo`, `<mod>_metadados`) | **português** | domínio e dados — conteúdo, não árvore. É a boa prática de DDD, não a exceção |
+| 11 | Nomes de skill (`code-modulo`, `cyber-segredos`) | **fora de escopo** | convenção de toda a base Sarak, não do template |
+
+**Dois casos que não são git mv nem rename simples de arquivo, e o inventário precisa marcá-los com um
+`tipo` próprio para não confundir com pasta física:**
+
+- **`modulos` (linha 1) não é uma pasta que exista na base.** Ela só nasce dentro de um projeto **gerado**
+  (`modulos/<id>/`); na base, o equivalente é `bindings/<binding>/_template/`. A palavra `modulos` aparece
+  na base como **string literal** dentro de ferramentas (o que `criar-modulo.mjs` escreve no projeto de
+  saída) e como **caminho de exemplo em prosa** na doutrina — nenhuma das duas ocorrências é um `git mv`.
+  Tipo de inventário: `simbolo`, resolvido contra o corpus de código real da base — a rodada AB.1 (achado
+  do revisor) já garante que esse corpus inclui `.json`/`.yaml`/dotfile, não só `.mjs`/`.ts`/`.py`.
+- **`memoria` (linha 1) é duas coisas ao mesmo tempo.** É pasta física (`adapters/memoria/` → `adapters/memory/`,
+  git mv normal) **e** é nome de provedor citado como **valor de string** em `config/portas.json` e nos
+  `switch`/`if` de `FABRICAS` que escolhem o adapter, lado a lado com `postgres`. A pasta segue a linha 1; o
+  valor de config é a mesma palavra, mesmo tipo `pasta` — resolve contra o mesmo corpus ampliado pelo AB.1.
+
+**A régua que decide os casos não listados aqui:** se o nome descreve **como o padrão Sarak é construído**
+(pasta, arquivo, chave de config, símbolo de código — a **árvore**), é técnico — inglês. Se o nome descreve
+**o que o negócio do módulo gerado é** (rota, coluna, tabela, texto de erro voltado ao usuário final — o
+**conteúdo**), é domínio — português. Ids de regra e mensagens de gate (6, 7) são o caso que parece árvore e
+é conteúdo: citam-se majoritariamente em prosa portuguesa, e mudar o idioma deles trocaria a UX do template
+sem ganho de leitura de código — por isso ficam de fora, com o motivo escrito, não por omissão.
+
+**Consequências.** A fronteira deixa de ser arbitrária e vira lei citável (`04-regras.md` §3). O custo é a
+campanha do plan-3.md Bloco AD — atômica, porque uma fronteira só decidida em parte volta a ser arbitrária
+pela metade que falta. `ferramentas/` (linha 4, só o símbolo) e os ids de regra (linha 6) são as duas
+exceções deliberadas dentro de um template majoritariamente inglês na camada técnica — registradas aqui para
+que uma futura "limpeza de consistência" não as trate como esquecimento.
+
+**Alternativa descartada.** Tudo em inglês, inclusive domínio/dados/rotas. Contradiz a lei de nomes já
+vigente (§3: "português no domínio, nas rotas e nos dados") e o próprio ADR-001 — regra de negócio duplicada
+por módulo já é português por natureza; traduzir a camada de domínio seria tradução de conteúdo, não rename,
+fora do escopo que esta campanha se propôs (plan-3.md, "Fora deste plano").

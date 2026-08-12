@@ -1,7 +1,7 @@
 // Taxonomia FECHADA de erro do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
 //
 // Fechada quer dizer: acrescentar codigo aqui e mudanca de contrato, nao improviso de rota.
-// Num projeto com `packages/portas`, este arquivo re-exporta a versao canonica de la — assim
+// Num projeto com `packages/ports`, este arquivo re-exporta a versao canonica de la — assim
 // todos os modulos falam a mesma lingua de erro. O molde traz a copia local para ser
 // autossuficiente desde o primeiro `npm test`.
 

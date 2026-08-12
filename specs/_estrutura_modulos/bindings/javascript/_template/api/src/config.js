@@ -107,9 +107,9 @@ export function carregarConfiguracao(raiz = encontrarRaizModulo()) {
     raiz,
     manifesto,
     api: lerJson(raiz, 'config/api.json'),
-    dominio: lerJson(raiz, 'config/dominio.json'),
+    dominio: lerJson(raiz, 'config/domain.json'),
     seguranca: lerJson(raiz, 'config/seguranca.json'),
-    portas: lerJson(raiz, 'config/portas.json'),
+    portas: lerJson(raiz, 'config/ports.json'),
     textos: lerJson(raiz, 'config/textos.json'),
   };
 }

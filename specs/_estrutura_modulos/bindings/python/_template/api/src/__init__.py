@@ -2,14 +2,14 @@
 
 REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria e nunca importa
 adapter nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
-config/portas.json. E o que permite trocar Postgres por outro banco editando um JSON.
+config/ports.json. E o que permite trocar Postgres por outro banco editando um JSON.
 """
 
 from __future__ import annotations
 
 from fastapi import FastAPI
 
-from core.portas import Auth, DependenciasModulo
+from core.ports import Auth, DependenciasModulo
 from .config import ConfiguracaoModulo, carregar_configuracao, env_obrigatoria
 from .logger import criar_logger
 from .middlewares import ContextoDaBorda, registrar_middlewares

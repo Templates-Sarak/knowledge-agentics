@@ -1,16 +1,16 @@
 // Rotas do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
 //
-// O contrato manda: toda rota daqui existe em contrato/openapi.yaml, e o inverso tambem.
+// O contrato manda: toda rota daqui existe em contract/openapi.yaml, e o inverso tambem.
 // Regras cobradas aqui: valida na borda ANTES do dominio; exige permissao nomeada; monta a
 // resposta pelo mapeador (nunca o registro cru); lanca ErroApi (nunca `res.status()` ad hoc).
 import { Router } from 'express';
 
 import type { ConfiguracaoModulo } from '../config.js';
-import type { DependenciasModulo } from '../../../core/portas/index.js';
-import { ErroDeValidacao, montarRegistro } from '../../../core/dominio/index.js';
+import type { DependenciasModulo } from '../../../core/ports/index.js';
+import { ErroDeValidacao, montarRegistro } from '../../../core/domain/index.js';
 import { ErroApi } from '../erros.js';
 import { exigirPermissao } from '../middlewares/index.js';
-import { paraColecao, paraContrato, paraMeta } from '../mapeadores/index.js';
+import { paraColecao, paraContrato, paraMeta } from '../mappers/index.js';
 
 interface Opcoes {
   deps: DependenciasModulo;

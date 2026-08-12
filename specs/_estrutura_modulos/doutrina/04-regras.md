@@ -100,10 +100,32 @@ pelo §1 (lei 2) o que não tem verificador **não é regra**: não se cobra em 
 real — as três rotas obrigatórias (`/health`, `/meta`, `/resumo`) são singulares por desenho, e pluralidade em
 português não é decidível por máquina. O resto da linha "Rota REST" **é** cobrado, por `rota-nomenclatura`.
 
-**Idioma.** Português no domínio, nas rotas e nos dados; inglês onde a linguagem ou o framework impõem
-(`src`, `hooks`, `pages`, `components`, `routes`, `middlewares`, `index`). A escolha entre português puro e o
-misto acima é **decisão de cada projeto**, registrada em `specs/adr/` — o gate cobra
-**consistência dentro do projeto**, não a escolha.
+**Idioma.** A regra não é "tudo em inglês": **a árvore de arquivos é inglês; o conteúdo dela é português**
+— o princípio que o `ADR-009` decide artefato por artefato, e que este parágrafo resume. "Árvore" é pasta,
+nome de arquivo, chave de manifesto/config e símbolo do esqueleto — a estrutura que o padrão Sarak impõe.
+"Conteúdo" é o que um módulo real guarda dentro dela — texto de negócio, nome de tabela, rota, mensagem ao
+usuário.
+
+- **Inglês** — as **doze** pastas estruturais (`tools`, `domain`, `ports`, `engine`, `contract`, `generated`,
+  `mappers`, `modules`, `root`, `rules`, `tests`, `memory`, mais o que a linguagem ou o framework impõem:
+  `src`, `hooks`, `pages`, `components`, `routes`, `middlewares`, `index`), funções do **esqueleto**
+  (`bindings/**`), os ~29 arquivos `.mjs` de `tools/` (o nome do arquivo, não o símbolo dentro dele — ver
+  próximo item), chaves de manifesto (`module.json`, `project.json`) e chaves de ambiente.
+- **Português** — domínio, rotas de negócio (`/registros`), dados (nome de tabela, coluna, schema), ids das
+  74 regras do catálogo, mensagens do gate e erros de runtime voltados ao usuário.
+- **Duas exceções deliberadas**, registradas para não parecerem esquecimento: os **símbolos** (função,
+  variável) dentro dos arquivos de `tools/` ficam em português — é ferramental vendorizado, isento do linter
+  no projeto gerado, mesmo com o nome do arquivo que os contém em inglês; e os **ids de regra + mensagens do
+  gate** ficam em português mesmo sendo "técnicos" — citam-se majoritariamente em prosa, e são a UX do
+  template.
+- **`doutrina/`/`specs/arquitetura/` é a única exceção ao princípio inteiro** — não é árvore de código nem
+  conteúdo de módulo, é documentação do próprio padrão, e o nome é vocabulário do fluxo SDD compartilhado com
+  `_estrutura_base`.
+
+Nome fora desta lista segue a régua do `ADR-009`: descreve **como o padrão é construído** → inglês; descreve
+**o que o negócio do módulo é** → português. A escolha entre português puro e o misto acima, **dentro do
+domínio de cada projeto** (não da estrutura do template, já decidida aqui), continua sendo decisão de cada
+projeto, registrada em `specs/adr/` — o gate cobra **consistência dentro do projeto**, não a escolha.
 
 **Fronteira de caixa:** o banco fala `snake_case`, o contrato fala `camelCase`, e a conversão é explícita no mapeador.
 

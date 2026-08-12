@@ -10,5 +10,5 @@
     "allowImportingTsExtensions": false
   },
   "include": ["api", "core"],
-  "exclude": ["node_modules", "dist", "gerados"]
+  "exclude": ["node_modules", "dist", "generated"]
 }

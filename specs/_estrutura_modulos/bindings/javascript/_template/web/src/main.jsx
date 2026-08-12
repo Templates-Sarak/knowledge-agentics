@@ -8,7 +8,7 @@ import { createRoot } from 'react-dom/client';
 
 import { RaizDoModulo } from './index.js';
 
-const alvo = document.getElementById('raiz');
+const alvo = document.getElementById('root');
 if (alvo === null) throw new Error('elemento #raiz nao encontrado em index.html');
 
 createRoot(alvo).render(

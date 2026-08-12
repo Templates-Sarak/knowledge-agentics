@@ -1,7 +1,7 @@
 """Adapter <provedor> para a porta "<porta>". Lei dona: specs/arquitetura/01-modulo.md §5.2.
 
-Gerado por `criar-adapter.mjs` a partir deste molde. Implemente aqui os metodos da interface
-da porta "<porta>" (packages/portas/__init__.py) — o TODO abaixo e o unico lugar que falta.
+Gerado por `create-adapter.mjs` a partir deste molde. Implemente aqui os metodos da interface
+da porta "<porta>" (packages/ports/__init__.py) — o TODO abaixo e o unico lugar que falta.
 
 Adapter NAO conhece dominio: nao existe `if modulo == "catalogo"` aqui dentro.
 """
@@ -12,7 +12,7 @@ from typing import Any
 
 
 class AdapterPendente:
-    """TODO: implemente os metodos da porta "<porta>" aqui (packages/portas/__init__.py)."""
+    """TODO: implemente os metodos da porta "<porta>" aqui (packages/ports/__init__.py)."""
 
     def __getattr__(self, nome: str) -> Any:
         raise NotImplementedError(

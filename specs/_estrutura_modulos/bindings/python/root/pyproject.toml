@@ -1,0 +1,68 @@
+[project]
+name = "<escopo>"
+version = "0.1.0"
+description = "Federacao de modulos autossuficientes."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.141.1",
+  "uvicorn==0.52.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "pytest-cov==7.1.0",
+  "httpx==0.28.1",
+  "ruff==0.16.2",
+  "mypy==2.3.0",
+  # "ferramenta que falta se instala" — `ci-dependencies.mjs` (tools/) chama
+  # `python -m pip_audit`. So na RAIZ, nao no molde de modulo: os bindings Python compartilham UM
+  # venv (a mesma razao de `pytest-cov` estar so aqui), e o audit le o ambiente inteiro de qualquer
+  # pasta — instalar de novo por modulo so duplicaria o pacote no mesmo venv, sem cobrir nada a mais.
+  "pip-audit==2.10.1",
+  # `scripts/migrations.py` (03-operacao.md §9.3) — NAO mora em tools/ (zero dependencia,
+  # lei 3): precisa de driver de Postgres. `[binary]` evita compilar contra libpq no dev.
+  "psycopg[binary]==3.3.4",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# `packages/` e a excecao minima (interface e contrato); `adapters/` sao as implementacoes;
+# `src/` e a fiacao. Nenhum dos tres e modulo de negocio — modulo mora em `modules/`.
+packages = ["packages", "adapters", "src"]
+
+[tool.pytest.ini_options]
+# A raiz entra no sys.path para que `packages`, `adapters` e `src` sejam importaveis sem instalar.
+pythonpath = ["."]
+asyncio_mode = "auto"
+
+# NAO ha `testpaths` apontando para `modules/` de proposito: cada modulo e testado a partir da
+# PASTA DELE (`python verificar.py` faz isso), e e justamente isso que prova que ele roda isolado
+# — a condicao pratica de "pronto para extracao" (specs/arquitetura/03-operacao.md §6).
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+
+# A raiz e a base de pacotes: sem isto o mypy resolve `packages/ports/__init__.py` com DOIS
+# nomes ("portas" e "packages.portas") e aborta antes de checar qualquer coisa.
+mypy_path = "."
+explicit_package_bases = true
+namespace_packages = true
+
+# Cada modulo tem tipos proprios e e checado a partir da PASTA DELE, com as dependencias dele.
+# Checar daqui misturaria os sys.path de todos os modulos — o oposto do isolamento.
+exclude = ["^modules/"]
+
+# A config do ruff mora em `.ruff.toml`, GERADA de `tools/gate/thresholds.mjs`, e NAO aqui.
+#
+# O motivo e de precedencia, nao de gosto: o ruff escolhe UM arquivo de configuracao, e o
+# `.ruff.toml` vence o `pyproject.toml` por inteiro — nao ha merge. Manter uma secao `[tool.ruff]`
+# aqui a deixaria silenciosamente morta, que e pior que duplicar: duas fontes, e a que o autor
+# edita nao e a que vale. Os limiares 40/3/4 sao LEI (specs/arquitetura/04-regras.md §4.7) e por
+# isso sao derivados, nunca escritos a mao — era este arquivo que os repetia antes.

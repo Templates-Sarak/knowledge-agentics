@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from core.dominio import Registro
-from core.portas import DependenciasModulo, Pagina
+from core.domain import Registro
+from core.ports import DependenciasModulo, Pagina
 
 INSTANTE_FIXO = "2024-01-01T00:00:00.000Z"
 

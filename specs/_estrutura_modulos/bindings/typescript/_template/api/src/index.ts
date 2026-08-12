@@ -2,11 +2,11 @@
 //
 // REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria e nunca importa
 // `adapters/*` nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
-// config/portas.json. E o que permite trocar Postgres por outro banco editando um JSON.
+// config/ports.json. E o que permite trocar Postgres por outro banco editando um JSON.
 import express, { type Express } from 'express';
 
 import { carregarConfiguracao, envObrigatoria } from './config.js';
-import type { DependenciasModulo } from '../../core/portas/index.js';
+import type { DependenciasModulo } from '../../core/ports/index.js';
 import { criarLogger } from './logger.js';
 import { criarRotas } from './routes/index.js';
 import {

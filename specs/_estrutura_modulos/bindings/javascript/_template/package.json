@@ -10,8 +10,8 @@
     "test:observar": "vitest",
     "tipos": "tsc --noEmit -p jsconfig.json",
     "build:web": "vite build --config web/vite.config.js",
-    "validar": "node ../../ferramentas/gate/validar.mjs .",
-    "validar:extracao": "node ../../ferramentas/gate/validar.mjs --extracao .",
+    "validar": "node ../../tools/gate/validate.mjs .",
+    "validar:extracao": "node ../../tools/gate/validate.mjs --extracao .",
     "//cobertura": "So aqui, nunca no `test`: escreve relatorios/cobertura/lcov.info (SonarQube/Codecov) e relatorios/junit.xml (CI). `cobertura:conferir` reprova se o relatorio nao existir ou vier degenerado (ferramenta que 'passou' sem medir nada) — lei 7 aplicada ao relatorio, nao so ao exit code do vitest.",
     "cobertura": "vitest run --coverage --reporter=default --reporter=junit --outputFile=relatorios/junit.xml && npm run cobertura:conferir",
     "cobertura:conferir": "node -e \"const fs=require('fs');const alvos=[['relatorios/cobertura/lcov.info','SF:'],['relatorios/junit.xml','<testsuite']];for(const [p,marca] of alvos){if(!fs.existsSync(p)){console.error('relatorio ausente: '+p);process.exit(1)}const t=fs.readFileSync(p,'utf8');if(!t.includes(marca)){console.error('relatorio degenerado (sem '+marca+'): '+p);process.exit(1)}}const m=fs.readFileSync('relatorios/junit.xml','utf8').match(/tests=\\\"(\\d+)\\\"/);if(!m||Number(m[1])===0){console.error('junit sem nenhum teste registrado — a suite nao rodou');process.exit(1)}console.log('relatorios OK: lcov + junit presentes, nao degenerados, '+m[1]+' teste(s)')\""

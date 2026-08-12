@@ -12,8 +12,8 @@ import type {
   GeradorId,
   Relogio,
   Repositorio,
-} from '../../core/portas/index.js';
-import type { Registro } from '../../core/dominio/index.js';
+} from '../../core/ports/index.js';
+import type { Registro } from '../../core/domain/index.js';
 import type { Auth } from '../../api/src/middlewares/index.js';
 
 const INSTANTE_FIXO = '2024-01-01T00:00:00.000Z';

@@ -15,7 +15,7 @@ from typing import Any, Awaitable, Callable
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from core.portas import Auth, GeradorId
+from core.ports import Auth, GeradorId
 from .erros import ErroApi, envelope_de_erro
 from .logger import Logger
 

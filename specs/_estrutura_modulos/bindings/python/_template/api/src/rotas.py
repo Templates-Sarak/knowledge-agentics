@@ -1,6 +1,6 @@
 """Rotas do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
 
-O contrato manda: toda rota daqui existe em contrato/openapi.yaml, e o inverso tambem.
+O contrato manda: toda rota daqui existe em contract/openapi.yaml, e o inverso tambem.
 Regras cobradas aqui: valida na borda ANTES do dominio; exige permissao nomeada; monta a resposta
 pelo mapeador (nunca o registro cru); lanca ErroApi (nunca resposta de erro ad hoc).
 """
@@ -11,10 +11,10 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 
-from core.dominio import ErroDeValidacao, Registro, montar_registro
-from core.portas import DependenciasModulo
+from core.domain import ErroDeValidacao, Registro, montar_registro
+from core.ports import DependenciasModulo
 from .erros import ErroApi
-from .mapeadores import para_colecao, para_contrato, para_meta
+from .mappers import para_colecao, para_contrato, para_meta
 from .middlewares import exigir_permissao
 
 _CAMPOS_PERMITIDOS = {"titulo", "status"}

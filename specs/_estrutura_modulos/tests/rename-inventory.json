@@ -1,0 +1,87 @@
+{
+  "_comentario": "Lista FECHADA de nomes que a campanha de idioma (plan-3 Bloco AD) renomeia. Consumida por verify-citations.mjs --antes/--depois e por apply-rename.mjs --fase <F> --relatorio|--aplicar|--diferencial. `fase` mecanicamente impede um item de outra fase (ex.: chave de manifesto, AD.3) de vazar para uma rodada de AD.1 — o script so processa itens cuja fase bate a pedida em --fase, mesmo que o texto deles case a fronteira.",
+  "_exemplo": {
+    "antigo": "doutrina",
+    "novo": "TBD",
+    "tipo": "pasta",
+    "fase": "AD.1",
+    "_tiposValidos": ["pasta", "arquivo", "chave", "simbolo"],
+    "_fasesValidas": ["AD.1", "AD.2", "AD.3"]
+  },
+  "itens": [
+    { "antigo": "ferramentas", "novo": "tools", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "dominio", "novo": "domain", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "portas", "novo": "ports", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "motor", "novo": "engine", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "contrato", "novo": "contract", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "gerados", "novo": "generated", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "mapeadores", "novo": "mappers", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "raiz", "novo": "root", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "regras", "novo": "rules", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "testes", "novo": "tests", "tipo": "pasta", "fase": "AD.1" },
+    { "antigo": "memoria", "novo": "memory", "tipo": "pasta", "fase": "AD.1" },
+
+    { "antigo": "modulos", "novo": "modules", "tipo": "simbolo", "fase": "AD.1",
+      "_nota": "sem pasta fisica na base — so existe em projeto GERADO (workspaces glob, grafo de dependencias). Ver ADR-009." },
+
+    { "antigo": "afetados.mjs", "novo": "affected.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "ci-dependencias.mjs", "novo": "ci-dependencies.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "ci-seguranca.mjs", "novo": "ci-security.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "contrato-compativel.mjs", "novo": "contract-compatible.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "criar-adapter.mjs", "novo": "create-adapter.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "criar-modulo.mjs", "novo": "create-module.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "criar-projeto.mjs", "novo": "create-project.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "empacotar.mjs", "novo": "package.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "gerar-config-lint.mjs", "novo": "generate-lint-config.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "gerar-schemas-portas.mjs", "novo": "generate-port-schemas.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "sincronizar-env.mjs", "novo": "sync-env.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "verificar-commit.mjs", "novo": "verify-commit.mjs", "tipo": "arquivo", "fase": "AD.1" },
+
+    { "antigo": "contexto.mjs", "novo": "context.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "esquema.mjs", "novo": "schema.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "limiares.mjs", "novo": "thresholds.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "motor.mjs", "novo": "engine.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "texto.mjs", "novo": "text.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "validar.mjs", "novo": "validate.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "vocabulario-portas.mjs", "novo": "ports-vocabulary.mjs", "tipo": "arquivo", "fase": "AD.1" },
+
+    { "antigo": "configuracao.mjs", "novo": "configuration.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "contrato.mjs", "novo": "contract.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "dados.mjs", "novo": "data.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "escrita.mjs", "novo": "writing.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "estrutura.mjs", "novo": "structure.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "isolamento.mjs", "novo": "isolation.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "operacao.mjs", "novo": "operation.mjs", "tipo": "arquivo", "fase": "AD.1" },
+
+    { "antigo": "casos.mjs", "novo": "cases.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "executar.mjs", "novo": "run.mjs", "tipo": "arquivo", "fase": "AD.1" },
+
+    { "antigo": "autoteste-template.mjs", "novo": "template-self-test.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "inventario-renomeacao.json", "novo": "rename-inventory.json", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "verificar-citacoes.mjs", "novo": "verify-citations.mjs", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "verificar-mapa.mjs", "novo": "verify-map.mjs", "tipo": "arquivo", "fase": "AD.1" },
+
+    { "antigo": "config-dominio.schema.json", "novo": "config-domain.schema.json", "tipo": "arquivo", "fase": "AD.1",
+      "_nota": "achado da rodada REFAZER anterior: o arquivo tinha sido renomeado fisicamente sem entrada no inventario. Ou entra aqui, ou nao e renomeado — as duas coisas juntas quebram o --antes/--depois." },
+    { "antigo": "config-portas.schema.json", "novo": "config-ports.schema.json", "tipo": "arquivo", "fase": "AD.1" },
+
+    { "antigo": "dominio.json", "novo": "domain.json", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "portas.json", "novo": "ports.json", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "mapeadores.py", "novo": "mappers.py", "tipo": "arquivo", "fase": "AD.1",
+      "_nota": "so python: js/ts tem pasta api/src/mapeadores/ (tipo pasta, ja coberta acima); python e um unico arquivo flat." },
+
+    { "antigo": "contrato.test.ts", "novo": "contract.test.ts", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "contrato.test.js", "novo": "contract.test.js", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "test_contrato.py", "novo": "test_contract.py", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "dominio.test.ts", "novo": "domain.test.ts", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "dominio.test.js", "novo": "domain.test.js", "tipo": "arquivo", "fase": "AD.1" },
+    { "antigo": "test_dominio.py", "novo": "test_domain.py", "tipo": "arquivo", "fase": "AD.1" }
+  ],
+  "literaisProtegidos": [
+    { "valor": "dominio", "motivo": "valor do enum 'papel' no manifesto (dominio|gateway|conector, modulo.schema.json:15) — a CHAVE vira ingles em AD.3, o VALOR nao (fronteira Bloco AC, decisao 8). Colide com o item pasta 'dominio' quando aparece bare-string em criar-modulo.mjs (PAPEIS, default de --papel)." },
+    { "valor": "gateway", "motivo": "mesmo enum de 'papel' — dominio|gateway|conector. Nao e item de pasta nenhum (nao ha renomeacao de 'gateway'), mas protegido pelo mesmo padrao de linha por simetria e clareza do relatorio." },
+    { "valor": "conector", "motivo": "mesmo enum de 'papel'." },
+    { "valor": "contrato", "motivo": "id da regra 'contrato' (ferramentas/gate/regras/contrato.mjs:467, ids de regra ficam portugues para sempre — ADR-009 decisao 6). Colide com o item pasta 'contrato' quando aparece bare-string em 'id: ...'/'regra: ...'; NAO protege o mesmo literal quando e segmento de caminho solto em join(...) (contrato-compativel.mjs) — esse uso continua substituindo." },
+    { "valor": "testes", "motivo": "id da regra 'testes' (ferramentas/gate/regras/estrutura.mjs:329). Colide com o item pasta 'testes' do mesmo jeito que 'contrato'; join(RAIZ_TEMPLATE, 'testes') em verify-citations.mjs continua substituindo (nao e id de regra ali)." }
+  ]
+}

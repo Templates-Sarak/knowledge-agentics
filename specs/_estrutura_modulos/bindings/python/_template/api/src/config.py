@@ -124,8 +124,8 @@ def carregar_configuracao(raiz: Path | None = None) -> ConfiguracaoModulo:
         raiz=raiz_modulo,
         manifesto=manifesto,
         api=_ler_json(raiz_modulo, "config/api.json"),
-        dominio=_ler_json(raiz_modulo, "config/dominio.json"),
+        dominio=_ler_json(raiz_modulo, "config/domain.json"),
         seguranca=_ler_json(raiz_modulo, "config/seguranca.json"),
-        portas=_ler_json(raiz_modulo, "config/portas.json"),
+        portas=_ler_json(raiz_modulo, "config/ports.json"),
         textos=_ler_json(raiz_modulo, "config/textos.json"),
     )

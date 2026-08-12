@@ -10,7 +10,7 @@ import { listarRegistros } from '../api-client/index.js';
  *
  * @typedef {object} Estado
  * @property {Situacao} situacao
- * @property {import('../../../core/dominio/index.js').Registro[]} registros
+ * @property {import('../../../core/domain/index.js').Registro[]} registros
  * @property {number} total
  * @property {string | null} mensagemDeErro
  */

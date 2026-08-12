@@ -1,7 +1,0 @@
-#!/bin/sh
-# Sarak — pre-push (camada de DEZENAS DE SEGUNDOS, 03-operacao.md §7): tipos e testes dos modulos
-# afetados desde o upstream (@{u}). Byte a byte igual nos tres bindings, mesma logica de
-# ferramentas/verificar-commit.mjs do pre-commit — ver o cabecalho daquele arquivo.
-#
-# Ativa com: git config core.hooksPath .githooks
-node ferramentas/verificar-commit.mjs pre-push || exit 1

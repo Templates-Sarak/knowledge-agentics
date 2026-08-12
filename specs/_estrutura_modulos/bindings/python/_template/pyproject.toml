@@ -35,7 +35,7 @@ asyncio_mode = "auto"
 #
 # O ruff sobe a arvore procurando configuracao e IGNORA `pyproject.toml` que nao declare
 # `[tool.ruff]`. Sem a secao, quem governa os arquivos deste modulo e o `.ruff.toml` da raiz,
-# GERADO de `ferramentas/gate/limiares.mjs` — a mesma fonte unica que o gate usa, e a razao de o
+# GERADO de `tools/gate/thresholds.mjs` — a mesma fonte unica que o gate usa, e a razao de o
 # numero 40 nao estar escrito em lugar nenhum deste arquivo.
 #
 # COM a secao, ela sombrearia a da raiz e os limiares voltariam ao DEFAULT do ruff (max-args 5,
@@ -44,7 +44,7 @@ asyncio_mode = "auto"
 #
 # LIMITE CONHECIDO — o modulo EXTRAIDO. Ao virar repositorio proprio, ele sai sem o `.ruff.toml`
 # da raiz e fica sem limiar cobrado pelo LINTER ate ser religado a um esqueleto de projeto
-# (`ferramentas/criar-projeto.mjs`), que o traz de volta gerado da mesma fonte. A janela e estreita
+# (`tools/create-project.mjs`), que o traz de volta gerado da mesma fonte. A janela e estreita
 # e o piso nao cai nela: o gate viaja DENTRO do modulo e cobra os mesmos 40/3/4 por
 # `limiar-funcao`, `limiar-aninhamento` e `limiar-parametros`. Perde-se a verificacao PROFUNDA do
 # linter (complexidade, idiomas), nunca o piso. Fechar a janela com uma secao aqui seria pior:

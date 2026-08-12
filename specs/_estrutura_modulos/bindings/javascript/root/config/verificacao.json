@@ -1,0 +1,23 @@
+{
+  "_doc": "Politica de VERIFICACAO deste projeto. Schema: tools/gate/schemas/verificacao.schema.json. NAO guarda limiar de escrita — 40/3/4 sao LEI (specs/arquitetura/04-regras.md §4.7), com fonte unica em tools/gate/thresholds.mjs, e o gate os leva junto quando o modulo e extraido.",
+  "qualidade": {
+    "_doc": "Severidade com que o hook padrao-limiares cobra o padrao de escrita. Tem `modo` e nada mais: `limiares` esta fora porque os 40/3/4 sao LEI (§4.7), fonte unica em tools/gate/thresholds.mjs; `proibir` esta fora porque a config gerada dela ja emite no-console e no-empty sem ler politica, entao o campo so conseguiria ESCONDER erro que o lint acusa. Declarar qualquer um dos dois REPROVA no schema.",
+    "modo": "warn"
+  },
+  "formatacao": {
+    "_doc": "O hook padrao-format formata o arquivo editado. Best-effort: sem formatador instalado, pula.",
+    "ativo": true
+  },
+  "cobertura": {
+    "_doc": "% minimo de cobertura de teste. Politica: depende da maturidade e do risco. O gate NAO mede, e o `verificar` local TAMBEM nao — custa dezenas de segundos por modulo (03-operacao.md §7), tempo demais para o feedback rapido que `verificar`/pre-commit/pre-push prometem. Quem mede e o passo de CI: `npm run ci:cobertura` (workspaces) chamando `npm run cobertura` de cada modulo, que aplica este minimo via `coverage.thresholds.lines` do vitest.",
+    "minima": 80
+  },
+  "dependencias": {
+    "_doc": "Piso de severidade que reprova numa auditoria de dependencia. Politica: o corte depende da exposicao do sistema.",
+    "severidadeMinima": "high"
+  },
+  "linguagens": {
+    "_doc": "Quem cobra o que. Politica: a ferramenta e substituivel sem mudar a lei — a lei fixa o limiar, nunca quem o mede.",
+    "javascript": { "linter": "eslint", "formatador": "prettier" }
+  }
+}

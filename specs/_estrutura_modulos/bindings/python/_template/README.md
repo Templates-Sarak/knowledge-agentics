@@ -3,7 +3,7 @@
 Fatia vertical autossuficiente do domínio **<Modulo>**, em Python. A **anatomia, o manifesto, o contrato e o
 catálogo de regras são idênticos** ao binding TypeScript — só a materialização muda.
 
-> **Não copie esta pasta à mão.** Use `node ferramentas/criar-modulo.mjs <id> --binding python`.
+> **Não copie esta pasta à mão.** Use `node tools/create-module.mjs <id> --binding python`.
 
 **Leis donas:** `specs/arquitetura/01-modulo.md` ·
 `specs/arquitetura/02-contrato-e-dados.md` ·
@@ -21,7 +21,7 @@ catálogo de regras são idênticos** ao binding TypeScript — só a materializ
 | Linter de limiares | ESLint | Ruff (`[tool.ruff]` no `pyproject.toml`) |
 | Tipos | `tsc --noEmit` | `mypy --strict` |
 
-O que **não** muda: `modulo.json`, `contrato/openapi.yaml`, `config/*.json`, `database/`, a árvore de pastas,
+O que **não** muda: `modulo.json`, `contract/openapi.yaml`, `config/*.json`, `database/`, a árvore de pastas,
 as fronteiras e todas as regras do gate.
 
 ## Módulo Python é backend
@@ -35,16 +35,16 @@ Se um módulo Python precisar de tela, ela é o `web/` do binding TypeScript —
 ```
 modulo.json      identidade + contrato — o sistema DESCOBRE o módulo por aqui
 pyproject.toml   dependências, pytest, ruff e mypy
-contrato/        openapi.yaml — a FONTE do contrato; o código segue
+contract/        openapi.yaml — a FONTE do contrato; o código segue
 config/          5 arquivos, um por assunto. Zero valor literal no código
 core/            engine interna, sem I/O
-  dominio/       tipos (dataclass) + validação
-  portas/        Protocols do que preciso de INFRAESTRUTURA
+  domain/       tipos (dataclass) + validação
+  ports/        Protocols do que preciso de INFRAESTRUTURA
   gateways/      o que preciso de OUTROS MÓDULOS — só HTTP
-  motor/         geração determinística do artefato
+  engine/         geração determinística do artefato
 api/src/         a única superfície pública (FastAPI)
 database/        schema.sql + migrations das tabelas <modulo>_*
-tests/           dominio/ contrato/ fixtures/ — sem rede, sem banco
+tests/           domain/ contract/ fixtures/ — sem rede, sem banco
 ```
 
 ## As regras que este molde já cabeia
@@ -53,7 +53,7 @@ Idênticas ao binding TypeScript, com a sintaxe da linguagem:
 
 - **Zero hardcoded** — segredo no `.env`, tunable em `config/`, texto em `config/textos.json`.
 - **Falha rápida** — `os.getenv("X", "http://localhost")` é violação; falta de env **derruba o boot**.
-- **Infraestrutura desacoplada** — `core/portas` define `Protocol`; o provedor só aparece em `config/portas.json`.
+- **Infraestrutura desacoplada** — `core/ports` define `Protocol`; o provedor só aparece em `config/ports.json`.
 - **Módulo alheio desacoplado** — `core/gateways/`, só HTTP, declarado em `consome`.
 - **Saída por allowlist** — `para_contrato()` é a projeção; devolver a linha crua é proibido.
 - **Deny by default** — toda rota exige token, exceto as de `rotasPublicas`.
@@ -67,6 +67,6 @@ pip install -e ".[dev]"      instala o módulo e as ferramentas de dev
 pytest                       testes, sem rede e sem banco
 mypy .                       tipos em modo estrito
 ruff check .                 limiares de escrita
-node ../../ferramentas/gate/validar.mjs .              gate de conformidade
-node ../../ferramentas/gate/validar.mjs --extracao .   vira microsserviço hoje?
+node ../../tools/gate/validate.mjs .              gate de conformidade
+node ../../tools/gate/validate.mjs --extracao .   vira microsserviço hoje?
 ```

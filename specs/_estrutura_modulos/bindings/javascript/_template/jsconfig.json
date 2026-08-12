@@ -17,5 +17,5 @@
     "noEmit": true
   },
   "include": ["api", "core", "web", "tests"],
-  "exclude": ["node_modules", "dist", "gerados"]
+  "exclude": ["node_modules", "dist", "generated"]
 }

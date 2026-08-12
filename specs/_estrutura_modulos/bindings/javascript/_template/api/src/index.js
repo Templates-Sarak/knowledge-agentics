@@ -2,7 +2,7 @@
 //
 // REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria e nunca importa
 // `adapters/*` nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
-// config/portas.json. E o que permite trocar de banco editando um JSON.
+// config/ports.json. E o que permite trocar de banco editando um JSON.
 import express from 'express';
 
 import { carregarConfiguracao, envObrigatoria } from './config.js';
@@ -20,11 +20,11 @@ import {
 /**
  * Monta o modulo num Express. Usado pela raiz de composicao E pelos testes de contrato.
  *
- * `raiz` e a pasta do modulo, quando quem monta o app ja a conhece — a raiz de composicao
+ * `root` e a pasta do modulo, quando quem monta o app ja a conhece — a raiz de composicao
  * (specs/arquitetura/00-arquitetura.md §3.4). Sem isto, `carregarConfiguracao()` resolve pelo cwd
  * do PROCESSO, que so bate com a pasta do modulo em execucao standalone; a raiz compoe varios
  * modulos no mesmo processo, cwd nenhum serve para todos ao mesmo tempo.
- * @param {{ deps: import('../../core/portas/index.js').DependenciasModulo, auth: import('../../core/portas/index.js').Auth, raiz?: string }} opcoes
+ * @param {{ deps: import('../../core/ports/index.js').DependenciasModulo, auth: import('../../core/ports/index.js').Auth, raiz?: string }} opcoes
  */
 export function criarApp({ deps, auth, raiz }) {
   const config = carregarConfiguracao(raiz);

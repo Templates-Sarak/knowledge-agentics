@@ -14,7 +14,7 @@
 // `core/gateways/<outro>.ts` seguindo a forma abaixo e declare-o no manifesto.
 //
 //   // core/gateways/financeiro.ts
-//   import type { Registro } from '../dominio/index.js';
+//   import type { Registro } from '../domain/index.js';
 //
 //   export interface FinanceiroGateway {
 //     obterAliquotaVigentePct(): Promise<number>;
