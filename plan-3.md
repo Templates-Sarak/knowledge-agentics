@@ -315,7 +315,26 @@ bindings** · `verificar-citacoes` verde · `verificar-mapa` verde · e um proje
 
 ---
 
-## Bloco AI — a rede do outro lado *(método; achado ao fechar o AD.1)*
+## Bloco AI — a rede do outro lado ✅ **FECHADO** *(commit `b43094b`, revisado e reproduzido)*
+
+> **O que fechou.** O defeito que sobreviveu a DUAS redes no AD.1 e só caiu no Bloco K três passos
+> adiante, disfarçado de `ModuleNotFoundError`, **agora cai num comando, nomeando arquivo e linha**.
+
+| Verificação — clone feito **a partir do commit** | Resultado |
+|---|---|
+| `--relatorio --fase AD.1` | **exit 0** · 0 pendências · 0 recusas novas |
+| **Idempotência** — `--aplicar` em árvore já renomeada | **`git diff` vazio, 0 arquivos** |
+| Contraprova: `core.motor` reinjetado em `create-module.mjs` | **exit 1** — `create-module.mjs:184 [motor] (identificador)` |
+| Contraprova de prosa, refeita pelo revisor em outra linha | **exit 1**, recusa nova com arquivo e linha |
+| `apply-rename` · `verify-citations` · `verify-map` · `affected` · `contract-compatible` | 45/45 · 31/31 · 9/9 · 19/19 · 12/12 |
+| Gate · Bloco K | 122/122 · 122/122 · 119/119 · **3/3 VERDE** |
+
+> **Auditoria das 24 recusas `RECUSADO-LITERAL-PROTEGIDO`, uma a uma** (proteção nova é falso negativo
+> em potencial, que é o que este bloco caça): 5 valores de manifesto (`papel: 'dominio'`), 3 chaves de
+> manifesto (`"portas"`), **7 ids de regra** (`id:`/`regra:` `'contrato'`/`'testes'` e
+> `REGRAS_DE_EXTRACAO` — decisão 6 do AC), 7 na documentação da chave em `generate-port-schemas.mjs`.
+> **Nenhuma é referência de pasta recusada por engano** — a pasta sempre aparece com barra
+> (`packages/portas`), que `pareceCaminho` resolve antes da proteção nu.
 
 > *(`AF`, `AG` e `AH` já são do `plan-3.1.md` — a família 3 compartilha a sequência de letras.)*
 
@@ -329,15 +348,15 @@ bindings** · `verificar-citacoes` verde · `verificar-mapa` verde · e um proje
 > adiante, disfarçado de `ModuleNotFoundError`. **O AD.2 e o AD.3 têm a mesma exposição em escala
 > maior** — o AD.3 mexe em ~40 regras com caso.
 
-- [ ] **A lista de RECUSAS vira ARTEFATO, não saída de console.** `--relatorio` grava as recusas em
+- [x] **A lista de RECUSAS vira ARTEFATO, não saída de console.** `--relatorio` grava as recusas em
       arquivo versionado (`tests/rename-refusals.json` ou similar), com arquivo, linha e o token recusado
-- [ ] **A rodada seguinte só aceita recusa que já estava lá.** Recusa **nova** é revisão obrigatória — e
+- [x] **A rodada seguinte só aceita recusa que já estava lá.** Recusa **nova** é revisão obrigatória — e
       é uma lista curta, porque o inventário é fechado. É a mesma disciplina de `conformidade.json`:
       começa vazia, cresce por decisão explícita, nunca por heurística
-- [ ] **Fronteira com o que já existe:** o `--diferencial` continua sendo o aceite de *não corrompeu*;
+- [x] **Fronteira com o que já existe:** o `--diferencial` continua sendo o aceite de *não corrompeu*;
       este é o aceite de *não esqueceu*. São perguntas diferentes e precisam de artefatos diferentes —
       juntá-los num relatório só foi o que permitiu ao AD.1 declarar "0 suspeitas" com um defeito dentro
-- [ ] **Contraprova:** remover à mão uma substituição legítima já feita (voltar um `tools/` para
+- [x] **Contraprova:** remover à mão uma substituição legítima já feita (voltar um `tools/` para
       `ferramentas/` numa linha), rodar, e exigir que apareça como recusa NOVA — nomeando arquivo e linha
 
 ### AI.4 — a invariante que faltava *(achada testando o AI contra o defeito histórico)*
@@ -351,10 +370,10 @@ bindings** · `verificar-citacoes` verde · `verificar-mapa` verde · e um proje
 > artefato de recusas responde a primeira. A segunda é uma linha de código, e é a que teria pegado o
 > `create-module.mjs:162` na hora.
 
-- [ ] **Para uma fase FECHADA, substituição pendente tem de ser ZERO.** Listar cada pendência
+- [x] **Para uma fase FECHADA, substituição pendente tem de ser ZERO.** Listar cada pendência
       (`arquivo:linha`, classe, contexto — no mesmo formato das recusas) e **sair 1** se houver qualquer
       uma. Hoje as pendências só existem como número agregado em *"totais por classificacao"*
-- [ ] Contraprova nos dois sentidos: **(a)** reinjetar o defeito histórico → sai **1** nomeando
+- [x] Contraprova nos dois sentidos: **(a)** reinjetar o defeito histórico → sai **1** nomeando
       `create-module.mjs` e a linha *(hoje sai 0)*; **(b)** estado limpo → **0 pendências, exit 0**
 
 ### AI.5 — a não-idempotência *(defeito de origem do AD.1, e a origem é do revisor)*
@@ -376,12 +395,12 @@ bindings** · `verificar-citacoes` verde · `verificar-mapa` verde · e um proje
 > pergunta **diferente**: a exclusão nunca foi sobre autocitação — era contra **literal de pasta do AD.1
 > colidindo com chave de manifesto do AD.3**. O revisor aprovou esse raciocínio.
 
-- [ ] **Estender LITERAIS PROTEGIDOS para chave de manifesto e id de regra em ARRAY DE STRING NU.** Hoje
+- [x] **Estender LITERAIS PROTEGIDOS para chave de manifesto e id de regra em ARRAY DE STRING NU.** Hoje
       o padrão-de-linha exige `id:`/`regra:`/`papel:` na mesma linha, e `REGRAS_DE_EXTRACAO` /
       `CAMPOS_OBRIGATORIOS` são listas nuas. Precisa de reconhecedor pelo **nome da constante** (a linha
       `const X = [` / `new Set([` que abre o bloco), não por marcador na mesma linha.
       *(Devolver só a exclusão de `modulo.json` resolve 3 dos 14 — não basta.)*
-- [ ] **Aceite operacional de idempotência:** `--aplicar --fase AD.1` numa árvore já renomeada produz
+- [x] **Aceite operacional de idempotência:** `--aplicar --fase AD.1` numa árvore já renomeada produz
       **`git diff` VAZIO**. Colar o `git diff --stat` provando
 
 ---
@@ -401,8 +420,12 @@ AD   a campanha                  AD.1 ✅ FECHADO (b8d48a7). AD.2 tem método pr
 AE   o CRLF, e os 3 sintomas     ✅ FECHADO (671cbf7). Clone limpo em Windows passa
                                  no próprio gate sem intervenção manual
 
-AI   a rede do outro lado        ANTES do AD.2 pelo mesmo motivo: o AD.3 mexe em ~40
-                                 regras com caso, e falso negativo hoje não tem rede
+AI   a rede do outro lado        ✅ FECHADO (b43094b). Falso negativo agora tem rede,
+                                 e o codemod é idempotente
+
+────────────────────────────────────────────────────────────────────────────────
+PRÓXIMO: AD.2 — os dois pré-requisitos (AE, AI) estão fechados.
+────────────────────────────────────────────────────────────────────────────────
 
 ═══ meta: `core/domain/` e `toContract` num template cuja lei e cujos comentários
     seguem em português, e cuja fronteira está escrita num ADR ═══

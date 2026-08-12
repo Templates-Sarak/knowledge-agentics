@@ -104,10 +104,16 @@ const ESCAPAR_REGEX = /[.*+?^${}()|[\]\\]/g;
 const EXTENSOES_RECONHECIDAS = ['mjs', 'ts', 'tsx', 'js', 'jsx', 'py', 'json', 'yaml', 'yml', 'toml', 'sql', 'md'];
 const RE_EXTENSAO = new RegExp(`\\.(${EXTENSOES_RECONHECIDAS.join('|')})$`);
 
-/** Regex de ocorrência para um `antigo`, pelo TIPO. `arquivo`: fronteira esquerda inclui `.`
+/**
+ * Regex de ocorrência para um `antigo`, pelo TIPO. `arquivo`: fronteira esquerda inclui `.`
  * (protege `modulo.json` de casar dentro de `modulo.json.bak`), fronteira direita aceita ponto
- * final de frase mas rejeita ponto seguido de mais nome — conserto (c). `pasta`/`simbolo`: `.`
- * conta como fronteira dos dois lados (habilita `grafo.modules`, `from core.domain import`). */
+ * final de frase mas rejeita ponto seguido de mais nome — conserto (c). `pasta`/`simbolo`/`chave`:
+ * `.` conta como fronteira dos dois lados — a MESMA forma acha caminho (`core/domain`), import
+ * pontilhado (`from core.domain import x`) E acesso de propriedade de chave de manifesto
+ * (`manifesto.nome`, `ctx.manifesto.envRequerido` — Bloco AD, resolução B2). `chave` não precisa
+ * de regex própria: a diferença entre os três tipos não está em ACHAR a ocorrência — está em
+ * `decidir()`, que decide SE aquela ocorrência substitui, por tipo e por fase.
+ */
 export function regexDoTipo(antigo, tipo) {
   const escapado = antigo.replace(ESCAPAR_REGEX, '\\$&');
   if (tipo === 'arquivo') {
@@ -227,21 +233,44 @@ const PADROES_DE_PROTECAO = new Map([
   // aparece em prosa de comentário, dentro de regex-como-string (generate-port-schemas.mjs), em
   // dict Python (composicao.py, test_config.py) e em JSON puro (modulo.json) — contextos demais
   // para um marcador só. E, diferente de 'contrato'/'testes', NENHUM uso NU (sem barra) de 'portas'
-  // é substituição legítima hoje: a única forma legítima é a PASTA, sempre com barra
+  // é substituição legítima FORA de AD.3 hoje: a única forma legítima é a PASTA, sempre com barra
   // (`core/portas/` → `core/ports/`), e essa forma já substitui ANTES de chegar aqui, via
   // `pareceCaminho`/`token`. Por isso `true` em vez de lista: protegido sempre que aparece NU, sem
-  // exigir marcador — não existe hoje um "portas nu que deveria substituir" para perder.
-  ['portas', true],
+  // exigir marcador.
+  //
+  // `protegidoExceto` (Bloco AD, resolução B3) — EM AD.3, `portas` DEIXA de ser colisão e vira o
+  // próprio ALVO (chave de manifesto `portas→ports`). Proteger sem exceção faria o AD.3 nunca
+  // conseguir renomear a própria chave que existe para renomear — e simplesmente REMOVER a proteção
+  // faz o AD.1 (idempotência já fechada, AI.5) voltar a corromper `modulo.json`/`composicao.py`.
+  // A saída é a mesma dos outros mecanismos fechados deste arquivo: FASE explícita, não heurística.
+  // `contrato`/`testes` NÃO precisam disto — a proteção deles é por MARCADOR (`id:`/`regra:`), que
+  // já discrimina "id de regra" (protege sempre) de "chave `consome[].contrato`" (sem marcador,
+  // substitui) pelo CONTEXTO da linha, sem precisar saber qual fase está rodando.
+  ['portas', { protegidoExceto: ['AD.3'] }],
 ]);
 
 /** `literaisProtegidos` é o `Map` acima (lido do inventário) — devolve `true` se o LITERAL está
- * marcado como SEMPRE protegido (`true`, valor sem forma bare legítima — AI.5), OU se tem lista de
- * marcadores E a linha onde ele ocorreu bate um deles. */
+ * marcado como SEMPRE protegido (`true`), como protegido-por-padrão-com-exceção-de-fase (objeto
+ * `{ protegidoExceto }`, sem a exceção aplicada aqui — ver `protecaoSuspensaNestaFase`), ou se tem
+ * lista de marcadores E a linha onde ele ocorreu bate um deles. */
 export function protegidoNestaLinha(linha, nomeOcorrencia, literaisProtegidos) {
   const padroes = literaisProtegidos?.get(nomeOcorrencia);
   if (!padroes) return false;
   if (padroes === true) return true;
-  return padroes.some((p) => linha.includes(p));
+  if (Array.isArray(padroes)) return padroes.some((p) => linha.includes(p));
+  return true; // objeto { protegidoExceto }: protegido POR PADRÃO — a exceção é do chamador.
+}
+
+/**
+ * A FASE ATUAL é a declarada como exceção deste literal (Bloco AD, B3) — ele deixa de estar
+ * protegido só agora, porque é ELE MESMO que está sendo renomeado nesta fase. Separada de
+ * `protegidoNestaLinha` de propósito: a exceção tem de vetar TODA fonte de proteção por igual —
+ * marcador de linha, `true` incondicional ou o bônus de `dentroDeArrayProtegido` — não só uma.
+ */
+export function protecaoSuspensaNestaFase(nomeOcorrencia, literaisProtegidos, fase) {
+  const padroes = literaisProtegidos?.get(nomeOcorrencia);
+  if (padroes === true || padroes === undefined || Array.isArray(padroes)) return false;
+  return (padroes.protegidoExceto ?? []).includes(fase);
 }
 
 /**
@@ -271,10 +300,11 @@ const RE_FECHA_ARRAY_PROTEGIDO = /^\s*\]\)?;?\s*$/;
  * PALAVRA do match, não a string toda; `protegido` (conserto (e), já resolvido pelo chamador via
  * `protegidoNestaLinha`) recusa uma string-sem-espaço cujo literal+linha bate um marcador de
  * manifesto/id-de-regra protegido. Para `'comentario'`: mesma forma, mas o alvo é o token de
- * `[\w./-]`. Para `'codigo'`: só sobrevive dentro de um especificador de import (conserto (f)) —
- * identificador nu fica.
+ * `[\w./-]`. Para `'codigo'`: histórico (AD.1, "conserto f") é só sobreviver dentro de um
+ * especificador de import — identificador nu fica. `fase` (Bloco AD, resolução B1) estreita isso:
+ * fora de AD.1, o item pode SER o próprio símbolo/chave aparecendo nu — ver comentário no ramo.
  */
-export function decidir(contexto, nomeOcorrencia, tipoItem, protegido) {
+export function decidir(contexto, nomeOcorrencia, tipoItem, protegido, fase) {
   if (tipoItem === 'arquivo') return { decisao: 'substitui', classe: 'caminho' };
   if (contexto.tipo === 'string') {
     const palavra = palavraAoRedor(contexto.conteudo, contexto.posicao, contexto.tamanho);
@@ -310,9 +340,26 @@ export function decidir(contexto, nomeOcorrencia, tipoItem, protegido) {
     }
     return { decisao: 'recusa', classe: 'RECUSADO-POR-PROSA' };
   }
-  // 'codigo': só sobrevive dentro de especificador de import — identificador nu fica em português.
+  // 'codigo' — Bloco AD, resolução B1/B2.
   if (contexto.linhaEhImport) return { decisao: 'substitui', classe: 'identificador' };
-  return { decisao: 'recusa', classe: 'RECUSADO-IDENTIFICADOR-NU' };
+  // AD.1 (`pasta`, e `simbolo`/`modulos`/`memoria` que também são AD.1): identificador nu SEMPRE
+  // recusa — é o "conserto f" original, e mexer nele quebraria a idempotência já fechada do AD.1
+  // (AI.5). A checagem vem ANTES de olhar `tipoItem`/`protegido` de propósito: nenhum item de AD.1
+  // muda de comportamento aqui, ponto final — só fases DEPOIS de AD.1 chegam nas linhas abaixo.
+  if (fase === 'AD.1') return { decisao: 'recusa', classe: 'RECUSADO-IDENTIFICADOR-NU' };
+  // AD.2 (`simbolo`, nome de função): o item É o próprio símbolo aparecendo nu — declaração
+  // (`function paraContrato`) e chamada (`paraContrato(x)`) nunca vêm precedidas de `.`. Substitui
+  // sem mais restrição — é exatamente o que a fase existe para renomear.
+  //
+  // AD.3 (`chave`, campo de manifesto): palavra COMUM (`nome`, `dados`, `id`...) com risco real de
+  // colidir com variável local sem nenhuma relação com manifesto. Só substitui em ACESSO DE
+  // PROPRIEDADE (precedido de `.` — `manifesto.nome`, `ctx.manifesto.envRequerido`); bare fica
+  // recusado mesmo em AD.3. Python não usa esta forma (chave sempre é string, ramo 'string' acima).
+  if (tipoItem === 'chave' && !contexto.precedidoDePonto) {
+    return { decisao: 'recusa', classe: 'RECUSADO-IDENTIFICADOR-NU' };
+  }
+  if (protegido) return { decisao: 'recusa', classe: 'RECUSADO-LITERAL-PROTEGIDO' };
+  return { decisao: 'substitui', classe: 'identificador' };
 }
 
 /**
@@ -327,9 +374,15 @@ export function decidir(contexto, nomeOcorrencia, tipoItem, protegido) {
  * fica protegido aqui, mesmo sem o marcador de linha (`id:`/`regra:`/`papel:`) que
  * `protegidoNestaLinha` exige — é o reconhecedor por NOME DA CONSTANTE, não por marcador na mesma
  * linha, que `REGRAS_DE_EXTRACAO`/`CAMPOS_OBRIGATORIOS` (arrays NUS) precisam.
+ *
+ * `fase` (Bloco AD, resolução B1/B2/B3) — default `'AD.1'`, o comportamento histórico, para toda
+ * chamada existente (autoteste, principalmente) continuar EXATAMENTE como antes sem precisar
+ * mudar uma linha. Só quem processa uma fase de verdade (`classificarArquivo`, via `item.fase`)
+ * passa outra coisa.
  */
 export function ocorrenciasClassificadasNaLinha(
   linha, antigo, tipo, formato, jaEmComentario, literaisProtegidos, dentroDeArrayProtegido = false,
+  fase = 'AD.1',
 ) {
   const re = regexDoTipo(antigo, tipo);
   const strings = jaEmComentario ? [] : stringsDaLinha(linha);
@@ -364,12 +417,18 @@ export function ocorrenciasClassificadasNaLinha(
           tamanho: antigo.length,
         };
       } else {
-        contexto = { tipo: 'codigo', linhaEhImport };
+        // `precedidoDePonto` (B2): só importa pro ramo 'codigo' de 'chave' — `manifesto.nome` tem
+        // `.` imediatamente antes de `nome`; `const nome = x` não tem. Barato de calcular sempre,
+        // ignorado pelos outros tipos.
+        contexto = { tipo: 'codigo', linhaEhImport, precedidoDePonto: linha[pos - 1] === '.' };
       }
     }
-    const protegido = protegidoNestaLinha(linha, antigo, literaisProtegidos)
+    const protegidoBase = protegidoNestaLinha(linha, antigo, literaisProtegidos)
       || (dentroDeArrayProtegido && (literaisProtegidos?.has(antigo) ?? false));
-    const { decisao, classe } = decidir(contexto, antigo, tipo, protegido);
+    // B3: a fase ATUAL sendo a exceção declarada do literal veta TODA fonte de proteção acima —
+    // marcador, `true` incondicional ou o bônus de array — não só uma.
+    const protegido = protegidoBase && !protecaoSuspensaNestaFase(antigo, literaisProtegidos, fase);
+    const { decisao, classe } = decidir(contexto, antigo, tipo, protegido, fase);
     achados.push({ coluna: pos, decisao, classe });
   }
   return achados;
@@ -498,7 +557,7 @@ function classificarArquivo(texto, item, formato, literaisProtegidos) {
   const porLinha = [];
   if (formato.comentarioTotal) {
     linhas.forEach((linha) => {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, false, item.fase));
     });
     return { linhas, porLinha };
   }
@@ -513,27 +572,27 @@ function classificarArquivo(texto, item, formato, literaisProtegidos) {
     const limpa = linha.trim();
     if (RE_ABRE_ARRAY_PROTEGIDO.test(linha)) dentroDeArrayProtegido = true;
     if (cerca !== null) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase));
       if (limpa.includes(cerca)) cerca = null;
       return;
     }
     if (emBloco) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase));
       if (limpa.includes('*/')) emBloco = false;
       return;
     }
     const aspas = formato.ehPython ? ['"""', "'''"].find((d) => limpa.includes(d)) : undefined;
     if (aspas !== undefined) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase));
       if ((limpa.split(aspas).length - 1) % 2 === 1) cerca = aspas;
       return;
     }
     if (formato.marcador === '//' && limpa.startsWith('/*')) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase));
       if (!limpa.includes('*/')) emBloco = true;
       return;
     }
-    porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, false, literaisProtegidos, dentroDeArrayProtegido));
+    porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, false, literaisProtegidos, dentroDeArrayProtegido, item.fase));
     if (dentroDeArrayProtegido && RE_FECHA_ARRAY_PROTEGIDO.test(linha)) dentroDeArrayProtegido = false;
   });
   return { linhas, porLinha };
@@ -892,6 +951,7 @@ const PROTEGIDOS_PAPEL = new Map([
   ['contrato', PADROES_DE_PROTECAO.get('contrato')],
   ['testes', PADROES_DE_PROTECAO.get('testes')],
 ]);
+const PROTEGIDOS_PORTAS = new Map([['portas', PADROES_DE_PROTECAO.get('portas')]]);
 
 function casosDeAutoteste() {
   return [
@@ -1165,6 +1225,56 @@ function casosDeAutoteste() {
         { arquivo: 'a.mjs', linha: 2, classe: 'caminho', antigo: 'x', contexto: 'y' },
       ];
       return pendentesDaFase('AD.1', registros).length === 1;
+    } },
+
+    // Bloco AD, B1/B2/B3 — a ferramenta desbloqueada para AD.2/AD.3, sem regredir o AD.1.
+    { nome: 'B1: identificador nu de simbolo RECUSA em AD.1 (fase default) — idempotencia do AD.1 intacta', fn: () => {
+      const linha = 'const alvos = [...resultado.modulos];';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'modulos', 'simbolo', FMT_JS, false);
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'B1: identificador nu de simbolo SUBSTITUI em AD.2 — e o proprio simbolo sendo renomeado', fn: () => {
+      const linha = 'function paraContrato(registro) {';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'paraContrato', 'simbolo', FMT_JS, false, undefined, false, 'AD.2');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'identificador';
+    } },
+    { nome: 'B2: chave BARE (sem ponto antes) RECUSA mesmo em AD.3 — risco de colisao com variavel local', fn: () => {
+      const linha = 'const nome = arquivo.split("/").pop();';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'nome', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'B2: chave em ACESSO DE PROPRIEDADE (precedida de ".") SUBSTITUI em AD.3', fn: () => {
+      const linha = 'return manifesto.nome;';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'nome', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'identificador';
+    } },
+    { nome: 'B2: mesmo acesso de propriedade RECUSA em AD.1 (fase nao autoriza identificador nu de jeito nenhum)', fn: () => {
+      const linha = 'return manifesto.nome;';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'nome', 'chave', FMT_JS, false);
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'B3: protecaoSuspensaNestaFase("portas", AD.3) e true — a fase alvo suspende a protecao', fn: () => (
+      protecaoSuspensaNestaFase('portas', PROTEGIDOS_PORTAS, 'AD.3') === true
+    ) },
+    { nome: 'B3: protecaoSuspensaNestaFase("portas", AD.1) e false — protegido continua fora do alvo', fn: () => (
+      protecaoSuspensaNestaFase('portas', PROTEGIDOS_PORTAS, 'AD.1') === false
+    ) },
+    { nome: 'B3: "portas" nu RECUSA em AD.1 (protecao normal — nao regrediu o AI.5)', fn: () => {
+      const linha = 'for porta in modulo["portas"]:';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'portas', 'chave', FMT_PY, false, PROTEGIDOS_PORTAS);
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-LITERAL-PROTEGIDO';
+    } },
+    { nome: 'B3: "portas" nu SUBSTITUI em AD.3 — e o proprio alvo, protecao suspensa', fn: () => {
+      const linha = 'for porta in modulo["portas"]:';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'portas', 'chave', FMT_PY, false, PROTEGIDOS_PORTAS, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'string-sem-espaco';
+    } },
+    { nome: 'B3: array-context ("portas" dentro de CAMPOS_OBRIGATORIOS) tambem respeita a excecao de AD.3', fn: () => {
+      const linha = "  'dados', 'envRequerido', 'portas', 'consome', 'ui', 'permissoes',";
+      const emAD1 = ocorrenciasClassificadasNaLinha(linha, 'portas', 'chave', FMT_JS, false, PROTEGIDOS_PORTAS, true, 'AD.1');
+      const emAD3 = ocorrenciasClassificadasNaLinha(linha, 'portas', 'chave', FMT_JS, false, PROTEGIDOS_PORTAS, true, 'AD.3');
+      return emAD1.length === 1 && emAD1[0].decisao === 'recusa'
+        && emAD3.length === 1 && emAD3[0].decisao === 'substitui';
     } },
   ];
 }
