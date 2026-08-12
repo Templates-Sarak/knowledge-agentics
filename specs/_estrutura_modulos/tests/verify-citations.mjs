@@ -346,17 +346,40 @@ function arquivosDeScriptsDeSkills(arquivosSkill) {
   return [...raizes].flatMap((raiz) => arquivosSob(join(raiz, 'scripts'), EXT_FONTE));
 }
 
+/** `plan.md`/`plan-2*.md`/`plan-3*.md` na raiz da base — REGISTRO HISTÓRICO da campanha, nunca alvo
+ * de citação (Bloco AD.5). Padrão explícito, não um `endsWith('.md')` genérico: um plano cita o nome
+ * ANTIGO porque é o nome que existia quando aquele parágrafo foi escrito, e é isso que um registro
+ * deve fazer — reescrevê-lo pra acompanhar o rename destruiria a própria razão de existir. */
+const RE_ARQUIVO_DE_PLANO = /^plan(-\d+(\.\d+)?)?\.md$/;
+
+/** Acha os planos NA RAIZ da base (não desce em subpasta — um `plan.md` dentro de `skills/` não é
+ * este tipo de registro). Existe para a exclusão abaixo ser uma DECISÃO auditável: sem esta função,
+ * os planos já ficam fora do corpus porque nenhuma das outras (`arquivosDeDoutrina`,
+ * `arquivosDeFonte`, `arquivosDeSkills`) desce na raiz da base — um ACIDENTE de cobertura de
+ * varredura, não uma lista. Achando-os aqui e excluindo-os explicitamente embaixo, a exclusão
+ * sobrevive o dia em que alguém estender o corpus pra cobrir a raiz da base por outro motivo. */
+function arquivosDePlanos() {
+  if (!existsSync(RAIZ_BASE)) return [];
+  return readdirSync(RAIZ_BASE, { withFileTypes: true })
+    .filter((entrada) => entrada.isFile() && RE_ARQUIVO_DE_PLANO.test(entrada.name))
+    .map((entrada) => join(RAIZ_BASE, entrada.name));
+}
+
 /** O corpus inteiro — todo arquivo onde uma citação (nome antigo ou novo) pode aparecer — como
  * `{ arquivo, texto }` bruto, sem separar comentário de código: `--depois` quer ZERO ocorrência de nome
- * antigo em QUALQUER lugar, comentário incluído (um comentário parado no nome velho é rot igual). */
+ * antigo em QUALQUER lugar, comentário incluído (um comentário parado no nome velho é rot igual).
+ *
+ * Os planos (`arquivosDePlanos`) são achados e DESCARTADOS aqui, por decisão (Bloco AD.5) — não
+ * porque nenhuma das fontes acima os alcance. */
 function corpusBruto() {
   const arquivosSkill = arquivosDeSkills();
+  const excluidos = new Set(arquivosDePlanos());
   const caminhos = [
     ...arquivosDeDoutrina(),
     ...arquivosDeFonte(),
     ...arquivosSkill,
     ...arquivosDeScriptsDeSkills(arquivosSkill),
-  ];
+  ].filter((caminho) => !excluidos.has(caminho));
   return caminhos.map((caminho) => ({ arquivo: relative(RAIZ_BASE, caminho).split('\\').join('/'), texto: lerTexto(caminho) }));
 }
 

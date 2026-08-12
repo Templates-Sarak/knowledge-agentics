@@ -25,9 +25,9 @@ Três bindings: `typescript`, `javascript`, `python`. Um projeto adota **um**.
 | Na base (`knowledge-agentics`) | No projeto gerado |
 |---|---|
 | `specs/_estrutura_modulos/doutrina/` | `specs/arquitetura/` |
-| `specs/_estrutura_modulos/ferramentas/` | `ferramentas/` |
-| `specs/_estrutura_modulos/bindings/<b>/raiz/` | a raiz do projeto |
-| `specs/_estrutura_modulos/bindings/<b>/_template/` | `modulos/_template/` (o molde) |
+| `specs/_estrutura_modulos/tools/` | `tools/` |
+| `specs/_estrutura_modulos/bindings/<b>/root/` | a raiz do projeto |
+| `specs/_estrutura_modulos/bindings/<b>/_template/` | `modules/_template/` (o molde) |
 
 É a mesma confusão que todo mundo tem uma vez: **na base a lei se chama `doutrina/`; no projeto ela se
 chama `specs/arquitetura/`.** É o mesmo arquivo, instalado.
@@ -40,12 +40,12 @@ chama `specs/arquitetura/`.** É o mesmo arquivo, instalado.
 
 ```
 <projeto>/
-  modulos/<id>/      as fatias verticais do sistema
-  packages/portas/   as interfaces puras — o único package que o template entrega
+  modules/<id>/      as fatias verticais do sistema
+  packages/ports/   as interfaces puras — o único package que o template entrega
   adapters/          as implementações das portas — memoria, e o que vier
   src/composicao.*   descobre os módulos, injeta os adapters, sobe UM processo
   config/            verificacao.json (política) · conformidade.json (exceções)
-  ferramentas/       o gate e as ferramentas de CI
+  tools/       o gate e as ferramentas de CI
   .githooks/         pre-commit · pre-push
   specs/arquitetura/ a lei instalada
   projeto.json       o manifesto da raiz
@@ -55,7 +55,7 @@ chama `specs/arquitetura/`.** É o mesmo arquivo, instalado.
 A direção da dependência é hexagonal, e o gate a cobra:
 
 ```
-modulos/  ──→  packages/portas/  ←──  adapters/
+modules/  ──→  packages/ports/  ←──  adapters/
                       ↑
                  src/ compõe
 ```
@@ -63,21 +63,21 @@ modulos/  ──→  packages/portas/  ←──  adapters/
 ### O módulo — uma fatia vertical
 
 ```
-modulos/<id>/
+modules/<id>/
   modulo.json      O MANIFESTO — a fonte de verdade sobre o módulo
-  contrato/        openapi.yaml — o contrato da API
+  contract/        openapi.yaml — o contrato da API
   api/src/         a borda HTTP: rotas, mapeadores, middlewares, logger, erros
   core/
-    dominio/       a regra de negócio
-    motor/         geração de artefato (quando geraArtefato)
-    portas/        as interfaces que o módulo exige
+    domain/       a regra de negócio
+    engine/         geração de artefato (quando geraArtefato)
+    ports/        as interfaces que o módulo exige
     gateways/      fala com OUTRO módulo, exclusivamente HTTP
     templates/     modelos do artefato
   config/          api · dominio · seguranca · portas · textos  (zero hardcoded)
   database/        migrations/NNNN-verbo-objeto.sql + schema.sql
   tests/           dominio · contrato · web · fixtures
   web/             o front do módulo
-  gerados/         saída de máquina — fora da varredura de propósito
+  generated/         saída de máquina — fora da varredura de propósito
 ```
 
 **A árvore é fechada.** Entrada não prevista na raiz do módulo reprova (`estrutura-estrita`).
@@ -97,12 +97,12 @@ está o comando que o imprime.
 
 | Camada | O que faz | Confira com |
 |---|---|---|
-| **Gate** | **74 regras**, escopos `modulo` · `global` · `raiz`, 7 famílias. Estático, zero dependência, **nunca executa** — por isso viaja dentro do módulo extraído | `node ferramentas/gate/validar.mjs --todos` |
-| **Autoteste do gate** | prova o verificador: o molde conforme dá **zero** erro, e cada mutação produz **exatamente** o id esperado. Id extra reprova | `node ferramentas/gate/testes/executar.mjs --binding <b>` |
-| **Coerência do gerado** | `.env.example` × manifestos; schemas de portas; config do linter derivada de `limiares.mjs`, byte a byte | `--conferir` nas três ferramentas |
-| **Linguagem** | formatador · linter (config **gerada** da lei) · tipos · testes por módulo | `npm run verificar` |
+| **Gate** | **74 regras**, escopos `modulo` · `global` · `root`, 7 famílias. Estático, zero dependência, **nunca executa** — por isso viaja dentro do módulo extraído | `node tools/gate/validate.mjs --todos` |
+| **Autoteste do gate** | prova o verificador: o molde conforme dá **zero** erro, e cada mutação produz **exatamente** o id esperado. Id extra reprova | `node tools/gate/tests/run.mjs --binding <b>` |
+| **Coerência do gerado** | `.env.example` × manifestos; schemas de portas; config do linter derivada de `thresholds.mjs`, byte a byte | `--conferir` nas três ferramentas |
+| **Linguagem** | formatador · linter (config **gerada** da lei) · tipos · testes por módulo | `npm run verify` |
 | **A cadeia** | gate → env → schemas → formato → lint → tipos → testes. **Ferramenta ausente REPROVA** | idem |
-| **Seleção** | o que mudou → quais módulos reverificar. **Erra para mais, nunca para menos** | `node ferramentas/afetados.mjs` |
+| **Seleção** | o que mudou → quais módulos reverificar. **Erra para mais, nunca para menos** | `node tools/affected.mjs` |
 | **Hooks de git** | `pre-commit` (segundos) · `pre-push` (dezenas de segundos) | `git config core.hooksPath .githooks` |
 | **Hooks do agente** | cinco, entregues pelo plugin `sarak`, guardando o Claude Code | `hooks/README.md` |
 
@@ -140,9 +140,9 @@ O caminho completo, com specs, primeiros módulos e gate verde ao final:
 Direto pelas ferramentas, se preferir:
 
 ```sh
-node ferramentas/criar-projeto.mjs <destino> --binding typescript --escopo acme
+node tools/create-project.mjs <destino> --binding typescript --escopo acme
 cd <destino>
-node ferramentas/criar-modulo.mjs catalogo
+node tools/create-module.mjs catalogo
 
 # preencher os VALORES no .env  (as CHAVES já chegaram sozinhas)
 npm install                      # ou:  pip install -e ".[dev]"
@@ -154,7 +154,7 @@ git config core.hooksPath .githooks
 git update-index --chmod=+x .githooks/pre-commit .githooks/pre-push
 ```
 
-> **Sobre o `.env`:** as **chaves** são geradas e mescladas por `sincronizar-env.mjs` a partir dos
+> **Sobre o `.env`:** as **chaves** são geradas e mescladas por `sync-env.mjs` a partir dos
 > manifestos; os **valores** são preenchidos à mão — é o único jeito de um segredo real nunca virar
 > texto versionado. O script nunca sobrescreve valor preenchido e nunca apaga chave em silêncio: chave
 > que nenhum manifesto exige mais vai para a seção `ORFAS`, comentada.
@@ -162,9 +162,9 @@ git update-index --chmod=+x .githooks/pre-commit .githooks/pre-push
 ### 4.2 O dia a dia
 
 ```sh
-npm run verificar     # a cadeia inteira, local
-npm run iniciar       # sobe o sistema: um processo, uma porta
-npm test              # testes, por módulo
+npm run verify         # a cadeia inteira, local
+npm run start          # sobe o sistema: um processo, uma porta
+npm test               # testes, por módulo
 ```
 
 No Python o equivalente é `python verificar.py` (com `--rapido`, `--todos`).
@@ -176,11 +176,11 @@ Ao **commitar**, o `pre-commit` roda o gate só nos módulos afetados, mais env,
 
 ```sh
 npm run build           # emite o backend (TS) e constrói o front de cada módulo com web/
-npm run iniciar:prod    # roda o artefato — node puro, sem tsx
+npm run start:prod      # roda o artefato — node puro, sem tsx
 npm run migrations      # aplica e reverte as migrations
 ```
 
-O artefato é **autossuficiente**: sobe sem a árvore de fonte, sem `ferramentas/`, sem `tests/`.
+O artefato é **autossuficiente**: sobe sem a árvore de fonte, sem `tools/`, sem `tests/`.
 
 | binding | backend | front |
 |---|---|---|
@@ -196,8 +196,8 @@ acoplamento** — *exit code* e *relatório legível por máquina*:
 
 ```sh
 npm run validar · validar:env · validar:schemas · formato · lint · tipos · test
-node ferramentas/afetados.mjs        # seleção do que reverificar
-npm run ci:contrato                  # breaking change vs baseline git
+node tools/affected.mjs        # seleção do que reverificar
+npm run ci:contract                  # breaking change vs baseline git
 npm run ci:cobertura                 # lcov + JUnit
 npm run ci:lint                      # JSON  (SARIF, no ruff do Python)
 npm run ci:seguranca                 # estágio 0, fail-closed
@@ -218,7 +218,7 @@ artefato instalado**.
 ## 5. Como criar um novo módulo
 
 ```sh
-node ferramentas/criar-modulo.mjs <id> [--papel dominio|gateway|conector] [--sem-artefato] [--sem-web]
+node tools/create-module.mjs <id> [--papel dominio|gateway|conector] [--sem-artefato] [--sem-web]
 ```
 
 O `id` é `kebab-case` e **tem de bater com o nome da pasta** — o gate cobra.
@@ -230,15 +230,15 @@ escreve o manifesto, sincroniza `.env`/`.env.example` e **roda o gate no módulo
 
 1. **Preencher os valores** das chaves novas no `.env` (`<MODULO>_API_PORT`, `<MODULO>_DB_URL`).
 2. **Ajustar o manifesto** — é a fonte de verdade, e quase toda regra do gate lê dele (§5.2).
-3. **Escrever o contrato antes do código.** `contrato/openapi.yaml` é a fonte; o gate cobra que rota do
+3. **Escrever o contrato antes do código.** `contract/openapi.yaml` é a fonte; o gate cobra que rota do
    código e rota da spec coincidam **nos dois sentidos**.
-4. **Domínio primeiro, borda depois.** `core/dominio/` não faz I/O; o que precisa de fora vira **porta**
-   em `core/portas/`, declarada em `modulo.json:portas` e escolhida em `config/portas.json`.
+4. **Domínio primeiro, borda depois.** `core/domain/` não faz I/O; o que precisa de fora vira **porta**
+   em `core/ports/`, declarada em `modulo.json:portas` e escolhida em `config/ports.json`.
 5. **Migrations** em `database/migrations/NNNN-verbo-objeto.sql`, com o bloco `-- rollback` — e ele é
    **executado** por `npm run migrations`, não é enfeite.
 6. **Testes** em `tests/`, com dublês em `tests/fixtures/`. Nada de rede nem banco: se um teste do
    módulo precisa de infraestrutura, a porta está mal desenhada.
-7. `npm run verificar` — e não entregue com o gate vermelho.
+7. `npm run verify` — e não entregue com o gate vermelho.
 
 ### 5.2 O manifesto, campo a campo
 
@@ -254,15 +254,15 @@ Todos os 19 são obrigatórios, e **cada um tem verificador**.
 | `rotaWeb` | `/<id>` | a rota do front |
 | `dados` | `schema` · `prefixo` · `tabelas` | **nunca** `public`; toda tabela prefixada e declarada |
 | `envRequerido` | as chaves de ambiente | ausente **derruba o boot** — nunca default silencioso |
-| `portas` | as interfaces que o módulo exige | cada uma precisa de provedor em `config/portas.json` |
-| `consome` | `{modulo, contrato, porQue}` | a rota e o método têm de existir no dono |
+| `portas` | as interfaces que o módulo exige | cada uma precisa de provedor em `config/ports.json` |
+| `consome` | `{modulo, contract, porQue}` | a rota e o método têm de existir no dono |
 | `ui` | `modo: proprio \| kit` | em `kit`, nada de biblioteca de UI bruta — e o `packages/ui-kit` é convenção **do projeto**, o template não o entrega |
 | `permissoes` | `<id>:<verbo>` | vêm do manifesto, nunca de literal no código |
 | `rotasPublicas` | as que passam sem token | tudo o mais é negado por padrão |
 | `camposSensiveis` | nomes que não podem vazar | nem em resposta, nem em log |
 | `navegacao` | `label` · `icone` · `ordem` | obrigatório quando há `rotaWeb` |
 | `exportaResumo` | entra no dashboard cross-módulo | se `true`, `GET /resumo` declara `total` |
-| `geraArtefato` | tem `core/motor`, `core/templates`, `gerados/` | bidirecional: `false` proíbe as três |
+| `geraArtefato` | tem `core/engine`, `core/templates`, `generated/` | bidirecional: `false` proíbe as três |
 
 Três rotas são **obrigatórias em todo módulo**: `GET /health`, `GET /meta`, `GET /resumo`.
 
@@ -282,14 +282,14 @@ Mensagem do gate sempre nomeia **o arquivo, a linha e o conserto**. Se alguma n�
 ### 5.4 Extrair um módulo para serviço próprio
 
 ```sh
-node ferramentas/gate/validar.mjs --extracao modulos/<id>   # está pronto?
+node tools/gate/validate.mjs --extracao modules/<id>   # está pronto?
 ```
 
 Pronto significa: copiar a pasta, recortar as chaves `<MODULO>_*` do `.env` e **apagar a linha
 `ENV_RAIZ=` do `.env` do módulo extraído**, preenchendo os valores que ela apontava direto ali. Sem
 este passo o módulo morre no boot com `[config] ENV_RAIZ aponta para "…\.env", que nao existe` —
 medido; o comentário do próprio `.env` avisa (ADR-004), mas o passo tem que estar aqui também.
-**Nenhum import muda.** O gate viaja junto; o esqueleto novo repõe `ferramentas/`, `adapters/`,
+**Nenhum import muda.** O gate viaja junto; o esqueleto novo repõe `tools/`, `adapters/`,
 `packages/` e `src/`.
 
 ---
@@ -333,7 +333,7 @@ esconde a própria lacuna é pior que uma lacuna conhecida.**
 | **O catálogo de regras e os limites de cada uma** | `doutrina/04-regras.md` |
 | As quatro peças e as fronteiras | `doutrina/00-arquitetura.md` |
 | Por que o gate mora no template e não no pipeline | `doutrina/adr/decisoes.md` — ADR-005 |
-| O contrato do gate (argumentos, exit code, `--json`) | `ferramentas/gate/README.md` |
+| O contrato do gate (argumentos, exit code, `--json`) | `tools/gate/README.md` |
 | Os hooks do agente e a política deles | `hooks/README.md` (na base) |
 
 No projeto gerado, tudo de `doutrina/` está em `specs/arquitetura/` — inclusive o mapa (`README.md`).

@@ -11,6 +11,286 @@
   "recusas": [
     {
       "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 100,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **Gate** | **74 regras**, escopos `modulo` · `global` · `root`, 7 famílias. Estático, zero dependência, **nunca executa** — por isso viaja"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 102,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **Coerência do gerado** | `.env.example` × manifestos; schemas de portas; config do linter derivada de `thresholds.mjs`, byte a byte | `--"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 102,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **Coerência do gerado** | `.env.example` × manifestos; schemas de portas; config do linter derivada de `thresholds.mjs`, byte a byte | `--"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 103,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **Linguagem** | formatador · linter (config **gerada** da lei) · tipos · testes por módulo | `npm run verify` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 104,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **A cadeia** | gate → env → schemas → formato → lint → tipos → testes. **Ferramenta ausente REPROVA** | idem |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 115,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "pre-push     dezenas       tipos + testes dos afetados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 116,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "CI           minutos       tudo em tudo + contrato + cobertura + segurança + deps + build + migrations"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 140,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Direto pelas ferramentas, se preferir:"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 167,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "npm test               # testes, por módulo"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 173,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**empurrar**, o `pre-push` roda tipos e testes dos afetados. Quando cai em \"tudo\", ele **diz por quê**."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 194,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "regra não pode morar num lugar que se perde ao trocar de provedor. O que ele traz é o **contrato de"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 221,
+      "antigo": "dominio",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "node tools/create-module.mjs <id> [--papel dominio|gateway|conector] [--sem-artefato] [--sem-web]"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 233,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "3. **Escrever o contrato antes do código.** `contract/openapi.yaml` é a fonte; o gate cobra que rota do"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 236,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "em `core/ports/`, declarada em `modulo.json:portas` e escolhida em `config/ports.json`."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 251,
+      "antigo": "dominio",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `papel` | `dominio` · `gateway` · `conector` | fecha o vocabulário |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 253,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `rotaBase` | `/api/v1/<id>` | tem de bater com `servers[0].url` do contrato |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 257,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `portas` | as interfaces que o módulo exige | cada uma precisa de provedor em `config/ports.json` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 273,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- rota no código e não no contrato, ou no contrato e não no código;"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 273,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- rota no código e não no contrato, ou no contrato e não no código;"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 275,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- campo projetado na resposta que nenhum schema do contrato declara;"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 29,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `specs/_estrutura_modulos/bindings/<b>/root/` | a raiz do projeto |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 320,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`schema.sql` que não é comparado com o resultado real das migrations. É o contrato: **uma lei que"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 333,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **O catálogo de regras e os limites de cada uma** | `doutrina/04-regras.md` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 336,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| O contrato do gate (argumentos, exit code, `--json`) | `tools/gate/README.md` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 45,
+      "antigo": "memoria",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "adapters/          as implementações das portas — memoria, e o que vier"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 45,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "adapters/          as implementações das portas — memoria, e o que vier"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 48,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "tools/       o gate e as ferramentas de CI"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 51,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "projeto.json       o manifesto da raiz"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 68,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "contract/        openapi.yaml — o contrato da API"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 69,
+      "antigo": "mapeadores",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "api/src/         a borda HTTP: rotas, mapeadores, middlewares, logger, erros"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 76,
+      "antigo": "dominio",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "config/          api · dominio · seguranca · portas · textos  (zero hardcoded)"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 76,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "config/          api · dominio · seguranca · portas · textos  (zero hardcoded)"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 78,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "tests/           dominio · contrato · web · fixtures"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 78,
+      "antigo": "dominio",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "tests/           dominio · contrato · web · fixtures"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 83,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**A árvore é fechada.** Entrada não prevista na raiz do módulo reprova (`estrutura-estrita`)."
+    },
+    {
+      "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/bindings/javascript/_adapter/index.js",
       "linha": 6,
       "antigo": "dominio",
@@ -23,7 +303,7 @@
       "linha": 101,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export function carregarConfiguracao(raiz = encontrarRaizModulo()) {"
+      "contexto": "export function loadConfiguration(raiz = findRootModule()) {"
     },
     {
       "fase": "AD.1",
@@ -31,7 +311,7 @@
       "linha": 102,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const manifesto = lerJson(raiz, 'modulo.json');"
+      "contexto": "const manifesto = readJson(raiz, 'modulo.json');"
     },
     {
       "fase": "AD.1",
@@ -39,7 +319,7 @@
       "linha": 103,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "resolverAmbiente(raiz);"
+      "contexto": "resolveEnvironment(raiz);"
     },
     {
       "fase": "AD.1",
@@ -55,7 +335,7 @@
       "linha": 109,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "api: lerJson(raiz, 'config/api.json'),"
+      "contexto": "api: readJson(raiz, 'config/api.json'),"
     },
     {
       "fase": "AD.1",
@@ -63,7 +343,7 @@
       "linha": 110,
       "antigo": "dominio",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "dominio: lerJson(raiz, 'config/domain.json'),"
+      "contexto": "dominio: readJson(raiz, 'config/domain.json'),"
     },
     {
       "fase": "AD.1",
@@ -71,7 +351,7 @@
       "linha": 110,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "dominio: lerJson(raiz, 'config/domain.json'),"
+      "contexto": "dominio: readJson(raiz, 'config/domain.json'),"
     },
     {
       "fase": "AD.1",
@@ -79,7 +359,7 @@
       "linha": 111,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "seguranca: lerJson(raiz, 'config/seguranca.json'),"
+      "contexto": "seguranca: readJson(raiz, 'config/seguranca.json'),"
     },
     {
       "fase": "AD.1",
@@ -87,7 +367,7 @@
       "linha": 112,
       "antigo": "portas",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "portas: lerJson(raiz, 'config/ports.json'),"
+      "contexto": "portas: readJson(raiz, 'config/ports.json'),"
     },
     {
       "fase": "AD.1",
@@ -95,7 +375,7 @@
       "linha": 112,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "portas: lerJson(raiz, 'config/ports.json'),"
+      "contexto": "portas: readJson(raiz, 'config/ports.json'),"
     },
     {
       "fase": "AD.1",
@@ -103,7 +383,7 @@
       "linha": 113,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "textos: lerJson(raiz, 'config/textos.json'),"
+      "contexto": "textos: readJson(raiz, 'config/textos.json'),"
     },
     {
       "fase": "AD.1",
@@ -111,7 +391,7 @@
       "linha": 27,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "function lerJson(raiz, relativo) {"
+      "contexto": "function readJson(raiz, relativo) {"
     },
     {
       "fase": "AD.1",
@@ -119,7 +399,7 @@
       "linha": 29,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "return JSON.parse(lerTexto(join(raiz, relativo)));"
+      "contexto": "return JSON.parse(readText(join(raiz, relativo)));"
     },
     {
       "fase": "AD.1",
@@ -207,7 +487,7 @@
       "linha": 29,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export function criarApp({ deps, auth, raiz }) {"
+      "contexto": "export function createApp({ deps, auth, raiz }) {"
     },
     {
       "fase": "AD.1",
@@ -215,7 +495,7 @@
       "linha": 30,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const config = carregarConfiguracao(raiz);"
+      "contexto": "const config = loadConfiguration(raiz);"
     },
     {
       "fase": "AD.1",
@@ -943,7 +1223,7 @@
       "linha": 102,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export function verificarRotasUnicas(modulos) {"
+      "contexto": "export function verifyRoutesUnique(modulos) {"
     },
     {
       "fase": "AD.1",
@@ -975,7 +1255,7 @@
       "linha": 139,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "function carregarEnvDaRaiz(raiz) {"
+      "contexto": "function loadEnvRoot(raiz) {"
     },
     {
       "fase": "AD.1",
@@ -999,7 +1279,7 @@
       "linha": 152,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export async function montarSistema(raiz) {"
+      "contexto": "export async function buildSystem(raiz) {"
     },
     {
       "fase": "AD.1",
@@ -1007,7 +1287,7 @@
       "linha": 153,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const modulos = descobrirModulos(raiz);"
+      "contexto": "const modulos = discoverModules(raiz);"
     },
     {
       "fase": "AD.1",
@@ -1015,7 +1295,7 @@
       "linha": 153,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const modulos = descobrirModulos(raiz);"
+      "contexto": "const modulos = discoverModules(raiz);"
     },
     {
       "fase": "AD.1",
@@ -1023,7 +1303,7 @@
       "linha": 154,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "verificarRotasUnicas(modulos);"
+      "contexto": "verifyRoutesUnique(modulos);"
     },
     {
       "fase": "AD.1",
@@ -1039,7 +1319,7 @@
       "linha": 167,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "app.use(modulo.rotaBase, api.criarApp({ deps, auth, raiz: modulo.pasta }));"
+      "contexto": "app.use(modulo.rotaBase, api.createApp({ deps, auth, raiz: modulo.pasta }));"
     },
     {
       "fase": "AD.1",
@@ -1047,7 +1327,7 @@
       "linha": 187,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export async function iniciarSistema(raiz) {"
+      "contexto": "export async function startSystem(raiz) {"
     },
     {
       "fase": "AD.1",
@@ -1055,7 +1335,7 @@
       "linha": 188,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "carregarEnvDaRaiz(raiz);"
+      "contexto": "loadEnvRoot(raiz);"
     },
     {
       "fase": "AD.1",
@@ -1063,7 +1343,7 @@
       "linha": 190,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const app = await montarSistema(raiz);"
+      "contexto": "const app = await buildSystem(raiz);"
     },
     {
       "fase": "AD.1",
@@ -1103,7 +1383,7 @@
       "linha": 212,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "{ nome: 'um so modulo', modulos: [manifestoDeTeste('a', '/api/v1/a')], esperaErro: false },"
+      "contexto": "{ nome: 'um so modulo', modulos: [testManifest('a', '/api/v1/a')], esperaErro: false },"
     },
     {
       "fase": "AD.1",
@@ -1111,7 +1391,7 @@
       "linha": 215,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos: [manifestoDeTeste('a', '/api/v1/a'), manifestoDeTeste('b', '/api/v1/b')],"
+      "contexto": "modulos: [testManifest('a', '/api/v1/a'), testManifest('b', '/api/v1/b')],"
     },
     {
       "fase": "AD.1",
@@ -1119,7 +1399,7 @@
       "linha": 220,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos: [manifestoDeTeste('a', '/api/v1/a'), manifestoDeTeste('a2', '/api/v1/a')],"
+      "contexto": "modulos: [testManifest('a', '/api/v1/a'), testManifest('a2', '/api/v1/a')],"
     },
     {
       "fase": "AD.1",
@@ -1143,7 +1423,7 @@
       "linha": 242,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "verificarRotasUnicas(caso.modulos);"
+      "contexto": "verifyRoutesUnique(caso.modulos);"
     },
     {
       "fase": "AD.1",
@@ -1151,7 +1431,7 @@
       "linha": 42,
       "antigo": "memoria",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "repositorio: { memoria: () => criarRepositorio(), postgres: (modulo) => criarPostgresRepositorio(modulo) },"
+      "contexto": "repositorio: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },"
     },
     {
       "fase": "AD.1",
@@ -1159,7 +1439,7 @@
       "linha": 43,
       "antigo": "memoria",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "auditoria: { memoria: () => criarAuditoria(), postgres: (modulo) => criarPostgresAuditoria(modulo) },"
+      "contexto": "auditoria: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },"
     },
     {
       "fase": "AD.1",
@@ -1167,7 +1447,7 @@
       "linha": 46,
       "antigo": "memoria",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "storage: { memoria: () => criarStorageEmMemoria() },"
+      "contexto": "storage: { memoria: () => createInMemoryStorage() },"
     },
     {
       "fase": "AD.1",
@@ -1175,7 +1455,7 @@
       "linha": 47,
       "antigo": "memoria",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "notificador: { memoria: () => criarNotificadorEmMemoria() },"
+      "contexto": "notificador: { memoria: () => createInMemoryNotifier() },"
     },
     {
       "fase": "AD.1",
@@ -1207,7 +1487,7 @@
       "linha": 58,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export function descobrirModulos(raiz) {"
+      "contexto": "export function discoverModules(raiz) {"
     },
     {
       "fase": "AD.1",
@@ -1303,7 +1583,7 @@
       "linha": 116,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "def carregar_configuracao(raiz: Path | None = None) -> ConfiguracaoModulo:"
+      "contexto": "def load_configuration(raiz: Path | None = None) -> ConfiguracaoModulo:"
     },
     {
       "fase": "AD.1",
@@ -1311,7 +1591,7 @@
       "linha": 118,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "raiz_modulo = raiz or encontrar_raiz_modulo()"
+      "contexto": "raiz_modulo = raiz or find_root_module()"
     },
     {
       "fase": "AD.1",
@@ -1327,7 +1607,7 @@
       "linha": 127,
       "antigo": "dominio",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "dominio=_ler_json(raiz_modulo, \"config/domain.json\"),"
+      "contexto": "dominio=_read_json(raiz_modulo, \"config/domain.json\"),"
     },
     {
       "fase": "AD.1",
@@ -1335,7 +1615,7 @@
       "linha": 129,
       "antigo": "portas",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "portas=_ler_json(raiz_modulo, \"config/ports.json\"),"
+      "contexto": "portas=_read_json(raiz_modulo, \"config/ports.json\"),"
     },
     {
       "fase": "AD.1",
@@ -1367,7 +1647,7 @@
       "linha": 41,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "def _ler_json(raiz: Path, relativo: str) -> Any:"
+      "contexto": "def _read_json(raiz: Path, relativo: str) -> Any:"
     },
     {
       "fase": "AD.1",
@@ -1383,7 +1663,7 @@
       "linha": 68,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "def _resolver_ambiente(raiz: Path) -> None:"
+      "contexto": "def _resolve_environment(raiz: Path) -> None:"
     },
     {
       "fase": "AD.1",
@@ -1468,7 +1748,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/rotas.py",
-      "linha": 102,
+      "linha": 100,
       "antigo": "dominio",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "\"\"\"Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO"
@@ -1476,7 +1756,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/rotas.py",
-      "linha": 107,
+      "linha": 105,
       "antigo": "dominio",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": "config.dominio[\"statusValidos\"],"
@@ -2063,7 +2343,7 @@
       "linha": 105,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "def verificar_rotas_unicas(modulos: list[dict[str, Any]]) -> None:"
+      "contexto": "def verify_routes_unique(modulos: list[dict[str, Any]]) -> None:"
     },
     {
       "fase": "AD.1",
@@ -2111,7 +2391,7 @@
       "linha": 138,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "\"\"\"Carrega `api.src` do modulo — o mesmo `criar_app` que os testes de contrato usam."
+      "contexto": "\"\"\"Carrega `api.src` do modulo — o mesmo `create_app` que os testes de contrato usam."
     },
     {
       "fase": "AD.1",
@@ -2119,7 +2399,7 @@
       "linha": 138,
       "antigo": "testes",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "\"\"\"Carrega `api.src` do modulo — o mesmo `criar_app` que os testes de contrato usam."
+      "contexto": "\"\"\"Carrega `api.src` do modulo — o mesmo `create_app` que os testes de contrato usam."
     },
     {
       "fase": "AD.1",
@@ -2159,7 +2439,7 @@
       "linha": 209,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "def montar_sistema(raiz: Path) -> RaizAsgi:"
+      "contexto": "def build_system(raiz: Path) -> RaizAsgi:"
     },
     {
       "fase": "AD.1",
@@ -2167,7 +2447,7 @@
       "linha": 213,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos = descobrir_modulos(raiz)"
+      "contexto": "modulos = discover_modules(raiz)"
     },
     {
       "fase": "AD.1",
@@ -2175,7 +2455,7 @@
       "linha": 213,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos = descobrir_modulos(raiz)"
+      "contexto": "modulos = discover_modules(raiz)"
     },
     {
       "fase": "AD.1",
@@ -2183,7 +2463,7 @@
       "linha": 214,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "verificar_rotas_unicas(modulos)"
+      "contexto": "verify_routes_unique(modulos)"
     },
     {
       "fase": "AD.1",
@@ -2199,7 +2479,7 @@
       "linha": 243,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "def _carregar_env_da_raiz(raiz: Path) -> None:"
+      "contexto": "def _load_env_root(raiz: Path) -> None:"
     },
     {
       "fase": "AD.1",
@@ -2223,7 +2503,7 @@
       "linha": 263,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "def iniciar_sistema(raiz: Path) -> None:"
+      "contexto": "def start_system(raiz: Path) -> None:"
     },
     {
       "fase": "AD.1",
@@ -2239,7 +2519,7 @@
       "linha": 272,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "_carregar_env_da_raiz(raiz)"
+      "contexto": "_load_env_root(raiz)"
     },
     {
       "fase": "AD.1",
@@ -2247,7 +2527,7 @@
       "linha": 274,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "app = montar_sistema(raiz)"
+      "contexto": "app = build_system(raiz)"
     },
     {
       "fase": "AD.1",
@@ -2287,7 +2567,7 @@
       "linha": 61,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "def descobrir_modulos(raiz: Path) -> list[dict[str, Any]]:"
+      "contexto": "def discover_modules(raiz: Path) -> list[dict[str, Any]]:"
     },
     {
       "fase": "AD.1",
@@ -2335,7 +2615,7 @@
       "linha": 163,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos = _modulos()"
+      "contexto": "modulos = _modules()"
     },
     {
       "fase": "AD.1",
@@ -2375,7 +2655,7 @@
       "linha": 243,
       "antigo": "testes",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "passos += [(f\"testes: {m.name}\", [\"pytest\", \"-q\"], m) for m in _modulos()]"
+      "contexto": "passos += [(f\"testes: {m.name}\", [\"pytest\", \"-q\"], m) for m in _modules()]"
     },
     {
       "fase": "AD.1",
@@ -2391,7 +2671,7 @@
       "linha": 141,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export function carregarConfiguracao(raiz: string = encontrarRaizModulo()): ConfiguracaoModulo {"
+      "contexto": "export function loadConfiguration(raiz: string = findRootModule()): ConfiguracaoModulo {"
     },
     {
       "fase": "AD.1",
@@ -2399,7 +2679,7 @@
       "linha": 142,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const manifesto = lerJson<Manifesto>(raiz, 'modulo.json');"
+      "contexto": "const manifesto = readJson<Manifesto>(raiz, 'modulo.json');"
     },
     {
       "fase": "AD.1",
@@ -2407,7 +2687,7 @@
       "linha": 143,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "resolverAmbiente(raiz);"
+      "contexto": "resolveEnvironment(raiz);"
     },
     {
       "fase": "AD.1",
@@ -2423,7 +2703,7 @@
       "linha": 149,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "api: lerJson<ConfigApi>(raiz, 'config/api.json'),"
+      "contexto": "api: readJson<ConfigApi>(raiz, 'config/api.json'),"
     },
     {
       "fase": "AD.1",
@@ -2431,7 +2711,7 @@
       "linha": 150,
       "antigo": "dominio",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "dominio: lerJson<{ statusValidos: string[] }>(raiz, 'config/domain.json'),"
+      "contexto": "dominio: readJson<{ statusValidos: string[] }>(raiz, 'config/domain.json'),"
     },
     {
       "fase": "AD.1",
@@ -2439,7 +2719,7 @@
       "linha": 150,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "dominio: lerJson<{ statusValidos: string[] }>(raiz, 'config/domain.json'),"
+      "contexto": "dominio: readJson<{ statusValidos: string[] }>(raiz, 'config/domain.json'),"
     },
     {
       "fase": "AD.1",
@@ -2447,7 +2727,7 @@
       "linha": 151,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "seguranca: lerJson<ConfigSeguranca>(raiz, 'config/seguranca.json'),"
+      "contexto": "seguranca: readJson<ConfigSeguranca>(raiz, 'config/seguranca.json'),"
     },
     {
       "fase": "AD.1",
@@ -2455,7 +2735,7 @@
       "linha": 152,
       "antigo": "portas",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "portas: lerJson<Record<string, string>>(raiz, 'config/ports.json'),"
+      "contexto": "portas: readJson<Record<string, string>>(raiz, 'config/ports.json'),"
     },
     {
       "fase": "AD.1",
@@ -2463,7 +2743,7 @@
       "linha": 152,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "portas: lerJson<Record<string, string>>(raiz, 'config/ports.json'),"
+      "contexto": "portas: readJson<Record<string, string>>(raiz, 'config/ports.json'),"
     },
     {
       "fase": "AD.1",
@@ -2471,7 +2751,7 @@
       "linha": 153,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "textos: lerJson<Record<string, string>>(raiz, 'config/textos.json'),"
+      "contexto": "textos: readJson<Record<string, string>>(raiz, 'config/textos.json'),"
     },
     {
       "fase": "AD.1",
@@ -2511,7 +2791,7 @@
       "linha": 67,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "function lerJson<T>(raiz: string, relativo: string): T {"
+      "contexto": "function readJson<T>(raiz: string, relativo: string): T {"
     },
     {
       "fase": "AD.1",
@@ -2519,7 +2799,7 @@
       "linha": 69,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "return JSON.parse(lerTexto(join(raiz, relativo))) as T;"
+      "contexto": "return JSON.parse(readText(join(raiz, relativo))) as T;"
     },
     {
       "fase": "AD.1",
@@ -2607,7 +2887,7 @@
       "linha": 35,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export function criarApp({ deps, auth, raiz }: OpcoesModulo): Express {"
+      "contexto": "export function createApp({ deps, auth, raiz }: OpcoesModulo): Express {"
     },
     {
       "fase": "AD.1",
@@ -2615,7 +2895,7 @@
       "linha": 36,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const config = carregarConfiguracao(raiz);"
+      "contexto": "const config = loadConfiguration(raiz);"
     },
     {
       "fase": "AD.1",
@@ -3231,7 +3511,7 @@
       "linha": 36,
       "antigo": "modulos",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "\"//iniciar\": \"DEV. Sobe o monolito modular (specs/arquitetura/00-arquitetura.md §5) do FONTE. `tsx` resolve em runtime os imports `.js` que "
+      "contexto": "\"//start\": \"DEV. Sobe o monolito modular (specs/arquitetura/00-arquitetura.md §5) do FONTE. `tsx` resolve em runtime os imports `.js` que ap"
     },
     {
       "fase": "AD.1",
@@ -3335,7 +3615,7 @@
       "linha": 113,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export function verificarRotasUnicas(modulos: ManifestoDescoberto[]): void {"
+      "contexto": "export function verifyRoutesUnique(modulos: ManifestoDescoberto[]): void {"
     },
     {
       "fase": "AD.1",
@@ -3359,7 +3639,7 @@
       "linha": 125,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "/** O que se espera de `api/src/index.*` de um modulo — o mesmo `criarApp` que os testes de contrato usam. */"
+      "contexto": "/** O que se espera de `api/src/index.*` de um modulo — o mesmo `createApp` que os testes de contrato usam. */"
     },
     {
       "fase": "AD.1",
@@ -3367,7 +3647,7 @@
       "linha": 125,
       "antigo": "testes",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "/** O que se espera de `api/src/index.*` de um modulo — o mesmo `criarApp` que os testes de contrato usam. */"
+      "contexto": "/** O que se espera de `api/src/index.*` de um modulo — o mesmo `createApp` que os testes de contrato usam. */"
     },
     {
       "fase": "AD.1",
@@ -3375,7 +3655,7 @@
       "linha": 127,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "criarApp(opcoes: { deps: Record<string, unknown>; auth: Auth; raiz: string }): Express;"
+      "contexto": "createApp(opcoes: { deps: Record<string, unknown>; auth: Auth; raiz: string }): Express;"
     },
     {
       "fase": "AD.1",
@@ -3399,7 +3679,7 @@
       "linha": 170,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "function carregarEnvDaRaiz(raiz: string): void {"
+      "contexto": "function loadEnvRoot(raiz: string): void {"
     },
     {
       "fase": "AD.1",
@@ -3415,7 +3695,7 @@
       "linha": 183,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export async function montarSistema(raiz: string): Promise<Express> {"
+      "contexto": "export async function buildSystem(raiz: string): Promise<Express> {"
     },
     {
       "fase": "AD.1",
@@ -3423,7 +3703,7 @@
       "linha": 184,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const modulos = descobrirModulos(raiz);"
+      "contexto": "const modulos = discoverModules(raiz);"
     },
     {
       "fase": "AD.1",
@@ -3431,7 +3711,7 @@
       "linha": 184,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const modulos = descobrirModulos(raiz);"
+      "contexto": "const modulos = discoverModules(raiz);"
     },
     {
       "fase": "AD.1",
@@ -3439,7 +3719,7 @@
       "linha": 185,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "verificarRotasUnicas(modulos);"
+      "contexto": "verifyRoutesUnique(modulos);"
     },
     {
       "fase": "AD.1",
@@ -3455,7 +3735,7 @@
       "linha": 198,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "app.use(modulo.rotaBase, api.criarApp({ deps, auth, raiz: modulo.pasta }));"
+      "contexto": "app.use(modulo.rotaBase, api.createApp({ deps, auth, raiz: modulo.pasta }));"
     },
     {
       "fase": "AD.1",
@@ -3463,7 +3743,7 @@
       "linha": 218,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export async function iniciarSistema(raiz: string): Promise<Server> {"
+      "contexto": "export async function startSystem(raiz: string): Promise<Server> {"
     },
     {
       "fase": "AD.1",
@@ -3471,7 +3751,7 @@
       "linha": 219,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "carregarEnvDaRaiz(raiz);"
+      "contexto": "loadEnvRoot(raiz);"
     },
     {
       "fase": "AD.1",
@@ -3479,7 +3759,7 @@
       "linha": 221,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const app = await montarSistema(raiz);"
+      "contexto": "const app = await buildSystem(raiz);"
     },
     {
       "fase": "AD.1",
@@ -3511,7 +3791,7 @@
       "linha": 240,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "function casosDeRotasUnicas(): Array<{ nome: string; modulos: ManifestoDescoberto[]; esperaErro: boolean }> {"
+      "contexto": "function uniqueRoutesCases(): Array<{ nome: string; modulos: ManifestoDescoberto[]; esperaErro: boolean }> {"
     },
     {
       "fase": "AD.1",
@@ -3527,7 +3807,7 @@
       "linha": 243,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "{ nome: 'um so modulo', modulos: [manifestoDeTeste('a', '/api/v1/a')], esperaErro: false },"
+      "contexto": "{ nome: 'um so modulo', modulos: [testManifest('a', '/api/v1/a')], esperaErro: false },"
     },
     {
       "fase": "AD.1",
@@ -3535,7 +3815,7 @@
       "linha": 246,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos: [manifestoDeTeste('a', '/api/v1/a'), manifestoDeTeste('b', '/api/v1/b')],"
+      "contexto": "modulos: [testManifest('a', '/api/v1/a'), testManifest('b', '/api/v1/b')],"
     },
     {
       "fase": "AD.1",
@@ -3543,7 +3823,7 @@
       "linha": 251,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos: [manifestoDeTeste('a', '/api/v1/a'), manifestoDeTeste('a2', '/api/v1/a')],"
+      "contexto": "modulos: [testManifest('a', '/api/v1/a'), testManifest('a2', '/api/v1/a')],"
     },
     {
       "fase": "AD.1",
@@ -3567,7 +3847,7 @@
       "linha": 295,
       "antigo": "modulos",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "verificarRotasUnicas(caso.modulos);"
+      "contexto": "verifyRoutesUnique(caso.modulos);"
     },
     {
       "fase": "AD.1",
@@ -3599,7 +3879,7 @@
       "linha": 53,
       "antigo": "memoria",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "repositorio: { memoria: () => criarRepositorio(), postgres: (modulo) => criarPostgresRepositorio(modulo) },"
+      "contexto": "repositorio: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },"
     },
     {
       "fase": "AD.1",
@@ -3607,7 +3887,7 @@
       "linha": 54,
       "antigo": "memoria",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "auditoria: { memoria: () => criarAuditoria(), postgres: (modulo) => criarPostgresAuditoria(modulo) },"
+      "contexto": "auditoria: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },"
     },
     {
       "fase": "AD.1",
@@ -3615,7 +3895,7 @@
       "linha": 57,
       "antigo": "memoria",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "storage: { memoria: () => criarStorageEmMemoria() },"
+      "contexto": "storage: { memoria: () => createInMemoryStorage() },"
     },
     {
       "fase": "AD.1",
@@ -3623,7 +3903,7 @@
       "linha": 58,
       "antigo": "memoria",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "notificador: { memoria: () => criarNotificadorEmMemoria() },"
+      "contexto": "notificador: { memoria: () => createInMemoryNotifier() },"
     },
     {
       "fase": "AD.1",
@@ -3647,7 +3927,7 @@
       "linha": 62,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "export function descobrirModulos(raiz: string): ManifestoDescoberto[] {"
+      "contexto": "export function discoverModules(raiz: string): ManifestoDescoberto[] {"
     },
     {
       "fase": "AD.1",
@@ -3680,6 +3960,1750 @@
       "antigo": "portas",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": "for (const porta of modulo.portas) {"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 134,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- **Proibido JOIN, view ou foreign key cruzando módulos.** O dado de outro módulo chega pelo contrato da `api/`"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 142,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Caminho relativo exige mesma origem — e a raiz de composição (§3.4) **não é** essa origem: ela só sobe a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 15,
+      "antigo": "motor",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "fatia vertical completa de um domínio de negócio: dono do próprio front, da própria API, do próprio motor e da"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 28,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **0 — Doutrina** | estas leis (`specs/arquitetura/`): anatomia, manifesto, contrato, nomenclatura, catálogo de regras | **Não** |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 28,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **0 — Doutrina** | estas leis (`specs/arquitetura/`): anatomia, manifesto, contrato, nomenclatura, catálogo de regras | **Não** |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 5,
+      "antigo": "modulos",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "tags: [\"arquitetura\", \"modulos\", \"doutrina\", \"hub\"]"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 62,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "## 3.2 Adapters — as implementações das portas"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 71,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`adapters/memory/` é **obrigatório** em todo projeto: é ele que permite os testes rodarem sem rede. Sem"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 74,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`adapters/postgres/` também vem pronto (plan-2.2.md Bloco Z), para as portas `repositorio` e `auditoria` —"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 81,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`packages/` só aceita o que é **interface, contrato ou design, sem lógica de negócio**:"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 85,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `ports/` | interfaces canônicas das portas + taxonomia fechada de erro |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/00-arquitetura.md",
+      "linha": 93,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "resolve as portas de cada um a partir do `config/ports.json` dele, **injeta** os adapters, monta cada `api/`"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 111,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- **Composição sem lista fixa:** a raiz de composição varre `modules/*/modulo.json` e monta cada `api/` sob a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 121,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- O manifesto é **contrato, não configuração**: não muda em runtime e não guarda tunable — esses vão para `config/`."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 123,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- Alterar `dados`, `rotaBase` ou `permissoes` é mudança de contrato ([[02-contrato-e-dados]] §5)."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 139,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| Identidade e contrato do módulo | `modulo.json` | §3 |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 143,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "O `.env` **real e único** de segredo fica na **raiz do projeto**. Cada módulo tem um `.env` próprio que"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 180,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "→ resolve portas → injeta adapters → sobe a api"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 184,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Como o carregador resolve o `.env` sozinho, a `api/` de um módulo **roda isolada**, sem depender da raiz de"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 199,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "## 5.1 Catálogo de portas"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 212,
+      "antigo": "motor",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`new Date()` e `Math.random()` voltam para dentro do domínio e o motor deixa de ser reproduzível."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 216,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "A decisão foi **impedir a divergência em vez de acusá-la** — nenhuma regra de raiz compara os três"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 229,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- **`memory` é obrigatório para toda porta.** Os testes do módulo rodam inteiros sem infraestrutura; se não"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 23,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "├── modulo.json          identidade + contrato — o sistema DESCOBRE o módulo por aqui"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 252,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "{ \"modulo\": \"catalogo\", \"contrato\": \"GET /aliquotas/vigente\", \"porQue\": \"alíquota do mês na conciliação\" }"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 263,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- **O consumidor projeta a fatia mínima.** O contrato do dono devolve o recurso inteiro; o consumidor guarda"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 269,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "A comunicação entre módulos é HTTP síncrona pelo contrato. Quando um barramento de eventos entrar, **entra"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 287,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "fina e opcional** (`index.html` + `main.tsx`) que só monta a raiz já exportada. Com isso, tanto um shell único"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 303,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`api/src/mappers` → `database/` → `web/src/pages` → `tests/`. O contrato antes do código é deliberado: é a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 305,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "dois sentidos** (`contrato-sincronizado`), e `contract-compatible.mjs` compara o contrato contra o baseline"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 30,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "│   └── openapi.yaml     a fonte do contrato. O código segue, nunca o inverso"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 323,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "## 9.1 Campo novo no contrato"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 334,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| 8 | `tests/` | caso novo em `domain/` e no teste de contrato |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 344,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "1. `contract/openapi.yaml` **primeiro** — o contrato é a fonte, o código segue."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 349,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "4. Teste de contrato cobrindo o sucesso e o erro esperado."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 353,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "1. `modulo.json:portas` — declare a porta."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 358,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "6. Garanta que existe a variante `memory`, senão os testes deixam de rodar sem rede."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 362,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "1. `modulo.json:consome` — declare módulo, contrato e motivo."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 371,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "3. Preencha o valor no `.env` da raiz."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 59,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "│       ├── main.tsx     monta a raiz exportada"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 5,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "tags: [\"modulo\", \"template\", \"manifesto\", \"configuracao\", \"portas\", \"gateways\"]"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 73,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`database/` e `generated/`. Módulo sem tela descarta `web/`. A árvore é **fechada**: entrada não prevista na raiz"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 91,
+      "antigo": "dominio",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `papel` | enum | `dominio` \\| `gateway` \\| `conector` — ver [[00-arquitetura]] §3.1 |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 92,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `binding` | enum | `typescript` \\| `javascript` \\| `python` — define o molde e as regras de linguagem |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 99,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `portas` | string[] | portas de infraestrutura que exige (§5) |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 99,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `portas` | string[] | portas de infraestrutura que exige (§5) |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 132,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**O `contract/openapi.yaml` é a fonte do contrato**, versionado junto do código. Rota que existe no código e"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 135,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Mudança de contrato afeta quem declarou `consome` do seu módulo — **consulte o grafo antes**, não depois."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 14,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Esta lei define a forma do contrato, a identidade dos registros, a forma dos dados no banco e como o schema evolui."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 168,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "É contrato textual preciso — não prosa que alguém lê antes de agir a mão."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 27,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `GET <rotaBase>/health` | vivo? portas resolvidas? |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 28,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `GET <rotaBase>/meta` | metadados PÚBLICOS do módulo, por **allowlist** — `id`, `nome`, `versao`, `papel`, `rotaBase`, `rotaWeb`, `navegac"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 49,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "> `envRequerido`, `portas`, `permissoes`, `rotasPublicas`, `camposSensiveis`, `consome` — é reconhecimento do"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 56,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- **O banco fala `snake_case`; o contrato fala `camelCase`.** A conversão é explícita, num mapeador em"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 5,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "tags: [\"api\", \"contrato\", \"rest\", \"openapi\", \"banco\", \"migrations\"]"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 61,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "contrato) nomeia-se `para<Algo>` em TS/JS (`toContract`, `toMeta`, `toCollection` — `para` seguido de"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 75,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Esquecer o **schema** deixou de ser falha silenciosa: publicar campo que o contrato não promete é erro de"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 78,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "sem passar pelo mapeador (§7.2). Essa metade é do teste de contrato, que exercita a resposta de verdade."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 115,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- o contrato existe e declara os três endpoints obrigatórios."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 117,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**O que ele não faz: executar teste.** O gate é estático e sem efeito colateral por contrato — ele lê arquivo"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 118,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "e devolve achado, nunca roda código do módulo. A prova de que os testes passam sem rede é o `npm test` /"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 126,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "3. Recortar as chaves `<MODULO>_*` do `.env` da raiz para o `.env` do módulo, e **apagar a linha `ENV_RAIZ`**."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 141,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "node tools/gate/validate.mjs --todos                laço + as regras globais"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 146,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Só **duas** regras são genuinamente do repositório e precisam de visão global: `import-lateral` (nenhum módulo"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 150,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "pode morar num lugar que se perde ao trocar de provedor. O gate é agnóstico e tem contrato estável (recebe"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 157,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| Milissegundos (lê arquivo) | manifesto, nomenclatura, import lateral, prefixo de tabela, env, schemas de portas | toda invocação |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 158,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| Segundos (compila/testa) | build, testes, tipos | sob demanda no local, obrigatório na entrega |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 176,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| Milissegundos + segundos | `pre-commit` | gate (`validate.mjs`) nos módulos **afetados** pelo staged, `.env.example` em dia, schemas de po"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 177,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| Dezenas de segundos | `pre-push` | tipos e testes dos módulos **afetados** desde o upstream | `tools/affected.mjs --desde @{u}` (sem upstr"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 227,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Duas ferramentas de CI, nenhuma delas o gate pode ser (o gate não roda git nem consulta registro"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 254,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**A ADR-005 continua valendo:** o template não traz pipeline de CI/CD, traz o contrato (comando,"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 274,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "npm run ci:contrato      # breaking change no contract/openapi.yaml"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 289,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`web/dist/` para onde quer que o deploy vá — também infraestrutura, não contrato). Prometer esses"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 295,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`config/conformidade.json` na raiz do projeto aceita exceção **nominal**, em duas listas com a mesma"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 317,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| TypeScript | **Emite** — `tsc -p tsconfig.build.json` (raiz e cada módulo) para `dist/`. Todo import já usa a convenção NodeNext (`./confi"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 338,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- um `package.json` mínimo, com `dependencies` MESCLADAS (raiz + cada módulo + cada `adapters/*`) —"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 343,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**`importApi` (raiz de composição) resolve por convenção de caminho, não por variável nem"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 352,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`tsconfig.build.json` (raiz e módulo) **estende** o `tsconfig.json` de tipos — a mesma árvore que é"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 382,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "contrato, não o provedor). Ausente, o runner falha nomeando a chave exata, antes de tentar"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 71,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `tests/domain/` | validação e regras de negócio |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 83,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Cobertura-alvo ~80% nos caminhos críticos — e isto NÃO é regra.** Medir cobertura exige executar os testes,"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 84,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "e o gate é estático por contrato ([[04-regras]] §7.1). É um alvo de equipe, cobrado em revisão e pelo comando"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 115,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "74 regras do catálogo, mensagens do gate e erros de runtime voltados ao usuário."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 130,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Fronteira de caixa:** o banco fala `snake_case`, o contrato fala `camelCase`, e a conversão é explícita no mapeador."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 141,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `estrutura-estrita` | erro | nenhuma entrada não prevista na raiz do módulo — a árvore é fechada | módulo |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 147,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `testes-gateway` | erro | todo gateway REAL de `core/gateways/` (barril `index`/`__init__` excluído) tem teste cujo nome o espelha (`<gate"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 148,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `manifesto-raiz` | erro | a raiz do projeto tem `projeto.json`, é JSON válido e conforma ao JSON Schema (`tools/gate/schemas/projeto.schem"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 148,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `manifesto-raiz` | erro | a raiz do projeto tem `projeto.json`, é JSON válido e conforma ao JSON Schema (`tools/gate/schemas/projeto.schem"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 148,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `manifesto-raiz` | erro | a raiz do projeto tem `projeto.json`, é JSON válido e conforma ao JSON Schema (`tools/gate/schemas/projeto.schem"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 155,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `import-adapter` | erro | nenhum `adapters/*` importado dentro do módulo, **fora de teste** — o adapter é **injetado**. Import **relativo*"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 15,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**quem cobra**. A assimetria é deliberada — enquanto cada documento era dono das próprias regras, o gate e a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 163,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `portas-pura` | erro | nenhum arquivo de `packages/ports/` importa de `modules/`, `adapters/` ou `src/` — a porta é a interface **canônica"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 164,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `adapter-isolado` | erro | nenhum arquivo de `adapters/` importa de `modules/` nem de `src/`. Dependência **externa** é legítima aqui e nã"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 165,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `composicao-descoberta` | erro | nenhum arquivo de `src/` importa de `modules/`. **Import é dependência; leitura de arquivo é descoberta**"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 183,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `schema-config` | erro | cada `config/*.json` conforma ao seu JSON Schema em `tools/gate/schemas/`. `api`, `seguranca` e `portas` têm form"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 184,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `porta-declarada` | erro | as chaves de `config/ports.json` e as entradas de `modulo.json:portas` coincidem **nos dois sentidos** — as dua"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 194,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `env-raiz-declarado` | erro | toda chave `RAIZ_*` usada na **fiação** (`adapters/`, `src/`, `packages/`) está em `projeto.json:envRequerid"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 194,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `env-raiz-declarado` | erro | toda chave `RAIZ_*` usada na **fiação** (`adapters/`, `src/`, `packages/`) está em `projeto.json:envRequerid"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 195,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `hardcode-url-raiz` | erro | nenhuma URL literal (`http://`, `https://`) na **fiação**, fora de teste e de comentário — o gêmeo de `hardco"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 196,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `fallback-raiz` | erro | nenhum default silencioso de env na **fiação** (`process.env.X ?? '…'`, `getenv(…, '…')`, `environ.get(…, '…')`) "
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 197,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `gitignore-segredo` | erro | o `.gitignore` da raiz ignora `.env` **e** `modules/*/.env` — o `.env.example` segue versionado. Verifica o a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 197,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `gitignore-segredo` | erro | o `.gitignore` da raiz ignora `.env` **e** `modules/*/.env` — o `.env.example` segue versionado. Verifica o a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 199,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `verificacao-declarada` | erro | a raiz do projeto tem `config/verificacao.json`, JSON válido e conforme ao schema (`tools/gate/schemas/ve"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 199,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `verificacao-declarada` | erro | a raiz do projeto tem `config/verificacao.json`, JSON válido e conforme ao schema (`tools/gate/schemas/ve"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 200,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `lint-derivado` | erro | a config do linter na raiz (`eslint.config.js` ou `.ruff.toml`) é **byte a byte** o que `tools/generate-lint-conf"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 200,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `lint-derivado` | erro | a config do linter na raiz (`eslint.config.js` ou `.ruff.toml`) é **byte a byte** o que `tools/generate-lint-conf"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 201,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `pre-commit-instalado` | erro | `.githooks/pre-commit` existe na raiz do projeto **e** referencia `tools/gate/validate.mjs` ou `tools/veri"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 201,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `pre-commit-instalado` | erro | `.githooks/pre-commit` existe na raiz do projeto **e** referencia `tools/gate/validate.mjs` ou `tools/veri"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 210,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `projecao-contrato` | erro | toda chave que uma função de PROJEÇÃO DE SAÍDA (nome `para*`/`para_*`, §3) devolve aparece como propriedade e"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 223,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `determinismo` | erro | nenhum `Math.random()`/`new Date()` (ou `random.`/`datetime.now`) dentro de `core/` — use as portas `geradorId` e "
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 230,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `sql-concatenado` | erro | nenhuma instrução SQL da **fiação** montada por concatenação ou interpolação (`+` com variável, `${…}`, f-strin"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 232,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `segredo-em-log` | erro | nenhuma chave de `projeto.json:envRequerido` que case o vocabulário fechado de **sufixo de credencial** (`*_SECR"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 232,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `segredo-em-log` | erro | nenhuma chave de `projeto.json:envRequerido` que case o vocabulário fechado de **sufixo de credencial** (`*_SECR"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 251,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**O linter continua sendo a verificação profunda** e é onde vivem as regras que exigem AST de verdade:"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 25,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **1** | **arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento** | **este catálogo** | `specs/arquitetura/04-regras.md"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 266,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "node tools/gate/validate.mjs --todos                todos + as regras globais"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 281,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`config/conformidade.json` na raiz aceita exceção **nominal**: módulo + regra + motivo + link da decisão em"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 303,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Toda regra deste catálogo tem verificador.** O que resta aqui não são regras sem verificador — são a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 311,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **Cobertura de teste ~80%** | exige executar os testes; o gate é estático e sem efeito colateral | alvo descrito em [[03-operacao]] §5, ex"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 312,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **`--extracao` prova que os testes passam sem rede** | idem — o comando verifica a *estrutura* da extraibilidade, não executa nada | [[03-"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 315,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **\"o mock do gateway vem do contrato, não da implementação\"** | é julgamento, não forma: o mesmo objeto de mock serve às duas origens, e n"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 316,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **`dependencia-fixada` — \"lockfile presente\"** | o lockfile é **produto do `npm install`**, e o gate promete rodar **sem instalar nada** —"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 316,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **`dependencia-fixada` — \"lockfile presente\"** | o lockfile é **produto do `npm install`**, e o gate promete rodar **sem instalar nada** —"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 320,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "dependência é forma — `import` está no arquivo ou não está —, e virou as três regras de §4.2. \"Não contém regra de"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 367,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "regras de `ui` não são heurísticas — `ui-kit` lê import, e o modo `proprio` é `import-lateral`."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 372,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `rota-publica-autenticada` | cobre **duas** das três coisas que a lei afirma, e a terceira fica declarada aqui em vez de fingida. Cobre: a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 372,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `rota-publica-autenticada` | cobre **duas** das três coisas que a lei afirma, e a terceira fica declarada aqui em vez de fingida. Cobre: a"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 373,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `entrada-allowlist` | cobra a **forma** do defeito, não a ausência da allowlist. Passar o corpo adiante é legítimo e é o que o molde faz —"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 376,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `gitignore-segredo` | lê o **arquivo de ignore**, e só ele. Não afirma que o `.env` está versionado — isso exigiria `git ls-files`, e o ga"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 378,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `segredo-em-publico` | vocabulário fechado nos dois eixos — prefixo público de bundler e sufixo de credencial, este ÚLTIMO compartilhado c"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 379,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `verificacao-declarada`, `lint-derivado` | são regras de escopo **`root`**, e silenciam quando a raiz não tem `modules/` — módulo extraído"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 379,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `verificacao-declarada`, `lint-derivado` | são regras de escopo **`root`**, e silenciam quando a raiz não tem `modules/` — módulo extraído"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 379,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `verificacao-declarada`, `lint-derivado` | são regras de escopo **`root`**, e silenciam quando a raiz não tem `modules/` — módulo extraído"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 379,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `verificacao-declarada`, `lint-derivado` | são regras de escopo **`root`**, e silenciam quando a raiz não tem `modules/` — módulo extraído"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 380,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `manifesto-raiz` | verifica **forma**, e só ela: que `projeto.json` existe, é JSON legível e conforma ao schema. Não afirma nada sobre o q"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 380,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `manifesto-raiz` | verifica **forma**, e só ela: que `projeto.json` existe, é JSON legível e conforma ao schema. Não afirma nada sobre o q"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 380,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `manifesto-raiz` | verifica **forma**, e só ela: que `projeto.json` existe, é JSON legível e conforma ao schema. Não afirma nada sobre o q"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 381,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `env-raiz-declarado` | lê `adapters/`, `src/` e `packages/`, e **só**. `tools/` fica fora de propósito — é o gate, que o template instala "
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 381,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `env-raiz-declarado` | lê `adapters/`, `src/` e `packages/`, e **só**. `tools/` fica fora de propósito — é o gate, que o template instala "
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 381,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `env-raiz-declarado` | lê `adapters/`, `src/` e `packages/`, e **só**. `tools/` fica fora de propósito — é o gate, que o template instala "
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 383,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `portas-pura`, `adapter-isolado`, `composicao-descoberta` | leem **forma de import** — o mesmo extrator de `import-lateral` —, e o recorte"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 383,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `portas-pura`, `adapter-isolado`, `composicao-descoberta` | leem **forma de import** — o mesmo extrator de `import-lateral` —, e o recorte"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 384,
+      "antigo": "portas",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| `portas-pura` | \"não depende de nada\" tem um recorte, e ele é obrigatório: **biblioteca-padrão da linguagem não conta**. `packages/ports/_"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 386,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `sql-concatenado` × `sql-no-modulo` | **fronteira por coleção, e nenhum arquivo cai nas duas**: a primeira lê `ctx.projeto.codigo` (`adapt"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 386,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `sql-concatenado` × `sql-no-modulo` | **fronteira por coleção, e nenhum arquivo cai nas duas**: a primeira lê `ctx.projeto.codigo` (`adapt"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 386,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `sql-concatenado` × `sql-no-modulo` | **fronteira por coleção, e nenhum arquivo cai nas duas**: a primeira lê `ctx.projeto.codigo` (`adapt"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 386,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `sql-concatenado` × `sql-no-modulo` | **fronteira por coleção, e nenhum arquivo cai nas duas**: a primeira lê `ctx.projeto.codigo` (`adapt"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 388,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `segredo-em-log` | o sinal é a **declaração que já existe** — `projeto.json:envRequerido` filtrado pelo vocabulário fechado de sufixo de c"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 388,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `segredo-em-log` | o sinal é a **declaração que já existe** — `projeto.json:envRequerido` filtrado pelo vocabulário fechado de sufixo de c"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 388,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `segredo-em-log` | o sinal é a **declaração que já existe** — `projeto.json:envRequerido` filtrado pelo vocabulário fechado de sufixo de c"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 388,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `segredo-em-log` | o sinal é a **declaração que já existe** — `projeto.json:envRequerido` filtrado pelo vocabulário fechado de sufixo de c"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 390,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `hardcode-numero` e `random-inseguro` **não** valem na raiz | e a ausência é decisão, não lacuna esquecida. `packages/ports/` contém a **t"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 392,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `porta-declarada` | compara **nomes**, nunca o provedor: `\"repositorio\": \"inexistente\"` passa aqui, porque saber se existe fábrica para aq"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 396,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **Leitura de código: comentário não é código** | Toda regra que julga CÓDIGO lê `textoDeCodigo` — o arquivo sem comentário nem docstring —"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 398,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `ui-kit` | **não** verifica que `packages/ui-kit` existe no projeto, e isso é decisão, não lacuna: a unidade de verificação é o **módulo**"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 401,
+      "antigo": "motor",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `artefato-declarado` | verifica **presença**, nunca conteúdo: motor que não gera nada e template vazio passam. As duas pastas de fonte (`c"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 401,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `artefato-declarado` | verifica **presença**, nunca conteúdo: motor que não gera nada e template vazio passam. As duas pastas de fonte (`c"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 402,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `resumo-exportado` | lê o bloco **daquela rota** dentro de `paths:` e segue o `$ref` até `components.schemas` — leitor por rota, não do ar"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 402,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `resumo-exportado` | lê o bloco **daquela rota** dentro de `paths:` e segue o `$ref` até `components.schemas` — leitor por rota, não do ar"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 405,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `contrato-sincronizado` | reconhece registro de rota em Express/FastAPI. Framework diferente faz a regra **declarar que não verificou**, e"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 409,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `rota-nomenclatura` | lê `servers:` e `paths:` linha a linha; contrato ilegível é do `contract`, e aqui ela silencia. O verbo sai de vocab"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 410,
+      "antigo": "contrato",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 485,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "para as regras com caso. Implementa a cláusula de compatibilidade de `02-contrato-e-dados.md` §5:"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 48,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "é módulo nenhum: a fiação (`adapters/`, `src/`, `packages/`), o manifesto do projeto e a política da raiz. O"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 52,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "A regra de raiz roda uma vez **porque o fato é um só**. Enquanto `verificacao-declarada` e `lint-derivado`"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 55,
+      "antigo": "motor",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "motor descarta achado global cujo módulo não esteja entre os selecionados, e a raiz não é módulo nenhum."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 55,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "motor descarta achado global cujo módulo não esteja entre os selecionados, e a raiz não é módulo nenhum."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 593,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "foi montar cada app sob a própria `rotaBase` na raiz (nunca em `\"/\"`), com `createApp` (TS/JS) ciente do"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 5,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "tags: [\"regras\", \"conformidade\", \"gate\", \"validador\", \"nomenclatura\"]"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 608,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "une o campo `dependencies` de cada `package.json` do workspace (raiz, módulos, adapters) mecanicamente —"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 637,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**`scripts/` não é varrido pelas regras de raiz** (`hardcode-url-raiz`, `fallback-raiz`,"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 637,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**`scripts/` não é varrido pelas regras de raiz** (`hardcode-url-raiz`, `fallback-raiz`,"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 83,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| Variável de ambiente **da raiz** | `RAIZ_<ASSUNTO>` — prefixo **reservado** | `RAIZ_JWT_SECRET` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 95,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "raiz ou de um módulo, e a chave mais sensível do sistema continuaria sem dono. O vocabulário já chamava a raiz"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 95,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "raiz ou de um módulo, e a chave mais sensível do sistema continuaria sem dono. O vocabulário já chamava a raiz"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 101,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "módulo**. O template **não** traz pipeline de CI/CD — traz o contrato de acoplamento (argumentos, exit 0/1,"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 135,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "cobra regras diferentes para cada modo. O `web/` é sempre um pacote que exporta suas páginas, mais uma entrada"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 140,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "por módulo, que só monta a raiz já exportada."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 144,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "## ADR-008 — A cadeia de ferramentas do template é fixa, e quem a envelhece é o próprio template"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 155,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Decisão.** Toda dependência do esqueleto (`package.json` da raiz e do `_template`, `pyproject.toml`) é"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 184,
+      "antigo": "gerados",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Consequências.** Dois projetos gerados com meses de distância recebem a mesma cadeia — e quando divergirem"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 207,
+      "antigo": "portas",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "template usava português em oito pastas estruturais (`modules`, `tools`, `domain`, `portas`, `engine`,"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "contrato",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "dominio",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "gerados",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "mapeadores",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "memoria",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "modulos",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "motor",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "portas",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "raiz",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "regras",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "testes",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 236,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 4 | Símbolos (funções/variáveis) **dentro de** `ferramentas/` (→ `tools/`) | **português** | ferramental vendorizado — o dono é outro repo"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 237,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 5 | Nomes de arquivo dentro de `ferramentas/` (→ `tools/`), os ~29 `.mjs` | **inglês** — `criar-projeto→create-project` `validar→validate`"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 238,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| 6 | Ids das 74 regras do catálogo | **português** | id de regra é nome de artigo de lei, e a lei é portuguesa — citado muito mais em prosa"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 240,
+      "antigo": "dominio",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "| 8 | Chaves do manifesto (`modulo.json`, `projeto.json`) e nome do arquivo | **inglês** — `name` `data` `ports` `requiredEnv` `basePath` … "
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 250,
+      "antigo": "ferramentas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "na base como **string literal** dentro de ferramentas (o que `create-module.mjs` escreve no projeto de"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 254,
+      "antigo": "memoria",
+      "classe": "RECUSADO-MAPEAMENTO",
+      "contexto": "- **`memory` (linha 1) é duas coisas ao mesmo tempo.** É pasta física (`adapters/memoria/` → `adapters/memory/`,"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 30,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`packages/` (interface, contrato, design — sem negócio) e os adapters que ela declara. Extrair um módulo é"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 50,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Consequências.** O gate consegue cobrar regras diferentes para riscos diferentes: gateway com SQL reprova, e"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 61,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "raiz. Duplicar significa N lugares para corrigir a mesma falha no dia da CVE do driver."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 63,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Decisão.** `adapters/<tecnologia>/` na raiz, fora de `packages/` porque adapter é fornecedor e merece"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 68,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "testes precisam de rede e o desacoplamento deixa de ser verificável."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 79,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Decisão.** O `.env` real e único fica na raiz. Cada módulo tem um `.env` próprio contendo o ponteiro"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 83,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Alternativas descartadas.** *Symlink* — quebra no Windows sem privilégio. *Só o `.env` da raiz, sem arquivo"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 19,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| Como um módulo é por dentro — árvore, manifesto, portas, gateways | `01-modulo.md` §1–§7 |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 22,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| … campo novo no contrato | `01-modulo.md` §9.1 |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 31,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **O catálogo de regras — o que o gate cobra, e por quê** | `04-regras.md` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 37,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "<comando-verificar>                        gate + env + schemas + forma + limiares + tipos + testes"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 43,
+      "antigo": "portas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "schemas de portas, forma e limiares. `pre-push` (dezenas de segundos) cobra tipos e testes dos"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 43,
+      "antigo": "testes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "schemas de portas, forma e limiares. `pre-push` (dezenas de segundos) cobra tipos e testes dos"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 54,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**contrato primeiro**, por decisão registrada ali mesmo."
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 67,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| rota no código sem contrato, ou no contrato sem código | `contrato-sincronizado` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 67,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| rota no código sem contrato, ou no contrato sem código | `contrato-sincronizado` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 69,
+      "antigo": "contrato",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| campo na resposta que nenhum schema do contrato declara | `projecao-contrato` |"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 74,
+      "antigo": "regras",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "O catálogo inteiro — todas as regras, nível e escopo de cada uma: `04-regras.md`."
     },
     {
       "fase": "AD.1",
@@ -3716,18 +5740,10 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tests/template-self-test.mjs",
-      "linha": 510,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "{ nome: 'passosDoBinding(python): sem build/lint separado (sem web/ nos modulos python), ci-dependencias por ULTIMO', fn: () => {"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tests/template-self-test.mjs",
       "linha": 99,
       "antigo": "testes",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "* cobre forma + limiares + tipos + testes num só passo, como o `npm run verificar` do lado Node."
+      "contexto": "* cobre forma + limiares + tipos + testes num só passo, como o `npm run verify` do lado Node."
     },
     {
       "fase": "AD.1",
@@ -3796,23 +5812,31 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 440,
-      "antigo": "modulos",
+      "linha": 349,
+      "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "{ nome: 'ocorrenciasDoNome: NAO acha \"modulo\" dentro de \"modulos\" (fronteira violada)', fn: () => ("
+      "contexto": "/** `plan.md`/`plan-2*.md`/`plan-3*.md` na raiz da base — REGISTRO HISTÓRICO da campanha, nunca alvo"
     },
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 441,
-      "antigo": "modulos",
+      "linha": 358,
+      "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "ocorrenciasDoNome('modulo', 'os modulos do projeto').length === 0"
+      "contexto": "* `arquivosDeFonte`, `arquivosDeSkills`) desce na raiz da base — um ACIDENTE de cobertura de"
     },
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 479,
+      "linha": 360,
+      "antigo": "raiz",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* sobrevive o dia em que alguém estender o corpus pra cobrir a raiz da base por outro motivo. */"
+    },
+    {
+      "fase": "AD.1",
+      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
+      "linha": 502,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "{ nome: 'avaliarDepois: novo NUNCA citado nao e falha (fora do contrato pedido)', fn: () => ("
@@ -3884,14 +5908,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 156,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "if (!grafo.modulos.has(segundo)) {"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 174,
       "antigo": "regras",
       "classe": "RECUSADO-POR-PROSA",
@@ -3904,14 +5920,6 @@
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "// raiz E todos os módulos — computada, não bailout: por isso é um `tipo` próprio, não `tudo`."
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 203,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "for (const [id, { consome }] of grafo.modulos) {"
     },
     {
       "fase": "AD.1",
@@ -3956,42 +5964,10 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 250,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "for (const id of grafo.modulos.keys()) {"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 273,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "return { tudo: false, raiz, modulos: [...afetados].sort() };"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 273,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": "return { tudo: false, raiz, modulos: [...afetados].sort() };"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 289,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const linhas = resultado.raiz ? ['(root)', ...resultado.modulos] : [...resultado.modulos];"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 289,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const linhas = resultado.raiz ? ['(root)', ...resultado.modulos] : [...resultado.modulos];"
     },
     {
       "fase": "AD.1",
@@ -4005,14 +5981,6 @@
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 295,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "? { tudo: true, motivo: resultado.motivo, raiz: null, modulos: null }"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 295,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": "? { tudo: true, motivo: resultado.motivo, raiz: null, modulos: null }"
@@ -4021,22 +5989,6 @@
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 296,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": ": { tudo: false, motivo: null, raiz: resultado.raiz, modulos: resultado.modulos };"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 296,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": ": { tudo: false, motivo: null, raiz: resultado.raiz, modulos: resultado.modulos };"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 296,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": ": { tudo: false, motivo: null, raiz: resultado.raiz, modulos: resultado.modulos };"
@@ -4048,22 +6000,6 @@
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": ": { tudo: false, motivo: null, raiz: resultado.raiz, modulos: resultado.modulos };"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 309,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos: new Map(["
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 321,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos: new Map(["
     },
     {
       "fase": "AD.1",
@@ -4084,58 +6020,10 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 338,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "return mesmoConjunto(resultado.modulos, esperado.modulos);"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 338,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "return mesmoConjunto(resultado.modulos, esperado.modulos);"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 345,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "nome: 'cadeia transitiva de tres modulos (a muda -> b e c tambem, \"solto\" fica de fora)',"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 348,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "esperado: { tudo: false, raiz: false, modulos: ['a', 'b', 'c'] },"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 348,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": "esperado: { tudo: false, raiz: false, modulos: ['a', 'b', 'c'] },"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 364,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "grafo: { ilegivel: true, modulos: new Map() },"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 372,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "esperado: { tudo: false, raiz: false, modulos: ['a', 'b'] },"
     },
     {
       "fase": "AD.1",
@@ -4149,14 +6037,6 @@
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 375,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "nome: 'mudanca em packages/ alcanca todos os modulos e a raiz',"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 375,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "nome: 'mudanca em packages/ alcanca todos os modulos e a raiz',"
@@ -4165,25 +6045,9 @@
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 378,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "esperado: { tudo: false, raiz: true, modulos: ['a', 'b', 'c', 'solto'] },"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 378,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": "esperado: { tudo: false, raiz: true, modulos: ['a', 'b', 'c', 'solto'] },"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 384,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "esperado: { tudo: false, raiz: false, modulos: ['a'] },"
     },
     {
       "fase": "AD.1",
@@ -4205,14 +6069,6 @@
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 390,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "esperado: { tudo: false, raiz: true, modulos: [] },"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 390,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
       "contexto": "esperado: { tudo: false, raiz: true, modulos: [] },"
@@ -4224,14 +6080,6 @@
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "nome: 'src/ afeta a raiz mas nenhum modulo (composicao nao e codigo de modulo)',"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 396,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "esperado: { tudo: false, raiz: true, modulos: [] },"
     },
     {
       "fase": "AD.1",
@@ -4260,22 +6108,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 417,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "nome: 'dois modulos folha independentes mudando juntos: uniao dos afetados, sem ciclo espurio',"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 420,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "esperado: { tudo: false, raiz: false, modulos: ['a', 'b', 'c', 'solto'] },"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 420,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
@@ -4288,14 +6120,6 @@
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "nome: 'lista vazia de caminhos nao afeta nada (nem \"tudo\", nem raiz, nem modulo)',"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 426,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "esperado: { tudo: false, raiz: false, modulos: [] },"
     },
     {
       "fase": "AD.1",
@@ -4364,38 +6188,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 71,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const modulos = new Map();"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 81,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos.set(id, { consome });"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 88,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "modulos.set(id, { consome: [] });"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 93,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "return { modulos, ilegivel };"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
       "linha": 97,
       "antigo": "ferramentas",
       "classe": "RECUSADO-POR-PROSA",
@@ -4460,14 +6252,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/contract-compatible.mjs",
-      "linha": 326,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "for (const [outroId, { consome }] of grafo.modulos) {"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/contract-compatible.mjs",
       "linha": 354,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
@@ -4480,14 +6264,6 @@
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "? (r.moduloExisteAinda ? ' (modulo continua, so o contrato sumiu)' : ' (modulo inteiro removido)')"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/contract-compatible.mjs",
-      "linha": 373,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "process.stdout.write(`${JSON.stringify({ desde: ref, modulos: resultados, erros }, null, 2)}\\n`);"
     },
     {
       "fase": "AD.1",
@@ -4511,7 +6287,7 @@
       "linha": 164,
       "antigo": "motor",
       "classe": "RECUSADO-POR-PROSA",
-      "contexto": "* (`montarRegistro`/`montar_registro`) fica intacto, porque não depende do motor."
+      "contexto": "* (`buildRecord`/`build_record`) fica intacto, porque não depende do motor."
     },
     {
       "fase": "AD.1",
@@ -5324,7 +7100,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 442,
+      "linha": 446,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "// Chave fora de camelCase e do `payload-camelcase`. Ela JAMAIS estara no contrato (que fala"
@@ -5332,7 +7108,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 444,
+      "linha": 448,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "// apontaria para o conserto errado (\"declare no contrato\" em vez de \"renomeie o campo\")."
@@ -5340,7 +7116,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 467,
+      "linha": 471,
       "antigo": "contrato",
       "classe": "RECUSADO-LITERAL-PROTEGIDO",
       "contexto": "id: 'contrato',"
@@ -5348,7 +7124,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 473,
+      "linha": 477,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "// DONA de \"spec ilegivel\": esta regra ja e a dona de o contrato existir e servir de fonte."
@@ -5356,7 +7132,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 508,
+      "linha": 512,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "// leitor nao alcanca faria esta regra AFIRMAR que toda rota do codigo falta no contrato —"
@@ -5364,7 +7140,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 567,
+      "linha": 571,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "achados.push(`${arquivo}: campo \"${chave}\" na projecao nao e camelCase — o contrato fala camelCase`);"
@@ -5500,14 +7276,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/isolation.mjs",
-      "linha": 532,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "+ ' modulos lendo modules/*/modulo.json, nunca por import: o import fixa a lista em tempo'"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/isolation.mjs",
       "linha": 562,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
@@ -5548,7 +7316,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 214,
+      "linha": 217,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* Toda entrada de `rotasPublicas` aponta para uma rota que EXISTE no contrato do módulo."
@@ -5556,7 +7324,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 238,
+      "linha": 241,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "achados.push(`rotasPublicas declara \"${entrada}\" mas o contrato nao tem o caminho \"${caminho}\"`"
@@ -5564,7 +7332,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 243,
+      "linha": 246,
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "achados.push(`rotasPublicas declara \"${entrada}\" mas o contrato nao declara ${metodo} em \"${rota}\"`"
@@ -5572,7 +7340,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 251,
+      "linha": 254,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* O discriminador de INJEÇÃO, e o único — `sql-concatenado` (raiz) e `sql-no-modulo` (módulo) fazem"
@@ -5580,7 +7348,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 284,
+      "linha": 287,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* e deixa o chamador decidir a mensagem — as regras de raiz precisam dizer QUAL chave ou QUAL forma"
@@ -5588,7 +7356,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 284,
+      "linha": 287,
       "antigo": "regras",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* e deixa o chamador decidir a mensagem — as regras de raiz precisam dizer QUAL chave ou QUAL forma"
@@ -5596,7 +7364,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 289,
+      "linha": 292,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* do que ela descreve. Exportado porque `configuration.mjs` tem duas regras de raiz e usa o mesmo"
@@ -5604,7 +7372,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 289,
+      "linha": 292,
       "antigo": "regras",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* do que ela descreve. Exportado porque `configuration.mjs` tem duas regras de raiz e usa o mesmo"
@@ -5620,7 +7388,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 322,
+      "linha": 325,
       "antigo": "portas",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "'nao-determinismo em core/ — use as portas relogio e geradorId',"
@@ -5628,7 +7396,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 423,
+      "linha": 426,
       "antigo": "memoria",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "+ ' — qualquer XSS na pagina o le. Use cookie HttpOnly, ou mantenha o token so em memoria');"
@@ -5636,7 +7404,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 455,
+      "linha": 458,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* O `sql-concatenado` foi para a raiz porque quem fala com banco é o adapter, e isso continua"
@@ -5644,7 +7412,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 461,
+      "linha": 464,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* mora no módulo e a execução na raiz: `sql-concatenado` vê o `.query(sql)` do adapter e NÃO vê"
@@ -5652,7 +7420,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 477,
+      "linha": 480,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "+ ' fronteira o `sql-concatenado` da raiz nao ajuda: o adapter recebe a string ja montada e'"
@@ -5660,7 +7428,7 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 486,
+      "linha": 489,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* O módulo cruza `camposSensiveis` com a projeção e o log (`sensivel-em-saida`), e a raiz não"
@@ -5784,14 +7552,6 @@
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* contrato do dono. Faltava o teste — e sem ele uma dependência entre módulos podia existir,"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/structure.mjs",
-      "linha": 382,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "+ ' modulo, e dependencia entre modulos nao existe sem teste que a exercite. Crie um teste'"
     },
     {
       "fase": "AD.1",
@@ -5992,14 +7752,6 @@
       "antigo": "contrato",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "consome: [{ modulo: 'vizinho', contrato: 'GET /rota-aposentada', porQue: 'deriva de contrato' }],"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 308,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "// modulos por `readdirSync` + `modulo.json` e passa limpo no caso \"molde conforme\"; com um"
     },
     {
       "fase": "AD.1",
@@ -6484,30 +8236,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
-      "linha": 265,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const modulos = join(temporario, 'modules');"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
-      "linha": 267,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const alvo = join(modulos, '_template');"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
-      "linha": 274,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "if (caso?.exigeVizinho === true) pastas.push(criarVizinho(modulos, molde, caso.vizinhoConsome === true));"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
       "linha": 277,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
@@ -6572,14 +8300,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/gate/validate.mjs",
-      "linha": 119,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "process.stderr.write(`erro: nenhum modulo encontrado em ${join(raizProjeto, 'modulos')}\\n`);"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/validate.mjs",
       "linha": 124,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
@@ -6640,30 +8360,6 @@
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* pergunta da extração é sobre o MÓDULO, não sobre a raiz que ele vai deixar para trás."
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/validate.mjs",
-      "linha": 73,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const modulos = selecionados.map((c) => c.idPasta);"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/validate.mjs",
-      "linha": 75,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "return temRaiz ? [ALVO_RAIZ, ...modulos] : modulos;"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/gate/validate.mjs",
-      "linha": 75,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "return temRaiz ? [ALVO_RAIZ, ...modulos] : modulos;"
     },
     {
       "fase": "AD.1",
@@ -6837,14 +8533,6 @@
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
       "linha": 177,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "* PURA — mescla `dependencies` de varios `package.json` (raiz, modulos, adapters), MECANICAMENTE:"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 177,
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* PURA — mescla `dependencies` de varios `package.json` (raiz, modulos, adapters), MECANICAMENTE:"
@@ -6880,30 +8568,6 @@
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "throw new Error('dist/ da raiz ausente — este binding nao tem backend emitido para empacotar (JS/Python nao usam este passo)');"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 214,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const modulos = listarModulosReais(raizProjeto);"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 216,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "for (const pastaModulo of modulos) empacotarModulo(pastaModulo, destinoModulos);"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 220,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "...modulos.map((m) => lerJsonSeExiste(join(m, 'package.json'))?.dependencies),"
     },
     {
       "fase": "AD.1",
@@ -7068,14 +8732,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
-      "linha": 262,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const alvos = [...resultado.modulos];"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
       "linha": 263,
       "antigo": "raiz",
       "classe": "RECUSADO-IDENTIFICADOR-NU",
@@ -7140,14 +8796,6 @@
     {
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
-      "linha": 296,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "escrever('[pre-commit] gate nos modulos afetados\\n');"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
       "linha": 310,
       "antigo": "portas",
       "classe": "RECUSADO-POR-PROSA",
@@ -7189,14 +8837,6 @@
       "fase": "AD.1",
       "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
       "linha": 337,
-      "antigo": "modulos",
-      "classe": "RECUSADO-POR-PROSA",
-      "contexto": "escrever('[pre-push] tipos e testes nos modulos afetados\\n');"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
-      "linha": 337,
       "antigo": "testes",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "escrever('[pre-push] tipos e testes nos modulos afetados\\n');"
@@ -7208,14 +8848,6 @@
       "antigo": "raiz",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "escrever('  ! nenhum package.json nem pyproject.toml na raiz — tipos/tests pulados\\n');"
-    },
-    {
-      "fase": "AD.1",
-      "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
-      "linha": 350,
-      "antigo": "modulos",
-      "classe": "RECUSADO-IDENTIFICADOR-NU",
-      "contexto": "const alvos = (resultado.tudo ? idsDosModulos() : [...resultado.modulos]).filter(semMolde);"
     },
     {
       "fase": "AD.1",
@@ -7264,6 +8896,70 @@
       "antigo": "regras",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* não tem id, não conta para as regras com caso do catálogo."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 104,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **A cadeia** | gate → env → schemas → formato → lint → tipos → testes. **Ferramenta ausente REPROVA** | idem |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 147,
+      "antigo": "preencher",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "# preencher os VALORES no .env  (as CHAVES já chegaram sozinhas)"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 165,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "npm run verify         # a cadeia inteira, local"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 170,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "No Python o equivalente é `python verificar.py` (com `--rapido`, `--todos`)."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 194,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "regra não pode morar num lugar que se perde ao trocar de provedor. O que ele traz é o **contrato de"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 208,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "No Python, por flag: `python verificar.py --todos | --cobertura | --seguranca | --dependencias |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 218,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "## 5. Como criar um novo módulo"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "funcionamento-esperado.md",
+      "linha": 229,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "### 5.1 Depois de criar — a ordem que funciona"
     },
     {
       "fase": "AD.2",
@@ -8096,6 +9792,742 @@
       "antigo": "estado",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "//                                                  de qualquer estado inicial (vazio ou ja migrado)"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 203,
+      "antigo": "buscar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `repositorio` | buscar, listar, inserir, atualizar, contar |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 203,
+      "antigo": "contar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `repositorio` | buscar, listar, inserir, atualizar, contar |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 203,
+      "antigo": "inserir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `repositorio` | buscar, listar, inserir, atualizar, contar |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 203,
+      "antigo": "listar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `repositorio` | buscar, listar, inserir, atualizar, contar |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 208,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `auth` | verificar token e devolver claims |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 217,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "lugares; quem impede é `tools/generate-port-schemas.mjs --conferir`, que roda dentro do `verificar`"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 240,
+      "antigo": "agora",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "DEFAULT de todo módulo; trocar é a mesma linha de `config/ports.json`, agora verdadeira nos dois"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 240,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "DEFAULT de todo módulo; trocar é a mesma linha de `config/ports.json`, agora verdadeira nos dois"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 328,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| 2 | `database/schema.sql` | refletir o estado alvo |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 333,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| 7 | `web/src/api-client/` | tipo do cliente |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 363,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "2. `core/gateways/<outro>.ts` — o cliente HTTP, projetando a fatia mínima."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 381,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Nada a fazer por conta do controle de estado.** `<modulo>_migrations` (§2, criada pela migration"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 383,
+      "antigo": "pendentes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "migrations pendentes, `down` reverte só a última aplicada. Uma migration nova não pede nenhum passo"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 390,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "2. `web/src/hooks/` — o estado; `web/src/api-client/` — o acesso, sempre por caminho relativo."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/01-modulo.md",
+      "linha": 63,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "│   ├── schema.sql       estado alvo depois da última migration"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 100,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "A taxonomia é **fechada** e vive em `packages/ports`. **A mensagem ao cliente é genérica e estável; o detalhe"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 108,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Erro de domínio é erro do **cliente**, não falha interna: a borda traduz a exceção de validação do domínio para"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 123,
+      "antigo": "inserir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "antes de inserir torna a colisão provável pelo paradoxo do aniversário. Ou o gerador consulta antes, ou o"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 128,
+      "antigo": "remover",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`v1` é estável. Acrescentar campo opcional ou rota nova é compatível; remover ou renomear campo, mudar tipo,"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 136,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Remover uma rota, renomeá-la ou trocar o método dela quebra quem depende: a regra `consome-contrato`"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 171,
+      "antigo": "pendentes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "as migrations **pendentes** (nunca falha por rodar duas vezes sobre um banco já migrado); `down`"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 173,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "(`up → down → up`) funcionar a partir de **qualquer** estado inicial, não só de banco vazio."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 176,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "- `schema.sql` reflete o estado alvo depois da última migration."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 198,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "ao cliente final."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 205,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| **Artefato publicado é imutável** | é proibido alterar, reformatar ou regerar um artefato já publicado. URL viva é compromisso com o clien"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 46,
+      "antigo": "agora",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "> `camposSensiveis` — o mapa de onde está a PII. A escolha feita foi a **projeção reduzida**, aplicada agora e"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 79,
+      "antigo": "agora",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Assimetria deliberada: publicar por omissão é o risco grave, e é o que o gate agora fecha."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/02-contrato-e-dados.md",
+      "linha": 95,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `CONFLITO` | 409 | violação de unicidade ou de estado |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 119,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "`pytest` do módulo, no comando `verificar` do projeto. Confundir as duas coisas foi o que, num sistema real,"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 150,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "pode morar num lugar que se perde ao trocar de provedor. O gate é agnóstico e tem contrato estável (recebe"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 165,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`git config core.hooksPath .githooks` — são git, **não** provedor de CI: eles não se perdem ao trocar"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 16,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "## 2.1 A cadeia da `api/`"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 18,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Toda requisição atravessa a mesma cadeia, na mesma ordem, em todo módulo:"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 192,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "existe e referencia a cadeia; a regra 74. Ativação e furo ficam fora do que um verificador estático"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 198,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "não é o gate, não é o `verificar`/`verificar.py`, e não é o hook local. É **CI**, e a decisão foi"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 198,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "não é o gate, não é o `verificar`/`verificar.py`, e não é o hook local. É **CI**, e a decisão foi"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 202,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "promessa de \"segundos\"/\"dezenas de segundos\" que `verificar` e os hooks locais fazem (§7, a tabela de"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 211,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| Python | `python verificar.py --cobertura` | `pytest --cov`, piso em `--cov-fail-under` lido da mesma política | CI |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 218,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "aqui. Ferramenta de cobertura ausente também reprova, nunca \"ok\" (lei 7 do gate, `verificar.py`)."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 221,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "`python verificar.py --lint-relatorio` (SARIF, ruff — nativo na versão pinada, testado). SARIF no"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 232,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `npm run ci:seguranca` / `python verificar.py --seguranca` | `.env` real versionado (`git ls-files`) + segredo reconhecido no delta desde "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 233,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `npm run ci:dependencias` / `python verificar.py --dependencias` | `npm audit --json` / `pip-audit --format=json` contra `config/verificac"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 248,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "**Nenhum dos dois entra em `pre-commit`/`pre-push`/`verificar` local**: `ci:seguranca` precisa de git"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 249,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "(estado do repositório, não do arquivo em edição) e `ci:dependencias` precisa de rede/registro externo"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 250,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "— o mesmo motivo, com sinal trocado, que já mantém `ci:contract` e `ci:cobertura` fora da cadeia local."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 308,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "As duas listas começam **vazias**, e esse é o estado correto."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 317,
+      "antigo": "emitir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| TypeScript | **Emite** — `tsc -p tsconfig.build.json` (raiz e cada módulo) para `dist/`. Todo import já usa a convenção NodeNext (`./confi"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 368,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "# de qualquer estado inicial"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 375,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "processo composto trocar de provedor em **runtime**; migration é ferramenta de **operação**, nunca"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 383,
+      "antigo": "conectar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "conectar."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 386,
+      "antigo": "pendentes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "molde cria `<schema>.<prefixo>migrations` — `up` aplica só as pendentes, `down` reverte só a"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 85,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "`verificar` do projeto, nunca pelo gate. Cobertura também não é meta em si: teste que existe só para subir"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/03-operacao.md",
+      "linha": 97,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "real (`npm run start`, `python verificar.py` via boot de verdade) prova isso fim a fim. **O que fecha a"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 194,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| `env-raiz-declarado` | erro | toda chave `RAIZ_*` usada na **fiação** (`adapters/`, `src/`, `packages/`) está em `projeto.json:envRequerid"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 224,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `rota-publica-autenticada` | erro | a isenção de autenticação é a do manifesto e nada mais: a `api/` **lê** `modulo.json:rotasPublicas`, n"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 262,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "# 5. A cadeia de verificação"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 293,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "A lista começa vazia, e esse é o estado correto."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 309,
+      "antigo": "agora",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| Antiga regra | Por quê saiu | Onde vive agora |"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 314,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "| **Teste de integração com banco real (`tests/integracao/`)** | o [[03-operacao]] §5 fecha a questão: *\"Tudo roda com adapters de memória, "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 319,
+      "antigo": "registrar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "A linha do `src/` é a mais recente, e vale registrar por que ela parou aqui em vez de virar regra. A direção de"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 325,
+      "antigo": "registrar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "As duas linhas de teste acima entraram juntas, e a primeira é a mais importante de registrar: ela não saiu por"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 326,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "ser difícil de verificar — sair de `tests/integracao/` é trivial. Ela saiu porque **a regra contradiria a lei**."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 332,
+      "antigo": "pedir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "difícil, e sim porque cobrá-la e cobrar `permissao-literal` ao mesmo tempo seria pedir e proibir a mesma linha de"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 335,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "Rodar teste é do comando `verificar` do projeto, não do gate. Essa separação é o que mantém o gate rápido,"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 372,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `rota-publica-autenticada` | cobre **duas** das três coisas que a lei afirma, e a terceira fica declarada aqui em vez de fingida. Cobre: a"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 372,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `rota-publica-autenticada` | cobre **duas** das três coisas que a lei afirma, e a terceira fica declarada aqui em vez de fingida. Cobre: a"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 377,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `pre-commit-instalado` | lê **o arquivo**, e só ele — o mesmo limite de `gitignore-segredo`, com a mesma razão: `core.hooksPath` é config "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 380,
+      "antigo": "agora",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `manifesto-raiz` | verifica **forma**, e só ela: que `projeto.json` existe, é JSON legível e conforma ao schema. Não afirma nada sobre o q"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 381,
+      "antigo": "contar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `env-raiz-declarado` | lê `adapters/`, `src/` e `packages/`, e **só**. `tools/` fica fora de propósito — é o gate, que o template instala "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 382,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `import-adapter` | usa `formaDeCaminho` — a mesma normalização de `areaDoImport` (isolation.mjs) — para reconhecer a forma **pontilhada** "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 393,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| `navegacao-declarada` | **uma direção só**, e a inversa é legítima: `rotaWeb` sem `navegacao` é a página alcançável por URL direta e fora "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 415,
+      "antigo": "resolver",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "kebab-case perto da palavra \"regra\", identificador com maiúscula interna — e resolver contra disco/"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 483,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "(`--desde <ref>`), pergunta que o gate não pode responder porque compara só **um** estado por desenho"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 520,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "pacote `@microsoft/eslint-formatter-sarif`, uma dependência nova só para trocar um formato que o"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 588,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "a cadeia; não prova que o hook está ligado)."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 117,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Decisão.** O molde entra no gate como qualquer módulo. Além disso, o ciclo completo — criar um módulo a"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 144,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "## ADR-008 — A cadeia de ferramentas do template é fixa, e quem a envelhece é o próprio template"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 148,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Contexto.** Um projeto gerado *hoje* precisa nascer com a mesma cadeia de dependências que um gerado"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 159,
+      "antigo": "verificar",
+      "classe": "RECUSADO-LITERAL-PROTEGIDO",
+      "contexto": "para número de versão. O sensor de envelhecimento é `ci:dependencias`/`verificar.py --dependencias`, que"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 160,
+      "antigo": "agora",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "agora roda **dentro do Bloco K** (D2, plan-2.md — só entrou depois que este ADR fechou a cadeia, para o K não"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 160,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "agora roda **dentro do Bloco K** (D2, plan-2.md — só entrou depois que este ADR fechou a cadeia, para o K não"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 170,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "exatamente por isso que a cadeia ficou presa a majors antigos até acumular CVE."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 184,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Consequências.** Dois projetos gerados com meses de distância recebem a mesma cadeia — e quando divergirem"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 186,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "subir de major é trabalho de verdade (medido, Bloco P: `vitest` 2→4 exigiu trocar `environmentMatchGlobs`,"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 190,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "gerenciador que cria o ambiente): o conserto é `pip install --upgrade pip` como primeiro passo depois de criar"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 212,
+      "antigo": "redigir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "explícito. Uma varredura completa do disco, feita ao redigir esta decisão, achou mais quatro pastas na mesma"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 233,
+      "antigo": "Lista",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 274,
+      "antigo": "traduzir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "por módulo já é português por natureza; traduzir a camada de domínio seria tradução de conteúdo, não rename,"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 44,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "com o financeiro\"* — e foi assim que, num sistema real, um cliente HTTP de outro módulo passou a morar numa"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/adr/decisoes.md",
+      "linha": 86,
+      "antigo": "preencher",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Consequências.** Na extração, apagar a linha `ENV_RAIZ` e preencher os valores é suficiente: **nenhuma linha"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 47,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "## 3. A ordem ao criar módulo"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/doutrina/README.md",
+      "linha": 57,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "**Sem o plugin** (este mapa, sozinho): `01-modulo.md` §8 para criar e §9 para alterar bastam — estão"
     }
   ]
 }

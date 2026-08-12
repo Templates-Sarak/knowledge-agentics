@@ -251,7 +251,7 @@ function entrypointDoNpm() {
  * `package.json` do módulo novo declara (`react`, `@testing-library/react`, `@vitejs/plugin-react`,
  * ...) nunca são baixadas — `npm install` só liga membro de workspace na hora em que roda, e o único
  * install documentado (`create-project.mjs`, passo 1) acontece ANTES do primeiro módulo existir.
- * Medido: `npm run verificar` de um módulo recém-criado reprovava `tipos` com ~20 erros TS2307
+ * Medido: `npm run verify` de um módulo recém-criado reprovava `tipos` com ~20 erros TS2307
  * ("Cannot find module 'react'") seguindo exatamente os passos que `create-project.mjs` imprime.
  * Só TS/JS: o binding Python não tem manifesto de dependência por módulo (venv único da raiz).
  */

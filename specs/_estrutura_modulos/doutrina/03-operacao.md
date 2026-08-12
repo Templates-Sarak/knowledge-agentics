@@ -68,8 +68,8 @@ requestId → headers de segurança → CORS → rate limit → autenticação �
 
 | Camada | Cobre |
 |---|---|
-| `tests/dominio/` | validação e regras de negócio |
-| `tests/contrato/` | cada rota do `openapi.yaml`; auth negada por padrão; payload malformado rejeitado |
+| `tests/domain/` | validação e regras de negócio |
+| `tests/contract/` | cada rota do `openapi.yaml`; auth negada por padrão; payload malformado rejeitado |
 | `tests/web/` | os três estados de cada tela (`loading`, `empty`, `error`) |
 | `tests/fixtures/` | dados compartilhados **dentro** do módulo |
 
@@ -77,7 +77,7 @@ requestId → headers de segurança → CORS → rate limit → autenticação �
 executável de que o desacoplamento existe. Se um teste do módulo precisa de infraestrutura, a porta está mal
 desenhada ou o adapter de memória está faltando.
 
-Módulo com `core/motor` testa **determinismo**: mesma entrada, saída idêntica. É o que garante que
+Módulo com `core/engine` testa **determinismo**: mesma entrada, saída idêntica. É o que garante que
 `relogio` e `geradorId` estão sendo usados no lugar de `new Date()` e `Math.random()`.
 
 **Cobertura-alvo ~80% nos caminhos críticos — e isto NÃO é regra.** Medir cobertura exige executar os testes,
@@ -85,17 +85,17 @@ e o gate é estático por contrato ([[04-regras]] §7.1). É um alvo de equipe, 
 `verificar` do projeto, nunca pelo gate. Cobertura também não é meta em si: teste que existe só para subir
 número é peso morto.
 
-O gate cobra o que **é** estruturalmente verificável: `tests/dominio/` e `tests/contrato/` existem e não estão
-vazios (regra `testes`).
+O gate cobra o que **é** estruturalmente verificável: `tests/domain/` e `tests/contract/` existem e não estão
+vazios (regra `tests`).
 
 **O bypass de `envRequerido` sob teste, e por que ele não é silencioso (plan-2.md N.4).**
-`api/src/config.ts:conferirEnvRequerido` (TS/JS) e `api/src/config.py:_conferir_env_requerido` (Python)
+`api/src/config.ts:checkEnvRequired` (TS/JS) e `api/src/config.py:_check_env_required` (Python)
 pulam a checagem de variável obrigatória quando o processo está sob teste (`NODE_ENV === 'test'`,
 `PYTEST_CURRENT_TEST` definido) — sem isso, todo `it()`/`def test_` cairia antes de rodar, porque nenhum
 `.env` real existe em CI nem no ambiente de quem escreve o módulo. **A consequência aceita:** `npm
 test`/`pytest` verde, sozinho, **não prova** que a fiação de ambiente do módulo está correta — só o boot
-real (`npm run iniciar`, `python verificar.py` via boot de verdade) prova isso fim a fim. **O que fecha a
-lacuna:** `tests/contrato/config.test.ts`/`.js`/`test_config.py` chama a função **diretamente**, com a
+real (`npm run start`, `python verificar.py` via boot de verdade) prova isso fim a fim. **O que fecha a
+lacuna:** `tests/contract/config.test.ts`/`.js`/`test_config.py` chama a função **diretamente**, com a
 flag de teste removida do ambiente só durante a chamada, e afirma que ela DE FATO lança quando falta
 variável — a mesma disciplina de "declaração sem verificador não é lei" (`04-regras.md` §1) aplicada ao
 código do template, não a uma regra do gate.
@@ -103,12 +103,12 @@ código do template, não a uma regra do gate.
 # 6. Extração — a prova que justifica tudo
 
 ```
-node ferramentas/gate/validar.mjs --extracao modulos/<modulo>
+node tools/gate/validate.mjs --extracao modules/<modulo>
 ```
 
 O comando responde uma pergunta objetiva: **a ESTRUTURA deste módulo permite extraí-lo hoje?** Ele confere que:
 
-- toda porta declarada tem adapter escolhido em `config/portas.json`;
+- toda porta declarada tem adapter escolhido em `config/ports.json`;
 - todo gateway tem entrada em `consome`, e existe env apontando a URL base do módulo consumido;
 - o `.env.example` cobre exatamente o que o manifesto declara;
 - nenhum import sai da pasta do módulo, e nenhum SDK de fornecedor está dentro dela;
@@ -121,11 +121,11 @@ fez um comando de extração "passar" sem nunca ter rodado um teste sequer.
 
 **O procedimento de extração**, quando chegar o dia:
 
-1. Copiar `modulos/<modulo>/` para o repositório novo.
+1. Copiar `modules/<modulo>/` para o repositório novo.
 2. Copiar os `adapters/<tec>` que ele declara e os `packages/` que ele usa.
 3. Recortar as chaves `<MODULO>_*` do `.env` da raiz para o `.env` do módulo, e **apagar a linha `ENV_RAIZ`**.
 4. Substituir os gateways por chamadas à URL pública dos módulos que ficaram.
-5. Copiar `specs/arquitetura/`, `specs/adr/000-decisoes-do-template.md` e `ferramentas/` — a lei e a
+5. Copiar `specs/arquitetura/`, `specs/adr/000-decisoes-do-template.md` e `tools/` — a lei e a
    verificabilidade viajam junto.
 
 Nenhum passo é refactor. Se algum for, uma regra foi violada antes e não foi pega.
@@ -133,14 +133,14 @@ Nenhum passo é refactor. Se algum for, uma regra foi violada antes e não foi p
 # 7. Verificação
 
 O verificador é uma **ferramenta que recebe o caminho de um módulo**. Verificação do repositório inteiro é um
-laço sobre `modulos/*`, não uma capacidade separada — é isso que permite ao módulo extraído continuar
+laço sobre `modules/*`, não uma capacidade separada — é isso que permite ao módulo extraído continuar
 verificável no repositório novo dele.
 
 ```
-node ferramentas/gate/validar.mjs <caminho-do-modulo>    um módulo
-node ferramentas/gate/validar.mjs --todos                laço + as regras globais
-node ferramentas/gate/validar.mjs --extracao <caminho>   pronto para virar serviço?
-node ferramentas/gate/validar.mjs --json <caminho>       saída para máquina
+node tools/gate/validate.mjs <caminho-do-modulo>    um módulo
+node tools/gate/validate.mjs --todos                laço + as regras globais
+node tools/gate/validate.mjs --extracao <caminho>   pronto para virar serviço?
+node tools/gate/validate.mjs --json <caminho>       saída para máquina
 ```
 
 Só **duas** regras são genuinamente do repositório e precisam de visão global: `import-lateral` (nenhum módulo
@@ -148,7 +148,7 @@ importa outro) e `consome-ciclo` (não há ciclo no grafo). Ambas rodam no `--to
 
 **O template não traz pipeline de CI/CD**, de propósito: config de CI é específica de provedor, e a regra não
 pode morar num lugar que se perde ao trocar de provedor. O gate é agnóstico e tem contrato estável (recebe
-caminho, devolve exit 0/1, opcionalmente JSON). Plugá-lo num executor é uma linha — ver `ferramentas/gate/README.md`.
+caminho, devolve exit 0/1, opcionalmente JSON). Plugá-lo num executor é uma linha — ver `tools/gate/README.md`.
 
 O que rodar onde é decisão de **custo**, não de importância:
 
@@ -161,22 +161,22 @@ O que rodar onde é decisão de **custo**, não de importância:
 ## 7.1 A fiação local das três camadas
 
 A tabela acima é custo; esta seção é **onde** cada custo roda localmente. `.githooks/pre-commit` e
-`.githooks/pre-push` — instalados pelo template em `bindings/<binding>/raiz/.githooks/` e ativados por
+`.githooks/pre-push` — instalados pelo template em `bindings/<binding>/root/.githooks/` e ativados por
 `git config core.hooksPath .githooks` — são git, **não** provedor de CI: eles não se perdem ao trocar
 de GitHub Actions para outra coisa, e por isso não contradizem a decisão da ADR-005
 (`specs/adr/000-decisoes-do-template.md`). **"O template não traz pipeline de CI/CD" continua
 verdadeiro** — pipeline é config de provedor (o `.yml` de um GitHub Actions, o script de um GitLab CI);
-hook de git é mecanismo do próprio git, o mesmo `ferramentas/gate/README.md` já cita como exemplo de
+hook de git é mecanismo do próprio git, o mesmo `tools/gate/README.md` já cita como exemplo de
 "plugar num executor em uma linha".
 
 A fiação, coluna a coluna da tabela de custo:
 
 | Custo | Hook | O que roda | Alimentado por |
 |---|---|---|---|
-| Milissegundos + segundos | `pre-commit` | gate (`validar.mjs`) nos módulos **afetados** pelo staged, `.env.example` em dia, schemas de portas em dia, formato, lint | `ferramentas/afetados.mjs` sobre `git diff --cached --name-only` |
-| Dezenas de segundos | `pre-push` | tipos e testes dos módulos **afetados** desde o upstream | `ferramentas/afetados.mjs --desde @{u}` (sem upstream: primeiro push do branch, verifica tudo) |
+| Milissegundos + segundos | `pre-commit` | gate (`validate.mjs`) nos módulos **afetados** pelo staged, `.env.example` em dia, schemas de portas em dia, formato, lint | `tools/affected.mjs` sobre `git diff --cached --name-only` |
+| Dezenas de segundos | `pre-push` | tipos e testes dos módulos **afetados** desde o upstream | `tools/affected.mjs --desde @{u}` (sem upstream: primeiro push do branch, verifica tudo) |
 
-A lógica de ambos os hooks mora num lugar só, `ferramentas/verificar-commit.mjs` — os arquivos
+A lógica de ambos os hooks mora num lugar só, `tools/verify-commit.mjs` — os arquivos
 `.githooks/pre-commit`/`.githooks/pre-push` são idênticos, byte a byte, nos três bindings, e só
 delegam para lá. É a mesma razão de o gate ter uma implementação e não três: seis arquivos de hook (três
 bindings × dois estágios) com lógica própria divergiriam no primeiro ajuste que alguém fizesse de um
@@ -237,7 +237,7 @@ externo, de propósito — é o que o mantém puro e chamável de dentro de um h
 resta: um CVE novo sem correção disponível, que deixaria vermelho um build que ontem estava verde sem
 ninguém ter tocado em código.
 
-**Vocabulário fechado de segredo, sem entropia.** `ci-seguranca.mjs` reconhece nome de chave
+**Vocabulário fechado de segredo, sem entropia.** `ci-security.mjs` reconhece nome de chave
 (`PADRAO_CREDENCIAL`, já usado por `gateway-credencial`/`segredo-em-publico`) atribuído a um literal, e
 valor de token com prefixo de fornecedor inequívoco (AWS, GitHub, Google, Slack, Stripe, npm, JWT,
 cabeçalho de chave privada) — cópia comentada do catálogo canônico de `skills/cyber-segredos`, sem as
@@ -247,13 +247,13 @@ declarado em `04-regras.md` §7.2, não escondido — é falso negativo, tolerad
 
 **Nenhum dos dois entra em `pre-commit`/`pre-push`/`verificar` local**: `ci:seguranca` precisa de git
 (estado do repositório, não do arquivo em edição) e `ci:dependencias` precisa de rede/registro externo
-— o mesmo motivo, com sinal trocado, que já mantém `ci:contrato` e `ci:cobertura` fora da cadeia local.
+— o mesmo motivo, com sinal trocado, que já mantém `ci:contract` e `ci:cobertura` fora da cadeia local.
 
 ## 7.4 Exemplo de fiação de CI — de um provedor, não do template
 
 **A ADR-005 continua valendo:** o template não traz pipeline de CI/CD, traz o contrato (comando,
 exit 0/1) para que um executor o chame em uma linha. O que segue é **exemplo de um provedor**
-(GitHub Actions, GitLab CI, o que for) — nada aqui é arquivo que `criar-projeto.mjs` instala.
+(GitHub Actions, GitLab CI, o que for) — nada aqui é arquivo que `create-project.mjs` instala.
 
 Cada linha é um comando que **já existe** hoje, na ordem em que um pipeline razoável os chamaria —
 nada inventado, e onde a escada não tem passo, este exemplo não mostra um:
@@ -268,10 +268,10 @@ npm run tipos
 npm test
 
 # 2. selecao — so quando o pipeline quer escopar por commit, nao rodar tudo
-node ferramentas/afetados.mjs --desde origin/main
+node tools/affected.mjs --desde origin/main
 
 # 3. so CI — custam rede, git de historico, ou dezenas de segundos
-npm run ci:contrato      # breaking change no contrato/openapi.yaml
+npm run ci:contrato      # breaking change no contract/openapi.yaml
 npm run ci:cobertura     # lcov + junit, por modulo
 npm run ci:seguranca     # estagio 0, fail-closed
 npm run ci:dependencias  # audit + excecao datada
@@ -296,7 +296,7 @@ comando do template os cobre.
 disciplina e donos diferentes:
 
 - **`excecoes`** — ao catálogo do gate: módulo + regra + motivo + `decisao` (ADR).
-- **`excecoesCve`** — a `ferramentas/ci-dependencias.mjs` (não é regra, não roda no gate): id do
+- **`excecoesCve`** — a `tools/ci-dependencies.mjs` (não é regra, não roda no gate): id do
   CVE/GHSA + motivo + `decisao` (ADR) **e `expira`** (`YYYY-MM-DD`). A exceção de CVE tem um jeito a
   mais de não valer que a de regra: **expirada também não vale**, e volta a reprovar sozinha, sem
   ninguém precisar editar nada — é o que impede um "risco aceito" de virar permanente por esquecimento.
@@ -318,20 +318,20 @@ roupa** — comando que não faz nada e devolve `0` é tão falso quanto saída 
 | JavaScript | **Nada** — o fonte já É o artefato; `node` roda `.js` direto, sem passo nenhum entre editar e rodar | idem |
 | Python | **Nada** — o processo roda o fonte por natureza da linguagem; não há "emitido" distinto do editado | módulo não tem `web/` neste binding |
 
-`node ferramentas/empacotar.mjs` (`npm run build`) orquestra os dois lados: compila o backend TS onde
+`node tools/package.mjs` (`npm run build`) orquestra os dois lados: compila o backend TS onde
 há `tsconfig.build.json` — e **diz que não emite**, sem erro, onde não há (JS/Python) — e constrói o
 front de todo módulo com `web/vite.config.*`, pulando em silêncio informativo quem não tem (nunca falha
 o passo por um módulo sem `web/` — Python molde nenhum, e qualquer módulo criado com `--sem-web`).
 
 ## 9.1 O artefato backend é autossuficiente, e a prova é rodá-lo sem o fonte
 
-`node ferramentas/empacotar.mjs <destino>` copia, para um diretório **novo**, só o que o processo
-composto lê em runtime — nada de `.ts`, nada de `ferramentas/`, nada de `tests/`:
+`node tools/package.mjs <destino>` copia, para um diretório **novo**, só o que o processo
+composto lê em runtime — nada de `.ts`, nada de `tools/`, nada de `tests/`:
 
 - `modulo.json` de cada módulo — o único nome fixo, porque é o manifesto canônico;
 - `config/*.json` de cada módulo — **todo** `.json` sob `config/`, mecanicamente, nunca por nome
   enumerado. Medido contra o runtime (`api/src/config.ts`): só esses cinco arquivos e `modulo.json`
-  são lidos fora de teste — `contrato/openapi.yaml`, `core/templates/*.html` e `database/**` **não**
+  são lidos fora de teste — `contract/openapi.yaml`, `core/templates/*.html` e `database/**` **não**
   são, e por isso ficam de fora do artefato (inchá-lo com o que ninguém lê rodando é o erro oposto);
 - `dist/` — o que `tsc` emitiu. A lista de arquivos `.ts` vira lista de ativos de graça: quem decide o
   que compila é o `include` de `tsconfig.build.json`, nunca este script;
@@ -340,11 +340,11 @@ composto lê em runtime — nada de `.ts`, nada de `ferramentas/`, nada de `test
 - `.env.example` (documentação das chaves) — **nunca `.env`**: segredo é por ambiente de implantação,
   não um artefato de build que viaja para onde quer que o pacote seja publicado.
 
-**`importarApi` (raiz de composição) resolve por convenção de caminho, não por variável nem
-tentativa**: prefere `modulos/<id>/dist/api/src/index.js` quando ele existe, e cai para
-`modulos/<id>/api/src/index.ts` (resolvida por `tsx` em dev) quando não existe. O preço declarado: um
+**`importApi` (raiz de composição) resolve por convenção de caminho, não por variável nem
+tentativa**: prefere `modules/<id>/dist/api/src/index.js` quando ele existe, e cai para
+`modules/<id>/api/src/index.ts` (resolvida por `tsx` em dev) quando não existe. O preço declarado: um
 `dist/` desatualizado — fonte mudou, ninguém rodou o build de novo — é servido sem aviso; mitigado por
-`empacotar.mjs` sempre recompilar do zero antes de copiar, nunca reaproveitar um `dist/` velho, e por
+`package.mjs` sempre recompilar do zero antes de copiar, nunca reaproveitar um `dist/` velho, e por
 dev tipicamente não ter `dist/` nenhum na árvore.
 
 ## 9.2 O que a emissão não muda
@@ -368,13 +368,13 @@ node scripts/migrations.mjs ciclo <modulo>    # up -> down -> up — prova que o
                                                # de qualquer estado inicial
 ```
 
-**Não mora em `ferramentas/`.** Falar com Postgres exige driver, e `ferramentas/**` é zero
+**Não mora em `tools/`.** Falar com Postgres exige driver, e `tools/**` é zero
 dependência externa (§3 do catálogo). O runner é devDependency de **projeto** — `pg` (Node) /
 `psycopg[binary]` (Python), mesmo precedente de `tsx`/`@vitest/coverage-v8`/`pytest-cov` — e por
 isso viaja com o projeto (`scripts/`), não com a base. `adapters/` continua sendo só para o
 processo composto trocar de provedor em **runtime**; migration é ferramenta de **operação**, nunca
-importada por `composicao.*` — mudar `adapters/memoria` não afeta o caminho de migrations, e
-`ferramentas/afetados.mjs` não precisou mudar por isso (medido: o runner não importa `adapters/`
+importada por `composicao.*` — mudar `adapters/memory` não afeta o caminho de migrations, e
+`tools/affected.mjs` não precisou mudar por isso (medido: o runner não importa `adapters/`
 em lugar nenhum).
 
 **A URL vem do ambiente, sempre `<MODULO>_DB_URL`** (já em `modulo.json:envRequerido` desde o

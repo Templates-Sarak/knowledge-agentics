@@ -189,7 +189,7 @@ export function classificarPasso(resultado) {
 
 /**
  * Varre os resultados de um binding e para no PRIMEIRO passo que falhar (mesmo raciocínio do `&&`
- * dentro de `npm run verificar`): passo que depende do anterior rodar sobre um estado que já não é
+ * dentro de `npm run verify`): passo que depende do anterior rodar sobre um estado que já não é
  * o que o passo espera não mede nada de novo, só duplica o mesmo defeito com outro nome.
  */
 export function primeiroFalho(resultadosClassificados) {

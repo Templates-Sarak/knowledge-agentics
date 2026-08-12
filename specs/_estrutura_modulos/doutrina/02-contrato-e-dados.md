@@ -31,7 +31,7 @@ Esta lei define a forma do contrato, a identidade dos registros, a forma dos dad
 O conector consome **apenas** esses três — nunca endpoint específico de um módulo.
 
 **A forma mínima de `/resumo`, e por que ela existe.** O agregador cross-módulo compõe **sem lista fixa**
-([[01-modulo]] §3.2): ele varre `modulos/*/modulo.json` e não conhece módulo nenhum de antemão. Somar o que não
+([[01-modulo]] §3.2): ele varre `modules/*/modulo.json` e não conhece módulo nenhum de antemão. Somar o que não
 se conhece exige uma forma **compartilhada** — por isso o módulo que declara `exportaResumo: true` deve declarar
 `total` (inteiro) no schema `200` de `GET /resumo`. Sem esse mínimo, agregar só seria possível com um caso por
 módulo dentro do conector: exatamente o acoplamento que "composição sem lista fixa" existe para proibir, e a
@@ -45,7 +45,7 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
 > segredo em `envRequerido`, o vocabulário inteiro de `permissoes`, `rotasPublicas` (o que não exige token) e
 > `camposSensiveis` — o mapa de onde está a PII. A escolha feita foi a **projeção reduzida**, aplicada agora e
 > não adiada para quando houver login: `/meta` devolve só os oito campos da tabela acima, cobrados por
-> `saida-crua` (`specs/arquitetura/04-regras.md` §4.5) e travados por caso em `casos.mjs`. O que sai da lista — `dados`,
+> `saida-crua` (`specs/arquitetura/04-regras.md` §4.5) e travados por caso em `cases.mjs`. O que sai da lista — `dados`,
 > `envRequerido`, `portas`, `permissoes`, `rotasPublicas`, `camposSensiveis`, `consome` — é reconhecimento do
 > módulo (o front precisa saber id/rota/navegação para se montar), nunca descoberta de superfície interna.
 > Sair de `rotasPublicas` quando houver login continua disponível como **endurecimento adicional**, não como
@@ -54,11 +54,11 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
 # 3. Caixa e projeção
 
 - **O banco fala `snake_case`; o contrato fala `camelCase`.** A conversão é explícita, num mapeador em
-  `api/src/mapeadores/`, nas duas direções.
+  `api/src/mappers/`, nas duas direções.
 - **Projeção de saída é obrigatória:** a resposta é montada campo a campo por **allowlist**. Devolver o
   registro cru do banco é **proibido** — é o que impede vazar coluna nova, campo livre ou PII.
 - **Convenção de nome, e ela é NORMATIVA — não estilo.** Função de PROJEÇÃO DE SAÍDA (domínio/manifesto →
-  contrato) nomeia-se `para<Algo>` em TS/JS (`paraContrato`, `paraMeta`, `paraColecao` — `para` seguido de
+  contrato) nomeia-se `para<Algo>` em TS/JS (`toContract`, `toMeta`, `toCollection` — `para` seguido de
   maiúscula) ou `para_<algo>` em Python. Conversão para o BANCO nomeia-se na direção inversa —
   `<algo>ParaLinha`/`linhaPara<Algo>` — nunca começando por `para`. `projecao-contrato`, `payload-camelcase`
   e `sensivel-em-saida` **dependem** desta convenção para achar a função (`04-regras.md` §7.2): projeção
@@ -97,12 +97,12 @@ Sucesso devolve o recurso, ou `{ itens, pagina, tamanho, total }` em coleção. 
 | `DEPENDENCIA_EXTERNA` | 502 | falha de adapter ou de gateway |
 | `INTERNO` | 500 | exceção não prevista |
 
-A taxonomia é **fechada** e vive em `packages/portas`. **A mensagem ao cliente é genérica e estável; o detalhe
+A taxonomia é **fechada** e vive em `packages/ports`. **A mensagem ao cliente é genérica e estável; o detalhe
 vai só para o log**, correlacionado pelo `requestId`. Mensagem de fornecedor nunca chega ao browser.
 
 ## 3.2 Validação na borda
 
-Todo input externo é validado **na `api/`, antes do `core/dominio`**: schema por rota, **allowlist de campos**
+Todo input externo é validado **na `api/`, antes do `core/domain`**: schema por rota, **allowlist de campos**
 (payload com campo desconhecido é rejeitado, não ignorado) e limite de tamanho de corpo vindo de `config/api.json`.
 
 Erro de domínio é erro do **cliente**, não falha interna: a borda traduz a exceção de validação do domínio para
@@ -129,7 +129,7 @@ espaço é grande o bastante, ou a colisão tem comportamento definido — mas i
 apertar validação ou mudar semântica **não é** — exige `/api/v2/` convivendo com `v1` por uma janela de
 depreciação anunciada no `openapi.yaml`.
 
-**O `contrato/openapi.yaml` é a fonte do contrato**, versionado junto do código. Rota que existe no código e
+**O `contract/openapi.yaml` é a fonte do contrato**, versionado junto do código. Rota que existe no código e
 não na spec, ou o contrário, é divergência que o gate pega.
 
 Mudança de contrato afeta quem declarou `consome` do seu módulo — **consulte o grafo antes**, não depois.
@@ -194,7 +194,7 @@ O `REVOKE UPDATE, DELETE` na migration é o que torna o *append-only* real, e n�
 
 # 7. O artefato publicado
 
-Módulo com `geraArtefato: true` produz saída publicável em `gerados/`. Distinto do código: é o que se entrega
+Módulo com `geraArtefato: true` produz saída publicável em `generated/`. Distinto do código: é o que se entrega
 ao cliente final.
 
 | Regra | Detalhe |

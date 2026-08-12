@@ -1864,6 +1864,10 @@
       "protegidoExceto": [
         "AD.3"
       ]
+    },
+    {
+      "valor": "verificar",
+      "motivo": "achado ao abrir doutrina/ (Bloco AD.4): bare 'verificar' em prosa de doutrina e sempre o termo generico binding-agnostico ('o comando de verificacao local'), nunca uma citacao especifica do script `verify` de UM binding. A colisao perigosa e `verificar.py`, citado 8 vezes (Python nunca renomeou o arquivo) — sem protecao, o item simbolo 'verificar' casa dentro do nome do arquivo e o corrompe para `verify.py`. Protegido sempre: nenhum uso bare em doutrina/ hoje espera substituir."
     }
   ]
 }

@@ -44,7 +44,7 @@ outros módulos. Quando as duas moram na mesma pasta, o `grep` não distingue *"
 com o financeiro"* — e foi assim que, num sistema real, um cliente HTTP de outro módulo passou a morar numa
 pasta chamada `database/`, ao lado de um adapter que fazia `SELECT` direto em tabela alheia.
 
-**Decisão.** `core/portas/` é infraestrutura; `core/gateways/` é outro módulo, exclusivamente HTTP, sempre
+**Decisão.** `core/ports/` é infraestrutura; `core/gateways/` é outro módulo, exclusivamente HTTP, sempre
 declarado em `modulo.json:consome`.
 
 **Consequências.** O gate consegue cobrar regras diferentes para riscos diferentes: gateway com SQL reprova, e
@@ -64,7 +64,7 @@ raiz. Duplicar significa N lugares para corrigir a mesma falha no dia da CVE do 
 separação visível. Extrair um módulo copia a pasta dele **mais** os adapters que ele declara.
 
 **Consequências.** Compartilhar adapter não fere o isolamento porque adapter não tem domínio — o que feriria
-seria compartilhar regra de negócio. Contrapartida obrigatória: **toda porta tem variante `memoria`**, senão os
+seria compartilhar regra de negócio. Contrapartida obrigatória: **toda porta tem variante `memory`**, senão os
 testes precisam de rede e o desacoplamento deixa de ser verificável.
 
 ---
@@ -154,7 +154,7 @@ salto de major para sair — `npm audit fix` sozinho não resolve breaking chang
 
 **Decisão.** Toda dependência do esqueleto (`package.json` da raiz e do `_template`, `pyproject.toml`) é
 **pinada exata** — sem `^`, sem `>=`. A versão é decisão do padrão, tomada e datada, nunca do relógio.
-Quem sobe a versão é o **template**, nunca o projeto gerado: `ferramentas/gerar-schemas-portas.mjs` já
+Quem sobe a versão é o **template**, nunca o projeto gerado: `tools/generate-port-schemas.mjs` já
 estabeleceu o precedente de "gerado, não escrito à mão" para config mecânica; aqui a mesma disciplina vale
 para número de versão. O sensor de envelhecimento é `ci:dependencias`/`verificar.py --dependencias`, que
 agora roda **dentro do Bloco K** (D2, plan-2.md — só entrou depois que este ADR fechou a cadeia, para o K não
@@ -164,7 +164,7 @@ uma CVE que não afeta versão nenhuma do pin atual não exige nada.
 
 **O procedimento do bump**, sempre nesta ordem: `npm outdated`/`npm audit`/`pip-audit` apontam o alvo →
 sobe a versão fixada nos `package.json`/`pyproject.toml` do esqueleto → `npm run autoteste:template` (ou
-`node specs/_estrutura_modulos/testes/autoteste-template.mjs`) nos três bindings → **verde** vira commit datado
+`node specs/_estrutura_modulos/tests/template-self-test.mjs`) nos três bindings → **verde** vira commit datado
 aqui; **vermelho** e a versão não entra, com o motivo escrito na tentativa. É o que torna o salto de major
 barato o bastante para acontecer: sem essa contraprova, a única atualização segura era nenhuma — e foi
 exatamente por isso que a cadeia ficou presa a majors antigos até acumular CVE.
@@ -188,7 +188,7 @@ removido no Vitest 3+, pela forma `// @vitest-environment jsdom` por arquivo —
 sem aviso), mas é trabalho pago **uma vez**, pelo template, sob o K — nunca por cada projeto gerado
 separadamente. O `pip` que `python -m venv` instala fica de fora deste pin (não é dependência declarada, é o
 gerenciador que cria o ambiente): o conserto é `pip install --upgrade pip` como primeiro passo depois de criar
-o venv, documentado nos "próximos passos" que `criar-projeto.mjs` imprime.
+o venv, documentado nos "próximos passos" que `create-project.mjs` imprime.
 
 **Pendência registrada, fora desta rodada:** `typescript`, `express`, `eslint` e `react` têm majors mais
 novos que o pin atual (medido: ts 5→7, express 4→5, eslint 9→10, react 18→19), nenhum deles com CVE aberta —
@@ -204,14 +204,14 @@ critério de cadência deste ADR ("quando o K acender", não "porque o registry 
 **Status:** 🟢 Aceito
 
 **Contexto.** O `04-regras.md` §3 já prometia "inglês onde a linguagem ou o framework impõem" — mas o
-template usava português em oito pastas estruturais (`modulos`, `ferramentas`, `dominio`, `portas`, `motor`,
-`contrato`, `gerados`, `mapeadores`) onde nada na linguagem ou no framework impunha nada: são vocabulário
+template usava português em oito pastas estruturais (`modules`, `tools`, `domain`, `portas`, `engine`,
+`contract`, `generated`, `mappers`) onde nada na linguagem ou no framework impunha nada: são vocabulário
 **estrutural** do próprio padrão Sarak, não do negócio. A pergunta que abriu esta decisão (plan-3.md) —
 *"o correto, segundo as boas práticas, não seria em inglês?"* — nasceu olhando `api/src/routes` e
-`api/src/mapeadores` lado a lado na mesma pasta: a mesma árvore misturando os dois vocabulários sem critério
+`api/src/mappers` lado a lado na mesma pasta: a mesma árvore misturando os dois vocabulários sem critério
 explícito. Uma varredura completa do disco, feita ao redigir esta decisão, achou mais quatro pastas na mesma
-situação que a lista inicial não citava: `ferramentas/gate/regras/`, `testes/` (em dois lugares) e
-`adapters/memoria/` — a mesma categoria, só não tinham sido contadas.
+situação que a lista inicial não citava: `tools/gate/rules/`, `tests/` (em dois lugares) e
+`adapters/memory/` — a mesma categoria, só não tinham sido contadas.
 
 **A boa prática não é "tudo em inglês".** É a distinção clássica: **vocabulário técnico em inglês,
 vocabulário de domínio no idioma do negócio**. O erro do template não era usar português — era usá-lo sem
@@ -245,14 +245,14 @@ nenhuma fique arbitrária por analogia:
 **Dois casos que não são git mv nem rename simples de arquivo, e o inventário precisa marcá-los com um
 `tipo` próprio para não confundir com pasta física:**
 
-- **`modulos` (linha 1) não é uma pasta que exista na base.** Ela só nasce dentro de um projeto **gerado**
-  (`modulos/<id>/`); na base, o equivalente é `bindings/<binding>/_template/`. A palavra `modulos` aparece
-  na base como **string literal** dentro de ferramentas (o que `criar-modulo.mjs` escreve no projeto de
+- **`modules` (linha 1) não é uma pasta que exista na base.** Ela só nasce dentro de um projeto **gerado**
+  (`modules/<id>/`); na base, o equivalente é `bindings/<binding>/_template/`. A palavra `modules` aparece
+  na base como **string literal** dentro de ferramentas (o que `create-module.mjs` escreve no projeto de
   saída) e como **caminho de exemplo em prosa** na doutrina — nenhuma das duas ocorrências é um `git mv`.
   Tipo de inventário: `simbolo`, resolvido contra o corpus de código real da base — a rodada AB.1 (achado
   do revisor) já garante que esse corpus inclui `.json`/`.yaml`/dotfile, não só `.mjs`/`.ts`/`.py`.
-- **`memoria` (linha 1) é duas coisas ao mesmo tempo.** É pasta física (`adapters/memoria/` → `adapters/memory/`,
-  git mv normal) **e** é nome de provedor citado como **valor de string** em `config/portas.json` e nos
+- **`memory` (linha 1) é duas coisas ao mesmo tempo.** É pasta física (`adapters/memoria/` → `adapters/memory/`,
+  git mv normal) **e** é nome de provedor citado como **valor de string** em `config/ports.json` e nos
   `switch`/`if` de `FABRICAS` que escolhem o adapter, lado a lado com `postgres`. A pasta segue a linha 1; o
   valor de config é a mesma palavra, mesmo tipo `pasta` — resolve contra o mesmo corpus ampliado pelo AB.1.
 
@@ -265,7 +265,7 @@ sem ganho de leitura de código — por isso ficam de fora, com o motivo escrito
 
 **Consequências.** A fronteira deixa de ser arbitrária e vira lei citável (`04-regras.md` §3). O custo é a
 campanha do plan-3.md Bloco AD — atômica, porque uma fronteira só decidida em parte volta a ser arbitrária
-pela metade que falta. `ferramentas/` (linha 4, só o símbolo) e os ids de regra (linha 6) são as duas
+pela metade que falta. `tools/` (linha 4, só o símbolo) e os ids de regra (linha 6) são as duas
 exceções deliberadas dentro de um template majoritariamente inglês na camada técnica — registradas aqui para
 que uma futura "limpeza de consistência" não as trate como esquecimento.
 

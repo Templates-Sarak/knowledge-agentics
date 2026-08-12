@@ -47,7 +47,7 @@ quem cobra sem esse furo é o CI (`03-operacao.md` §7).
 ## 3. A ordem ao criar módulo
 
 ```sh
-node ferramentas/criar-modulo.mjs <id> --binding <b> --papel <p> [--sem-artefato]
+node tools/create-module.mjs <id> --binding <b> --papel <p> [--sem-artefato]
 ```
 
 Depois do scaffold, a ordem de preenchimento e o motivo dela estão em `01-modulo.md` §8 —
@@ -75,7 +75,7 @@ O catálogo inteiro — todas as regras, nível e escopo de cada uma: `04-regras
 
 ## 5. Com e sem o plugin `sarak`
 
-**Com o plugin:** as skills conduzem o fluxo com HITL — `code-modulo` (criar/alterar módulo),
+**Com o plugin:** as skills conduzem o fluxo com HITL — `code-modulo` (create/alterar módulo),
 `meta-iniciar-repositorio` (repositório inteiro). Este mapa continua valendo: é o que as skills leem
 por baixo, não um caminho paralelo a elas.
 

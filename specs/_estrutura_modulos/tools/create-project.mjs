@@ -95,8 +95,8 @@ function aplicarEscopo(arquivos, escopo) {
  * composto (`verificar.py`) e sobe pelo módulo `src.composicao` (plan-2.1.md Bloco U).
  */
 const MARCADORES_DE_COMANDO = {
-  typescript: { '<comando-verificar>': 'npm run verificar', '<comando-iniciar>': 'npm run iniciar' },
-  javascript: { '<comando-verificar>': 'npm run verificar', '<comando-iniciar>': 'npm run iniciar' },
+  typescript: { '<comando-verificar>': 'npm run verify', '<comando-iniciar>': 'npm run start' },
+  javascript: { '<comando-verificar>': 'npm run verify', '<comando-iniciar>': 'npm run start' },
   python: { '<comando-verificar>': 'python verificar.py', '<comando-iniciar>': 'python -m src.composicao' },
 };
 
@@ -222,7 +222,7 @@ function principal() {
   const instalar = opcoes.binding === 'python'
     ? 'python -m venv .venv && .venv/Scripts/activate (ou source .venv/bin/activate) && pip install --upgrade pip && pip install -e ".[dev]"'
     : 'npm install';
-  const verificar = opcoes.binding === 'python' ? 'python verificar.py' : 'npm run verificar';
+  const verificar = opcoes.binding === 'python' ? 'python verificar.py' : 'npm run verify';
   process.stdout.write('  linter e formatador instalados: a config do linter e GERADA de'
     + ' tools/gate/thresholds.mjs (nao a edite a mao)\n');
   process.stdout.write('\nproximos passos:\n');

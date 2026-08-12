@@ -206,7 +206,34 @@ proteção — corretos nos dois sentidos em cada um.
 >    Foi assim que `create-module.mjs:162` (`'from core.motor import gerar_artefato\n'`) sobreviveu a
 >    duas redes e só caiu no Bloco K. **Antes do AD.2, ver o item de método no fim deste plano.**
 
-### AD.2 — funções do esqueleto
+### AD.2 — funções do esqueleto ✅ **FECHADO** *(commit `3d98906`, revisado e reproduzido)*
+
+| Verificação — clone feito **a partir do commit** | Resultado |
+|---|---|
+| `--relatorio --fase AD.2` | **exit 0** · 104 recusas · 0 novas · **0 pendências** |
+| Idempotência — `--aplicar` AD.2 **e** AD.1 | **0 arquivos** |
+| Autotestes · Gate · Bloco K | 55/55·31/31·9/9·19/19 · 122/122·122/122·119/119 · **3/3 VERDE** |
+| Diferencial de prosa independente do revisor | **zero corrupção real** |
+| **Completude** | **313 funções/classes em `bindings/`, só 2 em português** — `Registro` e `Pagina`, tipos de **domínio** (decisão 10). O escopo está completo |
+
+> **A inversão que a ferramenta acertou.** No AD.1, palavra em comentário era território a proteger.
+> No AD.2, referência entre crases **tem** de acompanhar o símbolo que aponta — `` `carregarConfiguracao()` ``
+> → `` `loadConfiguration()` ``, `npm run iniciar` → `npm run start` —, senão vira ponteiro morto.
+> Comportamento oposto na mesma classe sintática, e correto nos dois casos.
+>
+> **`env-fora-do-carregador` foi o único sem vermelho, e a justificativa se confirmou:** a regra ancora
+> em `ehCarregador(a.rel)` (caminho) e em `/process\.env|os\.environ|os\.getenv/` (forma do código) —
+> **nenhum nome de função**. Medido em rascunho antes de afirmar, e reconferido pelo revisor.
+>
+> **Técnica que nasceu aqui e vale reusar no AD.3:** a **auditoria cruzada Python↔TS/JS** achou 24
+> funções nunca renomeadas em `migrations.mjs` — quando um binding já está em inglês e o irmão não, a
+> divergência É o detector.
+>
+> **E dois falsos-verdes de ferramenta**, ambos só visíveis no Bloco K COMPLETO: a config do
+> Prettier/ruff não alcançava `_template/` (irmão de `root/`, não descendente), e três pares
+> arquivo/símbolo descasados que o `--rapido` não exercita. Registra por si só por que `--rapido` não
+> fecha bloco.
+
 - [x] As **248** dos `bindings/**`, incluindo a fiação de `FABRICAS` e os entrypoints
 - [x] **Os seis âncoras de regra, e eles NÃO são rename — são regra alterada:**
       `paraContrato`/`paraColecao`/`paraMeta` × `linhaParaDominio`/`dominioParaLinha` (o **discriminador
@@ -269,23 +296,48 @@ com `schema-manifesto`, e isso prova que a mudança está sendo vista. Verde no 
 que o schema não está sendo lido.
 
 ### AD.4 — as citações em texto
-- [ ] **Só as ~818 em forma de código** (dentro de crase ou com barra/ponto). As **1.434 como palavra
+- [x] **Só as ~818 em forma de código** (dentro de crase ou com barra/ponto). As **1.434 como palavra
       solta ficam intactas** — são português correto, e substituí-las é o defeito desta campanha
-- [ ] A substituição é **escopada por construção**: o script só troca dentro de crase e em token com
+- [x] A substituição é **escopada por construção**: o script só troca dentro de crase e em token com
       barra ou extensão. Nada de `sed` no arquivo inteiro
-- [ ] `verificar-citacoes` verde ao final, contra a linha de base do Bloco AB
+- [x] `verificar-citacoes --autoteste` verde, e `--depois` sem nenhum achado de classe "referência
+      quebrada" — o critério reescrito abaixo, com o porquê em `04-regras.md` §7.2
 
 ### AD.5 — o que fica declarado FORA, com motivo
-- [ ] **As 343 funções de `ferramentas/`** — decisão 4 da fronteira. 433 ocorrências de nomes internos
+- [x] **As 343 funções de `ferramentas/`** — decisão 4 da fronteira. 433 ocorrências de nomes internos
       que ninguém que usa o template lê, por ganho ~zero
-- [ ] **Os planos** (`plan.md`, `plan-2*`, `plan-3*`) — registro histórico. Citam nomes que existiam
+- [x] **Os planos** (`plan.md`, `plan-2*`, `plan-3*`) — registro histórico. Citam nomes que existiam
       quando foram escritos, e é isso que um registro deve fazer. **Não migram**, e o
-      `verificar-citacoes` os ignora por lista explícita, não por acidente
-- [ ] **Comentários e doutrina** — permanecem em português. Só as citações mudam
+      `verificar-citacoes` os ignora por lista explícita, não por acidente — `arquivosDePlanos()`
+      acha os planos e `corpusBruto()` os descarta por nome, com o motivo escrito no código; provado
+      nesta rodada com um plano-de-teste citando um nome antigo de pasta (AD.1) sem gerar achado
+- [x] **Comentários e doutrina** — permanecem em português. Só as citações mudam
+- [x] **VARIÁVEL LOCAL — fora de escopo, medido na revisão do AD.2.** Nem a decisão 3 do AC nem o
+      §AD.2 mencionam variável local: a fronteira fala de **funções** do esqueleto. Medição em
+      `bindings/`: **136 locais declaradas, 29 ainda em português** (`caminho` `linhas` `resultado`
+      `conteudo` `pagina` `tamanho` `total` `chave` `texto` `alvo` `pasta` `corpo` `resposta` …), e
+      algumas foram renomeadas incidentalmente na varredura do AD.2 (`estado`→`state`).
+      **Não se renomeia o resto** — local é de escopo de arquivo, nada externo a lê, e o ganho é zero
+      contra o risco de mais uma passada de codemod. Fica **declarado**, no padrão das outras lacunas:
+      *lacuna declarada é aceitável; lacuna escondida não*
+- [x] **Tipos de domínio** — `Registro`, `Pagina` e afins **ficam em português** (decisão 10). Foram os
+      **únicos 2** dos 313 símbolos declarados em `bindings/` que sobraram em português, e é o correto
 
 **Critério de aceite da campanha:** autoteste `122/122 · 122/122 · 119/119` · Bloco K **13/13 nos três
-bindings** · `verificar-citacoes` verde · `verificar-mapa` verde · e um projeto gerado do zero passando
-`verificar` → `build` → `lint` → **primeiro commit**.
+bindings** · `verificar-citacoes --autoteste` verde e `--depois` sem achado de classe "referência
+quebrada" · `verificar-mapa` verde · e um projeto gerado do zero passando `verificar` → `build` → `lint`
+→ **primeiro commit**.
+
+> ✅ **Resolvido no AD.4 — decisão B.** `--depois` não ganhou escopo de fase/caminho: medido que o ruído
+> não é sobre ONDE procurar, é sobre O QUÊ — item do inventário ser palavra portuguesa comum (`raiz`,
+> `verificar`, `contrato`…), que aparece como prosa legítima fora do template em QUALQUER lugar que se
+> olhe, `bindings/**` incluído. Escopar por caminho não teria resolvido a causa. Construir precisão por
+> FORMA já foi tentado e rejeitado (Rodada AB, `04-regras.md` §7.2, 360 achados/zero órfãos) — repetir
+> o mesmo experimento com escopo de fase teria o mesmo fim, e duplicaria dentro de `verify-citations.mjs`
+> o motor de classificação por contexto que `apply-rename.mjs` já tem. O critério de aceite virou o que
+> a ferramenta de fato consegue afirmar sem virar uma segunda fonte de verdade: `--autoteste` (núcleo) +
+> `--depois` sem achado de referência QUEBRADA (símbolo inexistente, caminho que não resolve). Medido e
+> declarado em `04-regras.md` §7.2, com prova de que a exclusão dos planos é por lista, não acidente.
 
 ---
 
@@ -464,8 +516,8 @@ AC   a fronteira em ADR          antes de tocar arquivo: é ela que impede a fro
 AD   a campanha                  AD.0 ✅ FECHADO (b64af36) — a ferramenta consegue
                                  executar AD.2 e AD.3
                                  AD.1 ✅ FECHADO (b8d48a7)
-                                 AD.2 → AGORA. Método próprio nos 6 âncoras
-                                 AD.3 → tem a terceira forma medida no AD.0
+                                 AD.2 ✅ FECHADO (3d98906)
+                                 AD.3 → AGORA. Tem a terceira forma medida no AD.0
                                  AD.4 → AD.5
 
 AE   o CRLF, e os 3 sintomas     ✅ FECHADO (671cbf7). Clone limpo em Windows passa

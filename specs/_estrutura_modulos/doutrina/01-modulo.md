@@ -19,28 +19,28 @@ exata em [[04-regras]].
 Todo módulo tem exatamente esta forma. Divergir dela exige decisão registrada em [[decisoes]], não improviso.
 
 ```
-modulos/<modulo>/
+modules/<modulo>/
 ├── modulo.json          identidade + contrato — o sistema DESCOBRE o módulo por aqui
 ├── package.json         @<escopo>/<modulo>        (pyproject.toml no binding Python)
 ├── .env                 ENV_RAIZ + overrides — NÃO versionado, criado pelo scaffold
 ├── .env.example         GERADO de modulo.json:envRequerido — nunca editado à mão
 ├── README.md
 │
-├── contrato/
+├── contract/
 │   └── openapi.yaml     a fonte do contrato. O código segue, nunca o inverso
 │
 ├── config/              toda configuração, um arquivo por assunto
 │   ├── api.json         paginação, timeout, limite de corpo, nível de log
-│   ├── dominio.json     parâmetros de negócio (status válidos, moedas, limites)
+│   ├── domain.json     parâmetros de negócio (status válidos, moedas, limites)
 │   ├── seguranca.json   rate limit, CORS, headers
-│   ├── portas.json      qual adapter atende cada porta
+│   ├── ports.json      qual adapter atende cada porta
 │   └── textos.json      rótulos e mensagens exibidos ao usuário
 │
 ├── core/                engine interna, sem deploy, sem I/O direto
-│   ├── dominio/         tipos + validação
-│   ├── portas/          o que preciso de INFRAESTRUTURA
+│   ├── domain/         tipos + validação
+│   ├── ports/          o que preciso de INFRAESTRUTURA
 │   ├── gateways/        o que preciso de OUTRO MÓDULO — exclusivamente HTTP
-│   ├── motor/           geração determinística do artefato   (só se geraArtefato)
+│   ├── engine/           geração determinística do artefato   (só se geraArtefato)
 │   └── templates/       base + blocos                        (só se geraArtefato)
 │
 ├── api/                 a ÚNICA superfície pública
@@ -49,7 +49,7 @@ modulos/<modulo>/
 │       ├── config.ts    carregador único; o único arquivo que toca env
 │       ├── routes/      rotas + /health, /meta, /resumo obrigatórios
 │       ├── middlewares/ requestId, headers, CORS, rate limit, auth, erro
-│       ├── mapeadores/  snake↔camel + projeção de saída por allowlist
+│       ├── mappers/  snake↔camel + projeção de saída por allowlist
 │       └── logger.ts    logger estruturado com redação de campo sensível
 │
 ├── web/                 front — consome só /api/v1/<modulo>, por caminho relativo
@@ -64,13 +64,13 @@ modulos/<modulo>/
 │   └── migrations/      NNNN-verbo-objeto.sql, cada uma com -- rollback
 │
 ├── tests/               tudo roda com adapters de memória — sem rede, sem banco
-│   ├── dominio/  contrato/  web/  fixtures/
+│   ├── domain/  contract/  web/  fixtures/
 │
-└── gerados/             saída publicável                     (só se geraArtefato)
+└── generated/             saída publicável                     (só se geraArtefato)
 ```
 
-**Descartar é permitido; renomear, não.** Módulo sem artefato descarta `core/motor`, `core/templates`,
-`database/` e `gerados/`. Módulo sem tela descarta `web/`. A árvore é **fechada**: entrada não prevista na raiz
+**Descartar é permitido; renomear, não.** Módulo sem artefato descarta `core/engine`, `core/templates`,
+`database/` e `generated/`. Módulo sem tela descarta `web/`. A árvore é **fechada**: entrada não prevista na raiz
 do módulo reprova no gate.
 
 Dependência interna: `web/` depende só do próprio `api-client/`; `api/` depende de `core/`; `core/` não depende
@@ -104,11 +104,11 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | `camposSensiveis` | string[] | campos que nunca saem em resposta, log ou OpenAPI |
 | `navegacao` | objeto \| null | `{ label, icone, ordem }` — o que o conector monta no menu |
 | `exportaResumo` | boolean | se entra no dashboard cross-módulo. `true` **obriga** o schema `200` de `GET /resumo` a declarar `total` (inteiro) — a forma mínima que o agregador lê sem conhecer o módulo ([[02-contrato-e-dados]] §2) |
-| `geraArtefato` | boolean | se possui `core/motor`, `core/templates` e `gerados/` |
+| `geraArtefato` | boolean | se possui `core/engine`, `core/templates` e `generated/` |
 
 ## 3.2 O que o manifesto habilita
 
-- **Composição sem lista fixa:** a raiz de composição varre `modulos/*/modulo.json` e monta cada `api/` sob a
+- **Composição sem lista fixa:** a raiz de composição varre `modules/*/modulo.json` e monta cada `api/` sob a
   sua `rotaBase`. **Acrescentar um módulo não pode exigir editar código compartilhado.**
 - **Navegação declarada:** o conector monta o menu a partir de `navegacao`.
 - **Grafo de dependências mecânico:** `consome` permite detectar ciclo e calcular a ordem de extração.
@@ -132,9 +132,9 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 |---|---|---|
 | Segredo, credencial, URL de infraestrutura, valor por ambiente | `.env`, prefixado `<MODULO>_` | `CATALOGO_DB_URL` |
 | Tunable não-secreto: paginação, timeout, limite de corpo, nível de log | `config/api.json` | `"paginaTamanhoMaximo": 100` |
-| Parâmetro de negócio: status válidos, moedas, percentuais | `config/dominio.json` | `"moedasAceitas": ["BRL"]` |
+| Parâmetro de negócio: status válidos, moedas, percentuais | `config/domain.json` | `"moedasAceitas": ["BRL"]` |
 | Rate limit, CORS, headers | `config/seguranca.json` | `"limiteEscrita": 20` |
-| Qual adapter atende cada porta | `config/portas.json` | `"repositorio": "postgres"` |
+| Qual adapter atende cada porta | `config/ports.json` | `"repositorio": "postgres"` |
 | Rótulo e mensagem exibidos ao usuário | `config/textos.json` | `"listaVazia": "Nada por aqui."` |
 | Identidade e contrato do módulo | `modulo.json` | §3 |
 
@@ -144,7 +144,7 @@ O `.env` **real e único** de segredo fica na **raiz do projeto**. Cada módulo 
 **aponta** para ele:
 
 ```bash
-# modulos/catalogo/.env   (não versionado; criado pelo scaffold)
+# modules/catalogo/.env   (não versionado; criado pelo scaffold)
 ENV_RAIZ=../../.env
 
 # Override local (dev). Vazio no monorepo; preenchido quando o módulo for extraído.
@@ -202,7 +202,7 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 |---|---|
 | `repositorio` | buscar, listar, inserir, atualizar, contar |
 | `auditoria` | gravar a trilha append-only do módulo |
-| `relogio` | `agora()` |
+| `relogio` | `now()` |
 | `geradorId` | identificadores e hash |
 | `storage` | gravar/ler arquivo |
 | `auth` | verificar token e devolver claims |
@@ -211,13 +211,13 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 `relogio` e `geradorId` não são preciosismo: são o que torna o `core/` determinístico e testável. Sem elas,
 `new Date()` e `Math.random()` voltam para dentro do domínio e o motor deixa de ser reproduzível.
 
-Fonte NORMATIVA do vocabulário: `ferramentas/gate/vocabulario-portas.mjs`, na base — os dois schemas do
-gate são GERADOS dela, e cada `packages/portas/index.*` por binding a espelha à mão (plan-2.md Bloco S).
+Fonte NORMATIVA do vocabulário: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do
+gate são GERADOS dela, e cada `packages/ports/index.*` por binding a espelha à mão (plan-2.md Bloco S).
 A decisão foi **impedir a divergência em vez de acusá-la** — nenhuma regra de raiz compara os três
-lugares; quem impede é `ferramentas/gerar-schemas-portas.mjs --conferir`, que roda dentro do `verificar`
+lugares; quem impede é `tools/generate-port-schemas.mjs --conferir`, que roda dentro do `verificar`
 de cada binding (script `validar:schemas`, logo depois de `validar:env`) e do `pre-commit`
-(`ferramentas/verificar-commit.mjs`, plan-2.md Bloco S.1) — o mesmo lugar e a mesma forma de
-`sincronizar-env.mjs --conferir`, o precedente que este mecanismo segue. `fila` SAIU do catálogo: arrasta
+(`tools/verify-commit.mjs`, plan-2.md Bloco S.1) — o mesmo lugar e a mesma forma de
+`sync-env.mjs --conferir`, o precedente que este mecanismo segue. `fila` SAIU do catálogo: arrasta
 retry, *dead-letter*, idempotência e ordem de entrega — desenho de TOPOLOGIA, que [[00-arquitetura]] §5
 diz que o template não escolhe. Volta no dia em que houver um projeto com a decisão tomada, e volta como
 ADR.
@@ -226,21 +226,21 @@ ADR.
 
 - **O módulo nunca importa um adapter.** Recebe-o por parâmetro no bootstrap.
 - **O módulo nunca importa SDK de fornecedor.** O SDK só existe dentro do adapter.
-- **`memoria` é obrigatório para toda porta.** Os testes do módulo rodam inteiros sem infraestrutura; se não
+- **`memory` é obrigatório para toda porta.** Os testes do módulo rodam inteiros sem infraestrutura; se não
   rodam, o desacoplamento é ficção.
 - **O adapter não conhece domínio.** Não existe `if (modulo === 'catalogo')` dentro de adapter.
 - **Erro de fornecedor não vaza.** O adapter traduz a falha para a taxonomia fechada antes de devolver.
-- **Trocar de fornecedor é editar `config/portas.json`.** Se for preciso mais que isso, a porta está mal desenhada.
-- **Adapter novo nasce por `criar-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
-  `criar-modulo.mjs`: copia o molde (`adapters/_template`), substitui marcadores, registra a fábrica em
+- **Trocar de fornecedor é editar `config/ports.json`.** Se for preciso mais que isso, a porta está mal desenhada.
+- **Adapter novo nasce por `create-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
+  `create-module.mjs`: copia o molde (`adapters/_template`), substitui marcadores, registra a fábrica em
   `src/composicao.*` e roda o gate antes de devolver o controle.
-- **`postgres` (`repositorio`/`auditoria`) já vem PRONTO, ao lado de `memoria`** (plan-2.2.md
-  Bloco Z) — não nasce por `criar-adapter.mjs`, porque já existe: materializa a forma que
-  `criar-modulo.mjs` já cria (`<prefixo>metadados`/`<prefixo>auditoria`). `memoria` continua o
-  DEFAULT de todo módulo; trocar é a mesma linha de `config/portas.json`, agora verdadeira nos dois
+- **`postgres` (`repositorio`/`auditoria`) já vem PRONTO, ao lado de `memory`** (plan-2.2.md
+  Bloco Z) — não nasce por `create-adapter.mjs`, porque já existe: materializa a forma que
+  `create-module.mjs` já cria (`<prefixo>metadados`/`<prefixo>auditoria`). `memory` continua o
+  DEFAULT de todo módulo; trocar é a mesma linha de `config/ports.json`, agora verdadeira nos dois
   sentidos. A fábrica recebe o **manifesto do módulo** (`ManifestoDescoberto`/`dict`), não zero
   argumentos — é o que permite um adapter genérico saber `dados.schema`/`dados.prefixo`/`<MODULO>_DB_URL`
-  de quem o está chamando; `memoria` ignora o argumento.
+  de quem o está chamando; `memory` ignora o argumento.
 
 # 6. Gateways — todo módulo alheio desacoplado
 
@@ -261,7 +261,7 @@ diferentes, para que a diferença seja visível e verificável.
 - **Sem ciclo.** `A` consome `B` e `B` consome `A` é erro — resolva a direção ou extraia o conceito comum
   para um terceiro módulo.
 - **O consumidor projeta a fatia mínima.** O contrato do dono devolve o recurso inteiro; o consumidor guarda
-  só os campos que declarou precisar, no tipo do próprio `core/dominio`.
+  só os campos que declarou precisar, no tipo do próprio `core/domain`.
 - **A URL base vem de `.env`**, nunca literal.
 
 ## 6.2 Comunicação assíncrona
@@ -290,7 +290,7 @@ que importa todos os módulos quanto um SPA por módulo funcionam sem estrutura 
 # 8. Criar um módulo novo
 
 ```
-node ferramentas/criar-modulo.mjs <id> --binding <b> --papel <p> [--sem-artefato]
+node tools/create-module.mjs <id> --binding <b> --papel <p> [--sem-artefato]
 ```
 
 O script copia o molde do binding, substitui os marcadores (`<modulo>` → id, `<MODULO>` → id em maiúscula,
@@ -299,15 +299,15 @@ O script copia o molde do binding, substitui os marcadores (`<modulo>` → id, `
 **Ninguém cria módulo à mão.** Módulo manual nasce com nome divergente e sem manifesto — as duas coisas que
 quebram o gate e que o gate não consegue consertar sozinho.
 
-Depois do scaffold, a ordem de preenchimento é: `contrato/openapi.yaml` → `core/dominio` → `api/src/routes` →
-`api/src/mapeadores` → `database/` → `web/src/pages` → `tests/`. O contrato antes do código é deliberado: é a
+Depois do scaffold, a ordem de preenchimento é: `contract/openapi.yaml` → `core/domain` → `api/src/routes` →
+`api/src/mappers` → `database/` → `web/src/pages` → `tests/`. O contrato antes do código é deliberado: é a
 **fronteira que outros consomem** (`modulo.json:consome`), o gate cobra rota do código × rota da spec **nos
-dois sentidos** (`contrato-sincronizado`), e `contrato-compativel.mjs` compara o contrato contra o baseline
+dois sentidos** (`contrato-sincronizado`), e `contract-compatible.mjs` compara o contrato contra o baseline
 git. Escrever código primeiro faz a spec ser redigida **para descrever o código** — e aí a fonte de verdade
 inverte sem ninguém decidir isso.
 
 **Recusada, com o motivo:** domínio primeiro. O argumento — *"a regra de negócio não deve ser moldada pelo
-transporte"* — é real, e continua valendo **dentro** do passo: `core/dominio` não importa nada da `api/`, e
+transporte"* — é real, e continua valendo **dentro** do passo: `core/domain` não importa nada da `api/`, e
 o gate cobra isso. O que esta ordem fixa é a **ordem de escrita**, não a direção da dependência, que já era
 e continua sendo domínio ← borda.
 
@@ -326,12 +326,12 @@ evita o erro clássico: mexer no banco e esquecer a borda, ou publicar campo que
 |---|---|---|
 | 1 | `database/migrations/NNNN-adiciona-<campo>.sql` | migration nova, com `-- rollback`. Migration publicada não se edita |
 | 2 | `database/schema.sql` | refletir o estado alvo |
-| 3 | `core/dominio/` | campo no tipo + validação |
-| 4 | `config/dominio.json` | o vocabulário, se houver — nunca literal no código |
-| 5 | `api/src/mapeadores/` | as duas direções **e** a projeção de saída |
-| 6 | `contrato/openapi.yaml` | schema do recurso |
+| 3 | `core/domain/` | campo no tipo + validação |
+| 4 | `config/domain.json` | o vocabulário, se houver — nunca literal no código |
+| 5 | `api/src/mappers/` | as duas direções **e** a projeção de saída |
+| 6 | `contract/openapi.yaml` | schema do recurso |
 | 7 | `web/src/api-client/` | tipo do cliente |
-| 8 | `tests/` | caso novo em `dominio/` e no teste de contrato |
+| 8 | `tests/` | caso novo em `domain/` e no teste de contrato |
 
 **A regra que atravessa tudo:** o campo só existe para fora quando alguém o acrescenta **deliberadamente** à
 projeção. Schema não publica nada sozinho.
@@ -341,7 +341,7 @@ nunca o cite em schema de resposta.
 
 ## 9.2 Rota nova
 
-1. `contrato/openapi.yaml` **primeiro** — o contrato é a fonte, o código segue.
+1. `contract/openapi.yaml` **primeiro** — o contrato é a fonte, o código segue.
 2. `api/src/routes/`: valide a entrada na borda, exija permissão, monte a resposta pelo mapeador, lance o erro
    da taxonomia fechada — nunca `status(...)` ad hoc.
 3. Se a rota for pública, declare `"MÉTODO /caminho"` em `rotasPublicas`. O método faz parte da declaração:
@@ -351,11 +351,11 @@ nunca o cite em schema de resposta.
 ## 9.3 Infraestrutura nova
 
 1. `modulo.json:portas` — declare a porta.
-2. `core/portas/` — estenda a interface canônica.
-3. `config/portas.json` — escolha o adapter.
+2. `core/ports/` — estenda a interface canônica.
+3. `config/ports.json` — escolha o adapter.
 4. `api/src/index` — receba por parâmetro. Nunca importe adapter nem SDK.
 5. Raiz de composição — resolva e injete.
-6. Garanta que existe a variante `memoria`, senão os testes deixam de rodar sem rede.
+6. Garanta que existe a variante `memory`, senão os testes deixam de rodar sem rede.
 
 ## 9.4 Dependência de outro módulo
 
@@ -367,7 +367,7 @@ nunca o cite em schema de resposta.
 ## 9.5 Variável de ambiente
 
 1. `modulo.json:envRequerido`.
-2. `node ferramentas/sincronizar-env.mjs` — regenera os `.env.example`. **Não edite esses arquivos à mão.**
+2. `node tools/sync-env.mjs` — regenera os `.env.example`. **Não edite esses arquivos à mão.**
 3. Preencha o valor no `.env` da raiz.
 4. Leia só pelo carregador. Ausência derruba o boot — nunca use `?? 'valor'`.
 

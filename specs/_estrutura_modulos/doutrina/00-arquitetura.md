@@ -38,14 +38,14 @@ Confundir estas peças é a forma mais rápida de destruir a extraibilidade.
 
 ## 3.1 Módulo — a fatia vertical
 
-`modulos/<modulo>/` contém tudo que o domínio precisa: `contrato/`, `config/`, `core/`, `api/`, `web/`,
+`modules/<modulo>/` contém tudo que o domínio precisa: `contract/`, `config/`, `core/`, `api/`, `web/`,
 `database/`, `tests/` e o manifesto `modulo.json`. A anatomia completa está em [[01-modulo]].
 
 Um módulo tem um **papel**, declarado no manifesto:
 
 | Papel | O que é | Restrição |
 |---|---|---|
-| `dominio` | um domínio de negócio | não pode declarar credencial de serviço externo pago |
+| `domain` | um domínio de negócio | não pode declarar credencial de serviço externo pago |
 | `gateway` | fronteira única de serviços externos pagos | é o **único** que pode declarar essas credenciais |
 | `conector` | casca, navegação e agregação cross-módulo | não guarda schema nem regra de negócio de ninguém |
 
@@ -66,13 +66,13 @@ e-mail ou um LLM. Fica **fora** do módulo, e por dois motivos:
 
 - **Adapter é código de fornecedor, sem uma linha de domínio.** Duplicá-lo por módulo significa N lugares para
   corrigir a mesma falha no dia da CVE do driver.
-- **Ele viaja na extração.** Extrair um módulo é copiar `modulos/<modulo>/` **mais** os adapters que ele declara.
+- **Ele viaja na extração.** Extrair um módulo é copiar `modules/<modulo>/` **mais** os adapters que ele declara.
 
-`adapters/memoria/` é **obrigatório** em todo projeto: é ele que permite os testes rodarem sem rede. Sem
+`adapters/memory/` é **obrigatório** em todo projeto: é ele que permite os testes rodarem sem rede. Sem
 variante de memória para cada porta, o desacoplamento não é verificável — e o que não é verificável é folclore.
 
 `adapters/postgres/` também vem pronto (plan-2.2.md Bloco Z), para as portas `repositorio` e `auditoria` —
-`memoria` continua sendo o que `config/portas.json` escolhe por padrão. Cobre a forma que `criar-modulo.mjs`
+`memory` continua sendo o que `config/ports.json` escolhe por padrão. Cobre a forma que `create-module.mjs`
 já cria (`<prefixo>metadados`/`<prefixo>auditoria`); módulo com tabela de outra forma escreve o próprio
 adapter, do mesmo jeito que sempre escreveu para qualquer outro fornecedor (01-modulo.md §5.2).
 
@@ -82,15 +82,15 @@ adapter, do mesmo jeito que sempre escreveu para qualquer outro fornecedor (01-m
 
 | Package | Papel |
 |---|---|
-| `portas/` | interfaces canônicas das portas + taxonomia fechada de erro |
+| `ports/` | interfaces canônicas das portas + taxonomia fechada de erro |
 | `ui-kit/` | ponto único de contato com a biblioteca de UI — só em projeto com `ui.modo: "kit"` |
 
 Regra de negócio **nunca** entra aqui. Se dois módulos precisam da mesma regra, **duplica-se**.
 
 ## 3.4 Raiz de composição — o wiring, e nada além
 
-`src/` é um entrypoint fino que **não é módulo**. Ele descobre os módulos lendo `modulos/*/modulo.json`,
-resolve as portas de cada um a partir do `config/portas.json` dele, **injeta** os adapters, monta cada `api/`
+`src/` é um entrypoint fino que **não é módulo**. Ele descobre os módulos lendo `modules/*/modulo.json`,
+resolve as portas de cada um a partir do `config/ports.json` dele, **injeta** os adapters, monta cada `api/`
 sob a `rotaBase` do manifesto e **sobe** — um processo, uma porta (§5) — servindo os módulos já montados.
 
 É só fiação. Nenhuma regra de negócio vive aqui, nenhum módulo importa daqui, e o front de nenhum módulo é
@@ -115,14 +115,14 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. Qua
 
 | Camada | Onde vive | Viaja na extração? |
 |---|---|---|
-| Interface (`Repositorio`, `Auth`, `Storage`) | `packages/portas/` | sim |
-| Uso pelo domínio (`DependenciasDoModulo`) | `modulos/<m>/core/portas/` | sim, é do módulo |
-| Escolha do provedor | `modulos/<m>/config/portas.json` | sim |
+| Interface (`Repositorio`, `Auth`, `Storage`) | `packages/ports/` | sim |
+| Uso pelo domínio (`DependenciasDoModulo`) | `modules/<m>/core/ports/` | sim, é do módulo |
+| Escolha do provedor | `modules/<m>/config/ports.json` | sim |
 | Implementação (fala Supabase, S3, …) | `adapters/<tecnologia>/` | sim, copia-se junto |
 | Fiação (instancia e injeta) | `src/` | não |
 
 **A consequência que torna o desacoplamento real:** o nome do provedor não aparece em lugar nenhum do módulo,
-**exceto** em `config/portas.json`. Trocar de fornecedor é editar uma linha de JSON. Se for preciso mais que
+**exceto** em `config/ports.json`. Trocar de fornecedor é editar uma linha de JSON. Se for preciso mais que
 isso, a porta está mal desenhada.
 
 ## 4.3 Fronteira de dados — só o dono toca a sua fatia

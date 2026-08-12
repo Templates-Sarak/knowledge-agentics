@@ -176,6 +176,54 @@ function pareceCaminho(token) {
   return token.includes('/') || RE_EXTENSAO.test(token);
 }
 
+/**
+ * Achado no Bloco AD.4 (revisão do revisor, `doutrina/adr/decisoes.md` §233/§237): dentro de UMA
+ * crase só, um token da forma `antigo→novo` é uma TABELA DE MAPEAMENTO — documenta a tradução em si,
+ * não cita o nome atual de nada. O lado ESQUERDO tem de ficar português SEMPRE, mesmo sem marcador de
+ * proteção nenhum: é o próprio "antes" que o mapeamento existe para registrar. Sem este
+ * reconhecimento, `` `ferramentas→tools` `` virava `` `tools→tools` `` — 11 dos 18 mapeamentos da
+ * doutrina viraram identidade, porque o motor tratava a crase como citação NUA comum (substitui sem
+ * proteção) em vez de mapeamento (lado esquerdo é histórico, nunca alvo).
+ *
+ * Mecanismo, não lista: reconhece a FORMA (`\S+→\S+` dentro de uma crase só, sem espaço em nenhum
+ * lado), não os itens específicos — cobre qualquer tabela futura da mesma forma sem exigir marcador
+ * novo por linha. O lado DIREITO é indiferente aqui de propósito: ele já é o nome novo (frequentemente
+ * idêntico ao antigo, como `tools→tools`), então substituí-lo ou não dá no mesmo resultado — só o
+ * esquerdo pode corromper.
+ */
+function ladoEsquerdoDeMapeamento(texto, posicao, tamanho) {
+  const span = spansDeCrase(texto).find((s) => posicao >= s.inicio && posicao + tamanho <= s.fim);
+  if (span === undefined) return false;
+  const conteudo = texto.slice(span.inicio + 1, span.fim - 1);
+  const m = conteudo.match(/^(\S+)→(\S+)$/);
+  if (m !== null) {
+    const fimDoLadoEsquerdo = span.inicio + 1 + m[1].length;
+    return posicao + tamanho <= fimDoLadoEsquerdo;
+  }
+  // MESMA forma, seta FORA da crase (Bloco AD.4, achado ao verificar §233/§237: a tabela do ADR-009
+  // também escreve `dentro de `ferramentas/` (→ `tools/`)` — duas crases, seta em prosa entre elas,
+  // não uma só). Sem isto, `ferramentas/` (crase isolada, sem seta dentro) substitui normal — igual
+  // qualquer caminho —, e a mesma crase que documenta "→ `tools/`" vira `tools/` (→ `tools/`),
+  // identidade de novo. Reconhece: esta crase não tem seta dentro, mas é seguida (a poucos
+  // caracteres, só espaço/parêntese) por uma seta e outra crase — é o lado esquerdo do MESMO par.
+  if (/→/.test(conteudo)) return false;
+  const resto = texto.slice(span.fim, span.fim + 12);
+  if (!/^\s*\(?→/.test(resto)) return false;
+  // Achado ao testar contra `doutrina/01-modulo.md`: um DIAGRAMA DE SEQUÊNCIA (`` `a` → `b` → `c` ``,
+  // três ou mais elos, cada um sua própria crase) casa a MESMA forma "crase, seta, crase" em CADA elo
+  // do meio — sem esta guarda, `core/dominio` no meio de `` `contrato/openapi.yaml` → `core/dominio` →
+  // `api/src/routes` `` ficaria preso em português para sempre, achando que é o lado esquerdo de um
+  // mapeamento. A DIFERENÇA real: um par de mapeamento é TERMINAL — depois do lado direito não vem
+  // outra seta. Acha a crase seguinte (o lado direito deste par) e recusa reconhecer mapeamento se ELA
+  // por sua vez também for seguida de seta — nesse caso é elo do meio de uma sequência, não um par.
+  const proximaCrase = spansDeCrase(texto).find((s) => s.inicio >= span.fim);
+  if (proximaCrase !== undefined) {
+    const apósLadoDireito = texto.slice(proximaCrase.fim, proximaCrase.fim + 12);
+    if (/^\s*\(?→/.test(apósLadoDireito)) return false;
+  }
+  return true;
+}
+
 /** A PALAVRA (delimitada por espaço, não por `[\w./-]`) contendo `pos` em `texto` — separa
  * `"node tools/gate/validate.mjs --todos"` (linha de comando: a STRING tem espaço, mas a PALAVRA do
  * match é caminho de verdade) de `"...o domain de negocio..."` (a palavra do match é só prosa). */
@@ -247,6 +295,16 @@ const PADROES_DE_PROTECAO = new Map([
   // já discrimina "id de regra" (protege sempre) de "chave `consome[].contrato`" (sem marcador,
   // substitui) pelo CONTEXTO da linha, sem precisar saber qual fase está rodando.
   ['portas', { protegidoExceto: ['AD.3'] }],
+  // Achado ao abrir doutrina/ (Bloco AD.4): 'verificar' nu, em doutrina, nunca cita o script `verify`
+  // de UM binding — é o termo GENÉRICO que a prosa usa para "o comando de verificação local",
+  // binding-agnóstico de propósito (TS/JS tem `npm run verify`, Python continua `verificar.py`; a
+  // doutrina descreve os três de uma vez). Medido: toda ocorrência bare em doutrina/*.md é desta
+  // forma — nenhuma diz "npm run verificar" (que substituiria certo). A mais perigosa é
+  // `verificar.py`, citado 8 vezes: sem esta proteção, o item simbolo 'verificar'→'verify' casa
+  // dentro do nome do arquivo (fronteira de tipo `simbolo` não é extension-aware como a de `arquivo`)
+  // e corrompe o nome de um script Python que nunca foi renomeado. Protegido sempre (`true`) — não há
+  // uso bare legítimo de 'verificar' esperando substituir em doutrina/ hoje.
+  ['verificar', true],
 ]);
 
 /** `literaisProtegidos` é o `Map` acima (lido do inventário) — devolve `true` se o LITERAL está
@@ -327,12 +385,30 @@ export function decidir(contexto, nomeOcorrencia, tipoItem, protegido, fase) {
     const dentroDeCrase = spansDeCrase(contexto.texto)
       .some((s) => contexto.posicao >= s.inicio && contexto.posicao + contexto.tamanho <= s.fim);
     const token = tokenAoRedor(contexto.texto, contexto.posicao, contexto.tamanho);
+    // Mapeamento `antigo→novo` numa crase só (Bloco AD.4) — precedência MÁXIMA no ramo comentário:
+    // o lado esquerdo é histórico por definição, nunca alvo, mesmo quando `pareceCaminho`/`protegido`
+    // diriam substitui. Ver `ladoEsquerdoDeMapeamento`.
+    if (ladoEsquerdoDeMapeamento(contexto.texto, contexto.posicao, contexto.tamanho)) {
+      return { decisao: 'recusa', classe: 'RECUSADO-MAPEAMENTO' };
+    }
     // Caminho de verdade (barra/extensão) SEMPRE substitui, protegido ou não — mesma precedência
     // do ramo 'string' acima (`pareceCaminho` antes do `protegido`): é o que mantém
     // `join('modulos', id, 'contrato', 'openapi.yaml')` substituindo enquanto `id: 'contrato'`
     // recusa. Só o token NU (sem barra/extensão) dentro de crase consulta `protegido` — antes
     // disto, crase sempre substituía cego, e foi assim que `generate-port-schemas.mjs` corrompeu
     // `"portas"` embutido em comentário/regex seis vezes (Bloco AI, AI.5).
+    //
+    // EXCEÇÃO ESTREITA (Bloco AD.4, doutrina/): `verificar.py` — o script Python nunca renomeado —
+    // tem EXTENSÃO (`RE_EXTENSAO` casa `.py`) sem barra nenhuma, então `pareceCaminho` o confunde
+    // com um caminho de verdade e substituiria cego para `verify.py`, um arquivo que não existe.
+    // Restrita a `nomeOcorrencia === 'verificar'` de propósito — generalizar para "protegido +
+    // parece-caminho-sem-barra" abriria um caso novo: `contrato`/`testes` são protegidos por
+    // MARCADOR de linha (não sempre), e uma linha com o marcador E, em outro ponto, um caminho de
+    // verdade tipo `contrato.json` perderia a substituição legítima por um efeito colateral do
+    // marcador estar em outro lugar da mesma linha.
+    if (nomeOcorrencia === 'verificar' && protegido && !token.includes('/') && RE_EXTENSAO.test(token)) {
+      return { decisao: 'recusa', classe: 'RECUSADO-LITERAL-PROTEGIDO' };
+    }
     if (pareceCaminho(token)) return { decisao: 'substitui', classe: 'caminho' };
     if (dentroDeCrase) {
       if (protegido) return { decisao: 'recusa', classe: 'RECUSADO-LITERAL-PROTEGIDO' };
@@ -525,11 +601,23 @@ function arquivos(pasta, acc = []) {
   return acc;
 }
 
+// `funcionamento-esperado.md` mora na RAIZ DA BASE (irmão de `plan-3.md`), fora de `doutrina/` — mas
+// ao contrário de um plano (registro histórico, Bloco AD.5), é documentação VIVA: descreve o template
+// que existe HOJE, não uma decisão datada. Achado no Bloco AD.4 (checagem de drift pedida pelo
+// revisor): nunca foi varrido por nenhuma fase — nem `arquivosAlvo()` descia na raiz da base, nem
+// `verify-citations.mjs` o alcança (não é `doutrina/`, nem `skills/`) — e por isso sobreviveu com
+// vocabulário de ANTES do AD.1 inteiro (`ferramentas/`, `raiz/`, `modulos/`, `portas/`, `motor/`,
+// `dominio/`, `npm run verificar`/`iniciar`). Incluído aqui por nome explícito, não por varrer a raiz
+// inteira — a raiz da base também tem os planos, que este arquivo NÃO é.
+const ARQUIVOS_DE_DOC_VIVA_NA_RAIZ = ['funcionamento-esperado.md'];
+
 function arquivosAlvo() {
   const brutos = [
     ...arquivos(join(RAIZ_TEMPLATE, 'bindings')),
     ...arquivos(join(RAIZ_TEMPLATE, 'tools')),
     ...arquivos(join(RAIZ_TEMPLATE, 'tests')),
+    ...arquivos(join(RAIZ_TEMPLATE, 'doutrina')),
+    ...ARQUIVOS_DE_DOC_VIVA_NA_RAIZ.map((nome) => join(RAIZ_BASE, nome)).filter((c) => existsSync(c)),
   ];
   return brutos.filter((c) => !CAMINHOS_EXCLUIDOS.some((re) => re.test(c.split('\\').join('/'))));
 }
@@ -609,11 +697,25 @@ function classificarArquivo(texto, item, formato, literaisProtegidos) {
  * coincidem de nome com as do molde, nunca deveriam substituir. `pasta`/`arquivo` continuam
  * varrendo tudo: são caminho/estrutura compartilhados entre a base e o projeto gerado (AD.1 já
  * prova isso fechado).
+ *
+ * `doutrina/` entra na MESMA fronteira que `bindings/`, não na de `tools/`/`tests/` — achado ao
+ * abrir o Bloco AD.4: `doutrina/*.md` nunca DECLARA função nenhuma (é prosa, sempre
+ * `comentarioTotal`), então o risco que motivou a fronteira acima — nome de função da PRÓPRIA base
+ * coincidindo por acaso com nome do molde — não existe aqui. O que existe é CITAÇÃO: `criarApp`/
+ * `resolverDependencias`, entre crases, continuavam em português mesmo depois do AD.2 porque esta
+ * função barrava `simbolo` fora de `bindings/`, e `doutrina/` nunca foi `bindings/`.
+ *
+ * `ARQUIVOS_DE_DOC_VIVA_NA_RAIZ` (`funcionamento-esperado.md`) pelo MESMO motivo de `doutrina/`: é
+ * prosa que cita o template, nunca código que o declara — sem risco de colisão de nome com função da
+ * base. Comparação por item da lista (não por prefixo de pasta, que não existe pra um arquivo solto
+ * na raiz).
  */
 function itemAplicaAoArquivo(item, caminho) {
   if (item.tipo !== 'simbolo' && item.tipo !== 'chave') return true;
   const raizBindings = join(RAIZ_TEMPLATE, 'bindings') + sep;
-  return caminho.startsWith(raizBindings);
+  const raizDoutrina = join(RAIZ_TEMPLATE, 'doutrina') + sep;
+  const docsVivasNaRaiz = new Set(ARQUIVOS_DE_DOC_VIVA_NA_RAIZ.map((nome) => join(RAIZ_BASE, nome)));
+  return caminho.startsWith(raizBindings) || caminho.startsWith(raizDoutrina) || docsVivasNaRaiz.has(caminho);
 }
 
 function processarArquivo(caminho, itensTodos, literaisProtegidos, aplicar) {
@@ -1294,6 +1396,27 @@ function casosDeAutoteste() {
       const emAD3 = ocorrenciasClassificadasNaLinha(linha, 'portas', 'chave', FMT_JS, false, PROTEGIDOS_PORTAS, true, 'AD.3');
       return emAD1.length === 1 && emAD1[0].decisao === 'recusa'
         && emAD3.length === 1 && emAD3[0].decisao === 'substitui';
+    } },
+    // Mapeamento `antigo→novo` numa crase so (Bloco AD.4, achado do revisor em decisoes.md §233/§237).
+    { nome: 'RECUSADO-MAPEAMENTO: lado esquerdo de `ferramentas→tools` (crase unica) recusa mesmo sem marcador de protecao', fn: () => {
+      const linha = 'Pastas estruturais (12) — `ferramentas→tools` `dominio→domain` `portas→ports`.';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'ferramentas', 'pasta', FMT_MD, true);
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-MAPEAMENTO';
+    } },
+    { nome: 'SUBSTITUI: `core/dominio/` (crase sem seta) continua caminho normal — mapeamento nao se aplica sem seta', fn: () => {
+      const linha = 'A regra de negocio mora em `core/dominio/`.';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'pasta', FMT_MD, true);
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'caminho';
+    } },
+    { nome: 'RECUSADO-MAPEAMENTO: par `X` (→ `Y`) com seta FORA da crase (duas crases) tambem recusa o lado esquerdo', fn: () => {
+      const linha = 'Simbolos dentro de `ferramentas/` (→ `tools/`) | portugues';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'ferramentas', 'pasta', FMT_MD, true);
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-MAPEAMENTO';
+    } },
+    { nome: 'SUBSTITUI: diagrama de SEQUENCIA (tres+ elos, `a` → `b` → `c`) nao e par de mapeamento — elo do meio substitui normal', fn: () => {
+      const linha = 'ordem: `contrato/openapi.yaml` → `core/dominio` → `api/src/routes` → `tests/`.';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'pasta', FMT_MD, true);
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'caminho';
     } },
   ];
 }
