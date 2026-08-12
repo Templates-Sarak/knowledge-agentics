@@ -76,8 +76,12 @@ function comEnumDePortasAtualizado(textoOriginal, portas) {
   return textoOriginal.replace(/("portas":\s*\{[^]*?"enum":\s*)\[[^\]]*\]/, `$1${novoEnum}`);
 }
 
+// Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:lerTexto` — o `.gitattributes`
+// e o conserto estrutural, isto cobre clone ainda nao renormalizado (plan-3.md Bloco AE).
 function lerOuNulo(caminho) {
-  return existsSync(caminho) ? readFileSync(caminho, 'utf8').replace(/^﻿/, '') : null;
+  return existsSync(caminho)
+    ? readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n')
+    : null;
 }
 
 function principal() {

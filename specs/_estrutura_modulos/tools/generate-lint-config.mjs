@@ -212,7 +212,11 @@ function principal() {
 
   const { nome, conteudo } = saidaDe(binding);
   const caminho = join(destino, nome);
-  const emDisco = existsSync(caminho) ? readFileSync(caminho, 'utf8').replace(/^﻿/, '') : null;
+  // Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:lerTexto` — o `.gitattributes`
+  // e o conserto estrutural, isto cobre clone ainda nao renormalizado (plan-3.md Bloco AE).
+  const emDisco = existsSync(caminho)
+    ? readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n')
+    : null;
 
   if (conferir) {
     if (emDisco === conteudo) {

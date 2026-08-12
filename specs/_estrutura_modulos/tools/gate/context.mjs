@@ -41,12 +41,20 @@ const ID_SINTETICO_DO_MOLDE = 'molde';
 const PASTAS_DA_RAIZ = ['adapters', 'src', 'packages'];
 
 /**
- * Le texto removendo o BOM (U+FEFF).
+ * Le texto removendo o BOM (U+FEFF) e normalizando CRLF para LF.
  * Editor e shell do Windows gravam BOM por padrao, e `JSON.parse` rejeita — o manifesto ficaria
  * "invalido" por um caractere invisivel, MASCARANDO todas as regras que dependem dele.
+ *
+ * A normalizacao de EOL e defesa em profundidade, nao o conserto estrutural (esse e o
+ * `.gitattributes` de cada binding, que forca `eol=lf` no checkout). Ela cobre o que o
+ * `.gitattributes` nao alcanca: um clone que ainda nao foi renormalizado, ou uma copia de disco
+ * feita fora do git (`create-project.mjs` copia bytes crus ANTES do primeiro commit). Toda regra
+ * que compara texto lido daqui byte a byte contra saida de gerador (`lint-derivado`) dependia de
+ * os dois lados concordarem em EOL — sem isto, `core.autocrlf=true` (Windows) fazia o gate
+ * reprovar 121 dos 122 casos do autoteste so por causa da quebra de linha (plan-3.md Bloco AE).
  */
 function lerTexto(caminho) {
-  return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
+  return readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n');
 }
 
 /** Percorre a pasta do módulo, ignorando o que não é fonte. Devolve caminhos absolutos. */

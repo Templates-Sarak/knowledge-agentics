@@ -116,6 +116,25 @@ function semCobertura(motivo) {
   return causa;
 }
 
+/**
+ * Irmã de `semCobertura`: a agulha de `substituir` não foi achada no arquivo. Diferente de
+ * SEM_COBERTURA (o caso não se aplica a este binding), aqui o caso SE APLICA e a mutação falhou —
+ * é reprovação do CASO, não ausência de cobertura, e por isso `verificarCaso` a trata como `FALHA`
+ * comum: reprova só este caso, os demais continuam medidos (plan-3.md Bloco AE, acerto pós-AE.c).
+ *
+ * Quando a causa é DETECTÁVEL — agulha com `\n` literal contra um arquivo em CRLF — a mensagem
+ * nomeia a causa provável em vez de deixar quem lê decifrar de novo os três sintomas do Bloco AE.
+ */
+function mutacaoInvalida(rel, de, conteudo) {
+  const base = `substituir: texto nao encontrado em ${rel}: ${JSON.stringify(de)}`;
+  const provavelmenteEol = de.includes('\n') && conteudo.includes('\r\n');
+  const causa = new Error(provavelmenteEol
+    ? `${base} — o arquivo esta em CRLF e a agulha em LF; renormalize (git add --renormalize .)`
+    : base);
+  causa.code = 'MUTACAO_INVALIDA';
+  return causa;
+}
+
 /** Trecho agnóstico entra como string; onde a sintaxe importa, como `{ js, py }`. */
 function trechoDe(trechos, binding) {
   if (typeof trechos === 'string') return trechos;
@@ -150,9 +169,18 @@ function operacoes(raiz, binding) {
       if (trecho === null) throw semCobertura(`o caso nao tem trecho de "${alvo}" para a sintaxe de "${binding}"`);
       acrescentar(rel, trecho);
     },
+    /**
+     * `String.replace(agulha)` que nao acha devolve a string IGUAL, em silencio — a mutacao vira
+     * noop e o caso reporta "nenhum achado", apontando a REGRA quando o defeito esta na MUTACAO
+     * (plan-3.md Bloco AE.c). Lanca `MUTACAO_INVALIDA` em vez de aceitar noop: quem escreve um caso
+     * novo com agulha errada (typo, `\n` que o molde nao tem mais) descobre no proprio `substituir`,
+     * nao tres camadas depois — e so ESTE caso reprova, os outros continuam medidos.
+     */
     substituir: (rel, de, para) => {
       const caminho = join(raiz, rel);
-      writeFileSync(caminho, readFileSync(caminho, 'utf8').replace(de, para), 'utf8');
+      const conteudo = readFileSync(caminho, 'utf8');
+      if (!conteudo.includes(de)) throw mutacaoInvalida(rel, de, conteudo);
+      writeFileSync(caminho, conteudo.replace(de, para), 'utf8');
     },
     remover: (rel) => rmSync(join(raiz, rel), { force: true }),
     removerPasta: (rel) => rmSync(join(raiz, rel), { recursive: true, force: true }),
@@ -310,6 +338,9 @@ function verificarCaso(binding, caso) {
       return { pulado: true, rotulo, motivo: 'o molde deste binding nao tem o arquivo que o caso muta' };
     }
     if (causa?.code === 'SEM_COBERTURA') return { pulado: true, rotulo, motivo: causa.message };
+    // A agulha de `substituir` nao foi achada: o CASO se aplica a este binding e a mutacao falhou —
+    // reprova so ele, no vocabulario comum de FALHA, sem cegar os demais (plan-3.md Bloco AE).
+    if (causa?.code === 'MUTACAO_INVALIDA') return { ok: false, rotulo, detalhe: causa.message };
     throw causa;
   }
   const ids = new Set(achados.map((a) => a.regra));

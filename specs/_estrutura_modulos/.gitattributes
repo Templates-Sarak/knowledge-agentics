@@ -1,0 +1,10 @@
+# Este repositorio (a base do TEMPLATE) precisa da MESMA normalizacao que ele exige de todo
+# projeto gerado (bindings/*/root/.gitattributes) — sem ela, o proprio autoteste do gate
+# (tools/gate/tests/run.mjs) reprova por CRLF/LF, nunca por regra (plan-3.md Bloco AE: clone limpo
+# em CRLF media 1/122 · 1/122 · 1/119 no autoteste dos tres bindings).
+#
+# Escopo largo de proposito: o .gitattributes de bindings/*/root SO vale dentro daquela pasta —
+# nao alcanca tools/, doutrina/, tests/ nem bindings/**, que e onde o gate, os casos de teste e o
+# molde de cada binding vivem. `text=auto` deixa o git decidir texto x binario; `eol=lf` fixa LF
+# no checkout independente do `core.autocrlf` de quem clona.
+* text=auto eol=lf

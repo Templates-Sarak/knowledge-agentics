@@ -24,9 +24,15 @@ function abortar(mensagem) {
   process.exit(1);
 }
 
-/** Le removendo o BOM: editor e shell do Windows gravam por padrao, e `JSON.parse` rejeita. */
+/**
+ * Le removendo o BOM (editor e shell do Windows gravam por padrao, e `JSON.parse` rejeita) e
+ * normalizando CRLF para LF — defesa em profundidade, mesma de `tools/gate/context.mjs:lerTexto`.
+ * O molde é copiado de disco, não de um clone git (`core.autocrlf` não protege aqui), e
+ * `podarTesteDeArtefatoPy` casa texto por `\n` literal: sem isto, um molde ainda em CRLF faz o
+ * `.replace()` de lá virar noop silencioso (plan-3.md Bloco AE.e).
+ */
 function lerTexto(caminho) {
-  return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
+  return readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n');
 }
 
 function lerOpcoes() {
@@ -138,6 +144,20 @@ function podarTextosDeTela(destino) {
 }
 
 /**
+ * Remove `agulha` de `texto` (regex ou string) e EXIGE que algo tenha mudado. Sem isto,
+ * `String.replace()`/`RegExp.replace()` que não casam devolvem o texto igual em silêncio — a poda
+ * vira noop, o import órfão sobra no arquivo, e só o `tsc`/`ruff` do Bloco K acusa, três passos
+ * adiante (o defeito real do AD.1 em `create-module.mjs:162`, plan-3.md Bloco AE.c/AE.e).
+ */
+function podarOuFalhar(texto, agulha, contexto) {
+  const podado = texto.replace(agulha, '');
+  if (podado === texto) {
+    throw new Error(`podarTesteDeArtefato: "${agulha}" nao encontrado em ${contexto} — o molde mudou e a poda ficou obsoleta`);
+  }
+  return podado;
+}
+
+/**
  * O teste de domínio importa `core/engine` para exercitar `gerarArtefato` (Bloco O, plan-2.md).
  * `--sem-artefato` apaga a PASTA e deixa o teste importando o nada — `tsc`/`import` reprova antes
  * mesmo do `vitest` rodar. Poda o import E o bloco de teste, por binding; o teste de domínio
@@ -145,11 +165,14 @@ function podarTextosDeTela(destino) {
  */
 function podarTesteDeArtefatoTsJs(caminho) {
   const conteudo = lerTexto(caminho);
-  const semImports = conteudo
-    .replace(/^import \{ gerarArtefato \} from '\.\.\/\.\.\/core\/engine\/index\.js';\n/m, '')
-    // `registroDeExemplo` so serve o bloco `gerarArtefato` — sem ele, o import fica sem leitor e
-    // `tsc --noEmit` reprova com TS6133 ("declared but its value is never read").
-    .replace(/^import \{ registroDeExemplo \} from '\.\.\/fixtures\/index\.js';\n/m, '');
+  const semImportEngine = podarOuFalhar(
+    conteudo, /^import \{ gerarArtefato \} from '\.\.\/\.\.\/core\/engine\/index\.js';\n/m, caminho,
+  );
+  // `registroDeExemplo` so serve o bloco `gerarArtefato` — sem ele, o import fica sem leitor e
+  // `tsc --noEmit` reprova com TS6133 ("declared but its value is never read").
+  const semImports = podarOuFalhar(
+    semImportEngine, /^import \{ registroDeExemplo \} from '\.\.\/fixtures\/index\.js';\n/m, caminho,
+  );
   const indice = semImports.indexOf("describe('gerarArtefato'");
   if (indice === -1) return;
   const inicioBloco = semImports.lastIndexOf('\n\n', indice) + 1;
@@ -158,10 +181,11 @@ function podarTesteDeArtefatoTsJs(caminho) {
 
 function podarTesteDeArtefatoPy(caminho) {
   const conteudo = lerTexto(caminho);
-  const semImports = conteudo
-    .replace('from core.engine import gerar_artefato\n', '')
-    // Mesmo motivo do lado TS/JS: `registro_de_exemplo` sem leitor e F401 (ruff) reprova.
-    .replace('from tests.fixtures import registro_de_exemplo\n', '');
+  const semImportEngine = podarOuFalhar(conteudo, 'from core.engine import gerar_artefato\n', caminho);
+  // Mesmo motivo do lado TS/JS: `registro_de_exemplo` sem leitor e F401 (ruff) reprova.
+  const semImports = podarOuFalhar(
+    semImportEngine, 'from tests.fixtures import registro_de_exemplo\n', caminho,
+  );
   const indice = semImports.indexOf('TEMPLATE = ');
   if (indice === -1) return;
   const inicioBloco = semImports.lastIndexOf('\n\n', indice) + 1;
