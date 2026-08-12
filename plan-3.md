@@ -127,20 +127,55 @@ e depois da campanha a mesma lista tem de resolver de novo. Isso é um *diff*, n
 
 ## Bloco AD — a campanha
 
-> **Atômica.** Tem de cair de uma vez nos três bindings, no gate, nos casos e nas citações. Não dá para
-> parcelar: o autoteste ou está verde ou não está.
+> **Atômica POR FASE**, não como bloco. Cada fase (`AD.1`, `AD.2`, `AD.3`) tem de cair de uma vez nos
+> três bindings, no gate, nos casos e nas citações — dentro dela não dá para parcelar, o autoteste ou
+> está verde ou não está. Mas as fases **não** caem juntas: o enunciado original dizia que sim, e três
+> tentativas do AD.1 mostraram o contrário. Uma fase, um relatório, uma aprovação.
 
-### AD.1 — pastas *(o maior retorno por unidade de trabalho)*
-- [ ] Os **26 diretórios** nos três bindings, `_template` e `_adapter`, por `git mv` — o histórico
-      importa mais aqui do que em qualquer outro bloco desta família
-- [ ] As **constantes de caminho do gate**: `ENTRADAS_PERMITIDAS`, `PASTAS_DE_ARTEFATO`, `NAO_PERCORRER`,
-      `CONTEUDO_IGNORADO_MAS_ENTRADA`, o filtro `/mapeador/i` de `chavesDaProjecao`, `areaDoImport`,
-      `saiDoModulo`, `temArquivoEm`
-- [ ] As **ferramentas**: `criar-projeto` `criar-modulo` `criar-adapter` `empacotar` `afetados`
-      `sincronizar-env` `verificar-commit` `ci-*` `gerar-*`
-- [ ] Config derivada e ignorada: `IGNORADOS` do `gerar-config-lint`, `.gitignore` (`**/generated/*`),
-      `tsconfig`, `vitest.config`, `pyproject`, `workspaces` do `package.json`
-- [ ] `casos.mjs` — os **alvos lógicos** por nome de pasta
+### AD.1 — pastas ✅ **FECHADO** *(commit `b8d48a7`, revisado e reproduzido)*
+- [x] Os **39 diretórios** nos três bindings, `_template` e `_adapter`, por `git mv` — o histórico
+      importa mais aqui do que em qualquer outro bloco desta família.
+      **Correção contra o disco:** este item dizia **26**, número herdado da contagem de 8 pastas que o
+      AC já corrigira para 12. Doze *nomes* de pasta rendem **39 diretórios físicos** (`ports` 6 ·
+      `domain` 6 · `contract` 6 · `tests` 5 · `root` 3 · `memory` 3 · `generated` 3 · `engine` 3 ·
+      `mappers` 2 · `tools` 1 · `rules` 1), porque a maioria aparece uma vez por binding e mais uma em
+      `_template`. **123 renomeações `R` no commit**, nenhum `delete`+`add`
+- [x] As **constantes de caminho do gate**: `ENTRADAS_PERMITIDAS`, `PASTAS_DE_ARTEFATO` (as **duas**
+      cópias — `create-module.mjs` e `structure.mjs`), `NAO_PERCORRER`,
+      `CONTEUDO_IGNORADO_MAS_ENTRADA`, o filtro `/mapeador/i`→`/mapper/i` de `chavesDaProjecao` (nos
+      **dois** pontos: `chavesDaProjecao` e `temMapeador`), `areaDoImport`, `saiDoModulo`, `temArquivoEm`
+- [x] As **ferramentas**: `criar-projeto` `criar-modulo` `criar-adapter` `empacotar` `afetados`
+      `sincronizar-env` `verificar-commit` `ci-*` `gerar-*` — mais o núcleo do gate e os arquivos de
+      regra, **55 itens de arquivo no inventário**
+- [x] Config derivada e ignorada: `IGNORADOS` do `gerar-config-lint`, `.gitignore` (`**/generated/*` +
+      `!**/generated/.gitkeep`), `tsconfig` (`exclude: ["…","modules"]`), `vitest.config`, `pyproject`
+      (`exclude = ["^modules/"]`), `workspaces` (`modules/[a-z]*`)
+- [x] `casos.mjs` — os **alvos lógicos** por nome de pasta (`ALVOS.mapeadores` → `ALVOS.mappers`, com os
+      `acrescentarEm`/`substituirEm` correspondentes; sem isso **7 casos ficavam SEM COBERTURA em
+      silêncio**, e foi assim que o defeito apareceu)
+
+**Prova de fechamento — medida pelo revisor, não relatada:**
+
+| Verificação | Resultado |
+|---|---|
+| `apply-rename --autoteste` | **37/37** |
+| `verify-citations` · `verify-map` · `affected` | 31/31 · 9/9 · 19/19 |
+| Resíduos tipo `arquivo`, fronteira frouxa (sem `.`) | **0** |
+| Diferencial independente do revisor contra `5a4083a` | **0 prosa corrompida** |
+| Gate self-test, árvore LF | **122/122 · 122/122 · 119/119** |
+| Bloco K | **13/13 nos três bindings** |
+| Blobs commitados | **215/215 em LF** |
+
+> **Duas coisas que este bloco custou três tentativas para aprender, e que valem para o AD.2/AD.3:**
+>
+> 1. **O campo `fase` protege contra vazamento de ITEM, não contra colisão de LITERAL.** `dominio` é item
+>    legítimo do AD.1 (a pasta) e mesmo assim renomeou `papel: "dominio"` — valor de manifesto, que
+>    nenhuma fase toca. A generalização é a lista de **literais protegidos**, e ela é do mesmo tipo de
+>    mecanismo dos outros: fechada, explícita, cresce por decisão.
+> 2. **`--diferencial` e `verify-citations --depois` cobrem falso POSITIVO, não falso NEGATIVO.** Uma
+>    referência estrutural que *deveria* ter mudado e não mudou não aparece em diff de linha alterada.
+>    Foi assim que `create-module.mjs:162` (`'from core.motor import gerar_artefato\n'`) sobreviveu a
+>    duas redes e só caiu no Bloco K. **Antes do AD.2, ver o item de método no fim deste plano.**
 
 ### AD.2 — funções do esqueleto
 - [ ] As **248** dos `bindings/**`, incluindo a fiação de `FABRICAS` e os entrypoints
@@ -207,7 +242,28 @@ bindings** · `verificar-citacoes` verde · `verificar-mapa` verde · e um proje
 
 ---
 
-## Bloco AE — CRLF/`autocrlf` mascarando `lint-derivado` *(defeito real do template, não da campanha)*
+## Bloco AE — CRLF/`autocrlf` ✅ **FECHADO** *(commit `671cbf7`, revisado e reproduzido)*
+
+> **O que este bloco entregou, e é a propriedade que o template anuncia.** Um clone limpo, em Windows,
+> com `core.autocrlf=true`, passa no próprio gate **sem nenhuma intervenção manual**. Antes desta
+> rodada o mesmo clone lia `1/122 · 1/122 · 1/119`.
+>
+> **E os três fracassos que este projeto carregou por vários planos como *"pré-existentes de regra"* —
+> `contrato-sincronizado`, `resumo-exportado` e `projecao-contrato` (molde Python) — eram UM defeito de
+> bancada.** Nenhuma regra foi tocada.
+
+| Verificação — clone feito **a partir do commit**, zero `sed` | Resultado |
+|---|---|
+| Arquivos em CRLF no working tree | **0** |
+| Autoteste do gate | **122/122 · 122/122 · 119/119** |
+| Bloco K, sem `--binding` | **3/3 VERDE**, 13/13 passos em cada |
+| Árvore CRLF, só a defesa em profundidade | **120/122 · 120/122 · 116/119**, roda até o fim |
+| As 3 falhas nessa árvore | cada uma com *"o arquivo esta em CRLF e a agulha em LF; renormalize"* |
+| Contraprova, agulha ausente por motivo **não**-EOL | **121/122** — 1 reprova, 121 medidos, **sem** o palpite |
+
+> **A decisão semântica que não era óbvia:** `MUTACAO_INVALIDA` devolve `{ ok: false }` — **reprova**;
+> `SEM_COBERTURA` devolve `{ pulado: true }`. Se a mutação inválida tivesse virado "pulado" por simetria
+> de forma, o resultado seria **verde falso** — exatamente o que este bloco existe para eliminar.
 
 > **Achado na rodada AD.1 — REFAZER.** Reproduzido em clone pristino de `5a4083a`, sem nenhuma
 > mudança desta campanha: `core.autocrlf=true` (padrão em checkout Windows) entrega
@@ -217,14 +273,116 @@ bindings** · `verificar-citacoes` verde · `verificar-mapa` verde · e um proje
 > corrigido apenas como diagnóstico (`sed`, não commitado como parte de AD.1) para medir os blocos
 > AD.1-AD.5 sem esse ruído.
 
-- [ ] `.gitattributes` de cada binding hoje só força `text eol=lf` em `.githooks/*`. Decidir —
+- [x] `.gitattributes` de cada binding hoje só força `text eol=lf` em `.githooks/*`. Decidir —
       e testar — quais outros caminhos GERADOS (`eslint.config.js`, `.ruff.toml`, os dois
-      `config-*.schema.json` derivados, outros?) precisam da mesma regra
-- [ ] Contraprova: aplicar a regra, `git add --renormalize .`, reproduzir o clone pristino de novo,
+      `config-*.schema.json` derivados, outros?) precisam da mesma regra — **decidido: `* text=auto
+      eol=lf` amplo (relatório do executor tem o porquê e o custo)**
+- [x] Contraprova: aplicar a regra, `git add --renormalize .`, reproduzir o clone pristino de novo,
       confirmar Bloco K sem o co-achado `lint-derivado` SEM o `sed` manual
-- [ ] Decidir se `tools/generate-lint-config.mjs` deveria detectar e respeitar o EOL do arquivo
+- [x] Decidir se `tools/generate-lint-config.mjs` deveria detectar e respeitar o EOL do arquivo
       existente em vez de sempre emitir LF, como camada extra (o `.gitattributes` é a correção
-      estrutural; isso seria defesa em profundidade)
+      estrutural; isso seria defesa em profundidade) — **decidido: NÃO (relatório do executor tem o
+      porquê)**
+
+> **A revisão do AD.1 mediu o alcance real, e ele é maior que o diagnóstico acima.** São **três
+> sintomas de uma raiz**, e o terceiro ninguém tinha visto:
+
+- [x] **`gerar-schemas-portas --conferir` tem o mesmo defeito do `lint-derivado`** —
+      `conteudoConfigPortas()` junta com `\n` e compara byte a byte contra um
+      `config-ports.schema.json` que o checkout entrega em CRLF. Reprova o passo `verificar` do Bloco K
+- [x] **`substituir` em `tools/gate/tests/run.mjs` FALHA ABERTO, e é o mais grave dos três.**
+      `String.replace(agulha)` que não acha devolve a string igual, **em silêncio**. Das 13 mutações de
+      `cases.mjs`, **3 contêm `\n`** e portanto nunca aplicam em árvore CRLF: o gate não acha nada e o
+      caso reporta `FALHA — nenhum achado`, mandando quem investiga olhar a **regra** quando o defeito
+      está na **mutação**. Tem de **lançar** quando o texto procurado não existe.
+      **Contraprova:** trocar o texto de uma mutação por algo ausente e exigir que o autoteste morra
+      nomeando a mutação, não a regra
+- [x] **Reclassificar:** os três fracassos que este plano vinha carregando como *"pré-existentes de
+      regra"* — `contrato-sincronizado`, `resumo-exportado` e `projecao-contrato` (molde Python) — são
+      **UM defeito de bancada, não três de regra**. Medido: convertendo os 39 arquivos ainda em CRLF, o
+      autoteste vai a **122/122 · 122/122 · 119/119** sem tocar em regra nenhuma
+- [x] Varrer **todo `String.replace(<literal>)`** das ferramentas e decidir a política. O mesmo padrão
+      causou o único defeito real do AD.1 (`create-module.mjs:162`, `'from core.motor import …'`) —
+      **22 chamadas achadas em `tools/`, categorizadas no relatório; `create-module.mjs` (o mesmo
+      padrão citado aqui) e `run.mjs:substituir` endurecidos, o resto já era seguro ou é cosmético**
+
+> **Medição que dimensiona a urgência.** Clone limpo de `b8d48a7` em Windows com `core.autocrlf=true`:
+> **209 arquivos em CRLF**, e o autoteste lê **1/122 · 1/122 · 1/119**. A propriedade que este template
+> anuncia é auto-verificação, e no estado commitado ela é **falsa para o caso de uso mais comum**.
+> Enquanto isto durar, todo relatório de rodada precisa dizer *"verde neste worktree"* — uma frase que
+> este ecossistema não deveria precisar escrever. **Por isso o AE vem antes do AD.2:** o AD.2 vai
+> precisar acreditar no gate, e hoje "vermelho" é ambíguo.
+
+---
+
+## Bloco AI — a rede do outro lado *(método; achado ao fechar o AD.1)*
+
+> *(`AF`, `AG` e `AH` já são do `plan-3.1.md` — a família 3 compartilha a sequência de letras.)*
+
+> **O buraco, e ele é do revisor.** As duas redes desta campanha — o `--diferencial` do
+> `apply-rename.mjs` e o `verify-citations --depois` — cobrem **falso positivo**: prosa portuguesa que
+> virou inglês por engano. **Nenhuma das duas cobre falso negativo**: referência estrutural que *deveria*
+> ter mudado e não mudou. E não cobre por construção, não por descuido — o diferencial só olha linha que
+> **mudou**, e uma linha esquecida não muda.
+>
+> Foi exatamente assim que `create-module.mjs:162` sobreviveu às duas e só caiu no Bloco K, três passos
+> adiante, disfarçado de `ModuleNotFoundError`. **O AD.2 e o AD.3 têm a mesma exposição em escala
+> maior** — o AD.3 mexe em ~40 regras com caso.
+
+- [ ] **A lista de RECUSAS vira ARTEFATO, não saída de console.** `--relatorio` grava as recusas em
+      arquivo versionado (`tests/rename-refusals.json` ou similar), com arquivo, linha e o token recusado
+- [ ] **A rodada seguinte só aceita recusa que já estava lá.** Recusa **nova** é revisão obrigatória — e
+      é uma lista curta, porque o inventário é fechado. É a mesma disciplina de `conformidade.json`:
+      começa vazia, cresce por decisão explícita, nunca por heurística
+- [ ] **Fronteira com o que já existe:** o `--diferencial` continua sendo o aceite de *não corrompeu*;
+      este é o aceite de *não esqueceu*. São perguntas diferentes e precisam de artefatos diferentes —
+      juntá-los num relatório só foi o que permitiu ao AD.1 declarar "0 suspeitas" com um defeito dentro
+- [ ] **Contraprova:** remover à mão uma substituição legítima já feita (voltar um `tools/` para
+      `ferramentas/` numa linha), rodar, e exigir que apareça como recusa NOVA — nomeando arquivo e linha
+
+### AI.4 — a invariante que faltava *(achada testando o AI contra o defeito histórico)*
+
+> **O AI foi construído para fechar o buraco de falso negativo, e a primeira coisa medida com ele foi o
+> defeito histórico — que ele deixou passar.** Reinjetando `'from core.motor import gerar_artefato\n'`
+> em `create-module.mjs`, o `--relatorio` sai **exit 0, "0 recusas novas"**. A ferramenta *vê* (aparece
+> como `identificador: 1` nos totais), mas **não lista as pendências e não olha para elas no exit**.
+>
+> **A lição:** *"não esqueceu de revisar"* e *"não sobrou nada por fazer"* são **duas perguntas**. O
+> artefato de recusas responde a primeira. A segunda é uma linha de código, e é a que teria pegado o
+> `create-module.mjs:162` na hora.
+
+- [ ] **Para uma fase FECHADA, substituição pendente tem de ser ZERO.** Listar cada pendência
+      (`arquivo:linha`, classe, contexto — no mesmo formato das recusas) e **sair 1** se houver qualquer
+      uma. Hoje as pendências só existem como número agregado em *"totais por classificacao"*
+- [ ] Contraprova nos dois sentidos: **(a)** reinjetar o defeito histórico → sai **1** nomeando
+      `create-module.mjs` e a linha *(hoje sai 0)*; **(b)** estado limpo → **0 pendências, exit 0**
+
+### AI.5 — a não-idempotência *(defeito de origem do AD.1, e a origem é do revisor)*
+
+> **`--aplicar --fase AD.1` na árvore APROVADA — Bloco K verde — corrompe 14 pontos.** Todos são chave
+> de manifesto (AD.3) ou **id de regra**, que a decisão 6 do Bloco AC manda ficar em português. Medido
+> pelo revisor rodando `--aplicar` numa cópia e lendo o `git diff`:
+>
+> | Onde | O quê |
+> |---|---|
+> | `modulo.json` × 3 bindings | `"portas"` → `"ports"`, com o schema (excluído) ainda em `portas` |
+> | `tools/gate/engine.mjs` §`REGRAS_DE_EXTRACAO` | `'contrato'` — **id de regra**, quebraria o registro |
+> | `tools/gate/rules/structure.mjs` §`CAMPOS_OBRIGATORIOS` | `'portas'` — chave de manifesto |
+> | `tools/generate-port-schemas.mjs` | 6, inclusive a regex `/"portas":\s*\{…/` **e o comentário que diz que `"portas"` ali é chave de manifesto da fase AD.3 e nunca é renomeada** |
+> | `composicao.py`, `test_config.py` | leitura de `modulo["portas"]` |
+>
+> **Causa, e ela é do revisor.** No reescrever do AD.1 a exclusão `/(^|[\/])modulo\.json$/` saiu de
+> `CAMINHOS_EXCLUIDOS` com a justificativa *"não cita a si mesmo por nome"*. Isso responde a uma
+> pergunta **diferente**: a exclusão nunca foi sobre autocitação — era contra **literal de pasta do AD.1
+> colidindo com chave de manifesto do AD.3**. O revisor aprovou esse raciocínio.
+
+- [ ] **Estender LITERAIS PROTEGIDOS para chave de manifesto e id de regra em ARRAY DE STRING NU.** Hoje
+      o padrão-de-linha exige `id:`/`regra:`/`papel:` na mesma linha, e `REGRAS_DE_EXTRACAO` /
+      `CAMPOS_OBRIGATORIOS` são listas nuas. Precisa de reconhecedor pelo **nome da constante** (a linha
+      `const X = [` / `new Set([` que abre o bloco), não por marcador na mesma linha.
+      *(Devolver só a exclusão de `modulo.json` resolve 3 dos 14 — não basta.)*
+- [ ] **Aceite operacional de idempotência:** `--aplicar --fase AD.1` numa árvore já renomeada produz
+      **`git diff` VAZIO**. Colar o `git diff --stat` provando
 
 ---
 
@@ -237,12 +395,23 @@ AB   o verificador de citação    PRÉ-REQUISITO — e com LINHA DE BASE, senã
 AC   a fronteira em ADR          antes de tocar arquivo: é ela que impede a fronteira
                                  arbitrária de voltar por analogia
 
-AD   a campanha                  ATÔMICA — pastas + funções do esqueleto + citações,
-                                 num movimento. AD.2 tem método próprio nos 6 âncoras
+AD   a campanha                  AD.1 ✅ FECHADO (b8d48a7). AD.2 tem método próprio
+                                 nos 6 âncoras
+
+AE   o CRLF, e os 3 sintomas     ✅ FECHADO (671cbf7). Clone limpo em Windows passa
+                                 no próprio gate sem intervenção manual
+
+AI   a rede do outro lado        ANTES do AD.2 pelo mesmo motivo: o AD.3 mexe em ~40
+                                 regras com caso, e falso negativo hoje não tem rede
 
 ═══ meta: `core/domain/` e `toContract` num template cuja lei e cujos comentários
     seguem em português, e cuja fronteira está escrita num ADR ═══
 ```
+
+> **A campanha deixou de ser atômica, e isso foi medido, não escolhido.** O enunciado original do AD
+> dizia *"tem de cair de uma vez"*. Três tentativas mostraram que não: o AD.1 sozinho consumiu duas
+> reversões completas, e o que o tornou fechável foi justamente ter sido isolado — uma fase, um
+> relatório, uma aprovação. O AD.2 e o AD.3 seguem a mesma disciplina.
 
 ---
 

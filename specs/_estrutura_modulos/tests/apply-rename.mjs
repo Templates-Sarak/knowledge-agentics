@@ -8,8 +8,21 @@
  *
  *   node tests/apply-rename.mjs --fase AD.1 --relatorio                dry-run: só o relatório
  *   node tests/apply-rename.mjs --fase AD.1 --aplicar                  escreve, e imprime o relatório
+ *   node tests/apply-rename.mjs --fase AD.1 --relatorio --gravar-recusas   grava as recusas atuais
+ *       como novo baseline em `rename-refusals.json` — decisão explícita, nunca automática (Bloco AI)
  *   node tests/apply-rename.mjs --fase AD.1 --diferencial <arvore>     confere contra clone pristino
  *   node tests/apply-rename.mjs --autoteste                            prova o núcleo com fixtures
+ *
+ * A FRONTEIRA entre `--diferencial` e o artefato de recusas (`rename-refusals.json`, Bloco AI do
+ * plan-3.md) é a fronteira entre duas perguntas diferentes, cada uma com o seu artefato — juntá-las
+ * num relatório só foi o que permitiu ao AD.1 declarar "0 suspeitas" com um defeito dentro:
+ *   - `--diferencial` prova NÃO CORROMPEU: nenhum token novo apareceu onde não devia (falso
+ *     POSITIVO — prosa portuguesa que virou inglês por engano). Só olha linha que MUDOU no diff.
+ *   - o artefato de recusas prova NÃO ESQUECEU: toda vez que o motor decidiu "isto pode não devesse
+ *     mudar, decida você" (RECUSADO-*), alguém de fato decidiu — em vez de a recusa morrer no
+ *     stdout do terminal de quem rodou o comando (falso NEGATIVO — referência que deveria ter
+ *     mudado e não mudou, ou recusa que devia ter sido SUBSTITUI). `--relatorio`/`--aplicar` LEEM
+ *     o artefato e reprovam recusa NOVA; só `--gravar-recusas` — decisão explícita — o atualiza.
  *
  * QUATRO CONSERTOS sobre a rodada 2 (REFAZER), cada um por um defeito medido pelo revisor:
  *
@@ -77,6 +90,10 @@ const AQUI = fileURLToPath(new URL('.', import.meta.url));
 const RAIZ_TEMPLATE = resolve(AQUI, '..');
 const RAIZ_BASE = resolve(RAIZ_TEMPLATE, '..', '..');
 const CAMINHO_INVENTARIO = join(AQUI, 'rename-inventory.json');
+// Irma do inventario (plan-3.md Bloco AI): a lista de RECUSAS deixa de ser so saida de console e
+// vira artefato versionado, na MESMA disciplina de config/conformidade.json — comeca vazia/ausente,
+// cresce so por decisao explicita (`--gravar-recusas`), nunca por heuristica.
+const CAMINHO_RECUSAS = join(AQUI, 'rename-refusals.json');
 
 // ================================================================================================
 // NÚCLEO — puro. Nenhuma linha até a marca "CASCA" toca `fs` (exceto `--diferencial`, que chama
@@ -206,15 +223,41 @@ const PADROES_DE_PROTECAO = new Map([
   ['conector', ['PAPEIS', 'papel']],
   ['contrato', ['id:', 'regra:']],
   ['testes', ['id:', 'regra:']],
+  // 'portas' (chave de manifesto, fase AD.3 — Bloco AI, AI.5) NÃO tem marcador-de-linha confiável:
+  // aparece em prosa de comentário, dentro de regex-como-string (generate-port-schemas.mjs), em
+  // dict Python (composicao.py, test_config.py) e em JSON puro (modulo.json) — contextos demais
+  // para um marcador só. E, diferente de 'contrato'/'testes', NENHUM uso NU (sem barra) de 'portas'
+  // é substituição legítima hoje: a única forma legítima é a PASTA, sempre com barra
+  // (`core/portas/` → `core/ports/`), e essa forma já substitui ANTES de chegar aqui, via
+  // `pareceCaminho`/`token`. Por isso `true` em vez de lista: protegido sempre que aparece NU, sem
+  // exigir marcador — não existe hoje um "portas nu que deveria substituir" para perder.
+  ['portas', true],
 ]);
 
-/** `literaisProtegidos` é o `Map` acima (lido do inventário) — devolve `true` só se o LITERAL tem
- * entrada de proteção E a linha onde ele ocorreu bate um dos padrões daquela entrada. */
+/** `literaisProtegidos` é o `Map` acima (lido do inventário) — devolve `true` se o LITERAL está
+ * marcado como SEMPRE protegido (`true`, valor sem forma bare legítima — AI.5), OU se tem lista de
+ * marcadores E a linha onde ele ocorreu bate um deles. */
 export function protegidoNestaLinha(linha, nomeOcorrencia, literaisProtegidos) {
   const padroes = literaisProtegidos?.get(nomeOcorrencia);
   if (!padroes) return false;
+  if (padroes === true) return true;
   return padroes.some((p) => linha.includes(p));
 }
+
+/**
+ * O RECONHECEDOR POR NOME DA CONSTANTE (Bloco AI, AI.5) — `REGRAS_DE_EXTRACAO` (id de regra) e
+ * `CAMPOS_OBRIGATORIOS` (chave de manifesto) são array/`Set` NUS: nenhum elemento tem `id:`/
+ * `regra:`/`papel:` na própria linha para `protegidoNestaLinha` reconhecer. Em vez de mais um
+ * marcador-de-linha (que exigiria editar CADA elemento), reconhece o BLOCO inteiro pela linha que
+ * o abre — `const NOME = [` ou `const NOME = new Set([` — até a linha que fecha, sozinha (as duas
+ * constantes hoje são só isso; se uma ficar de uma linha só, o reconhecedor de bloco não se aplica
+ * e ela volta a precisar de marcador-de-linha, o comportamento de sempre).
+ */
+const CONSTANTES_COM_ARRAY_PROTEGIDO = ['REGRAS_DE_EXTRACAO', 'CAMPOS_OBRIGATORIOS'];
+const RE_ABRE_ARRAY_PROTEGIDO = new RegExp(
+  `\\b(?:export\\s+)?(?:const|let)\\s+(?:${CONSTANTES_COM_ARRAY_PROTEGIDO.join('|')})\\s*=\\s*(?:new Set\\()?\\[\\s*$`,
+);
+const RE_FECHA_ARRAY_PROTEGIDO = /^\s*\]\)?;?\s*$/;
 
 /**
  * A DECISÃO — dado onde a ocorrência caiu, devolve `{ decisao: 'substitui'|'recusa', classe }`.
@@ -253,9 +296,18 @@ export function decidir(contexto, nomeOcorrencia, tipoItem, protegido) {
   if (contexto.tipo === 'comentario') {
     const dentroDeCrase = spansDeCrase(contexto.texto)
       .some((s) => contexto.posicao >= s.inicio && contexto.posicao + contexto.tamanho <= s.fim);
-    if (dentroDeCrase) return { decisao: 'substitui', classe: 'caminho' };
     const token = tokenAoRedor(contexto.texto, contexto.posicao, contexto.tamanho);
+    // Caminho de verdade (barra/extensão) SEMPRE substitui, protegido ou não — mesma precedência
+    // do ramo 'string' acima (`pareceCaminho` antes do `protegido`): é o que mantém
+    // `join('modulos', id, 'contrato', 'openapi.yaml')` substituindo enquanto `id: 'contrato'`
+    // recusa. Só o token NU (sem barra/extensão) dentro de crase consulta `protegido` — antes
+    // disto, crase sempre substituía cego, e foi assim que `generate-port-schemas.mjs` corrompeu
+    // `"portas"` embutido em comentário/regex seis vezes (Bloco AI, AI.5).
     if (pareceCaminho(token)) return { decisao: 'substitui', classe: 'caminho' };
+    if (dentroDeCrase) {
+      if (protegido) return { decisao: 'recusa', classe: 'RECUSADO-LITERAL-PROTEGIDO' };
+      return { decisao: 'substitui', classe: 'caminho' };
+    }
     return { decisao: 'recusa', classe: 'RECUSADO-POR-PROSA' };
   }
   // 'codigo': só sobrevive dentro de especificador de import — identificador nu fica em português.
@@ -269,8 +321,16 @@ export function decidir(contexto, nomeOcorrencia, tipoItem, protegido) {
  * `formatoDoArquivo`); comentário de bloco/docstring fica fora deste núcleo por linha — a casca
  * trata via `emBloco`/`cerca` antes de chamar (mesmo padrão de `classificarLinhas` em
  * verify-citations.mjs), sinalizando com `jaEmComentario`.
+ *
+ * `dentroDeArrayProtegido` (Bloco AI, AI.5) — a casca sinaliza que a linha está dentro do array/Set
+ * de uma das `CONSTANTES_COM_ARRAY_PROTEGIDO`: todo literal que TAMBÉM está em `literaisProtegidos`
+ * fica protegido aqui, mesmo sem o marcador de linha (`id:`/`regra:`/`papel:`) que
+ * `protegidoNestaLinha` exige — é o reconhecedor por NOME DA CONSTANTE, não por marcador na mesma
+ * linha, que `REGRAS_DE_EXTRACAO`/`CAMPOS_OBRIGATORIOS` (arrays NUS) precisam.
  */
-export function ocorrenciasClassificadasNaLinha(linha, antigo, tipo, formato, jaEmComentario, literaisProtegidos) {
+export function ocorrenciasClassificadasNaLinha(
+  linha, antigo, tipo, formato, jaEmComentario, literaisProtegidos, dentroDeArrayProtegido = false,
+) {
   const re = regexDoTipo(antigo, tipo);
   const strings = jaEmComentario ? [] : stringsDaLinha(linha);
   const inicioComentario = jaEmComentario ? 0 : inicioComentarioDeLinha(linha, strings, formato.marcador);
@@ -307,7 +367,8 @@ export function ocorrenciasClassificadasNaLinha(linha, antigo, tipo, formato, ja
         contexto = { tipo: 'codigo', linhaEhImport };
       }
     }
-    const protegido = protegidoNestaLinha(linha, antigo, literaisProtegidos);
+    const protegido = protegidoNestaLinha(linha, antigo, literaisProtegidos)
+      || (dentroDeArrayProtegido && (literaisProtegidos?.has(antigo) ?? false));
     const { decisao, classe } = decidir(contexto, antigo, tipo, protegido);
     achados.push({ coluna: pos, decisao, classe });
   }
@@ -370,11 +431,15 @@ export function formatoDoArquivo(caminho) {
   return { marcador: null, comentarioTotal: true, yaml: false, ehPython: false };
 }
 
-// Território de manifesto real (fase AD.3) — NUNCA entra numa rodada AD.1. `modulo.json` e
-// `projeto.json` (o arquivo, não o schema) não citam a si mesmos por nome dentro do próprio
-// conteúdo, então não precisam de exclusão — só os DOIS SCHEMAS, cujo `$comentario`/`description`
-// referencia o nome do arquivo de manifesto que eles validam.
+// Território de manifesto real (fase AD.3) — NUNCA entra numa rodada AD.1. A exclusão de
+// `modulo.json` (achado do revisor, Bloco AI AI.5) NUNCA foi sobre o arquivo citar o PRÓPRIO NOME
+// — era contra o CONTEÚDO dele colidir com item de pasta de OUTRA fase: `"portas"` é chave de
+// manifesto (AD.3) e, ao mesmo tempo, texto idêntico ao item pasta `portas→ports` do AD.1. Uma
+// reescrita anterior tirou esta linha com a justificativa errada ("não cita a si mesmo por nome")
+// e `--aplicar --fase AD.1` voltou a corromper `"portas"` nos três `_template/modulo.json`.
+// `projeto.json` fica de fora da exclusão: não tem `portas` no vocabulário hoje (medido).
 const CAMINHOS_EXCLUIDOS = [
+  /(^|[\\/])modulo\.json$/,
   /(^|[\\/])modulo\.schema\.json$/,
   /(^|[\\/])projeto\.schema\.json$/,
   // Auto-referência: as fixtures do autoteste PRECISAM conter os nomes antigos de verdade (é o que
@@ -384,6 +449,11 @@ const CAMINHOS_EXCLUIDOS = [
   // exatamente a forma que a regra do delimitador aceita. Sem esta exclusão a primeira rodada real
   // reescreveu os 50 itens para `antigo === novo`, destruindo o mapeamento.
   /(^|[\\/])rename-inventory\.json$/,
+  // O MESMO problema, terceira vez (Bloco AI): o artefato de recusas guarda `antigo` E `contexto` —
+  // a linha ORIGINAL de cada recusa, citando o nome velho de verdade. Sem esta exclusão, gravar o
+  // artefato faz a PRÓPRIA GRAVAÇÃO aparecer como centenas de recusas novas na rodada seguinte —
+  // achado rodando `--relatorio` duas vezes seguidas logo depois de `--gravar-recusas`.
+  /(^|[\\/])rename-refusals\.json$/,
 ];
 
 function arquivos(pasta, acc = []) {
@@ -434,30 +504,37 @@ function classificarArquivo(texto, item, formato, literaisProtegidos) {
   }
   let emBloco = false;
   let cerca = null;
+  // AI.5: array/Set de uma CONSTANTES_COM_ARRAY_PROTEGIDO — do `const X = [`/`new Set([` que abre
+  // até o `]`/`]);` que fecha, sozinho na linha (as duas constantes hoje são só isso). Abre ANTES
+  // de classificar a própria linha de abertura (que não tem literal, mas não custa) e fecha DEPOIS
+  // da linha de fechamento, pelo mesmo motivo.
+  let dentroDeArrayProtegido = false;
   linhas.forEach((linha) => {
     const limpa = linha.trim();
+    if (RE_ABRE_ARRAY_PROTEGIDO.test(linha)) dentroDeArrayProtegido = true;
     if (cerca !== null) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido));
       if (limpa.includes(cerca)) cerca = null;
       return;
     }
     if (emBloco) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido));
       if (limpa.includes('*/')) emBloco = false;
       return;
     }
     const aspas = formato.ehPython ? ['"""', "'''"].find((d) => limpa.includes(d)) : undefined;
     if (aspas !== undefined) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido));
       if ((limpa.split(aspas).length - 1) % 2 === 1) cerca = aspas;
       return;
     }
     if (formato.marcador === '//' && limpa.startsWith('/*')) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido));
       if (!limpa.includes('*/')) emBloco = true;
       return;
     }
-    porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, false, literaisProtegidos));
+    porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, false, literaisProtegidos, dentroDeArrayProtegido));
+    if (dentroDeArrayProtegido && RE_FECHA_ARRAY_PROTEGIDO.test(linha)) dentroDeArrayProtegido = false;
   });
   return { linhas, porLinha };
 }
@@ -502,7 +579,145 @@ function relatarRegistros(fase, itensCount, alvosCount, registros, rotulo) {
   }
 }
 
-function rodar(fase, aplicar) {
+// ================================================================================================
+// O ARTEFATO DE RECUSAS (Bloco AI, plan-3.md) — falso NEGATIVO, não falso positivo.
+//
+// `--diferencial` e `verify-citations --depois` prova "não corrompeu" (prosa que virou inglês por
+// engano). Nenhum dos dois prova "não esqueceu": uma RECUSA é o próprio motor dizendo "isto pode
+// não devesse ter mudado, decida você" — e até aqui essa decisão só existia no stdout de quem
+// rodou o comando, descartada no instante seguinte. Foi assim que `create-module.mjs:162`
+// (`'from core.motor import gerar_artefato\n'`, um import Python DENTRO de uma string JS — sem
+// `/` para o heurístico de caminho reconhecer, então RECUSADO-POR-PROSA) sobreviveu às duas redes:
+// a recusa foi impressa, ninguém olhou, e só o Bloco K, três passos adiante, provou que ESTA
+// recusa específica devia ter sido um conserto manual, não um silêncio.
+// ================================================================================================
+
+function lerRecusasSalvas() {
+  if (!existsSync(CAMINHO_RECUSAS)) return [];
+  const bruto = JSON.parse(readFileSync(CAMINHO_RECUSAS, 'utf8'));
+  return bruto.recusas ?? [];
+}
+
+/** Identidade de uma recusa: os quatro campos que, juntos, dizem "é a MESMA recusa de antes".
+ * Qualquer um mudando — a linha se moveu, o token mudou, a própria classificação mudou — conta
+ * como recusa DIFERENTE, nunca a mesma revista. Não inclui `contexto`: o texto ao redor pode
+ * mudar por um motivo alheio (outra linha da mesma função foi editada) sem que a recusa em si
+ * tenha mudado de natureza. */
+function chaveDaRecusa(r) {
+  return `${r.fase}\u0000${r.arquivo}\u0000${r.linha}\u0000${r.antigo}\u0000${r.classe}`;
+}
+
+/** As recusas ATUAIS desta fase, no formato do artefato (caminho relativo à raiz do repositório,
+ * barra normal — o mesmo formato que `relatarRegistros` já imprime). */
+function recusasDaFase(fase, registros) {
+  return registros
+    .filter((r) => r.classe.startsWith('RECUSADO'))
+    .map((r) => ({
+      fase,
+      arquivo: relative(RAIZ_BASE, r.arquivo).split('\\').join('/'),
+      linha: r.linha,
+      antigo: r.antigo,
+      classe: r.classe,
+      contexto: r.contexto,
+    }));
+}
+
+/** `novas`: recusa atual que o artefato salvo não conhece — exige revisão humana antes de
+ * `--gravar-recusas` aceitar. `resolvidas`: recusa que o artefato salvo tinha e que sumiu (a
+ * linha virou SUBSTITUI, ou o trecho não existe mais) — boa notícia, só informativa, nunca reprova. */
+function compararRecusas(fase, atuais, salvasTodas) {
+  const salvas = salvasTodas.filter((s) => s.fase === fase);
+  const chavesSalvas = new Set(salvas.map(chaveDaRecusa));
+  const chavesAtuais = new Set(atuais.map(chaveDaRecusa));
+  return {
+    novas: atuais.filter((r) => !chavesSalvas.has(chaveDaRecusa(r))),
+    resolvidas: salvas.filter((r) => !chavesAtuais.has(chaveDaRecusa(r))),
+  };
+}
+
+function relatarComparacaoDeRecusas(novas, resolvidas) {
+  if (resolvidas.length > 0) {
+    process.stdout.write(`\n=== recusas RESOLVIDAS desde o artefato salvo (${resolvidas.length}) — informativo ===\n`);
+    for (const r of resolvidas) process.stdout.write(`  ${r.arquivo}:${r.linha} [${r.antigo}] (${r.classe})\n`);
+  }
+  if (novas.length === 0) {
+    process.stdout.write(`\nrecusas NOVAS vs. ${relative(RAIZ_BASE, CAMINHO_RECUSAS).split('\\').join('/')}: 0 — nada a revisar\n`);
+    return;
+  }
+  process.stdout.write(`\n=== recusas NOVAS vs. ${relative(RAIZ_BASE, CAMINHO_RECUSAS).split('\\').join('/')} (${novas.length}) — REVISÃO OBRIGATÓRIA ===\n`);
+  for (const r of novas) {
+    process.stdout.write(`  ${r.arquivo}:${r.linha} [${r.antigo}] (${r.classe}) ${r.contexto}\n`);
+  }
+  process.stdout.write('\nCada uma acima é ou (a) prosa legítima nunca vista nesta forma — revise e rode de\n'
+    + 'novo com --gravar-recusas para aceitar, ou (b) uma referência que deveria ter virado SUBSTITUI e\n'
+    + 'não virou — conserte a ORIGEM (o inventário, a classificação, ou o arquivo), nunca este artefato.\n');
+}
+
+/** Escreve o artefato: substitui SÓ as entradas desta fase pelas recusas atuais, preservando as
+ * de outras fases intactas. É a decisão explícita — nunca chamada por `--relatorio`/`--aplicar`
+ * sozinhos, só quando `--gravar-recusas` está no argv, o mesmo padrão de `--aplicar` exigir opt-in. */
+function gravarRecusas(fase, atuais) {
+  const salvasTodas = lerRecusasSalvas().filter((s) => s.fase !== fase);
+  const recusas = [...salvasTodas, ...atuais].sort((a, b) => chaveDaRecusa(a).localeCompare(chaveDaRecusa(b)));
+  const conteudo = {
+    _comentario: 'Lista VERSIONADA das recusas que apply-rename.mjs ja revisou e aceitou — mesma '
+      + 'disciplina de config/conformidade.json (04-regras.md): comeca vazia, cresce so por decisao '
+      + 'explicita (--gravar-recusas), nunca por heuristica. --relatorio/--aplicar comparam as recusas '
+      + 'ATUAIS contra esta lista: recusa NOVA (arquivo+linha+antigo+classe ausente daqui) reprova e '
+      + 'exige revisao humana. Fecha o que --diferencial e verify-citations --depois nao cobrem: falso '
+      + 'NEGATIVO — referencia que devia mudar e nao mudou, ou recusa que deveria ter sido um SUBSTITUI '
+      + 'de verdade (plan-3.md Bloco AI). Aqueles provam "nao corrompeu"; isto prova "nao esqueceu".',
+    _exemplo: {
+      fase: 'AD.1', arquivo: 'specs/_estrutura_modulos/bindings/python/root/src/composicao.py', linha: 86,
+      antigo: 'portas', classe: 'RECUSADO-LITERAL-PROTEGIDO',
+      contexto: 'for porta in modulo["portas"]:',
+    },
+    recusas,
+  };
+  writeFileSync(CAMINHO_RECUSAS, `${JSON.stringify(conteudo, null, 2)}\n`, 'utf8');
+  process.stdout.write(`\ngravado: ${recusas.filter((r) => r.fase === fase).length} recusa(s) da fase `
+    + `${fase} aceitas em ${relative(RAIZ_BASE, CAMINHO_RECUSAS).split('\\').join('/')}\n`);
+}
+
+/**
+ * AI.4 — a invariante que faltava. "Não esqueceu de revisar" (o artefato de recusas) e "não sobrou
+ * nada por fazer" são DUAS perguntas — reinjetar o defeito histórico em `create-module.mjs` mostrou
+ * que a primeira sozinha deixa passar: a ocorrência aparece nos "totais por classificacao"
+ * (`identificador: 1`), mas nada LISTA nem REPROVA por ela. `pendentesDaFase` é a segunda pergunta:
+ * todo registro cuja decisão é `substitui` (qualquer classe que NÃO comece com `RECUSADO`) e que
+ * `--relatorio` (dry-run) ainda encontra na árvore é trabalho não feito — para uma fase que já foi
+ * aplicada e commitada, isso só pode significar regressão. Só faz sentido em modo `--relatorio`:
+ * em `--aplicar`, os mesmos registros SÃO exatamente o que acabou de ser escrito, o estado desejado
+ * sendo alcançado, não uma pendência.
+ */
+function pendentesDaFase(fase, registros) {
+  return registros
+    .filter((r) => !r.classe.startsWith('RECUSADO'))
+    .map((r) => ({
+      fase,
+      arquivo: relative(RAIZ_BASE, r.arquivo).split('\\').join('/'),
+      linha: r.linha,
+      antigo: r.antigo,
+      classe: r.classe,
+      contexto: r.contexto,
+    }));
+}
+
+function relatarPendencias(pendentes) {
+  if (pendentes.length === 0) {
+    process.stdout.write('\npendencias (substituicao ainda nao aplicada nesta arvore): 0\n');
+    return;
+  }
+  process.stdout.write(`\n=== PENDENCIAS — substituicao NAO aplicada (${pendentes.length}) ===\n`);
+  for (const p of pendentes) {
+    process.stdout.write(`  ${p.arquivo}:${p.linha} [${p.antigo}] (${p.classe}) ${p.contexto}\n`);
+  }
+  process.stdout.write('\nCada uma acima e um nome ANTIGO que o motor decidiu SUBSTITUIR mas que ainda\n'
+    + 'esta na arvore, sem terem sido escritas — rode --aplicar, ou se a fase ja foi aplicada e\n'
+    + 'commitada, investigue: e regressao (plan-3.md Bloco AI, AI.4).\n');
+}
+
+function rodar(fase, aplicar, gravar) {
   const { itens: todosItens, literaisProtegidos } = lerInventario();
   const itens = todosItens.filter((i) => i.fase === fase);
   if (itens.length === 0) {
@@ -512,7 +727,19 @@ function rodar(fase, aplicar) {
   const alvos = arquivosAlvo();
   const registros = alvos.flatMap((caminho) => processarArquivo(caminho, itens, literaisProtegidos, aplicar));
   relatarRegistros(fase, itens.length, alvos.length, registros, aplicar ? '(APLICADO)' : '(dry-run)');
-  return 0;
+
+  const atuais = recusasDaFase(fase, registros);
+  const { novas, resolvidas } = compararRecusas(fase, atuais, lerRecusasSalvas());
+  relatarComparacaoDeRecusas(novas, resolvidas);
+  if (gravar) gravarRecusas(fase, atuais);
+
+  // Pendencia so faz sentido em dry-run: em --aplicar os mesmos registros acabaram de ser escritos.
+  const pendentes = aplicar ? [] : pendentesDaFase(fase, registros);
+  relatarPendencias(pendentes);
+
+  const reprovaPorRecusaNova = !gravar && novas.length > 0;
+  const reprovaPorPendencia = pendentes.length > 0;
+  return reprovaPorRecusaNova || reprovaPorPendencia ? 1 : 0;
 }
 
 // ================================================================================================
@@ -892,6 +1119,53 @@ function casosDeAutoteste() {
       const resultado = aplicarNaLinha(linha, oc, 'contrato', 'contract');
       return resultado === linha; // nenhuma das duas ocorrencias substitui (chave e identificador nu, string e prosa)
     } },
+
+    // O artefato de recusas (Bloco AI, plan-3.md) — nucleo puro, sem tocar CAMINHO_RECUSAS.
+    { nome: 'compararRecusas: recusa atual identica a uma salva NAO conta como nova', fn: () => {
+      const r = { fase: 'AD.1', arquivo: 'a.mjs', linha: 10, antigo: 'ferramentas', classe: 'RECUSADO-POR-PROSA', contexto: 'x' };
+      const { novas, resolvidas } = compararRecusas('AD.1', [r], [r]);
+      return novas.length === 0 && resolvidas.length === 0;
+    } },
+    { nome: 'compararRecusas: recusa atual ausente do artefato salvo E nova', fn: () => {
+      const r = { fase: 'AD.1', arquivo: 'a.mjs', linha: 10, antigo: 'ferramentas', classe: 'RECUSADO-POR-PROSA', contexto: 'x' };
+      const { novas, resolvidas } = compararRecusas('AD.1', [r], []);
+      return novas.length === 1 && novas[0].arquivo === 'a.mjs' && novas[0].linha === 10 && resolvidas.length === 0;
+    } },
+    { nome: 'compararRecusas: recusa salva ausente das atuais e RESOLVIDA, nunca reprova', fn: () => {
+      const salva = { fase: 'AD.1', arquivo: 'a.mjs', linha: 10, antigo: 'ferramentas', classe: 'RECUSADO-POR-PROSA', contexto: 'x' };
+      const { novas, resolvidas } = compararRecusas('AD.1', [], [salva]);
+      return novas.length === 0 && resolvidas.length === 1 && resolvidas[0].linha === 10;
+    } },
+    { nome: 'compararRecusas: mesma linha, CLASSE diferente da salva conta como nova (identidade e o tuplo inteiro)', fn: () => {
+      const salva = { fase: 'AD.1', arquivo: 'a.mjs', linha: 10, antigo: 'ferramentas', classe: 'RECUSADO-POR-PROSA', contexto: 'x' };
+      const atual = { ...salva, classe: 'RECUSADO-IDENTIFICADOR-NU' };
+      const { novas, resolvidas } = compararRecusas('AD.1', [atual], [salva]);
+      return novas.length === 1 && resolvidas.length === 1; // a antiga sumiu (resolvida), a nova classe e outra recusa
+    } },
+    { nome: 'compararRecusas: recusa salva de OUTRA fase nao protege a mesma linha nesta fase', fn: () => {
+      const salvaDeOutraFase = { fase: 'AD.2', arquivo: 'a.mjs', linha: 10, antigo: 'ferramentas', classe: 'RECUSADO-POR-PROSA', contexto: 'x' };
+      const atualDestaFase = { ...salvaDeOutraFase, fase: 'AD.1' };
+      const { novas } = compararRecusas('AD.1', [atualDestaFase], [salvaDeOutraFase]);
+      return novas.length === 1; // fase e parte da chave — nao ha "credito" entre fases
+    } },
+
+    // pendentesDaFase (Bloco AI, AI.4) — nucleo puro, sem tocar disco nem rodar --relatorio de verdade.
+    { nome: 'pendentesDaFase: registro RECUSADO-* nao e pendencia', fn: () => {
+      const registros = [{ arquivo: 'a.mjs', linha: 5, classe: 'RECUSADO-POR-PROSA', antigo: 'x', contexto: 'y' }];
+      return pendentesDaFase('AD.1', registros).length === 0;
+    } },
+    { nome: 'pendentesDaFase: registro SUBSTITUI (classe sem RECUSADO) e pendencia, nomeando arquivo e linha', fn: () => {
+      const registros = [{ arquivo: 'tools/create-module.mjs', linha: 184, classe: 'identificador', antigo: 'motor', contexto: 'from core.motor import x' }];
+      const pendentes = pendentesDaFase('AD.1', registros);
+      return pendentes.length === 1 && pendentes[0].linha === 184 && pendentes[0].antigo === 'motor';
+    } },
+    { nome: 'pendentesDaFase: mistura recusa+substitui conta so o substitui', fn: () => {
+      const registros = [
+        { arquivo: 'a.mjs', linha: 1, classe: 'RECUSADO-IDENTIFICADOR-NU', antigo: 'x', contexto: 'y' },
+        { arquivo: 'a.mjs', linha: 2, classe: 'caminho', antigo: 'x', contexto: 'y' },
+      ];
+      return pendentesDaFase('AD.1', registros).length === 1;
+    } },
   ];
 }
 
@@ -925,6 +1199,7 @@ function principal() {
   if (fase === null) {
     process.stderr.write('uso: node tests/apply-rename.mjs --fase AD.1 --relatorio\n'
       + '     node tests/apply-rename.mjs --fase AD.1 --aplicar\n'
+      + '     node tests/apply-rename.mjs --fase AD.1 --relatorio --gravar-recusas   aceita as recusas atuais como novo baseline\n'
       + '     node tests/apply-rename.mjs --fase AD.1 --diferencial <arvore-pristina>\n'
       + '     node tests/apply-rename.mjs --autoteste\n');
     return 1;
@@ -938,7 +1213,7 @@ function principal() {
     }
     return rodarDiferencial(fase, resolve(raizPristina));
   }
-  return rodar(fase, argv.includes('--aplicar'));
+  return rodar(fase, argv.includes('--aplicar'), argv.includes('--gravar-recusas'));
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
