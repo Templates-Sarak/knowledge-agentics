@@ -5,84 +5,1865 @@
     "novo": "TBD",
     "tipo": "pasta",
     "fase": "AD.1",
-    "_tiposValidos": ["pasta", "arquivo", "chave", "simbolo"],
-    "_fasesValidas": ["AD.1", "AD.2", "AD.3"]
+    "_tiposValidos": [
+      "pasta",
+      "arquivo",
+      "chave",
+      "simbolo"
+    ],
+    "_fasesValidas": [
+      "AD.1",
+      "AD.2",
+      "AD.3"
+    ]
   },
   "itens": [
-    { "antigo": "ferramentas", "novo": "tools", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "dominio", "novo": "domain", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "portas", "novo": "ports", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "motor", "novo": "engine", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "contrato", "novo": "contract", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "gerados", "novo": "generated", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "mapeadores", "novo": "mappers", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "raiz", "novo": "root", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "regras", "novo": "rules", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "testes", "novo": "tests", "tipo": "pasta", "fase": "AD.1" },
-    { "antigo": "memoria", "novo": "memory", "tipo": "pasta", "fase": "AD.1" },
-
-    { "antigo": "modulos", "novo": "modules", "tipo": "simbolo", "fase": "AD.1",
-      "_nota": "sem pasta fisica na base — so existe em projeto GERADO (workspaces glob, grafo de dependencias). Ver ADR-009." },
-
-    { "antigo": "afetados.mjs", "novo": "affected.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "ci-dependencias.mjs", "novo": "ci-dependencies.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "ci-seguranca.mjs", "novo": "ci-security.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "contrato-compativel.mjs", "novo": "contract-compatible.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "criar-adapter.mjs", "novo": "create-adapter.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "criar-modulo.mjs", "novo": "create-module.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "criar-projeto.mjs", "novo": "create-project.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "empacotar.mjs", "novo": "package.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "gerar-config-lint.mjs", "novo": "generate-lint-config.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "gerar-schemas-portas.mjs", "novo": "generate-port-schemas.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "sincronizar-env.mjs", "novo": "sync-env.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "verificar-commit.mjs", "novo": "verify-commit.mjs", "tipo": "arquivo", "fase": "AD.1" },
-
-    { "antigo": "contexto.mjs", "novo": "context.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "esquema.mjs", "novo": "schema.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "limiares.mjs", "novo": "thresholds.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "motor.mjs", "novo": "engine.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "texto.mjs", "novo": "text.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "validar.mjs", "novo": "validate.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "vocabulario-portas.mjs", "novo": "ports-vocabulary.mjs", "tipo": "arquivo", "fase": "AD.1" },
-
-    { "antigo": "configuracao.mjs", "novo": "configuration.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "contrato.mjs", "novo": "contract.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "dados.mjs", "novo": "data.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "escrita.mjs", "novo": "writing.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "estrutura.mjs", "novo": "structure.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "isolamento.mjs", "novo": "isolation.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "operacao.mjs", "novo": "operation.mjs", "tipo": "arquivo", "fase": "AD.1" },
-
-    { "antigo": "casos.mjs", "novo": "cases.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "executar.mjs", "novo": "run.mjs", "tipo": "arquivo", "fase": "AD.1" },
-
-    { "antigo": "autoteste-template.mjs", "novo": "template-self-test.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "inventario-renomeacao.json", "novo": "rename-inventory.json", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "verificar-citacoes.mjs", "novo": "verify-citations.mjs", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "verificar-mapa.mjs", "novo": "verify-map.mjs", "tipo": "arquivo", "fase": "AD.1" },
-
-    { "antigo": "config-dominio.schema.json", "novo": "config-domain.schema.json", "tipo": "arquivo", "fase": "AD.1",
-      "_nota": "achado da rodada REFAZER anterior: o arquivo tinha sido renomeado fisicamente sem entrada no inventario. Ou entra aqui, ou nao e renomeado — as duas coisas juntas quebram o --antes/--depois." },
-    { "antigo": "config-portas.schema.json", "novo": "config-ports.schema.json", "tipo": "arquivo", "fase": "AD.1" },
-
-    { "antigo": "dominio.json", "novo": "domain.json", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "portas.json", "novo": "ports.json", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "mapeadores.py", "novo": "mappers.py", "tipo": "arquivo", "fase": "AD.1",
-      "_nota": "so python: js/ts tem pasta api/src/mapeadores/ (tipo pasta, ja coberta acima); python e um unico arquivo flat." },
-
-    { "antigo": "contrato.test.ts", "novo": "contract.test.ts", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "contrato.test.js", "novo": "contract.test.js", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "test_contrato.py", "novo": "test_contract.py", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "dominio.test.ts", "novo": "domain.test.ts", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "dominio.test.js", "novo": "domain.test.js", "tipo": "arquivo", "fase": "AD.1" },
-    { "antigo": "test_dominio.py", "novo": "test_domain.py", "tipo": "arquivo", "fase": "AD.1" }
+    {
+      "antigo": "ferramentas",
+      "novo": "tools",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "dominio",
+      "novo": "domain",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "portas",
+      "novo": "ports",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "motor",
+      "novo": "engine",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "contrato",
+      "novo": "contract",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "gerados",
+      "novo": "generated",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "mapeadores",
+      "novo": "mappers",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "raiz",
+      "novo": "root",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "regras",
+      "novo": "rules",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "testes",
+      "novo": "tests",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "memoria",
+      "novo": "memory",
+      "tipo": "pasta",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "modulos",
+      "novo": "modules",
+      "tipo": "simbolo",
+      "fase": "AD.1",
+      "_nota": "sem pasta fisica na base — so existe em projeto GERADO (workspaces glob, grafo de dependencias). Ver ADR-009."
+    },
+    {
+      "antigo": "afetados.mjs",
+      "novo": "affected.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "ci-dependencias.mjs",
+      "novo": "ci-dependencies.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "ci-seguranca.mjs",
+      "novo": "ci-security.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "contrato-compativel.mjs",
+      "novo": "contract-compatible.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "criar-adapter.mjs",
+      "novo": "create-adapter.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "criar-modulo.mjs",
+      "novo": "create-module.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "criar-projeto.mjs",
+      "novo": "create-project.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "empacotar.mjs",
+      "novo": "package.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "gerar-config-lint.mjs",
+      "novo": "generate-lint-config.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "gerar-schemas-portas.mjs",
+      "novo": "generate-port-schemas.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "sincronizar-env.mjs",
+      "novo": "sync-env.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "verificar-commit.mjs",
+      "novo": "verify-commit.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "contexto.mjs",
+      "novo": "context.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "esquema.mjs",
+      "novo": "schema.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "limiares.mjs",
+      "novo": "thresholds.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "motor.mjs",
+      "novo": "engine.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "texto.mjs",
+      "novo": "text.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "validar.mjs",
+      "novo": "validate.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "vocabulario-portas.mjs",
+      "novo": "ports-vocabulary.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "configuracao.mjs",
+      "novo": "configuration.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "contrato.mjs",
+      "novo": "contract.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "dados.mjs",
+      "novo": "data.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "escrita.mjs",
+      "novo": "writing.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "estrutura.mjs",
+      "novo": "structure.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "isolamento.mjs",
+      "novo": "isolation.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "operacao.mjs",
+      "novo": "operation.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "casos.mjs",
+      "novo": "cases.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "executar.mjs",
+      "novo": "run.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "autoteste-template.mjs",
+      "novo": "template-self-test.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "inventario-renomeacao.json",
+      "novo": "rename-inventory.json",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "verificar-citacoes.mjs",
+      "novo": "verify-citations.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "verificar-mapa.mjs",
+      "novo": "verify-map.mjs",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "config-dominio.schema.json",
+      "novo": "config-domain.schema.json",
+      "tipo": "arquivo",
+      "fase": "AD.1",
+      "_nota": "achado da rodada REFAZER anterior: o arquivo tinha sido renomeado fisicamente sem entrada no inventario. Ou entra aqui, ou nao e renomeado — as duas coisas juntas quebram o --antes/--depois."
+    },
+    {
+      "antigo": "config-portas.schema.json",
+      "novo": "config-ports.schema.json",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "dominio.json",
+      "novo": "domain.json",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "portas.json",
+      "novo": "ports.json",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "mapeadores.py",
+      "novo": "mappers.py",
+      "tipo": "arquivo",
+      "fase": "AD.1",
+      "_nota": "so python: js/ts tem pasta api/src/mapeadores/ (tipo pasta, ja coberta acima); python e um unico arquivo flat."
+    },
+    {
+      "antigo": "contrato.test.ts",
+      "novo": "contract.test.ts",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "contrato.test.js",
+      "novo": "contract.test.js",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "test_contrato.py",
+      "novo": "test_contract.py",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "dominio.test.ts",
+      "novo": "domain.test.ts",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "dominio.test.js",
+      "novo": "domain.test.js",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "test_dominio.py",
+      "novo": "test_domain.py",
+      "tipo": "arquivo",
+      "fase": "AD.1"
+    },
+    {
+      "antigo": "_achar_node",
+      "novo": "_find_node",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_aplicar_cors",
+      "novo": "_apply_cors",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_aplicar_headers",
+      "novo": "_apply_headers",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_aplicar_pendentes",
+      "novo": "_apply_pending",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_aplicar_sem_sobrescrever",
+      "novo": "_apply_without_overwrite",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_aplicar_uma",
+      "novo": "_apply_one",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_autenticar",
+      "novo": "_authenticate",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_buscar_registro_por_hash",
+      "novo": "_find_record_by_hash",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_caminho_relativo",
+      "novo": "_path_relative",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_carregar_env_da_raiz",
+      "novo": "_load_env_root",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_casos_de_chave_de_ambiente",
+      "novo": "_environment_key_cases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_casos_de_escolha_de_rota",
+      "novo": "_route_choice_cases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_casos_de_estado",
+      "novo": "_state_cases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_casos_de_ordenacao",
+      "novo": "_ordering_cases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_casos_de_rotas_unicas",
+      "novo": "_unique_routes_cases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_casos_de_separar_up_down",
+      "novo": "_split_up_down_cases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_chave_de_ambiente",
+      "novo": "_environment_key",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_ciclo_de_vida",
+      "novo": "_lifecycle",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_comando_de_cobertura",
+      "novo": "_coverage_command",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_conectar",
+      "novo": "_connect",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_conexao_para",
+      "novo": "_connection_for",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_conferir_env_requerido",
+      "novo": "_check_env_required",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_contar_registros",
+      "novo": "_count_records",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_contexto_da_tabela",
+      "novo": "_table_context",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_descomentar_rollback",
+      "novo": "_uncomment_rollback",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_emitir",
+      "novo": "_emit",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_env_obrigatoria_da_raiz",
+      "novo": "_env_required_root",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_escrever",
+      "novo": "_write",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_exigir_status",
+      "novo": "_require_status",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_exigir_titulo",
+      "novo": "_require_title",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_importar_api_do_modulo",
+      "novo": "_import_api_module",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_inserir_registro",
+      "novo": "_insert_record",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_ler_corpo",
+      "novo": "_read_body",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_ler_dados",
+      "novo": "_read_data",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_ler_json",
+      "novo": "_read_json",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_ler_paginacao",
+      "novo": "_read_pagination",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_ler_pares_env",
+      "novo": "_read_pairs_env",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_ler_texto",
+      "novo": "_read_text",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_limitar",
+      "novo": "_limit",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_listar_migrations",
+      "novo": "_list_migrations",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_listar_registros",
+      "novo": "_list_records",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_manifesto_de_teste",
+      "novo": "_test_manifest",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_migracoes_aplicadas",
+      "novo": "_applied_migrations",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_minima_de_cobertura",
+      "novo": "_minimum_coverage",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_modulos",
+      "novo": "_modules",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_nao_encontrado",
+      "novo": "_not_found",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_nome_qualificado",
+      "novo": "_qualified_name",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_para_registro",
+      "novo": "_to_record",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_pasta_do_modulo",
+      "novo": "_module_folder",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_permissoes_de",
+      "novo": "_permissions_for",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_persistir",
+      "novo": "_persist",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_preencher",
+      "novo": "_fill",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_prefixo_de",
+      "novo": "_prefix",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_redigir",
+      "novo": "_redact",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_registrar_evento",
+      "novo": "_record_audit_event",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_relatorio_degenerado",
+      "novo": "_degenerate_report",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_resolver",
+      "novo": "_resolve",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_resolver_ambiente",
+      "novo": "_resolve_environment",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_responder_erro",
+      "novo": "_respond_error",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_reverter_ultimo",
+      "novo": "_revert_last",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_reverter_uma",
+      "novo": "_revert_one",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_rodar",
+      "novo": "_run",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_rodar_autoteste",
+      "novo": "_run_selftest",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_rodar_cobertura",
+      "novo": "_run_coverage",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_rodar_delegado",
+      "novo": "_run_delegated",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_rodar_lint_relatorio",
+      "novo": "_run_lint_report",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_rodar_migrations",
+      "novo": "_run_migrations",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_tabela_de_controle",
+      "novo": "_control_table",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "_url_obrigatoria",
+      "novo": "_required_url",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "agora",
+      "novo": "now",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "aplicarSemSobrescrever",
+      "novo": "applyWithoutOverwrite",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "autenticacao",
+      "novo": "authentication",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "autenticado",
+      "novo": "authenticated",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "Aviso",
+      "novo": "Notice",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "buscar",
+      "novo": "find",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "buscar_por_hash",
+      "novo": "find_by_hash",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "buscarPorHash",
+      "novo": "findByHash",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "buscarRegistroPorHash",
+      "novo": "findRecordByHash",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "cadeia",
+      "novo": "chain",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "caminhoRelativo",
+      "novo": "pathRelative",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "carregar_configuracao",
+      "novo": "load_configuration",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "carregarConfiguracao",
+      "novo": "loadConfiguration",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "carregarEnvDaRaiz",
+      "novo": "loadEnvRoot",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "casosDeEntrypoint",
+      "novo": "entrypointCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "casosDeRotasUnicas",
+      "novo": "uniqueRoutesCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "chave_de_ambiente",
+      "novo": "environment_key",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "chaveDeAmbiente",
+      "novo": "environmentKey",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "separarUpDown",
+      "novo": "splitUpDown",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "descomentarRollback",
+      "novo": "uncommentRollback",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "prefixoDe",
+      "novo": "prefix",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "ordenarMigrations",
+      "novo": "orderMigrations",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "ultimoAplicado",
+      "novo": "lastApplied",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "pastaDoModulo",
+      "novo": "moduleFolder",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "listarMigrations",
+      "novo": "listMigrations",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "tabelaDeControle",
+      "novo": "controlTable",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "conectar",
+      "novo": "connect",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "migracoesAplicadas",
+      "novo": "appliedMigrations",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "aplicarUma",
+      "novo": "applyOne",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "reverterUma",
+      "novo": "revertOne",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "aplicarPendentes",
+      "novo": "applyPending",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "reverterUltimo",
+      "novo": "revertLast",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rodarUp",
+      "novo": "runUp",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rodarDown",
+      "novo": "runDown",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rodarCiclo",
+      "novo": "runCycle",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "casosDeSepararUpDownPreenchidos",
+      "novo": "splitUpDownFilledCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "casosDeSepararUpDownVazios",
+      "novo": "splitUpDownEmptyCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "casosDeSepararUpDown",
+      "novo": "splitUpDownCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "casosDeOrdenacao",
+      "novo": "orderingCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "casosDeChaveDeAmbiente",
+      "novo": "environmentKeyCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "casosDeEstado",
+      "novo": "stateCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rodarCasosDeEstado",
+      "novo": "runStateCases",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "Aviso.tsx",
+      "novo": "Notice.tsx",
+      "tipo": "arquivo",
+      "fase": "AD.2",
+      "_nota": "achado no Bloco K: o componente exportado ja virou `Notice` (simbolo), mas o ARQUIVO ficou `Aviso.tsx` — outros arquivos importam './components/Notice.js', tsc reprova TS2307 (modulo nao encontrado)."
+    },
+    {
+      "antigo": "Aviso.jsx",
+      "novo": "Notice.jsx",
+      "tipo": "arquivo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "Lista.tsx",
+      "novo": "List.tsx",
+      "tipo": "arquivo",
+      "fase": "AD.2",
+      "_nota": "mesmo achado do Aviso->Notice: componente exportado ja virou `List`, arquivo ficou `Lista.tsx`."
+    },
+    {
+      "antigo": "Lista.jsx",
+      "novo": "List.jsx",
+      "tipo": "arquivo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "Lista.test.tsx",
+      "novo": "List.test.tsx",
+      "tipo": "arquivo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "Lista.test.jsx",
+      "novo": "List.test.jsx",
+      "tipo": "arquivo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "useListaDeRegistros.ts",
+      "novo": "useRecordList.ts",
+      "tipo": "arquivo",
+      "fase": "AD.2",
+      "_nota": "mesmo achado do Aviso->Notice/Lista->List: hook exportado ja virou `useRecordList`, arquivo ficou `useListaDeRegistros.ts`."
+    },
+    {
+      "antigo": "useListaDeRegistros.js",
+      "novo": "useRecordList.js",
+      "tipo": "arquivo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "cliente",
+      "novo": "client",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "colecao",
+      "novo": "collection",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "como_dicionario",
+      "novo": "as_dict",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "conferirEnvRequerido",
+      "novo": "checkEnvRequired",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "contar",
+      "novo": "count",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "contarRegistros",
+      "novo": "countRecords",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "contextoDaTabela",
+      "novo": "tableContext",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criar",
+      "novo": "create",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criar_app",
+      "novo": "create_app",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criar_dependencias",
+      "novo": "create_dependencies",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criar_logger",
+      "novo": "create_logger",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criar_rotas",
+      "novo": "create_routes",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarAdapter",
+      "novo": "createAdapter",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarApp",
+      "novo": "createApp",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarAuditoria",
+      "novo": "createAuditLog",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarAuditoriaEmMemoria",
+      "novo": "createInMemoryAudit",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarAuth",
+      "novo": "createAuth",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarAuthQueNega",
+      "novo": "createDenyingAuth",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarDependencias",
+      "novo": "createDependencies",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarGeradorId",
+      "novo": "createIdGenerator",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarGeradorSequencial",
+      "novo": "createSequentialGenerator",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarLogger",
+      "novo": "createLogger",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarNotificadorEmMemoria",
+      "novo": "createInMemoryNotifier",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarPostgresAuditoria",
+      "novo": "createPostgresAudit",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarPostgresRepositorio",
+      "novo": "createPostgresRepository",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarRelogio",
+      "novo": "createClock",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarRelogioFixo",
+      "novo": "createFixedClock",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarRepositorio",
+      "novo": "createRepository",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarRepositorioEmMemoria",
+      "novo": "createInMemoryRepository",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarRotas",
+      "novo": "createRoutes",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "criarStorageEmMemoria",
+      "novo": "createInMemoryStorage",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "descobrir_modulos",
+      "novo": "discover_modules",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "descobrirModulos",
+      "novo": "discoverModules",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "dominio_para_linha",
+      "novo": "domain_to_row",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "dominioParaLinha",
+      "novo": "domainToRow",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "emitir",
+      "novo": "emit",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "encontrar_raiz_modulo",
+      "novo": "find_root_module",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "encontrarRaizModulo",
+      "novo": "findRootModule",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "env_obrigatoria",
+      "novo": "env_required",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "envelope_de_erro",
+      "novo": "error_envelope",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "envelopeDeErro",
+      "novo": "errorEnvelope",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "enviar",
+      "novo": "send",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "envObrigatoria",
+      "novo": "envRequired",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "envObrigatoriaDaRaiz",
+      "novo": "envRequiredRoot",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "escapar",
+      "novo": "escape",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "escolher_rota_base",
+      "novo": "choose_base_route",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "escolherEntrypointDoModulo",
+      "novo": "chooseModuleEntrypoint",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "estado",
+      "novo": "state",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "exigir_permissao",
+      "novo": "require_permission",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "exigirPermissao",
+      "novo": "requirePermission",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "exigirStatus",
+      "novo": "requireStatus",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "exigirTitulo",
+      "novo": "requireTitle",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "gerar_artefato",
+      "novo": "generate_artifact",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "gerarArtefato",
+      "novo": "generateArtifact",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "headersDeSeguranca",
+      "novo": "securityHeaders",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "importarApi",
+      "novo": "importApi",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "iniciar",
+      "novo": "start",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "iniciar_sistema",
+      "novo": "start_system",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "iniciarSistema",
+      "novo": "startSystem",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "inserir",
+      "novo": "insert",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "inserirRegistro",
+      "novo": "insertRecord",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "lerCorpo",
+      "novo": "readBody",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "lerDados",
+      "novo": "readData",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "lerJson",
+      "novo": "readJson",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "lerPaginacao",
+      "novo": "readPagination",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "lerParesEnv",
+      "novo": "readPairsEnv",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "lerTexto",
+      "novo": "readText",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "limite_de_corpo_em_bytes",
+      "novo": "body_limit_bytes",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "linha_para_dominio",
+      "novo": "row_to_domain",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "linhaParaDominio",
+      "novo": "rowToDomain",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "Lista",
+      "novo": "List",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "listar",
+      "novo": "list",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "listarRegistros",
+      "novo": "listRecords",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "manifestoDeTeste",
+      "novo": "testManifest",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "minimaDeCobertura",
+      "novo": "minimumCoverage",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "montar_registro",
+      "novo": "build_record",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "montar_sistema",
+      "novo": "build_system",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "montarRegistro",
+      "novo": "buildRecord",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "montarSistema",
+      "novo": "buildSystem",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "nomeQualificado",
+      "novo": "qualifiedName",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "obter",
+      "novo": "get",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "obter_aliquota_vigente_pct",
+      "novo": "get_current_rate_pct",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "obterRegistro",
+      "novo": "getRecord",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "ordenar_migrations",
+      "novo": "order_migrations",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "para_colecao",
+      "novo": "to_collection",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "para_contrato",
+      "novo": "to_contract",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "para_meta",
+      "novo": "to_meta",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "paraColecao",
+      "novo": "toCollection",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "paraContrato",
+      "novo": "toContract",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "paraMeta",
+      "novo": "toMeta",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "paraRegistro",
+      "novo": "toRecord",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "pedir",
+      "novo": "request",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "pendentes",
+      "novo": "pending",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "permissoesDe",
+      "novo": "permissionsFor",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "poolPara",
+      "novo": "poolFor",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "porta_de_escuta",
+      "novo": "listen_port",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "preencher",
+      "novo": "fill",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "redigir",
+      "novo": "redact",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "registrar",
+      "novo": "record",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "registrar_middlewares",
+      "novo": "record_middlewares",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "registrarEvento",
+      "novo": "recordAuditEvent",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "registro_de_exemplo",
+      "novo": "record_example",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "registroDeExemplo",
+      "novo": "recordExample",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "remover",
+      "novo": "remove",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "resolver",
+      "novo": "resolve",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "resolver_auth",
+      "novo": "resolve_auth",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "resolver_dependencias",
+      "novo": "resolve_dependencies",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "resolverAmbiente",
+      "novo": "resolveEnvironment",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "resolverAuth",
+      "novo": "resolveAuth",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "resolverDependencias",
+      "novo": "resolveDependencies",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rodar_ciclo",
+      "novo": "run_cycle",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rodar_down",
+      "novo": "run_down",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rodar_up",
+      "novo": "run_up",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rodarAutoteste",
+      "novo": "runSelftest",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rotasDeRegistros",
+      "novo": "recordRoutes",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "rotasObrigatorias",
+      "novo": "requiredRoutes",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "salvar",
+      "novo": "save",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "separar_up_down",
+      "novo": "split_up_down",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "setEstado",
+      "novo": "setState",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "traduzir",
+      "novo": "translate",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "tratadorDeErro",
+      "novo": "errorHandler",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "trocar",
+      "novo": "replace",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "ultimo_aplicado",
+      "novo": "last_applied",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "urlObrigatoria",
+      "novo": "requiredUrl",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "useListaDeRegistros",
+      "novo": "useRecordList",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "verificar",
+      "novo": "verify",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "verificar_rotas_unicas",
+      "novo": "verify_routes_unique",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    },
+    {
+      "antigo": "verificarRotasUnicas",
+      "novo": "verifyRoutesUnique",
+      "tipo": "simbolo",
+      "fase": "AD.2"
+    }
   ],
   "literaisProtegidos": [
-    { "valor": "dominio", "motivo": "valor do enum 'papel' no manifesto (dominio|gateway|conector, modulo.schema.json:15) — a CHAVE vira ingles em AD.3, o VALOR nao (fronteira Bloco AC, decisao 8). Colide com o item pasta 'dominio' quando aparece bare-string em criar-modulo.mjs (PAPEIS, default de --papel)." },
-    { "valor": "gateway", "motivo": "mesmo enum de 'papel' — dominio|gateway|conector. Nao e item de pasta nenhum (nao ha renomeacao de 'gateway'), mas protegido pelo mesmo padrao de linha por simetria e clareza do relatorio." },
-    { "valor": "conector", "motivo": "mesmo enum de 'papel'." },
-    { "valor": "contrato", "motivo": "id da regra 'contrato' (ferramentas/gate/regras/contrato.mjs:467, ids de regra ficam portugues para sempre — ADR-009 decisao 6). Colide com o item pasta 'contrato' quando aparece bare-string em 'id: ...'/'regra: ...'; NAO protege o mesmo literal quando e segmento de caminho solto em join(...) (contrato-compativel.mjs) — esse uso continua substituindo." },
-    { "valor": "testes", "motivo": "id da regra 'testes' (ferramentas/gate/regras/estrutura.mjs:329). Colide com o item pasta 'testes' do mesmo jeito que 'contrato'; join(RAIZ_TEMPLATE, 'testes') em verify-citations.mjs continua substituindo (nao e id de regra ali)." },
-    { "valor": "portas", "motivo": "chave de manifesto 'portas' (modulo.schema.json, campo renomeado so na fase AD.3 — Bloco AI, AI.5). Colide com o item pasta 'portas' (fase AD.1) em modulo.json (excluido do scan por nome de arquivo), tools/gate/rules/structure.mjs:CAMPOS_OBRIGATORIOS (array nu, protegido por nome de constante), tools/generate-port-schemas.mjs (comentario/regex citando a chave) e composicao.py/test_config.py (leitura por chave). Protegido SEMPRE que aparece nu (sem barra), EXCETO em AD.3 (protegidoExceto): ao contrario de 'contrato'/'testes' (protegidos por marcador de linha, que discrimina por CONTEXTO em qualquer fase), 'portas' nao tem marcador confiavel — a saida e a fase: fora de AD.3 nao ha uso bare legitimo esperando substituir (a forma legitima e sempre a pasta, com barra, que ja substitui antes da checagem de protecao); em AD.3 'portas' E o proprio alvo (a chave do manifesto), e a protecao se suspende (Bloco AD, resolucao B3).", "protegidoExceto": ["AD.3"] }
+    {
+      "valor": "dominio",
+      "motivo": "valor do enum 'papel' no manifesto (dominio|gateway|conector, modulo.schema.json:15) — a CHAVE vira ingles em AD.3, o VALOR nao (fronteira Bloco AC, decisao 8). Colide com o item pasta 'dominio' quando aparece bare-string em criar-modulo.mjs (PAPEIS, default de --papel)."
+    },
+    {
+      "valor": "gateway",
+      "motivo": "mesmo enum de 'papel' — dominio|gateway|conector. Nao e item de pasta nenhum (nao ha renomeacao de 'gateway'), mas protegido pelo mesmo padrao de linha por simetria e clareza do relatorio."
+    },
+    {
+      "valor": "conector",
+      "motivo": "mesmo enum de 'papel'."
+    },
+    {
+      "valor": "contrato",
+      "motivo": "id da regra 'contrato' (ferramentas/gate/regras/contrato.mjs:467, ids de regra ficam portugues para sempre — ADR-009 decisao 6). Colide com o item pasta 'contrato' quando aparece bare-string em 'id: ...'/'regra: ...'; NAO protege o mesmo literal quando e segmento de caminho solto em join(...) (contrato-compativel.mjs) — esse uso continua substituindo."
+    },
+    {
+      "valor": "testes",
+      "motivo": "id da regra 'testes' (ferramentas/gate/regras/estrutura.mjs:329). Colide com o item pasta 'testes' do mesmo jeito que 'contrato'; join(RAIZ_TEMPLATE, 'testes') em verify-citations.mjs continua substituindo (nao e id de regra ali)."
+    },
+    {
+      "valor": "portas",
+      "motivo": "chave de manifesto 'portas' (modulo.schema.json, campo renomeado so na fase AD.3 — Bloco AI, AI.5). Colide com o item pasta 'portas' (fase AD.1) em modulo.json (excluido do scan por nome de arquivo), tools/gate/rules/structure.mjs:CAMPOS_OBRIGATORIOS (array nu, protegido por nome de constante), tools/generate-port-schemas.mjs (comentario/regex citando a chave) e composicao.py/test_config.py (leitura por chave). Protegido SEMPRE que aparece nu (sem barra), EXCETO em AD.3 (protegidoExceto): ao contrario de 'contrato'/'testes' (protegidos por marcador de linha, que discrimina por CONTEXTO em qualquer fase), 'portas' nao tem marcador confiavel — a saida e a fase: fora de AD.3 nao ha uso bare legitimo esperando substituir (a forma legitima e sempre a pasta, com barra, que ja substitui antes da checagem de protecao); em AD.3 'portas' E o proprio alvo (a chave do manifesto), e a protecao se suspende (Bloco AD, resolucao B3).",
+      "protegidoExceto": [
+        "AD.3"
+      ]
+    }
   ]
 }

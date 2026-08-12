@@ -6,10 +6,10 @@
 //   - SPA por modulo: `web/main.tsx` monta a mesma raiz, servida sob /<modulo>.
 //
 // Nada aqui conhece o shell. Um modulo nunca importa pagina de outro modulo.
-export { Lista } from './pages/Lista.js';
-export { Aviso } from './components/Aviso.js';
-export { useListaDeRegistros } from './hooks/useListaDeRegistros.js';
+export { List } from './pages/List.js';
+export { Notice } from './components/Notice.js';
+export { useRecordList } from './hooks/useRecordList.js';
 export type { Colecao, Registro } from './api-client/index.js';
 
 /** Raiz do modulo. E o que o shell monta, e o que `main.tsx` renderiza. */
-export { Lista as RaizDoModulo } from './pages/Lista.js';
+export { List as RaizDoModulo } from './pages/List.js';

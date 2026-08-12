@@ -24,7 +24,7 @@ interface EnvelopeErro {
   erro?: { codigo?: string; mensagem?: string };
 }
 
-async function pedir<T>(caminho: string, opcoes: RequestInit = {}): Promise<T> {
+async function request<T>(caminho: string, opcoes: RequestInit = {}): Promise<T> {
   const resposta = await fetch(`${ROTA_BASE}${caminho}`, {
     ...opcoes,
     headers: { 'content-type': 'application/json', ...(opcoes.headers ?? {}) },
@@ -37,10 +37,10 @@ async function pedir<T>(caminho: string, opcoes: RequestInit = {}): Promise<T> {
   return (await resposta.json()) as T;
 }
 
-export function listarRegistros(pagina: number, tamanho: number): Promise<Colecao> {
-  return pedir<Colecao>(`/registros?pagina=${pagina}&tamanho=${tamanho}`);
+export function listRecords(pagina: number, tamanho: number): Promise<Colecao> {
+  return request<Colecao>(`/registros?pagina=${pagina}&tamanho=${tamanho}`);
 }
 
-export function obterRegistro(hash: string): Promise<Registro> {
-  return pedir<Registro>(`/registros/${encodeURIComponent(hash)}`);
+export function getRecord(hash: string): Promise<Registro> {
+  return request<Registro>(`/registros/${encodeURIComponent(hash)}`);
 }

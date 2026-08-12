@@ -16,11 +16,11 @@
 //   // core/gateways/financeiro.ts
 //   import type { Registro } from '../domain/index.js';
 //
-//   export interface FinanceiroGateway {
+//   export interface FinanceGateway {
 //     obterAliquotaVigentePct(): Promise<number>;
 //   }
 //
-//   export function criarGatewayFinanceiro(baseUrl: string): FinanceiroGateway {
+//   export function createFinanceGateway(baseUrl: string): FinanceGateway {
 //     return {
 //       async obterAliquotaVigentePct(): Promise<number> {
 //         const resposta = await fetch(`${baseUrl}/aliquotas/vigente`);

@@ -39,6 +39,6 @@ export class ErroApi extends Error {
 }
 
 /** Envelope unico de erro. Toda falha sai exatamente nesta forma. */
-export function envelopeDeErro(erro, requestId) {
+export function errorEnvelope(erro, requestId) {
   return { erro: { codigo: erro.codigo, mensagem: erro.message, requestId } };
 }

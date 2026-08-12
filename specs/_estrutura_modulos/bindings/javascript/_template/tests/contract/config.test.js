@@ -1,4 +1,4 @@
-// Prova que `conferirEnvRequerido` DE FATO derruba o boot quando falta variavel — plan-2.md N.4.
+// Prova que `checkEnvRequired` DE FATO derruba o boot quando falta variavel — plan-2.md N.4.
 // Sob `NODE_ENV=test` (todo o resto da suite) o bypass cala a checagem de proposito: sem `.env`
 // real, qualquer teste derrubaria antes do primeiro `it()`. Isso deixa "suite verde" incapaz de
 // provar, sozinha, que a fiacao de ambiente esta correta — so o boot real prova. Este teste fecha
@@ -9,7 +9,7 @@
 // — "usada no codigo e ausente do manifesto" — por um vazamento que nao tem nada a ver com este teste.
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { conferirEnvRequerido } from '../../api/src/config.js';
+import { checkEnvRequired } from '../../api/src/config.js';
 
 const CHAVE = '<MODULO>_API_PORT';
 
@@ -39,16 +39,16 @@ afterEach(() => {
   else process.env[CHAVE] = VALOR_ORIGINAL;
 });
 
-describe('conferirEnvRequerido', () => {
+describe('checkEnvRequired', () => {
   it('derruba o boot quando falta variavel obrigatoria E o processo NAO esta em NODE_ENV=test', () => {
     process.env['NODE_ENV'] = 'production';
     delete process.env[CHAVE];
-    expect(() => conferirEnvRequerido(MANIFESTO_BASE)).toThrow(/variaveis ausentes no ambiente/);
+    expect(() => checkEnvRequired(MANIFESTO_BASE)).toThrow(/variaveis ausentes no ambiente/);
   });
 
   it('NAO derruba quando a variavel esta presente, mesmo fora de NODE_ENV=test', () => {
     process.env['NODE_ENV'] = 'production';
     process.env[CHAVE] = '3999';
-    expect(() => conferirEnvRequerido(MANIFESTO_BASE)).not.toThrow();
+    expect(() => checkEnvRequired(MANIFESTO_BASE)).not.toThrow();
   });
 });

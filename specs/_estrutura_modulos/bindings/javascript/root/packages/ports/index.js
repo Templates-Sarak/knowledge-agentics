@@ -69,10 +69,10 @@ export const PORTAS_CONHECIDAS = [
 /**
  * @template T
  * @typedef {object} Repositorio
- * @property {(pagina: number, tamanho: number) => Promise<Pagina<T>>} listar
- * @property {(hash: string) => Promise<T | null>} buscarPorHash
- * @property {(registro: T) => Promise<void>} inserir
- * @property {() => Promise<number>} contar
+ * @property {(pagina: number, tamanho: number) => Promise<Pagina<T>>} list
+ * @property {(hash: string) => Promise<T | null>} findByHash
+ * @property {(registro: T) => Promise<void>} insert
+ * @property {() => Promise<number>} count
  */
 
 /**
@@ -86,16 +86,16 @@ export const PORTAS_CONHECIDAS = [
 
 /**
  * @typedef {object} Auditoria
- * @property {(evento: EventoDeAuditoria) => Promise<void>} registrar
+ * @property {(evento: EventoDeAuditoria) => Promise<void>} record
  *
  * @typedef {object} Relogio
- * @property {() => string} agora
+ * @property {() => string} now
  *
  * @typedef {object} GeradorId
  * @property {() => string} hash
  *
  * @typedef {object} Auth
- * @property {(token: string) => Promise<{ permissoes: string[] } | null>} verificar
+ * @property {(token: string) => Promise<{ permissoes: string[] } | null>} verify
  */
 
 /**
@@ -104,16 +104,16 @@ export const PORTAS_CONHECIDAS = [
  * nada de `executar(comando: string)` — o desenho que sustenta `sql-no-modulo` do lado do banco.
  *
  * @typedef {object} Storage
- * @property {(caminho: string, conteudo: Buffer) => Promise<void>} salvar
- * @property {(caminho: string) => Promise<Buffer | null>} buscar
- * @property {(caminho: string) => Promise<void>} remover
+ * @property {(caminho: string, conteudo: Buffer) => Promise<void>} save
+ * @property {(caminho: string) => Promise<Buffer | null>} find
+ * @property {(caminho: string) => Promise<void>} remove
  */
 
 /**
  * Envia mensagem a um destinatario — e-mail, o outro caso mais comum (plan-2.md Bloco S).
  *
  * @typedef {object} Notificador
- * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} enviar
+ * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} send
  */
 
 export {};

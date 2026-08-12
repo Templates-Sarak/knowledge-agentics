@@ -6,9 +6,9 @@
 //   - SPA por modulo: `web/src/main.jsx` monta a mesma raiz, servida sob /<modulo>.
 //
 // Nada aqui conhece o shell. Um modulo nunca importa pagina de outro modulo.
-export { Lista } from './pages/Lista.jsx';
-export { Aviso } from './components/Aviso.jsx';
-export { useListaDeRegistros } from './hooks/useListaDeRegistros.js';
+export { List } from './pages/List.jsx';
+export { Notice } from './components/Notice.jsx';
+export { useRecordList } from './hooks/useRecordList.js';
 
 /** Raiz do modulo. E o que o shell monta, e o que `main.jsx` renderiza. */
-export { Lista as RaizDoModulo } from './pages/Lista.jsx';
+export { List as RaizDoModulo } from './pages/List.jsx';

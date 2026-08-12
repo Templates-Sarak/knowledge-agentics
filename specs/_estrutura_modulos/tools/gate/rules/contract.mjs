@@ -409,12 +409,16 @@ function chavesDaRegiao(arquivo, regiao, vistos) {
 
 /**
  * O nome de uma função de PROJEÇÃO DE SAÍDA, pela convenção que a doutrina agora exige
- * (02-contrato-e-dados.md §3): começa com `para` seguido de maiúscula (`paraContrato`, `paraMeta`,
- * `paraColecao`) em TS/JS, ou `para_` em Python. Direção BANCO fica de fora por CONSTRUÇÃO, não por
- * lista: `linhaParaDominio`/`dominioParaLinha` têm "Para"/"para" no MEIO do nome, nunca no início —
- * `\b` garante que o casador não pare no meio de um identificador maior.
+ * (02-contrato-e-dados.md §3): começa com `to` seguido de maiúscula (`toContract`, `toMeta`,
+ * `toCollection`) em TS/JS, ou `to_` em Python. Direção BANCO fica de fora por CONSTRUÇÃO, não por
+ * lista: `rowToDomain`/`domainToRow` têm "To"/"to" no MEIO do nome, nunca no início — `\b` garante
+ * que o casador não pare no meio de um identificador maior.
+ *
+ * Bloco AD, Rodada 1 (AD.2) — âncora trocado de `para[A-Z]`/`para_` (português) para `to[A-Z]`/
+ * `to_` (inglês), no MESMO passo isolado que muda só a regra, antes de qualquer fixture ou molde
+ * mudar de nome — é o que prova o vermelho intermediário exigido pelo método.
  */
-const PADRAO_NOME_PROJECAO = /\bpara[A-Z]\w*|\bpara_\w+/g;
+const PADRAO_NOME_PROJECAO = /\bto[A-Z]\w*|\bto_\w+/g;
 
 function chavesDaProjecao(ctx) {
   const vistos = new Set();

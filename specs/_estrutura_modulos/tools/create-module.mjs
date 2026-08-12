@@ -158,22 +158,22 @@ function podarOuFalhar(texto, agulha, contexto) {
 }
 
 /**
- * O teste de domínio importa `core/engine` para exercitar `gerarArtefato` (Bloco O, plan-2.md).
+ * O teste de domínio importa `core/engine` para exercitar `generateArtifact` (Bloco O, plan-2.md).
  * `--sem-artefato` apaga a PASTA e deixa o teste importando o nada — `tsc`/`import` reprova antes
  * mesmo do `vitest` rodar. Poda o import E o bloco de teste, por binding; o teste de domínio
- * (`montarRegistro`/`montar_registro`) fica intacto, porque não depende do motor.
+ * (`buildRecord`/`build_record`) fica intacto, porque não depende do motor.
  */
 function podarTesteDeArtefatoTsJs(caminho) {
   const conteudo = lerTexto(caminho);
   const semImportEngine = podarOuFalhar(
-    conteudo, /^import \{ gerarArtefato \} from '\.\.\/\.\.\/core\/engine\/index\.js';\n/m, caminho,
+    conteudo, /^import \{ generateArtifact \} from '\.\.\/\.\.\/core\/engine\/index\.js';\n/m, caminho,
   );
-  // `registroDeExemplo` so serve o bloco `gerarArtefato` — sem ele, o import fica sem leitor e
+  // `recordExample` so serve o bloco `generateArtifact` — sem ele, o import fica sem leitor e
   // `tsc --noEmit` reprova com TS6133 ("declared but its value is never read").
   const semImports = podarOuFalhar(
-    semImportEngine, /^import \{ registroDeExemplo \} from '\.\.\/fixtures\/index\.js';\n/m, caminho,
+    semImportEngine, /^import \{ recordExample \} from '\.\.\/fixtures\/index\.js';\n/m, caminho,
   );
-  const indice = semImports.indexOf("describe('gerarArtefato'");
+  const indice = semImports.indexOf("describe('generateArtifact'");
   if (indice === -1) return;
   const inicioBloco = semImports.lastIndexOf('\n\n', indice) + 1;
   writeFileSync(caminho, `${semImports.slice(0, inicioBloco).trimEnd()}\n`, 'utf8');
@@ -181,10 +181,10 @@ function podarTesteDeArtefatoTsJs(caminho) {
 
 function podarTesteDeArtefatoPy(caminho) {
   const conteudo = lerTexto(caminho);
-  const semImportEngine = podarOuFalhar(conteudo, 'from core.engine import gerar_artefato\n', caminho);
-  // Mesmo motivo do lado TS/JS: `registro_de_exemplo` sem leitor e F401 (ruff) reprova.
+  const semImportEngine = podarOuFalhar(conteudo, 'from core.engine import generate_artifact\n', caminho);
+  // Mesmo motivo do lado TS/JS: `record_example` sem leitor e F401 (ruff) reprova.
   const semImports = podarOuFalhar(
-    semImportEngine, 'from tests.fixtures import registro_de_exemplo\n', caminho,
+    semImportEngine, 'from tests.fixtures import record_example\n', caminho,
   );
   const indice = semImports.indexOf('TEMPLATE = ');
   if (indice === -1) return;

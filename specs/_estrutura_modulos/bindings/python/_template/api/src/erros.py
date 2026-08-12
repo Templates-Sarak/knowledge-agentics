@@ -34,6 +34,12 @@ class ErroApi(Exception):
         return CODIGOS[self.codigo]
 
 
-def envelope_de_erro(erro: ErroApi, request_id: str) -> dict[str, Any]:
+def error_envelope(erro: ErroApi, request_id: str) -> dict[str, Any]:
     """Envelope UNICO de erro. Toda falha sai exatamente nesta forma."""
-    return {"erro": {"codigo": erro.codigo, "mensagem": erro.mensagem, "requestId": request_id}}
+    return {
+        "erro": {
+            "codigo": erro.codigo,
+            "mensagem": erro.mensagem,
+            "requestId": request_id,
+        }
+    }

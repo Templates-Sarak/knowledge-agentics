@@ -21,15 +21,15 @@ import { pathToFileURL } from 'node:url';
 import express, { type Express } from 'express';
 
 import {
-  criarAuditoria,
-  criarAuthQueNega,
-  criarGeradorId,
-  criarNotificadorEmMemoria,
-  criarRelogio,
-  criarRepositorio,
-  criarStorageEmMemoria,
+  createAuditLog,
+  createDenyingAuth,
+  createIdGenerator,
+  createInMemoryNotifier,
+  createClock,
+  createRepository,
+  createInMemoryStorage,
 } from '../adapters/memory/index.js';
-import { criarPostgresAuditoria, criarPostgresRepositorio } from '../adapters/postgres/index.js';
+import { createPostgresAudit, createPostgresRepository } from '../adapters/postgres/index.js';
 import type { Auth } from '../packages/ports/index.js';
 
 export interface ManifestoDescoberto {
@@ -50,16 +50,16 @@ export interface ManifestoDescoberto {
  * por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
  */
 const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {
-  repositorio: { memoria: () => criarRepositorio(), postgres: (modulo) => criarPostgresRepositorio(modulo) },
-  auditoria: { memoria: () => criarAuditoria(), postgres: (modulo) => criarPostgresAuditoria(modulo) },
-  relogio: { sistema: () => criarRelogio() },
-  geradorId: { padrao: () => criarGeradorId() },
-  storage: { memoria: () => criarStorageEmMemoria() },
-  notificador: { memoria: () => criarNotificadorEmMemoria() },
+  repositorio: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
+  auditoria: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
+  relogio: { sistema: () => createClock() },
+  geradorId: { padrao: () => createIdGenerator() },
+  storage: { memoria: () => createInMemoryStorage() },
+  notificador: { memoria: () => createInMemoryNotifier() },
 };
 
 /** Le todos os manifestos. E a DESCOBERTA: o sistema conhece os modulos por declaracao, nao por import. */
-export function descobrirModulos(raiz: string): ManifestoDescoberto[] {
+export function discoverModules(raiz: string): ManifestoDescoberto[] {
   const base = join(raiz, 'modules');
   if (!existsSync(base)) return [];
 
@@ -77,7 +77,7 @@ export function descobrirModulos(raiz: string): ManifestoDescoberto[] {
  * Resolve as portas declaradas por um modulo, lendo a ESCOLHA em config/ports.json dele.
  * Porta declarada sem provedor conhecido derruba o boot — melhor falhar aqui que servir errado.
  */
-export function resolverDependencias(modulo: ManifestoDescoberto): Record<string, unknown> {
+export function resolveDependencies(modulo: ManifestoDescoberto): Record<string, unknown> {
   const escolhas = JSON.parse(readFileSync(join(modulo.pasta, 'config', 'ports.json'), 'utf8')) as Record<
     string,
     string
@@ -101,8 +101,8 @@ export function resolverDependencias(modulo: ManifestoDescoberto): Record<string
  * Auth do sistema. Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem
  * token estao declaradas em `rotasPublicas` de cada modulo, e so elas passam.
  */
-export function resolverAuth(): Auth {
-  return criarAuthQueNega();
+export function resolveAuth(): Auth {
+  return createDenyingAuth();
 }
 
 /**
@@ -110,7 +110,7 @@ export function resolverAuth(): Auth {
  * alcancado (o Express do primeiro responde por ele antes), e o defeito ficaria mudo ate alguem
  * notar uma rota "sumida". PURO — dado o array de manifestos, so decide; nao toca disco nem rede.
  */
-export function verificarRotasUnicas(modulos: ManifestoDescoberto[]): void {
+export function verifyRoutesUnique(modulos: ManifestoDescoberto[]): void {
   const porRota = new Map<string, string[]>();
   for (const modulo of modulos) {
     porRota.set(modulo.rotaBase, [...(porRota.get(modulo.rotaBase) ?? []), modulo.id]);
@@ -122,9 +122,9 @@ export function verificarRotasUnicas(modulos: ManifestoDescoberto[]): void {
   throw new Error(`[composicao] rotaBase colidindo entre modulos: ${detalhe}`);
 }
 
-/** O que se espera de `api/src/index.*` de um modulo — o mesmo `criarApp` que os testes de contrato usam. */
+/** O que se espera de `api/src/index.*` de um modulo — o mesmo `createApp` que os testes de contrato usam. */
 interface ModuloApi {
-  criarApp(opcoes: { deps: Record<string, unknown>; auth: Auth; raiz: string }): Express;
+  createApp(opcoes: { deps: Record<string, unknown>; auth: Auth; raiz: string }): Express;
 }
 
 /**
@@ -135,21 +135,21 @@ interface ModuloApi {
  * `dist/` desatualizado (fonte mudou, build nao rodou de novo) e servido sem aviso — mitigado por
  * `tools/package.mjs` sempre recompilar do zero antes de copiar, nunca reusar `dist/` velho.
  */
-export function escolherEntrypointDoModulo(pastaModulo: string, emitidoExiste: boolean): string {
+export function chooseModuleEntrypoint(pastaModulo: string, emitidoExiste: boolean): string {
   return emitidoExiste
     ? join(pastaModulo, 'dist', 'api', 'src', 'index.js')
     : join(pastaModulo, 'api', 'src', 'index.ts');
 }
 
 /** Import dinamico do modulo, pelo CAMINHO — a mesma descoberta por declaracao, nunca por lista fixa. */
-async function importarApi(modulo: ManifestoDescoberto): Promise<ModuloApi> {
+async function importApi(modulo: ManifestoDescoberto): Promise<ModuloApi> {
   const emitido = join(modulo.pasta, 'dist', 'api', 'src', 'index.js');
-  const caminho = escolherEntrypointDoModulo(modulo.pasta, existsSync(emitido));
+  const caminho = chooseModuleEntrypoint(modulo.pasta, existsSync(emitido));
   return (await import(pathToFileURL(caminho).href)) as ModuloApi;
 }
 
 /** Pares chave=valor de um `.env`, ignorando comentario e linha vazia — mesma leitura do carregador de modulo. */
-function lerParesEnv(caminho: string): Array<[string, string]> {
+function readPairsEnv(caminho: string): Array<[string, string]> {
   return readFileSync(caminho, 'utf8')
     .replace(/^﻿/, '')
     .split(/\r?\n/)
@@ -167,41 +167,41 @@ function lerParesEnv(caminho: string): Array<[string, string]> {
  * arquivo: cada modulo, chamado daqui, ainda resolve o proprio `.env`/`ENV_RAIZ`, mas a essa altura
  * o processo ja tem tudo — a leitura dele so confirma o que ja esta la.
  */
-function carregarEnvDaRaiz(raiz: string): void {
+function loadEnvRoot(raiz: string): void {
   const caminho = join(raiz, '.env');
   if (!existsSync(caminho)) return;
-  for (const [chave, valor] of lerParesEnv(caminho)) {
+  for (const [chave, valor] of readPairsEnv(caminho)) {
     if (process.env[chave] === undefined) process.env[chave] = valor;
   }
 }
 
 /**
  * Monta o app do PROCESSO: um Express por modulo, cada um montado sob a PROPRIA `rotaBase` — nunca
- * em "/". `criarApp`, quando composto (recebe `root`), ja sabe que o Express externo tira o prefixo
+ * em "/". `createApp`, quando composto (recebe `root`), ja sabe que o Express externo tira o prefixo
  * antes de entregar a requisicao a ele; aqui so se ESCOLHE onde montar, nenhuma rota e remontada.
  */
-export async function montarSistema(raiz: string): Promise<Express> {
-  const modulos = descobrirModulos(raiz);
-  verificarRotasUnicas(modulos);
+export async function buildSystem(raiz: string): Promise<Express> {
+  const modulos = discoverModules(raiz);
+  verifyRoutesUnique(modulos);
 
-  const auth = resolverAuth();
+  const auth = resolveAuth();
   const app = express();
 
   for (const modulo of modulos) {
-    const deps = resolverDependencias(modulo);
-    const api = await importarApi(modulo);
+    const deps = resolveDependencies(modulo);
+    const api = await importApi(modulo);
     // MONTADO na propria rotaBase — nunca em "/". Middleware de modulo (auth INCLUSIVE, que NEGA
     // por padrao) roda para QUALQUER requisicao que alcance o app dele; montado em "/", o app do
     // PRIMEIRO modulo responderia (errado) por caminho de OUTRO modulo antes de "no match" —
     // medido: 401 na rota publica de um segundo modulo, negada pela auth do primeiro. Montando na
     // rotaBase, o Express so entrega ao app do modulo a requisicao que ja e dele.
-    app.use(modulo.rotaBase, api.criarApp({ deps, auth, raiz: modulo.pasta }));
+    app.use(modulo.rotaBase, api.createApp({ deps, auth, raiz: modulo.pasta }));
   }
   return app;
 }
 
 /** Le uma variavel obrigatoria da RAIZ. Ausente = boot morre com mensagem acionavel. */
-function envObrigatoriaDaRaiz(chave: string): string {
+function envRequiredRoot(chave: string): string {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
@@ -215,55 +215,55 @@ function envObrigatoriaDaRaiz(chave: string): string {
  * Sobe o processo: um Express, uma porta (specs/arquitetura/00-arquitetura.md §5). A porta vem do
  * ambiente — nenhum literal aqui — e a falta dela DERRUBA o boot, nomeando a chave.
  */
-export async function iniciarSistema(raiz: string): Promise<Server> {
-  carregarEnvDaRaiz(raiz);
-  const porta = Number(envObrigatoriaDaRaiz('RAIZ_API_PORT'));
-  const app = await montarSistema(raiz);
+export async function startSystem(raiz: string): Promise<Server> {
+  loadEnvRoot(raiz);
+  const porta = Number(envRequiredRoot('RAIZ_API_PORT'));
+  const app = await buildSystem(raiz);
 
-  return new Promise((resolver) => {
+  return new Promise((resolve) => {
     const servidor = app.listen(porta, () => {
       process.stdout.write(`[composicao] sistema no ar na porta ${porta}\n`);
-      resolver(servidor);
+      resolve(servidor);
     });
   });
 }
 
 // ================================================================================================
-// AUTOTESTE — so a parte PURA (`verificarRotasUnicas`): descoberta, DI e boot sao I/O de verdade,
+// AUTOTESTE — so a parte PURA (`verifyRoutesUnique`): descoberta, DI e boot sao I/O de verdade,
 // provados pela subida real de processo (relatorio do bloco), nao por fixture em memoria.
 // ================================================================================================
 
-function manifestoDeTeste(id: string, rotaBase: string): ManifestoDescoberto {
+function testManifest(id: string, rotaBase: string): ManifestoDescoberto {
   return { id, nome: id, rotaBase, papel: 'dominio', portas: [], pasta: `/fake/${id}` };
 }
 
-function casosDeRotasUnicas(): Array<{ nome: string; modulos: ManifestoDescoberto[]; esperaErro: boolean }> {
+function uniqueRoutesCases(): Array<{ nome: string; modulos: ManifestoDescoberto[]; esperaErro: boolean }> {
   return [
     { nome: 'lista vazia', modulos: [], esperaErro: false },
-    { nome: 'um so modulo', modulos: [manifestoDeTeste('a', '/api/v1/a')], esperaErro: false },
+    { nome: 'um so modulo', modulos: [testManifest('a', '/api/v1/a')], esperaErro: false },
     {
       nome: 'rotas distintas',
-      modulos: [manifestoDeTeste('a', '/api/v1/a'), manifestoDeTeste('b', '/api/v1/b')],
+      modulos: [testManifest('a', '/api/v1/a'), testManifest('b', '/api/v1/b')],
       esperaErro: false,
     },
     {
       nome: 'rotas colidindo',
-      modulos: [manifestoDeTeste('a', '/api/v1/a'), manifestoDeTeste('a2', '/api/v1/a')],
+      modulos: [testManifest('a', '/api/v1/a'), testManifest('a2', '/api/v1/a')],
       esperaErro: true,
     },
     {
       nome: 'tres modulos, dois colidindo',
       modulos: [
-        manifestoDeTeste('a', '/api/v1/a'),
-        manifestoDeTeste('b', '/api/v1/b'),
-        manifestoDeTeste('b2', '/api/v1/b'),
+        testManifest('a', '/api/v1/a'),
+        testManifest('b', '/api/v1/b'),
+        testManifest('b2', '/api/v1/b'),
       ],
       esperaErro: true,
     },
   ];
 }
 
-function casosDeEntrypoint(): Array<{
+function entrypointCases(): Array<{
   nome: string;
   pasta: string;
   emitidoExiste: boolean;
@@ -285,27 +285,27 @@ function casosDeEntrypoint(): Array<{
   ];
 }
 
-function rodarAutoteste(): number {
+function runSelftest(): number {
   let falhas = 0;
-  const casos = casosDeRotasUnicas();
+  const casos = uniqueRoutesCases();
 
   for (const caso of casos) {
     let lancou = false;
     try {
-      verificarRotasUnicas(caso.modulos);
+      verifyRoutesUnique(caso.modulos);
     } catch {
       lancou = true;
     }
     const ok = lancou === caso.esperaErro;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} verificarRotasUnicas: ${caso.nome}\n`);
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} verifyRoutesUnique: ${caso.nome}\n`);
     if (!ok) falhas += 1;
   }
 
-  const casosEntrypoint = casosDeEntrypoint();
+  const casosEntrypoint = entrypointCases();
   for (const caso of casosEntrypoint) {
-    const obtido = escolherEntrypointDoModulo(caso.pasta, caso.emitidoExiste);
+    const obtido = chooseModuleEntrypoint(caso.pasta, caso.emitidoExiste);
     const ok = obtido === caso.esperado;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} escolherEntrypointDoModulo: ${caso.nome}\n`);
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} chooseModuleEntrypoint: ${caso.nome}\n`);
     if (!ok) {
       falhas += 1;
       process.stdout.write(`       esperado: ${caso.esperado} obtido: ${obtido}\n`);
@@ -326,9 +326,9 @@ const ehExecucaoDireta =
 
 if (ehExecucaoDireta) {
   if (process.argv.includes('--autoteste')) {
-    process.exit(rodarAutoteste());
+    process.exit(runSelftest());
   } else {
-    iniciarSistema(process.cwd()).catch((causa: unknown) => {
+    startSystem(process.cwd()).catch((causa: unknown) => {
       process.stderr.write(`${causa instanceof Error ? causa.message : String(causa)}\n`);
       process.exitCode = 1;
     });

@@ -22,7 +22,7 @@ class Registro:
     status: str
     criado_em: str
 
-    def como_dicionario(self) -> dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -34,13 +34,13 @@ class ErroDeValidacao(Exception):
         self.campo = campo
 
 
-def _exigir_titulo(titulo: Any) -> str:
+def _require_title(titulo: Any) -> str:
     if not isinstance(titulo, str) or titulo.strip() == "":
         raise ErroDeValidacao("titulo", "titulo e obrigatorio")
     return titulo.strip()
 
 
-def _exigir_status(status: Any, status_validos: Sequence[str]) -> str:
+def _require_status(status: Any, status_validos: Sequence[str]) -> str:
     if not status_validos:
         raise ErroDeValidacao("status", "config/domain.json:statusValidos esta vazio")
     if status is None:
@@ -50,7 +50,7 @@ def _exigir_status(status: Any, status_validos: Sequence[str]) -> str:
     return status
 
 
-def montar_registro(
+def build_record(
     entrada: dict[str, Any],
     status_validos: Sequence[str],
     hash_universal: str,
@@ -63,7 +63,7 @@ def montar_registro(
     """
     return Registro(
         hash=hash_universal,
-        titulo=_exigir_titulo(entrada.get("titulo")),
-        status=_exigir_status(entrada.get("status"), status_validos),
+        titulo=_require_title(entrada.get("titulo")),
+        status=_require_status(entrada.get("status"), status_validos),
         criado_em=criado_em,
     )

@@ -7264,6 +7264,838 @@
       "antigo": "regras",
       "classe": "RECUSADO-POR-PROSA",
       "contexto": "* não tem id, não conta para as regras com caso do catálogo."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/erros.js",
+      "linha": 20,
+      "antigo": "traduzir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* O unico erro que a borda sabe traduzir em resposta."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/index.js",
+      "linha": 5,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// config/ports.json. E o que permite trocar de banco editando um JSON."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/mappers/index.js",
+      "linha": 77,
+      "antigo": "colecao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "/** Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1). */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/middlewares/index.js",
+      "linha": 117,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "/** Unico lugar que transforma excecao em resposta. Detalhe vai para o log, nunca para o cliente. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/middlewares/index.js",
+      "linha": 4,
+      "antigo": "autenticacao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "//   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/middlewares/index.js",
+      "linha": 66,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* `rotasPublicas` e declarado RELATIVO a rotaBase (\"GET /health\"), mas esta cadeia roda ANTES do"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/middlewares/index.js",
+      "linha": 6,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// Nenhuma rota monta erro a mao: quem transforma excecao em resposta e o tratador, no fim da cadeia."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/middlewares/index.js",
+      "linha": 9,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "/** Correlaciona log, trilha de auditoria e envelope de erro. Primeiro da cadeia, sempre. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/contract/openapi.yaml",
+      "linha": 65,
+      "antigo": "Lista",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "summary: Lista registros"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/contract/openapi.yaml",
+      "linha": 71,
+      "antigo": "colecao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "description: colecao paginada"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/core/ports/index.js",
+      "linha": 6,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// O modulo nunca importa `adapters/*` nem SDK de fornecedor — trocar de provedor e editar um JSON."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/README.md",
+      "linha": 55,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "aparece em `config/ports.json` — trocar de banco é editar uma linha de JSON."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/tests/contract/contract.test.js",
+      "linha": 60,
+      "antigo": "autenticacao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "describe('autenticacao — deny by default', () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/tests/contract/contract.test.js",
+      "linha": 73,
+      "antigo": "colecao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "it('lista no envelope de colecao', async () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/tests/web/List.test.jsx",
+      "linha": 27,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "it('mostra o estado CARREGANDO antes da resposta', () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/tests/web/List.test.jsx",
+      "linha": 33,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "it('mostra o estado VAZIO quando nao ha registro', async () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/tests/web/List.test.jsx",
+      "linha": 39,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "it('mostra o estado ERRO quando a api falha', async () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/vitest.config.js",
+      "linha": 12,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// continua funcionando no Vitest 4, testada empiricamente antes de trocar."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/adapters/postgres/index.js",
+      "linha": 3,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// trocar para este adapter e editar UMA linha ali, nunca este arquivo."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/adapters/postgres/index.js",
+      "linha": 59,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// conexões internamente; criar um Pool por requisição esgotaria o limite de conexões do servidor."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/adapters/postgres/index.js",
+      "linha": 8,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// materializada sobre a tabela que o molde ja cria. Modulo que criar tabela com outra forma"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/config/conformidade.json",
+      "linha": 2,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"_comentario\": \"Duas listas de excecao NOMINAL, mesma disciplina, donos diferentes. 'excecoes' e ao catalogo do gate (specs/arquitetura/04-r"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/config/verificacao.json",
+      "linha": 12,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"_doc\": \"% minimo de cobertura de teste. Politica: depende da maturidade e do risco. O gate NAO mede, e o `verificar` local TAMBEM nao — cus"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/package.json",
+      "linha": 22,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//ci:contract\": \"So CI: compara o contract/openapi.yaml com o commit anterior e nomeia quem quebra. Custa git + comparar dois estados, por "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/package.json",
+      "linha": 24,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//ci:cobertura\": \"So CI (03-operacao.md §7): roda cobertura de CADA modulo com relatorio lcov+junit, e reprova se algum vier ausente/degene"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/package.json",
+      "linha": 26,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//ci:lint\": \"So CI: o MESMO `eslint .` do `verificar`, so que tambem grava JSON (SonarQube le nativo; SARIF exigiria @microsoft/eslint-form"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/package.json",
+      "linha": 32,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//formato\": \"Forma. `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.\","
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/package.json",
+      "linha": 40,
+      "antigo": "verificarRotasUnicas",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//start:autoteste\": \"Prova a UNICA decisao pura do entrypoint (verificarRotasUnicas) sem subir processo nem tocar disco.\","
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
+      "linha": 123,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* reverter um passo, nunca a lista inteira, e por isso `ciclo` funciona de qualquer estado. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
+      "linha": 14,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// aqui (scripts/) — nao em `adapters/` (adapter e para o processo composto trocar de provedor em"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
+      "linha": 19,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// nao um cliente isolado). Instalar um Postgres inteiro no sistema so para ter o CLI e acao pesada"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
+      "linha": 20,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// e dificil de reverter — desproporcional para um cliente. `pg` como devDependency e comum, escopada"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
+      "linha": 215,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* existe, o estado normal do PRIMEIRO `up` de um banco novo. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
+      "linha": 307,
+      "antigo": "pendentes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "process.stdout.write(`[migrations] ${idDoModulo}: up (aplica pendentes)\\n`);"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
+      "linha": 30,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// QUALQUER estado inicial, não só de banco vazio)."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
+      "linha": 8,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "//                                                  de qualquer estado inicial (vazio ou ja migrado)"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/__init__.py",
+      "linha": 5,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "config/ports.json. E o que permite trocar Postgres por outro banco editando um JSON."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/erros.py",
+      "linha": 24,
+      "antigo": "traduzir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"\"\"O unico erro que a borda sabe traduzir em resposta.\"\"\""
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/erros.py",
+      "linha": 4,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "A mensagem ao cliente e generica e estavel; o detalhe vai so para o log, ligado pelo requestId."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/mappers.py",
+      "linha": 73,
+      "antigo": "colecao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"\"\"Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1).\"\"\""
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/middlewares.py",
+      "linha": 26,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"\"\"`rotasPublicas` e declarado RELATIVO a rotaBase (\"GET /health\"), mas esta cadeia roda antes"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/middlewares.py",
+      "linha": 36,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"\"\"O que a cadeia precisa alem da config. Agrupado para respeitar o limiar de 4 parametros"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/middlewares.py",
+      "linha": 4,
+      "antigo": "autenticacao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/middlewares.py",
+      "linha": 6,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "Nenhuma rota monta erro a mao: quem transforma excecao em resposta e o tratador, no fim da cadeia."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/middlewares.py",
+      "linha": 71,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"\"\"Unico lugar que transforma excecao em resposta. Detalhe vai para o log, nunca ao cliente.\"\"\""
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/contract/openapi.yaml",
+      "linha": 65,
+      "antigo": "Lista",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "summary: Lista registros"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/contract/openapi.yaml",
+      "linha": 71,
+      "antigo": "colecao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "description: colecao paginada"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/core/gateways/__init__.py",
+      "linha": 24,
+      "antigo": "obter_aliquota_vigente_pct",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "async def obter_aliquota_vigente_pct(self) -> float:"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/core/gateways/__init__.py",
+      "linha": 25,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "async with httpx.AsyncClient() as cliente:"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/core/gateways/__init__.py",
+      "linha": 26,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "resposta = await cliente.get(f\"{self._base_url}/aliquotas/vigente\")"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/core/ports/__init__.py",
+      "linha": 6,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "O modulo nunca importa adapter nem SDK de fornecedor — trocar de provedor e editar um JSON."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/tests/contract/test_config.py",
+      "linha": 13,
+      "antigo": "remover",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "MEDIDO: remover `PYTEST_CURRENT_TEST` numa FIXTURE (fase \"setup\") nao basta — o pytest RE-ESCREVE a"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/adapters/postgres/__init__.py",
+      "linha": 3,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "trocar para este adapter e editar UMA linha ali, nunca este arquivo."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/adapters/postgres/__init__.py",
+      "linha": 8,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "materializada sobre a tabela que o molde ja cria. Modulo que criar tabela com outra forma escreve"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/config/conformidade.json",
+      "linha": 2,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"_comentario\": \"Duas listas de excecao NOMINAL, mesma disciplina, donos diferentes. 'excecoes' e ao catalogo do gate (specs/arquitetura/04-r"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/config/verificacao.json",
+      "linha": 12,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"_doc\": \"% minimo de cobertura de teste. Politica: depende da maturidade e do risco. O gate NAO mede, e o `verificar.py` local TAMBEM nao — "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py",
+      "linha": 128,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "`down`: reverter um passo, nunca a lista inteira, e por isso `ciclo` funciona de qualquer estado.\"\"\""
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py",
+      "linha": 15,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "(scripts/) — nao em `adapters/` (adapter e para o processo composto trocar de provedor em RUNTIME;"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py",
+      "linha": 20,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "nao um cliente isolado). Instalar um Postgres inteiro no sistema so para ter o CLI e acao pesada e"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py",
+      "linha": 21,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "dificil de reverter — desproporcional para um cliente. `psycopg` como optional-dependency e comum,"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py",
+      "linha": 220,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "nao existe, o estado normal do PRIMEIRO `up` de um banco novo.\"\"\""
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py",
+      "linha": 306,
+      "antigo": "pendentes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "sys.stdout.write(f\"[migrations] {id_do_modulo}: up (aplica pendentes)\\n\")"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py",
+      "linha": 30,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "de runner de migration, e o que faz `ciclo` funcionar de QUALQUER estado inicial)."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py",
+      "linha": 9,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "qualquer estado inicial (vazio ou ja migrado)"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/verificar.py",
+      "linha": 125,
+      "antigo": "contar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "pytest: uma ferramenta que 'passa' sem escrever nada de verdade nao pode contar como sucesso.\"\"\""
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/verificar.py",
+      "linha": 238,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "# `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/erros.ts",
+      "linha": 22,
+      "antigo": "traduzir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* O unico erro que a borda sabe traduzir em resposta."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/index.ts",
+      "linha": 5,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// config/ports.json. E o que permite trocar Postgres por outro banco editando um JSON."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/mappers/index.ts",
+      "linha": 76,
+      "antigo": "colecao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "/** Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1). */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/middlewares/index.ts",
+      "linha": 132,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "/** Unico lugar que transforma excecao em resposta. Detalhe vai para o log, nunca para o cliente. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/middlewares/index.ts",
+      "linha": 20,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "/** Correlaciona log, trilha de auditoria e envelope de erro. Primeiro da cadeia, sempre. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/middlewares/index.ts",
+      "linha": 4,
+      "antigo": "autenticacao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "//   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/middlewares/index.ts",
+      "linha": 6,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// Nenhuma rota monta erro a mao: quem transforma excecao em resposta e o tratador, no fim da cadeia."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/middlewares/index.ts",
+      "linha": 81,
+      "antigo": "cadeia",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* `rotasPublicas` e declarado RELATIVO a rotaBase (\"GET /health\"), mas esta cadeia roda ANTES do"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/contract/openapi.yaml",
+      "linha": 65,
+      "antigo": "Lista",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "summary: Lista registros"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/contract/openapi.yaml",
+      "linha": 71,
+      "antigo": "colecao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "description: colecao paginada"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/core/domain/index.ts",
+      "linha": 17,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "/** O que a borda aceita para criar um registro. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/core/ports/index.ts",
+      "linha": 6,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// O modulo nunca importa `adapters/*` nem SDK de fornecedor — trocar de provedor e editar um JSON."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/README.md",
+      "linha": 51,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "aparece em `config/ports.json` — trocar de banco é editar uma linha de JSON."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/tests/contract/contract.test.ts",
+      "linha": 65,
+      "antigo": "autenticacao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "describe('autenticacao — deny by default', () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/tests/contract/contract.test.ts",
+      "linha": 79,
+      "antigo": "colecao",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "it('lista no envelope de colecao', async () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/tests/web/List.test.tsx",
+      "linha": 27,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "it('mostra o estado CARREGANDO antes da resposta', () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/tests/web/List.test.tsx",
+      "linha": 33,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "it('mostra o estado VAZIO quando nao ha registro', async () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/tests/web/List.test.tsx",
+      "linha": 39,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "it('mostra o estado ERRO quando a api falha', async () => {"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/tsconfig.build.json",
+      "linha": 3,
+      "antigo": "emitir",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//allowImportingTsExtensions\": \"desligada abaixo: so vale com noEmit/emitDeclarationOnly (TS5025/TS5096, medido ao tentar emitir). Nenhum a"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/vitest.config.ts",
+      "linha": 12,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// continua funcionando no Vitest 4, testada empiricamente antes de trocar."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/adapters/postgres/index.ts",
+      "linha": 3,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// trocar para este adapter e editar UMA linha ali, nunca este arquivo."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/adapters/postgres/index.ts",
+      "linha": 83,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// conexões internamente; criar um Pool por requisição esgotaria o limite de conexões do servidor."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/adapters/postgres/index.ts",
+      "linha": 8,
+      "antigo": "criar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// materializada sobre a tabela que o molde ja cria. Modulo que criar tabela com outra forma"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/config/conformidade.json",
+      "linha": 2,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"_comentario\": \"Duas listas de excecao NOMINAL, mesma disciplina, donos diferentes. 'excecoes' e ao catalogo do gate (specs/arquitetura/04-r"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/config/verificacao.json",
+      "linha": 12,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"_doc\": \"% minimo de cobertura de teste. Politica: depende da maturidade e do risco. O gate NAO mede, e o `verificar` local TAMBEM nao — cus"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/package.json",
+      "linha": 22,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//ci:contract\": \"So CI: compara o contract/openapi.yaml com o commit anterior e nomeia quem quebra. Custa git + comparar dois estados, por "
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/package.json",
+      "linha": 24,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//ci:cobertura\": \"So CI (03-operacao.md §7): roda cobertura de CADA modulo com relatorio lcov+junit, e reprova se algum vier ausente/degene"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/package.json",
+      "linha": 26,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//ci:lint\": \"So CI: o MESMO `eslint .` do `verificar`, so que tambem grava JSON (SonarQube le nativo; SARIF exigiria @microsoft/eslint-form"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/package.json",
+      "linha": 32,
+      "antigo": "verificar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//formato\": \"Forma. `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.\","
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/package.json",
+      "linha": 38,
+      "antigo": "importarApi",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "\"//start:prod\": \"PRODUCAO. Sobe do EMITIDO (dist/), sem tsx — e o artefato de `npm run build`, autossuficiente sem a arvore .ts (03-operacao"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
+      "linha": 123,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* reverter um passo, nunca a lista inteira, e por isso `ciclo` funciona de qualquer estado. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
+      "linha": 14,
+      "antigo": "trocar",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// aqui (scripts/) — nao em `adapters/` (adapter e para o processo composto trocar de provedor em"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
+      "linha": 19,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// nao um cliente isolado). Instalar um Postgres inteiro no sistema so para ter o CLI e acao pesada"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
+      "linha": 20,
+      "antigo": "cliente",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// e dificil de reverter — desproporcional para um cliente. `pg` como devDependency e comum, escopada"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
+      "linha": 215,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "* existe, o estado normal do PRIMEIRO `up` de um banco novo. */"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
+      "linha": 307,
+      "antigo": "pendentes",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "process.stdout.write(`[migrations] ${idDoModulo}: up (aplica pendentes)\\n`);"
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
+      "linha": 30,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "// QUALQUER estado inicial, não só de banco vazio)."
+    },
+    {
+      "fase": "AD.2",
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
+      "linha": 8,
+      "antigo": "estado",
+      "classe": "RECUSADO-POR-PROSA",
+      "contexto": "//                                                  de qualquer estado inicial (vazio ou ja migrado)"
     }
   ]
 }

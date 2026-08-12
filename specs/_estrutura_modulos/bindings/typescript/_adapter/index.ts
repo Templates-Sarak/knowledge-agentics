@@ -9,6 +9,6 @@
  * TODO: troque `Record<string, unknown>` pela interface real da porta "<porta>"
  * (packages/ports/index.ts) depois de implementar os metodos dela aqui.
  */
-export function criarAdapter(): Record<string, unknown> {
+export function createAdapter(): Record<string, unknown> {
   throw new Error('TODO: implemente os metodos da porta "<porta>" em adapters/<provedor>/index.ts');
 }

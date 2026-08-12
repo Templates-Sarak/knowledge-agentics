@@ -9,41 +9,41 @@
 
 const INSTANTE_FIXO = '2024-01-01T00:00:00.000Z';
 
-export function criarRepositorioEmMemoria(iniciais = []) {
+export function createInMemoryRepository(iniciais = []) {
   const registros = [...iniciais];
   return {
-    async listar(pagina, tamanho) {
+    async list(pagina, tamanho) {
       const inicio = (pagina - 1) * tamanho;
       return { itens: registros.slice(inicio, inicio + tamanho), pagina, tamanho, total: registros.length };
     },
-    async buscarPorHash(hash) {
+    async findByHash(hash) {
       return registros.find((registro) => registro.hash === hash) ?? null;
     },
-    async inserir(registro) {
+    async insert(registro) {
       registros.push(registro);
     },
-    async contar() {
+    async count() {
       return registros.length;
     },
   };
 }
 
-export function criarAuditoriaEmMemoria() {
+export function createInMemoryAudit() {
   const eventos = [];
   return {
     eventos,
-    async registrar(evento) {
+    async record(evento) {
       eventos.push(evento);
     },
   };
 }
 
-export function criarRelogioFixo(instante = INSTANTE_FIXO) {
-  return { agora: () => instante };
+export function createFixedClock(instante = INSTANTE_FIXO) {
+  return { now: () => instante };
 }
 
 /** Sequencial e previsivel: teste que depende de sorteio nao e teste. */
-export function criarGeradorSequencial() {
+export function createSequentialGenerator() {
   let proximo = 0;
   return {
     hash() {
@@ -53,24 +53,24 @@ export function criarGeradorSequencial() {
   };
 }
 
-export function criarDependencias(iniciais = []) {
+export function createDependencies(iniciais = []) {
   return {
-    repositorio: criarRepositorioEmMemoria(iniciais),
-    auditoria: criarAuditoriaEmMemoria(),
-    relogio: criarRelogioFixo(),
-    geradorId: criarGeradorSequencial(),
+    repositorio: createInMemoryRepository(iniciais),
+    auditoria: createInMemoryAudit(),
+    relogio: createFixedClock(),
+    geradorId: createSequentialGenerator(),
   };
 }
 
 /** Auth que aceita um token conhecido. Qualquer outro e negado — deny by default. */
-export function criarAuth(permissoes, tokenValido = 'token-de-teste') {
+export function createAuth(permissoes, tokenValido = 'token-de-teste') {
   return {
-    async verificar(token) {
+    async verify(token) {
       return token === tokenValido ? { permissoes } : null;
     },
   };
 }
 
-export function registroDeExemplo(sobrescrever = {}) {
+export function recordExample(sobrescrever = {}) {
   return { hash: '10001', titulo: 'Exemplo', status: 'rascunho', criadoEm: INSTANTE_FIXO, ...sobrescrever };
 }

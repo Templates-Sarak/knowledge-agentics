@@ -16,15 +16,15 @@ export interface Pagina<T> {
 
 /** Persistencia dos registros do proprio modulo. Nunca toca tabela de outro modulo. */
 export interface Repositorio {
-  listar(pagina: number, tamanho: number): Promise<Pagina<Registro>>;
-  buscarPorHash(hash: string): Promise<Registro | null>;
-  inserir(registro: Registro): Promise<void>;
-  contar(): Promise<number>;
+  list(pagina: number, tamanho: number): Promise<Pagina<Registro>>;
+  findByHash(hash: string): Promise<Registro | null>;
+  insert(registro: Registro): Promise<void>;
+  count(): Promise<number>;
 }
 
 /** Trilha append-only do modulo. Guarda o NOME dos campos alterados, nunca o valor. */
 export interface Auditoria {
-  registrar(evento: {
+  record(evento: {
     hash: string;
     acao: string;
     sujeito: string;
@@ -35,7 +35,7 @@ export interface Auditoria {
 
 /** O instante. Existe para que o dominio nunca chame `new Date()`. */
 export interface Relogio {
-  agora(): string;
+  now(): string;
 }
 
 /** Identificadores. Existe para que o dominio nunca chame `Math.random()`. */
@@ -46,7 +46,7 @@ export interface GeradorId {
 /** Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
  * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1, plan-2.md Bloco S). */
 export interface Notificador {
-  enviar(destinatario: string, assunto: string, corpo: string): Promise<void>;
+  send(destinatario: string, assunto: string, corpo: string): Promise<void>;
 }
 
 /**

@@ -23,7 +23,7 @@ export interface LinhaRegistro {
 }
 
 /** banco -> dominio */
-export function linhaParaDominio(linha: LinhaRegistro): Registro {
+export function rowToDomain(linha: LinhaRegistro): Registro {
   return {
     hash: linha.hash,
     titulo: linha.titulo,
@@ -33,7 +33,7 @@ export function linhaParaDominio(linha: LinhaRegistro): Registro {
 }
 
 /** dominio -> banco */
-export function dominioParaLinha(registro: Registro): LinhaRegistro {
+export function domainToRow(registro: Registro): LinhaRegistro {
   return {
     hash: registro.hash,
     titulo: registro.titulo,
@@ -46,7 +46,7 @@ export function dominioParaLinha(registro: Registro): LinhaRegistro {
  * dominio -> CONTRATO. A allowlist e esta funcao: o que nao esta escrito aqui nao e publicado.
  * Campo declarado em modulo.json:camposSensiveis nunca entra — ou entra mascarado.
  */
-export function paraContrato(registro: Registro): Record<string, unknown> {
+export function toContract(registro: Registro): Record<string, unknown> {
   return {
     hash: registro.hash,
     titulo: registro.titulo,
@@ -60,7 +60,7 @@ export function paraContrato(registro: Registro): Record<string, unknown> {
  * esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
  * `permissoes`, `rotasPublicas` e `camposSensiveis` nunca saem por esta rota (plan-2.md N.1).
  */
-export function paraMeta(manifesto: Manifesto): Record<string, unknown> {
+export function toMeta(manifesto: Manifesto): Record<string, unknown> {
   return {
     id: manifesto.id,
     nome: manifesto.nome,
@@ -74,11 +74,11 @@ export function paraMeta(manifesto: Manifesto): Record<string, unknown> {
 }
 
 /** Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1). */
-export function paraColecao(
+export function toCollection(
   registros: Registro[],
   pagina: number,
   tamanho: number,
   total: number,
 ): Record<string, unknown> {
-  return { itens: registros.map(paraContrato), pagina, tamanho, total };
+  return { itens: registros.map(toContract), pagina, tamanho, total };
 }

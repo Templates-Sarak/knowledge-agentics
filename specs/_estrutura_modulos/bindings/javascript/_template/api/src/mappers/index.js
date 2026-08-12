@@ -16,7 +16,7 @@
  * @param {{ hash: string, titulo: string, status: string, created_at: string }} linha
  * @returns {import('../../../core/domain/index.js').Registro}
  */
-export function linhaParaDominio(linha) {
+export function rowToDomain(linha) {
   return {
     hash: linha.hash,
     titulo: linha.titulo,
@@ -29,7 +29,7 @@ export function linhaParaDominio(linha) {
  * dominio -> banco
  * @param {import('../../../core/domain/index.js').Registro} registro
  */
-export function dominioParaLinha(registro) {
+export function domainToRow(registro) {
   return {
     hash: registro.hash,
     titulo: registro.titulo,
@@ -44,7 +44,7 @@ export function dominioParaLinha(registro) {
  *
  * @param {import('../../../core/domain/index.js').Registro} registro
  */
-export function paraContrato(registro) {
+export function toContract(registro) {
   return {
     hash: registro.hash,
     titulo: registro.titulo,
@@ -61,7 +61,7 @@ export function paraContrato(registro) {
  * @param {{ id: string, nome: string, versao: string, papel: string, rotaBase: string,
  *   rotaWeb: string|null, navegacao: object|null, exportaResumo: boolean }} manifesto
  */
-export function paraMeta(manifesto) {
+export function toMeta(manifesto) {
   return {
     id: manifesto.id,
     nome: manifesto.nome,
@@ -75,6 +75,6 @@ export function paraMeta(manifesto) {
 }
 
 /** Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1). */
-export function paraColecao(registros, pagina, tamanho, total) {
-  return { itens: registros.map(paraContrato), pagina, tamanho, total };
+export function toCollection(registros, pagina, tamanho, total) {
+  return { itens: registros.map(toContract), pagina, tamanho, total };
 }

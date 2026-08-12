@@ -3,7 +3,7 @@
 // carregando, vazio e erro. Tela que so trata o caminho feliz reprova em revisao.
 import { useEffect, useState } from 'react';
 
-import { listarRegistros } from '../api-client/index.js';
+import { listRecords } from '../api-client/index.js';
 
 /**
  * @typedef {'carregando' | 'ok' | 'vazio' | 'erro'} Situacao
@@ -23,26 +23,26 @@ const INICIAL = { situacao: 'carregando', registros: [], total: 0, mensagemDeErr
  * @param {number} tamanho
  * @returns {Estado}
  */
-export function useListaDeRegistros(pagina, tamanho) {
-  const [estado, setEstado] = useState(INICIAL);
+export function useRecordList(pagina, tamanho) {
+  const [state, setState] = useState(INICIAL);
 
   useEffect(() => {
     let ativo = true;
-    setEstado(INICIAL);
+    setState(INICIAL);
 
-    listarRegistros(pagina, tamanho)
-      .then((colecao) => {
+    listRecords(pagina, tamanho)
+      .then((collection) => {
         if (!ativo) return;
-        setEstado({
-          situacao: colecao.itens.length === 0 ? 'vazio' : 'ok',
-          registros: colecao.itens,
-          total: colecao.total,
+        setState({
+          situacao: collection.itens.length === 0 ? 'vazio' : 'ok',
+          registros: collection.itens,
+          total: collection.total,
           mensagemDeErro: null,
         });
       })
       .catch((causa) => {
         if (!ativo) return;
-        setEstado({
+        setState({
           situacao: 'erro',
           registros: [],
           total: 0,
@@ -55,5 +55,5 @@ export function useListaDeRegistros(pagina, tamanho) {
     };
   }, [pagina, tamanho]);
 
-  return estado;
+  return state;
 }

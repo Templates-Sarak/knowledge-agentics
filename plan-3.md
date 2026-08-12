@@ -132,6 +132,35 @@ e depois da campanha a mesma lista tem de resolver de novo. Isso é um *diff*, n
 > está verde ou não está. Mas as fases **não** caem juntas: o enunciado original dizia que sim, e três
 > tentativas do AD.1 mostraram o contrário. Uma fase, um relatório, uma aprovação.
 
+### AD.0 — o desbloqueio da ferramenta ✅ **FECHADO** *(commit `b64af36`, revisado e reproduzido)*
+
+> **Três bloqueios que não estavam neste plano.** Medidos pelo revisor antes da Rodada 1: o codemod
+> que fechou o AD.1 **não conseguia executar o AD.2 nem o AD.3**, e o mecanismo que o AI acabara de
+> construir para proteger chave de manifesto era exatamente o que impediria o AD.3 de renomeá-la.
+
+- [x] **B1 — identificador nu, política por FASE.** `decidir()` recusava identificador nu sempre
+      (conserto (f) do AD.1, deliberado: símbolo fica em português, ADR-009 dec. 4) — e o **AD.2 é 248
+      identificadores nus**. Resolvido com parâmetro `fase`, default `'AD.1'`, e a checagem
+      `fase === 'AD.1'` **antes** de olhar tipo ou proteção.
+      **Por que fase e não tipo:** `tipo: 'simbolo'` já é usado *dentro* do AD.1 (`modulos`, `memoria`
+      — `grafo.modulos`); liberar por tipo faria o AD.1 corromper esses dois na reexecução, que é a
+      regressão que a idempotência do AI.5 existe para impedir
+- [x] **B2 — o tipo `chave` estava declarado em `_tiposValidos` e não implementado.** O AD.3 é
+      inteiramente chave de manifesto. Implementado com forma própria: em código só substitui após `.`
+      (`manifesto.nome`), nunca nu — `nome`, `dados`, `descricao` são palavras portuguesas comuns, ao
+      contrário dos 248 nomes de função do AD.2, específicos o bastante para substituir nus
+- [x] **B3 — os literais protegidos não tinham fase, e o AD.3 é a fase que os renomeia.** `portas`
+      ganhou `{ protegidoExceto: ['AD.3'] }`: protegido sempre, alvo na fase que o renomeia.
+      `contrato`/`testes` **não** precisaram — a proteção deles é por marcador (`id:`/`regra:`), que já
+      discrimina "id de regra" (fica para sempre, dec. 6) de "chave `consome[].contrato`" (vai em AD.3)
+      pelo contexto da própria linha, sem saber qual fase roda
+
+**Prova:** `apply-rename --autoteste` **55/55** · `--relatorio --fase AD.1` exit 0 · **`--aplicar
+--fase AD.1` com as ferramentas commitadas produz `git diff` VAZIO** (idempotência do AD.1 preservada
+depois das três mudanças) · gate 122/122 · 122/122 · 119/119 · Bloco K 3/3. O revisor testou os três
+mecanismos **por fora do autoteste**, chamando `ocorrenciasClassificadasNaLinha` com o mapa real de
+proteção — corretos nos dois sentidos em cada um.
+
 ### AD.1 — pastas ✅ **FECHADO** *(commit `b8d48a7`, revisado e reproduzido)*
 - [x] Os **39 diretórios** nos três bindings, `_template` e `_adapter`, por `git mv` — o histórico
       importa mais aqui do que em qualquer outro bloco desta família.
@@ -178,13 +207,13 @@ e depois da campanha a mesma lista tem de resolver de novo. Isso é um *diff*, n
 >    duas redes e só caiu no Bloco K. **Antes do AD.2, ver o item de método no fim deste plano.**
 
 ### AD.2 — funções do esqueleto
-- [ ] As **248** dos `bindings/**`, incluindo a fiação de `FABRICAS` e os entrypoints
-- [ ] **Os seis âncoras de regra, e eles NÃO são rename — são regra alterada:**
+- [x] As **248** dos `bindings/**`, incluindo a fiação de `FABRICAS` e os entrypoints
+- [x] **Os seis âncoras de regra, e eles NÃO são rename — são regra alterada:**
       `paraContrato`/`paraColecao`/`paraMeta` × `linhaParaDominio`/`dominioParaLinha` (o **discriminador
       de direção** de três regras; em inglês a propriedade sobrevive — `toContract` começa com `to`,
       `rowToDomain` não —, mas exige casos novos) · `exigirPermissao` (lido por `permissao-literal`) ·
       `envObrigatoria` e `carregarConfiguracao` (lidos por `env-fora-do-carregador`)
-- [ ] **MÉTODO OBRIGATÓRIO nos seis:** trocar o **âncora** e as **fixtures** em passos separados, e
+- [x] **MÉTODO OBRIGATÓRIO nos seis:** trocar o **âncora** e as **fixtures** em passos separados, e
       **provar o estado intermediário vermelho**. Ali o objeto testado e o teste mudam juntos — é o
       cenário clássico em que uma suíte passa sem provar nada
 
@@ -215,6 +244,24 @@ e depois da campanha a mesma lista tem de resolver de novo. Isso é um *diff*, n
 - [ ] **O que NÃO muda, e a fronteira precisa estar clara no diff:** `dados.schema` continua com valor
       em português (nome de schema é **dado**, decisão 10), e `permissoes` continua com valores
       `<id>:<verbo>` em português (`catalogo:ler`) — **a chave vira inglês, o valor não**
+
+> **A TERCEIRA FORMA, medida pelo revisor no AD.0 — não descubra isto no meio da rodada.** O tipo
+> `chave` (B2) cobre `"nome":` em JSON e `manifesto.nome` em código. **Não cobre chave de objeto
+> literal SEM aspas em JS/TS** — `{ consome: [] }`, `{ contrato: 'GET /x', porQue: 'y' }` —, que hoje
+> cai em `RECUSADO-IDENTIFICADOR-NU`. São **462 ocorrências** fora de comentário, em duas populações
+> que precisam de tratamento oposto:
+>
+> | População | Quantas | O que fazer |
+> |---|---|---|
+> | Chave de manifesto de verdade | **~130** — `camposSensiveis` 17 · `rotaBase` 12 · `papel` 11 · `portas` 11 · `consome` 10 · `envRequerido` 9 · `dados` 8 · `permissoes` 7 · `rotaWeb` 7 · `exportaResumo` 6 · `navegacao` 6 · `versao` 5 · `rotasPublicas` 5 · `tabelas` 5 · `porQue` 4 · `prefixo` 4 · `geraArtefato` 2 · `icone` 1 · `ordem` 1 | **precisa de mecanismo próprio** — provavelmente marcador por constante/contexto, no molde do `CONSTANTES_COM_ARRAY_PROTEGIDO` do AI.5 |
+> | `nome` (206) e `descricao` (125) | **331** | **a maioria NÃO é manifesto** — são campos de caso de teste (`descricao: 'adapter importando de modules/'`). Substituir chave de objeto nu sem discriminar renomearia 125 descrições de teste |
+>
+> **Os 331 são a prova de que a decisão conservadora do B2 está certa.** O trabalho aqui é alcançar as
+> ~130 sem tocar nos 331 — e é exatamente por isso que o mecanismo tem de ser por contexto, nunca por
+> liberação geral de chave nua.
+
+- [ ] **As ~130 chaves de manifesto em objeto literal sem aspas**, com mecanismo por contexto e caso de
+      autoteste nos dois sentidos — a chave de manifesto substitui, `descricao:` de caso de teste recusa
 
 **Trava específica deste bloco:** o **JSON Schema é o verificador mais barato que existe aqui.** Renomeie
 a chave no schema **antes** de renomeá-la no molde e nos leitores: o gate passa a reprovar todo módulo
@@ -414,8 +461,12 @@ AB   o verificador de citação    PRÉ-REQUISITO — e com LINHA DE BASE, senã
 AC   a fronteira em ADR          antes de tocar arquivo: é ela que impede a fronteira
                                  arbitrária de voltar por analogia
 
-AD   a campanha                  AD.1 ✅ FECHADO (b8d48a7). AD.2 tem método próprio
-                                 nos 6 âncoras
+AD   a campanha                  AD.0 ✅ FECHADO (b64af36) — a ferramenta consegue
+                                 executar AD.2 e AD.3
+                                 AD.1 ✅ FECHADO (b8d48a7)
+                                 AD.2 → AGORA. Método próprio nos 6 âncoras
+                                 AD.3 → tem a terceira forma medida no AD.0
+                                 AD.4 → AD.5
 
 AE   o CRLF, e os 3 sintomas     ✅ FECHADO (671cbf7). Clone limpo em Windows passa
                                  no próprio gate sem intervenção manual

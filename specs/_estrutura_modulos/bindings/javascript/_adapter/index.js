@@ -10,6 +10,6 @@
  * (packages/ports/index.js) depois de implementar os metodos dela aqui.
  * @returns {Record<string, unknown>}
  */
-export function criarAdapter() {
+export function createAdapter() {
   throw new Error('TODO: implemente os metodos da porta "<porta>" em adapters/<provedor>/index.js');
 }

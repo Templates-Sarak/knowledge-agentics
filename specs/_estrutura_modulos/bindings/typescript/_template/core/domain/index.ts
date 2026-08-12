@@ -31,14 +31,14 @@ export class ErroDeValidacao extends Error {
   }
 }
 
-function exigirTitulo(titulo: unknown): string {
+function requireTitle(titulo: unknown): string {
   if (typeof titulo !== 'string' || titulo.trim() === '') {
     throw new ErroDeValidacao('titulo', 'titulo e obrigatorio');
   }
   return titulo.trim();
 }
 
-function exigirStatus(status: unknown, statusValidos: readonly string[]): string {
+function requireStatus(status: unknown, statusValidos: readonly string[]): string {
   const padrao = statusValidos[0];
   if (padrao === undefined) {
     throw new ErroDeValidacao('status', 'config/domain.json:statusValidos esta vazio');
@@ -54,7 +54,7 @@ function exigirStatus(status: unknown, statusValidos: readonly string[]): string
  * Valida a entrada externa e devolve o registro do dominio.
  * O `hash` e o `criadoEm` vem de fora (portas), nunca daqui — e o que mantem o dominio deterministico.
  */
-export function montarRegistro(
+export function buildRecord(
   entrada: NovoRegistro,
   statusValidos: readonly string[],
   hash: string,
@@ -62,8 +62,8 @@ export function montarRegistro(
 ): Registro {
   return {
     hash,
-    titulo: exigirTitulo(entrada.titulo),
-    status: exigirStatus(entrada.status, statusValidos),
+    titulo: requireTitle(entrada.titulo),
+    status: requireStatus(entrada.status, statusValidos),
     criadoEm,
   };
 }

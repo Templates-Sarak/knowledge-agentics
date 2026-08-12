@@ -22,7 +22,7 @@ class RepositorioEmMemoria:
     def __init__(self, iniciais: Sequence[Registro] = ()) -> None:
         self._registros = list(iniciais)
 
-    async def listar(self, pagina: int, tamanho: int) -> Pagina:
+    async def list(self, pagina: int, tamanho: int) -> Pagina:
         inicio = (pagina - 1) * tamanho
         return Pagina(
             itens=self._registros[inicio : inicio + tamanho],
@@ -31,13 +31,13 @@ class RepositorioEmMemoria:
             total=len(self._registros),
         )
 
-    async def buscar_por_hash(self, hash_universal: str) -> Registro | None:
+    async def find_by_hash(self, hash_universal: str) -> Registro | None:
         return next((r for r in self._registros if r.hash == hash_universal), None)
 
-    async def inserir(self, registro: Registro) -> None:
+    async def insert(self, registro: Registro) -> None:
         self._registros.append(registro)
 
-    async def contar(self) -> int:
+    async def count(self) -> int:
         return len(self._registros)
 
 
@@ -45,7 +45,7 @@ class AuditoriaEmMemoria:
     def __init__(self) -> None:
         self.eventos: list[dict[str, object]] = []
 
-    async def registrar(self, evento: dict[str, object]) -> None:
+    async def record(self, evento: dict[str, object]) -> None:
         self.eventos.append(evento)
 
 
@@ -53,7 +53,7 @@ class RelogioFixo:
     def __init__(self, instante: str = INSTANTE_FIXO) -> None:
         self._instante = instante
 
-    def agora(self) -> str:
+    def now(self) -> str:
         return self._instante
 
 
@@ -75,11 +75,11 @@ class AuthDeTeste:
         self._permissoes = list(permissoes)
         self._token = token_valido
 
-    async def verificar(self, token: str) -> dict[str, Any] | None:
+    async def verify(self, token: str) -> dict[str, Any] | None:
         return {"permissoes": self._permissoes} if token == self._token else None
 
 
-def criar_dependencias(iniciais: Sequence[Registro] = ()) -> DependenciasModulo:
+def create_dependencies(iniciais: Sequence[Registro] = ()) -> DependenciasModulo:
     return DependenciasModulo(
         repositorio=RepositorioEmMemoria(iniciais),
         auditoria=AuditoriaEmMemoria(),
@@ -88,7 +88,12 @@ def criar_dependencias(iniciais: Sequence[Registro] = ()) -> DependenciasModulo:
     )
 
 
-def registro_de_exemplo(**sobrescrever: Any) -> Registro:
-    padrao = {"hash": "10001", "titulo": "Exemplo", "status": "rascunho", "criado_em": INSTANTE_FIXO}
+def record_example(**sobrescrever: Any) -> Registro:
+    padrao = {
+        "hash": "10001",
+        "titulo": "Exemplo",
+        "status": "rascunho",
+        "criado_em": INSTANTE_FIXO,
+    }
     padrao.update(sobrescrever)
     return Registro(**padrao)

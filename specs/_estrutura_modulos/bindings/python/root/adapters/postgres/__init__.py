@@ -35,13 +35,13 @@ from typing import Any, Sequence
 # ====================================================================================================
 
 
-def _chave_de_ambiente(id_do_modulo: str) -> str:
+def _environment_key(id_do_modulo: str) -> str:
     return f"{id_do_modulo.upper().replace('-', '_')}_DB_URL"
 
 
-def _url_obrigatoria(id_do_modulo: str) -> str:
+def _required_url(id_do_modulo: str) -> str:
     """Ausente = falha nomeando a chave exata (lei 7 do catalogo) — nunca um default silencioso."""
-    chave = _chave_de_ambiente(id_do_modulo)
+    chave = _environment_key(id_do_modulo)
     valor = os.environ.get(chave)
     if not valor:
         raise RuntimeError(
@@ -54,7 +54,7 @@ def _url_obrigatoria(id_do_modulo: str) -> str:
 _dados_cache: dict[str, dict[str, str]] = {}
 
 
-def _ler_dados(modulo: dict[str, Any]) -> dict[str, str]:
+def _read_data(modulo: dict[str, Any]) -> dict[str, str]:
     """`dados.schema`/`dados.prefixo` do PROPRIO manifesto do modulo — a mesma fonte que a
     migration 0001 usa para nomear as tabelas. Cacheada por pasta: o manifesto nao muda em runtime."""
     pasta = str(modulo["pasta"])
@@ -67,7 +67,7 @@ def _ler_dados(modulo: dict[str, Any]) -> dict[str, str]:
     return dados
 
 
-def _nome_qualificado(schema: str, tabela: str) -> str:
+def _qualified_name(schema: str, tabela: str) -> str:
     """`"<schema>"."<tabela>"` — nunca interpolado numa linha que tambem tenha um verbo SQL (ver o
     cabecalho do arquivo)."""
     return f'"{schema}"."{tabela}"'
@@ -83,7 +83,7 @@ def _nome_qualificado(schema: str, tabela: str) -> str:
 _conexoes: dict[str, Any] = {}
 
 
-async def _conexao_para(url: str) -> Any:
+async def _connection_for(url: str) -> Any:
     """Lazy DE PROPOSITO — mesma forma de `scripts/migrations.py`: `psycopg` e optional-dependency
     `dev`, e carregar este arquivo (ex.: autoteste de `composicao.py`) nao pode exigi-lo."""
     existente = _conexoes.get(url)
@@ -96,12 +96,12 @@ async def _conexao_para(url: str) -> Any:
     return conexao
 
 
-async def _contexto_da_tabela(modulo: dict[str, Any], sufixo: str) -> tuple[Any, str]:
+async def _table_context(modulo: dict[str, Any], sufixo: str) -> tuple[Any, str]:
     """Resolve conexao + nome qualificado de UMA vez — as quatro operacoes abaixo precisam das
     duas coisas."""
-    dados = _ler_dados(modulo)
-    conexao = await _conexao_para(_url_obrigatoria(modulo["id"]))
-    nome = _nome_qualificado(dados["schema"], f"{dados['prefixo']}{sufixo}")
+    dados = _read_data(modulo)
+    conexao = await _connection_for(_required_url(modulo["id"]))
+    nome = _qualified_name(dados["schema"], f"{dados['prefixo']}{sufixo}")
     return conexao, nome
 
 
@@ -126,15 +126,15 @@ class _PaginaDoMolde:
     total: int
 
 
-def _para_registro(linha: tuple[Any, ...]) -> _RegistroDoMolde:
+def _to_record(linha: tuple[Any, ...]) -> _RegistroDoMolde:
     hash_universal, titulo, status, criado_em = linha
     return _RegistroDoMolde(
         hash=hash_universal, titulo=titulo, status=status, criado_em=criado_em.isoformat()
     )
 
 
-async def _listar_registros(modulo: dict[str, Any], pagina: int, tamanho: int) -> _PaginaDoMolde:
-    conexao, nome = await _contexto_da_tabela(modulo, "metadados")
+async def _list_records(modulo: dict[str, Any], pagina: int, tamanho: int) -> _PaginaDoMolde:
+    conexao, nome = await _table_context(modulo, "metadados")
     inicio = (pagina - 1) * tamanho
 
     clausula_select = "select hash, titulo, status, created_at"
@@ -149,26 +149,26 @@ async def _listar_registros(modulo: dict[str, Any], pagina: int, tamanho: int) -
         linha_conta = await cursor.fetchone()
 
     return _PaginaDoMolde(
-        itens=[_para_registro(linha) for linha in linhas],
+        itens=[_to_record(linha) for linha in linhas],
         pagina=pagina,
         tamanho=tamanho,
         total=linha_conta[0],
     )
 
 
-async def _buscar_registro_por_hash(modulo: dict[str, Any], hash_universal: str) -> _RegistroDoMolde | None:
-    conexao, nome = await _contexto_da_tabela(modulo, "metadados")
+async def _find_record_by_hash(modulo: dict[str, Any], hash_universal: str) -> _RegistroDoMolde | None:
+    conexao, nome = await _table_context(modulo, "metadados")
     clausula_select = "select hash, titulo, status, created_at"
     clausula_from = f"from {nome}"
     clausula_onde = "where hash = %s"
     async with conexao.cursor() as cursor:
         await cursor.execute(" ".join([clausula_select, clausula_from, clausula_onde]), (hash_universal,))
         linha = await cursor.fetchone()
-    return None if linha is None else _para_registro(linha)
+    return None if linha is None else _to_record(linha)
 
 
-async def _inserir_registro(modulo: dict[str, Any], registro: Any) -> None:
-    conexao, nome = await _contexto_da_tabela(modulo, "metadados")
+async def _insert_record(modulo: dict[str, Any], registro: Any) -> None:
+    conexao, nome = await _table_context(modulo, "metadados")
     nome_e_colunas = f"{nome} (hash, titulo, status, created_at, updated_at)"
     clausula_insert = "insert into"
     clausula_values = "values (%s, %s, %s, %s, %s)"
@@ -178,8 +178,8 @@ async def _inserir_registro(modulo: dict[str, Any], registro: Any) -> None:
         await cursor.execute(consulta, valores)
 
 
-async def _contar_registros(modulo: dict[str, Any]) -> int:
-    conexao, nome = await _contexto_da_tabela(modulo, "metadados")
+async def _count_records(modulo: dict[str, Any]) -> int:
+    conexao, nome = await _table_context(modulo, "metadados")
     clausula_select = "select count(*) as total"
     clausula_from = f"from {nome}"
     async with conexao.cursor() as cursor:
@@ -190,22 +190,22 @@ async def _contar_registros(modulo: dict[str, Any]) -> int:
 
 class RepositorioPostgres:
     """`Repositorio` real, sobre a tabela `<prefixo>metadados` que o molde cria. Recebe o manifesto
-    do modulo (`dict`, o mesmo formato de `descobrir_modulos`) — nunca o tipo de `src/composicao.py`."""
+    do modulo (`dict`, o mesmo formato de `discover_modules`) — nunca o tipo de `src/composicao.py`."""
 
     def __init__(self, modulo: dict[str, Any]) -> None:
         self._modulo = modulo
 
-    async def listar(self, pagina: int, tamanho: int) -> _PaginaDoMolde:
-        return await _listar_registros(self._modulo, pagina, tamanho)
+    async def list(self, pagina: int, tamanho: int) -> _PaginaDoMolde:
+        return await _list_records(self._modulo, pagina, tamanho)
 
-    async def buscar_por_hash(self, hash_universal: str) -> _RegistroDoMolde | None:
-        return await _buscar_registro_por_hash(self._modulo, hash_universal)
+    async def find_by_hash(self, hash_universal: str) -> _RegistroDoMolde | None:
+        return await _find_record_by_hash(self._modulo, hash_universal)
 
-    async def inserir(self, registro: Any) -> None:
-        await _inserir_registro(self._modulo, registro)
+    async def insert(self, registro: Any) -> None:
+        await _insert_record(self._modulo, registro)
 
-    async def contar(self) -> int:
-        return await _contar_registros(self._modulo)
+    async def count(self) -> int:
+        return await _count_records(self._modulo)
 
 
 # ====================================================================================================
@@ -213,8 +213,8 @@ class RepositorioPostgres:
 # ====================================================================================================
 
 
-async def _registrar_evento(modulo: dict[str, Any], evento: dict[str, Any]) -> None:
-    conexao, nome = await _contexto_da_tabela(modulo, "auditoria")
+async def _record_audit_event(modulo: dict[str, Any], evento: dict[str, Any]) -> None:
+    conexao, nome = await _table_context(modulo, "auditoria")
     nome_e_colunas = f"{nome} (hash, acao, sujeito, campos_alterados, request_id)"
     clausula_insert = "insert into"
     clausula_values = "values (%s, %s, %s, %s, %s)"
@@ -236,8 +236,8 @@ class AuditoriaPostgres:
     def __init__(self, modulo: dict[str, Any]) -> None:
         self._modulo = modulo
 
-    async def registrar(self, evento: dict[str, Any]) -> None:
-        await _registrar_evento(self._modulo, evento)
+    async def record(self, evento: dict[str, Any]) -> None:
+        await _record_audit_event(self._modulo, evento)
 
 
 # ====================================================================================================

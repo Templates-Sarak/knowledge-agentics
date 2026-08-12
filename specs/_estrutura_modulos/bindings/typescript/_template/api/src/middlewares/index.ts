@@ -7,7 +7,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import type { ConfigSeguranca } from '../config.js';
-import { ErroApi, envelopeDeErro } from '../erros.js';
+import { ErroApi, errorEnvelope } from '../erros.js';
 import type { Logger } from '../logger.js';
 
 declare module 'express-serve-static-core' {
@@ -26,7 +26,7 @@ export function requestId(gerar: () => string): RequestHandler {
   };
 }
 
-export function headersDeSeguranca(config: ConfigSeguranca['headers']): RequestHandler {
+export function securityHeaders(config: ConfigSeguranca['headers']): RequestHandler {
   return (_req, res, next) => {
     if (config.hsts) res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
     if (config.noSniff) res.setHeader('x-content-type-options', 'nosniff');
@@ -55,11 +55,11 @@ export function rateLimit(config: ConfigSeguranca['rateLimit']): RequestHandler 
   return (req, res, next) => {
     const limite = req.method === 'GET' ? config.limiteLeitura : config.limiteEscrita;
     const chave = `${req.ip ?? 'desconhecido'}:${req.method}`;
-    const agora = Date.now();
+    const now = Date.now();
     const atual = janelas.get(chave);
 
-    if (atual === undefined || agora - atual.inicio > config.janelaSegundos * 1000) {
-      janelas.set(chave, { inicio: agora, contagem: 1 });
+    if (atual === undefined || now - atual.inicio > config.janelaSegundos * 1000) {
+      janelas.set(chave, { inicio: now, contagem: 1 });
       next();
       return;
     }
@@ -74,7 +74,7 @@ export function rateLimit(config: ConfigSeguranca['rateLimit']): RequestHandler 
 }
 
 export interface Auth {
-  verificar(token: string): Promise<{ permissoes: string[] } | null>;
+  verify(token: string): Promise<{ permissoes: string[] } | null>;
 }
 
 /**
@@ -82,18 +82,18 @@ export interface Auth {
  * router ser montado — aqui `req.path` ainda e absoluto ("/api/v1/<modulo>/health"). Sem tirar o
  * prefixo, nenhuma rota publica casaria e /health, /meta e /resumo responderiam 401.
  */
-function caminhoRelativo(caminho: string, rotaBase: string): string {
+function pathRelative(caminho: string, rotaBase: string): string {
   if (!caminho.startsWith(rotaBase)) return caminho;
   const resto = caminho.slice(rotaBase.length);
   return resto === '' ? '/' : resto;
 }
 
 /** DENY BY DEFAULT: so as rotas de `modulo.json:rotasPublicas` passam sem token. */
-export function autenticacao(auth: Auth, rotasPublicas: string[], rotaBase: string): RequestHandler {
+export function authentication(auth: Auth, rotasPublicas: string[], rotaBase: string): RequestHandler {
   const publicas = new Set(rotasPublicas.map((rota) => rota.toUpperCase()));
 
   return (req, _res, next) => {
-    const relativo = caminhoRelativo(req.path, rotaBase);
+    const relativo = pathRelative(req.path, rotaBase);
     if (publicas.has(`${req.method} ${relativo}`.toUpperCase())) {
       req.permissoes = [];
       next();
@@ -105,7 +105,7 @@ export function autenticacao(auth: Auth, rotasPublicas: string[], rotaBase: stri
       return;
     }
     auth
-      .verificar(cabecalho.slice(7))
+      .verify(cabecalho.slice(7))
       .then((claims) => {
         if (claims === null) {
           next(new ErroApi('NAO_AUTENTICADO', 'token invalido'));
@@ -119,7 +119,7 @@ export function autenticacao(auth: Auth, rotasPublicas: string[], rotaBase: stri
 }
 
 /** Autorizacao por permissao NOMEADA. RLS no banco e defesa em profundidade, nao o controle. */
-export function exigirPermissao(permissao: string): RequestHandler {
+export function requirePermission(permissao: string): RequestHandler {
   return (req, _res, next) => {
     if (!req.permissoes?.includes(permissao)) {
       next(new ErroApi('NAO_AUTORIZADO', 'permissao insuficiente'));
@@ -130,7 +130,7 @@ export function exigirPermissao(permissao: string): RequestHandler {
 }
 
 /** Unico lugar que transforma excecao em resposta. Detalhe vai para o log, nunca para o cliente. */
-export function tratadorDeErro(logger: Logger) {
+export function errorHandler(logger: Logger) {
   return (erro: unknown, req: Request, res: Response, _next: NextFunction): void => {
     const conhecido =
       erro instanceof ErroApi
@@ -143,6 +143,6 @@ export function tratadorDeErro(logger: Logger) {
       caminho: req.path,
       detalhe: conhecido.detalhe ?? conhecido.message,
     });
-    res.status(conhecido.status).json(envelopeDeErro(conhecido, req.requestId));
+    res.status(conhecido.status).json(errorEnvelope(conhecido, req.requestId));
   };
 }

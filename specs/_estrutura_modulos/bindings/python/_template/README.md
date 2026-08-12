@@ -55,7 +55,7 @@ Idênticas ao binding TypeScript, com a sintaxe da linguagem:
 - **Falha rápida** — `os.getenv("X", "http://localhost")` é violação; falta de env **derruba o boot**.
 - **Infraestrutura desacoplada** — `core/ports` define `Protocol`; o provedor só aparece em `config/ports.json`.
 - **Módulo alheio desacoplado** — `core/gateways/`, só HTTP, declarado em `consome`.
-- **Saída por allowlist** — `para_contrato()` é a projeção; devolver a linha crua é proibido.
+- **Saída por allowlist** — `to_contract()` é a projeção; devolver a linha crua é proibido.
 - **Deny by default** — toda rota exige token, exceto as de `rotasPublicas`.
 - **Log estruturado** — `print()` é proibido; o logger emite JSON com `requestId` e redige campo sensível.
 - **Determinismo** — `datetime.now()` e `random` proibidos em `core/`; use `relogio` e `geradorId`.

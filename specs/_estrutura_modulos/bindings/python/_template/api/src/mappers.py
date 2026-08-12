@@ -18,7 +18,7 @@ from typing import Any, Sequence
 from core.domain import Registro
 
 
-def linha_para_dominio(linha: dict[str, Any]) -> Registro:
+def row_to_domain(linha: dict[str, Any]) -> Registro:
     """banco -> dominio"""
     return Registro(
         hash=linha["hash"],
@@ -28,7 +28,7 @@ def linha_para_dominio(linha: dict[str, Any]) -> Registro:
     )
 
 
-def dominio_para_linha(registro: Registro) -> dict[str, Any]:
+def domain_to_row(registro: Registro) -> dict[str, Any]:
     """dominio -> banco"""
     return {
         "hash": registro.hash,
@@ -38,7 +38,7 @@ def dominio_para_linha(registro: Registro) -> dict[str, Any]:
     }
 
 
-def para_contrato(registro: Registro) -> dict[str, Any]:
+def to_contract(registro: Registro) -> dict[str, Any]:
     """dominio -> CONTRATO (camelCase).
 
     A allowlist E esta funcao: o que nao esta escrito aqui nao e publicado. Campo declarado em
@@ -52,7 +52,7 @@ def para_contrato(registro: Registro) -> dict[str, Any]:
     }
 
 
-def para_meta(manifesto: dict[str, Any]) -> dict[str, Any]:
+def to_meta(manifesto: dict[str, Any]) -> dict[str, Any]:
     """manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`rotasPublicas`): o que
     nao esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
     `permissoes`, `rotasPublicas` e `camposSensiveis` nunca saem por esta rota (plan-2.md N.1).
@@ -69,10 +69,10 @@ def para_meta(manifesto: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def para_colecao(registros: Sequence[Registro], pagina: int, tamanho: int, total: int) -> dict[str, Any]:
+def to_collection(registros: Sequence[Registro], pagina: int, tamanho: int, total: int) -> dict[str, Any]:
     """Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1)."""
     return {
-        "itens": [para_contrato(r) for r in registros],
+        "itens": [to_contract(r) for r in registros],
         "pagina": pagina,
         "tamanho": tamanho,
         "total": total,

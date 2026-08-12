@@ -8,12 +8,12 @@
 import type { Registro } from '../domain/index.js';
 
 /** Substitui marcadores `{{chave}}` do template pelos valores informados. */
-function preencher(template: string, valores: Record<string, string>): string {
+function fill(template: string, valores: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (original, chave: string) => valores[chave] ?? original);
 }
 
 /** Escapa o que vai para HTML. Artefato publicado nao pode virar vetor de injecao. */
-function escapar(texto: string): string {
+function escape(texto: string): string {
   return texto
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -25,11 +25,11 @@ function escapar(texto: string): string {
  * Gera o artefato de um registro. O `template` vem de core/templates/, lido pela borda —
  * o motor nao le arquivo, para continuar puro e testavel.
  */
-export function gerarArtefato(registro: Registro, template: string): string {
-  return preencher(template, {
-    hash: escapar(registro.hash),
-    titulo: escapar(registro.titulo),
-    status: escapar(registro.status),
-    criadoEm: escapar(registro.criadoEm),
+export function generateArtifact(registro: Registro, template: string): string {
+  return fill(template, {
+    hash: escape(registro.hash),
+    titulo: escape(registro.titulo),
+    status: escape(registro.status),
+    criadoEm: escape(registro.criadoEm),
   });
 }

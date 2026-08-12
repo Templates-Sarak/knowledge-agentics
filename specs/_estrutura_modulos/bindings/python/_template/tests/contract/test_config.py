@@ -1,4 +1,4 @@
-"""Prova que `_conferir_env_requerido` DE FATO derruba o boot quando falta variavel — plan-2.md N.4.
+"""Prova que `_check_env_required` DE FATO derruba o boot quando falta variavel — plan-2.md N.4.
 
 Sob `PYTEST_CURRENT_TEST` setado (pytest o define automaticamente, em toda a suite) o bypass cala a
 checagem de proposito: sem `.env` real, qualquer teste derrubaria antes do primeiro `def test_...`.
@@ -12,7 +12,7 @@ no codigo e ausente do manifesto" — por um vazamento que nao tem nada a ver co
 
 MEDIDO: remover `PYTEST_CURRENT_TEST` numa FIXTURE (fase "setup") nao basta — o pytest RE-ESCREVE a
 variavel na fronteira de fase, antes de entrar na fase "call" que roda o corpo do teste, e o valor
-removido volta antes de `_conferir_env_requerido` ser chamada. A remocao tem de acontecer DENTRO do
+removido volta antes de `_check_env_required` ser chamada. A remocao tem de acontecer DENTRO do
 proprio corpo do teste (mesma fase "call"), com `try/finally` para restaurar mesmo se o teste falhar.
 """
 
@@ -22,7 +22,7 @@ import os
 
 import pytest
 
-from api.src.config import _conferir_env_requerido
+from api.src.config import _check_env_required
 
 CHAVE = "<MODULO>_API_PORT"
 
@@ -53,7 +53,7 @@ def test_derruba_quando_falta_variavel_fora_do_pytest():
     chave_original = os.environ.pop(CHAVE, None)
     try:
         with pytest.raises(RuntimeError, match="variaveis ausentes no ambiente"):
-            _conferir_env_requerido(MANIFESTO_BASE)
+            _check_env_required(MANIFESTO_BASE)
     finally:
         if pytest_original is not None:
             os.environ["PYTEST_CURRENT_TEST"] = pytest_original
@@ -66,7 +66,7 @@ def test_nao_derruba_quando_a_variavel_esta_presente():
     chave_original = os.environ.get(CHAVE)
     os.environ[CHAVE] = "3999"
     try:
-        _conferir_env_requerido(MANIFESTO_BASE)
+        _check_env_required(MANIFESTO_BASE)
     finally:
         if pytest_original is not None:
             os.environ["PYTEST_CURRENT_TEST"] = pytest_original

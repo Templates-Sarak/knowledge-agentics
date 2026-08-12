@@ -16,7 +16,7 @@
 //   // core/gateways/catalogo.js
 //   import { ErroDeGateway } from './index.js';
 //
-//   export function criarGatewayCatalogo(baseUrl) {
+//   export function createCatalogGateway(baseUrl) {
 //     return {
 //       async obterPrecoVigente(hash) {
 //         const resposta = await fetch(`${baseUrl}/itens/${hash}/preco-vigente`);

@@ -11,7 +11,7 @@
  * @param {Record<string, string>} valores
  * @returns {string}
  */
-function preencher(template, valores) {
+function fill(template, valores) {
   return template.replace(/\{\{(\w+)\}\}/g, (original, chave) => valores[chave] ?? original);
 }
 
@@ -20,7 +20,7 @@ function preencher(template, valores) {
  * @param {string} texto
  * @returns {string}
  */
-function escapar(texto) {
+function escape(texto) {
   return texto
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -36,11 +36,11 @@ function escapar(texto) {
  * @param {string} template
  * @returns {string}
  */
-export function gerarArtefato(registro, template) {
-  return preencher(template, {
-    hash: escapar(registro.hash),
-    titulo: escapar(registro.titulo),
-    status: escapar(registro.status),
-    criadoEm: escapar(registro.criadoEm),
+export function generateArtifact(registro, template) {
+  return fill(template, {
+    hash: escape(registro.hash),
+    titulo: escape(registro.titulo),
+    status: escape(registro.status),
+    criadoEm: escape(registro.criadoEm),
   });
 }

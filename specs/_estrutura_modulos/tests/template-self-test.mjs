@@ -96,7 +96,7 @@ export const COMBINACOES_DE_MODULO = [
  *
  * Python não tem passo `build`/`lint` separado: o binding não empacota front-end (sem `web/` nos
  * módulos Python — medido, `bindings/python/_template` não tem pasta `web`), e `verificar.py` já
- * cobre forma + limiares + tipos + testes num só passo, como o `npm run verificar` do lado Node.
+ * cobre forma + limiares + tipos + testes num só passo, como o `npm run verify` do lado Node.
  *
  * `rapido`: só a combinação PADRÃO (sem flag) — medido, as quatro juntas custam ~70s (TS) / ~52s
  * (JS), e o `--rapido` combinado (TS+JS) foi de ~25s para ~1m58s — bem em cima do teto de ~2min que
@@ -159,7 +159,7 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
     ...passosDeModulo,
     cloneSimulado,
     primeiroCommit,
-    { nome: 'verificar', tipo: 'npm-script', script: 'verificar' },
+    { nome: 'verify', tipo: 'npm-script', script: 'verify' },
     mapaInstalado,
     { nome: 'build', tipo: 'npm-script', script: 'build' },
     { nome: 'lint', tipo: 'npm-script', script: 'lint' },
@@ -526,17 +526,19 @@ function casosDeAutoteste() {
         return iUltimoModulo !== -1 && iClone === iUltimoModulo + 1;
       })
     ) },
-    { nome: 'passosDoBinding: primeiro-commit logo depois de clone-simulado e antes de verificar, nos tres bindings (Bloco X, plan-2.2.md)', fn: () => (
+    { nome: 'passosDoBinding: primeiro-commit logo depois de clone-simulado e antes de verificar/verify, nos tres bindings (Bloco X, plan-2.2.md)', fn: () => (
       BINDINGS.every((binding) => {
         const nomes = passosDoBinding(binding).map((p) => p.nome);
+        const nomeVerificar = binding === 'python' ? 'verificar' : 'verify';
         const iCommit = nomes.indexOf('primeiro-commit');
-        return iCommit === nomes.indexOf('clone-simulado') + 1 && iCommit === nomes.indexOf('verificar') - 1;
+        return iCommit === nomes.indexOf('clone-simulado') + 1 && iCommit === nomes.indexOf(nomeVerificar) - 1;
       })
     ) },
-    { nome: 'passosDoBinding: mapa (Bloco U, plan-2.1.md) roda logo depois de verificar, nos tres bindings', fn: () => (
+    { nome: 'passosDoBinding: mapa (Bloco U, plan-2.1.md) roda logo depois de verificar/verify, nos tres bindings', fn: () => (
       BINDINGS.every((binding) => {
         const nomes = passosDoBinding(binding).map((p) => p.nome);
-        return nomes.indexOf('mapa') === nomes.indexOf('verificar') + 1;
+        const nomeVerificar = binding === 'python' ? 'verificar' : 'verify';
+        return nomes.indexOf('mapa') === nomes.indexOf(nomeVerificar) + 1;
       })
     ) },
     { nome: 'passosDoBinding: as QUATRO combinacoes de flag do Bloco O, nos tres bindings', fn: () => (

@@ -17,7 +17,7 @@ Este modulo nasce sem gateway (`consome: []`). Para acrescentar um, crie
     import httpx
     from . import ErroDeGateway
 
-    class FinanceiroGateway:
+    class FinanceGateway:
         def __init__(self, base_url: str) -> None:
             self._base_url = base_url
 

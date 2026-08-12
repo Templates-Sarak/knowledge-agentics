@@ -64,10 +64,10 @@ export interface Pagina<T> {
 }
 
 export interface Repositorio<T> {
-  listar(pagina: number, tamanho: number): Promise<Pagina<T>>;
-  buscarPorHash(hash: string): Promise<T | null>;
-  inserir(registro: T): Promise<void>;
-  contar(): Promise<number>;
+  list(pagina: number, tamanho: number): Promise<Pagina<T>>;
+  findByHash(hash: string): Promise<T | null>;
+  insert(registro: T): Promise<void>;
+  count(): Promise<number>;
 }
 
 export interface EventoDeAuditoria {
@@ -79,11 +79,11 @@ export interface EventoDeAuditoria {
 }
 
 export interface Auditoria {
-  registrar(evento: EventoDeAuditoria): Promise<void>;
+  record(evento: EventoDeAuditoria): Promise<void>;
 }
 
 export interface Relogio {
-  agora(): string;
+  now(): string;
 }
 
 export interface GeradorId {
@@ -91,7 +91,7 @@ export interface GeradorId {
 }
 
 export interface Auth {
-  verificar(token: string): Promise<{ permissoes: string[] } | null>;
+  verify(token: string): Promise<{ permissoes: string[] } | null>;
 }
 
 /**
@@ -100,12 +100,12 @@ export interface Auth {
  * nada de `executar(comando: string)` — o desenho que sustenta `sql-no-modulo` do lado do banco.
  */
 export interface Storage {
-  salvar(caminho: string, conteudo: Buffer): Promise<void>;
-  buscar(caminho: string): Promise<Buffer | null>;
-  remover(caminho: string): Promise<void>;
+  save(caminho: string, conteudo: Buffer): Promise<void>;
+  find(caminho: string): Promise<Buffer | null>;
+  remove(caminho: string): Promise<void>;
 }
 
 /** Envia mensagem a um destinatario — e-mail, o outro caso mais comum (plan-2.md Bloco S). */
 export interface Notificador {
-  enviar(destinatario: string, assunto: string, corpo: string): Promise<void>;
+  send(destinatario: string, assunto: string, corpo: string): Promise<void>;
 }

@@ -21,50 +21,50 @@ interface ComHash {
   hash: string;
 }
 
-export function criarRepositorio<T extends ComHash>(iniciais: T[] = []): Repositorio<T> {
+export function createRepository<T extends ComHash>(iniciais: T[] = []): Repositorio<T> {
   const registros = [...iniciais];
   return {
-    async listar(pagina: number, tamanho: number): Promise<Pagina<T>> {
+    async list(pagina: number, tamanho: number): Promise<Pagina<T>> {
       const inicio = (pagina - 1) * tamanho;
       return { itens: registros.slice(inicio, inicio + tamanho), pagina, tamanho, total: registros.length };
     },
-    async buscarPorHash(hash: string): Promise<T | null> {
+    async findByHash(hash: string): Promise<T | null> {
       return registros.find((registro) => registro.hash === hash) ?? null;
     },
-    async inserir(registro: T): Promise<void> {
+    async insert(registro: T): Promise<void> {
       registros.push(registro);
     },
-    async contar(): Promise<number> {
+    async count(): Promise<number> {
       return registros.length;
     },
   };
 }
 
-export function criarAuditoria(): Auditoria & { eventos: EventoDeAuditoria[] } {
+export function createAuditLog(): Auditoria & { eventos: EventoDeAuditoria[] } {
   const eventos: EventoDeAuditoria[] = [];
   return {
     eventos,
-    async registrar(evento: EventoDeAuditoria): Promise<void> {
+    async record(evento: EventoDeAuditoria): Promise<void> {
       eventos.push(evento);
     },
   };
 }
 
 /** Relogio do sistema. Existe aqui, fora do dominio, exatamente para que o dominio nao o tenha. */
-export function criarRelogio(): Relogio {
-  return { agora: () => new Date().toISOString() };
+export function createClock(): Relogio {
+  return { now: () => new Date().toISOString() };
 }
 
 /** Relogio congelado, para teste de motor deterministico. */
-export function criarRelogioFixo(instante: string): Relogio {
-  return { agora: () => instante };
+export function createFixedClock(instante: string): Relogio {
+  return { now: () => instante };
 }
 
-export function criarGeradorId(): GeradorId {
+export function createIdGenerator(): GeradorId {
   return { hash: () => String(Math.floor(Math.random() * 90000) + 10000) };
 }
 
-export function criarGeradorSequencial(inicio = 10000): GeradorId {
+export function createSequentialGenerator(inicio = 10000): GeradorId {
   let atual = inicio;
   return {
     hash() {
@@ -75,26 +75,26 @@ export function criarGeradorSequencial(inicio = 10000): GeradorId {
 }
 
 /** Auth que NEGA tudo. E o default seguro enquanto o projeto nao tem login (deny by default). */
-export function criarAuthQueNega(): Auth {
+export function createDenyingAuth(): Auth {
   return {
-    async verificar(): Promise<{ permissoes: string[] } | null> {
+    async verify(): Promise<{ permissoes: string[] } | null> {
       return null;
     },
   };
 }
 
-/** `arquivos` exposto para o teste inspecionar o que foi salvo — mesmo padrao de `criarAuditoria`. */
-export function criarStorageEmMemoria(): Storage & { arquivos: Map<string, Buffer> } {
+/** `arquivos` exposto para o teste inspecionar o que foi salvo — mesmo padrao de `createAuditLog`. */
+export function createInMemoryStorage(): Storage & { arquivos: Map<string, Buffer> } {
   const arquivos = new Map<string, Buffer>();
   return {
     arquivos,
-    async salvar(caminho: string, conteudo: Buffer): Promise<void> {
+    async save(caminho: string, conteudo: Buffer): Promise<void> {
       arquivos.set(caminho, conteudo);
     },
-    async buscar(caminho: string): Promise<Buffer | null> {
+    async find(caminho: string): Promise<Buffer | null> {
       return arquivos.get(caminho) ?? null;
     },
-    async remover(caminho: string): Promise<void> {
+    async remove(caminho: string): Promise<void> {
       arquivos.delete(caminho);
     },
   };
@@ -106,12 +106,12 @@ interface MensagemEnviada {
   corpo: string;
 }
 
-/** `enviados` exposto pelo mesmo motivo de `criarStorageEmMemoria`: o teste afirma o que saiu. */
-export function criarNotificadorEmMemoria(): Notificador & { enviados: MensagemEnviada[] } {
+/** `enviados` exposto pelo mesmo motivo de `createInMemoryStorage`: o teste afirma o que saiu. */
+export function createInMemoryNotifier(): Notificador & { enviados: MensagemEnviada[] } {
   const enviados: MensagemEnviada[] = [];
   return {
     enviados,
-    async enviar(destinatario: string, assunto: string, corpo: string): Promise<void> {
+    async send(destinatario: string, assunto: string, corpo: string): Promise<void> {
       enviados.push({ destinatario, assunto, corpo });
     },
   };

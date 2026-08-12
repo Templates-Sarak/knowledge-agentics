@@ -20,7 +20,7 @@ import react from '@vitejs/plugin-react';
  * arquivo (módulo solto, fora de projeto), o vitest não aplica piso nenhum: o gate (`verificacao-declarada`)
  * é quem cobra a ausência da política, não a cobertura.
  */
-function minimaDeCobertura() {
+function minimumCoverage() {
   try {
     const { cobertura } = JSON.parse(readFileSync('../../config/verificacao.json', 'utf8'));
     return typeof cobertura?.minima === 'number' ? cobertura.minima : undefined;
@@ -29,7 +29,7 @@ function minimaDeCobertura() {
   }
 }
 
-const minima = minimaDeCobertura();
+const minima = minimumCoverage();
 
 export default defineConfig({
   plugins: [react()],

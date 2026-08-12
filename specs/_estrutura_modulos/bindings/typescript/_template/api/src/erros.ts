@@ -38,6 +38,6 @@ export class ErroApi extends Error {
 }
 
 /** Envelope unico de erro. Toda falha sai exatamente nesta forma. */
-export function envelopeDeErro(erro: ErroApi, requestId: string): Record<string, unknown> {
+export function errorEnvelope(erro: ErroApi, requestId: string): Record<string, unknown> {
   return { erro: { codigo: erro.codigo, mensagem: erro.message, requestId } };
 }

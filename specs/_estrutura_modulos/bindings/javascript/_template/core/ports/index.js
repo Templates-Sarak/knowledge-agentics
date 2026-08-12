@@ -20,16 +20,16 @@
 /**
  * Persistencia dos registros do proprio modulo. Nunca toca tabela de outro modulo.
  * @typedef {object} Repositorio
- * @property {(pagina: number, tamanho: number) => Promise<Pagina<import('../domain/index.js').Registro>>} listar
- * @property {(hash: string) => Promise<import('../domain/index.js').Registro | null>} buscarPorHash
- * @property {(registro: import('../domain/index.js').Registro) => Promise<void>} inserir
- * @property {() => Promise<number>} contar
+ * @property {(pagina: number, tamanho: number) => Promise<Pagina<import('../domain/index.js').Registro>>} list
+ * @property {(hash: string) => Promise<import('../domain/index.js').Registro | null>} findByHash
+ * @property {(registro: import('../domain/index.js').Registro) => Promise<void>} insert
+ * @property {() => Promise<number>} count
  */
 
 /**
  * Trilha append-only do modulo. Guarda o NOME dos campos alterados, nunca o valor.
  * @typedef {object} Auditoria
- * @property {(evento: EventoDeAuditoria) => Promise<void>} registrar
+ * @property {(evento: EventoDeAuditoria) => Promise<void>} record
  */
 
 /**
@@ -44,7 +44,7 @@
 /**
  * O instante. Existe para que o dominio nunca chame `new Date()`.
  * @typedef {object} Relogio
- * @property {() => string} agora
+ * @property {() => string} now
  */
 
 /**
@@ -55,14 +55,14 @@
 
 /**
  * @typedef {object} Auth
- * @property {(token: string) => Promise<{ permissoes: string[] } | null>} verificar
+ * @property {(token: string) => Promise<{ permissoes: string[] } | null>} verify
  */
 
 /**
  * Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
  * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1, plan-2.md Bloco S).
  * @typedef {object} Notificador
- * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} enviar
+ * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} send
  */
 
 /**

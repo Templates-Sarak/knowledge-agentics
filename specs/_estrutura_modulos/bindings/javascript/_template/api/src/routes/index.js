@@ -5,13 +5,13 @@
 // monte a resposta pelo mapeador; lance ErroApi — nunca `res.status(...)` ad hoc.
 import { Router } from 'express';
 
-import { ErroDeValidacao, montarRegistro } from '../../../core/domain/index.js';
+import { ErroDeValidacao, buildRecord } from '../../../core/domain/index.js';
 import { ErroApi } from '../erros.js';
-import { exigirPermissao } from '../middlewares/index.js';
-import { paraColecao, paraContrato, paraMeta } from '../mappers/index.js';
+import { requirePermission } from '../middlewares/index.js';
+import { toCollection, toContract, toMeta } from '../mappers/index.js';
 
 /** Paginacao validada na borda, com padrao e teto vindos de config/api.json. */
-function lerPaginacao(query, config) {
+function readPagination(query, config) {
   const pagina = Number(query.pagina ?? 1);
   const tamanho = Number(query.tamanho ?? config.api.paginaTamanhoPadrao);
   if (!Number.isInteger(pagina) || pagina < 1) {
@@ -27,7 +27,7 @@ function lerPaginacao(query, config) {
 }
 
 /** Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado (specs/arquitetura/02-contrato-e-dados.md §3.2). */
-function lerCorpo(corpo) {
+function readBody(corpo) {
   if (typeof corpo !== 'object' || corpo === null) {
     throw new ErroApi('VALIDACAO', 'corpo deve ser um objeto');
   }
@@ -40,7 +40,7 @@ function lerCorpo(corpo) {
 }
 
 /** As permissoes vem do manifesto, nunca de literal no codigo. */
-function permissoesDe(config) {
+function permissionsFor(config) {
   const [ler, escrever] = config.manifesto.permissoes;
   if (ler === undefined || escrever === undefined) {
     throw new Error('[rotas] modulo.json:permissoes precisa declarar leitura e escrita');
@@ -48,69 +48,69 @@ function permissoesDe(config) {
   return { ler, escrever };
 }
 
-function rotasObrigatorias(router, { deps, config }) {
+function requiredRoutes(router, { deps, config }) {
   const { manifesto } = config;
 
   router.get('/health', (_req, res, next) => {
     deps.repositorio
-      .contar()
+      .count()
       .then(() => res.json({ ok: true, modulo: manifesto.id }))
       .catch(next);
   });
 
   router.get('/meta', (_req, res) => {
-    res.json(paraMeta(manifesto));
+    res.json(toMeta(manifesto));
   });
 
   router.get('/resumo', (_req, res, next) => {
     deps.repositorio
-      .contar()
+      .count()
       .then((total) => res.json({ total }))
       .catch(next);
   });
 }
 
-function rotasDeRegistros(router, { deps, config }) {
-  const { ler, escrever } = permissoesDe(config);
+function recordRoutes(router, { deps, config }) {
+  const { ler, escrever } = permissionsFor(config);
 
-  router.get('/registros', exigirPermissao(ler), (req, res, next) => {
+  router.get('/registros', requirePermission(ler), (req, res, next) => {
     Promise.resolve()
-      .then(() => lerPaginacao(req.query, config))
-      .then(([pagina, tamanho]) => deps.repositorio.listar(pagina, tamanho))
-      .then((r) => res.json(paraColecao(r.itens, r.pagina, r.tamanho, r.total)))
+      .then(() => readPagination(req.query, config))
+      .then(([pagina, tamanho]) => deps.repositorio.list(pagina, tamanho))
+      .then((r) => res.json(toCollection(r.itens, r.pagina, r.tamanho, r.total)))
       .catch(next);
   });
 
-  router.get('/registros/:hash', exigirPermissao(ler), (req, res, next) => {
+  router.get('/registros/:hash', requirePermission(ler), (req, res, next) => {
     deps.repositorio
-      .buscarPorHash(req.params.hash)
+      .findByHash(req.params.hash)
       .then((registro) => {
         if (registro === null) throw new ErroApi('NAO_ENCONTRADO', 'registro nao encontrado');
-        res.json(paraContrato(registro));
+        res.json(toContract(registro));
       })
       .catch(next);
   });
 
-  router.post('/registros', exigirPermissao(escrever), (req, res, next) => {
+  router.post('/registros', requirePermission(escrever), (req, res, next) => {
     Promise.resolve()
-      .then(() => criar(req.body, deps, config, req.requestId))
-      .then((registro) => res.status(201).json(paraContrato(registro)))
-      .catch((causa) => next(traduzir(causa)));
+      .then(() => create(req.body, deps, config, req.requestId))
+      .then((registro) => res.status(201).json(toContract(registro)))
+      .catch((causa) => next(translate(causa)));
   });
 }
 
-async function criar(corpo, deps, config, requestId) {
-  const entrada = lerCorpo(corpo);
-  const registro = montarRegistro(
+async function create(corpo, deps, config, requestId) {
+  const entrada = readBody(corpo);
+  const registro = buildRecord(
     entrada,
     config.dominio.statusValidos,
     deps.geradorId.hash(),
-    deps.relogio.agora(),
+    deps.relogio.now(),
   );
-  await deps.repositorio.inserir(registro);
-  await deps.auditoria.registrar({
+  await deps.repositorio.insert(registro);
+  await deps.auditoria.record({
     hash: registro.hash,
-    acao: 'criar',
+    acao: 'create',
     sujeito: 'sistema',
     camposAlterados: Object.keys(registro),
     requestId,
@@ -119,14 +119,14 @@ async function criar(corpo, deps, config, requestId) {
 }
 
 /** Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO (specs/arquitetura/02-contrato-e-dados.md §3.2). */
-function traduzir(causa) {
+function translate(causa) {
   if (causa instanceof ErroDeValidacao) return new ErroApi('VALIDACAO', causa.message);
   return causa;
 }
 
-export function criarRotas(opcoes) {
+export function createRoutes(opcoes) {
   const router = Router();
-  rotasObrigatorias(router, opcoes);
-  rotasDeRegistros(router, opcoes);
+  requiredRoutes(router, opcoes);
+  recordRoutes(router, opcoes);
   return router;
 }

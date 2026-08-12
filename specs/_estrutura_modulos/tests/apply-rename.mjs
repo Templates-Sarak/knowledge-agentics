@@ -598,11 +598,30 @@ function classificarArquivo(texto, item, formato, literaisProtegidos) {
   return { linhas, porLinha };
 }
 
-function processarArquivo(caminho, itens, literaisProtegidos, aplicar) {
+/**
+ * `simbolo`/`chave` são vocabulário do ESQUELETO — decisão 3/8 do Bloco AC. `tools/` E `tests/`
+ * são ferramental de quem MANTÉM A BASE (nunca do projeto gerado — mesmo raciocínio da decisão 4,
+ * "ferramental vendorizado", estendido a `tests/` pelo mesmo motivo que já vale para
+ * `verify-map.mjs`/`template-self-test.mjs`: moram fora de `tools/` só por não entrarem no Bloco K
+ * por binding, não porque sejam do esqueleto). Achado ao rodar `--relatorio --fase AD.2`
+ * (plan-3.md Bloco AD, Rodada 1): sem esta fronteira, o item `lerTexto`/`rodarAutoteste` casava
+ * DENTRO de `tests/verify-citations.mjs`/`verify-map.mjs` — funções da PRÓPRIA base que só
+ * coincidem de nome com as do molde, nunca deveriam substituir. `pasta`/`arquivo` continuam
+ * varrendo tudo: são caminho/estrutura compartilhados entre a base e o projeto gerado (AD.1 já
+ * prova isso fechado).
+ */
+function itemAplicaAoArquivo(item, caminho) {
+  if (item.tipo !== 'simbolo' && item.tipo !== 'chave') return true;
+  const raizBindings = join(RAIZ_TEMPLATE, 'bindings') + sep;
+  return caminho.startsWith(raizBindings);
+}
+
+function processarArquivo(caminho, itensTodos, literaisProtegidos, aplicar) {
   const textoOriginal = readFileSync(caminho, 'utf8');
   const formato = formatoDoArquivo(caminho);
   let linhasAtuais = textoOriginal.split(/\r?\n/);
   const registros = [];
+  const itens = itensTodos.filter((item) => itemAplicaAoArquivo(item, caminho));
 
   for (const item of itens) {
     const { porLinha } = classificarArquivo(linhasAtuais.join('\n'), item, formato, literaisProtegidos);

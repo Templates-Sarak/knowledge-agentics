@@ -16,16 +16,16 @@ REDIGIDO = "[REDIGIDO]"
 _PROFUNDIDADE_MAXIMA = 4
 
 
-def _redigir(valor: Any, sensiveis: set[str], profundidade: int = 0) -> Any:
+def _redact(valor: Any, sensiveis: set[str], profundidade: int = 0) -> Any:
     """Substitui recursivamente o valor de todo campo sensivel."""
     if profundidade > _PROFUNDIDADE_MAXIMA:
         return valor
     if isinstance(valor, list):
-        return [_redigir(item, sensiveis, profundidade + 1) for item in valor]
+        return [_redact(item, sensiveis, profundidade + 1) for item in valor]
     if not isinstance(valor, dict):
         return valor
     return {
-        chave: REDIGIDO if chave in sensiveis else _redigir(conteudo, sensiveis, profundidade + 1)
+        chave: REDIGIDO if chave in sensiveis else _redact(conteudo, sensiveis, profundidade + 1)
         for chave, conteudo in valor.items()
     }
 
@@ -36,29 +36,29 @@ class Logger:
         self._minimo = NIVEIS.index(nivel_minimo)
         self._sensiveis = set(campos_sensiveis)
 
-    def _emitir(self, nivel: str, mensagem: str, dados: dict[str, Any] | None) -> None:
+    def _emit(self, nivel: str, mensagem: str, dados: dict[str, Any] | None) -> None:
         if NIVEIS.index(nivel) < self._minimo:
             return
         linha = {"nivel": nivel, "modulo": self._modulo, "mensagem": mensagem}
-        linha.update(_redigir(dados or {}, self._sensiveis))
+        linha.update(_redact(dados or {}, self._sensiveis))
         sys.stdout.write(f"{json.dumps(linha, ensure_ascii=False)}\n")
 
     # `dados` e KEYWORD-ONLY de proposito: alem de deixar a chamada legivel, impede que o linter
     # confunda este logger com o `logging` da stdlib, cujo segundo argumento posicional e
     # argumento de format string. Sem isso, `logger.error("msg", {...})` vira falso positivo.
     def debug(self, mensagem: str, *, dados: dict[str, Any] | None = None) -> None:
-        self._emitir("debug", mensagem, dados)
+        self._emit("debug", mensagem, dados)
 
     def info(self, mensagem: str, *, dados: dict[str, Any] | None = None) -> None:
-        self._emitir("info", mensagem, dados)
+        self._emit("info", mensagem, dados)
 
     def warn(self, mensagem: str, *, dados: dict[str, Any] | None = None) -> None:
-        self._emitir("warn", mensagem, dados)
+        self._emit("warn", mensagem, dados)
 
     def error(self, mensagem: str, *, dados: dict[str, Any] | None = None) -> None:
-        self._emitir("error", mensagem, dados)
+        self._emit("error", mensagem, dados)
 
 
-def criar_logger(modulo: str, nivel_minimo: str, campos_sensiveis: Sequence[str]) -> Logger:
+def create_logger(modulo: str, nivel_minimo: str, campos_sensiveis: Sequence[str]) -> Logger:
     """`nivel_minimo` vem de config/api.json:nivelLog — nunca literal no codigo."""
     return Logger(modulo, nivel_minimo, campos_sensiveis)

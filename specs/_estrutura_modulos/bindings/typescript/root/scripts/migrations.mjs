@@ -6,7 +6,7 @@
 //   node scripts/migrations.mjs down <modulo>     reverte so o ULTIMO aplicado (bloco "-- rollback")
 //   node scripts/migrations.mjs ciclo <modulo>    up -> down -> up — prova que o rollback fecha,
 //                                                  de qualquer estado inicial (vazio ou ja migrado)
-//   node scripts/migrations.mjs --autoteste       prova interna (parser, ordem, pendentes/ultimo)
+//   node scripts/migrations.mjs --autoteste       prova interna (parser, ordem, pending/ultimo)
 //
 // NAO MORA em tools/ (zero dependencia externa, lei 3 da base) — precisa de driver de
 // Postgres, e tools/ so usa node:*. `pg` e devDependency do PROJETO (mesmo precedente de
@@ -39,8 +39,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 // `pg` e LAZY, de proposito — mesma forma do `psycopg` em migrations.py (importado dentro da funcao
-// que conecta, nunca no topo). O nucleo puro (separarUpDown, ordenarMigrations, chaveDeAmbiente,
-// pendentes, ultimoAplicado) e o que `--autoteste` prova, e ele nunca toca banco: um import de topo
+// que conecta, nunca no topo). O nucleo puro (splitUpDown, orderMigrations, environmentKey,
+// pending, lastApplied) e o que `--autoteste` prova, e ele nunca toca banco: um import de topo
 // faria um teste que nao usa banco nenhum exigir o driver instalado, e `--autoteste` deixaria de
 // rodar "de qualquer lugar". Medido tambem (nao presumido) o formato do `await import('pg')`: o
 // pacote e CJS, mas expoe `Client` como export NOMEADO tambem (alem de `.default.Client`) —
@@ -65,13 +65,13 @@ const VERBOS_DE_REVERSAO = /^(drop|alter|delete|truncate|revoke|grant|create|ins
  * ocorrencia em qualquer lugar do texto (diferente do regex de deteccao do gate, `data.mjs`, que
  * so precisa saber SE existe bloco, nunca onde ele comeca).
  */
-export function separarUpDown(conteudo) {
+export function splitUpDown(conteudo) {
   const linhas = conteudo.split(/\r?\n/);
   const indiceMarcador = linhas.findIndex((linha) => /^\s*--\s*rollback\s*$/i.test(linha));
   if (indiceMarcador === -1) return { up: conteudo.trim(), down: '' };
 
   const up = linhas.slice(0, indiceMarcador).join('\n').trim();
-  const down = descomentarRollback(linhas.slice(indiceMarcador + 1));
+  const down = uncommentRollback(linhas.slice(indiceMarcador + 1));
   return { up, down };
 }
 
@@ -83,7 +83,7 @@ export function separarUpDown(conteudo) {
  * aqui se ja nao estivesse comentado). E o que faz o parser nunca quebrar, provado por
  * `--autoteste` com linha em branco, comentario que NAO e rollback, e indentacao.
  */
-function descomentarRollback(linhas) {
+function uncommentRollback(linhas) {
   return linhas
     .filter((linha) => linha.trim() !== '')
     .map((linha) => {
@@ -98,30 +98,30 @@ function descomentarRollback(linhas) {
 
 /** Nome do arquivo -> prefixo NNNN. `null` quando foge do padrao — a regra `migrations` do gate ja
  * reprova isso; aqui so nao quebra a ordenacao. */
-function prefixoDe(nomeDeArquivo) {
+function prefix(nomeDeArquivo) {
   const casado = nomeDeArquivo.match(/^(\d{4})-/);
   return casado === null ? null : casado[1];
 }
 
 /** UP em ordem crescente (prefixo NNNN); DOWN e o INVERSO — reverte o que aplicou por ultimo primeiro. */
-export function ordenarMigrations(nomes, direcao) {
-  const ordenados = [...nomes].sort((a, b) => (prefixoDe(a) ?? a).localeCompare(prefixoDe(b) ?? b));
+export function orderMigrations(nomes, direcao) {
+  const ordenados = [...nomes].sort((a, b) => (prefix(a) ?? a).localeCompare(prefix(b) ?? b));
   return direcao === 'down' ? ordenados.reverse() : ordenados;
 }
 
 /** `<modulo>` -> `<MODULO>_DB_URL` — a MESMA convencao de `modulo.json:envRequerido`. */
-export function chaveDeAmbiente(idDoModulo) {
+export function environmentKey(idDoModulo) {
   return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
 
 /** Os nomes (ja ordenados por 'up') que NAO estao em `aplicados` — em ordem, o que falta aplicar. */
-export function pendentes(nomesOrdenadosUp, aplicados) {
+export function pending(nomesOrdenadosUp, aplicados) {
   return nomesOrdenadosUp.filter((nome) => !aplicados.has(nome));
 }
 
 /** O ULTIMO nome (na ordem 'up') que esta em `aplicados` — `null` se nenhum esta. E o alvo do `down`:
  * reverter um passo, nunca a lista inteira, e por isso `ciclo` funciona de qualquer estado. */
-export function ultimoAplicado(nomesOrdenadosUp, aplicados) {
+export function lastApplied(nomesOrdenadosUp, aplicados) {
   const feitos = nomesOrdenadosUp.filter((nome) => aplicados.has(nome));
   return feitos.length > 0 ? feitos.at(-1) : null;
 }
@@ -131,13 +131,13 @@ export function ultimoAplicado(nomesOrdenadosUp, aplicados) {
 // pelos pontos nomeados (leitura de arquivo, rede) explicitamente.
 // ================================================================================================
 
-function lerTexto(caminho) {
+function readText(caminho) {
   return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
 }
 
-/** Pares chave=valor de um `.env` — mesma leitura de `src/composicao.ts:lerParesEnv`. */
-function lerParesEnv(caminho) {
-  return lerTexto(caminho)
+/** Pares chave=valor de um `.env` — mesma leitura de `src/composicao.ts:readPairsEnv`. */
+function readPairsEnv(caminho) {
+  return readText(caminho)
     .split(/\r?\n/)
     .map((linha) => linha.trim())
     .filter((linha) => linha !== '' && !linha.startsWith('#') && linha.includes('='))
@@ -148,18 +148,18 @@ function lerParesEnv(caminho) {
 }
 
 /** Carrega o `.env` UNICO da raiz no processo, sem sobrescrever o que ja veio de fora — mesma
- * precedencia de `src/composicao.ts:carregarEnvDaRaiz` (ADR-004). */
-function carregarEnvDaRaiz() {
+ * precedencia de `src/composicao.ts:loadEnvRoot` (ADR-004). */
+function loadEnvRoot() {
   const caminho = join(RAIZ, '.env');
   if (!existsSync(caminho)) return;
-  for (const [chave, valor] of lerParesEnv(caminho)) {
+  for (const [chave, valor] of readPairsEnv(caminho)) {
     if (process.env[chave] === undefined) process.env[chave] = valor;
   }
 }
 
 /** `<modulo>` valido E dentro de `modules/` — nunca escapa por `..` nem separador. Falha nomeando
  * a entrada recusada, nunca silenciosa. */
-function pastaDoModulo(idDoModulo) {
+function moduleFolder(idDoModulo) {
   if (!ID_DE_MODULO_VALIDO.test(idDoModulo)) {
     throw new Error(`[migrations] "${idDoModulo}" nao e um id de modulo valido (kebab-case minusculo)`);
   }
@@ -174,7 +174,7 @@ function pastaDoModulo(idDoModulo) {
   return pasta;
 }
 
-function listarMigrations(pastaModulo) {
+function listMigrations(pastaModulo) {
   const base = join(pastaModulo, 'database', 'migrations');
   if (!existsSync(base)) return [];
   return readdirSync(base).filter((nome) => nome.endsWith('.sql'));
@@ -184,17 +184,17 @@ function listarMigrations(pastaModulo) {
  * nunca um terceiro lugar para o nome da tabela de controle. Devolve `{ schema, tabela, nome }` —
  * `nome` já qualificado (`"schema"."tabela"`), para as funções abaixo passarem UM parâmetro em vez
  * de dois (limiar de 4 parâmetros). */
-function tabelaDeControle(pastaModulo) {
-  const manifesto = JSON.parse(lerTexto(join(pastaModulo, 'modulo.json')));
+function controlTable(pastaModulo) {
+  const manifesto = JSON.parse(readText(join(pastaModulo, 'modulo.json')));
   const schema = manifesto.dados.schema;
   const tabela = `${manifesto.dados.prefixo}migrations`;
   return { schema, tabela, nome: `"${schema}"."${tabela}"` };
 }
 
 /** Le uma variavel obrigatoria. Ausente = falha nomeando a chave (lei 7 do catalogo, mesmo padrao
- * de `api/src/config.ts:envObrigatoria`). */
-function urlObrigatoria(idDoModulo) {
-  const chave = chaveDeAmbiente(idDoModulo);
+ * de `api/src/config.ts:envRequired`). */
+function requiredUrl(idDoModulo) {
+  const chave = environmentKey(idDoModulo);
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
@@ -204,112 +204,112 @@ function urlObrigatoria(idDoModulo) {
   return valor;
 }
 
-async function conectar(url) {
+async function connect(url) {
   const { Client } = await import('pg');
-  const cliente = new Client({ connectionString: url });
-  await cliente.connect();
-  return cliente;
+  const client = new Client({ connectionString: url });
+  await client.connect();
+  return client;
 }
 
 /** `Set` dos `arquivo` já registrados — vazio (nunca erro) quando a tabela de controle ainda não
  * existe, o estado normal do PRIMEIRO `up` de um banco novo. */
-async function migracoesAplicadas(cliente, schema, tabela) {
-  const existe = await cliente.query(
+async function appliedMigrations(client, schema, tabela) {
+  const existe = await client.query(
     'select 1 from information_schema.tables where table_schema = $1 and table_name = $2',
     [schema, tabela],
   );
   if (existe.rowCount === 0) return new Set();
-  const linhas = await cliente.query(`select arquivo from "${schema}"."${tabela}"`);
+  const linhas = await client.query(`select arquivo from "${schema}"."${tabela}"`);
   return new Set(linhas.rows.map((linha) => linha.arquivo));
 }
 
 /** UMA migration, dentro de UMA transação: roda o SQL, depois grava a linha de controle — nessa
  * ordem, porque a migration 0001 CRIA a tabela de controle no próprio SQL que acabou de rodar.
- * `tabelaControle` já vem qualificada (`{ nome }` de `tabelaDeControle`) — um parâmetro, não dois. */
-async function aplicarUma(cliente, pastaModulo, nome, tabelaControle) {
-  const conteudo = lerTexto(join(pastaModulo, 'database', 'migrations', nome));
-  const { up } = separarUpDown(conteudo);
+ * `tabelaControle` já vem qualificada (`{ nome }` de `controlTable`) — um parâmetro, não dois. */
+async function applyOne(client, pastaModulo, nome, tabelaControle) {
+  const conteudo = readText(join(pastaModulo, 'database', 'migrations', nome));
+  const { up } = splitUpDown(conteudo);
   process.stdout.write(`  up ${nome}...\n`);
-  await cliente.query('begin');
+  await client.query('begin');
   try {
-    if (up !== '') await cliente.query(up);
-    await cliente.query(`insert into ${tabelaControle} (arquivo) values ($1)`, [nome]);
-    await cliente.query('commit');
+    if (up !== '') await client.query(up);
+    await client.query(`insert into ${tabelaControle} (arquivo) values ($1)`, [nome]);
+    await client.query('commit');
   } catch (causa) {
-    await cliente.query('rollback');
+    await client.query('rollback');
     throw causa;
   }
 }
 
 /** UMA migration revertida, dentro de UMA transação: apaga a linha de controle ANTES do SQL de
- * reversão — a ordem inversa de `aplicarUma`, pelo motivo simétrico: reverter 0001 apaga a própria
+ * reversão — a ordem inversa de `applyOne`, pelo motivo simétrico: reverter 0001 apaga a própria
  * tabela de controle, e não há como `DELETE` dela depois que ela sumiu. */
-async function reverterUma(cliente, pastaModulo, nome, tabelaControle) {
-  const conteudo = lerTexto(join(pastaModulo, 'database', 'migrations', nome));
-  const { down } = separarUpDown(conteudo);
+async function revertOne(client, pastaModulo, nome, tabelaControle) {
+  const conteudo = readText(join(pastaModulo, 'database', 'migrations', nome));
+  const { down } = splitUpDown(conteudo);
   process.stdout.write(`  down ${nome}...\n`);
-  await cliente.query('begin');
+  await client.query('begin');
   try {
-    await cliente.query(`delete from ${tabelaControle} where arquivo = $1`, [nome]);
-    if (down !== '') await cliente.query(down);
-    await cliente.query('commit');
+    await client.query(`delete from ${tabelaControle} where arquivo = $1`, [nome]);
+    if (down !== '') await client.query(down);
+    await client.query('commit');
   } catch (causa) {
-    await cliente.query('rollback');
+    await client.query('rollback');
     throw causa;
   }
 }
 
-async function aplicarPendentes(cliente, pastaModulo) {
-  const { schema, tabela, nome: tabelaControle } = tabelaDeControle(pastaModulo);
-  const nomesUp = ordenarMigrations(listarMigrations(pastaModulo), 'up');
-  const aplicados = await migracoesAplicadas(cliente, schema, tabela);
-  const faltam = pendentes(nomesUp, aplicados);
+async function applyPending(client, pastaModulo) {
+  const { schema, tabela, nome: tabelaControle } = controlTable(pastaModulo);
+  const nomesUp = orderMigrations(listMigrations(pastaModulo), 'up');
+  const aplicados = await appliedMigrations(client, schema, tabela);
+  const faltam = pending(nomesUp, aplicados);
   if (faltam.length === 0) {
     process.stdout.write('  nada pendente — todas as migrations ja estao aplicadas\n');
     return;
   }
-  for (const nome of faltam) await aplicarUma(cliente, pastaModulo, nome, tabelaControle);
+  for (const nome of faltam) await applyOne(client, pastaModulo, nome, tabelaControle);
 }
 
-async function reverterUltimo(cliente, pastaModulo) {
-  const { schema, tabela, nome: tabelaControle } = tabelaDeControle(pastaModulo);
-  const nomesUp = ordenarMigrations(listarMigrations(pastaModulo), 'up');
-  const aplicados = await migracoesAplicadas(cliente, schema, tabela);
-  const alvo = ultimoAplicado(nomesUp, aplicados);
+async function revertLast(client, pastaModulo) {
+  const { schema, tabela, nome: tabelaControle } = controlTable(pastaModulo);
+  const nomesUp = orderMigrations(listMigrations(pastaModulo), 'up');
+  const aplicados = await appliedMigrations(client, schema, tabela);
+  const alvo = lastApplied(nomesUp, aplicados);
   if (alvo === null) {
     process.stdout.write('  nada aplicado — nada a reverter\n');
     return;
   }
-  await reverterUma(cliente, pastaModulo, alvo, tabelaControle);
+  await revertOne(client, pastaModulo, alvo, tabelaControle);
 }
 
-async function rodarUp(idDoModulo) {
-  const pastaModulo = pastaDoModulo(idDoModulo);
-  const cliente = await conectar(urlObrigatoria(idDoModulo));
+async function runUp(idDoModulo) {
+  const pastaModulo = moduleFolder(idDoModulo);
+  const client = await connect(requiredUrl(idDoModulo));
   try {
-    await aplicarPendentes(cliente, pastaModulo);
+    await applyPending(client, pastaModulo);
   } finally {
-    await cliente.end();
+    await client.end();
   }
 }
 
-async function rodarDown(idDoModulo) {
-  const pastaModulo = pastaDoModulo(idDoModulo);
-  const cliente = await conectar(urlObrigatoria(idDoModulo));
+async function runDown(idDoModulo) {
+  const pastaModulo = moduleFolder(idDoModulo);
+  const client = await connect(requiredUrl(idDoModulo));
   try {
-    await reverterUltimo(cliente, pastaModulo);
+    await revertLast(client, pastaModulo);
   } finally {
-    await cliente.end();
+    await client.end();
   }
 }
 
-async function rodarCiclo(idDoModulo) {
+async function runCycle(idDoModulo) {
   process.stdout.write(`[migrations] ${idDoModulo}: up (aplica pendentes)\n`);
-  await rodarUp(idDoModulo);
+  await runUp(idDoModulo);
   process.stdout.write(`[migrations] ${idDoModulo}: down (reverte o ultimo aplicado)\n`);
-  await rodarDown(idDoModulo);
+  await runDown(idDoModulo);
   process.stdout.write(`[migrations] ${idDoModulo}: up (reaplica o que o down reverteu)\n`);
-  await rodarUp(idDoModulo);
+  await runUp(idDoModulo);
   process.stdout.write(`[migrations] ${idDoModulo}: ciclo up -> down -> up OK\n`);
 }
 
@@ -319,9 +319,9 @@ async function rodarCiclo(idDoModulo) {
 // ================================================================================================
 
 /** Os dois casos de bloco preenchido — a forma do molde e a adversarial (linha em branco, comentario
- * que nao e rollback, indentacao). Separado de `casosDeSepararUpDownVazios` so a funcao caber no
+ * que nao e rollback, indentacao). Separado de `splitUpDownEmptyCases` so a funcao caber no
  * limiar de 40 linhas — o mesmo limiar que este arquivo existe para fazer valer no codigo do usuario. */
-function casosDeSepararUpDownPreenchidos() {
+function splitUpDownFilledCases() {
   return [
     {
       nome: 'bloco simples (o molde de verdade)',
@@ -361,7 +361,7 @@ function casosDeSepararUpDownPreenchidos() {
 }
 
 /** Os dois casos SEM bloco de rollback (ausente / presente e vazio) — ver o motivo do split acima. */
-function casosDeSepararUpDownVazios() {
+function splitUpDownEmptyCases() {
   return [
     {
       nome: 'sem bloco de rollback: down vazio, up e o arquivo inteiro',
@@ -376,11 +376,11 @@ function casosDeSepararUpDownVazios() {
   ];
 }
 
-function casosDeSepararUpDown() {
-  return [...casosDeSepararUpDownPreenchidos(), ...casosDeSepararUpDownVazios()];
+function splitUpDownCases() {
+  return [...splitUpDownFilledCases(), ...splitUpDownEmptyCases()];
 }
 
-function casosDeOrdenacao() {
+function orderingCases() {
   return [
     {
       nome: 'up: ordem crescente',
@@ -397,52 +397,51 @@ function casosDeOrdenacao() {
   ];
 }
 
-function casosDeChaveDeAmbiente() {
+function environmentKeyCases() {
   return [
     { nome: 'simples', id: 'catalogo', esperado: 'CATALOGO_DB_URL' },
     { nome: 'com hifen', id: 'linha-de-producao', esperado: 'LINHA_DE_PRODUCAO_DB_URL' },
   ];
 }
 
-/** `pendentes`/`ultimoAplicado` contra os TRES estados que `ciclo` atravessa: banco vazio (nada
+/** `pending`/`lastApplied` contra os TRES estados que `ciclo` atravessa: banco vazio (nada
  * aplicado), banco parcialmente migrado, e banco totalmente migrado (o caso que travava `up`
  * antes deste bloco — medido no teste real, plan-2.2.md Bloco Y). */
-function casosDeEstado() {
+function stateCases() {
   const nomes = ['0001-cria-metadados.sql', '0002-acrescenta-status.sql', '0003-cria-indice.sql'];
   return [
     {
-      nome: 'pendentes: banco vazio -> as tres, em ordem',
-      fn: () => JSON.stringify(pendentes(nomes, new Set())) === JSON.stringify(nomes),
+      nome: 'pending: banco vazio -> as tres, em ordem',
+      fn: () => JSON.stringify(pending(nomes, new Set())) === JSON.stringify(nomes),
     },
     {
-      nome: 'pendentes: banco ja migrado por completo -> nenhuma (isto e o que travava antes)',
-      fn: () => pendentes(nomes, new Set(nomes)).length === 0,
+      nome: 'pending: banco ja migrado por completo -> nenhuma (isto e o que travava antes)',
+      fn: () => pending(nomes, new Set(nomes)).length === 0,
     },
     {
-      nome: 'pendentes: so a primeira aplicada -> falta a segunda e a terceira, em ordem',
-      fn: () =>
-        JSON.stringify(pendentes(nomes, new Set([nomes[0]]))) === JSON.stringify([nomes[1], nomes[2]]),
+      nome: 'pending: so a primeira aplicada -> falta a segunda e a terceira, em ordem',
+      fn: () => JSON.stringify(pending(nomes, new Set([nomes[0]]))) === JSON.stringify([nomes[1], nomes[2]]),
     },
     {
-      nome: 'ultimoAplicado: nenhuma aplicada -> null (down nao tem o que reverter)',
-      fn: () => ultimoAplicado(nomes, new Set()) === null,
+      nome: 'lastApplied: nenhuma aplicada -> null (down nao tem o que reverter)',
+      fn: () => lastApplied(nomes, new Set()) === null,
     },
     {
-      nome: 'ultimoAplicado: todas aplicadas -> a TERCEIRA (maior prefixo), nunca a primeira',
-      fn: () => ultimoAplicado(nomes, new Set(nomes)) === nomes[2],
+      nome: 'lastApplied: todas aplicadas -> a TERCEIRA (maior prefixo), nunca a primeira',
+      fn: () => lastApplied(nomes, new Set(nomes)) === nomes[2],
     },
     {
-      nome: 'ultimoAplicado: aplicadas fora de ordem no Set -> ainda assim a de MAIOR prefixo',
-      fn: () => ultimoAplicado(nomes, new Set([nomes[2], nomes[0]])) === nomes[2],
+      nome: 'lastApplied: aplicadas fora de ordem no Set -> ainda assim a de MAIOR prefixo',
+      fn: () => lastApplied(nomes, new Set([nomes[2], nomes[0]])) === nomes[2],
     },
   ];
 }
 
-/** Isolado de `rodarAutoteste` só para a função caber no limiar de 40 linhas — o mesmo limiar que
+/** Isolado de `runSelftest` só para a função caber no limiar de 40 linhas — o mesmo limiar que
  * este arquivo existe para fazer valer no código do usuário. */
-function rodarCasosDeEstado() {
+function runStateCases() {
   let falhas = 0;
-  for (const caso of casosDeEstado()) {
+  for (const caso of stateCases()) {
     let ok;
     try {
       ok = caso.fn() === true;
@@ -455,15 +454,15 @@ function rodarCasosDeEstado() {
   return falhas;
 }
 
-function rodarAutoteste() {
+function runSelftest() {
   let falhas = 0;
   let total = 0;
 
-  for (const caso of casosDeSepararUpDown()) {
+  for (const caso of splitUpDownCases()) {
     total += 1;
-    const obtido = separarUpDown(caso.entrada);
+    const obtido = splitUpDown(caso.entrada);
     const ok = obtido.up === caso.esperado.up && obtido.down === caso.esperado.down;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} separarUpDown: ${caso.nome}\n`);
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} splitUpDown: ${caso.nome}\n`);
     if (!ok) {
       falhas += 1;
       process.stdout.write(`       esperado: ${JSON.stringify(caso.esperado)}\n`);
@@ -471,24 +470,24 @@ function rodarAutoteste() {
     }
   }
 
-  for (const caso of casosDeOrdenacao()) {
+  for (const caso of orderingCases()) {
     total += 1;
-    const obtido = ordenarMigrations(caso.nomes, caso.direcao);
+    const obtido = orderMigrations(caso.nomes, caso.direcao);
     const ok = JSON.stringify(obtido) === JSON.stringify(caso.esperado);
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ordenarMigrations: ${caso.nome}\n`);
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} orderMigrations: ${caso.nome}\n`);
     if (!ok) falhas += 1;
   }
 
-  for (const caso of casosDeChaveDeAmbiente()) {
+  for (const caso of environmentKeyCases()) {
     total += 1;
-    const obtido = chaveDeAmbiente(caso.id);
+    const obtido = environmentKey(caso.id);
     const ok = obtido === caso.esperado;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} chaveDeAmbiente: ${caso.nome}\n`);
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} environmentKey: ${caso.nome}\n`);
     if (!ok) falhas += 1;
   }
 
-  total += casosDeEstado().length;
-  falhas += rodarCasosDeEstado();
+  total += stateCases().length;
+  falhas += runStateCases();
 
   process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
   return falhas === 0 ? 0 : 1;
@@ -500,7 +499,7 @@ function rodarAutoteste() {
 
 async function principal() {
   const [comando, alvo] = process.argv.slice(2);
-  if (comando === '--autoteste') return rodarAutoteste();
+  if (comando === '--autoteste') return runSelftest();
 
   if (!['up', 'down', 'ciclo'].includes(comando) || alvo === undefined) {
     process.stderr.write(
@@ -510,11 +509,11 @@ async function principal() {
     return 1;
   }
 
-  carregarEnvDaRaiz();
+  loadEnvRoot();
   try {
-    if (comando === 'up') await rodarUp(alvo);
-    else if (comando === 'down') await rodarDown(alvo);
-    else await rodarCiclo(alvo);
+    if (comando === 'up') await runUp(alvo);
+    else if (comando === 'down') await runDown(alvo);
+    else await runCycle(alvo);
     return 0;
   } catch (causa) {
     process.stderr.write(`${causa instanceof Error ? causa.message : String(causa)}\n`);

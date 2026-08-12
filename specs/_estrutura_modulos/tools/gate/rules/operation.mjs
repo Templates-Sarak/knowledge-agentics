@@ -148,14 +148,17 @@ function temContextoSecreto(texto) {
 const ROTA_LITERAL = /['"`](GET|POST|PUT|PATCH|DELETE)\s+\/[^'"`]*['"`]/;
 
 /**
- * Permissão escrita como LITERAL no argumento de `exigirPermissao`. É a forma exata da autorização
+ * Permissão escrita como LITERAL no argumento de `requirePermission`. É a forma exata da autorização
  * que desmente o manifesto: `modulo.json:permissoes` declara uma coisa, a rota exige outra, e nada
  * muda quando o manifesto muda.
  *
- * `[^)]*` cobre as duas assinaturas dos moldes — `exigirPermissao(ler)` em TS/JS e
- * `exigir_permissao(request, permissao)` em Python, onde o literal seria o SEGUNDO argumento.
+ * `[^)]*` cobre as duas assinaturas dos moldes — `requirePermission(ler)` em TS/JS e
+ * `require_permission(request, permissao)` em Python, onde o literal seria o SEGUNDO argumento.
+ *
+ * Bloco AD, Rodada 1 (AD.2) — âncora trocado de `exigir_?[Pp]ermissao` (português) para
+ * `require_?[Pp]ermission` (inglês), passo isolado, antes de fixture/molde mudar de nome.
  */
-const PERMISSAO_LITERAL = /exigir_?[Pp]ermissao\s*\([^)]*['"`]/;
+const PERMISSAO_LITERAL = /require_?[Pp]ermission\s*\([^)]*['"`]/;
 
 /** Onde um cookie é definido, em Express/Fastify e em Python. */
 const DEFINE_COOKIE = /\bres(?:ponse)?\.cookie\(|set_cookie\(|['"`]Set-Cookie['"`]/i;

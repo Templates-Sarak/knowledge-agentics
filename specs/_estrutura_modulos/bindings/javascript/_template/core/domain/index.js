@@ -40,7 +40,7 @@ export class ErroDeValidacao extends Error {
  * @param {unknown} titulo
  * @returns {string}
  */
-function exigirTitulo(titulo) {
+function requireTitle(titulo) {
   if (typeof titulo !== 'string' || titulo.trim() === '') {
     throw new ErroDeValidacao('titulo', 'titulo e obrigatorio');
   }
@@ -52,7 +52,7 @@ function exigirTitulo(titulo) {
  * @param {readonly string[]} statusValidos
  * @returns {string}
  */
-function exigirStatus(status, statusValidos) {
+function requireStatus(status, statusValidos) {
   const padrao = statusValidos[0];
   if (padrao === undefined) {
     throw new ErroDeValidacao('status', 'config/domain.json:statusValidos esta vazio');
@@ -75,11 +75,11 @@ function exigirStatus(status, statusValidos) {
  * @param {string} criadoEm
  * @returns {Registro}
  */
-export function montarRegistro(entrada, statusValidos, hash, criadoEm) {
+export function buildRecord(entrada, statusValidos, hash, criadoEm) {
   return {
     hash,
-    titulo: exigirTitulo(entrada.titulo),
-    status: exigirStatus(entrada.status, statusValidos),
+    titulo: requireTitle(entrada.titulo),
+    status: requireStatus(entrada.status, statusValidos),
     criadoEm,
   };
 }

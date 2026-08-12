@@ -16,13 +16,13 @@
 // mesmo raciocinio de `scripts/migrations.mjs`, aqui aplicado sob uma regra que migrations.mjs nao
 // sofre (ele mora fora de adapters/src/packages, o escopo que `sql-concatenado` varre).
 
-function chaveDeAmbiente(idDoModulo) {
+function environmentKey(idDoModulo) {
   return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
 
 /** Ausente = falha nomeando a chave exata (lei 7 do catálogo) — nunca um default silencioso. */
-function urlObrigatoria(idDoModulo) {
-  const chave = chaveDeAmbiente(idDoModulo);
+function requiredUrl(idDoModulo) {
+  const chave = environmentKey(idDoModulo);
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
@@ -37,7 +37,7 @@ function urlObrigatoria(idDoModulo) {
  * Cacheada por pasta — o manifesto não muda em runtime, e cada operação chamaria isto de novo. */
 const dadosCache = new Map();
 
-async function lerDados(modulo) {
+async function readData(modulo) {
   const existente = dadosCache.get(modulo.pasta);
   if (existente !== undefined) return existente;
   const { readFile } = await import('node:fs/promises');
@@ -50,7 +50,7 @@ async function lerDados(modulo) {
 
 /** `"<schema>"."<tabela>"` — nunca interpolado numa linha que também tenha um verbo SQL (ver o
  * cabeçalho do arquivo). Isolado aqui porque as quatro operações abaixo precisam da mesma forma. */
-function nomeQualificado(schema, tabela) {
+function qualifiedName(schema, tabela) {
   return `"${schema}"."${tabela}"`;
 }
 
@@ -64,7 +64,7 @@ const pools = new Map();
 /** Lazy DE PROPÓSITO — mesma forma de `scripts/migrations.mjs`: `pg` não pode ser dependência de
  * import estático aqui, senão carregar este arquivo (ex.: para autoteste de `composicao.js`)
  * exigiria o pacote instalado mesmo em um caminho que nunca toca banco. */
-async function poolPara(url) {
+async function poolFor(url) {
   const existente = pools.get(url);
   if (existente !== undefined) return existente;
   const { Pool } = await import('pg');
@@ -73,7 +73,7 @@ async function poolPara(url) {
   return pool;
 }
 
-function paraRegistro(linha) {
+function toRecord(linha) {
   return {
     hash: linha.hash,
     titulo: linha.titulo,
@@ -87,14 +87,14 @@ function paraRegistro(linha) {
 // ================================================================================================
 
 /** Resolve pool + nome qualificado de UMA vez — as quatro operações abaixo precisam das duas coisas. */
-async function contextoDaTabela(modulo, sufixo) {
-  const { schema, prefixo } = await lerDados(modulo);
-  const pool = await poolPara(urlObrigatoria(modulo.id));
-  return { pool, nome: nomeQualificado(schema, `${prefixo}${sufixo}`) };
+async function tableContext(modulo, sufixo) {
+  const { schema, prefixo } = await readData(modulo);
+  const pool = await poolFor(requiredUrl(modulo.id));
+  return { pool, nome: qualifiedName(schema, `${prefixo}${sufixo}`) };
 }
 
-async function listarRegistros(modulo, pagina, tamanho) {
-  const { pool, nome } = await contextoDaTabela(modulo, 'metadados');
+async function listRecords(modulo, pagina, tamanho) {
+  const { pool, nome } = await tableContext(modulo, 'metadados');
   const inicio = (pagina - 1) * tamanho;
 
   const clausulaSelect = 'select hash, titulo, status, created_at';
@@ -105,20 +105,20 @@ async function listarRegistros(modulo, pagina, tamanho) {
   const clausulaConta = 'select count(*)::int as total';
   const contagem = await pool.query([clausulaConta, clausulaFrom].join(' '));
 
-  return { itens: linhas.rows.map(paraRegistro), pagina, tamanho, total: contagem.rows[0].total };
+  return { itens: linhas.rows.map(toRecord), pagina, tamanho, total: contagem.rows[0].total };
 }
 
-async function buscarRegistroPorHash(modulo, hash) {
-  const { pool, nome } = await contextoDaTabela(modulo, 'metadados');
+async function findRecordByHash(modulo, hash) {
+  const { pool, nome } = await tableContext(modulo, 'metadados');
   const clausulaSelect = 'select hash, titulo, status, created_at';
   const clausulaFrom = `from ${nome}`;
   const clausulaOnde = 'where hash = $1';
   const resultado = await pool.query([clausulaSelect, clausulaFrom, clausulaOnde].join(' '), [hash]);
-  return resultado.rows[0] === undefined ? null : paraRegistro(resultado.rows[0]);
+  return resultado.rows[0] === undefined ? null : toRecord(resultado.rows[0]);
 }
 
-async function inserirRegistro(modulo, registro) {
-  const { pool, nome } = await contextoDaTabela(modulo, 'metadados');
+async function insertRecord(modulo, registro) {
+  const { pool, nome } = await tableContext(modulo, 'metadados');
   const nomeEColunas = `${nome} (hash, titulo, status, created_at, updated_at)`;
   const clausulaInsert = 'insert into';
   const clausulaValues = 'values ($1, $2, $3, $4, $4)';
@@ -126,20 +126,20 @@ async function inserirRegistro(modulo, registro) {
   await pool.query(consulta, [registro.hash, registro.titulo, registro.status, registro.criadoEm]);
 }
 
-async function contarRegistros(modulo) {
-  const { pool, nome } = await contextoDaTabela(modulo, 'metadados');
+async function countRecords(modulo) {
+  const { pool, nome } = await tableContext(modulo, 'metadados');
   const clausulaSelect = 'select count(*)::int as total';
   const clausulaFrom = `from ${nome}`;
   const resultado = await pool.query([clausulaSelect, clausulaFrom].join(' '));
   return resultado.rows[0].total;
 }
 
-export function criarPostgresRepositorio(modulo) {
+export function createPostgresRepository(modulo) {
   return {
-    listar: (pagina, tamanho) => listarRegistros(modulo, pagina, tamanho),
-    buscarPorHash: (hash) => buscarRegistroPorHash(modulo, hash),
-    inserir: (registro) => inserirRegistro(modulo, registro),
-    contar: () => contarRegistros(modulo),
+    list: (pagina, tamanho) => listRecords(modulo, pagina, tamanho),
+    findByHash: (hash) => findRecordByHash(modulo, hash),
+    insert: (registro) => insertRecord(modulo, registro),
+    count: () => countRecords(modulo),
   };
 }
 
@@ -147,8 +147,8 @@ export function criarPostgresRepositorio(modulo) {
 // AUDITORIA
 // ================================================================================================
 
-async function registrarEvento(modulo, evento) {
-  const { pool, nome } = await contextoDaTabela(modulo, 'auditoria');
+async function recordAuditEvent(modulo, evento) {
+  const { pool, nome } = await tableContext(modulo, 'auditoria');
   const nomeEColunas = `${nome} (hash, acao, sujeito, campos_alterados, request_id)`;
   const clausulaInsert = 'insert into';
   const clausulaValues = 'values ($1, $2, $3, $4, $5)';
@@ -162,8 +162,8 @@ async function registrarEvento(modulo, evento) {
   ]);
 }
 
-export function criarPostgresAuditoria(modulo) {
-  return { registrar: (evento) => registrarEvento(modulo, evento) };
+export function createPostgresAudit(modulo) {
+  return { record: (evento) => recordAuditEvent(modulo, evento) };
 }
 
 // ================================================================================================

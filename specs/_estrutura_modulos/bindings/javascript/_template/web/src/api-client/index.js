@@ -6,7 +6,7 @@
 
 const ROTA_BASE = '/api/v1/<modulo>';
 
-async function pedir(caminho, opcoes = {}) {
+async function request(caminho, opcoes = {}) {
   const resposta = await fetch(`${ROTA_BASE}${caminho}`, {
     ...opcoes,
     headers: { 'content-type': 'application/json', ...(opcoes.headers ?? {}) },
@@ -19,10 +19,10 @@ async function pedir(caminho, opcoes = {}) {
   return resposta.json();
 }
 
-export function listarRegistros(pagina, tamanho) {
-  return pedir(`/registros?pagina=${pagina}&tamanho=${tamanho}`);
+export function listRecords(pagina, tamanho) {
+  return request(`/registros?pagina=${pagina}&tamanho=${tamanho}`);
 }
 
-export function obterRegistro(hash) {
-  return pedir(`/registros/${encodeURIComponent(hash)}`);
+export function getRecord(hash) {
+  return request(`/registros/${encodeURIComponent(hash)}`);
 }

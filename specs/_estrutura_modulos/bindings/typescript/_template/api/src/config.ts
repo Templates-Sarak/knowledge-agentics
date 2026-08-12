@@ -48,7 +48,7 @@ export interface ConfiguracaoModulo {
 }
 
 /** Sobe a partir de um ponto ate achar o `modulo.json`. Funciona em dev, em teste e ja extraido. */
-export function encontrarRaizModulo(partida: string = process.cwd()): string {
+export function findRootModule(partida: string = process.cwd()): string {
   let atual = partida;
   for (let nivel = 0; nivel < 8; nivel += 1) {
     if (existsSync(join(atual, 'modulo.json'))) return atual;
@@ -60,21 +60,21 @@ export function encontrarRaizModulo(partida: string = process.cwd()): string {
 }
 
 /** Le removendo o BOM: editor e shell do Windows gravam por padrao, e `JSON.parse` rejeita. */
-function lerTexto(caminho: string): string {
+function readText(caminho: string): string {
   return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
 }
 
-function lerJson<T>(raiz: string, relativo: string): T {
+function readJson<T>(raiz: string, relativo: string): T {
   try {
-    return JSON.parse(lerTexto(join(raiz, relativo))) as T;
+    return JSON.parse(readText(join(raiz, relativo))) as T;
   } catch (causa) {
     throw new Error(`[config] nao foi possivel ler "${relativo}": ${String(causa)}`);
   }
 }
 
 /** Pares chave=valor de um `.env`, ignorando comentario e linha vazia. */
-function lerParesEnv(caminho: string): Array<[string, string]> {
-  return lerTexto(caminho)
+function readPairsEnv(caminho: string): Array<[string, string]> {
+  return readText(caminho)
     .split(/\r?\n/)
     .map((linha) => linha.trim())
     .filter((linha) => linha !== '' && !linha.startsWith('#') && linha.includes('='))
@@ -85,7 +85,7 @@ function lerParesEnv(caminho: string): Array<[string, string]> {
 }
 
 /** Aplica pares no ambiente SEM sobrescrever o que ja veio do processo — mantem a precedencia. */
-function aplicarSemSobrescrever(pares: Array<[string, string]>): void {
+function applyWithoutOverwrite(pares: Array<[string, string]>): void {
   for (const [chave, valor] of pares) {
     if (process.env[chave] === undefined) process.env[chave] = valor;
   }
@@ -96,12 +96,12 @@ function aplicarSemSobrescrever(pares: Array<[string, string]>): void {
  * O `.env` do modulo aponta para o da raiz por `ENV_RAIZ`. Na extracao, apaga-se essa linha e
  * os valores passam a viver localmente — sem uma linha de codigo mudar.
  */
-function resolverAmbiente(raizModulo: string): void {
+function resolveEnvironment(raizModulo: string): void {
   const local = join(raizModulo, '.env');
   if (!existsSync(local)) return;
 
-  const pares = lerParesEnv(local);
-  aplicarSemSobrescrever(pares.filter(([chave]) => chave !== 'ENV_RAIZ'));
+  const pares = readPairsEnv(local);
+  applyWithoutOverwrite(pares.filter(([chave]) => chave !== 'ENV_RAIZ'));
 
   const ponteiro = pares.find(([chave]) => chave === 'ENV_RAIZ');
   if (ponteiro === undefined) return;
@@ -110,11 +110,11 @@ function resolverAmbiente(raizModulo: string): void {
   if (!existsSync(alvo)) {
     throw new Error(`[config] ENV_RAIZ aponta para "${alvo}", que nao existe`);
   }
-  aplicarSemSobrescrever(lerParesEnv(alvo));
+  applyWithoutOverwrite(readPairsEnv(alvo));
 }
 
 /** Le uma variavel obrigatoria. Ausente = boot morre com mensagem acionavel. */
-export function envObrigatoria(chave: string): string {
+export function envRequired(chave: string): string {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(`[config] variavel obrigatoria ausente: ${chave} (declare em modulo.json:envRequerido)`);
@@ -125,12 +125,12 @@ export function envObrigatoria(chave: string): string {
 /**
  * Exportada só para o teste direto (plan-2.md N.4): sem `.env` real, TODO teste rodaria sob
  * `NODE_ENV=test` sem uma unica variavel de `envRequerido` preenchida — e sem o bypass abaixo,
- * `carregarConfiguracao()` derrubaria a suite inteira antes do primeiro `it()`. O preco declarado:
+ * `loadConfiguration()` derrubaria a suite inteira antes do primeiro `it()`. O preco declarado:
  * "suite verde" nunca prova, por si so, que a fiacao de ambiente esta correta — quem prova isso e o
- * boot real (`npm run iniciar`) ou este mesmo teste, chamando a funcao com `NODE_ENV` diferente de
+ * boot real (`npm run start`) ou este mesmo teste, chamando a funcao com `NODE_ENV` diferente de
  * `test` de proposito.
  */
-export function conferirEnvRequerido(manifesto: Manifesto): void {
+export function checkEnvRequired(manifesto: Manifesto): void {
   const faltando = manifesto.envRequerido.filter((chave) => process.env[chave] === undefined);
   if (faltando.length > 0 && process.env['NODE_ENV'] !== 'test') {
     throw new Error(`[config] ${manifesto.id}: variaveis ausentes no ambiente: ${faltando.join(', ')}`);
@@ -138,18 +138,18 @@ export function conferirEnvRequerido(manifesto: Manifesto): void {
 }
 
 /** Carrega e valida TUDO no boot; qualquer falta derruba o processo antes de servir. */
-export function carregarConfiguracao(raiz: string = encontrarRaizModulo()): ConfiguracaoModulo {
-  const manifesto = lerJson<Manifesto>(raiz, 'modulo.json');
-  resolverAmbiente(raiz);
-  conferirEnvRequerido(manifesto);
+export function loadConfiguration(raiz: string = findRootModule()): ConfiguracaoModulo {
+  const manifesto = readJson<Manifesto>(raiz, 'modulo.json');
+  resolveEnvironment(raiz);
+  checkEnvRequired(manifesto);
 
   return {
     raiz,
     manifesto,
-    api: lerJson<ConfigApi>(raiz, 'config/api.json'),
-    dominio: lerJson<{ statusValidos: string[] }>(raiz, 'config/domain.json'),
-    seguranca: lerJson<ConfigSeguranca>(raiz, 'config/seguranca.json'),
-    portas: lerJson<Record<string, string>>(raiz, 'config/ports.json'),
-    textos: lerJson<Record<string, string>>(raiz, 'config/textos.json'),
+    api: readJson<ConfigApi>(raiz, 'config/api.json'),
+    dominio: readJson<{ statusValidos: string[] }>(raiz, 'config/domain.json'),
+    seguranca: readJson<ConfigSeguranca>(raiz, 'config/seguranca.json'),
+    portas: readJson<Record<string, string>>(raiz, 'config/ports.json'),
+    textos: readJson<Record<string, string>>(raiz, 'config/textos.json'),
   };
 }

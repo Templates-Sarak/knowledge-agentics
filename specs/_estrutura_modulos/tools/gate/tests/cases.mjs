@@ -700,12 +700,12 @@ export const CASOS = [
   },
   {
     regra: 'permissao-literal',
-    descricao: 'permissao escrita como literal no argumento de exigirPermissao',
+    descricao: 'permissao escrita como literal no argumento de requirePermission',
     // Nao registra rota: um `router.get` novo violaria tambem `contrato-sincronizado`, e o caso
     // deixaria de provar qual regra esta viva. So a chamada, com o literal que a regra persegue.
     mutar: (m) => m.acrescentarEm('rotas', {
-      js: "\nexport const exigirLiteral = (req) => exigirPermissao('molde:ler')(req);\n",
-      py: '\n\ndef exigir_literal(request):\n    exigir_permissao(request, "molde:ler")\n',
+      js: "\nexport const exigirLiteral = (req) => requirePermission('molde:ler')(req);\n",
+      py: '\n\ndef exigir_literal(request):\n    require_permission(request, "molde:ler")\n',
     }),
   },
   {
@@ -774,7 +774,7 @@ export const CASOS = [
     // O `servers:` e as `properties:` entram na spec minima de proposito: sem eles o caso acusaria
     // tambem `rota-nomenclatura` e `projecao-contrato`, e deixaria de provar a ausencia das rotas
     // OBRIGATORIAS, que e o dele. As propriedades sao TODAS as que os mapeadores do molde projetam
-    // (paraContrato, paraMeta, paraColecao — desde o N.2, os tres sao vistos, nao so o primeiro).
+    // (toContract, toMeta, toCollection — desde o N.2, os tres sao vistos, nao so o primeiro).
     mutar: (m) => m.escrever(
       'contract/openapi.yaml',
       [
@@ -932,7 +932,7 @@ export const CASOS = [
     // pode ter virado cegueira para a forma que a causava.
     mutar: (m) => m.escrever(
       'api/src/mapper-arrow.ts',
-      'export const paraContratoArrow = (r) => ({ hash: r.hash, campoArrow: r.extra });\n',
+      'export const toContractArrow = (r) => ({ hash: r.hash, campoArrow: r.extra });\n',
     ),
   },
   {
@@ -944,12 +944,12 @@ export const CASOS = [
     //
     // As duas ultimas linhas travam uma NAO-acusacao, pela tecnica do caso do `log`: `naoPublica`
     // nao e projecao nenhuma, e `created_at` NAO pode ser acusado. Se o extrator voltar a aceitar
-    // REFERENCIA a `paraContrato*` como sitio de projecao, o `map(...)` engata na abertura da funcao
+    // REFERENCIA a `toContract*` como sitio de projecao, o `map(...)` engata na abertura da funcao
     // seguinte, `payload-camelcase` acusa `created_at`, e o id extra reprova este caso na hora.
     mutar: (m) => m.escrever(
       'api/src/mapper-extra.ts',
-      'export function paraContratoExtra(r) {\n  return { hash: r.hash, campoFantasma: r.fantasma };\n}\n'
-        + 'export const paraContratoLista = (rs) => rs.map(paraContratoExtra);\n'
+      'export function toContractExtra(r) {\n  return { hash: r.hash, campoFantasma: r.fantasma };\n}\n'
+        + 'export const toContractLista = (rs) => rs.map(toContractExtra);\n'
         + 'export function naoPublica(r) {\n  return { created_at: r.criadoEm };\n}\n',
     ),
   },
@@ -963,7 +963,7 @@ export const CASOS = [
     // "cpf"). O extrator novo nunca olha a assinatura: procura `return {` direto.
     mutar: (m) => m.escrever(
       'api/src/mapper-forma1.ts',
-      'export function paraContratoForma1(r: { hash: string }): { hash: string; campoForma1: string } {\n'
+      'export function toContractForma1(r: { hash: string }): { hash: string; campoForma1: string } {\n'
         + "  return { hash: r.hash, campoForma1: 'x' };\n}\n",
     ),
   },
@@ -972,7 +972,7 @@ export const CASOS = [
     descricao: 'N.2 forma 2 — um parametro com tipo inline',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma2.ts',
-      'export function paraContratoForma2(o: { a: string }): Record<string, unknown> {\n'
+      'export function toContractForma2(o: { a: string }): Record<string, unknown> {\n'
         + "  return { a: o.a, campoForma2: 'x' };\n}\n",
     ),
   },
@@ -981,7 +981,7 @@ export const CASOS = [
     descricao: 'N.2 forma 3 — dois parametros com tipo inline',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma3.ts',
-      'export function paraContratoForma3(o: { a: string }, p: { b: string }): Record<string, unknown> {\n'
+      'export function toContractForma3(o: { a: string }, p: { b: string }): Record<string, unknown> {\n'
         + "  return { a: o.a, b: p.b, campoForma3: 'x' };\n}\n",
     ),
   },
@@ -990,7 +990,7 @@ export const CASOS = [
     descricao: 'N.2 forma 4 — generico com objeto (<T extends { id: string }>)',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma4.ts',
-      'export function paraContratoForma4<T extends { id: string }>(o: T): Record<string, unknown> {\n'
+      'export function toContractForma4<T extends { id: string }>(o: T): Record<string, unknown> {\n'
         + "  return { id: o.id, campoForma4: 'x' };\n}\n",
     ),
   },
@@ -999,7 +999,7 @@ export const CASOS = [
     descricao: 'N.2 forma 5 — Array<{ … }> no retorno',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma5.ts',
-      'export function paraContratoForma5(r: { hash: string }): Array<{ hash: string }> {\n'
+      'export function toContractForma5(r: { hash: string }): Array<{ hash: string }> {\n'
         + "  return { hash: r.hash, campoForma5: 'x' };\n}\n",
     ),
   },
@@ -1008,7 +1008,7 @@ export const CASOS = [
     descricao: 'N.2 forma 6 — Promise<{ … }> no retorno',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma6.ts',
-      'export async function paraContratoForma6(r: { hash: string }): Promise<{ hash: string }> {\n'
+      'export async function toContractForma6(r: { hash: string }): Promise<{ hash: string }> {\n'
         + "  return { hash: r.hash, campoForma6: 'x' };\n}\n",
     ),
   },
@@ -1016,9 +1016,9 @@ export const CASOS = [
     regra: 'projecao-contrato',
     descricao: 'N.2 forma 7 — default de parametro "= {}", nos tres bindings',
     mutar: (m) => m.acrescentarEm('mappers', {
-      js: "\nexport function paraContratoForma7(opcoes: Record<string, unknown> = {}): Record<string, unknown> {\n"
+      js: "\nexport function toContractForma7(opcoes: Record<string, unknown> = {}): Record<string, unknown> {\n"
         + "  return { campoForma7: 'x' };\n}\n",
-      py: "\n\ndef para_contrato_forma7(opcoes=None):\n    return {\"campoForma7\": \"x\"}\n",
+      py: "\n\ndef to_contract_forma7(opcoes=None):\n    return {\"campoForma7\": \"x\"}\n",
     }),
   },
   {
@@ -1026,18 +1026,18 @@ export const CASOS = [
     descricao: 'N.2 forma 8 — tipo inline COM default',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma8.ts',
-      "export function paraContratoForma8(o: { a: string } = { a: 'x' }): Record<string, unknown> {\n"
+      "export function toContractForma8(o: { a: string } = { a: 'x' }): Record<string, unknown> {\n"
         + "  return { campoForma8: 'x' };\n}\n",
     ),
   },
   {
     regra: 'projecao-contrato',
     descricao: 'N.2 forma 9 — corpo canonico "): Record<string, unknown> {" nao pode regredir',
-    // E a forma que o proprio molde usa (paraContrato) — este caso trava que uma violacao SOB essa
+    // E a forma que o proprio molde usa (toContract) — este caso trava que uma violacao SOB essa
     // forma continua sendo pega, nao so que a forma boa passa.
     mutar: (m) => m.escrever(
       'api/src/mapper-forma9.ts',
-      "export function paraContratoForma9(r: { hash: string }): Record<string, unknown> {\n"
+      "export function toContractForma9(r: { hash: string }): Record<string, unknown> {\n"
         + "  return { hash: r.hash, campoForma9: 'x' };\n}\n",
     ),
   },
@@ -1046,7 +1046,7 @@ export const CASOS = [
     descricao: 'N.2 forma 11 — objeto aninhado dentro da projecao nao pode regredir',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma11.ts',
-      "export function paraContratoForma11(r: { hash: string }): Record<string, unknown> {\n"
+      "export function toContractForma11(r: { hash: string }): Record<string, unknown> {\n"
         + "  return { hash: r.hash, aninhado: { campoForma11: 'x' } };\n}\n",
     ),
   },
@@ -1059,7 +1059,7 @@ export const CASOS = [
     vezes: 2,
     mutar: (m) => m.escrever(
       'api/src/mapper-forma12.ts',
-      "export function paraContratoForma12(r: { hash: string }, resumo: boolean): Record<string, unknown> {\n"
+      "export function toContractForma12(r: { hash: string }, resumo: boolean): Record<string, unknown> {\n"
         + "  if (resumo) {\n    return { campoForma12Resumo: 'x' };\n  }\n"
         + "  return { hash: r.hash, campoForma12Detalhe: 'x' };\n}\n",
     ),
@@ -1073,7 +1073,7 @@ export const CASOS = [
     // (`projecao-contrato`) NAO DECLARADO, e o caso reprovaria.
     mutar: (m) => m.escrever(
       'api/src/mapper-forma14.ts',
-      "export function paraContratoForma14(r: { hash: string }): Record<string, unknown> {\n"
+      "export function toContractForma14(r: { hash: string }): Record<string, unknown> {\n"
         + "  const interno = { campoInterno: 'nunca publicado' };\n"
         + "  console.log(interno);\n"
         + "  return { hash: r.hash };\n}\n",
@@ -1088,10 +1088,10 @@ export const CASOS = [
     // metodo anterior. `console.log` arma o chamariz: se `created_at` fosse (erradamente) visto
     // como projetado, apareceria `payload-camelcase` NAO DECLARADO e o caso reprovaria.
     mutar: (m) => m.acrescentarEm('mappers', {
-      js: '\nexport class ProjecoesN21 {\n  paraGama(registro) {\n    console.log("x");\n'
+      js: '\nexport class ProjecoesN21 {\n  toGama(registro) {\n    console.log("x");\n'
         + '    return { hash: registro.hash };\n  }\n\n'
         + '  chaveDeCache(registro) {\n    return { created_at: registro.criadoEm };\n  }\n}\n',
-      py: '\n\nclass ProjecoesN21:\n    def para_gama(self, registro):\n        print("x")\n'
+      py: '\n\nclass ProjecoesN21:\n    def to_gama(self, registro):\n        print("x")\n'
         + '        return {"hash": registro["hash"]}\n\n'
         + '    def chave_de_cache(self, registro):\n        return {"created_at": registro["criado_em"]}\n',
     }),
@@ -1105,10 +1105,10 @@ export const CASOS = [
     mutar: (m) => {
       m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
       m.acrescentarEm('mappers', {
-        js: '\nexport class ProjecoesN21b {\n  paraDelta(registro) {\n    console.log("x");\n'
+        js: '\nexport class ProjecoesN21b {\n  toDelta(registro) {\n    console.log("x");\n'
           + '    return { hash: registro.hash };\n  }\n\n'
           + '  chaveDeCache(registro) {\n    return { created_at: registro.criadoEm, cpf: registro.hash };\n  }\n}\n',
-        py: '\n\nclass ProjecoesN21b:\n    def para_delta(self, registro):\n        print("x")\n'
+        py: '\n\nclass ProjecoesN21b:\n    def to_delta(self, registro):\n        print("x")\n'
           + '        return {"hash": registro["hash"]}\n\n'
           + '    def chave_de_cache(self, registro):\n'
           + '        return {"created_at": registro["criado_em"], "cpf": registro["hash"]}\n',
@@ -1124,15 +1124,15 @@ export const CASOS = [
     mutar: (m) => {
       m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
       m.acrescentarEm('mappers', {
-        js: '\nexport class ProjecoesN21c {\n  paraEpsilon(registro) {\n'
+        js: '\nexport class ProjecoesN21c {\n  toEpsilon(registro) {\n'
           + '    return { hash: registro.hash };\n  }\n\n'
           + '  chaveDeCache(registro) {\n    return { created_at: registro.criadoEm };\n  }\n\n'
-          + '  paraZeta(registro) {\n    return { hash: registro.hash, cpf: registro.cpf };\n  }\n}\n',
-        py: '\n\nclass ProjecoesN21c:\n    def para_epsilon(self, registro):\n'
+          + '  toZeta(registro) {\n    return { hash: registro.hash, cpf: registro.cpf };\n  }\n}\n',
+        py: '\n\nclass ProjecoesN21c:\n    def to_epsilon(self, registro):\n'
           + '        return {"hash": registro["hash"]}\n\n'
           + '    def chave_de_cache(self, registro):\n'
           + '        return {"created_at": registro["criado_em"]}\n\n'
-          + '    def para_zeta(self, registro):\n'
+          + '    def to_zeta(self, registro):\n'
           + '        return {"hash": registro["hash"], "cpf": registro["cpf"]}\n',
       });
     },
@@ -1142,16 +1142,16 @@ export const CASOS = [
     descricao: 'N.2.2 — propriedade-arrow que NAO publica, DEPOIS de propriedade-arrow que publica (chamariz)',
     // O defeito que so aparece em objeto literal de arrows: o FECHADOR antigo exigia `identificador(`
     // depois do nome, e `chaveDeCache: (r) => (...)` tem `:` entre os dois — nunca fechava a janela
-    // de `paraGama`. `console.log`/`print` arma o chamariz: se "created_at" fosse (erradamente) visto
-    // como projetado por `paraGama`, apareceria `payload-camelcase` NAO DECLARADO e o caso reprovaria.
+    // de `toGama`. `console.log`/`print` arma o chamariz: se "created_at" fosse (erradamente) visto
+    // como projetado por `toGama`, apareceria `payload-camelcase` NAO DECLARADO e o caso reprovaria.
     // No Python o analogo e a atribuicao de modulo (`nome = lambda r: {...}`, sem `def` nem `class`):
     // `chave_de_cache` bare, seguida de "=" (nao "("), era invisivel ao fechador antigo pelo MESMO
     // motivo.
     mutar: (m) => m.acrescentarEm('mappers', {
-      js: "\nexport const ProjecoesN22 = {\n  paraGama: (registro) => {\n    console.log('x');\n"
+      js: "\nexport const ProjecoesN22 = {\n  toGama: (registro) => {\n    console.log('x');\n"
         + '    return { hash: registro.hash };\n  },\n\n'
         + '  chaveDeCache: (registro) => ({ created_at: registro.criadoEm }),\n};\n',
-      py: '\n\ndef para_gama(registro):\n    print("x")\n'
+      py: '\n\ndef to_gama(registro):\n    print("x")\n'
         + '    return {"hash": registro["hash"]}\n\n\n'
         + 'chave_de_cache = lambda registro: {"created_at": registro["criado_em"]}\n',
     }),
@@ -1167,20 +1167,20 @@ export const CASOS = [
     mutar: (m) => {
       m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
       m.acrescentarEm('mappers', {
-        js: '\nexport const ProjecoesN22c = {\n  paraEpsilon: (registro) => ({ hash: registro.hash }),\n\n'
+        js: '\nexport const ProjecoesN22c = {\n  toEpsilon: (registro) => ({ hash: registro.hash }),\n\n'
           + '  chaveDeCache: (registro) => ({ created_at: registro.criadoEm }),\n\n'
-          + '  paraZeta: (registro) => ({ hash: registro.hash, cpf: registro.cpf }),\n};\n',
-        py: '\n\npara_epsilon = lambda registro: {"hash": registro["hash"]}\n\n'
+          + '  toZeta: (registro) => ({ hash: registro.hash, cpf: registro.cpf }),\n};\n',
+        py: '\n\nto_epsilon = lambda registro: {"hash": registro["hash"]}\n\n'
           + 'chave_de_cache = lambda registro: {"created_at": registro["criado_em"]}\n\n'
-          + 'para_zeta = lambda registro: {"hash": registro["hash"], "cpf": registro["cpf"]}\n',
+          + 'to_zeta = lambda registro: {"hash": registro["hash"], "cpf": registro["cpf"]}\n',
       });
     },
   },
   {
     regra: 'sensivel-em-saida',
-    descricao: 'N.2 item 1(a) — "cpf" vazado em paraMeta, a rota SEM TOKEN (regressao que a N.1 fechou)',
-    // paraMeta serve /meta, rota sem token — o mesmo vazamento que a N.1 fechou. Sob a ancora de
-    // nome ESTREITA (so paraContrato*) a funcao inteira era invisivel ao extrator, e um campo
+    descricao: 'N.2 item 1(a) — "cpf" vazado em toMeta, a rota SEM TOKEN (regressao que a N.1 fechou)',
+    // toMeta serve /meta, rota sem token — o mesmo vazamento que a N.1 fechou. Sob a ancora de
+    // nome ESTREITA (so toContract*) a funcao inteira era invisivel ao extrator, e um campo
     // sensivel acrescentado aqui nunca seria pego por regra nenhuma. Tenta os tres caminhos; so o
     // do binding em teste existe, os outros dois viram ENOENT e sao ignorados aqui mesmo.
     tambem: ['projecao-contrato'],
@@ -1202,7 +1202,7 @@ export const CASOS = [
   },
   {
     regra: 'sensivel-em-saida',
-    descricao: 'N.2 item 1(a) — "cpf" vazado em paraColecao (pre-existente, nunca medido antes)',
+    descricao: 'N.2 item 1(a) — "cpf" vazado em toCollection (pre-existente, nunca medido antes)',
     tambem: ['projecao-contrato'],
     mutar: (m) => {
       m.manifesto((x) => ({ ...x, camposSensiveis: ['cpf'] }));
@@ -1210,26 +1210,26 @@ export const CASOS = [
         try {
           m.substituir(
             caminho,
-            'return { itens: registros.map(paraContrato), pagina, tamanho, total };',
-            "return { itens: registros.map(paraContrato), pagina, tamanho, total, cpf: 'x' };",
+            'return { itens: registros.map(toContract), pagina, tamanho, total };',
+            "return { itens: registros.map(toContract), pagina, tamanho, total, cpf: 'x' };",
           );
         } catch { /* binding errado para este caminho — ENOENT esperado */ }
       }
       try {
         m.substituir(
           'api/src/mappers.py',
-          '"itens": [para_contrato(r) for r in registros],',
-          '"itens": [para_contrato(r) for r in registros],\n        "cpf": "x",',
+          '"itens": [to_contract(r) for r in registros],',
+          '"itens": [to_contract(r) for r in registros],\n        "cpf": "x",',
         );
       } catch { /* binding errado — ENOENT esperado */ }
     },
   },
   {
     regra: 'log',
-    descricao: 'N.2 — "created_at" em linhaParaDominio/dominioParaLinha (direcao BANCO) NAO acusa (chamariz)',
+    descricao: 'N.2 — "created_at" em rowToDomain/domainToRow (direcao BANCO) NAO acusa (chamariz)',
     // As duas funcoes de direcao BANCO usam "created_at" (campo do banco, snake_case) e nao devem
     // ser lidas como projecao de SAIDA — o nome delas nao COMECA com "para" (comeca no MEIO:
-    // linhaParaDominio, dominioParaLinha). Ja estao no molde, sem mutacao nenhuma; o chamariz so
+    // rowToDomain, domainToRow). Ja estao no molde, sem mutacao nenhuma; o chamariz so
     // precisa de um id esperado para o harness comparar. Se a ancora de nome regredir para "o
     // arquivo inteiro", `payload-camelcase` acusa "created_at" e este caso reprova com id NAO
     // declarado — e essa nao-acusacao vira verificacao, nao impressao.
@@ -1244,8 +1244,8 @@ export const CASOS = [
     // `hash` esta declarado no contrato e `criado_em` fica fora do camelCase, entao
     // `projecao-contrato` (que ignora chave nao-camelCase de proposito) segue calada: UM id.
     mutar: (m) => m.acrescentarEm('mappers', {
-      js: '\nexport function paraContratoErrado(r) {\n  return { hash: r.hash, criado_em: r.criadoEm };\n}\n',
-      py: '\n\ndef para_contrato_errado(r):\n    return {"hash": r.hash, "criado_em": r.criado_em}\n',
+      js: '\nexport function toContractErrado(r) {\n  return { hash: r.hash, criado_em: r.criadoEm };\n}\n',
+      py: '\n\ndef to_contract_errado(r):\n    return {"hash": r.hash, "criado_em": r.criado_em}\n',
     }),
   },
   {
@@ -1253,7 +1253,7 @@ export const CASOS = [
     descricao: 'campo sensivel citado em schema de resposta do OpenAPI',
     // `modulo` e declarado na resposta de /health e NUNCA projetado nem logado — isola o lado do
     // CONTRATO. Com `status` (que o mapeador projeta) o caso acusaria tambem `sensivel-em-saida`.
-    // NAO usar `total`: desde o N.2 (ancora de nome larga), `paraColecao` projeta `total` de
+    // NAO usar `total`: desde o N.2 (ancora de nome larga), `toCollection` projeta `total` de
     // verdade — o proprio campo que este caso precisa NUNCA estar projetado deixou de servir,
     // porque o extrator novo enxerga exatamente o que antes era ponto cego.
     mutar: (m) => m.manifesto((x) => ({ ...x, camposSensiveis: ['modulo'] })),
@@ -1353,20 +1353,20 @@ export const CASOS = [
   {
     regra: 'log',
     descricao: 'saida-crua CALA: objeto literal e chamada de projecao nao sao "cru" (chamariz de log)',
-    // `res.json({ total })` e `res.json(paraContrato(x))` NUNCA casam o padrao da borda — o proximo
+    // `res.json({ total })` e `res.json(toContract(x))` NUNCA casam o padrao da borda — o proximo
     // caractere depois do identificador nao e `)`. O chamariz (`console.log`, regra `log`) prova que
     // saida-crua ficou muda: se a borda regredir para aceitar chamada/objeto, este id aparece
     // NAO DECLARADO e o caso reprova.
     mutar: (m) => m.acrescentarEm('rotas', {
       js: '\nexport const chamarizObjeto = (res) => {\n  console.log("x");\n'
-        + '  res.json({ total: 1 });\n  return res.json(paraContrato({}));\n};\n',
+        + '  res.json({ total: 1 });\n  return res.json(toContract({}));\n};\n',
     }),
   },
   {
     regra: 'log',
     descricao: 'Python: saida-crua CALA fora de handler roteado e em chamada (chamariz de log)',
     // `return router` (fim de `criar_rotas`, MESMO recuo do ultimo decorator) e `return
-    // para_contrato(...)` (chamada, nao identificador puro) sao os dois casos que a formulacao por
+    // to_contract(...)` (chamada, nao identificador puro) sao os dois casos que a formulacao por
     // "qualquer return" acusava errado e a formulacao por indentacao/decorator cala corretamente.
     // Ambos ja existem no molde conforme; o chamariz aqui e so para o caso ter um id esperado.
     mutar: (m) => m.acrescentarEm('rotas', {
@@ -1404,7 +1404,7 @@ export const CASOS = [
       m.escrever(
         'api/src/mapper-doc.ts',
         '// A projecao, escrita como documentacao. NENHUMA destas chaves e publicada:\n'
-          + '//   export function paraContratoDoc(r) { return { cpf: r.cpf, criado_em: r.criadoEm }; }\n',
+          + '//   export function toContractDoc(r) { return { cpf: r.cpf, criado_em: r.criadoEm }; }\n',
       );
       m.acrescentarEm('rotas', {
         js: '\n// A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'

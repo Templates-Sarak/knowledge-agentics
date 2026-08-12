@@ -35,13 +35,13 @@ export interface RegistroDoMolde {
   criadoEm: string;
 }
 
-function chaveDeAmbiente(idDoModulo: string): string {
+function environmentKey(idDoModulo: string): string {
   return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
 
 /** Ausente = falha nomeando a chave exata (lei 7 do catálogo) — nunca um default silencioso. */
-function urlObrigatoria(idDoModulo: string): string {
-  const chave = chaveDeAmbiente(idDoModulo);
+function requiredUrl(idDoModulo: string): string {
+  const chave = environmentKey(idDoModulo);
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
@@ -61,7 +61,7 @@ interface DadosDoManifesto {
  * Cacheada por pasta — o manifesto não muda em runtime, e cada operação chamaria isto de novo. */
 const dadosCache = new Map<string, DadosDoManifesto>();
 
-async function lerDados(modulo: ModuloParaAdapter): Promise<DadosDoManifesto> {
+async function readData(modulo: ModuloParaAdapter): Promise<DadosDoManifesto> {
   const existente = dadosCache.get(modulo.pasta);
   if (existente !== undefined) return existente;
   const { readFile } = await import('node:fs/promises');
@@ -74,7 +74,7 @@ async function lerDados(modulo: ModuloParaAdapter): Promise<DadosDoManifesto> {
 
 /** `"<schema>"."<tabela>"` — nunca interpolado numa linha que também tenha um verbo SQL (ver o
  * cabeçalho do arquivo). Isolado aqui porque as quatro operações abaixo precisam da mesma forma. */
-function nomeQualificado(schema: string, tabela: string): string {
+function qualifiedName(schema: string, tabela: string): string {
   return `"${schema}"."${tabela}"`;
 }
 
@@ -89,7 +89,7 @@ const pools = new Map<string, Pool>();
  * import estático de VALOR aqui, senão carregar este arquivo (ex.: para autoteste de
  * `composicao.ts`) exigiria o pacote instalado mesmo em um caminho que nunca toca banco. O `import
  * type { Pool }` acima é diferente: é apagado na compilação, nunca vira um `require('pg')`. */
-async function poolPara(url: string): Promise<Pool> {
+async function poolFor(url: string): Promise<Pool> {
   const existente = pools.get(url);
   if (existente !== undefined) return existente;
   const { Pool } = await import('pg');
@@ -98,7 +98,7 @@ async function poolPara(url: string): Promise<Pool> {
   return pool;
 }
 
-function paraRegistro(linha: {
+function toRecord(linha: {
   hash: string;
   titulo: string;
   status: string;
@@ -122,18 +122,18 @@ interface ContextoDeTabela {
 }
 
 /** Resolve pool + nome qualificado de UMA vez — as quatro operações abaixo precisam das duas coisas. */
-async function contextoDaTabela(modulo: ModuloParaAdapter, sufixo: string): Promise<ContextoDeTabela> {
-  const { schema, prefixo } = await lerDados(modulo);
-  const pool = await poolPara(urlObrigatoria(modulo.id));
-  return { pool, nome: nomeQualificado(schema, `${prefixo}${sufixo}`) };
+async function tableContext(modulo: ModuloParaAdapter, sufixo: string): Promise<ContextoDeTabela> {
+  const { schema, prefixo } = await readData(modulo);
+  const pool = await poolFor(requiredUrl(modulo.id));
+  return { pool, nome: qualifiedName(schema, `${prefixo}${sufixo}`) };
 }
 
-async function listarRegistros(
+async function listRecords(
   modulo: ModuloParaAdapter,
   pagina: number,
   tamanho: number,
 ): Promise<Pagina<RegistroDoMolde>> {
-  const { pool, nome } = await contextoDaTabela(modulo, 'metadados');
+  const { pool, nome } = await tableContext(modulo, 'metadados');
   const inicio = (pagina - 1) * tamanho;
 
   const clausulaSelect = 'select hash, titulo, status, created_at';
@@ -144,23 +144,20 @@ async function listarRegistros(
   const clausulaConta = 'select count(*)::int as total';
   const contagem = await pool.query([clausulaConta, clausulaFrom].join(' '));
 
-  return { itens: linhas.rows.map(paraRegistro), pagina, tamanho, total: contagem.rows[0].total };
+  return { itens: linhas.rows.map(toRecord), pagina, tamanho, total: contagem.rows[0].total };
 }
 
-async function buscarRegistroPorHash(
-  modulo: ModuloParaAdapter,
-  hash: string,
-): Promise<RegistroDoMolde | null> {
-  const { pool, nome } = await contextoDaTabela(modulo, 'metadados');
+async function findRecordByHash(modulo: ModuloParaAdapter, hash: string): Promise<RegistroDoMolde | null> {
+  const { pool, nome } = await tableContext(modulo, 'metadados');
   const clausulaSelect = 'select hash, titulo, status, created_at';
   const clausulaFrom = `from ${nome}`;
   const clausulaOnde = 'where hash = $1';
   const resultado = await pool.query([clausulaSelect, clausulaFrom, clausulaOnde].join(' '), [hash]);
-  return resultado.rows[0] === undefined ? null : paraRegistro(resultado.rows[0]);
+  return resultado.rows[0] === undefined ? null : toRecord(resultado.rows[0]);
 }
 
-async function inserirRegistro(modulo: ModuloParaAdapter, registro: RegistroDoMolde): Promise<void> {
-  const { pool, nome } = await contextoDaTabela(modulo, 'metadados');
+async function insertRecord(modulo: ModuloParaAdapter, registro: RegistroDoMolde): Promise<void> {
+  const { pool, nome } = await tableContext(modulo, 'metadados');
   const nomeEColunas = `${nome} (hash, titulo, status, created_at, updated_at)`;
   const clausulaInsert = 'insert into';
   const clausulaValues = 'values ($1, $2, $3, $4, $4)';
@@ -168,20 +165,20 @@ async function inserirRegistro(modulo: ModuloParaAdapter, registro: RegistroDoMo
   await pool.query(consulta, [registro.hash, registro.titulo, registro.status, registro.criadoEm]);
 }
 
-async function contarRegistros(modulo: ModuloParaAdapter): Promise<number> {
-  const { pool, nome } = await contextoDaTabela(modulo, 'metadados');
+async function countRecords(modulo: ModuloParaAdapter): Promise<number> {
+  const { pool, nome } = await tableContext(modulo, 'metadados');
   const clausulaSelect = 'select count(*)::int as total';
   const clausulaFrom = `from ${nome}`;
   const resultado = await pool.query([clausulaSelect, clausulaFrom].join(' '));
   return resultado.rows[0].total;
 }
 
-export function criarPostgresRepositorio(modulo: ModuloParaAdapter): Repositorio<RegistroDoMolde> {
+export function createPostgresRepository(modulo: ModuloParaAdapter): Repositorio<RegistroDoMolde> {
   return {
-    listar: (pagina, tamanho) => listarRegistros(modulo, pagina, tamanho),
-    buscarPorHash: (hash) => buscarRegistroPorHash(modulo, hash),
-    inserir: (registro) => inserirRegistro(modulo, registro),
-    contar: () => contarRegistros(modulo),
+    list: (pagina, tamanho) => listRecords(modulo, pagina, tamanho),
+    findByHash: (hash) => findRecordByHash(modulo, hash),
+    insert: (registro) => insertRecord(modulo, registro),
+    count: () => countRecords(modulo),
   };
 }
 
@@ -189,8 +186,8 @@ export function criarPostgresRepositorio(modulo: ModuloParaAdapter): Repositorio
 // AUDITORIA
 // ================================================================================================
 
-async function registrarEvento(modulo: ModuloParaAdapter, evento: EventoDeAuditoria): Promise<void> {
-  const { pool, nome } = await contextoDaTabela(modulo, 'auditoria');
+async function recordAuditEvent(modulo: ModuloParaAdapter, evento: EventoDeAuditoria): Promise<void> {
+  const { pool, nome } = await tableContext(modulo, 'auditoria');
   const nomeEColunas = `${nome} (hash, acao, sujeito, campos_alterados, request_id)`;
   const clausulaInsert = 'insert into';
   const clausulaValues = 'values ($1, $2, $3, $4, $5)';
@@ -204,8 +201,8 @@ async function registrarEvento(modulo: ModuloParaAdapter, evento: EventoDeAudito
   ]);
 }
 
-export function criarPostgresAuditoria(modulo: ModuloParaAdapter): Auditoria {
-  return { registrar: (evento) => registrarEvento(modulo, evento) };
+export function createPostgresAudit(modulo: ModuloParaAdapter): Auditoria {
+  return { record: (evento) => recordAuditEvent(modulo, evento) };
 }
 
 // ================================================================================================

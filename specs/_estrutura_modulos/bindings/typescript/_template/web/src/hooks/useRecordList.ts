@@ -3,7 +3,7 @@
 // carregando, vazio e erro. Tela que so trata o caminho feliz reprova em revisao.
 import { useEffect, useState } from 'react';
 
-import { type Registro, listarRegistros } from '../api-client/index.js';
+import { type Registro, listRecords } from '../api-client/index.js';
 
 export type Situacao = 'carregando' | 'ok' | 'vazio' | 'erro';
 
@@ -16,26 +16,26 @@ interface Estado {
 
 const INICIAL: Estado = { situacao: 'carregando', registros: [], total: 0, mensagemDeErro: null };
 
-export function useListaDeRegistros(pagina: number, tamanho: number): Estado {
-  const [estado, setEstado] = useState<Estado>(INICIAL);
+export function useRecordList(pagina: number, tamanho: number): Estado {
+  const [state, setState] = useState<Estado>(INICIAL);
 
   useEffect(() => {
     let ativo = true;
-    setEstado(INICIAL);
+    setState(INICIAL);
 
-    listarRegistros(pagina, tamanho)
-      .then((colecao) => {
+    listRecords(pagina, tamanho)
+      .then((collection) => {
         if (!ativo) return;
-        setEstado({
-          situacao: colecao.itens.length === 0 ? 'vazio' : 'ok',
-          registros: colecao.itens,
-          total: colecao.total,
+        setState({
+          situacao: collection.itens.length === 0 ? 'vazio' : 'ok',
+          registros: collection.itens,
+          total: collection.total,
           mensagemDeErro: null,
         });
       })
       .catch((causa: unknown) => {
         if (!ativo) return;
-        setEstado({
+        setState({
           situacao: 'erro',
           registros: [],
           total: 0,
@@ -48,5 +48,5 @@ export function useListaDeRegistros(pagina: number, tamanho: number): Estado {
     };
   }, [pagina, tamanho]);
 
-  return estado;
+  return state;
 }
