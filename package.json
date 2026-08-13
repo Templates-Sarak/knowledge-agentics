@@ -11,15 +11,25 @@
     "//verificar:citacoes:antes": "Rodada AB / plan-3 Bloco AC: roda ANTES do rename da campanha de idioma — todo nome ANTIGO do inventario fechado (tests/rename-inventory.json) e citado no corpus da base e a citacao resolve (sanidade: o alvo do rename e real). NAO e gate continuo — nao ha pre-commit rastreado na base (so o local, fora do repo) nem workflow por commit; roda manual, uma vez por lado do rename. Inventario comeca vazio, e --antes fica verde por vacuidade ate o plan-3 Bloco AC popular a lista.",
     "verificar:citacoes:antes": "node specs/_estrutura_modulos/tests/verify-citations.mjs --antes",
     "//verificar:citacoes:depois": "Par do --antes acima — roda DEPOIS do rename: zero ocorrencia de nome antigo em qualquer arquivo do corpus, e todo nome novo citado resolve.",
-    "verificar:citacoes:depois": "node specs/_estrutura_modulos/tests/verify-citations.mjs --depois"
+    "verificar:citacoes:depois": "node specs/_estrutura_modulos/tests/verify-citations.mjs --depois",
+    "//verificar:citacoes:estrito": "plan-3.1.md Bloco AJ.0/AJ.1 — --depois filtrado por identificador distintivo E por arquivo (itemAplicaAoArquivo, simbolo so conta em bindings/+doutrina/+docs vivas da raiz), contra a linha de base versionada (citation-baseline.json). Achado novo reprova; --gravar-linha-base aceita.",
+    "verificar:citacoes:estrito": "node specs/_estrutura_modulos/tests/verify-citations.mjs --depois-estrito",
+    "//typecheck:tools": "plan-3.1.md Bloco AJ.1 — tools/** nao tem tipo estatico, lint (ADR-009 dec. 4 isenta) nem garantia de execucao. checkJs sem strict pega simbolo inexistente em qualquer ramo, inclusive o nao percorrido por nenhum --autoteste.",
+    "typecheck:tools": "tsc --project tsconfig.tools-check.json",
+    "//autoteste:tudo": "plan-3.1.md Bloco AJ.1 — o achado do AG generalizado: --autoteste que nada invoca e indistinguivel de nao ter. Descobre por varredura (nao lista a mao) todo arquivo com --autoteste em tools/, tests/ e bindings/*/root/, reprova ORFAO (achado sem entrada no registro) antes de rodar, e exige 0 falhas nos registrados.",
+    "autoteste:tudo": "node specs/_estrutura_modulos/tests/run-all-selftests.mjs"
   },
   "dependencies": {
-    "eslint": "^8.54.0",
-    "prettier": "^3.1.0",
-    "jest": "^29.7.0",
     "@playwright/test": "^1.40.0",
     "artillery": "^2.0.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.1.0",
     "supertest": "^6.3.3",
     "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
   }
 }

@@ -65,6 +65,8 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { itemAplicaAoArquivo } from './apply-rename.mjs';
+
 const AQUI = fileURLToPath(new URL('.', import.meta.url));
 const RAIZ_TEMPLATE = resolve(AQUI, '..');
 const RAIZ_BASE = resolve(RAIZ_TEMPLATE, '..', '..');
@@ -137,11 +139,30 @@ export function distintivo(nome) {
   return /[a-z][A-Z]/.test(nome) || nome.includes('_') || nome.includes('.') || nome.includes('-');
 }
 
-/** Achados de `avaliarDepois` (todos os itens) que passam pelo corte estrito. */
+/**
+ * SEGUNDO corte, achado ao medir o primeiro em cima de si mesmo: `distintivo` sozinho ainda conta
+ * `lerTexto`/`rodarAutoteste`/`envRequerido` DENTRO de `tools/`/`tests/` — símbolo que está exatamente
+ * onde a decisão 4 da fronteira (ADR-009) manda ficar em português, não resíduo nenhum. `--depois-
+ * estrito` reusa `itemAplicaAoArquivo` (`apply-rename.mjs`): item tipo `simbolo` só conta dentro de
+ * `bindings/` + `doutrina/` + as docs vivas da raiz — a MESMA fronteira que a campanha de rename já
+ * usa pra decidir o que é RENOMEADO. Medido contra a linha de base do Bloco AJ: **177 das 317
+ * entradas saem — 56%.** `chave`/`pasta`/`arquivo` continuam sem filtro de caminho (mesma regra de
+ * `itemAplicaAoArquivo`): só `simbolo` tem risco de colisão com o vocabulário PRÓPRIO da ferramenta.
+ */
+function dentroDoEscopoDeItem(item, arquivoRelativo) {
+  if (arquivoRelativo === undefined) return true;
+  const caminhoAbsoluto = join(RAIZ_BASE, ...arquivoRelativo.split('/'));
+  return itemAplicaAoArquivo(item, caminhoAbsoluto);
+}
+
+/** Achados de `avaliarDepois` (todos os itens) que passam pelos dois cortes: identificador
+ * distintivo, E — só pra `simbolo` — dentro do escopo que `itemAplicaAoArquivo` já usa pro rename. */
 export function filtrarEstrito(achados) {
   return achados.filter((a) => (
     a.motivo === 'nome-novo-citado-mas-nao-resolve'
-    || (a.motivo === 'nome-antigo-ainda-presente' && distintivo(a.item.antigo))
+    || (a.motivo === 'nome-antigo-ainda-presente'
+      && distintivo(a.item.antigo)
+      && dentroDoEscopoDeItem(a.item, a.arquivo))
   ));
 }
 
@@ -149,7 +170,7 @@ export function filtrarEstrito(achados) {
  * ocorrência entre rodadas (achado sem `arquivo`/`linha`, o caso `nome-novo-citado-mas-nao-resolve`,
  * usa só o nome — é um achado por ITEM, não por ocorrência). */
 export function chaveDoAchado(a) {
-  return `${a.arquivo ?? ''} ${a.linha ?? ''} ${a.nome}`;
+  return JSON.stringify([a.arquivo ?? null, a.linha ?? null, a.nome]);
 }
 
 /** `novos`: achado atual que a linha de base não conhece — exige revisão antes de

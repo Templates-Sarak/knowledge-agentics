@@ -82,6 +82,7 @@ export const CHAVE_CREDENCIAL_ATRIBUIDA = new RegExp(
  * catálogo canônico `skills/cyber-segredos/scripts/config.json` — só as nove formas sem entropia e
  * com prefixo fechado; a origem e o corte estão no cabeçalho do arquivo.
  */
+/** @type {[string, RegExp][]} */
 export const VOCABULARIO_VALOR = [
   ['AWS Access Key', /AKIA[0-9A-Z]{16}/],
   ['GitHub Token', /gh[pousr]_[A-Za-z0-9]{36,}/],

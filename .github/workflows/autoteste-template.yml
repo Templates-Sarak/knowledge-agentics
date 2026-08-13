@@ -24,6 +24,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - run: npm ci
+      # plan-3.1.md Bloco AJ.1 — os dois baratos primeiro (segundos, sem scaffold): tipo estatico
+      # em tools/** (simbolo inexistente em ramo nao percorrido) e todo --autoteste do template
+      # (--autoteste que nada invoca e o achado do AG — migrations.py ficou quebrado com tudo verde).
+      - run: npm run typecheck:tools
+      - run: npm run autoteste:tudo
       - run: npm run autoteste:template
 
   # plan-3.1.md Bloco AG: os runners de migrations (scripts/migrations.mjs, scripts/migrations.py)

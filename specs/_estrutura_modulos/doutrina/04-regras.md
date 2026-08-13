@@ -435,33 +435,46 @@ aberta: confere só o INVENTÁRIO FECHADO que o plan-3 Bloco AC declara em
 pra trás nem cita nome novo que não existe, e nada além disso. Falso positivo sobre prosa legítima
 continuaria sendo a direção proibida se a ferramenta tentasse ir além do inventário.**
 
-**`--depois-estrito` (plan-3.1.md Bloco AJ) é o corte que faltava, e ele NÃO reabre a discussão
-acima.** `--depois` cru afirma "zero ocorrência de nome antigo", e essa afirmação é inalcançável —
-medido de novo neste bloco: **4508** achados, dos quais só palavra comum do léxico português
-(`raiz`, `nome`, `contrato`, `consome`, `prefixo`, `tabelas`, `dominio`, `ordem`, `registrar`,
-`descricao`...) explica a esmagadora maioria, e é prosa legítima **dentro** do escopo pelo mesmo
-motivo do parágrafo acima. O corte é **por forma do nome ANTIGO**, não por forma da citação: um item
-do inventário é **IDENTIFICADOR DISTINTIVO** — camelCase interno, `snake_case`, com extensão de
-arquivo, ou hífen — ou é **palavra comum**, e só o primeiro grupo reprova. Medido: **271 dos 330**
-itens do inventário são distintivos; aplicado aos 4508 achados brutos, sobram **308, em ~65
-arquivos** — `rotaBase` (47×), `lerTexto` (43×), `envRequerido` (36×), `rodarAutoteste` (21×),
-`modulo.json` (15×), `geraArtefato` (14×)... nenhum é falso positivo verificado até aqui.
+**`--depois-estrito` (plan-3.1.md Bloco AJ) são DOIS cortes, e nenhum reabre a discussão acima.**
+`--depois` cru afirma "zero ocorrência de nome antigo", e essa afirmação é inalcançável — medido
+neste bloco: **4508** achados, dos quais só palavra comum do léxico português (`raiz`, `nome`,
+`contrato`, `consome`, `prefixo`, `tabelas`, `dominio`, `ordem`, `registrar`, `descricao`...) explica
+a esmagadora maioria, e é prosa legítima **dentro** do escopo pelo mesmo motivo do parágrafo acima.
 
-**O que o corte NÃO fecha:** identificador antigo que TAMBÉM é palavra comum (`dominio` — "domínio" é
-português de dicionário) fica de fora mesmo citado como resíduo real (`core/dominio` num caminho,
-por exemplo) — tentar capturar esse caso por contexto (posição depois de `/`, dentro de crase)
-reabriria exatamente o problema dos 360/407 já medido: a mesma palavra é prosa legítima na
+**Corte 1 — por forma do nome ANTIGO.** Um item do inventário é **IDENTIFICADOR DISTINTIVO**
+(camelCase interno, `snake_case`, extensão de arquivo, ou hífen) ou é **palavra comum**, e só o
+primeiro grupo reprova. Medido: **271 dos 330** itens do inventário são distintivos; aplicado aos
+4508 achados brutos, sobram 308.
+
+**Corte 2 — por ARQUIVO, achado ao medir o corte 1 em cima de si mesmo.** `lerTexto`/
+`rodarAutoteste`/`envRequerido` dentro de `tools/`/`tests/` são distintivos por forma E não são
+resíduo nenhum — são símbolo da PRÓPRIA base, exatamente onde a decisão 4 da fronteira (ADR-009)
+manda ficar em português. `--depois-estrito` reusa `itemAplicaAoArquivo` (`apply-rename.mjs`, a
+MESMA fronteira que a campanha de rename já usa pra decidir o que é renomeado): item tipo `simbolo`
+só conta dentro de `bindings/` + `doutrina/` + as docs vivas da raiz; `chave`/`pasta`/`arquivo`
+continuam sem filtro de caminho — só `simbolo` tem risco de colidir com o vocabulário da ferramenta.
+Medido: **177 das 308 saem — 56%**. Sem este corte, todo arquivo novo escrito **na convenção
+correta** (símbolo em português dentro de `tools/`/`tests/`) geraria achado novo e exigiria decisão
+humana — a catraca perderia o fio exatamente no caso que ela existe pra deixar passar calado.
+
+**O que os dois cortes NÃO fecham:** identificador antigo que TAMBÉM é palavra comum (`dominio` —
+"domínio" é português de dicionário) fica de fora mesmo citado como resíduo real (`core/dominio` num
+caminho, por exemplo) — tentar capturar esse caso por contexto (posição depois de `/`, dentro de
+crase) reabriria exatamente o problema dos 360/407 já medido: a mesma palavra é prosa legítima na
 esmagadora maioria das próprias ocorrências (`dominio` sozinho aparece centenas de vezes em
-`bindings/**` como o conceito de negócio, não como resíduo). O corte troca **recall por precisão**
-de propósito — é o mesmo acordo da opção B, só que mais estreito: aquele argumento vale para
-**palavra comum**, nunca para **identificador**.
+`bindings/**` como o conceito de negócio, não como resíduo). Os cortes trocam **recall por
+precisão** de propósito — é o mesmo acordo da opção B, só que mais estreito: aquele argumento vale
+para **palavra comum**, nunca para **identificador**.
 
 **O artefato:** `tests/citation-baseline.json`, mesma disciplina de `rename-refusals.json` (Bloco
-AI, `apply-rename.mjs`) — começa com os 308 já medidos e revisados (não vazio: o estado NÃO
-revisado, com 4508 achados nunca olhados, é o próprio problema que motivou o corte), cresce só por
-`--gravar-linha-base`, e achado novo reprova nomeando arquivo e linha. Contraprova feita nos dois
-sentidos: um resíduo distintivo novo introduzido de propósito (`paraContrato` numa linha de
-doutrina) reprova nomeando o arquivo; removido, volta a **0 achados novos, exit 0**.
+AI, `apply-rename.mjs`) — começa com os **202** achados já medidos e revisados depois dos dois
+cortes (não vazio: o estado NÃO revisado, com 4508 achados nunca olhados, é o próprio problema que
+motivou o corte), cresce só por `--gravar-linha-base`, e achado novo reprova nomeando arquivo e
+linha. Contraprova feita nos dois sentidos, para os dois cortes: um resíduo distintivo novo
+introduzido de propósito FORA do escopo (`paraContrato` numa linha de `doutrina/`) reprova nomeando
+o arquivo; o mesmo tipo de símbolo introduzido DENTRO do escopo excluído (`resolverDependencias` em
+`tools/`) não aparece — nem como achado, nem como falso alerta. Os dois revertidos, volta a **0
+achados novos, exit 0**.
 
 ### 7.2.1 — O extrator de projeção
 

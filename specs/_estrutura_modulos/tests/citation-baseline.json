@@ -62,30 +62,6 @@
       "motivo": "nome-antigo-ainda-presente"
     },
     {
-      "arquivo": "skills/code-modulo/references/workflow.md",
-      "linha": 206,
-      "item": {
-        "antigo": "dominioParaLinha",
-        "novo": "domainToRow",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "dominioParaLinha",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "skills/code-modulo/references/workflow.md",
-      "linha": 206,
-      "item": {
-        "antigo": "linhaParaDominio",
-        "novo": "rowToDomain",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "linhaParaDominio",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
       "arquivo": "skills/padrao-escrita/references/PADRAO-ORGANIZACAO.md",
       "linha": 32,
       "item": {
@@ -1227,19 +1203,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
-      "linha": 447,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
-      "linha": 447,
+      "linha": 449,
       "item": {
         "antigo": "lerTexto",
         "novo": "readText",
@@ -1251,7 +1215,19 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
-      "linha": 447,
+      "linha": 450,
+      "item": {
+        "antigo": "envRequerido",
+        "novo": "requiredEnv",
+        "tipo": "chave",
+        "fase": "AD.3"
+      },
+      "nome": "envRequerido",
+      "motivo": "nome-antigo-ainda-presente"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 450,
       "item": {
         "antigo": "rodarAutoteste",
         "novo": "runSelftest",
@@ -1263,43 +1239,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
-      "linha": 447,
-      "item": {
-        "antigo": "rotaBase",
-        "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "rotaBase",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
-      "linha": 448,
-      "item": {
-        "antigo": "geraArtefato",
-        "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "geraArtefato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
-      "linha": 448,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
-      "linha": 463,
+      "linha": 474,
       "item": {
         "antigo": "paraContrato",
         "novo": "toContract",
@@ -1307,6 +1247,18 @@
         "fase": "AD.2"
       },
       "nome": "paraContrato",
+      "motivo": "nome-antigo-ainda-presente"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/doutrina/04-regras.md",
+      "linha": 475,
+      "item": {
+        "antigo": "resolverDependencias",
+        "novo": "resolveDependencies",
+        "tipo": "simbolo",
+        "fase": "AD.2"
+      },
+      "nome": "resolverDependencias",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -1467,18 +1419,6 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1062,
-      "item": {
-        "antigo": "gerar_artefato",
-        "novo": "generate_artifact",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "gerar_artefato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
       "linha": 109,
       "item": {
         "antigo": "modulo.json",
@@ -1487,18 +1427,6 @@
         "fase": "AD.3"
       },
       "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1253,
-      "item": {
-        "antigo": "caminhoRelativo",
-        "novo": "pathRelative",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "caminhoRelativo",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -1535,42 +1463,6 @@
         "fase": "AD.3"
       },
       "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1404,
-      "item": {
-        "antigo": "montar_registro",
-        "novo": "build_record",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "montar_registro",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1413,
-      "item": {
-        "antigo": "gerar_artefato",
-        "novo": "generate_artifact",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "gerar_artefato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1414,
-      "item": {
-        "antigo": "gerar_artefato",
-        "novo": "generate_artifact",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "gerar_artefato",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -1691,30 +1583,6 @@
         "fase": "AD.3"
       },
       "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1652,
-      "item": {
-        "antigo": "paraContrato",
-        "novo": "toContract",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "paraContrato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1653,
-      "item": {
-        "antigo": "paraContrato",
-        "novo": "toContract",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "paraContrato",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -1911,30 +1779,6 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 2050,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 2074,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
       "linha": 267,
       "item": {
         "antigo": "dominio.json",
@@ -2067,30 +1911,6 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 585,
-      "item": {
-        "antigo": "gerar_artefato",
-        "novo": "generate_artifact",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "gerar_artefato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 637,
-      "item": {
-        "antigo": "paraContrato",
-        "novo": "toContract",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "paraContrato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
       "linha": 67,
       "item": {
         "antigo": "dominio.json",
@@ -2174,176 +1994,20 @@
       "motivo": "nome-antigo-ainda-presente"
     },
     {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 968,
+      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
+      "linha": 144,
       "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
+        "antigo": "envRequerido",
+        "novo": "requiredEnv",
+        "tipo": "chave",
+        "fase": "AD.3"
       },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 968,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 977,
-      "item": {
-        "antigo": "criarApp",
-        "novo": "createApp",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "criarApp",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 978,
-      "item": {
-        "antigo": "resolverDependencias",
-        "novo": "resolveDependencies",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolverDependencias",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/template-self-test.mjs",
-      "linha": 472,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/template-self-test.mjs",
-      "linha": 579,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
+      "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 308,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 396,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 449,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 453,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 454,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 465,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 492,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 500,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 518,
+      "linha": 539,
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
@@ -2355,7 +2019,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 519,
+      "linha": 540,
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
@@ -2367,19 +2031,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 554,
-      "item": {
-        "antigo": "montarRegistro",
-        "novo": "buildRecord",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "montarRegistro",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 607,
+      "linha": 628,
       "item": {
         "antigo": "mapeadores.py",
         "novo": "mappers.py",
@@ -2392,7 +2044,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 608,
+      "linha": 629,
       "item": {
         "antigo": "criar-modulo.mjs",
         "novo": "create-module.mjs",
@@ -2400,534 +2052,6 @@
         "fase": "AD.1"
       },
       "nome": "criar-modulo.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 644,
-      "item": {
-        "antigo": "montarRegistro",
-        "novo": "buildRecord",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "montarRegistro",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 694,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 790,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-map.mjs",
-      "linha": 108,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-map.mjs",
-      "linha": 185,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-map.mjs",
-      "linha": 208,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-map.mjs",
-      "linha": 84,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/verify-map.mjs",
-      "linha": 93,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 443,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 48,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 504,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/affected.mjs",
-      "linha": 77,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/ci-dependencies.mjs",
-      "linha": 331,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/ci-dependencies.mjs",
-      "linha": 423,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/ci-security.mjs",
-      "linha": 204,
-      "item": {
-        "antigo": "caminhoRelativo",
-        "novo": "pathRelative",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "caminhoRelativo",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/ci-security.mjs",
-      "linha": 205,
-      "item": {
-        "antigo": "caminhoRelativo",
-        "novo": "pathRelative",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "caminhoRelativo",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/ci-security.mjs",
-      "linha": 330,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/ci-security.mjs",
-      "linha": 410,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/contract-compatible.mjs",
-      "linha": 294,
-      "item": {
-        "antigo": "caminhoRelativo",
-        "novo": "pathRelative",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "caminhoRelativo",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/contract-compatible.mjs",
-      "linha": 403,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/contract-compatible.mjs",
-      "linha": 564,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-adapter.mjs",
-      "linha": 107,
-      "item": {
-        "antigo": "criarAdapter",
-        "novo": "createAdapter",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "criarAdapter",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-adapter.mjs",
-      "linha": 122,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-adapter.mjs",
-      "linha": 191,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-adapter.mjs",
-      "linha": 19,
-      "item": {
-        "antigo": "resolver_auth",
-        "novo": "resolve_auth",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolver_auth",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-adapter.mjs",
-      "linha": 19,
-      "item": {
-        "antigo": "resolverAuth",
-        "novo": "resolveAuth",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolverAuth",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-adapter.mjs",
-      "linha": 22,
-      "item": {
-        "antigo": "resolverAuth",
-        "novo": "resolveAuth",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolverAuth",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-adapter.mjs",
-      "linha": 41,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-module.mjs",
-      "linha": 118,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-module.mjs",
-      "linha": 126,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-module.mjs",
-      "linha": 148,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-module.mjs",
-      "linha": 174,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-module.mjs",
-      "linha": 190,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-module.mjs",
-      "linha": 36,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-module.mjs",
-      "linha": 41,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/create-module.mjs",
-      "linha": 91,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 129,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 145,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 163,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 189,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 221,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 230,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 235,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 241,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -2940,90 +2064,6 @@
         "fase": "AD.3"
       },
       "nome": "geraArtefato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 327,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/context.mjs",
-      "linha": 56,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/configuration.mjs",
-      "linha": 145,
-      "item": {
-        "antigo": "lerParesEnv",
-        "novo": "readPairsEnv",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerParesEnv",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/configuration.mjs",
-      "linha": 214,
-      "item": {
-        "antigo": "resolverDependencias",
-        "novo": "resolveDependencies",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolverDependencias",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/configuration.mjs",
-      "linha": 366,
-      "item": {
-        "antigo": "lerParesEnv",
-        "novo": "readPairsEnv",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerParesEnv",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/configuration.mjs",
-      "linha": 385,
-      "item": {
-        "antigo": "lerParesEnv",
-        "novo": "readPairsEnv",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerParesEnv",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/configuration.mjs",
-      "linha": 497,
-      "item": {
-        "antigo": "resolverAuth",
-        "novo": "resolveAuth",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolverAuth",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -3052,18 +2092,6 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 13,
-      "item": {
-        "antigo": "paraContrato",
-        "novo": "toContract",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "paraContrato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
       "linha": 228,
       "item": {
         "antigo": "rotaBase",
@@ -3084,18 +2112,6 @@
         "fase": "AD.3"
       },
       "nome": "rotaBase",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 334,
-      "item": {
-        "antigo": "paraContrato",
-        "novo": "toContract",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "paraContrato",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -3123,42 +2139,6 @@
       "motivo": "nome-antigo-ainda-presente"
     },
     {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 88,
-      "item": {
-        "antigo": "paraContrato",
-        "novo": "toContract",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "paraContrato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 95,
-      "item": {
-        "antigo": "criar_rotas",
-        "novo": "create_routes",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "criar_rotas",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 189,
-      "item": {
-        "antigo": "permissoesDe",
-        "novo": "permissionsFor",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "permissoesDe",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
       "linha": 241,
       "item": {
@@ -3180,42 +2160,6 @@
         "fase": "AD.3"
       },
       "nome": "rotasPublicas",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 383,
-      "item": {
-        "antigo": "exigirPermissao",
-        "novo": "requirePermission",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "exigirPermissao",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 461,
-      "item": {
-        "antigo": "buscarPorHash",
-        "novo": "findByHash",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "buscarPorHash",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 479,
-      "item": {
-        "antigo": "buscarPorHash",
-        "novo": "findByHash",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "buscarPorHash",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -3340,30 +2284,6 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 1363,
-      "item": {
-        "antigo": "lerCorpo",
-        "novo": "readBody",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerCorpo",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 1426,
-      "item": {
-        "antigo": "criar_rotas",
-        "novo": "create_routes",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "criar_rotas",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
       "linha": 1498,
       "item": {
         "antigo": "rotasPublicas",
@@ -3388,42 +2308,6 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 273,
-      "item": {
-        "antigo": "resolverAuth",
-        "novo": "resolveAuth",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolverAuth",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 274,
-      "item": {
-        "antigo": "resolver_auth",
-        "novo": "resolve_auth",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolver_auth",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 283,
-      "item": {
-        "antigo": "criarRepositorio",
-        "novo": "createRepository",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "criarRepositorio",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
       "linha": 524,
       "item": {
         "antigo": "rotaWeb",
@@ -3432,30 +2316,6 @@
         "fase": "AD.3"
       },
       "nome": "rotaWeb",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 572,
-      "item": {
-        "antigo": "resolverAuth",
-        "novo": "resolveAuth",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolverAuth",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 683,
-      "item": {
-        "antigo": "resolverDependencias",
-        "novo": "resolveDependencies",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "resolverDependencias",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -3519,186 +2379,6 @@
       "motivo": "nome-antigo-ainda-presente"
     },
     {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
-      "linha": 144,
-      "item": {
-        "antigo": "lerJson",
-        "novo": "readJson",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerJson",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
-      "linha": 199,
-      "item": {
-        "antigo": "lerJson",
-        "novo": "readJson",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerJson",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
-      "linha": 204,
-      "item": {
-        "antigo": "lerJson",
-        "novo": "readJson",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerJson",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
-      "linha": 208,
-      "item": {
-        "antigo": "lerJson",
-        "novo": "readJson",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerJson",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/run.mjs",
-      "linha": 249,
-      "item": {
-        "antigo": "lerJson",
-        "novo": "readJson",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerJson",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/text.mjs",
-      "linha": 23,
-      "item": {
-        "antigo": "lerParesEnv",
-        "novo": "readPairsEnv",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerParesEnv",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/generate-lint-config.mjs",
-      "linha": 215,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/generate-port-schemas.mjs",
-      "linha": 80,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 261,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 285,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 55,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 60,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/package.mjs",
-      "linha": 71,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
-      "linha": 128,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
-      "linha": 224,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
       "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
       "linha": 33,
       "item": {
@@ -3732,66 +2412,6 @@
         "fase": "AD.3"
       },
       "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
-      "linha": 73,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
-      "linha": 82,
-      "item": {
-        "antigo": "lerTexto",
-        "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "lerTexto",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
-      "linha": 422,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
-      "linha": 43,
-      "item": {
-        "antigo": "_resolver",
-        "novo": "_resolve",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "_resolver",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/verify-commit.mjs",
-      "linha": 446,
-      "item": {
-        "antigo": "rodarAutoteste",
-        "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
-      },
-      "nome": "rodarAutoteste",
       "motivo": "nome-antigo-ainda-presente"
     }
   ]

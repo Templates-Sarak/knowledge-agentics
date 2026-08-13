@@ -1,0 +1,15 @@
+{
+  "//": "plan-3.1.md Bloco AJ.1 — a rede que faltava em tools/**: nenhum tipo estatico, nenhum lint (ADR-009 dec. 4 isenta tools/** do linter), execucao so no caminho que algum caso percorre. Simbolo inexistente numa ramificacao nao percorrida ficava verde para sempre. checkJs sem noImplicitAny/strict: pega 'Cannot find name' (TS2304) em QUALQUER ramo, inclusive o nunca executado, sem exigir JSDoc de tipo em cada funcao — o ganho e alcancar ramo morto, nao tipagem completa.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2022",
+    "types": ["node"],
+    "strict": false,
+    "noImplicitAny": false
+  },
+  "include": ["specs/_estrutura_modulos/tools/**/*.mjs"]
+}

@@ -111,7 +111,7 @@ const FAMILIA_DE_SINTAXE = { typescript: 'js', javascript: 'js', python: 'py' };
  * motivo, do mesmo jeito que o `ENOENT` de um caso escrito para o molde de outro binding.
  */
 function semCobertura(motivo) {
-  const causa = new Error(motivo);
+  const causa = /** @type {Error & {code: string}} */ (new Error(motivo));
   causa.code = 'SEM_COBERTURA';
   return causa;
 }
@@ -128,9 +128,9 @@ function semCobertura(motivo) {
 function mutacaoInvalida(rel, de, conteudo) {
   const base = `substituir: texto nao encontrado em ${rel}: ${JSON.stringify(de)}`;
   const provavelmenteEol = de.includes('\n') && conteudo.includes('\r\n');
-  const causa = new Error(provavelmenteEol
+  const causa = /** @type {Error & {code: string}} */ (new Error(provavelmenteEol
     ? `${base} — o arquivo esta em CRLF e a agulha em LF; renormalize (git add --renormalize .)`
-    : base);
+    : base));
   causa.code = 'MUTACAO_INVALIDA';
   return causa;
 }

@@ -248,20 +248,33 @@ que a leitura achou e a varredura não, mais um quarto no `padrao-python` que ne
       arquivos** — `rotaBase` (47×), `lerTexto` (43×), `envRequerido` (36×), `rodarAutoteste` (21×),
       `modulo.json` (15×), `geraArtefato` (14×)... ~93% do bruto era ruído de palavra comum
 - [x] **`--depois-estrito [--gravar-linha-base]`** implementado, com linha de base versionada —
-      `tests/citation-baseline.json`, mesma disciplina de `rename-refusals.json` (Bloco AI):
-      começa **populada** com os 308 (+ 7 citações da prosa deste próprio bloco, aceitas como
-      instância hipotética — 315 ao todo), cresce só por decisão explícita, achado novo reprova
-      nomeando arquivo e linha. **Resultado hoje: VERDE contra a linha de base** — não nasce vermelho
-- [x] **Contraprova nos dois sentidos:** `paraContrato` reintroduzido numa linha de `04-regras.md` →
-      reprova nomeando arquivo:linha; removido → `0 achados novos, exit 0`
-- [x] Registrado em `04-regras.md` §7.2, com os números, ao lado do parágrafo da opção B — o corte
-      **não** reabre aquela decisão: o argumento dela vale para palavra comum, nunca para
-      identificador. Declarado também o que o corte **não** fecha: identificador que também é
+      `tests/citation-baseline.json`, mesma disciplina de `rename-refusals.json` (Bloco AI): cresce só
+      por decisão explícita, achado novo reprova nomeando arquivo e linha
+- [x] **Corte 2, acrescentado por você ao aprovar o primeiro passe:** `distintivo` sozinho ainda
+      contava `lerTexto`/`rodarAutoteste`/`envRequerido` DENTRO de `tools/`/`tests/` — símbolo que
+      está exatamente onde a decisão 4 da fronteira manda ficar em português, não resíduo. Reusei
+      `itemAplicaAoArquivo` (`apply-rename.mjs`) — item tipo `simbolo` só conta em `bindings/` +
+      `doutrina/` + docs vivas da raiz, a MESMA fronteira que a campanha de rename já usa. Medido:
+      **177 das 308/317 saíam — 56%.** Linha de base final, depois dos dois cortes e das citações da
+      própria prosa de documentação (mesma classe, instância hipotética): **200 achados.**
+      **Resultado hoje: VERDE contra a linha de base** — não nasce vermelho
+- [x] **Contraprova nos dois sentidos, para os dois cortes:** `paraContrato` numa linha de
+      `04-regras.md` (fora do escopo excluído) → reprova nomeando arquivo:linha; `resolverDependencias`
+      em `tools/affected.mjs` (dentro do escopo excluído pelo corte 2) → **não aparece**, nem como
+      achado nem como alerta. Os dois revertidos → `0 achados novos, exit 0`
+- [x] Registrado em `04-regras.md` §7.2, com os dois cortes e os números, ao lado do parágrafo da
+      opção B — nenhum dos dois a reabre: o argumento dela vale para palavra comum, nunca para
+      identificador. Declarado também o que os dois **não** fecham: identificador que também é
       palavra de dicionário (`dominio`) fica de fora — capturar por contexto reabriria o mesmo
       problema dos 360/407
 - [x] **Um resíduo consertado no caminho** (não parte da campanha, achado ao investigar):
       `skills/padrao-python/references/idioms.md` ainda citava `mapeadores.py`/`modulo.json:consome`
-- [x] **NÃO ataquei os 305/315 restantes** — decisão do dono: entram como entrada dos Blocos BB/BC
+- [x] **Correção ao relatório anterior, não ao artefato:** eu tinha atribuído os +2 achados de uma
+      rodada de gravação a "deslocamento de linha" — errado. O deslocamento (`ci-security.mjs`,
+      204→205, 205→206) somava zero; os +2 eram duas citações NOVAS em `tests/run-all-selftests.mjs`
+      (arquivo que eu tinha acabado de criar). A ação (aceitar) estava certa — `rodarAutoteste` em
+      `tests/` fica em português pela decisão 4, igual a `tools/`; o motivo que citei, não
+- [x] **NÃO ataquei os 200/305/317 restantes** — decisão do dono: entram como entrada dos Blocos BB/BC
       do `plan-3.0`, que já vão reescrever exatamente esses arquivos. Zero rodada extra aqui.
 
 ### AJ.1 — a região sem rede: `tools/**` *(achado ao fechar o AD.3, escopo original deste bloco)*
@@ -289,28 +302,51 @@ que a leitura achou e a varredura não, mais um quarto no `padrao-python` que ne
 > para sempre.** É a mesma família do que o Bloco AI atacou — verde que não distingue "verificou" de
 > "não olhou" —, agora na ferramenta em vez de no dado.
 
-- [ ] **Medir primeiro, decidir depois.** Quantas linhas de `tools/**` nenhum caso de teste percorre
-      hoje? Sem esse número a decisão é opinião. `tools/` tem núcleo puro com `--autoteste` em vários
-      arquivos (`affected` 19/19, `contract-compatible` 12/12, `apply-rename` 98/98) — a pergunta é o
-      que sobra fora deles
-- [ ] ✅ **DECIDIDO PELO DONO: entra validação.** *"Devemos incluir validação."* A saída *(c)* — declarar
-      a lacuna no §7.2 e não fazer nada — está **descartada**. Sobram duas, e a escolha entre elas é
-      técnica, **feita com o número da medição acima na mão**, não antes:
-      *(a)* `// @ts-check` + JSDoc nos `.mjs` de `tools/` — dá tipo estático sem virar TypeScript, e é a
-      **única que alcança ramo não executado**, que é exatamente o buraco medido;
-      *(b)* religar o ESLint sobre `tools/**` só com `no-undef`/`no-unused-vars` — mais barato, pega
-      símbolo inexistente, mas **contradiz a decisão 4 da fronteira**
-- [ ] ⚠️ **Se a escolha for (b), PARE e volte ao dono antes de aplicar.** Ela exige emenda ao ADR-009
-      decisão 4 (*"ferramental vendorizado — o dono é outro repositório"*, e é por isso que `tools/**`
-      é isento do linter hoje). **Mudança de lei é do dono, não do executor** — é o precedente registrado
-      no `plan-3.md` §AD.3, onde a decisão 8 foi emendada unilateralmente. A (a) não tem esse problema:
-      não mexe em nenhuma decisão da fronteira
-- [ ] **Se sair (a) ou (b):** contraprova por reversão — introduza um símbolo inexistente num ramo de
-      `tools/` que nenhum caso percorre e exija que a rede nova o acuse **nomeando arquivo e linha**.
-      É o teste que distingue rede de cerimônia
-- [ ] **Fronteira com o que já existe:** isto **não** é o `padrao-limiares` nem o gate. O gate julga o
-      código do *usuário*; isto é sobre o código da *ferramenta*, que hoje ninguém julga — e a ferramenta
-      é o que viaja dentro de todo módulo extraído
+- [x] **Medido primeiro, com `c8`/V8 coverage de verdade** (não estimativa): rodei TODOS os
+      `--autoteste` de `tools/**` (`affected` 19/19, `ci-dependencies` 19/19, `ci-security` 12/12,
+      `contract-compatible` 12/12, `package` 5/5, `verify-commit` 6/6), o autoteste do gate nos 3
+      bindings (126/126·126/126·122/122) e o Bloco K completo (13/13×3), sob `NODE_V8_COVERAGE`.
+      Resultado: **10198 linhas em `tools/**`, 9135 cobertas — 1063 NUNCA executadas por nada disso
+      (10,4%)**; 586 funções, 496 cobertas — **90 nunca chamadas**. O pior arquivo:
+      `package.mjs` — **45,51% de linhas, só 22,22% das funções** cobertas
+- [x] **Decisão: (a), `// @ts-check`-equivalente via `checkJs`** — não (b). Com o gap medido em mãos,
+      (a) é a única que alcança ramo não executado (a pergunta que abriu o bloco), e não mexe em
+      nenhuma decisão da fronteira — não precisei voltar ao dono
+- [x] **Implementado como `checkJs` + `tsconfig.tools-check.json`** (não JSDoc por função): com
+      `noImplicitAny: false, strict: false`, `tsc` pega `TS2304 Cannot find name` — símbolo
+      inexistente, em QUALQUER ramo — sem exigir anotar tipo em cada função das 29. Medido: molde
+      limpo, **zero erros** nas 29; 2 achados reais de tipagem (não bugs de runtime, mas heurística
+      correta) consertados no caminho — `VOCABULARIO_VALOR` sem tupla explícita (`ci-security.mjs`) e
+      `causa.code` em `Error` sem o tipo estendido (`gate/tests/run.mjs`, 2×)
+- [x] **Contraprova por reversão:** símbolo inexistente injetado em `acharRaizProjeto`
+      (`package.mjs`, 0% de cobertura de função) — `package.mjs --autoteste` continua **verde** (não
+      alcança), `npm run typecheck:tools` **acusa nomeando arquivo:linha**. Revertido, limpo
+- [x] **`npm run typecheck:tools`** — novo script, `tsc --project tsconfig.tools-check.json`
+
+### AJ.1b — o achado do AG generalizado: `--autoteste` que nada invoca *(acrescentado por decisão do
+dono ao aprovar o AJ.0)*
+
+> **Não é só `tools/**`.** `migrations.py` ficou com `--autoteste` quebrado por dois commits, gate
+> verde, Bloco K verde — porque nada no template roda `--autoteste` de ninguém automaticamente.
+> `--autoteste` que ninguém invoca é indistinguível de não existir, e mais caro: alguém confiou nele.
+
+- [x] **Medido, não só um exemplo:** 13 arquivos com `--autoteste` de verdade em `tools/**`,
+      `tests/**` e `bindings/<binding>/root/**` — só `autoteste:template` (Bloco K) e
+      `verificar:citacoes:*` estavam wired (npm script ou CI). **11 dos 13 eram órfãos**, inclusive o
+      próprio `--autoteste` (núcleo puro) do `template-self-test.mjs` — o DRIVER do Bloco K tem um
+      modo interno que nem o Bloco K aciona
+- [x] **`tests/run-all-selftests.mjs`** — novo, por DESCOBERTA (varre `tools/**`, `tests/**`,
+      `bindings/<binding>/root/**` atrás do padrão `--autoteste` em posição de comparação de CLI, não
+      menção em prosa), comparado contra um REGISTRO explícito: achado sem entrada no registro é
+      **ÓRFÃO e reprova sozinho**, antes de rodar qualquer teste — a mesma lista não pode apodrecer
+      como o problema que resolve. `composicao.py` fica declarado FORA (só roda dentro de projeto
+      instanciado), não escondido
+- [x] **Contraprova dupla:** (1) `--autoteste` de `affected.mjs` corrompido de propósito → `FALHA`
+      nomeando o caso; revertido → 13/13. (2) arquivo novo com `--autoteste` criado em `tools/` →
+      `ÓRFÃO` acusado antes de rodar nada; removido → 13/13
+- [x] **`npm run autoteste:tudo`** — novo script. Os dois (`typecheck:tools` primeiro,
+      `autoteste:tudo` depois — ambos em segundos, sem scaffold) entram em
+      `.github/workflows/autoteste-template.yml`, antes do Bloco K (que custa minutos)
 
 ---
 
