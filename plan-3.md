@@ -44,7 +44,7 @@ A operação segura é a estreita, e o default (não mexer) é o correto.
 
 ---
 
-## Bloco AB — o verificador de citação  *(pré-requisito, executado à parte)*
+## Bloco AB — o verificador de citação ✅ **FECHADO** *(commit `5a4083a`, pré-requisito, executado à parte)*
 
 > **O único ponto cego.** Nada confere que um caminho ou identificador citado em TEXTO existe no disco.
 > A doutrina pode passar a descrever `core/dominio/` num template que só tem `core/domain/` e tudo fica
@@ -63,7 +63,7 @@ A operação segura é a estreita, e o default (não mexer) é o correto.
 - [x] ~~`npm run verificar:citacoes` na base~~ — CLI é `node testes/verificar-citacoes.mjs --antes|--depois|--autoteste`,
       fora de `ferramentas/` de propósito. **Não** entra no Bloco K por binding
 
-### AB.1 — o corpus não cobre config, e é onde o pior modo de falha mora  *(achado na revisão do AC)*
+### AB.1 — o corpus não cobre config ✅ **FECHADO** *(achado na revisão do AC)*
 
 > **Medido pelo revisor.** As extensões presentes nos 2.392 achados do `--depois` são
 > `.mjs · .md · .py · .ts · .js · .tsx · .jsx` — **nenhum `.json`, `.yaml`, `.toml` nem dotfile.** Só nos
@@ -92,7 +92,7 @@ e depois da campanha a mesma lista tem de resolver de novo. Isso é um *diff*, n
 
 ---
 
-## Bloco AC — a fronteira, e ela vira ADR
+## Bloco AC — a fronteira, e ela vira ADR ✅ **FECHADO** *(ADR-009; a decisão 8 foi reinterpretada no AD.3 — ver a nota lá)*
 
 > *"Código em inglês, documentação em português"* parece uma linha nítida. Ela **atravessa onze
 > artefatos** que não são claramente nem um nem outro, e cada um precisa de decisão explícita — senão a
@@ -125,7 +125,17 @@ e depois da campanha a mesma lista tem de resolver de novo. Isso é um *diff*, n
 
 ---
 
-## Bloco AD — a campanha
+## Bloco AD — a campanha ✅ **FECHADO** *(AD.0 `b64af36` · AD.1 `b8d48a7` · AD.2 `3d98906` · AD.4+AD.5 `cee117c` · AD.3 `0b657e9`)*
+
+> **O que a campanha entregou.** `core/domain/` e `toContract` num template cuja lei e cujos comentários
+> seguem em português, e cuja fronteira está escrita num ADR. Seis rodadas, **duas reversões completas**
+> no AD.1, e três blocos de ferramenta que não existiam quando o plano foi escrito (AD.0, AE, AI).
+>
+> **A lição que se repetiu três vezes e vale como lei:** o **mesmo literal** pode ser alvo e não-alvo no
+> mesmo arquivo, e o discriminador é sempre **contexto sintático**, nunca a palavra. `portas` (pasta ×
+> chave de manifesto) · `contrato` (pasta × id de regra) · `ferramentas` (referência viva × registro
+> histórico num mapeamento). Cada uma custou uma rodada. **Entra no `04-regras.md`.**
+
 
 > **Atômica POR FASE**, não como bloco. Cada fase (`AD.1`, `AD.2`, `AD.3`) tem de cair de uma vez nos
 > três bindings, no gate, nos casos e nas citações — dentro dela não dá para parcelar, o autoteste ou
@@ -244,7 +254,49 @@ proteção — corretos nos dois sentidos em cada um.
       **provar o estado intermediário vermelho**. Ali o objeto testado e o teste mudam juntos — é o
       cenário clássico em que uma suíte passa sem provar nada
 
-### AD.3 — as chaves do manifesto  *(o item que mais pesa, e o único que faltava ter seção)*
+### AD.3 — as chaves do manifesto ✅ **FECHADO** *(commit `0b657e9`, revisado e reproduzido)*
+
+| Verificação — clone feito **a partir do commit** | Resultado |
+|---|---|
+| `apply-rename --autoteste` · `verify-citations --autoteste` | **98/98** · **33/33** |
+| `--relatorio` AD.1 · AD.2 · AD.3 · AD.4 | exit 0 nas quatro · 0 pendências · 0 recusas novas |
+| Idempotência das quatro fases | **0 arquivos** |
+| Gate · Bloco K | 122/122 · 122/122 · 119/119 · **3/3 VERDE 13/13** |
+| `verify-citations --depois` | **zero** achado de referência nova quebrada |
+| Marcador de scaffold | `<modulo>` em **109** arquivos · `<module>` em **0** |
+| A fronteira do valor | `data.schema` `<escopo>` · `permissions` `<modulo>:ler` · `ports` `repositorio…` · `data.tables` `<modulo>_metadados` — **todos preservados em português** |
+
+> **⚠️ A DECISÃO 8 FOI REINTERPRETADA NESTA RODADA, e o registro precisa dizer isso.**
+>
+> O **valor** do enum de `papel` virou inglês: `dominio|gateway|conector` → `role: domain|gateway|connector`.
+> **É a mesma mudança pela qual o AD.1 foi REPROVADO** — na época o revisor escreveu *"é valor de
+> manifesto, fora de escopo em AD.1 **e** em AD.3"*, e o mecanismo de literais protegidos foi construído
+> para impedi-la. Sem esta nota, quem ler o histórico encontra uma reprovação e uma aprovação para a
+> mesma mudança, sem explicação.
+>
+> **O mérito foi aceito, e o argumento é o certo:** `dominio` como valor de `role` é o **mesmo conceito**
+> da pasta `dominio/` que virou `domain/` — manter a pasta em inglês e o valor em português seria a
+> incoerência, não a coerência; e `binding` já tinha valores em inglês. O ADR-009 decisão 8 foi emendado
+> com esse argumento, e schema, molde e doutrina ficaram consistentes entre si.
+>
+> **O processo não foi seguido:** o cabeçalho deste plano manda *parar e perguntar* ao discordar de uma
+> linha da fronteira, e emendar o ADR que **define** a campanha é a decisão mais estrutural que existe
+> aqui — foi tomada e ratificada no mesmo movimento, e não estava na lista de desvios levantada no
+> checkpoint da rodada. Não foi reprovada porque desfazer destruiria trabalho correto para punir a
+> ordem em que foi feito. Fica registrado como **precedente**: mudança de lei é do dono, não do executor.
+
+> **O melhor achado da rodada.** `chavesDoSchema` do `verify-citations` não descia em `oneOf/anyOf/allOf`:
+> `icon` e `order`, sob um `navigation` nullable, eram **estruturalmente invisíveis** ao walker — ponto
+> cego do próprio verificador, que nenhum teste anterior tocava. Achado ao consertar outra coisa, e
+> consertado **na origem** (walker estendido + 2 casos de autoteste) em vez de silenciar os 4 achados.
+>
+> **E uma hipótese do revisor caiu, medida por reinjeção:** o `--diferencial` **não** pega o bug de
+> interpolação de template literal — o token corrompido é cercado por crase/barra/ponto/colchete, não
+> por espaço, e é o próprio desenho da heurística que o deixa passar. Quem pegou foi o **tipo estático**
+> do Bloco K (`tsc`/`mypy`), que varre todo arquivo independente de execução. É daí que sai o item de
+> cobertura de `tools/**` registrado no `plan-3.1.md`.
+
+### ~~AD.3 — as chaves do manifesto~~ *(itens abaixo, todos fechados)*
 
 > **Levantado pelo executor ao tocar o schema.** O item 8 da fronteira estava no AC como uma menção —
 > *"é o que mais pesa"* — e sem seção própria. Ele é, sozinho, **um JSON Schema inteiro + ~40 casos de
@@ -295,7 +347,33 @@ a chave no schema **antes** de renomeá-la no molde e nos leitores: o gate passa
 com `schema-manifesto`, e isso prova que a mudança está sendo vista. Verde no meio do caminho é sinal de
 que o schema não está sendo lido.
 
-### AD.4 — as citações em texto
+### AD.4 — as citações em texto ✅ **FECHADO** *(commit `cee117c`, revisado e reproduzido)*
+
+> **A doutrina entrou no alvo pela primeira vez** — nenhuma fase anterior a varria, e é a maior
+> densidade de prosa do repositório. Além do scanner, a **fronteira** `itemAplicaAoArquivo` também
+> precisou saber que `doutrina/` existe (`.md` nunca *declara* função, só cita).
+>
+> **O defeito da rodada, e a regra que nasceu dele.** A tabela de mapeamento do ADR-009 teve o lado
+> ESQUERDO renomeado: `ferramentas→tools` virou `tools→tools`. **11 dos 18 mapeamentos viraram
+> identidade**, e os 7 que sobraram sobreviveram por acaso — pior que corrupção uniforme.
+> Consertado com regra genérica em **três guardas**, cada uma achada testando a anterior contra
+> conteúdo real: (1) crase única `antigo→novo`; (2) o par em **duas crases adjacentes**
+> (`` `ferramentas/` (→ `tools/`) ``); (3) **diagrama de sequência** de três ou mais elos NÃO é
+> mapeamento — sem essa guarda, `core/dominio` no meio de uma cadeia ficaria preso em português
+> para sempre. O executor introduziu esse bug ao consertar o anterior e o pegou **antes de aplicar**,
+> testando contra o arquivo real em vez da fixture recém-escrita.
+>
+> **Decisão do Trabalho 2 — opção B, e bem fundamentada.** O aceite *"`verify-citations` verde"* era
+> inalcançável: `raiz` sozinho eram 407 de 1863 (22%), e escopar por caminho não resolveria, porque a
+> mesma palavra comum é prosa legítima *dentro* do escopo. Implementar o escopo duplicaria dentro do
+> verificador o motor de classificação por contexto que o codemod já tem — o mesmo erro que o §7.2 já
+> registra ter sido tentado e medido em 360 falsos positivos. Critério reescrito para o que a
+> ferramenta consegue afirmar, com a lacuna declarada no `04-regras.md` §7.2.
+>
+> **E dois bugs reais em `create-project.mjs`** — os placeholders `npm run verificar`/`npm run iniciar`
+> gravados no README de **todo projeto novo**, comandos que não existem mais. Achados pelo **caminho
+> real do usuário**, não pelo Bloco K.
+
 - [x] **Só as ~818 em forma de código** (dentro de crase ou com barra/ponto). As **1.434 como palavra
       solta ficam intactas** — são português correto, e substituí-las é o defeito desta campanha
 - [x] A substituição é **escopada por construção**: o script só troca dentro de crase e em token com
@@ -303,7 +381,12 @@ que o schema não está sendo lido.
 - [x] `verificar-citacoes --autoteste` verde, e `--depois` sem nenhum achado de classe "referência
       quebrada" — o critério reescrito abaixo, com o porquê em `04-regras.md` §7.2
 
-### AD.5 — o que fica declarado FORA, com motivo
+### AD.5 — o que fica declarado FORA ✅ **FECHADO** *(commit `cee117c`, revisado e reproduzido)*
+
+> A exclusão dos planos passou a ser **por lista explícita**, não por acidente de varredura —
+> `arquivosDePlanos()` os acha por regex e `corpusBruto()` os descarta por decisão. Contraprova: um
+> `plan-9.md` descartável citando nomes antigos não gerou achado nenhum.
+
 - [x] **As 343 funções de `ferramentas/`** — decisão 4 da fronteira. 433 ocorrências de nomes internos
       que ninguém que usa o template lê, por ganho ~zero
 - [x] **Os planos** (`plan.md`, `plan-2*`, `plan-3*`) — registro histórico. Citam nomes que existiam
@@ -458,7 +541,7 @@ quebrada" · `verificar-mapa` verde · e um projeto gerado do zero passando `ver
 - [x] **Contraprova:** remover à mão uma substituição legítima já feita (voltar um `tools/` para
       `ferramentas/` numa linha), rodar, e exigir que apareça como recusa NOVA — nomeando arquivo e linha
 
-### AI.4 — a invariante que faltava *(achada testando o AI contra o defeito histórico)*
+### AI.4 — a invariante que faltava ✅ **FECHADO** *(achada testando o AI contra o defeito histórico)*
 
 > **O AI foi construído para fechar o buraco de falso negativo, e a primeira coisa medida com ele foi o
 > defeito histórico — que ele deixou passar.** Reinjetando `'from core.motor import gerar_artefato\n'`
@@ -475,7 +558,7 @@ quebrada" · `verificar-mapa` verde · e um projeto gerado do zero passando `ver
 - [x] Contraprova nos dois sentidos: **(a)** reinjetar o defeito histórico → sai **1** nomeando
       `create-module.mjs` e a linha *(hoje sai 0)*; **(b)** estado limpo → **0 pendências, exit 0**
 
-### AI.5 — a não-idempotência *(defeito de origem do AD.1, e a origem é do revisor)*
+### AI.5 — a não-idempotência ✅ **FECHADO** *(defeito de origem do AD.1, e a origem é do revisor)*
 
 > **`--aplicar --fase AD.1` na árvore APROVADA — Bloco K verde — corrompe 14 pontos.** Todos são chave
 > de manifesto (AD.3) ou **id de regra**, que a decisão 6 do Bloco AC manda ficar em português. Medido
@@ -517,8 +600,9 @@ AD   a campanha                  AD.0 ✅ FECHADO (b64af36) — a ferramenta con
                                  executar AD.2 e AD.3
                                  AD.1 ✅ FECHADO (b8d48a7)
                                  AD.2 ✅ FECHADO (3d98906)
-                                 AD.3 → AGORA. Tem a terceira forma medida no AD.0
-                                 AD.4 → AD.5
+                                 AD.4+AD.5 ✅ FECHADO (cee117c) — rodou fora de ordem
+                                 AD.3 ✅ FECHADO (0b657e9)
+                                 BLOCO AD ✅ FECHADO
 
 AE   o CRLF, e os 3 sintomas     ✅ FECHADO (671cbf7). Clone limpo em Windows passa
                                  no próprio gate sem intervenção manual
@@ -530,8 +614,14 @@ AI   a rede do outro lado        ✅ FECHADO (b43094b). Falso negativo agora tem
 PRÓXIMO: AD.2 — os dois pré-requisitos (AE, AI) estão fechados.
 ────────────────────────────────────────────────────────────────────────────────
 
-═══ meta: `core/domain/` e `toContract` num template cuja lei e cujos comentários
-    seguem em português, e cuja fronteira está escrita num ADR ═══
+═══ ✅ META ATINGIDA — `core/domain/` e `toContract` num template cuja lei e cujos
+    comentários seguem em português, e cuja fronteira está escrita num ADR ═══
+
+    O plan-3 está FECHADO. O que continua aberto é o plan-3.1.md:
+      AF  a skill meta-iniciar-repositorio, nunca exercitada
+      AG  migrations com estado em JS e Python contra Postgres
+      AH  a convenção de nome do mapeador + o §3  ← DECISÃO DO DONO
+      AJ  cobertura de tools/** — sem lint, sem tipo, sem execução (novo)
 ```
 
 > **A campanha deixou de ser atômica, e isso foi medido, não escolhido.** O enunciado original do AD
