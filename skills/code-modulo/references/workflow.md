@@ -2,7 +2,7 @@
 
 Versão expandida do workflow do `SKILL.md`. Leia quando precisar do detalhe de um passo.
 
-- **§A — Fluxo A**, iniciar um sistema modular (o projeto ainda não tem `modulos/`).
+- **§A — Fluxo A**, iniciar um sistema modular (o projeto ainda não tem `modules/`).
 - **§B — Fluxo B**, criar um módulo (o projeto já adotou o template). Trate **um módulo por vez**.
 
 O Fluxo A termina chamando o Fluxo B, uma vez por módulo inicial.
@@ -15,13 +15,13 @@ O Fluxo A termina chamando o Fluxo B, uma vez por módulo inicial.
 
 **Objetivo:** não sobrescrever trabalho alheio.
 
-O `criar-projeto` **aborta** se o destino já tem `modulos/`, e também se já tem os arquivos de raiz do
+O `create-project` **aborta** se o destino já tem `modules/`, e também se já tem os arquivos de raiz do
 binding (`package.json`, `pyproject.toml`, `tsconfig.json`, `jsconfig.json`, `.gitignore`, `verificar.py`).
 
 | Situação | O que fazer |
 |---|---|
 | Diretório vazio ou repositório recém-criado | siga |
-| Já tem `modulos/` | é o **Fluxo B**, não este |
+| Já tem `modules/` | é o **Fluxo B**, não este |
 | Já tem `package.json`/`pyproject.toml` de um projeto em andamento | **pare e pergunte.** `--forcar` sobrescreve; o `.gitignore` é mesclado, mas o manifesto de pacote **não** |
 
 ## A2: Entrevista
@@ -30,7 +30,7 @@ Bloco A de `references/templates.md`. Não pergunte o que dá para ler: se há u
 **escopo** saem do nome da pasta e do remoto.
 
 **O que detectar:**
-- `dados.schema` = `public` → recuse; é erro de gate sem exceção possível.
+- `data.schema` = `public` → recuse; é erro de gate sem exceção possível.
 - Escopo com maiúscula ou espaço → package inválido.
 - Binding `python` com pedido de tela → o binding Python nasce backend-only; a tela é um módulo TS.
 - Só um módulo planejado → pergunte se é mesmo modular. Um módulo só não precisa de federação.
@@ -43,11 +43,11 @@ tocado**. Aguarde confirmação explícita.
 ## A4: Instanciar
 
 ```
-node <template>/ferramentas/criar-projeto.mjs <destino> --binding <b> --escopo <e>
+node <template>/tools/create-project.mjs <destino> --binding <b> --escopo <e>
 ```
 
-Nasce com: `ferramentas/` (o gate), `packages/portas`, `adapters/memoria` (**obrigatório** — é o que permite
-testar sem rede), `src/composicao`, `modulos/_template`, e a doutrina em `specs/arquitetura/` mais
+Nasce com: `tools/` (o gate), `packages/ports`, `adapters/memory` (**obrigatório** — é o que permite
+testar sem rede), `src/composicao`, `modules/_template`, e a doutrina em `specs/arquitetura/` mais
 `specs/adr/000-decisoes-do-template.md`.
 
 **O que detectar:** exit ≠ 0 → leia a mensagem; ela nomeia a colisão.
@@ -59,7 +59,7 @@ Estas são **decisões**, não configuração — vão para `specs/adr/NNN-*.md`
 | Decisão | Por que precisa estar escrita |
 |---|---|
 | Idioma das pastas (misto EN ou PT puro) | o gate cobra **consistência**, não a escolha — sem o registro, não há o que ser consistente com |
-| Topologia de schema (único ou por módulo) | muda o custo de separar depois; e `dados.schema` de todo módulo depende dela |
+| Topologia de schema (único ou por módulo) | muda o custo de separar depois; e `data.schema` de todo módulo depende dela |
 | `ui.modo` padrão (`proprio` ou `kit`) | `kit` proíbe importar a lib de UI bruta; adotar depois é campanha |
 
 ## A6: Criar cada módulo
@@ -70,7 +70,7 @@ pago, e o `conector` **por último** — ele agrega os outros e precisa que exis
 ## A7: Verificar
 
 ```
-node ferramentas/gate/validar.mjs --todos     # inclui import-lateral e consome-ciclo
+node tools/gate/validate.mjs --todos          # inclui import-lateral e consome-ciclo
 npm run verificar                             # ou: python verificar.py
 ```
 
@@ -85,13 +85,13 @@ exatamente o acoplamento que a arquitetura existe para impedir.
 
 **Objetivo:** garantir que o projeto adotou o template antes de escrever qualquer arquivo.
 
-1. Glob por `ferramentas/criar-modulo.mjs`, `ferramentas/gate/validar.mjs`, `specs/arquitetura/04-regras.md` e `modulos/`.
+1. Glob por `tools/create-module.mjs`, `tools/gate/validate.mjs`, `specs/arquitetura/04-regras.md` e `modules/`.
 2. Leia `specs/arquitetura/01-modulo.md` (anatomia e manifesto) e `specs/arquitetura/04-regras.md` (catálogo normativo).
-3. Liste `modulos/` para conhecer os módulos vizinhos — você vai precisar deles no campo `consome`.
+3. Liste `modules/` para conhecer os módulos vizinhos — você vai precisar deles no campo `consumes`.
 
 **O que detectar:**
-- Falta `ferramentas/criar-modulo.mjs` ou `modulos/` → o projeto **não** adotou o template: e o Fluxo A, nao este.
-- Existe `Modulos/` com maiúscula, ou `src/modules/` → estrutura antiga, não adequada.
+- Falta `tools/create-module.mjs` ou `modules/` → o projeto **não** adotou o template: e o Fluxo A, nao este.
+- Existe `Modules/` com maiúscula, ou `src/modules/` → estrutura antiga, não adequada.
 
 **Como corrigir:** **pare e reporte.** Criar o módulo numa estrutura não adequada gera um módulo que nasce
 fora do padrão e vira dívida no dia da adequação. Adequar o projeto é campanha à parte.
@@ -104,16 +104,16 @@ fora do padrão e vira dívida no dia da adequação. Adequar o projeto é campa
 
 | Campo | Regra | Consequência de errar |
 |---|---|---|
-| `id` | kebab-case minúsculo, singular ou plural conforme o domínio | é pasta + package + `rotaBase` + prefixo de tabela + prefixo de env. Mudar depois = renomear tudo |
-| `papel` | `dominio` \| `gateway` \| `conector` | só `gateway` pode declarar credencial de serviço externo pago |
+| `id` | kebab-case minúsculo, singular ou plural conforme o domínio | é pasta + package + `basePath` + prefixo de tabela + prefixo de env. Mudar depois = renomear tudo |
+| `role` (CLI: `--role`, digitado em PT) | `dominio` \| `gateway` \| `conector` — gravado no manifesto como `domain`\|`gateway`\|`connector` | só `gateway` pode declarar credencial de serviço externo pago |
 | `binding` | `typescript` \| `javascript` \| `python` | define o molde e o conjunto de regras de linguagem |
-| `geraArtefato` | `true` só se o módulo produz saída publicável | `false` descarta `core/motor`, `core/templates` e `gerados/` |
-| `rotaWeb` | `/<id>` ou `null` | `null` descarta `web/`; se declarado, o gate exige página real |
+| `generatesArtifact` | `true` só se o módulo produz saída publicável | `false` descarta `core/engine`, `core/templates` e `generated/` |
+| `webPath` | `/<id>` ou `null` | `null` descarta `web/`; se declarado, o gate exige página real |
 | `ui.modo` | `proprio` \| `kit` | `kit` proíbe importar a lib de UI bruta fora do `ui-kit` |
 
 **O que detectar:**
 - `id` com maiúscula, underscore ou acento → reprova no scaffold.
-- `id` que já existe em `modulos/` → o scaffold aborta.
+- `id` que já existe em `modules/` → o scaffold aborta.
 - `id` genérico (`core`, `comum`, `utils`) → não é domínio de negócio; é sinal de que a fronteira está errada.
 
 ---
@@ -127,7 +127,7 @@ resposta ambígua.
 
 **O que detectar no próprio plano:**
 - Tabela sem o prefixo `<id>_` → renomeie antes de criar.
-- `consome` apontando para módulo que também consome este → **ciclo**; o gate reprova. Resolva a direção agora.
+- `consumes` apontando para módulo que também consome este → **ciclo**; o gate reprova. Resolva a direção agora.
 - Porta declarada sem adapter correspondente → o módulo não sobe.
 
 ---
@@ -137,7 +137,7 @@ resposta ambígua.
 **Objetivo:** materializar a árvore canônica sem digitar caminho à mão.
 
 ```
-node ferramentas/criar-modulo.mjs <id> --binding <b> --papel <p> [--sem-artefato]
+node tools/create-module.mjs <id> --binding <b> --role <p> [--sem-artefato]
 ```
 
 O script copia o molde do binding, substitui os marcadores (`<modulo>`, `<MODULO>`, `<Modulo>`), ajusta o
@@ -147,14 +147,14 @@ manifesto, cria o `.env` com o ponteiro `ENV_RAIZ` e roda o gate ao final.
 
 **Antes:**
 ```
-modulos/
+modules/
 ├── _template/
 └── conector/
 ```
 
 **Depois:**
 ```
-modulos/
+modules/
 ├── _template/
 ├── conector/
 └── catalogo/          ← árvore completa, manifesto preenchido, gate verde
@@ -166,12 +166,12 @@ modulos/
 
 **Objetivo:** o módulo se declara; o sistema o **descobre**. Nada é registrado em código compartilhado.
 
-Preencha `modulo.json` conforme `references/templates.md`. Regra que atravessa tudo: **não declarado, não existe.**
+Preencha `module.json` conforme `references/templates.md`. Regra que atravessa tudo: **não declarado, não existe.**
 
 **O que detectar:**
-- Tabela usada no código e ausente de `dados.tabelas` → o gate varre **uso**, não só declaração.
-- Chave `<MODULO>_*` lida no código e ausente de `envRequerido` → erro.
-- `dados.schema` igual a `public` → erro, sem exceção.
+- Tabela usada no código e ausente de `data.tables` → o gate varre **uso**, não só declaração.
+- Chave `<MODULO>_*` lida no código e ausente de `requiredEnv` → erro.
+- `data.schema` igual a `public` → erro, sem exceção.
 - Permissão de outro módulo declarada aqui → o módulo declara **só o que possui**.
 
 ---
@@ -180,18 +180,18 @@ Preencha `modulo.json` conforme `references/templates.md`. Regra que atravessa t
 
 **Objetivo:** a spec manda; o código segue.
 
-Escreva `contrato/openapi.yaml` com os três endpoints obrigatórios e os recursos do domínio.
+Escreva `contract/openapi.yaml` com os três endpoints obrigatórios e os recursos do domínio.
 
 | Rota | Papel |
 |---|---|
-| `GET <rotaBase>/health` | vivo? portas resolvidas? |
-| `GET <rotaBase>/meta` | ecoa o manifesto — é por aqui que o sistema descobre o módulo |
-| `GET <rotaBase>/resumo` | contagem e indicadores que o conector agrega |
+| `GET <basePath>/health` | vivo? portas resolvidas? |
+| `GET <basePath>/meta` | ecoa o manifesto — é por aqui que o sistema descobre o módulo |
+| `GET <basePath>/resumo` | contagem e indicadores que o conector agrega |
 
 **O que detectar:**
 - Verbo no path (`/criarItem`) → a ação é o método HTTP.
 - Recurso no singular ou em camelCase → plural kebab-case.
-- Campo de `camposSensiveis` aparecendo em schema de **resposta** → erro de gate.
+- Campo de `sensitiveFields` aparecendo em schema de **resposta** → erro de gate.
 
 ---
 
@@ -199,16 +199,16 @@ Escreva `contrato/openapi.yaml` com os três endpoints obrigatórios e os recurs
 
 **Objetivo:** cada camada nasce sobre a anterior já pronta, sem retrabalho.
 
-1. **`core/dominio`** — tipos + validação. Sem I/O, sem `new Date()`, sem `Math.random()` (use as portas
+1. **`core/domain`** — tipos + validação. Sem I/O, sem `new Date()`, sem `Math.random()` (use as portas
    `relogio` e `geradorId`).
 2. **`api/src/routes`** — valide a entrada na **borda**, exija permissão, monte a resposta pelo mapeador,
    lance o erro da taxonomia fechada (nunca `res.status(...)` ad hoc).
-3. **`api/src/mapeadores`** — `linhaParaDominio`, `dominioParaLinha` e a **projeção de saída por allowlist**.
+3. **`api/src/mappers`** — `linhaParaDominio`, `dominioParaLinha` e a **projeção de saída por allowlist**.
    O campo só é publicado se alguém o acrescentar deliberadamente aqui.
 4. **`database/`** — `schema.sql` (estado alvo) + `migrations/0001-cria-<entidade>.sql` com bloco `-- rollback`.
 5. **`web/src/pages`** — a tela com os três estados (`loading`, `empty`, `error`); estado em `hooks/`, acesso em
    `api-client/` por caminho relativo.
-6. **`tests/`** — `dominio/`, `contrato/`, `web/`, tudo com adapters de memória.
+6. **`tests/`** — `domain/`, `contract/`, `web/`, tudo com adapters de memória.
 
 **O que detectar:**
 - `import` de `@<escopo>/<outro-modulo>` ou caminho relativo saindo da pasta → **import lateral**, erro.
@@ -217,14 +217,14 @@ Escreva `contrato/openapi.yaml` com os três endpoints obrigatórios e os recurs
 
 **Antes (errado):**
 ```ts
-// modulos/pedidos/database/adaptador/adaptadorCatalogo.ts
+// modules/pedidos/database/adaptador/adaptadorCatalogo.ts
 import { pool } from '<sdk-do-fornecedor>'
 const { rows } = await pool.query('SELECT preco FROM catalogo_precos WHERE item = $1')
 ```
 
 **Depois (certo):**
 ```ts
-// modulos/pedidos/core/gateways/catalogo.ts
+// modules/pedidos/core/gateways/catalogo.ts
 export function criarGatewayCatalogo(baseUrl: string): CatalogoGateway {
   return {
     async obterPrecoVigente(hash: string): Promise<number> {
@@ -244,10 +244,10 @@ export function criarGatewayCatalogo(baseUrl: string): CatalogoGateway {
 **Objetivo:** o que o módulo exige e o que está documentado nunca divergirem.
 
 ```
-node ferramentas/sincronizar-env.mjs
+node tools/sync-env.mjs
 ```
 
-Regenera o `.env.example` do módulo (a partir de `envRequerido`) e o da raiz (união de todos).
+Regenera o `.env.example` do módulo (a partir de `requiredEnv`) e o da raiz (união de todos).
 Depois, preencha os **valores reais** no `.env` da **raiz**.
 
 **O que detectar:**
@@ -262,8 +262,8 @@ Depois, preencha os **valores reais** no `.env` da **raiz**.
 **Objetivo:** o módulo nasce conforme e provadamente extraível.
 
 ```
-node ferramentas/gate/validar.mjs modulos/<id>
-node ferramentas/gate/validar.mjs --extracao modulos/<id>
+node tools/gate/validate.mjs modules/<id>
+node tools/gate/validate.mjs --extracao modules/<id>
 ```
 
 O segundo comando responde a pergunta que justifica a arquitetura inteira: **este módulo vira microsserviço

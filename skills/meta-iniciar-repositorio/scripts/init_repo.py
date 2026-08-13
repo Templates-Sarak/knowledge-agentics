@@ -8,7 +8,7 @@
 Monta, nesta ordem:
 
     1. git init (opcional, --git-init)
-    2. projeto modular: ferramentas/, packages/, adapters/, src/, modulos/_template
+    2. projeto modular: tools/, packages/, adapters/, src/, modules/_template
        + a doutrina em specs/arquitetura/ e specs/adr/  (so com --binding)
     3. specs/ do fluxo SDD (00-*, _templates, plan/, adr/)
     4. a base da linguagem em specs/arquitetura/00-base-<binding>.md
@@ -106,12 +106,12 @@ exit 0
 """
 
 # A linha que o template instala em `.githooks/pre-commit` (raiz/.githooks/pre-commit dos tres
-# bindings — byte a byte igual, conforme ferramentas/verificar-commit.mjs). Constante aqui porque
+# bindings — byte a byte igual, conforme tools/verify-commit.mjs). Constante aqui porque
 # `compor_pre_commit` as vezes precisa dela sem ter o arquivo do template em mao (estado C: so o
 # nosso hook existe, nada para extrair).
-LINHA_HOOK_TEMPLATE = "node ferramentas/verificar-commit.mjs pre-commit || exit 1"
+LINHA_HOOK_TEMPLATE = "node tools/verify-commit.mjs pre-commit || exit 1"
 MARCADOR_HOOK_NOSSO = "verificar_commit.py"
-MARCADOR_HOOK_TEMPLATE = "verificar-commit.mjs"
+MARCADOR_HOOK_TEMPLATE = "verify-commit.mjs"
 
 
 def _sem_shebang(texto: str) -> str:
@@ -169,7 +169,7 @@ def _casos_de_autoteste_pre_commit() -> list[dict]:
     template_isolado = (
         "#!/bin/sh\n"
         "# Sarak - pre-commit (gate de conformidade)\n"
-        "node ferramentas/verificar-commit.mjs pre-commit || exit 1\n"
+        "node tools/verify-commit.mjs pre-commit || exit 1\n"
     )
     return [
         {
@@ -278,8 +278,8 @@ def rodar(rotulo: str, comando: list, pasta: Path) -> bool:
 
 
 def instalar_projeto_modular(target: Path, template: Path, args) -> bool:
-    """Passo 2: ferramentas, packages, adapters, molde de modulo e a doutrina em specs/."""
-    criar_projeto = template / "ferramentas" / "criar-projeto.mjs"
+    """Passo 2: tools, packages, adapters, molde de modulo e a doutrina em specs/."""
+    criar_projeto = template / "tools" / "create-project.mjs"
     if not criar_projeto.exists():
         print(f"[ERRO] Template de modulos nao encontrado em {template}")
         return False
@@ -331,15 +331,15 @@ def instalar_base_de_linguagem(target: Path, xskills_root: Path, binding: str, n
 
 def criar_modulos(target: Path, template: Path, modulos: list, binding: str) -> None:
     """Passo 5: os primeiros modulos, um por vez. O conector vai por ultimo — ele agrega os outros."""
-    criar_modulo = target / "ferramentas" / "criar-modulo.mjs"
+    criar_modulo = target / "tools" / "create-module.mjs"
     if not criar_modulo.exists():
-        criar_modulo = template / "ferramentas" / "criar-modulo.mjs"
+        criar_modulo = template / "tools" / "create-module.mjs"
     ordenados = sorted(modulos, key=lambda m: m == "conector")
     for modulo in ordenados:
         papel = "conector" if modulo == "conector" else "dominio"
         rodar(
             f"Modulo '{modulo}' ({papel})",
-            ["node", str(criar_modulo), modulo, "--binding", binding, "--papel", papel],
+            ["node", str(criar_modulo), modulo, "--binding", binding, "--role", papel],
             target,
         )
 
@@ -375,7 +375,7 @@ def escrever_entrypoint(target: Path, modular: bool) -> None:
     if modular:
         texto += (
             "> **Arquitetura de modulos:** a lei esta em `specs/arquitetura/` (`04-regras.md` e o catalogo "
-            "normativo) e e cobrada por maquina: `node ferramentas/gate/validar.mjs --todos`. "
+            "normativo) e e cobrada por maquina: `node tools/gate/validate.mjs --todos`. "
             "Modulo novo so pela skill `code-modulo` — nunca copiando pasta a mao.\n"
         )
     claude_md = target / "CLAUDE.md"
@@ -425,7 +425,7 @@ def instalar_hooks_git(target: Path, xskills_root: Path) -> None:
 
 def verificar(target: Path) -> None:
     """Passo 7: o gate global. Reprovar aqui e informacao, nao acidente."""
-    validar = target / "ferramentas" / "gate" / "validar.mjs"
+    validar = target / "tools" / "gate" / "validate.mjs"
     if not validar.exists():
         return
     rodar("Gate de conformidade (--todos)", ["node", str(validar), "--todos"], target)

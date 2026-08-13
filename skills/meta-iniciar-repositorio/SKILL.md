@@ -20,8 +20,8 @@ arquitetura de módulos instalada, o fluxo SDD montado, os primeiros módulos cr
 
 ```
 1. git init                     (se não houver .git)
-2. projeto modular              ferramentas/ · packages/portas · adapters/memoria · src/composicao
-                                · modulos/_template · specs/arquitetura/ (as 5 leis)
+2. projeto modular              tools/ · packages/ports · adapters/memory · src/composicao
+                                · modules/_template · specs/arquitetura/ (as 5 leis)
                                 · specs/adr/000-decisoes-do-template.md
 3. specs/ do fluxo SDD          00-contexto · 00-indice · 00-knowledge · prompts · _templates · plan/
 4. base da linguagem            specs/arquitetura/00-base-<binding>.md
@@ -72,7 +72,7 @@ sobrescreve o manifesto de pacote do projeto — o `.gitignore` é mesclado, mas
 Essa decisão é do usuário, nunca sua.
 
 ### 4. Verificar
-O próprio script roda `validar.mjs --todos` ao final. Rode também o comando composto do binding
+O próprio script roda `validate.mjs --todos` ao final. Rode também o comando composto do binding
 (`npm run verificar` ou `python verificar.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
 
 Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito — o passo 6 do script
@@ -80,12 +80,12 @@ Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito
 `python init_repo.py --autoteste`), então isto é conferência, não ação manual:
 
 ```bash
-grep -c "^node ferramentas/verificar-commit.mjs" <alvo>/.githooks/pre-commit    # == 1: gate de conformidade do template
+grep -c "^node tools/verify-commit.mjs" <alvo>/.githooks/pre-commit             # == 1: gate de conformidade do template
 grep -c "^\"\$PY\" .githooks/verificar_commit.py" <alvo>/.githooks/pre-commit   # == 1: gate de segredos
 ```
 
 Ancorado na **invocação**, não em qualquer menção ao nome do arquivo — o hook também comenta
-`ferramentas/verificar-commit.mjs` em prosa, e um `grep` sem âncora conta o comentário junto. Os dois
+`tools/verify-commit.mjs` em prosa, e um `grep` sem âncora conta o comentário junto. Os dois
 têm de dar exatamente 1 — zero é hook não composto; mais de 1 é hook duplicado (composição rodou mais
 de uma vez sobre o mesmo arquivo).
 
@@ -113,7 +113,7 @@ que o script escreve já é o final — nada a fazer aqui.
 - **NUNCA** commite nem crie remoto por conta própria — é irreversível e externo. Isso é `git-commit-inicial`.
 - **NÃO** aceite `go` ou `java` como binding: **não existe molde de módulo** para eles — nem doutrina, nem
   gate, nem camada de escrita. Sistema modular nasce em `typescript`, `javascript` ou `python`.
-- **NÃO** crie módulo copiando pasta à mão — sempre pelo `criar-modulo` (é o que o script faz).
+- **NÃO** crie módulo copiando pasta à mão — sempre pelo `create-module.mjs` (é o que o script faz).
 - **NÃO encerre com o gate vermelho.**
 
 ## Checklist "pronta"
@@ -125,7 +125,7 @@ que o script escreve já é o final — nada a fazer aqui.
 - [ ] `specs/adr/000-decisoes-do-template.md` presente?
 - [ ] Módulos criados, cada um com manifesto e contrato?
 - [ ] `.agents/` com `gerar_indice.py`, `core.hooksPath` apontando para `.githooks`, e — em projeto
-      modular — `.githooks/pre-commit` com o gate de segredos **e** `verificar-commit.mjs` do template
+      modular — `.githooks/pre-commit` com o gate de segredos **e** `verify-commit.mjs` do template
       compostos (nunca um sobrescrevendo o outro), `.githooks/pre-push` intacto?
-- [ ] `validar.mjs --todos` verde?
+- [ ] `validate.mjs --todos` verde?
 - [ ] Pendências de HITL comunicadas (`.env`, `00-contexto.md`, ADRs, primeiro commit)?

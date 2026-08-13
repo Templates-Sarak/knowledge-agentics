@@ -26,15 +26,15 @@ virar microsserviço depois é copiar a pasta e recortar as chaves `<MODULO>_*` 
 ## Detecção do caso — antes de perguntar
 
 ```
-existe ferramentas/criar-modulo.mjs E modulos/ na raiz do projeto?
+existe tools/create-module.mjs E modules/ na raiz do projeto?
    sim → FLUXO B (módulo novo)          não → FLUXO A (sistema novo)
 ```
 
-Confirme em **uma linha** e siga: *"Projeto já adota o template (`modulos/` com 3 módulos) → vou criar um
+Confirme em **uma linha** e siga: *"Projeto já adota o template (`modules/` com 3 módulos) → vou criar um
 módulo novo. Certo?"* Perguntar "você quer A ou B?" quando o repositório já responde é atrito.
 
 **Princípio da entrevista: pergunte só o que não dá para inferir.** Binding, escopo, schema e topologia saem
-do projeto quando ele existe — leia `modulo.json` de um vizinho antes de abrir a boca.
+do projeto quando ele existe — leia `module.json` de um vizinho antes de abrir a boca.
 
 ---
 
@@ -42,8 +42,8 @@ do projeto quando ele existe — leia `modulo.json` de um vizinho antes de abrir
 
 Detalhe de cada passo em `references/workflow.md` §A.
 
-1. **Confirmar o terreno** — diretório vazio ou repositório sem `modulos/`. Se já houver `package.json`,
-   `pyproject.toml` ou `.gitignore`, o `criar-projeto` **aborta**: decida com o usuário antes de `--forcar`.
+1. **Confirmar o terreno** — diretório vazio ou repositório sem `modules/`. Se já houver `package.json`,
+   `pyproject.toml` ou `.gitignore`, o `create-project` **aborta**: decida com o usuário antes de `--forcar`.
 2. **Entrevista** — o bloco A de `references/templates.md`:
 
    | Bloco | Extrai |
@@ -57,12 +57,12 @@ Detalhe de cada passo em `references/workflow.md` §A.
 
 3. **HITL — plano** — a árvore que será criada, os módulos, e **o que não será tocado**.
    → "⚠️ Confirma?" **Aguarde.**
-4. **Instanciar** — `node <template>/ferramentas/criar-projeto.mjs <destino> --binding <b> --escopo <e>`.
+4. **Instanciar** — `node <template>/tools/create-project.mjs <destino> --binding <b> --escopo <e>`.
    A doutrina cai em `specs/arquitetura/`; as decisões, em `specs/adr/000-decisoes-do-template.md`.
 5. **Registrar as decisões do projeto** — idioma das pastas, topologia de schema e `ui.modo` viram ADR novo
    em `specs/adr/`, não comentário solto.
 6. **Criar cada módulo** — repita o Fluxo B para cada um, na ordem: `conector` por último (ele agrega os outros).
-7. **Verificar** — `validar.mjs --todos` + o comando `verificar` do binding. **Não encerre vermelho.**
+7. **Verificar** — `validate.mjs --todos` + o comando `verificar` do binding. **Não encerre vermelho.**
 8. **Reportar** — árvore criada, módulos, decisões registradas, o que ficou pendente.
 
 ---
@@ -72,41 +72,41 @@ Detalhe de cada passo em `references/workflow.md` §A.
 Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 
 1. **Ler antes de decidir** — `specs/arquitetura/01-modulo.md` (anatomia + manifesto) e `04-regras.md`
-   (catálogo). Liste `modulos/` — os vizinhos são o vocabulário de `consome`.
+   (catálogo). Liste `modules/` — os vizinhos são o vocabulário de `consumes`.
 2. **Entrevista** — o bloco B de `references/templates.md`:
 
    | Bloco | Extrai |
    |---|---|
-   | Identidade | `id` (kebab-case), `nome`, `descricao` numa linha, `papel` (`dominio`\|`gateway`\|`conector`) |
-   | Forma | `geraArtefato`, `rotaWeb` ou `null`, `ui.modo` |
+   | Identidade | `id` (kebab-case), `name`, `description` numa linha, `role` (valor digitado na CLI: `dominio`\|`gateway`\|`conector`, gravado no manifesto como `domain`\|`gateway`\|`connector`) |
+   | Forma | `generatesArtifact`, `webPath` ou `null`, `ui.modo` |
    | Dados | tabelas do módulo (schema e prefixo **herdados** dos vizinhos) |
-   | Dependências | portas de infraestrutura; `consome` de outros módulos — **com checagem de ciclo antes de confirmar** |
-   | Segurança | `permissoes`, `rotasPublicas` (opt-in, **método incluso**), `camposSensiveis`, `envRequerido` |
+   | Dependências | portas de infraestrutura (`ports`); `consumes` de outros módulos — **com checagem de ciclo antes de confirmar** |
+   | Segurança | `permissions`, `publicRoutes` (opt-in, **método incluso**), `sensitiveFields`, `requiredEnv` |
 
 3. **HITL — plano** → "⚠️ Confirma a criação do módulo `<id>`?" **Aguarde.**
-4. **Scaffold** — `node ferramentas/criar-modulo.mjs <id> --binding <b> --papel <p> [--sem-artefato]`.
-5. **Declarar no manifesto** — `dados`, `envRequerido`, `portas`, `consome`, `permissoes`, `rotasPublicas`,
-   `camposSensiveis`, `navegacao`. **Não declarado, não existe** — é daqui que o gate lê.
-6. **Contrato antes do código** — `contrato/openapi.yaml` **primeiro**, com `/health`, `/meta` e `/resumo`.
-7. **Preencher nesta ordem** — `core/dominio` → `api/src/routes` → `api/src/mapeadores` (saída por
+4. **Scaffold** — `node tools/create-module.mjs <id> --binding <b> --role <p> [--sem-artefato]`.
+5. **Declarar no manifesto** — `data`, `requiredEnv`, `ports`, `consumes`, `permissions`, `publicRoutes`,
+   `sensitiveFields`, `navigation`. **Não declarado, não existe** — é daqui que o gate lê.
+6. **Contrato antes do código** — `contract/openapi.yaml` **primeiro**, com `/health`, `/meta` e `/resumo`.
+7. **Preencher nesta ordem** — `core/domain` → `api/src/routes` → `api/src/mappers` (saída por
    **allowlist**) → `database/` (migration com `-- rollback`) → `web/src/pages` → `tests/`.
-8. **Sincronizar ambiente** — `node ferramentas/sincronizar-env.mjs`; valores reais no `.env` da **raiz**.
-9. **Gate verde** — `validar.mjs modulos/<id>` **e** `validar.mjs --extracao modulos/<id>`.
-10. **Reportar** — id, papel, binding, rotas, tabelas, portas, `consome` e pendências.
+8. **Sincronizar ambiente** — `node tools/sync-env.mjs`; valores reais no `.env` da **raiz**.
+9. **Gate verde** — `validate.mjs modules/<id>` **e** `validate.mjs --extracao modules/<id>`.
+10. **Reportar** — id, role, binding, rotas, tabelas, portas, `consumes` e pendências.
 
 ---
 
 ## Regras e limites
-- **NUNCA** crie o módulo copiando a pasta do molde à mão — use o `criar-modulo`. Módulo manual nasce sem
+- **NUNCA** crie o módulo copiando a pasta do molde à mão — use o `create-module.mjs`. Módulo manual nasce sem
   manifesto e com nome divergente: as duas coisas que o gate reprova e não consegue consertar sozinho.
 - **NUNCA** importe código de outro módulo — nem por package, nem por caminho relativo saindo da pasta. Dado
-  alheio vem pelo **contrato HTTP** do dono, em `core/gateways/`, e a dependência se declara em `consome`.
+  alheio vem pelo **contrato HTTP** do dono, em `core/gateways/`, e a dependência se declara em `consumes`.
 - **NUNCA** importe SDK de fornecedor (`@supabase/*`, `pg`, `aws-sdk`, `firebase`, `oracledb`) dentro do
-  módulo — infraestrutura só por porta; o nome do provedor só aparece em `config/portas.json`.
-- **NUNCA** escreva rota antes do `contrato/openapi.yaml` — código divergente da spec é erro de gate.
-- **NUNCA** declare `dados.schema` como `public`, nem tabela sem o prefixo `<id>_`.
+  módulo — infraestrutura só por porta; o nome do provedor só aparece em `config/ports.json`.
+- **NUNCA** escreva rota antes do `contract/openapi.yaml` — código divergente da spec é erro de gate.
+- **NUNCA** declare `data.schema` como `public`, nem tabela sem o prefixo `<id>_`.
 - **NUNCA** ponha segredo no `.env` do módulo — ele só aceita `ENV_RAIZ` e chaves `<MODULO>_*`.
-- **NUNCA** confirme um `consome` sem checar ciclo: `A→B` e `B→A` reprova, e o conserto é redesenho.
+- **NUNCA** confirme um `consumes` sem checar ciclo: `A→B` e `B→A` reprova, e o conserto é redesenho.
 - **NÃO** use fallback de infraestrutura (`env['X'] ?? 'http://localhost'`) — falta de config **derruba o boot**.
 - **NÃO** devolva registro cru na resposta — a saída é montada campo a campo pelo mapeador.
 - **NÃO** renomeie pasta da árvore canônica. **Descartar** o que o módulo não usa é permitido; renomear, não.
@@ -117,18 +117,18 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 ## Checklist "pronta"
 - [ ] Caso detectado pelo repositório (não perguntado), e confirmado em uma linha?
 - [ ] HITL com plano explícito **antes** de qualquer arquivo criado?
-- [ ] `id` idêntico em pasta, package, `rotaBase`, prefixo de tabela e prefixo de env?
-- [ ] Manifesto reflete o que o código usa (tabelas, env, portas, `consome`, permissões)?
-- [ ] `contrato/openapi.yaml` escrito **antes** do código, com `/health`, `/meta` e `/resumo`?
+- [ ] `id` idêntico em pasta, package, `basePath`, prefixo de tabela e prefixo de env?
+- [ ] Manifesto reflete o que o código usa (tabelas, env, portas, `consumes`, permissões)?
+- [ ] `contract/openapi.yaml` escrito **antes** do código, com `/health`, `/meta` e `/resumo`?
 - [ ] Zero import de outro módulo e zero SDK de fornecedor dentro do módulo?
-- [ ] `consome` sem ciclo, e cada gateway com a sua entrada declarada?
+- [ ] `consumes` sem ciclo, e cada gateway com a sua entrada declarada?
 - [ ] `.env.example` gerado pelo script (não editado à mão) e valores no `.env` da raiz?
 - [ ] Testes de domínio e de contrato rodando **sem rede e sem banco** (adapters de memória)?
-- [ ] `validar <modulo>` e `validar --extracao <modulo>` verdes? (Fluxo A: também `--todos`.)
+- [ ] `validate <modulo>` e `validate --extracao <modulo>` verdes? (Fluxo A: também `--todos`.)
 - [ ] Fluxo A: decisões do projeto (idioma, schema, `ui.modo`) registradas em `specs/adr/`?
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/workflow.md` — cada passo dos dois fluxos em detalhe, com o que detectar e como corrigir.
-- `references/templates.md` — blocos copiáveis: entrevista A e B, plano HITL, `modulo.json`, esqueleto do
+- `references/templates.md` — blocos copiáveis: entrevista A e B, plano HITL, `module.json`, esqueleto do
   `openapi.yaml`, relatório final.
 - `references/examples.md` — um módulo criado certo e um errado, com o impacto de cada violação.

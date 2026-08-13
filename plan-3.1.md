@@ -13,6 +13,29 @@
 
 **Regras herdadas:** as quatro do `plan-3.md`, sem alteração.
 
+> ## ⚠️ A regra que governa os Blocos AF e AG: **isto é TESTE, não instalação**
+>
+> **O objetivo não é obter um repositório funcionando — é obter um VEREDITO sobre se a instalação
+> acontece como esperado.** O artefato produzido é descartável; o que se entrega é a medição.
+>
+> **Três consequências, e nenhuma é negociável:**
+>
+> 1. **Nada se conserta no caminho.** Divergência entre o que a skill/script faz e o que deveria fazer
+>    é **defeito**, e defeito se registra e se conserta **na origem** — na skill, no script, no molde.
+>    Contorno local ("ajustei aqui e segui") é a única coisa que este teste não pode produzir: o
+>    template vai ser reusado dezenas de vezes, e o contorno não viaja junto — **o defeito viaja.**
+> 2. **O executor não ajuda a skill.** Responda a entrevista como um usuário normal responderia, com
+>    respostas plausíveis. Onde a skill perguntar algo ambíguo, pedir o que já sabe, ou fizer o passo
+>    errado, **isso É o achado** — não é algo a suavizar respondendo "do jeito que ela espera".
+> 3. **Conserto na origem obriga a REEXECUÇÃO DO ZERO.** Consertou? Descarte o alvo e rode de novo,
+>    limpo. Consertar no meio e seguir valida um caminho que nenhum usuário vai percorrer — e o que
+>    interessa é justamente o caminho do primeiro uso.
+>
+> **O critério de sucesso não é "o repositório subiu".** É: *um usuário que só responde a entrevista,
+> sem saber nada do que está por baixo, chega ao primeiro commit verde sem intervenção fora do roteiro.*
+> Qualquer intervenção que ele não teria como fazer sozinho é defeito, mesmo que o resultado final
+> funcione.
+
 > **✅ AS DECISÕES DO DONO ESTÃO TOMADAS — este plano é executável de ponta a ponta.**
 >
 > | Bloco | Decisão |
@@ -49,15 +72,46 @@
 >
 > **É a metade do fluxo que o usuário realmente usa**, e é a única sem nenhuma prova.
 
-- [ ] Rodar **`/sarak:meta-iniciar-repositorio` de verdade**, num alvo novo, respondendo a entrevista
-- [ ] Acrescentar o segundo módulo pela **skill `code-modulo`**, não pelo `criar-modulo.mjs` direto
-- [ ] **Diferenciar a árvore** contra a que o script produz sozinho. Divergência é uma de duas coisas, e
+- [x] Rodar **`/sarak:meta-iniciar-repositorio` de verdade**, num alvo novo, respondendo a entrevista
+      **como usuário**, não como quem conhece o script por dentro
+- [x] Acrescentar o segundo módulo pela **skill `code-modulo`**, não pelo `criar-modulo.mjs` direto
+- [x] **O DIÁRIO DA EXECUÇÃO é entregável, e vale tanto quanto a árvore.** Registre, na ordem em que
+      acontecerem: cada pergunta feita, cada resposta dada, cada momento em que você **soube** o que
+      responder por conhecer o interno — esse é o ponto exato onde um usuário real teria travado —, e
+      cada intervenção fora do roteiro. **Intervenção fora do roteiro é DEFEITO**, mesmo que o resultado
+      final funcione
+- [x] **Conserto na origem, e reexecução do zero.** Achou defeito? Conserte na skill/script/molde,
+      **descarte o alvo** e rode de novo limpo. O aceite é a execução **sem nenhum conserto no meio** —
+      a que ainda tiver conserto no meio não é a execução que fecha o bloco
+- [x] **Diferenciar a árvore** contra a que o script produz sozinho. Divergência é uma de duas coisas, e
       as duas importam: prosa desatualizada em relação ao script, ou passo que a skill faz e o script
       não sabe fazer
-- [ ] Conferir o que só a skill entrega: ADRs do projeto registrados, pendências de HITL comunicadas,
+- [x] Conferir o que só a skill entrega: ADRs do projeto registrados, pendências de HITL comunicadas,
       engate do `spec-fundacao` e do `git-commit-inicial`
-- [ ] **Limite a declarar:** este bloco é verificação **humana/agente**, não automatizável — a entrevista
+- [x] **Limite a declarar:** este bloco é verificação **humana/agente**, não automatizável — a entrevista
       é conversa. O que dá para automatizar é a **comparação de árvore**, e é só isso que vira script
+
+> **Achado pendente de decisão do dono — NÃO consertado.** `init_repo.py:criar_modulos()` tem duas
+> facetas do mesmo problema, e são a mesma causa: o atalho em lote (`--modulos <id> [<id>...]`) não
+> pergunta nada, então **chuta** o que a entrevista da `code-modulo` pergunta de verdade.
+>
+> ```python
+> papel = "conector" if modulo == "conector" else "dominio"
+> ```
+>
+> 1. **`--sem-artefato` nunca é passado** — todo módulo criado em lote sai com `generatesArtifact: true`,
+>    mesmo um `conector` (medido no Bloco AF: `core/engine`, `core/templates`, a tabela de migration do
+>    artefato e `generated/.gitkeep` sobram no `conector` só-script, ausentes no `conector` da skill).
+> 2. **O papel é adivinhado pelo NOME do id, não perguntado.** Só `id == "conector"` vira `conector`;
+>    qualquer outro id — inclusive um claramente `gateway`, como `gateway-pagamentos` — sai com
+>    `role: dominio` em silêncio, sem erro, sem aviso.
+>
+> **A conclusão que falta tomar:** ou o atalho em lote passa a perguntar (papel + geraArtefato) por
+> módulo, tornando-se um Fluxo B de verdade só sem HITL, ou o script **declara explicitamente** — na
+> ajuda do `--modulos` e no `SKILL.md` — que ele entrega só o default (`dominio`, com artefato) e nada
+> além disso, e que qualquer módulo `gateway`/`conector`/sem-artefato criado em lote precisa ser
+> corrigido à mão depois. As duas são consertos legítimos; qual delas é **decisão de desenho do atalho**,
+> não do executor.
 
 ---
 

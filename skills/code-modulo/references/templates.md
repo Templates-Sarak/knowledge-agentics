@@ -29,13 +29,13 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 | 3 | `ui.modo` padrão | <acima> |
 
 **Módulos iniciais**
-| id | papel | o que faz | geraArtefato | rotaWeb |
+| id | role | o que faz | generatesArtifact | webPath |
 |---|---|---|---|---|
 | `<id>` | dominio | <uma linha> | não | `/<id>` |
 | `conector` | conector | casca, navegação e agregação | não | `/` |
 
-**Será criado:** `ferramentas/`, `packages/portas`, `adapters/memoria`, `src/composicao`,
-`modulos/{_template,<ids>}`, `specs/arquitetura/` (5 leis), `specs/adr/000-decisoes-do-template.md`,
+**Será criado:** `tools/`, `packages/ports`, `adapters/memory`, `src/composicao`,
+`modules/{_template,<ids>}`, `specs/arquitetura/` (5 leis), `specs/adr/000-decisoes-do-template.md`,
 `config/conformidade.json`, `.env`, `.gitignore`.
 
 **NÃO será tocado:** <listar o que já existe no destino>
@@ -54,13 +54,13 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 | Campo | Valor |
 |---|---|
 | id | `<id>` |
-| nome | <Nome> |
-| papel | dominio \| gateway \| conector |
+| name | <Nome> |
+| role (CLI `--role`, digitado em PT) | dominio \| gateway \| conector |
 | binding | typescript \| javascript \| python |
-| rotaBase | `/api/v1/<id>` |
-| rotaWeb | `/<id>` \| null |
+| basePath | `/api/v1/<id>` |
+| webPath | `/<id>` \| null |
 | ui.modo | proprio \| kit |
-| geraArtefato | true \| false |
+| generatesArtifact | true \| false |
 
 **Dados** — schema `<schema>` (nunca `public`), prefixo `<id>_`
 - `<id>_metadados`, `<id>_auditoria`
@@ -69,7 +69,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 **Consome (outros módulos)** — `<outro>` via `GET /<recurso>` — motivo: <por quê>
 **Env** — `<ID>_API_PORT`, `<ID>_DB_URL`
 
-**Será criado** — `modulos/<id>/` com contrato, config, core, api, web, database, tests
+**Será criado** — `modules/<id>/` com contract, config, core, api, web, database, tests
 **Não será tocado** — nenhum módulo existente; `.env` da raiz só ganha chaves novas (valores em branco)
 
 ⚠️ Confirma a criação do módulo `<id>`?
@@ -77,53 +77,57 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 
 ---
 
-## 2. `modulo.json`
+## 2. `module.json`
 
 ```jsonc
 {
   "id": "<id>",
-  "nome": "<Nome>",
-  "versao": "0.1.0",
-  "descricao": "<uma linha sobre o domínio de negócio>",
+  "name": "<Nome>",
+  "version": "0.1.0",
+  "description": "<uma linha sobre o domínio de negócio>",
 
-  "papel": "dominio",
+  "role": "domain",
   "binding": "typescript",
 
-  "rotaBase": "/api/v1/<id>",
-  "rotaWeb": "/<id>",
+  "basePath": "/api/v1/<id>",
+  "webPath": "/<id>",
 
-  "dados": {
+  "data": {
     "schema": "<schema>",
-    "prefixo": "<id>_",
-    "tabelas": ["<id>_metadados", "<id>_auditoria"]
+    "prefix": "<id>_",
+    "tables": ["<id>_metadados", "<id>_auditoria"]
   },
 
-  "envRequerido": ["<ID>_API_PORT", "<ID>_DB_URL"],
+  "requiredEnv": ["<ID>_API_PORT", "<ID>_DB_URL"],
 
-  "portas": ["repositorio", "auditoria", "relogio", "geradorId"],
+  "ports": ["repositorio", "auditoria", "relogio", "geradorId"],
 
-  "consome": [
+  "consumes": [
     { "modulo": "<outro>", "contrato": "GET /<recurso>", "porQue": "<motivo de negócio>" }
   ],
 
   "ui": { "modo": "proprio" },
 
-  "permissoes": ["<id>:ler", "<id>:escrever"],
-  "rotasPublicas": ["GET /health", "GET /meta", "GET /resumo"],
-  "camposSensiveis": [],
+  "permissions": ["<id>:ler", "<id>:escrever"],
+  "publicRoutes": ["GET /health", "GET /meta", "GET /resumo"],
+  "sensitiveFields": [],
 
-  "navegacao": { "label": "<Nome>", "icone": "Box", "ordem": 100 },
-  "exportaResumo": true,
-  "geraArtefato": true
+  "navigation": { "label": "<Nome>", "icon": "Box", "order": 100 },
+  "exportsSummary": true,
+  "generatesArtifact": true
 }
 ```
 
-**Lembretes:** `consome` vazio é `[]`, não ausente. `camposSensiveis` recebe todo campo com PII — ele nunca sai
-em resposta, log ou OpenAPI. `rotasPublicas` é **opt-in** e o método faz parte da declaração.
+**`role` é traduzido pelo scaffold** — a CLI recebe `dominio`\|`gateway`\|`conector` (`--role`), e
+`create-module.mjs` grava o valor em inglês no manifesto (`domain`\|`gateway`\|`connector`). Os dois
+blocos acima usam `role: "domain"` porque é o que o arquivo final contém.
+
+**Lembretes:** `consumes` vazio é `[]`, não ausente. `sensitiveFields` recebe todo campo com PII — ele nunca sai
+em resposta, log ou OpenAPI. `publicRoutes` é **opt-in** e o método faz parte da declaração.
 
 ---
 
-## 3. Esqueleto do `contrato/openapi.yaml`
+## 3. Esqueleto do `contract/openapi.yaml`
 
 ```yaml
 openapi: 3.1.0
@@ -192,7 +196,7 @@ identificador na URL é o hash universal, nunca o `id` interno do banco.
 ## 4. Primeira migration
 
 ```sql
--- modulos/<id>/database/migrations/0001-cria-<entidade>.sql
+-- modules/<id>/database/migrations/0001-cria-<entidade>.sql
 create table "<schema>"."<id>_metadados" (
   id          uuid primary key default gen_random_uuid(),
   hash        text not null unique,
@@ -217,7 +221,7 @@ Toda tabela tem `id`, `hash`, `created_at`, `updated_at`, RLS ligado e bloco `--
 
 | | |
 |---|---|
-| Papel / binding | <papel> / <binding> |
+| Papel / binding | <role> / <binding> |
 | Rotas expostas | `/api/v1/<id>` — health, meta, resumo, <recursos> |
 | Tela | `/<id>` \| sem tela |
 | Tabelas | `<id>_metadados`, `<id>_auditoria` (schema `<schema>`) |
@@ -225,7 +229,7 @@ Toda tabela tem `id`, `hash`, `created_at`, `updated_at`, RLS ligado e bloco `--
 | Consome | `<outro>` via `GET /<recurso>` \| nenhum |
 | Env acrescentada | `<ID>_API_PORT`, `<ID>_DB_URL` — **valores pendentes no `.env` da raiz** |
 
-**Gate:** `validar` ✅ · `validar --extracao` ✅
+**Gate:** `validate` ✅ · `validate --extracao` ✅
 
 **Pendente**
 - [ ] Preencher os valores das chaves novas no `.env` da raiz
