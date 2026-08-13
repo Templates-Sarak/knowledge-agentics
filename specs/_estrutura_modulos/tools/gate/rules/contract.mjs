@@ -1,7 +1,7 @@
 /**
  * rules/contract.mjs — família "Contrato" do catálogo (specs/arquitetura/04-regras.md §4.5).
  * ids: contrato, rota-nomenclatura, contrato-sincronizado, projecao-contrato, payload-camelcase,
- *      saida-sensivel, sensivel-em-saida, resumo-exportado, saida-crua
+ *      saida-sensivel, sensivel-em-saida, mapeador-nomenclatura, resumo-exportado, saida-crua
  *
  * O `contract/openapi.yaml` é a FONTE. Estas regras existem para que ele não seja ficção: o que
  * está na spec existe no código, o que está no código existe na spec, e nada sensível vaza.
@@ -466,6 +466,57 @@ function achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis) {
   return achados;
 }
 
+/**
+ * `mapeador-nomenclatura` (plan-3.1.md Bloco AH) — a convenção de nome do mapeador (§3, `to*`/
+ * `*To*`) tinha lei mas nunca teve verificador: `projecao-contrato`, `payload-camelcase` e
+ * `sensivel-em-saida` só ENXERGAM função cujo nome já casa `PADRAO_NOME_PROJECAO` — uma função de
+ * saída chamada `buildResponse` ou `serialize` nunca é sítio de projeção para as três, e um campo
+ * sensível publicado por ela escapava das três, inclusive da que existe para bloquear PII.
+ *
+ * Esta regra é a fronteira: julga só o NOME de toda função EXPORTADA de nível de módulo num
+ * arquivo de mapeador — nunca o conteúdo da projeção (`projecao-contrato`) nem o caixa
+ * (`payload-camelcase`). Por isso não tem heurística: nome bate um dos dois moldes, ou reprova.
+ *
+ * Método de classe e propriedade de objeto (`chaveDeCache` nos casos N.2.1/N.2.2 de `cases.mjs`)
+ * ficam FORA — não são "função exportada", é a classe/objeto que carrega o `export`. É o mesmo
+ * limite, já declarado, do extrator de projeção (§7.2): esta regra fecha a lacuna do NOME solto,
+ * não a da forma sintática.
+ */
+const PADRAO_EXPORT_FUNCTION = /^export\s+(?:async\s+)?function\s+([A-Za-z_]\w*)/gm;
+const PADRAO_EXPORT_CONST_ARROW = /^export\s+const\s+([A-Za-z_]\w*)\s*=\s*(?:async\s*)?\(/gm;
+const PADRAO_DEF_PYTHON = /^def\s+([A-Za-z_]\w*)\s*\(/gm;
+
+/** Nome de SAÍDA (`toContract`/`to_contract`) — mesma âncora de `PADRAO_NOME_PROJECAO`, sem o `\b`
+ * global: aqui o nome inteiro já está isolado pela extração, não precisa casar dentro de texto. */
+function ehNomeDeSaida(nome) {
+  return /^to[A-Z]\w*$/.test(nome) || /^to_\w+$/.test(nome);
+}
+
+/** Nome de conversão de BANCO (`rowToDomain`/`row_to_domain`) — "To"/"_to_" no MEIO do nome, nunca
+ * no início (isso já é `ehNomeDeSaida`). */
+function ehNomeDeConversaoBanco(nome) {
+  return /[a-z0-9]To[A-Z]\w*$/.test(nome) || (/_to_/.test(nome) && !nome.startsWith('to_'));
+}
+
+/** Toda função EXPORTADA de nível de módulo, num arquivo de mapeador — TS/JS: `export function` e
+ * `export const <nome> = (` (arrow); Python: `def <nome>(` no nível zero de recuo, e "exportado" é
+ * "público" pela convenção do próprio código-base (prefixo `_` = privado, mesmo critério de
+ * `scripts/migrations.py`). Método/propriedade dentro de classe ou objeto nunca casa `^` — a âncora
+ * de início de linha já os exclui, porque vêm indentados. */
+function funcoesExportadasDoMapeador(arquivo) {
+  const texto = textoDeCodigo(arquivo);
+  const nomes = [];
+  if (arquivo.rel.endsWith('.py')) {
+    for (const m of texto.matchAll(PADRAO_DEF_PYTHON)) {
+      if (!m[1].startsWith('_')) nomes.push(m[1]);
+    }
+    return nomes;
+  }
+  for (const m of texto.matchAll(PADRAO_EXPORT_FUNCTION)) nomes.push(m[1]);
+  for (const m of texto.matchAll(PADRAO_EXPORT_CONST_ARROW)) nomes.push(m[1]);
+  return nomes;
+}
+
 export default [
   {
     id: 'contrato',
@@ -615,6 +666,24 @@ export default [
         for (const { numero, texto } of arquivo.linhasCodigo) {
           if (!CHAMADA_DE_LOG_VERBOS.test(texto)) continue;
           achados.push(...achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis));
+        }
+      }
+      return achados;
+    },
+  },
+  {
+    id: 'mapeador-nomenclatura',
+    nivel: 'erro',
+    escopo: 'module',
+    verificar(ctx) {
+      const achados = [];
+      for (const arquivo of ctx.codigo) {
+        if (arquivo.eTeste || !/mapper/i.test(arquivo.rel)) continue;
+        for (const nome of funcoesExportadasDoMapeador(arquivo)) {
+          if (ehNomeDeSaida(nome) || ehNomeDeConversaoBanco(nome)) continue;
+          achados.push(`${arquivo.rel}: funcao exportada "${nome}" nao segue a convencao do `
+            + 'mapeador (saida: to<Algo>/to_<algo>; banco: <algo>To<Algo>/<algo>_to_<algo>) — '
+            + 'renomeie, ou mova esta funcao para fora do mapeador');
         }
       }
       return achados;

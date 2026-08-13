@@ -188,28 +188,45 @@
 > convenção **não** vira lacuna declarada: vira regra. O ramo "Se NÃO" está **descartado** e sai do plano.
 
 **A regra mínima, e ela não tem heurística — é por isso que cabe no catálogo:**
-- [ ] Em arquivo de mapeador, **toda função exportada** ou segue a convenção de saída (`to<Algo>`) ou a
+- [x] Em arquivo de mapeador, **toda função exportada** ou segue a convenção de saída (`to<Algo>`) ou a
       de conversão de banco (`<algo>To<Algo>`). Qualquer outro nome exportado ali **reprova**, com a
       mensagem oferecendo os dois consertos que a lei autoriza: **renomeie**, ou **mova para fora do
-      mapeador**
-- [ ] Fronteira com quem já cobra: ela **não** julga o conteúdo da projeção (isso é `projecao-contrato`)
+      mapeador**. Implementada em `tools/gate/rules/contract.mjs` como `mapeador-nomenclatura`
+- [x] Fronteira com quem já cobra: ela **não** julga o conteúdo da projeção (isso é `projecao-contrato`)
       nem o caixa (`payload-camelcase`). Julga **só o nome**, e é por isso que não tem heurística
-- [ ] Caso próprio nos três bindings, nos dois sentidos — e o chamariz de não-acusação para
-      `<algo>To<Algo>`, que é a forma que **precisa calar**
-- [ ] **Preço já conhecido, e é fixo:** linha no `04-regras.md` §4.x · caso em `cases.mjs` nos três
-      bindings · limite no §7.2 · e o autoteste do gate sobe de 122/122·122/122·119/119 para o número
-      novo, nos três
-- [ ] **Contraprova que fecha o item, e é a que dá sentido à regra:** o `cpf` publicado por função fora
-      da convenção — a medição que abriu este bloco, com o gate dizendo `0 erro(s)` — passa a **reprovar
-      nomeando o arquivo e a função**. Cole a saída antes e depois
+- [x] Caso próprio nos três bindings, nos dois sentidos — e o chamariz de não-acusação para
+      `<algo>To<Algo>`, que é a forma que **precisa calar**. 4 casos novos em `cases.mjs`: positivo
+      (`buildResponse`), a forma `export const` (TS/JS), e os dois chamarizes (saída `to<Algo>` e banco
+      `<algo>To<Algo>` acrescentados por MUTAÇÃO nova, não só o molde intocado)
+- [x] **Preço já conhecido, e foi exatamente esse:** linha no `04-regras.md` §4.5 (mais o conserto do
+      `para*`/`para_*` obsoleto na descrição de `projecao-contrato` — resíduo do AD.2, achado no
+      caminho) · 4 casos em `cases.mjs` (2 exigiram `tambem` em casos JÁ existentes que usavam nome fora
+      da convenção como controle negativo — `naoPublica`, `logarChamariz` — porque agora são co-achados
+      LEGÍTIMOS) · limite no §7.2 · autoteste do gate: **122/122·122/122·119/119 → 126/126 (typescript) ·
+      126/126 (javascript) · 122/122 (python)**, 75 regras com caso (era 74), zero `FALHA` nos três
+- [x] **Contraprova que fecha o item:** reproduzida em `C:\tmp\ah-cpf-repro` — `cpf` publicado por
+      `buildResponse` (fora da convenção). **Antes** (`contract.mjs` do HEAD, sem a regra):
+      ```
+      clientes: 0 erro(s), 0 aviso(s)
+      conformidade: OK — 1 modulo(s) + a raiz, 0 erro(s)
+      ```
+      **Depois** (com `mapeador-nomenclatura`):
+      ```
+      clientes: 1 erro(s), 0 aviso(s)
+        x [mapeador-nomenclatura] api/src/mappers/index.ts: funcao exportada "buildResponse" nao segue
+        a convencao do mapeador (saida: to<Algo>/to_<algo>; banco: <algo>To<Algo>/<algo>_to_<algo>) —
+        renomeie, ou mova esta funcao para fora do mapeador
+      conformidade: REPROVADO — 1 erro(s)
+      ```
 
 ### AH.2 — o §3, e agora ele tem como virar verdade
-- [ ] A frase *"o gate cobra consistência dentro do projeto"* é **reescrita para dizer exatamente o que
-      a regra nova cobre** — nome de função exportada em arquivo de mapeador, e nada além. Não a
-      generalize para "consistência": seria trocar uma promessa vazia por outra menor, e é a mesma
-      classe de defeito que o `plan-2` matou em todo o resto
-- [ ] **Diga também o que ela NÃO cobre**, no §7.2: não há regra de idioma nem de consistência de
-      nomenclatura fora do mapeador. *Lacuna declarada é aceitável; lacuna escondida não*
+- [x] A frase *"o gate cobra consistência dentro do projeto"* foi **reescrita para dizer exatamente o
+      que a regra nova cobre** — nome de função exportada em arquivo de mapeador, e nada além. Não virou
+      "consistência" genérica: o parágrafo agora nomeia `mapeador-nomenclatura` e para por aí
+- [x] **O que ela NÃO cobre está declarado no §7.2 e no corpo do §3**: não há regra de idioma nem de
+      consistência de nomenclatura fora do mapeador — a mais próxima segue sendo `rota-nomenclatura`
+      (kebab-case e verbo em rota, nunca idioma). Método de classe/propriedade de objeto também
+      declarado fora, com o exemplo (`chaveDeCache`) que já vive em `cases.mjs`
 
 ---
 

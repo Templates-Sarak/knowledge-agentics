@@ -946,6 +946,12 @@ export const CASOS = [
     // nao e projecao nenhuma, e `created_at` NAO pode ser acusado. Se o extrator voltar a aceitar
     // REFERENCIA a `toContract*` como sitio de projecao, o `map(...)` engata na abertura da funcao
     // seguinte, `payload-camelcase` acusa `created_at`, e o id extra reprova este caso na hora.
+    //
+    // `naoPublica` tambem e o nome ERRADO pela convencao do Bloco AH — funcao exportada de nivel
+    // de modulo, num arquivo `/mapper/i`, que nao comeca com "to" nem tem "To" no meio. Co-achado
+    // LEGITIMO de `mapeador-nomenclatura`, nao efeito colateral: e exatamente o tipo de nome que a
+    // regra existe para pegar, so que aqui o proposito do caso e outro.
+    tambem: ['mapeador-nomenclatura'],
     mutar: (m) => m.escrever(
       'api/src/mapper-extra.ts',
       'export function toContractExtra(r) {\n  return { hash: r.hash, campoFantasma: r.fantasma };\n}\n'
@@ -1228,15 +1234,67 @@ export const CASOS = [
     regra: 'log',
     descricao: 'N.2 — "created_at" em rowToDomain/domainToRow (direcao BANCO) NAO acusa (chamariz)',
     // As duas funcoes de direcao BANCO usam "created_at" (campo do banco, snake_case) e nao devem
-    // ser lidas como projecao de SAIDA — o nome delas nao COMECA com "para" (comeca no MEIO:
+    // ser lidas como projecao de SAIDA — o nome delas nao COMECA com "to" (comeca no MEIO:
     // rowToDomain, domainToRow). Ja estao no molde, sem mutacao nenhuma; o chamariz so
     // precisa de um id esperado para o harness comparar. Se a ancora de nome regredir para "o
     // arquivo inteiro", `payload-camelcase` acusa "created_at" e este caso reprova com id NAO
     // declarado — e essa nao-acusacao vira verificacao, nao impressao.
+    //
+    // `logarChamariz` tambem e o nome ERRADO pela convencao do Bloco AH (arquivo `/mapper/i`,
+    // funcao exportada, nome fora dos dois moldes) — co-achado LEGITIMO de `mapeador-nomenclatura`.
+    tambem: ['mapeador-nomenclatura'],
     mutar: (m) => m.escrever(
       'api/src/mapper-chamariz-banco.ts',
       "export function logarChamariz() {\n  console.log('x');\n}\n",
     ),
+  },
+  // --- Bloco AH: mapeador-nomenclatura (plan-3.1.md) ------------------------------------------
+  {
+    regra: 'mapeador-nomenclatura',
+    descricao: 'reproducao exata do achado — funcao de saida fora da convencao publica campo sensivel',
+    // O caso que abriu o Bloco AH: "buildResponse"/"build_response" nao comeca com "to" nem tem
+    // "To"/"_to_" no meio — nenhuma das tres regras de projecao a enxerga, entao "cpf" vazava com
+    // 0 erro(s) (medido no relatorio do bloco, cole a saida antes/depois). Esta regra julga SO o
+    // nome: nao precisa de `sensitiveFields` nem de contrato para acusar.
+    mutar: (m) => m.acrescentarEm('mappers', {
+      js: '\nexport function buildResponse(registro) {\n  return { hash: registro.hash, cpf: registro.hash };\n}\n',
+      py: '\n\ndef build_response(registro):\n    return {"hash": registro["hash"], "cpf": registro["hash"]}\n',
+    }),
+  },
+  {
+    regra: 'mapeador-nomenclatura',
+    descricao: 'const/arrow exportada fora da convencao (TS/JS) — a segunda forma de exportar funcao',
+    // `PADRAO_EXPORT_CONST_ARROW` precisa cobrir a MESMA classe de defeito na forma
+    // `export const nome = (...) => ...`, nao so `export function`. So JS/TS: em Python toda
+    // funcao e `def`, a forma unica ja coberta pelo caso acima.
+    mutar: (m) => m.acrescentarEm('mappers', {
+      js: '\nexport const serialize = (registro) => ({ hash: registro.hash });\n',
+    }),
+  },
+  {
+    regra: 'log',
+    descricao: 'CHAMARIZ: funcao de SAIDA bem-nomeada (to<Algo>) acrescentada ao mapeador NAO acusa',
+    // `toRegistroExtra`/`to_registro_extra` bate a convencao de SAIDA (`ehNomeDeSaida`) — precisa
+    // continuar calada mesmo depois da regra nova entrar no catalogo. `console.log`/`print` da o id
+    // esperado (`log`); se `mapeador-nomenclatura` aparecesse aqui, seria NAO DECLARADO e o caso
+    // reprovaria.
+    mutar: (m) => m.acrescentarEm('mappers', {
+      js: '\nexport function toRegistroExtra(registro) {\n  console.log("x");\n  return { hash: registro.hash };\n}\n',
+      py: '\n\ndef to_registro_extra(registro):\n    print("x")\n    return {"hash": registro["hash"]}\n',
+    }),
+  },
+  {
+    regra: 'log',
+    descricao: 'CHAMARIZ: funcao de conversao de BANCO (<algo>To<Algo>) acrescentada ao mapeador NAO acusa',
+    // O chamariz que a decisao do dono (AH.1, item 3) pede explicitamente: prova, por MUTACAO nova
+    // (nao so pelo molde intocado), que a forma banco continua calada. "itemToRegistro"/
+    // "item_to_registro" tem "To"/"_to_" no MEIO, nunca no inicio — `ehNomeDeConversaoBanco` aceita,
+    // `mapeador-nomenclatura` fica muda. Se `mapeador-nomenclatura` aparecesse aqui, seria id NAO
+    // DECLARADO e o caso reprovaria.
+    mutar: (m) => m.acrescentarEm('mappers', {
+      js: '\nexport function itemToRegistro(linha) {\n  console.log("x");\n  return { hash: linha.hash };\n}\n',
+      py: '\n\ndef item_to_registro(linha):\n    print("x")\n    return {"hash": linha["hash"]}\n',
+    }),
   },
   {
     regra: 'payload-camelcase',

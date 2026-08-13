@@ -112,7 +112,7 @@ usuário.
   (`bindings/**`), os ~29 arquivos `.mjs` de `tools/` (o nome do arquivo, não o símbolo dentro dele — ver
   próximo item), chaves de manifesto (`module.json`, `project.json`) e chaves de ambiente.
 - **Português** — domínio, rotas de negócio (`/registros`), dados (nome de tabela, coluna, schema), ids das
-  74 regras do catálogo, mensagens do gate e erros de runtime voltados ao usuário.
+  75 regras do catálogo, mensagens do gate e erros de runtime voltados ao usuário.
 - **Duas exceções deliberadas**, registradas para não parecerem esquecimento: os **símbolos** (função,
   variável) dentro dos arquivos de `tools/` ficam em português — é ferramental vendorizado, isento do linter
   no projeto gerado, mesmo com o nome do arquivo que os contém em inglês; e os **ids de regra + mensagens do
@@ -125,7 +125,15 @@ usuário.
 Nome fora desta lista segue a régua do `ADR-009`: descreve **como o padrão é construído** → inglês; descreve
 **o que o negócio do módulo é** → português. A escolha entre português puro e o misto acima, **dentro do
 domínio de cada projeto** (não da estrutura do template, já decidida aqui), continua sendo decisão de cada
-projeto, registrada em `specs/adr/` — o gate cobra **consistência dentro do projeto**, não a escolha.
+projeto, registrada em `specs/adr/`. **O gate não cobra essa consistência** — não existe regra de idioma nem
+de consistência geral de nomenclatura no catálogo; a mais próxima é `rota-nomenclatura`, que julga
+kebab-case e verbo em rota, nunca idioma (limite declarado no §7.2).
+
+**A única coisa que o gate cobra sobre nome de função é a convenção do mapeador** (`mapeador-nomenclatura`,
+§4.5): toda função **exportada** num arquivo de mapeador segue `to<Algo>`/`to_<algo>` (saída) ou
+`<algo>To<Algo>`/`<algo>_to_<algo>` (conversão de banco) — nada além disso, e nada sobre idioma. Método de
+classe ou propriedade de objeto ficam fora (§7.2): a regra julga o **nome**, não a **forma sintática** de
+quem o carrega.
 
 **Fronteira de caixa:** o banco fala `snake_case`, o contrato fala `camelCase`, e a conversão é explícita no mapeador.
 
@@ -207,10 +215,11 @@ projeto, registrada em `specs/adr/` — o gate cobra **consistência dentro do p
 | `contract` | erro | `contract/openapi.yaml` existe e declara `/health`, `/meta` e `/resumo` | módulo |
 | `rota-nomenclatura` | erro | `servers[0].url` é igual ao `basePath` do manifesto; nenhum segmento de path carrega verbo (vocabulário fechado, PT e EN, comparado token a token do kebab); todo segmento é kebab-case minúsculo e todo parâmetro de caminho é camelCase. Se nenhum path puder ser extraído, a regra **diz que não verificou** em vez de passar calada | módulo |
 | `contrato-sincronizado` | erro | as rotas registradas no código e as declaradas em `paths:` coincidem **nos dois sentidos** (parâmetro de caminho normalizado). Se nenhuma rota puder ser extraída do código, a regra **diz que não verificou** em vez de passar calada | módulo |
-| `projecao-contrato` | erro | toda chave que uma função de PROJEÇÃO DE SAÍDA (nome `para*`/`para_*`, §3) devolve aparece como propriedade em algum schema de **resposta** do `contract/openapi.yaml` — publicar o que o contrato não promete é campo saindo sem ninguém ter decidido. **Uma direção só** (§7.2). Sem projeção ou sem schema de resposta extraível, a regra **diz que não verificou** | módulo |
+| `projecao-contrato` | erro | toda chave que uma função de PROJEÇÃO DE SAÍDA (nome `to<Algo>`/`to_<algo>`, §3) devolve aparece como propriedade em algum schema de **resposta** do `contract/openapi.yaml` — publicar o que o contrato não promete é campo saindo sem ninguém ter decidido. **Uma direção só** (§7.2). Sem projeção ou sem schema de resposta extraível, a regra **diz que não verificou** | módulo |
 | `payload-camelcase` | erro | toda chave da projeção de saída é camelCase, e nenhuma propriedade de schema de **resposta** no OpenAPI usa `snake_case` | módulo |
 | `saida-sensivel` | erro | nenhum campo de `sensitiveFields` aparece em schema de **resposta** do `openapi.yaml` | módulo |
 | `sensivel-em-saida` | erro | nenhum campo de `sensitiveFields` entra na projeção de saída nem é citado em chamada de log — citá-lo direto burla a redação automática do logger | módulo |
+| `mapeador-nomenclatura` | erro | toda função **exportada** de nível de módulo num arquivo de mapeador segue `to<Algo>`/`to_<algo>` (saída) ou `<algo>To<Algo>`/`<algo>_to_<algo>` (conversão de banco) — nome fora dos dois é o que faz `projecao-contrato`, `payload-camelcase` e `sensivel-em-saida` não enxergarem a função (§3). Julga **só o nome**; método de classe e propriedade de objeto ficam fora (§7.2) | módulo |
 | `resumo-exportado` | erro | módulo com `exportsSummary: true` declara `total` no schema `200` de `GET /resumo` — é a forma mínima que o agregador cross-módulo lê sem conhecer o módulo ([[02-contrato-e-dados]] §2). **Uma direção só**: `false` não proíbe nada. Lê o bloco daquela ROTA, seguindo `$ref` (§7.2) | módulo |
 | `entrada-allowlist` | erro | o corpo da requisição não vira entidade sem passar por allowlist — proibidos o **spread** do corpo (`{...req.body}`, `{**corpo}`), o corpo indo **direto ao repositório** e a **atribuição em massa** (`Object.assign(entidade, req.body)`). É a simétrica de `saida-crua` na direção da entrada ([[02-contrato-e-dados]] §3.2). Passar o corpo para uma função que aplica a allowlist é o caminho CERTO e não é acusado (§7.2) | módulo |
 | `saida-crua` | erro | nenhuma resposta devolve um identificador cru. **Borda** (TS/JS): `.json(<identificador>)` acusa sempre, sem vocabulário — objeto literal e chamada de projeção não casam por construção. **Borda** (Python): `return <identificador ou acesso.pontilhado>` dentro de função decorada com `@router.<verbo>`, delimitado por indentação. **Mapeador** (os três): `return (linha|linhas|row|rows)`, vocabulário fechado. Dois limites declarados (§7.2) | módulo |
@@ -369,6 +378,7 @@ regras de `ui` não são heurísticas — `ui-kit` lê import, e o modo `proprio
 | Regra | Limite conhecido |
 |---|---|
 | `limiar-funcao`, `limiar-aninhamento`, `limiar-parametros` | assinatura fora do padrão comum pode não ser medida; nenhum falso positivo esperado, falso negativo é possível |
+| `mapeador-nomenclatura` | julga **só o nome** de função **exportada de nível de módulo** — método de classe e propriedade de objeto (`chaveDeCache` nos casos N.2.1/N.2.2 de `cases.mjs`) ficam fora: não são "função exportada", é a classe/objeto que carrega o `export`. É o mesmo limite, já declarado, do extrator de projeção que `projecao-contrato`/`payload-camelcase`/`sensivel-em-saida` compartilham (§7.2, "Extração de texto... de mapeador") — esta regra fecha a lacuna do NOME solto, não a da forma sintática. **E não fecha o escape por NOME DE ARQUIVO** — as quatro regras da família selecionam "é mapeador" pelo mesmo `/mapper/i`, e um mapeador batizado fora desse vocabulário escapa das quatro por igual (§7.2.1, item 4). Falso negativo assumido nas duas formas; nenhum falso positivo esperado |
 | `rota-publica-autenticada` | cobre **duas** das três coisas que a lei afirma, e a terceira fica declarada aqui em vez de fingida. Cobre: a lista de isenção vir do manifesto (a `api/` lê `publicRoutes` e não escreve rota literal) e cada entrada apontar para caminho **e método** que o contrato tem. **Não** cobre que o middleware esteja de fato aplicado e na posição certa da cadeia: em TS/JS o wiring é `app.use(authentication(...))` no bootstrap, em Python ele vive dentro de `record_middlewares`, e não há forma portável de afirmar estaticamente "esta cadeia rejeita quem não tem token". Isso é comportamento, e quem o prova é o teste de contrato, que exercita a requisição de verdade. A cláusula do manifesto é o que sobra de verificável, e ela é o suficiente para pegar o defeito que importa: a lista em vigor ser outra que não a declarada. Spec ausente ou `paths:` ilegível é do `contract`, e aqui a regra silencia |
 | `entrada-allowlist` | cobra a **forma** do defeito, não a ausência da allowlist. Passar o corpo adiante é legítimo e é o que o molde faz — `create(req.body, …)` chama `readBody`, que rejeita campo desconhecido; proibir a passagem acusaria o código correto. Por isso a regra persegue as três formas em que o corpo vira entidade **sem passar por ninguém**: spread, repositório direto e `Object.assign`. O que escapa: allowlist escrita mas incompleta (campo novo esquecido) — o gate não sabe quais campos deviam estar lá, e essa metade é do teste de contrato. Falso negativo assumido; nenhum falso positivo esperado |
 | `cookie-seguro`, `token-em-armazenamento` | **condicionais por desenho**, como `web-declarado` e `artefato-declarado`: cobram onde a superfície existe e silenciam onde não existe — o molde não tem cookie nem storage, e não há o que declarar nele. `cookie-seguro` lê a linha que define o cookie e exige as três flags ali: opções montadas num objeto de várias linhas **escapam** (falso negativo). O vocabulário de cookie de sessão é próprio e não o de `random-inseguro`, de propósito: aquele inclui `csrf`, e o cookie de CSRF no padrão double-submit **precisa** ser legível por JavaScript — exigir `HttpOnly` dele seria falso positivo sobre código correto. `token-em-armazenamento` remove o identificador `localStorage`/`sessionStorage` do texto antes de procurar o contexto secreto, senão guardar o TEMA em `sessionStorage` seria acusado como token pela palavra "session" do próprio identificador |
@@ -440,8 +450,8 @@ quando está no INÍCIO da linha lógica — sem olhar o que vem depois do nome,
 forma, método de objeto/classe (`name(...)`), propriedade-arrow (`name: (...) => ({…})`) e atribuição
 de módulo em Python (`name = lambda r: {...}`).
 
-**Âncora de NOME:** só é candidata a projeção um sítio cujo nome começa com `para` seguido de
-maiúscula (TS/JS) ou `para_` (Python) — nunca uma REFERÊNCIA (`registros.map(toContract)` não é
+**Âncora de NOME:** só é candidata a projeção um sítio cujo nome começa com `to` seguido de
+maiúscula (TS/JS) ou `to_` (Python) — nunca uma REFERÊNCIA (`registros.map(toContract)` não é
 sítio: o nome não está no início da linha lógica ali).
 
 **Âncora de REGIÃO:** dentro da janela do nome até o PRÓXIMO sítio (qualquer nome) de recuo **IGUAL
@@ -456,24 +466,38 @@ reconhecedor, mas está sempre mais indentada que o sítio que abriu a janela, e
 **Isto mata, por construção, o defeito antigo desta linha** (assinatura com `{` — tipo de retorno
 inline, parâmetro tipado, genérico, `Array<{…}>`, default `= {}` — confundindo a leitura), o falso
 positivo do objeto intermediário (`const interno = { … }`, fora de posição de `return`), o falso
-positivo do MÉTODO seguinte que não publica nada (`chaveDeCache` depois de `paraAlfa` numa classe) e o
+positivo do MÉTODO seguinte que não publica nada (`chaveDeCache` depois de `toAlfa` numa classe) e o
 mesmo falso positivo numa propriedade-arrow (`chaveDeCache: (r) => (...)` depois de
-`paraGama: (r) => (...)` num objeto literal, ou `name = lambda r: {...}` depois de outro no nível do
+`toGama: (r) => (...)` num objeto literal, ou `name = lambda r: {...}` depois de outro no nível do
 módulo em Python): nenhum dos quatro exigiu guarda nova, os quatro deixaram de ser candidatos pela
 forma do extrator. Cada par (arquivo, campo) rende **uma** mensagem: a região não guarda número de
 linha, então duas projeções do mesmo campo no mesmo arquivo produziam a mesma frase duas vezes, e a
 segunda não dizia nada que a primeira já não dissesse.
 
-**Os três limites que sobram:**
+**Os quatro limites que sobram:**
 
 1. Projeção fora da CONVENÇÃO DE NOME (§3) — uma função chamada `montarResposta` que devolve campo
-   sensível **escapa inteira**, porque não é candidata; é falso negativo, e é o preço declarado de a
-   âncora depender de nome, não de análise de fluxo.
+   sensível **escapa inteira** de `projecao-contrato`/`payload-camelcase`/`sensivel-em-saida`, porque
+   não é candidata; é falso negativo, e é o preço declarado de a âncora depender de nome, não de
+   análise de fluxo. **`mapeador-nomenclatura` (Bloco AH) fecha a METADE desse escape**: `montarResposta`
+   exportada num arquivo já identificado como mapeador vira erro **pelo nome**, forçando renomear ou
+   mover — mas não faz `projecao-contrato` enxergar o conteúdo dela; o conserto é o rename, não uma
+   segunda leitura. Ver item 4 abaixo para a outra metade, que `mapeador-nomenclatura` **não** fecha.
 2. Projeção montada por INDIREÇÃO (spread, `Object.assign`, dicionário construído em laço, ou
    `return` de uma variável montada em linha anterior) **escapa** — falso negativo; é o mesmo limite
    que a inversão do `saida-crua` (N.1) cobre do lado da BORDA, não do MAPEADOR.
 3. `}` dentro de **string** conta para o balanceamento, então `{ rotulo: '}}', campoNovo: x }` fecha a
    região antes do `campoNovo`, que **escapa** — falso negativo, e o preço de não ser um lexer.
+4. **Escape por NOME DE ARQUIVO, e `mapeador-nomenclatura` não cobre este lado.** As quatro regras da
+   família (`projecao-contrato`, `payload-camelcase`, `sensivel-em-saida`, `mapeador-nomenclatura`)
+   selecionam "arquivo de mapeador" pelo MESMO critério — `/mapper/i` no caminho relativo
+   (`chavesDaProjecao`/`funcoesExportadasDoMapeador`, `rules/contract.mjs`). Um mapeador batizado fora
+   desse vocabulário (`serializers.ts`, `transformadores.py`, qualquer nome sem a palavra "mapper") é
+   **invisível às quatro ao mesmo tempo** — o mesmo campo sensível do item 1, publicado por uma função
+   `toContract` corretíssima dentro de um arquivo com o nome errado, escapa por igual, e nenhuma das
+   quatro regras diz "não verifiquei": elas simplesmente não encontram o arquivo, e o resultado é
+   indistinguível de conformidade. **Não há verificador de convenção de nome de ARQUIVO do mapeador**
+   — só de nome de FUNÇÃO, que é o que este bloco (AH) resolveu. Falso negativo assumido.
 
 Chave fora de camelCase é do `payload-camelcase` e não é acusada aqui.
 
