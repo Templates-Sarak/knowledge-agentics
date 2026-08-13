@@ -9,6 +9,13 @@
  *   node tests/verify-citations.mjs --depois      prova DEPOIS do rename: zero ocorrência de nome
  *                                                    antigo em qualquer arquivo do corpus, e todo nome
  *                                                    novo citado resolve
+ *   node tests/verify-citations.mjs --depois-estrito [--gravar-linha-base]
+ *                                                  plan-3.1.md Bloco AJ — `--depois` filtrado pelo
+ *                                                    corte de IDENTIFICADOR DISTINTIVO (camelCase,
+ *                                                    snake_case, extensão, hífen — nunca palavra
+ *                                                    comum do léxico português), comparado contra
+ *                                                    `citation-baseline.json`. `--gravar-linha-base`
+ *                                                    aceita os achados atuais como linha de base nova
  *   node tests/verify-citations.mjs --autoteste   prova o núcleo com fixtures em memória
  *
  * INVENTÁRIO COMO ENTRADA (`rename-inventory.json`, mesma pasta): a lista FECHADA de nomes que a
@@ -54,7 +61,7 @@
  * pasta, resolução contra disco/schema/corpus) toca disco. `--autoteste` prova o núcleo inteiro sem
  * escrever nada.
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -63,6 +70,7 @@ const RAIZ_TEMPLATE = resolve(AQUI, '..');
 const RAIZ_BASE = resolve(RAIZ_TEMPLATE, '..', '..');
 const BINDINGS = ['typescript', 'javascript', 'python'];
 const CAMINHO_INVENTARIO = join(AQUI, 'rename-inventory.json');
+const CAMINHO_LINHA_BASE = join(AQUI, 'citation-baseline.json');
 
 // ================================================================================================
 // NÚCLEO — puro. Nenhuma linha até a marca "CASCA" toca `fs`.
@@ -114,6 +122,50 @@ export function avaliarAntes(item, corpus, resolveAntigo) {
  * "todo nome novo citado resolve" pressupõe citação; ausência de citação é outra pergunta, fora do
  * contrato pedido.
  */
+/**
+ * `--depois-estrito` (plan-3.1.md Bloco AJ) — o mesmo `--depois`, mas conta como ERRO só o achado
+ * `nome-antigo-ainda-presente` cujo nome antigo é um IDENTIFICADOR DISTINTIVO: camelCase interno,
+ * snake_case, com extensão, ou hífen — nunca palavra comum do léxico português (`raiz`, `nome`,
+ * `contrato`, `consome`). É o corte que o AD.4 mediu como inviável para o `--depois` cru (`raiz`
+ * sozinho eram 407 de 1863 achados, e a mesma palavra é prosa legítima DENTRO do escopo — esse
+ * argumento vale para PALAVRA COMUM, nunca para identificador); medido contra o corpus real deste
+ * bloco: 4508 achados brutos → 305 distintivos em 65 arquivos, ~93% do bruto é ruído de palavra
+ * comum. `nome-novo-citado-mas-nao-resolve` nunca é filtrado — não é da MESMA classe de ambiguidade
+ * (não existe "nome novo comum" competindo com prosa), então sempre conta.
+ */
+export function distintivo(nome) {
+  return /[a-z][A-Z]/.test(nome) || nome.includes('_') || nome.includes('.') || nome.includes('-');
+}
+
+/** Achados de `avaliarDepois` (todos os itens) que passam pelo corte estrito. */
+export function filtrarEstrito(achados) {
+  return achados.filter((a) => (
+    a.motivo === 'nome-novo-citado-mas-nao-resolve'
+    || (a.motivo === 'nome-antigo-ainda-presente' && distintivo(a.item.antigo))
+  ));
+}
+
+/** Chave estável de um achado — arquivo + linha + nome, o suficiente pra identificar a MESMA
+ * ocorrência entre rodadas (achado sem `arquivo`/`linha`, o caso `nome-novo-citado-mas-nao-resolve`,
+ * usa só o nome — é um achado por ITEM, não por ocorrência). */
+export function chaveDoAchado(a) {
+  return `${a.arquivo ?? ''} ${a.linha ?? ''} ${a.nome}`;
+}
+
+/** `novos`: achado atual que a linha de base não conhece — exige revisão antes de
+ * `--gravar-linha-base` aceitar. `resolvidos`: achado da linha de base que sumiu (a citação foi
+ * consertada) — boa notícia, só informativa, nunca reprova. Mesma forma de `compararRecusas`
+ * (`apply-rename.mjs`, Bloco AI) — mesmo problema (achado versionado, cresce só por decisão
+ * explícita), arquivo diferente porque este mora em `tests/` (D3) e aquele em `apply-rename.mjs`. */
+export function compararComLinhaBase(atuais, salvos) {
+  const chavesSalvas = new Set(salvos.map(chaveDoAchado));
+  const chavesAtuais = new Set(atuais.map(chaveDoAchado));
+  return {
+    novos: atuais.filter((a) => !chavesSalvas.has(chaveDoAchado(a))),
+    resolvidos: salvos.filter((a) => !chavesAtuais.has(chaveDoAchado(a))),
+  };
+}
+
 export function avaliarDepois(item, corpus, resolveNovo) {
   const achados = [];
   for (const { arquivo, texto } of corpus) {
@@ -441,6 +493,39 @@ function lerInventario() {
   return { itens: bruto.itens ?? [] };
 }
 
+/** Lê `citation-baseline.json` — mesma disciplina de `rename-refusals.json` (Bloco AI,
+ * `apply-rename.mjs`): ausente ou vazio é estado válido (nada aceito ainda). */
+function lerLinhaBase() {
+  if (!existsSync(CAMINHO_LINHA_BASE)) return [];
+  const bruto = JSON.parse(lerTexto(CAMINHO_LINHA_BASE));
+  return bruto.achados ?? [];
+}
+
+/** Escreve a linha de base — decisão EXPLÍCITA, só quando `--gravar-linha-base` está no argv, o
+ * mesmo padrão de `--gravar-recusas` (`apply-rename.mjs`, Bloco AI). */
+function gravarLinhaBase(atuais) {
+  const achados = [...atuais].sort((a, b) => chaveDoAchado(a).localeCompare(chaveDoAchado(b)));
+  const conteudo = {
+    _comentario: 'Lista VERSIONADA dos achados de --depois-estrito ja revisados e aceitos — mesma '
+      + 'disciplina de rename-refusals.json (Bloco AI, apply-rename.mjs): comeca vazia, cresce so por '
+      + 'decisao explicita (--gravar-linha-base), nunca por heuristica. --depois-estrito compara os '
+      + 'achados ATUAIS contra esta lista: achado NOVO (arquivo+linha+nome ausente daqui) reprova e '
+      + 'exige revisao humana — e ou (a) prosa legitima nunca vista nesta forma, ou (b) residuo real '
+      + '(plan-3.1.md Bloco AJ). So a linha de base comeca populada com os 305 medidos ao criar este '
+      + 'modo: e o estado JA CONHECIDO, nao o alvo — verde contra a linha de base no dia 1, nunca '
+      + 'vermelho parado (o problema que o --depois cru, com 4508 achados nunca revisados, tem).',
+    _exemplo: {
+      arquivo: 'skills/exemplo/SKILL.md', linha: 42, nome: 'rotaBase',
+      item: { antigo: 'rotaBase', novo: 'basePath', tipo: 'chave', fase: 'AD.3' },
+      motivo: 'nome-antigo-ainda-presente',
+    },
+    achados,
+  };
+  writeFileSync(CAMINHO_LINHA_BASE, `${JSON.stringify(conteudo, null, 2)}\n`, 'utf8');
+  process.stdout.write(`\ngravado: ${achados.length} achado(s) aceito(s) em `
+    + `${relative(RAIZ_BASE, CAMINHO_LINHA_BASE).split('\\').join('/')}\n`);
+}
+
 function rodarAntes(inventario, corpus, contexto) {
   const achados = [];
   for (const item of inventario.itens) {
@@ -516,6 +601,40 @@ function casosDeAutoteste() {
     { nome: 'avaliarDepois: novo NUNCA citado nao e falha (fora do contrato pedido)', fn: () => (
       avaliarDepois({ antigo: 'doutrina', novo: 'doctrine', tipo: 'pasta' }, [{ arquivo: 'x.md', texto: 'nada aqui' }], false).length === 0
     ) },
+    // distintivo — o corte do --depois-estrito (Bloco AJ)
+    { nome: 'distintivo: camelCase interno -> true', fn: () => distintivo('paraGama') === true },
+    { nome: 'distintivo: snake_case -> true', fn: () => distintivo('para_gama') === true },
+    { nome: 'distintivo: com extensao -> true', fn: () => distintivo('mapeadores.py') === true },
+    { nome: 'distintivo: kebab-case composto -> true', fn: () => distintivo('criar-modulo.mjs') === true },
+    { nome: 'distintivo: palavra comum do lexico portugues -> false', fn: () => distintivo('raiz') === false },
+    { nome: 'distintivo: palavra comum minuscula sem marcador -> false', fn: () => distintivo('dominio') === false },
+    // filtrarEstrito
+    { nome: 'filtrarEstrito: nome-antigo-ainda-presente com item comum -> descartado', fn: () => {
+      const achados = [{ arquivo: 'x.md', linha: 1, item: { antigo: 'raiz', novo: 'root' }, nome: 'raiz', motivo: 'nome-antigo-ainda-presente' }];
+      return filtrarEstrito(achados).length === 0;
+    } },
+    { nome: 'filtrarEstrito: nome-antigo-ainda-presente com item distintivo -> mantido', fn: () => {
+      const achados = [{ arquivo: 'x.md', linha: 1, item: { antigo: 'paraGama', novo: 'toGama' }, nome: 'paraGama', motivo: 'nome-antigo-ainda-presente' }];
+      return filtrarEstrito(achados).length === 1;
+    } },
+    { nome: 'filtrarEstrito: nome-novo-citado-mas-nao-resolve NUNCA e filtrado, mesmo com item comum', fn: () => {
+      const achados = [{ item: { antigo: 'raiz', novo: 'root' }, nome: 'root', motivo: 'nome-novo-citado-mas-nao-resolve' }];
+      return filtrarEstrito(achados).length === 1;
+    } },
+    // compararComLinhaBase
+    { nome: 'compararComLinhaBase: achado identico ao salvo -> nao e novo', fn: () => {
+      const a = { arquivo: 'x.md', linha: 1, nome: 'paraGama', item: {} };
+      return compararComLinhaBase([a], [a]).novos.length === 0;
+    } },
+    { nome: 'compararComLinhaBase: achado atual ausente da linha de base -> novo', fn: () => {
+      const a = { arquivo: 'x.md', linha: 1, nome: 'paraGama', item: {} };
+      return compararComLinhaBase([a], []).novos.length === 1;
+    } },
+    { nome: 'compararComLinhaBase: achado salvo ausente dos atuais -> resolvido, nunca reprova', fn: () => {
+      const salvo = { arquivo: 'x.md', linha: 1, nome: 'paraGama', item: {} };
+      const r = compararComLinhaBase([], [salvo]);
+      return r.novos.length === 0 && r.resolvidos.length === 1;
+    } },
     // resolução por tipo (tocam disco de verdade, mesmo precedente de sempre nesta base)
     { nome: 'resolveNome pasta: existe no disco', fn: () => resolveNome('pasta', 'doutrina', contexto) === true },
     { nome: 'resolveNome pasta: nao existe', fn: () => resolveNome('pasta', 'pasta-fantasma-xyz', contexto) === false },
@@ -618,13 +737,63 @@ function rodar(modo) {
   return achados.length === 0 ? 0 : 1;
 }
 
+/** Relata `novos`/`resolvidos` contra a linha de base — mesma forma de
+ * `relatarComparacaoDeRecusas` (`apply-rename.mjs`, Bloco AI). */
+function relatarComparacaoComLinhaBase(novos, resolvidos) {
+  const rel = relative(RAIZ_BASE, CAMINHO_LINHA_BASE).split('\\').join('/');
+  if (resolvidos.length > 0) {
+    process.stdout.write(`\n=== achados RESOLVIDOS desde a linha de base (${resolvidos.length}) — informativo ===\n`);
+    for (const a of resolvidos) process.stdout.write(`${formatarAchado(a)}\n`);
+  }
+  if (novos.length === 0) {
+    process.stdout.write(`\nachados NOVOS vs. ${rel}: 0 — nada a revisar\n`);
+    return;
+  }
+  process.stdout.write(`\n=== achados NOVOS vs. ${rel} (${novos.length}) — REVISÃO OBRIGATÓRIA ===\n`);
+  for (const a of novos) process.stdout.write(`${formatarAchado(a)}\n`);
+  process.stdout.write('\nCada um acima é ou (a) prosa legítima nunca vista nesta forma — revise e rode de novo\n'
+    + 'com --gravar-linha-base para aceitar, ou (b) resíduo real de rename — conserte a ORIGEM (o arquivo\n'
+    + 'citado), nunca este artefato.\n');
+}
+
+/** `--depois-estrito`: `--depois` filtrado pelo corte de identificador distintivo (`filtrarEstrito`),
+ * comparado contra `citation-baseline.json` — mesmo padrão de `apply-rename.mjs --relatorio` contra
+ * `rename-refusals.json` (Bloco AI). `gravar` grava a linha de base quando `--gravar-linha-base`
+ * está no argv; nunca chamado sozinho por `--depois-estrito`. */
+function rodarDepoisEstrito(gravar) {
+  const inventario = lerInventario();
+  if (inventario.itens.length === 0) {
+    process.stdout.write(
+      'rename-inventory.json vazio — nada a conferir. Estado correto antes do plan-3 Bloco AC\n'
+      + 'popular a lista fechada de renomes.\n',
+    );
+    return 0;
+  }
+  const corpus = corpusBruto();
+  const contexto = contextoDeResolucao();
+  const brutos = rodarDepois(inventario, corpus, contexto);
+  const atuais = filtrarEstrito(brutos);
+  const { novos, resolvidos } = compararComLinhaBase(atuais, lerLinhaBase());
+  relatarComparacaoComLinhaBase(novos, resolvidos);
+  if (gravar) gravarLinhaBase(atuais);
+  // Gravar E' a aceitacao explicita — reprovar por achado novo depois de aceita-lo seria a mesma
+  // volta que `apply-rename.mjs --gravar-recusas` (Bloco AI) ja resolveu: `!gravar && novos.length > 0`.
+  const reprova = !gravar && novos.length > 0;
+  process.stdout.write(reprova
+    ? `\n--depois-estrito: REPROVADO — ${novos.length} achado(s) novo(s)\n`
+    : `\n--depois-estrito: OK — ${atuais.length} achado(s) na linha de base\n`);
+  return reprova ? 1 : 0;
+}
+
 function principal() {
   const argv = process.argv.slice(2);
   if (argv.includes('--autoteste')) return rodarAutoteste();
   if (argv.includes('--antes')) return rodar('antes');
+  if (argv.includes('--depois-estrito')) return rodarDepoisEstrito(argv.includes('--gravar-linha-base'));
   if (argv.includes('--depois')) return rodar('depois');
   process.stderr.write('uso: node tests/verify-citations.mjs --antes\n'
     + '     node tests/verify-citations.mjs --depois\n'
+    + '     node tests/verify-citations.mjs --depois-estrito [--gravar-linha-base]\n'
     + '     node tests/verify-citations.mjs --autoteste\n');
   return 1;
 }

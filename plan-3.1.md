@@ -230,7 +230,41 @@
 
 ---
 
-## Bloco AJ — a região sem rede: `tools/**` *(achado ao fechar o AD.3)*
+## Bloco AJ — mudou de escopo ao fechar o AH: dois itens, não um
+
+### AJ.0 — o corte por identificador distintivo *(achado ao fechar o AH — três resíduos do AD.2
+que a leitura achou e a varredura não, mais um quarto no `padrao-python` que nem tinha sido tocado)*
+
+> **A dúvida que o AD.4 fechou como opção B era real, mas mal recortada.** `--depois` cru afirma
+> "zero ocorrência de nome antigo" — inalcançável: `raiz` sozinho eram 407/1863, e a mesma palavra é
+> prosa legítima **dentro** do escopo, não só fora. O corte proposto **não** escopa por caminho (o
+> mesmo erro medido em 360 falsos positivos na Rodada AB) — escopa pela **forma do nome antigo**:
+> camelCase interno, `snake_case`, extensão de arquivo ou hífen é **identificador distintivo**;
+> palavra comum do léxico português nunca é.
+
+- [x] `distintivo(nome)` implementada em `verify-citations.mjs` (núcleo puro, `--autoteste` prova)
+- [x] **Medido contra o inventário e o corpus reais, não só proposto:** 271/330 itens do inventário
+      são distintivos · 4508 achados brutos de `--depois` → **308** sobrevivem ao corte, em **~65
+      arquivos** — `rotaBase` (47×), `lerTexto` (43×), `envRequerido` (36×), `rodarAutoteste` (21×),
+      `modulo.json` (15×), `geraArtefato` (14×)... ~93% do bruto era ruído de palavra comum
+- [x] **`--depois-estrito [--gravar-linha-base]`** implementado, com linha de base versionada —
+      `tests/citation-baseline.json`, mesma disciplina de `rename-refusals.json` (Bloco AI):
+      começa **populada** com os 308 (+ 7 citações da prosa deste próprio bloco, aceitas como
+      instância hipotética — 315 ao todo), cresce só por decisão explícita, achado novo reprova
+      nomeando arquivo e linha. **Resultado hoje: VERDE contra a linha de base** — não nasce vermelho
+- [x] **Contraprova nos dois sentidos:** `paraContrato` reintroduzido numa linha de `04-regras.md` →
+      reprova nomeando arquivo:linha; removido → `0 achados novos, exit 0`
+- [x] Registrado em `04-regras.md` §7.2, com os números, ao lado do parágrafo da opção B — o corte
+      **não** reabre aquela decisão: o argumento dela vale para palavra comum, nunca para
+      identificador. Declarado também o que o corte **não** fecha: identificador que também é
+      palavra de dicionário (`dominio`) fica de fora — capturar por contexto reabriria o mesmo
+      problema dos 360/407
+- [x] **Um resíduo consertado no caminho** (não parte da campanha, achado ao investigar):
+      `skills/padrao-python/references/idioms.md` ainda citava `mapeadores.py`/`modulo.json:consome`
+- [x] **NÃO ataquei os 305/315 restantes** — decisão do dono: entram como entrada dos Blocos BB/BC
+      do `plan-3.0`, que já vão reescrever exatamente esses arquivos. Zero rodada extra aqui.
+
+### AJ.1 — a região sem rede: `tools/**` *(achado ao fechar o AD.3, escopo original deste bloco)*
 
 > **Levantado pelo executor, medido por reinjeção deliberada.** O bug de interpolação de template
 > (`` `${nome}.schema.json` `` em JS/TS, `f"{dados['prefixo']}"` em Python) produziu código que

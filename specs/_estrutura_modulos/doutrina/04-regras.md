@@ -435,6 +435,34 @@ aberta: confere só o INVENTÁRIO FECHADO que o plan-3 Bloco AC declara em
 pra trás nem cita nome novo que não existe, e nada além disso. Falso positivo sobre prosa legítima
 continuaria sendo a direção proibida se a ferramenta tentasse ir além do inventário.**
 
+**`--depois-estrito` (plan-3.1.md Bloco AJ) é o corte que faltava, e ele NÃO reabre a discussão
+acima.** `--depois` cru afirma "zero ocorrência de nome antigo", e essa afirmação é inalcançável —
+medido de novo neste bloco: **4508** achados, dos quais só palavra comum do léxico português
+(`raiz`, `nome`, `contrato`, `consome`, `prefixo`, `tabelas`, `dominio`, `ordem`, `registrar`,
+`descricao`...) explica a esmagadora maioria, e é prosa legítima **dentro** do escopo pelo mesmo
+motivo do parágrafo acima. O corte é **por forma do nome ANTIGO**, não por forma da citação: um item
+do inventário é **IDENTIFICADOR DISTINTIVO** — camelCase interno, `snake_case`, com extensão de
+arquivo, ou hífen — ou é **palavra comum**, e só o primeiro grupo reprova. Medido: **271 dos 330**
+itens do inventário são distintivos; aplicado aos 4508 achados brutos, sobram **308, em ~65
+arquivos** — `rotaBase` (47×), `lerTexto` (43×), `envRequerido` (36×), `rodarAutoteste` (21×),
+`modulo.json` (15×), `geraArtefato` (14×)... nenhum é falso positivo verificado até aqui.
+
+**O que o corte NÃO fecha:** identificador antigo que TAMBÉM é palavra comum (`dominio` — "domínio" é
+português de dicionário) fica de fora mesmo citado como resíduo real (`core/dominio` num caminho,
+por exemplo) — tentar capturar esse caso por contexto (posição depois de `/`, dentro de crase)
+reabriria exatamente o problema dos 360/407 já medido: a mesma palavra é prosa legítima na
+esmagadora maioria das próprias ocorrências (`dominio` sozinho aparece centenas de vezes em
+`bindings/**` como o conceito de negócio, não como resíduo). O corte troca **recall por precisão**
+de propósito — é o mesmo acordo da opção B, só que mais estreito: aquele argumento vale para
+**palavra comum**, nunca para **identificador**.
+
+**O artefato:** `tests/citation-baseline.json`, mesma disciplina de `rename-refusals.json` (Bloco
+AI, `apply-rename.mjs`) — começa com os 308 já medidos e revisados (não vazio: o estado NÃO
+revisado, com 4508 achados nunca olhados, é o próprio problema que motivou o corte), cresce só por
+`--gravar-linha-base`, e achado novo reprova nomeando arquivo e linha. Contraprova feita nos dois
+sentidos: um resíduo distintivo novo introduzido de propósito (`paraContrato` numa linha de
+doutrina) reprova nomeando o arquivo; removido, volta a **0 achados novos, exit 0**.
+
 ### 7.2.1 — O extrator de projeção
 
 > Movido para fora da tabela do §7.2 (plan-2.md Bloco R.1): era o texto mais importante desta seção

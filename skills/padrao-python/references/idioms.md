@@ -18,9 +18,9 @@ a detecta**.
 | Privado | prefixo `_` (`_helper`) — sinaliza "não é contrato público" |
 
 - **Borda de serialização:** interno `snake_case` ↔ contrato `camelCase` é convertido em
-  `api/src/mapeadores.py` (Pydantic alias, serializer, etc.), nunca espalhando o casing do contrato pelo `core/`.
+  `api/src/mappers.py` (Pydantic alias, serializer, etc.), nunca espalhando o casing do contrato pelo `core/`.
 - **Imports:** **nunca** importe código de outro módulo — nem o `api/` dele. Dado alheio vem por **HTTP**,
-  num gateway em `core/gateways/<provider>`, declarado em `modulo.json:consome`. A anatomia e a regra estão
+  num gateway em `core/gateways/<provider>`, declarado em `module.json:consumes`. A anatomia e a regra estão
   em `specs/arquitetura/01-modulo.md` §6 (na base, `specs/_estrutura_modulos/doutrina/01-modulo.md`).
 
 ---
