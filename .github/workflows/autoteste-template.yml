@@ -25,3 +25,71 @@ jobs:
         with:
           python-version: '3.11'
       - run: npm run autoteste:template
+
+  # plan-3.1.md Bloco AG: os runners de migrations (scripts/migrations.mjs, scripts/migrations.py)
+  # precisam de Postgres real — o Bloco K acima nao tem banco e nunca exercita isto. Medido a mao
+  # (Bloco AG): ciclo completo (up -> up[pula] -> down -> up) e o estado no banco (tabelas, indice,
+  # unique, RLS, tabela de controle) batem nos dois bindings. Job separado do Bloco K de proposito —
+  # nao arrisca o 13/13 ja provado só para acrescentar uma dependencia de servico.
+  verificar-migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sarak
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Scaffold projeto javascript + modulo itens
+        run: |
+          python skills/meta-iniciar-repositorio/scripts/init_repo.py \
+            --target /tmp/ci-migrations-js --name "CI Migrations JS" \
+            --binding javascript --escopo cimig --modulos itens --git-init
+
+      - name: Configurar .env (javascript)
+        run: |
+          sed -i 's/^ITENS_API_PORT=.*/ITENS_API_PORT=4001/' /tmp/ci-migrations-js/.env
+          sed -i 's#^ITENS_DB_URL=.*#ITENS_DB_URL=postgres://postgres:postgres@localhost:5432/sarak#' /tmp/ci-migrations-js/.env
+
+      - name: Migrations javascript — up -> up (pula) -> down -> up
+        working-directory: /tmp/ci-migrations-js
+        run: |
+          node scripts/migrations.mjs up itens
+          node scripts/migrations.mjs up itens
+          node scripts/migrations.mjs down itens
+          node scripts/migrations.mjs up itens
+
+      - name: Scaffold projeto python + modulo itens
+        run: |
+          python skills/meta-iniciar-repositorio/scripts/init_repo.py \
+            --target /tmp/ci-migrations-py --name "CI Migrations PY" \
+            --binding python --escopo cimig --modulos itens --git-init
+
+      - name: Configurar .env e instalar dependencias (python)
+        run: |
+          sed -i 's/^ITENS_API_PORT=.*/ITENS_API_PORT=4002/' /tmp/ci-migrations-py/.env
+          sed -i 's#^ITENS_DB_URL=.*#ITENS_DB_URL=postgres://postgres:postgres@localhost:5432/sarak#' /tmp/ci-migrations-py/.env
+          cd /tmp/ci-migrations-py && pip install -e ".[dev]"
+
+      - name: Migrations python — up -> up (pula) -> down -> up
+        working-directory: /tmp/ci-migrations-py
+        run: |
+          python scripts/migrations.py up itens
+          python scripts/migrations.py up itens
+          python scripts/migrations.py down itens
+          python scripts/migrations.py up itens

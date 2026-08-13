@@ -124,14 +124,46 @@
 >
 > **E o Bloco K não cobre, por decisão:** ele não tem banco. Então hoje ninguém roda.
 
-- [ ] Postgres efêmero em Docker, e o ciclo completo nos **dois bindings restantes**:
+- [x] Postgres efêmero em Docker, e o ciclo completo nos **dois bindings restantes**:
       `up` → `up` (tem de dizer *"nada pendente"*, não falhar) → `down` → `up` → `ciclo`
-- [ ] Conferir no banco: as tabelas do molde, o **índice**, o `unique`, o **RLS ligado**, e a tabela de
+- [x] Conferir no banco: as tabelas do molde, o **índice**, o `unique`, o **RLS ligado**, e a tabela de
       controle **declarada em `dados.tabelas`** — foi essa declaração que manteve `tabela-declarada` e
       `tabela-alheia` sem exceção
-- [ ] **Onde isto passa a rodar sempre.** Hoje é manual. Ou vira passo do pipeline de CI (a linha de
-      "minutos" do §7 já reserva o lugar, e é onde `service container` existe), ou fica declarado como
-      *"provado uma vez, não recorrente"* — e a segunda é honesta, mas é dívida. **Decidir e registrar**
+- [x] **Onde isto passa a rodar sempre.** Decidido: vira passo de CI (`.github/workflows/autoteste-template.yml`,
+      job `verificar-migrations`, novo — service container `postgres:16-alpine`, os dois bindings). O
+      YAML valida (`yaml.safe_load`) e os comandos são a tradução literal do que rodou manualmente
+      contra o Postgres efêmero, mas isso é o desenho, **não a prova** — a decisão fica
+      **PENDENTE DE PROVA até o primeiro `workflow_dispatch` real**, mesma classe de "verde neste
+      worktree não vale": um YAML que nunca disparou é tão não-medido quanto um script que nunca rodou
+
+> **Achado — É a campanha, rastreado por commit.** `scripts/migrations.py` tinha `--autoteste`
+> **quebrado desde sempre**: as quatro funções de fixture devolviam a chave `"name"` (inglês) e as
+> quatro leituras em `_run_selftest()` liam `caso['nome']` (português) — `KeyError: 'nome'` na primeira
+> linha, sempre. `git blame` por commit: `b8d64fb` (AD.1) 0 ocorrências · `3d98906` (AD.2) 0 ·
+> **`0b657e9` (AD.3) 14** · `cee117c` 0. **É o AD.3** — `nome→name` é a chave nº 1 das 19 do rename de
+> manifesto, e o rename varreu esta fixture de teste (um dicionário Python solto, não um `module.json`)
+> junto, sem checar se o alvo era manifesto de verdade.
+>
+> **A causa generalizável, e é o que vale guardar:** o mesmo rename bateu nos dois runners irmãos, com
+> sintaxes diferentes e resultado oposto:
+> | Binding | Sintaxe da chave | O que aconteceu |
+> |---|---|---|
+> | JavaScript (`migrations.mjs`) | `nome: '...'` — chave **NUA** (identificador, sem aspas) | o rename **recusou** — o tipo `chave` do inventário só troca string entre aspas, e uma chave nua não bate no padrão. Protegido **por acidente**: a regra existe por outro motivo (distinguir chave de manifesto de string solta), não para blindar fixture de teste |
+> | Python (`migrations.py`) | `"name": "..."` — string **entre aspas**, sintaxe idêntica à de uma chave de manifesto de verdade | o rename **trocou** — nada no `chave` distinguia "isto é uma fixture de teste" de "isto é `module.json`" |
+>
+> **Não é falha do executor nem contorno: é limite conhecido do tipo `chave` do inventário de rename,
+> e agora está medido** — ele generaliza mal quando o mesmo texto (`"nome"`) aparece em dois lugares
+> com significado diferente (manifesto vs. dado de teste) e só um dos dois tem proteção sintática.
+>
+> **Raio já medido (pelo revisor, não refeito aqui):** os 14 pontos de `--autoteste` do template —
+> todos verdes, exceto `composicao.py` (só roda dentro de projeto instanciado, não é achado). O raio
+> deste defeito é **um arquivo só**, `migrations.py`, e está consertado.
+>
+> **Conserto na origem:** as 14 ocorrências de `"name":` viraram `"nome":` — alinha com as 4 leituras
+> E com o runner irmão (`migrations.mjs` usa `nome` nos mesmos casos, já provado contra Postgres real
+> no TypeScript). Reexecutei do zero (descartei o alvo, rodei `init_repo.py` de novo) antes de repetir
+> o ciclo contra o banco — a mesma disciplina do AF. `--autoteste` 14/14 depois do conserto, confirmado
+> também pelo revisor direto no container.
 
 ---
 
