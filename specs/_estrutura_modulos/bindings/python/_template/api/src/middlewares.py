@@ -23,7 +23,7 @@ Proximo = Callable[[Request], Awaitable[Any]]
 
 
 def _path_relative(caminho: str, rota_base: str) -> str:
-    """`rotasPublicas` e declarado RELATIVO a rotaBase ("GET /health"), mas esta cadeia roda antes
+    """`publicRoutes` e declarado RELATIVO a rotaBase ("GET /health"), mas esta cadeia roda antes
     do router — aqui o caminho ainda e absoluto. Sem tirar o prefixo, nenhuma rota publica casaria
     e /health, /meta e /resumo responderiam 401."""
     if not caminho.startswith(rota_base):
@@ -45,7 +45,7 @@ def record_middlewares(app: Any, config: Any, borda: ContextoDaBorda) -> None:
     gerador, auth, logger = borda.gerador, borda.auth, borda.logger
     seguranca = config.seguranca
     manifesto = config.manifesto
-    publicas = {rota.upper() for rota in manifesto["rotasPublicas"]}
+    publicas = {rota.upper() for rota in manifesto["publicRoutes"]}
     janelas: dict[str, tuple[float, int]] = {}
 
     @app.middleware("http")
@@ -53,7 +53,7 @@ def record_middlewares(app: Any, config: Any, borda: ContextoDaBorda) -> None:
         request.state.request_id = gerador.hash()
         try:
             _limit(request, seguranca["rateLimit"], janelas)
-            await _authenticate(request, auth, publicas, manifesto["rotaBase"])
+            await _authenticate(request, auth, publicas, manifesto["basePath"])
             resposta = await proximo(request)
         except ErroApi as erro:
             return _respond_error(erro, request, logger)
@@ -116,7 +116,7 @@ def _limit(request: Request, config: dict[str, Any], janelas: dict[str, tuple[fl
 
 
 async def _authenticate(request: Request, auth: Auth, publicas: set[str], rota_base: str) -> None:
-    """DENY BY DEFAULT: so as rotas de `modulo.json:rotasPublicas` passam sem token."""
+    """DENY BY DEFAULT: so as rotas de `module.json:publicRoutes` passam sem token."""
     relativo = _path_relative(request.url.path, rota_base)
     if f"{request.method} {relativo}".upper() in publicas:
         request.state.permissoes = []
@@ -129,7 +129,7 @@ async def _authenticate(request: Request, auth: Auth, publicas: set[str], rota_b
     claims = await auth.verify(cabecalho[7:])
     if claims is None:
         raise ErroApi("NAO_AUTENTICADO", "token invalido")
-    request.state.permissoes = claims.get("permissoes", [])
+    request.state.permissoes = claims.get("permissions", [])
 
 
 def require_permission(request: Request, permissao: str) -> None:

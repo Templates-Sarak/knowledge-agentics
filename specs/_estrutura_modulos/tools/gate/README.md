@@ -99,7 +99,7 @@ node tools/contract-compatible.mjs [--desde <ref>] [<modulo>] [--json]
 ```
 
 Sem argumento, compara com `HEAD~1` e descobre sozinho quais `contract/openapi.yaml` mudaram. Acha
-incompatibilidade → nomeia **quem consome** o módulo (`modulo.json:consome`, um salto só, igual
+incompatibilidade → nomeia **quem consome** o módulo (`module.json:consumes`, um salto só, igual
 `consome-contrato`). É passo de **CI**, não de `pre-commit`/`verificar` local (custa git + comparação
 de dois estados). O que ele cobra e o que fica de fora: `specs/arquitetura/04-regras.md` §7.2, logo
 depois da tabela de precisão dos verificadores.
@@ -120,7 +120,7 @@ depois da tabela de precisão dos verificadores.
 }
 ```
 
-3. Regra de escopo `global` devolve `{ modulo, mensagem }` em vez de string, porque precisa dizer de quem é o
+3. Regra de escopo `global` devolve `{ module, mensagem }` em vez de string, porque precisa dizer de quem é o
    achado. Regra de escopo `root` devolve string: o alvo dela é sempre `(root)`.
 4. **Nenhuma regra lê disco.** Tudo vem do contexto (`tools/gate/context.mjs`) — é o que as mantém
    rápidas e testáveis. O que é do **projeto**, e não do módulo, chega em `ctx.projeto`

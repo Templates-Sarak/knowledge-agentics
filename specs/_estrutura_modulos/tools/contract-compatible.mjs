@@ -316,7 +316,7 @@ function modulosComContratoMudado(ref) {
   return [...new Set(mudados)];
 }
 
-/** Quem DECLARA `consome` apontando para `id`, no grafo ATUAL — inclusive se `id` não existe mais
+/** Quem DECLARA `consumes` apontando para `id`, no grafo ATUAL — inclusive se `id` não existe mais
  * (a declaração continua no manifesto de quem consome, ainda que o dono tenha sumido). Mesma
  * pergunta que `consome-contrato` faz no gate ("reportado no consumidor"), UM salto só — não
  * transitivo como `affected.mjs:calcularAfetados` (que responde "o que precisa reverificar", uma
@@ -383,7 +383,7 @@ function lerOpcoes(argv) {
     if (argv[i] === '--autoteste') { opcoes.autoteste = true; continue; }
     if (argv[i] === '--json') { opcoes.json = true; continue; }
     if (argv[i] === '--desde') { opcoes.desde = argv[i + 1] ?? null; i += 1; continue; }
-    if (!argv[i].startsWith('--')) { opcoes.modulo = argv[i]; continue; }
+    if (!argv[i].startsWith('--')) { opcoes.module = argv[i]; continue; }
   }
   return opcoes;
 }
@@ -409,7 +409,7 @@ function principal() {
   }
 
   const grafo = montarGrafo(RAIZ);
-  const ids = opcoes.modulo !== null ? [opcoes.modulo] : modulosComContratoMudado(ref);
+  const ids = opcoes.module !== null ? [opcoes.module] : modulosComContratoMudado(ref);
   const resultados = ids.map((id) => compararModulo(ref, grafo, id));
 
   if (opcoes.json) imprimirJson(ref, resultados);

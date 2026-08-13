@@ -6,11 +6,11 @@ Sao riscos diferentes, por isso moram em pastas diferentes — e o gate cobra re
 
   - arquivo aqui fala EXCLUSIVAMENTE HTTP (regra `gateway-http`);
     nenhum SQL, nenhuma conexao, nenhum acesso a tabela — nem a propria;
-  - cada arquivo aqui TEM entrada em modulo.json:consome (regra `gateway-declarado`);
-  - o grafo de `consome` nao pode ter ciclo (regra `consome-ciclo`);
+  - cada arquivo aqui TEM entrada em module.json:consome (regra `gateway-declarado`);
+  - o grafo de `consumes` nao pode ter ciclo (regra `consome-ciclo`);
   - a URL base vem do ambiente, nunca literal (regra `hardcode-url`).
 
-Este modulo nasce sem gateway (`consome: []`). Para acrescentar um, crie
+Este modulo nasce sem gateway (`consumes: []`). Para acrescentar um, crie
 `core/gateways/<outro>.py` seguindo a forma abaixo e declare-o no manifesto:
 
     # core/gateways/financeiro.py

@@ -27,15 +27,15 @@ class ConfiguracaoModulo:
 
 
 def find_root_module(partida: Path | None = None) -> Path:
-    """Sobe ate achar o `modulo.json`. Funciona em dev, em teste e ja extraido."""
+    """Sobe ate achar o `module.json`. Funciona em dev, em teste e ja extraido."""
     atual = (partida or Path.cwd()).resolve()
     for _ in range(8):
-        if (atual / "modulo.json").exists():
+        if (atual / "module.json").exists():
             return atual
         if atual.parent == atual:
             break
         atual = atual.parent
-    raise RuntimeError(f"[config] modulo.json nao encontrado a partir de {partida or Path.cwd()}")
+    raise RuntimeError(f"[config] module.json nao encontrado a partir de {partida or Path.cwd()}")
 
 
 def _read_json(raiz: Path, relativo: str) -> Any:
@@ -93,7 +93,7 @@ def env_required(chave: str) -> str:
     valor = os.environ.get(chave)
     if valor is None or valor == "":
         raise RuntimeError(
-            f"[config] variavel obrigatoria ausente: {chave} (declare em modulo.json:envRequerido)"
+            f"[config] variavel obrigatoria ausente: {chave} (declare em module.json:envRequerido)"
         )
     return valor
 
@@ -101,12 +101,12 @@ def env_required(chave: str) -> str:
 def _check_env_required(manifesto: dict[str, Any]) -> None:
     """Importada direto pelo teste (plan-2.md N.4, `api.src.config._check_env_required`): sem
     `.env` real, TODA a suite rodaria sob `PYTEST_CURRENT_TEST` sem uma unica variavel de
-    `envRequerido` preenchida — sem o bypass abaixo, `load_configuration()` derrubaria a suite
+    `requiredEnv` preenchida — sem o bypass abaixo, `load_configuration()` derrubaria a suite
     inteira antes do primeiro teste. O preco declarado: "suite verde" nunca prova, por si so, que a
     fiacao de ambiente esta correta — quem prova isso e o boot real (`python verify.py`, boot de
     verdade) ou o teste direto, chamando esta funcao com `PYTEST_CURRENT_TEST` removido de proposito.
     """
-    faltando = [c for c in manifesto["envRequerido"] if os.environ.get(c) is None]
+    faltando = [c for c in manifesto["requiredEnv"] if os.environ.get(c) is None]
     if faltando and os.environ.get("PYTEST_CURRENT_TEST") is None:
         raise RuntimeError(
             f"[config] {manifesto['id']}: variaveis ausentes no ambiente: {', '.join(faltando)}"
@@ -116,7 +116,7 @@ def _check_env_required(manifesto: dict[str, Any]) -> None:
 def load_configuration(raiz: Path | None = None) -> ConfiguracaoModulo:
     """Carrega e valida TUDO no boot; qualquer falta derruba o processo antes de servir."""
     raiz_modulo = raiz or find_root_module()
-    manifesto = _read_json(raiz_modulo, "modulo.json")
+    manifesto = _read_json(raiz_modulo, "module.json")
     _resolve_environment(raiz_modulo)
     _check_env_required(manifesto)
 

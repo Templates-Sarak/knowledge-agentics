@@ -102,7 +102,7 @@ def _modules() -> list[Path]:
     base = RAIZ / "modules"
     if not base.exists():
         return []
-    return [p for p in sorted(base.iterdir()) if not p.name.startswith("_") and (p / "modulo.json").exists()]
+    return [p for p in sorted(base.iterdir()) if not p.name.startswith("_") and (p / "module.json").exists()]
 
 
 def _minimum_coverage() -> int | None:

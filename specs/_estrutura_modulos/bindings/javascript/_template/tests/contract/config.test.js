@@ -4,7 +4,7 @@
 // provar, sozinha, que a fiacao de ambiente esta correta — so o boot real prova. Este teste fecha
 // essa lacuna chamando a funcao com `NODE_ENV` DIFERENTE de "test", de proposito.
 //
-// Usa `<MODULO>_API_PORT` (ja declarada em modulo.json:envRequerido pelo molde) em vez de inventar
+// Usa `<MODULO>_API_PORT` (ja declarada em module.json:envRequerido pelo molde) em vez de inventar
 // uma chave nova: uma chave sintetica usada via `process.env[...]` seria acusada por `env-declarado`
 // — "usada no codigo e ausente do manifesto" — por um vazamento que nao tem nada a ver com este teste.
 import { afterEach, describe, expect, it } from 'vitest';
@@ -15,19 +15,19 @@ const CHAVE = '<MODULO>_API_PORT';
 
 const MANIFESTO_BASE = {
   id: '<modulo>',
-  nome: '<Modulo>',
-  versao: '0.1.0',
-  papel: 'dominio',
-  rotaBase: '/api/v1/<modulo>',
-  rotaWeb: null,
-  navegacao: null,
-  exportaResumo: false,
-  dados: { schema: '<escopo>', prefixo: '<modulo>_', tabelas: [] },
-  envRequerido: [CHAVE],
-  portas: [],
-  permissoes: [],
-  rotasPublicas: [],
-  camposSensiveis: [],
+  name: '<Modulo>',
+  version: '0.1.0',
+  role: 'domain',
+  basePath: '/api/v1/<modulo>',
+  webPath: null,
+  navigation: null,
+  exportsSummary: false,
+  data: { schema: '<escopo>', prefix: '<modulo>_', tables: [] },
+  requiredEnv: [CHAVE],
+  ports: [],
+  permissions: [],
+  publicRoutes: [],
+  sensitiveFields: [],
 };
 
 const NODE_ENV_ORIGINAL = process.env['NODE_ENV'];

@@ -1835,20 +1835,190 @@
       "novo": "verifyRoutesUnique",
       "tipo": "simbolo",
       "fase": "AD.2"
+    },
+    {
+      "antigo": "modulo.json",
+      "novo": "module.json",
+      "tipo": "arquivo",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "projeto.json",
+      "novo": "project.json",
+      "tipo": "arquivo",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "modulo.schema.json",
+      "novo": "module.schema.json",
+      "tipo": "arquivo",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "projeto.schema.json",
+      "novo": "project.schema.json",
+      "tipo": "arquivo",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "nome",
+      "novo": "name",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "versao",
+      "novo": "version",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "descricao",
+      "novo": "description",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "papel",
+      "novo": "role",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "rotaBase",
+      "novo": "basePath",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "rotaWeb",
+      "novo": "webPath",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "dados",
+      "novo": "data",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "prefixo",
+      "novo": "prefix",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "tabelas",
+      "novo": "tables",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "envRequerido",
+      "novo": "requiredEnv",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "portas",
+      "novo": "ports",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "consome",
+      "novo": "consumes",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "modulo",
+      "novo": "module",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "contrato",
+      "novo": "contract",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "porQue",
+      "novo": "why",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "permissoes",
+      "novo": "permissions",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "rotasPublicas",
+      "novo": "publicRoutes",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "camposSensiveis",
+      "novo": "sensitiveFields",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "navegacao",
+      "novo": "navigation",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "exportaResumo",
+      "novo": "exportsSummary",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "geraArtefato",
+      "novo": "generatesArtifact",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "conector",
+      "novo": "connector",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "icone",
+      "novo": "icon",
+      "tipo": "chave",
+      "fase": "AD.3"
+    },
+    {
+      "antigo": "ordem",
+      "novo": "order",
+      "tipo": "chave",
+      "fase": "AD.3"
     }
   ],
   "literaisProtegidos": [
     {
       "valor": "dominio",
-      "motivo": "valor do enum 'papel' no manifesto (dominio|gateway|conector, modulo.schema.json:15) — a CHAVE vira ingles em AD.3, o VALOR nao (fronteira Bloco AC, decisao 8). Colide com o item pasta 'dominio' quando aparece bare-string em criar-modulo.mjs (PAPEIS, default de --papel)."
+      "motivo": "valor do enum 'papel' no manifesto (dominio|gateway|conector, module.schema.json). CORRIGIDO no Bloco AD.3 — a motivo anterior dizia 'a CHAVE vira ingles, o VALOR nao'; decisoes.md §240 (ADR-009, decisao 8) e explicito no sentido contrario: 'Enum de valor estrutural (papel: dominio|gateway|conector -> role: domain|gateway|connector) segue a mesma traducao da pasta homonima (linha 1) — e o mesmo conceito, nao uma excecao'. O VALOR traduz JUNTO com a chave, em AD.3. Colide com o item pasta 'dominio' (AD.1) quando aparece bare-string em create-module.mjs (PAPEIS, default de --papel/--role) — protegido por marcador ('PAPEIS'/'papel' na linha) FORA de AD.3, suspenso EM AD.3 (e o proprio alvo).",
+      "protegidoExceto": ["AD.3"]
     },
     {
       "valor": "gateway",
-      "motivo": "mesmo enum de 'papel' — dominio|gateway|conector. Nao e item de pasta nenhum (nao ha renomeacao de 'gateway'), mas protegido pelo mesmo padrao de linha por simetria e clareza do relatorio."
+      "motivo": "mesmo enum de 'papel' — dominio|gateway|conector. Ja e ingles: nao ha item de rename (nem pasta nem chave) com antigo 'gateway', protegido pelo mesmo padrao de linha so por simetria e clareza do relatorio — nunca precisa de excecao de fase."
     },
     {
       "valor": "conector",
-      "motivo": "mesmo enum de 'papel'."
+      "motivo": "mesmo enum de 'papel' que 'dominio' (ver motivo acima) — VALOR traduz junto com a chave em AD.3 (decisoes.md §240, decisao 8). Sem item pasta correspondente (nunca houve pasta 'core/conector/'), mas precisa do mesmo par marcador+excecao-de-fase: 'conector' tambem e palavra comum o bastante pra aparecer fora do contexto de 'papel' (raro, mas o marcador custa pouco e mantem a simetria com 'dominio').",
+      "protegidoExceto": ["AD.3"]
     },
     {
       "valor": "contrato",
@@ -1868,6 +2038,14 @@
     {
       "valor": "verificar",
       "motivo": "achado ao abrir doutrina/ (Bloco AD.4): bare 'verificar' em prosa de doutrina e sempre o termo generico binding-agnostico ('o comando de verificacao local'), nunca uma citacao especifica do script `verify` de UM binding. A colisao perigosa e `verificar.py`, citado 8 vezes (Python nunca renomeou o arquivo) — sem protecao, o item simbolo 'verificar' casa dentro do nome do arquivo e o corrompe para `verify.py`. Protegido sempre: nenhum uso bare em doutrina/ hoje espera substituir."
+    },
+    {
+      "valor": "modulo",
+      "motivo": "'<modulo>'/'<MODULO>'/'<Modulo>' sao o MARCADOR de template que create-module.mjs:substituir/context.mjs:trocarMarcadores procuram e trocam pelo id/nome reais — mecanismo de scaffolding, nao chave de manifesto, mesmo usando a mesma palavra que consome[].modulo. Decisao do revisor (Bloco AD.3, revisao pos-round): a familia fica UNIFORME em portugues — '<MODULO>' e a convencao de prefixo de env documentada em toda a doutrina, dividir so '<modulo>' pro ingles seria pior que o problema. Fecha os dois lados (sem barra e com barra) junto de 'dentroDeMarcadorDeTemplate' em decidir() (ramo 'string'), que vence a precedencia de pareceCaminho — sem esse desvio, 'basePath: \"/api/v1/<modulo>\"' (tem barra) substituia pra '<module>' enquanto 'id: \"<modulo>\"' (sem barra) ficava protegido, os dois convivendo no mesmo module.json."
+    },
+    {
+      "valor": "permissoes",
+      "motivo": "achado na verificacao de pendencias pos-round do Bloco AD.3: 'request.state.permissoes' (Python, middlewares.py) e o MESMO conceito fora-de-escopo que 'req.permissoes' em TS/JS — permissoes da REQUISICAO autenticada, nunca a chave do manifesto. A atribuicao (pontilhada, sem base conhecida) ficava protegida de graca; a LEITURA por 'getattr(request.state, \"permissoes\", [])' e string-sem-espaco, substituia por padrao — os dois lados do mesmo estado divergiam, toda checagem de permissao lia lista vazia (Bloco K, binding Python, 'permissao insuficiente' em toda rota autenticada). Protegido SO com o marcador 'request.state' na linha: 'permissoes' continua substituindo em todo outro contexto (os 19 lugares que ja fecharam certo)."
     }
   ]
 }

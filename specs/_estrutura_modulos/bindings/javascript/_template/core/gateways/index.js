@@ -6,11 +6,11 @@
 //
 //   - arquivo aqui fala EXCLUSIVAMENTE HTTP (regra `gateway-http`);
 //     nenhum SQL, nenhuma conexao, nenhum acesso a tabela — nem a propria;
-//   - cada arquivo aqui TEM entrada em modulo.json:consome (regra `gateway-declarado`);
-//   - o grafo de `consome` nao pode ter ciclo (regra `consome-ciclo`);
+//   - cada arquivo aqui TEM entrada em module.json:consome (regra `gateway-declarado`);
+//   - o grafo de `consumes` nao pode ter ciclo (regra `consome-ciclo`);
 //   - a URL base vem de .env, nunca literal (regra `hardcode-url`).
 //
-// Este modulo nasce sem gateway (`consome: []`). Para acrescentar um, crie
+// Este modulo nasce sem gateway (`consumes: []`). Para acrescentar um, crie
 // `core/gateways/<outro>.js` seguindo a forma abaixo e declare-o no manifesto.
 //
 //   // core/gateways/catalogo.js

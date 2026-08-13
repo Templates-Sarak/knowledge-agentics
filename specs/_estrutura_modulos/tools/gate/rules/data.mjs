@@ -28,27 +28,27 @@ export default [
   {
     id: 'schema-nao-public',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      const schema = ctx.manifesto?.dados?.schema;
-      if (schema === undefined || schema === '') return ['dados.schema nao declarado'];
-      if (schema.toLowerCase() === 'public') return ['dados.schema e "public" — proibido (specs/arquitetura/02 §6.1)'];
+      const schema = ctx.manifesto?.data?.schema;
+      if (schema === undefined || schema === '') return ['data.schema nao declarado'];
+      if (schema.toLowerCase() === 'public') return ['data.schema e "public" — proibido (specs/arquitetura/02 §6.1)'];
       return [];
     },
   },
   {
     id: 'tabela-prefixo',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      const dados = ctx.manifesto?.dados;
-      if (dados === undefined) return [];
+      const data = ctx.manifesto?.data;
+      if (data === undefined) return [];
       const esperado = `${ctx.manifesto.id}_`;
       const achados = [];
-      if (dados.prefixo !== esperado) {
-        achados.push(`dados.prefixo "${dados.prefixo}" deveria ser "${esperado}"`);
+      if (data.prefix !== esperado) {
+        achados.push(`data.prefix "${data.prefix}" deveria ser "${esperado}"`);
       }
-      for (const tabela of dados.tabelas ?? []) {
+      for (const tabela of data.tables ?? []) {
         if (!tabela.startsWith(esperado)) achados.push(`tabela "${tabela}" sem o prefixo "${esperado}"`);
       }
       return achados;
@@ -73,7 +73,7 @@ export default [
   {
     id: 'migrations',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const migrations = ctx.sql.filter((a) => a.rel.startsWith('database/migrations/'));
       const achados = [];
@@ -86,7 +86,7 @@ export default [
           achados.push(`database/migrations/${nome}: sem bloco "-- rollback"`);
         }
       }
-      const tabelas = ctx.manifesto?.dados?.tabelas ?? [];
+      const tabelas = ctx.manifesto?.data?.tables ?? [];
       if (tabelas.length > 0 && migrations.length === 0) {
         achados.push('modulo declara tabelas mas nao tem database/migrations/');
       }
@@ -95,9 +95,9 @@ export default [
   },
   {
     /**
-     * `dados.tabelas` é declaração, e até aqui nada a confrontava com o disco — o
+     * `data.tables` é declaração, e até aqui nada a confrontava com o disco — o
      * `artefato-declarado` chega a justificar deixar `database/` de fora dizendo que *"quem declara
-     * banco é `dados.tabelas`"*, o que só é verdade se alguém cobrar isso. Agora cobra.
+     * banco é `data.tables`"*, o que só é verdade se alguém cobrar isso. Agora cobra.
      *
      * A metade "declara tabelas e não tem `database/migrations/`" já era do `migrations`, e continua
      * dele: quando NÃO HÁ SQL nenhum, esta regra cala. Sem isso, um módulo com tabelas e sem banco
@@ -106,15 +106,15 @@ export default [
      */
     id: 'tabela-declarada',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      const tabelas = ctx.manifesto?.dados?.tabelas ?? [];
+      const tabelas = ctx.manifesto?.data?.tables ?? [];
       // Ausencia TOTAL de SQL e do `migrations` — um defeito, uma mensagem.
       if (tabelas.length === 0 || ctx.sql.length === 0) return [];
       const sql = juntarSql(ctx);
       return tabelas
         .filter((tabela) => !criaTabela(sql, tabela))
-        .map((tabela) => `tabela "${tabela}" declarada em dados.tabelas e sem CREATE TABLE no SQL do`
+        .map((tabela) => `tabela "${tabela}" declarada em data.tables e sem CREATE TABLE no SQL do`
           + ' modulo — declaracao sem consequencia: o schema real nao tem a tabela que o manifesto'
           + ' promete. Crie a migration, ou remova a tabela da declaracao');
     },
@@ -122,10 +122,10 @@ export default [
   {
     id: 'rls',
     nivel: 'aviso',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const sql = juntarSql(ctx);
-      return (ctx.manifesto?.dados?.tabelas ?? [])
+      return (ctx.manifesto?.data?.tables ?? [])
         // Tabela que NAO EXISTE no SQL e do `tabela-declarada`, e a fronteira e explicita: sem
         // isto, a tabela ausente caia aqui com a mensagem errada — "sem RLS", quando o problema e
         // que ela nao existe. Um defeito, uma mensagem, e a mensagem certa.

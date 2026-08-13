@@ -48,7 +48,7 @@ chama `specs/arquitetura/`.** É o mesmo arquivo, instalado.
   tools/       o gate e as ferramentas de CI
   .githooks/         pre-commit · pre-push
   specs/arquitetura/ a lei instalada
-  projeto.json       o manifesto da raiz
+  project.json       o manifesto da raiz
   .env               segredo real (nunca versionado) · .env.example versionado
 ```
 
@@ -64,7 +64,7 @@ modules/  ──→  packages/ports/  ←──  adapters/
 
 ```
 modules/<id>/
-  modulo.json      O MANIFESTO — a fonte de verdade sobre o módulo
+  module.json      O MANIFESTO — a fonte de verdade sobre o módulo
   contract/        openapi.yaml — o contrato da API
   api/src/         a borda HTTP: rotas, mapeadores, middlewares, logger, erros
   core/
@@ -84,9 +84,9 @@ modules/<id>/
 
 ### As três leis que valem sempre
 
-1. **Módulo não importa módulo.** Vizinho só por HTTP, declarado em `modulo.json:consome`.
+1. **Módulo não importa módulo.** Vizinho só por HTTP, declarado em `module.json:consumes`.
 2. **Módulo não importa adapter.** O adapter é **injetado** pela composição.
-3. **Módulo não toca a fatia de dados alheia.** Cada um tem `schema` e `prefixo` próprios.
+3. **Módulo não toca a fatia de dados alheia.** Cada um tem `schema` e `prefix` próprios.
 
 ---
 
@@ -97,7 +97,7 @@ está o comando que o imprime.
 
 | Camada | O que faz | Confira com |
 |---|---|---|
-| **Gate** | **74 regras**, escopos `modulo` · `global` · `root`, 7 famílias. Estático, zero dependência, **nunca executa** — por isso viaja dentro do módulo extraído | `node tools/gate/validate.mjs --todos` |
+| **Gate** | **74 regras**, escopos `module` · `global` · `root`, 7 famílias. Estático, zero dependência, **nunca executa** — por isso viaja dentro do módulo extraído | `node tools/gate/validate.mjs --todos` |
 | **Autoteste do gate** | prova o verificador: o molde conforme dá **zero** erro, e cada mutação produz **exatamente** o id esperado. Id extra reprova | `node tools/gate/tests/run.mjs --binding <b>` |
 | **Coerência do gerado** | `.env.example` × manifestos; schemas de portas; config do linter derivada de `thresholds.mjs`, byte a byte | `--conferir` nas três ferramentas |
 | **Linguagem** | formatador · linter (config **gerada** da lei) · tipos · testes por módulo | `npm run verify` |
@@ -218,7 +218,7 @@ artefato instalado**.
 ## 5. Como criar um novo módulo
 
 ```sh
-node tools/create-module.mjs <id> [--papel dominio|gateway|conector] [--sem-artefato] [--sem-web]
+node tools/create-module.mjs <id> [--role dominio|gateway|conector] [--sem-artefato] [--sem-web]
 ```
 
 O `id` é `kebab-case` e **tem de bater com o nome da pasta** — o gate cobra.
@@ -233,7 +233,7 @@ escreve o manifesto, sincroniza `.env`/`.env.example` e **roda o gate no módulo
 3. **Escrever o contrato antes do código.** `contract/openapi.yaml` é a fonte; o gate cobra que rota do
    código e rota da spec coincidam **nos dois sentidos**.
 4. **Domínio primeiro, borda depois.** `core/domain/` não faz I/O; o que precisa de fora vira **porta**
-   em `core/ports/`, declarada em `modulo.json:portas` e escolhida em `config/ports.json`.
+   em `core/ports/`, declarada em `module.json:ports` e escolhida em `config/ports.json`.
 5. **Migrations** em `database/migrations/NNNN-verbo-objeto.sql`, com o bloco `-- rollback` — e ele é
    **executado** por `npm run migrations`, não é enfeite.
 6. **Testes** em `tests/`, com dublês em `tests/fixtures/`. Nada de rede nem banco: se um teste do
@@ -247,28 +247,28 @@ Todos os 19 são obrigatórios, e **cada um tem verificador**.
 | Campo | O que é | Cuidado |
 |---|---|---|
 | `id` | kebab-case, igual ao nome da pasta | o gate compara |
-| `nome` · `versao` · `descricao` | identificação | — |
-| `papel` | `dominio` · `gateway` · `conector` | fecha o vocabulário |
+| `name` · `version` · `description` | identificação | — |
+| `role` | `domain` · `gateway` · `connector` | fecha o vocabulário |
 | `binding` | a linguagem do módulo | um projeto, um binding |
-| `rotaBase` | `/api/v1/<id>` | tem de bater com `servers[0].url` do contrato |
-| `rotaWeb` | `/<id>` | a rota do front |
-| `dados` | `schema` · `prefixo` · `tabelas` | **nunca** `public`; toda tabela prefixada e declarada |
-| `envRequerido` | as chaves de ambiente | ausente **derruba o boot** — nunca default silencioso |
-| `portas` | as interfaces que o módulo exige | cada uma precisa de provedor em `config/ports.json` |
-| `consome` | `{modulo, contract, porQue}` | a rota e o método têm de existir no dono |
+| `basePath` | `/api/v1/<id>` | tem de bater com `servers[0].url` do contrato |
+| `webPath` | `/<id>` | a rota do front |
+| `data` | `schema` · `prefix` · `tables` | **nunca** `public`; toda tabela prefixada e declarada |
+| `requiredEnv` | as chaves de ambiente | ausente **derruba o boot** — nunca default silencioso |
+| `ports` | as interfaces que o módulo exige | cada uma precisa de provedor em `config/ports.json` |
+| `consumes` | `{module, contract, why}` | a rota e o método têm de existir no dono |
 | `ui` | `modo: proprio \| kit` | em `kit`, nada de biblioteca de UI bruta — e o `packages/ui-kit` é convenção **do projeto**, o template não o entrega |
-| `permissoes` | `<id>:<verbo>` | vêm do manifesto, nunca de literal no código |
-| `rotasPublicas` | as que passam sem token | tudo o mais é negado por padrão |
-| `camposSensiveis` | nomes que não podem vazar | nem em resposta, nem em log |
-| `navegacao` | `label` · `icone` · `ordem` | obrigatório quando há `rotaWeb` |
-| `exportaResumo` | entra no dashboard cross-módulo | se `true`, `GET /resumo` declara `total` |
-| `geraArtefato` | tem `core/engine`, `core/templates`, `generated/` | bidirecional: `false` proíbe as três |
+| `permissions` | `<id>:<verbo>` | vêm do manifesto, nunca de literal no código |
+| `publicRoutes` | as que passam sem token | tudo o mais é negado por padrão |
+| `sensitiveFields` | nomes que não podem vazar | nem em resposta, nem em log |
+| `navigation` | `label` · `icon` · `order` | obrigatório quando há `webPath` |
+| `exportsSummary` | entra no dashboard cross-módulo | se `true`, `GET /resumo` declara `total` |
+| `generatesArtifact` | tem `core/engine`, `core/templates`, `generated/` | bidirecional: `false` proíbe as três |
 
 Três rotas são **obrigatórias em todo módulo**: `GET /health`, `GET /meta`, `GET /resumo`.
 
 ### 5.3 Os erros que o gate mais pega em módulo novo
 
-- importar outro módulo, ou um adapter — use `consome` (HTTP) ou uma **porta**;
+- importar outro módulo, ou um adapter — use `consumes` (HTTP) ou uma **porta**;
 - porta, permissão ou tabela usada e **não declarada** no manifesto — ou o inverso, declarada e sem uso;
 - rota no código e não no contrato, ou no contrato e não no código;
 - `process.env` fora do carregador de config, ou default silencioso (`?? 3000`);

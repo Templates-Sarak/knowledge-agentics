@@ -73,9 +73,9 @@ function requiredRoutes(router: Router, { deps, config }: Opcoes): void {
  * Manifesto incompleto derruba o boot aqui — melhor que servir rota sem autorizacao.
  */
 function permissionsFor(config: ConfiguracaoModulo): { ler: string; escrever: string } {
-  const [ler, escrever] = config.manifesto.permissoes;
+  const [ler, escrever] = config.manifesto.permissions;
   if (ler === undefined || escrever === undefined) {
-    throw new Error('[rotas] modulo.json:permissoes precisa declarar leitura e escrita');
+    throw new Error('[rotas] module.json:permissoes precisa declarar leitura e escrita');
   }
   return { ler, escrever };
 }

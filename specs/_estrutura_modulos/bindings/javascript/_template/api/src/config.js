@@ -12,16 +12,16 @@ function readText(caminho) {
   return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
 }
 
-/** Sobe a partir de um ponto ate achar o `modulo.json`. Funciona em dev, em teste e ja extraido. */
+/** Sobe a partir de um ponto ate achar o `module.json`. Funciona em dev, em teste e ja extraido. */
 export function findRootModule(partida = process.cwd()) {
   let atual = partida;
   for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'modulo.json'))) return atual;
+    if (existsSync(join(atual, 'module.json'))) return atual;
     const pai = dirname(atual);
     if (pai === atual) break;
     atual = pai;
   }
-  throw new Error(`[config] modulo.json nao encontrado a partir de "${partida}"`);
+  throw new Error(`[config] module.json nao encontrado a partir de "${partida}"`);
 }
 
 function readJson(raiz, relativo) {
@@ -77,21 +77,21 @@ function resolveEnvironment(raizModulo) {
 export function envRequired(chave) {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
-    throw new Error(`[config] variavel obrigatoria ausente: ${chave} (declare em modulo.json:envRequerido)`);
+    throw new Error(`[config] variavel obrigatoria ausente: ${chave} (declare em module.json:envRequerido)`);
   }
   return valor;
 }
 
 /**
  * Exportada só para o teste direto (plan-2.md N.4): sem `.env` real, TODO teste rodaria sob
- * `NODE_ENV=test` sem uma unica variavel de `envRequerido` preenchida — e sem o bypass abaixo,
+ * `NODE_ENV=test` sem uma unica variavel de `requiredEnv` preenchida — e sem o bypass abaixo,
  * `loadConfiguration()` derrubaria a suite inteira antes do primeiro `it()`. O preco declarado:
  * "suite verde" nunca prova, por si so, que a fiacao de ambiente esta correta — quem prova isso e o
  * boot real (`npm run start`) ou este mesmo teste, chamando a funcao com `NODE_ENV` diferente de
  * `test` de proposito.
  */
 export function checkEnvRequired(manifesto) {
-  const faltando = manifesto.envRequerido.filter((chave) => process.env[chave] === undefined);
+  const faltando = manifesto.requiredEnv.filter((chave) => process.env[chave] === undefined);
   if (faltando.length > 0 && process.env['NODE_ENV'] !== 'test') {
     throw new Error(`[config] ${manifesto.id}: variaveis ausentes no ambiente: ${faltando.join(', ')}`);
   }
@@ -99,7 +99,7 @@ export function checkEnvRequired(manifesto) {
 
 /** Carrega e valida TUDO no boot; qualquer falta derruba o processo antes de servir. */
 export function loadConfiguration(raiz = findRootModule()) {
-  const manifesto = readJson(raiz, 'modulo.json');
+  const manifesto = readJson(raiz, 'module.json');
   resolveEnvironment(raiz);
   checkEnvRequired(manifesto);
 

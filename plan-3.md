@@ -250,25 +250,25 @@ proteção — corretos nos dois sentidos em cada um.
 > *"é o que mais pesa"* — e sem seção própria. Ele é, sozinho, **um JSON Schema inteiro + ~40 casos de
 > regra**, porque quase toda regra do gate lê do manifesto. Merecia estar escrito.
 
-- [ ] **`modulo.json` → `module.json`** e as **19 chaves**: `nome→name` · `versao→version` ·
+- [x] **`modulo.json` → `module.json`** e as **19 chaves**: `nome→name` · `versao→version` ·
       `descricao→description` · `papel→role` · `rotaBase→basePath` · `rotaWeb→webPath` · `dados→data`
       (`schema` · `prefixo→prefix` · `tabelas→tables`) · `envRequerido→requiredEnv` · `portas→ports` ·
       `consome→consumes` (`modulo→module` · `contrato→contract` · `porQue→why`) ·
       `permissoes→permissions` · `rotasPublicas→publicRoutes` · `camposSensiveis→sensitiveFields` ·
       `navegacao→navigation` (`label` · `icone→icon` · `ordem→order`) · `exportaResumo→exportsSummary` ·
       `geraArtefato→generatesArtifact`. `id` e `binding` já são inglês
-- [ ] **`projeto.json` → `project.json`** e `envRequerido→requiredEnv` — o schema da raiz tem
+- [x] **`projeto.json` → `project.json`** e `envRequerido→requiredEnv` — o schema da raiz tem
       `additionalProperties: false`, então ele reprova sozinho se a chave nova não for declarada. **Use
       isso como trava:** renomear o schema antes do manifesto faz o gate acusar, e é a contraprova barata
-- [ ] **Os dois schemas** (`modulo.schema.json`, `projeto.schema.json`) e todo `$comentario` que os cita
-- [ ] **As ~40 regras que leem manifesto** — `ctx.manifesto.<chave>` em `estrutura.mjs`,
+- [x] **Os dois schemas** (`modulo.schema.json`, `projeto.schema.json`) e todo `$comentario` que os cita
+- [x] **As ~40 regras que leem manifesto** — `ctx.manifesto.<chave>` em `estrutura.mjs`,
       `configuracao.mjs`, `contrato.mjs`, `dados.mjs`, `isolamento.mjs`, `operacao.mjs`
-- [ ] **`casos.mjs`** — todo caso que muta manifesto (`m.manifesto.<chave>`), que é a maioria
-- [ ] **As ferramentas que escrevem ou leem manifesto:** `criar-modulo` (escreve), `sincronizar-env`
+- [x] **`casos.mjs`** — todo caso que muta manifesto (`m.manifesto.<chave>`), que é a maioria
+- [x] **As ferramentas que escrevem ou leem manifesto:** `criar-modulo` (escreve), `sincronizar-env`
       (lê `envRequerido`), `afetados` (lê `consome`), `composicao.*` (lê `portas`, `rotaBase`,
       `envRequerido`), `empacotar`, `contrato-compativel`, `criar-adapter`
-- [ ] **A tabela campo-a-campo do `01-modulo.md` §3.1** e o §5.2 do `funcionamento-esperado.md`
-- [ ] **O que NÃO muda, e a fronteira precisa estar clara no diff:** `dados.schema` continua com valor
+- [x] **A tabela campo-a-campo do `01-modulo.md` §3.1** e o §5.2 do `funcionamento-esperado.md`
+- [x] **O que NÃO muda, e a fronteira precisa estar clara no diff:** `dados.schema` continua com valor
       em português (nome de schema é **dado**, decisão 10), e `permissoes` continua com valores
       `<id>:<verbo>` em português (`catalogo:ler`) — **a chave vira inglês, o valor não**
 
@@ -287,7 +287,7 @@ proteção — corretos nos dois sentidos em cada um.
 > ~130 sem tocar nos 331 — e é exatamente por isso que o mecanismo tem de ser por contexto, nunca por
 > liberação geral de chave nua.
 
-- [ ] **As ~130 chaves de manifesto em objeto literal sem aspas**, com mecanismo por contexto e caso de
+- [x] **As ~130 chaves de manifesto em objeto literal sem aspas**, com mecanismo por contexto e caso de
       autoteste nos dois sentidos — a chave de manifesto substitui, `descricao:` de caso de teste recusa
 
 **Trava específica deste bloco:** o **JSON Schema é o verificador mais barato que existe aqui.** Renomeie

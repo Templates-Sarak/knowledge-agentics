@@ -36,7 +36,7 @@ def test_health_responde_sem_token(client: TestClient) -> None:
 
 
 def test_meta_ecoa_o_manifesto(client: TestClient) -> None:
-    assert client.get(f"{ROTA_BASE}/meta").json()["rotaBase"] == ROTA_BASE
+    assert client.get(f"{ROTA_BASE}/meta").json()["basePath"] == ROTA_BASE
 
 
 def test_resumo_devolve_a_contagem(client: TestClient) -> None:

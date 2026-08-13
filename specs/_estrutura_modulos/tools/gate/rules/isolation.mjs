@@ -236,7 +236,7 @@ function importaAdapter(alvo) {
  * **A distinção que sustenta estas três regras: IMPORT é dependência; leitura de arquivo é
  * descoberta.** Só o que `importesDe` extrai chega aqui, e ele extrai forma de import — nunca
  * `readdirSync(join(root, 'modules'))`. É por isso que `src/composicao.*`, que alcança todos os
- * módulos lendo o `modulo.json` de cada pasta, passa limpo: import amarra em tempo de compilação e mata a
+ * módulos lendo o `module.json` de cada pasta, passa limpo: import amarra em tempo de compilação e mata a
  * substituição; leitura de arquivo é o mecanismo que permite acrescentar módulo sem tocar na
  * composição. Uma regra que procurasse a string `modules` acusaria o próprio desenho que protege.
  */
@@ -324,7 +324,7 @@ export default [
   {
     id: 'import-adapter',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -342,7 +342,7 @@ export default [
   {
     id: 'sdk-fornecedor',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -358,7 +358,7 @@ export default [
   {
     id: 'gateway-http',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const proibidos = new RegExp(`\\b(${SQL_FONTE}|createClient|new\\s+Pool|\\.query\\()`, 'i');
       return ctx.codigo
@@ -371,15 +371,15 @@ export default [
   {
     id: 'gateway-declarado',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      const consumidos = (ctx.manifesto?.consome ?? []).map((c) => c.modulo);
+      const consumidos = (ctx.manifesto?.consumes ?? []).map((c) => c.module);
       // A exclusao de barril mora em `gatewaysDe` — ver o import no topo.
       const arquivos = gatewaysDe(ctx);
 
       const achados = arquivos
         .filter((nome) => !consumidos.includes(nome))
-        .map((nome) => `core/gateways/${nome}: sem entrada em modulo.json:consome`);
+        .map((nome) => `core/gateways/${nome}: sem entrada em module.json:consumes`);
 
       return achados.concat(
         consumidos
@@ -396,8 +396,8 @@ export default [
       const donos = new Map(contextos.map((c) => [c.idPasta, c]));
       const achados = [];
       for (const ctx of contextos) {
-        for (const entrada of ctx.manifesto?.consome ?? []) {
-          const falha = conferirConsumo(donos.get(entrada.modulo) ?? null, entrada);
+        for (const entrada of ctx.manifesto?.consumes ?? []) {
+          const falha = conferirConsumo(donos.get(entrada.module) ?? null, entrada);
           if (falha !== null) achados.push({ modulo: ctx.idPasta, mensagem: falha });
         }
       }
@@ -410,7 +410,7 @@ export default [
     escopo: 'global',
     verificar(contextos) {
       const grafo = new Map(
-        contextos.map((c) => [c.idPasta, (c.manifesto?.consome ?? []).map((x) => x.modulo)]),
+        contextos.map((c) => [c.idPasta, (c.manifesto?.consumes ?? []).map((x) => x.module)]),
       );
       const achados = [];
       for (const inicio of grafo.keys()) {
@@ -423,7 +423,7 @@ export default [
   {
     id: 'ui-kit',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       if (!modoKitSeAplica(ctx)) return [];
 
@@ -514,7 +514,7 @@ export default [
     /**
      * A composição DESCOBRE os módulos, nunca os importa — e a diferença entre as duas é a regra.
      *
-     * `src/composicao` alcança todos os módulos por `readdirSync(modules/)` + `modulo.json`, e
+     * `src/composicao` alcança todos os módulos por `readdirSync(modules/)` + `module.json`, e
      * isso é a doutrina funcionando (00-arquitetura.md §3.4). Import é o oposto: fixa a lista em
      * tempo de compilação, e acrescentar um módulo passaria a exigir editar este arquivo.
      *
@@ -529,14 +529,14 @@ export default [
       return importesDaArea(projeto, 'src/')
         .filter(({ area }) => area === 'modules')
         .map(({ rel, alvo }) => `${rel}: importa de modules/ ("${alvo}") — a composicao DESCOBRE os`
-          + ' modulos lendo modules/*/modulo.json, nunca por import: o import fixa a lista em tempo'
+          + ' modulos lendo modules/*/module.json, nunca por import: o import fixa a lista em tempo'
           + ' de compilacao, e acrescentar um modulo passaria a exigir editar este arquivo');
     },
   },
   {
     id: 'ui-token',
     nivel: 'aviso',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       if (!modoKitSeAplica(ctx)) return [];
       const achados = [];
@@ -559,13 +559,13 @@ export default [
 ];
 
 /**
- * Confere UMA entrada de `consome` contra o contrato do módulo dono. `null` = conforme.
+ * Confere UMA entrada de `consumes` contra o contrato do módulo dono. `null` = conforme.
  *
  * Nunca aprova por omissão: dono inexistente e dono sem spec viram achado, e não silêncio. É o
  * §7 aplicado — a regra diz que não conseguiu verificar, em vez de deixar passar.
  */
 function conferirConsumo(dono, entrada) {
-  const alvo = `"${entrada.contrato}" (modulo dono "${entrada.modulo}")`;
+  const alvo = `"${entrada.contract}" (modulo dono "${entrada.module}")`;
   if (dono === null) return `consome ${alvo}: o modulo dono nao existe em modules/`;
 
   const spec = specDe(dono);
@@ -579,7 +579,7 @@ function conferirConsumo(dono, entrada) {
 
   // Forma garantida pelo schema (`^(GET|POST|PATCH|PUT|DELETE) /`); manifesto torto e do
   // `schema-manifesto`, nao desta regra — nao acusamos duas vezes o mesmo defeito.
-  const [metodo, caminho] = entrada.contrato.split(/\s+/);
+  const [metodo, caminho] = entrada.contract.split(/\s+/);
   if (caminho === undefined) return null;
 
   const operacoes = operacoesDaSpec(spec.conteudo);

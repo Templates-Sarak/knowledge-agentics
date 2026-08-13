@@ -4,7 +4,7 @@ Nao e um adapter "de brinquedo": e o que permite os testes de todo modulo rodare
 banco. Sem variante de memoria para cada porta, o desacoplamento nao e verificavel — e o que nao
 e verificavel e folclore (ADR-003, specs/adr/000-decisoes-do-template.md).
 
-Adapter NAO conhece dominio: nao existe `if modulo == "catalogo"` aqui dentro.
+Adapter NAO conhece dominio: nao existe `if module == "catalogo"` aqui dentro.
 """
 
 from __future__ import annotations

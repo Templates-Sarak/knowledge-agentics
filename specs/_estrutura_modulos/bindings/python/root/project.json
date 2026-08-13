@@ -1,0 +1,3 @@
+{
+  "requiredEnv": ["RAIZ_API_PORT"]
+}

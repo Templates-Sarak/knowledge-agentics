@@ -41,9 +41,9 @@ function readBody(corpo) {
 
 /** As permissoes vem do manifesto, nunca de literal no codigo. */
 function permissionsFor(config) {
-  const [ler, escrever] = config.manifesto.permissoes;
+  const [ler, escrever] = config.manifesto.permissions;
   if (ler === undefined || escrever === undefined) {
-    throw new Error('[rotas] modulo.json:permissoes precisa declarar leitura e escrita');
+    throw new Error('[rotas] module.json:permissoes precisa declarar leitura e escrita');
   }
   return { ler, escrever };
 }

@@ -1,7 +1,7 @@
 // Raiz de composicao — o WIRING, e nada alem. Lei dona: specs/arquitetura/00-arquitetura.md §3.4.
 //
 // O que este arquivo faz:
-//   1. DESCOBRE os modulos lendo modules/*/modulo.json — nao existe lista fixa de modulos no codigo;
+//   1. DESCOBRE os modulos lendo modules/*/module.json — nao existe lista fixa de modulos no codigo;
 //   2. resolve as portas de cada um a partir do config/ports.json DELE;
 //   3. INJETA os adapters e MONTA cada api/ sob a rotaBase do manifesto — um Express por modulo,
 //      pendurado no Express raiz sob a propria rotaBase (nunca em "/": middleware de modulo roda
@@ -34,10 +34,10 @@ import type { Auth } from '../packages/ports/index.js';
 
 export interface ManifestoDescoberto {
   id: string;
-  nome: string;
-  rotaBase: string;
-  papel: string;
-  portas: string[];
+  name: string;
+  basePath: string;
+  role: string;
+  ports: string[];
   pasta: string;
 }
 
@@ -45,8 +45,8 @@ export interface ManifestoDescoberto {
  * Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so.
  *
  * Recebe o `ManifestoDescoberto` do modulo que esta compondo — `memory` ignora (nao precisa saber
- * QUEM a chamou), `postgres` usa (`modulo.id` para a chave de ambiente, `modulo.pasta` para ler
- * `dados.schema`/`dados.prefixo` do proprio manifesto). Sem isto, um adapter que precisa de contexto
+ * QUEM a chamou), `postgres` usa (`module.id` para a chave de ambiente, `module.pasta` para ler
+ * `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um adapter que precisa de contexto
  * por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
  */
 const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {
@@ -65,10 +65,10 @@ export function discoverModules(raiz: string): ManifestoDescoberto[] {
 
   return readdirSync(base)
     .filter((nome) => !nome.startsWith('_'))
-    .filter((nome) => existsSync(join(base, nome, 'modulo.json')))
+    .filter((nome) => existsSync(join(base, nome, 'module.json')))
     .map((nome) => {
       const pasta = join(base, nome);
-      const manifesto = JSON.parse(readFileSync(join(pasta, 'modulo.json'), 'utf8')) as ManifestoDescoberto;
+      const manifesto = JSON.parse(readFileSync(join(pasta, 'module.json'), 'utf8')) as ManifestoDescoberto;
       return { ...manifesto, pasta };
     });
 }
@@ -84,7 +84,7 @@ export function resolveDependencies(modulo: ManifestoDescoberto): Record<string,
   >;
   const dependencias: Record<string, unknown> = {};
 
-  for (const porta of modulo.portas) {
+  for (const porta of modulo.ports) {
     const provedor = escolhas[porta];
     const fabrica = FABRICAS[porta]?.[provedor ?? ''];
     if (fabrica === undefined) {
@@ -99,7 +99,7 @@ export function resolveDependencies(modulo: ManifestoDescoberto): Record<string,
 
 /**
  * Auth do sistema. Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem
- * token estao declaradas em `rotasPublicas` de cada modulo, e so elas passam.
+ * token estao declaradas em `publicRoutes` de cada modulo, e so elas passam.
  */
 export function resolveAuth(): Auth {
   return createDenyingAuth();
@@ -113,7 +113,7 @@ export function resolveAuth(): Auth {
 export function verifyRoutesUnique(modulos: ManifestoDescoberto[]): void {
   const porRota = new Map<string, string[]>();
   for (const modulo of modulos) {
-    porRota.set(modulo.rotaBase, [...(porRota.get(modulo.rotaBase) ?? []), modulo.id]);
+    porRota.set(modulo.basePath, [...(porRota.get(modulo.basePath) ?? []), modulo.id]);
   }
   const colisoes = [...porRota.entries()].filter(([, ids]) => ids.length > 1);
   if (colisoes.length === 0) return;
@@ -176,7 +176,7 @@ function loadEnvRoot(raiz: string): void {
 }
 
 /**
- * Monta o app do PROCESSO: um Express por modulo, cada um montado sob a PROPRIA `rotaBase` — nunca
+ * Monta o app do PROCESSO: um Express por modulo, cada um montado sob a PROPRIA `basePath` — nunca
  * em "/". `createApp`, quando composto (recebe `root`), ja sabe que o Express externo tira o prefixo
  * antes de entregar a requisicao a ele; aqui so se ESCOLHE onde montar, nenhuma rota e remontada.
  */
@@ -195,7 +195,7 @@ export async function buildSystem(raiz: string): Promise<Express> {
     // PRIMEIRO modulo responderia (errado) por caminho de OUTRO modulo antes de "no match" —
     // medido: 401 na rota publica de um segundo modulo, negada pela auth do primeiro. Montando na
     // rotaBase, o Express so entrega ao app do modulo a requisicao que ja e dele.
-    app.use(modulo.rotaBase, api.createApp({ deps, auth, raiz: modulo.pasta }));
+    app.use(modulo.basePath, api.createApp({ deps, auth, raiz: modulo.pasta }));
   }
   return app;
 }
@@ -205,7 +205,7 @@ function envRequiredRoot(chave: string): string {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
-      `[composicao] variavel obrigatoria ausente: ${chave} (declare em projeto.json:envRequerido)`,
+      `[composicao] variavel obrigatoria ausente: ${chave} (declare em project.json:envRequerido)`,
     );
   }
   return valor;
@@ -233,8 +233,8 @@ export async function startSystem(raiz: string): Promise<Server> {
 // provados pela subida real de processo (relatorio do bloco), nao por fixture em memoria.
 // ================================================================================================
 
-function testManifest(id: string, rotaBase: string): ManifestoDescoberto {
-  return { id, nome: id, rotaBase, papel: 'dominio', portas: [], pasta: `/fake/${id}` };
+function testManifest(id: string, basePath: string): ManifestoDescoberto {
+  return { id, name: id, basePath, role: 'domain', ports: [], pasta: `/fake/${id}` };
 }
 
 function uniqueRoutesCases(): Array<{ nome: string; modulos: ManifestoDescoberto[]; esperaErro: boolean }> {

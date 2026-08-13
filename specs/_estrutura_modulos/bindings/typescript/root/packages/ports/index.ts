@@ -35,10 +35,10 @@ export class ErroPorta extends Error {
 }
 
 /**
- * Nomes validos de porta. `config/ports.json` e `modulo.json:ports` usam este vocabulario.
+ * Nomes validos de porta. `config/ports.json` e `module.json:ports` usam este vocabulario.
  *
  * Fonte NORMATIVA: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do gate
- * (`config-ports.schema.json`, `modulo.schema.json:ports.items.enum`) sao GERADOS dela. Esta
+ * (`config-ports.schema.json`, `module.schema.json:ports.items.enum`) sao GERADOS dela. Esta
  * lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
  * mantenha as duas iguais a mao (plan-2.md Bloco S). `fila` SAIU do vocabulario: arrasta retry,
  * dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz

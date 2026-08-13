@@ -42,7 +42,7 @@ def to_contract(registro: Registro) -> dict[str, Any]:
     """dominio -> CONTRATO (camelCase).
 
     A allowlist E esta funcao: o que nao esta escrito aqui nao e publicado. Campo declarado em
-    modulo.json:camposSensiveis nunca entra — ou entra mascarado.
+    module.json:camposSensiveis nunca entra — ou entra mascarado.
     """
     return {
         "hash": registro.hash,
@@ -53,19 +53,19 @@ def to_contract(registro: Registro) -> dict[str, Any]:
 
 
 def to_meta(manifesto: dict[str, Any]) -> dict[str, Any]:
-    """manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`rotasPublicas`): o que
+    """manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`publicRoutes`): o que
     nao esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
-    `permissoes`, `rotasPublicas` e `camposSensiveis` nunca saem por esta rota (plan-2.md N.1).
+    `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota (plan-2.md N.1).
     """
     return {
         "id": manifesto["id"],
-        "nome": manifesto["nome"],
-        "versao": manifesto["versao"],
-        "papel": manifesto["papel"],
-        "rotaBase": manifesto["rotaBase"],
-        "rotaWeb": manifesto["rotaWeb"],
-        "navegacao": manifesto["navegacao"],
-        "exportaResumo": manifesto["exportaResumo"],
+        "name": manifesto["name"],
+        "version": manifesto["version"],
+        "role": manifesto["role"],
+        "basePath": manifesto["basePath"],
+        "webPath": manifesto["webPath"],
+        "navigation": manifesto["navigation"],
+        "exportsSummary": manifesto["exportsSummary"],
     }
 
 

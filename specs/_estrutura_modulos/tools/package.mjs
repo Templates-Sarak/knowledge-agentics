@@ -8,7 +8,7 @@
  *   node tools/package.mjs <destino>       idem, MAIS empacota o artefato backend em <destino>
  *   node tools/package.mjs --autoteste     prova interna (mesclarDependencias)
  *
- * SO TYPESCRIPT EMITE. Um modulo/root sem `tsconfig.build.json` e pulado em silencio informativo —
+ * SO TYPESCRIPT EMITE. Um module/root sem `tsconfig.build.json` e pulado em silencio informativo —
  * JavaScript ja E o artefato (o fonte roda direto), Python roda o fonte por natureza (specs/arquitetura/
  * 03-operacao.md §9). Nao ha "build vazio" aqui: o que nao emite, o script DIZ que nao emite, e
  * segue — nunca finge um passo que nao faz nada (lei 10 do catalogo, mesma raiz do defeito).
@@ -22,7 +22,7 @@
  * que uma dependência entre ferramentas que não precisavam se conhecer.
  *
  * ATIVOS COPIADOS POR CONVENCAO, NUNCA POR LISTA DE NOMES — e o que faz a lista nao envelhecer:
- *   - `modulo.json`: o UNICO nome fixo, porque e o manifesto canonico (um por modulo, sempre).
+ *   - `module.json`: o UNICO nome fixo, porque e o manifesto canonico (um por modulo, sempre).
  *   - `config/*.json`: TODO arquivo `.json` sob `config/` do modulo, mecanicamente — uma chave nova
  *     amanha entra sozinha, sem tocar este arquivo (medido contra o runtime: config.ts:128-141 le
  *     exatamente os `.json` de `config/`, nunca por nome fora dali).
@@ -88,7 +88,7 @@ function listarModulosReais(raizProjeto) {
   if (!existsSync(base)) return [];
   return readdirSync(base)
     .filter((nome) => !nome.startsWith('_'))
-    .filter((nome) => existsSync(join(base, nome, 'modulo.json')))
+    .filter((nome) => existsSync(join(base, nome, 'module.json')))
     .map((nome) => join(base, nome));
 }
 
@@ -158,7 +158,7 @@ function empacotarModulo(pastaModulo, destinoModulos) {
   const id = basename(pastaModulo);
   const destino = join(destinoModulos, id);
   mkdirSync(destino, { recursive: true });
-  cpSync(join(pastaModulo, 'modulo.json'), join(destino, 'modulo.json'));
+  cpSync(join(pastaModulo, 'module.json'), join(destino, 'module.json'));
   copiarJsonDe(join(pastaModulo, 'config'), join(destino, 'config'));
 
   const dist = join(pastaModulo, 'dist');

@@ -52,8 +52,8 @@ describe('rotas obrigatorias', () => {
   });
 
   it('GET /meta ecoa o manifesto', async () => {
-    const corpo = (await (await request('/meta')).json()) as { rotaBase: string };
-    expect(corpo.rotaBase).toBe(ROTA_BASE);
+    const corpo = (await (await request('/meta')).json()) as { basePath: string };
+    expect(corpo.basePath).toBe(ROTA_BASE);
   });
 
   it('GET /resumo devolve a contagem', async () => {

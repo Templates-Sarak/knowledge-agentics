@@ -49,7 +49,7 @@ describe('rotas obrigatorias', () => {
   });
 
   it('GET /meta ecoa o manifesto', async () => {
-    expect((await (await request('/meta')).json()).rotaBase).toBe(ROTA_BASE);
+    expect((await (await request('/meta')).json()).basePath).toBe(ROTA_BASE);
   });
 
   it('GET /resumo devolve a contagem', async () => {

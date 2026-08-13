@@ -71,11 +71,11 @@ const CAMINHO_INVENTARIO = join(AQUI, 'rename-inventory.json');
 const ESCAPAR_REGEX = /[.*+?^${}()|[\]\\]/g;
 
 /**
- * Toda linha (1-based) onde `nome` aparece como TOKEN INTEIRO — não como pedaço de um token maior.
- * `modulo` não casa dentro de `modules` (o `s` seguinte é fronteira violada); `create-module.mjs` casa
+ * Toda linha (1-based) onde `name` aparece como TOKEN INTEIRO — não como pedaço de um token maior.
+ * `module` não casa dentro de `modules` (o `s` seguinte é fronteira violada); `create-module.mjs` casa
  * dentro de `tools/create-module.mjs` (a `/` anterior é fronteira válida). Fronteira é "não é letra,
  * dígito, `_`, `.` nem `-`" dos dois lados — cobre kebab-case (`pre-push`) e nome pontuado
- * (`modulo.json`) sem exigir que o delimitador seja espaço/crase: uma citação real nesta base aparece
+ * (`module.json`) sem exigir que o delimitador seja espaço/crase: uma citação real nesta base aparece
  * tanto entre crases quanto NUA (mensagem de regra, caminho num exemplo de shell), e o inventário é uma
  * lista FECHADA — não há forma a discriminar, só o nome exato a achar ou não achar.
  */
@@ -128,11 +128,25 @@ export function avaliarDepois(item, corpus, resolveNovo) {
   return achados;
 }
 
-/** Achata um JSON Schema em nomes de chave — bare (`schema`) e path-completo (`dados.schema`). Desce
- * em `properties` e em `items.properties` (arrays de objeto, como `consome`). Usada pra resolver item
- * de tipo `chave` (manifesto/env). */
+/** Achata um JSON Schema em nomes de chave — bare (`schema`) e path-completo (`data.schema`) — e em
+ * valores de `enum` de string (`domain`, `gateway`, `connector`: vocabulário fechado que o schema
+ * declara tanto quanto uma chave). Desce em `properties`, em `items.properties` (arrays de objeto,
+ * como `consumes`) e em `oneOf`/`anyOf`/`allOf` (campo nullable como `navigation`, que não tem
+ * `properties` direto — só um branch dentro do `oneOf` tem). Usada pra resolver item de tipo `chave`
+ * (manifesto/env). */
 export function chavesDoSchema(schema, prefixo = '') {
   const chaves = new Set();
+  if (Array.isArray(schema?.enum)) {
+    for (const valor of schema.enum) {
+      if (typeof valor === 'string') chaves.add(valor);
+    }
+  }
+  for (const composicao of [schema?.oneOf, schema?.anyOf, schema?.allOf]) {
+    if (!Array.isArray(composicao)) continue;
+    for (const ramo of composicao) {
+      for (const filha of chavesDoSchema(ramo, prefixo)) chaves.add(filha);
+    }
+  }
   const propriedades = schema?.properties ?? schema?.items?.properties;
   if (propriedades === undefined) return chaves;
   for (const [nome, sub] of Object.entries(propriedades)) {
@@ -332,7 +346,7 @@ function arquivosDeSkills() {
   });
 }
 
-/** `skills/<nome>/` a partir de um `SKILL.md`/`references/*.md` dentro dela — raiz pra achar os
+/** `skills/<name>/` a partir de um `SKILL.md`/`references/*.md` dentro dela — raiz pra achar os
  * `scripts/**` DA MESMA skill (uma skill que cita o template também cita, com frequência, funções dos
  * seus próprios scripts, e essas precisam entrar no corpus). */
 function raizDaSkill(caminho) {
@@ -384,8 +398,8 @@ function corpusBruto() {
 }
 
 function chavesDeManifesto() {
-  const moduloSchema = JSON.parse(lerTexto(join(RAIZ_TEMPLATE, 'tools', 'gate', 'schemas', 'modulo.schema.json')));
-  const projetoSchema = JSON.parse(lerTexto(join(RAIZ_TEMPLATE, 'tools', 'gate', 'schemas', 'projeto.schema.json')));
+  const moduloSchema = JSON.parse(lerTexto(join(RAIZ_TEMPLATE, 'tools', 'gate', 'schemas', 'module.schema.json')));
+  const projetoSchema = JSON.parse(lerTexto(join(RAIZ_TEMPLATE, 'tools', 'gate', 'schemas', 'project.schema.json')));
   return new Set([...chavesDoSchema(moduloSchema), ...chavesDoSchema(projetoSchema)]);
 }
 
@@ -451,7 +465,7 @@ function casosDeAutoteste() {
   const contexto = {
     raizes: [RAIZ_TEMPLATE],
     indiceNomes: new Set(['validate.mjs']),
-    chavesDeManifesto: new Set(['envRequerido']),
+    chavesDeManifesto: new Set(['requiredEnv']),
     palavrasDeCodigo: new Set(['montarRegistro']),
   };
   return [
@@ -461,7 +475,7 @@ function casosDeAutoteste() {
       return ls.length === 1 && ls[0] === 2;
     } },
     { nome: 'ocorrenciasDoNome: NAO acha "modulo" dentro de "modulos" (fronteira violada)', fn: () => (
-      ocorrenciasDoNome('modulo', 'os modulos do projeto').length === 0
+      ocorrenciasDoNome('module', 'os modulos do projeto').length === 0
     ) },
     { nome: 'ocorrenciasDoNome: acha nome kebab-case inteiro (pre-push)', fn: () => (
       ocorrenciasDoNome('pre-push', 'nao exige `pre-push` aqui').length === 1
@@ -469,8 +483,8 @@ function casosDeAutoteste() {
     { nome: 'ocorrenciasDoNome: acha nome com barra dentro de caminho maior (basename)', fn: () => (
       ocorrenciasDoNome('create-module.mjs', 'rode `tools/create-module.mjs` agora').length === 1
     ) },
-    { nome: 'ocorrenciasDoNome: NAO acha "modulo.json" dentro de "modulo.json.bak"', fn: () => (
-      ocorrenciasDoNome('modulo.json', 'arquivo modulo.json.bak encontrado').length === 0
+    { nome: 'ocorrenciasDoNome: NAO acha "module.json" dentro de "modulo.json.bak"', fn: () => (
+      ocorrenciasDoNome('module.json', 'arquivo modulo.json.bak encontrado').length === 0
     ) },
     { nome: 'ocorrenciasDoNome: acha em varias linhas', fn: () => (
       ocorrenciasDoNome('doutrina', 'doutrina aqui\nnada\ndoutrina ali').length === 2
@@ -506,7 +520,7 @@ function casosDeAutoteste() {
     { nome: 'resolveNome pasta: existe no disco', fn: () => resolveNome('pasta', 'doutrina', contexto) === true },
     { nome: 'resolveNome pasta: nao existe', fn: () => resolveNome('pasta', 'pasta-fantasma-xyz', contexto) === false },
     { nome: 'resolveNome arquivo: por nome-base no indice', fn: () => resolveNome('arquivo', 'validate.mjs', contexto) === true },
-    { nome: 'resolveNome chave: existe no schema', fn: () => resolveNome('chave', 'envRequerido', contexto) === true },
+    { nome: 'resolveNome chave: existe no schema', fn: () => resolveNome('chave', 'requiredEnv', contexto) === true },
     { nome: 'resolveNome chave: nao existe', fn: () => resolveNome('chave', 'chaveFantasma', contexto) === false },
     { nome: 'resolveNome simbolo: existe no corpus de codigo', fn: () => resolveNome('simbolo', 'montarRegistro', contexto) === true },
     { nome: 'resolveNome simbolo: nao existe', fn: () => resolveNome('simbolo', 'funcaoFantasma', contexto) === false },
@@ -519,8 +533,22 @@ function casosDeAutoteste() {
     { nome: 'resolveNome pasta: resolve so na visao do projeto (specs/arquitetura) via tabela', fn: () => resolveNome('pasta', 'specs/arquitetura', contexto) === true },
     // chavesDoSchema
     { nome: 'chavesDoSchema: achata bare e dotted', fn: () => {
-      const chaves = chavesDoSchema({ properties: { dados: { properties: { schema: { type: 'string' } } } } });
-      return chaves.has('dados') && chaves.has('schema') && chaves.has('dados.schema');
+      const chaves = chavesDoSchema({ properties: { data: { properties: { schema: { type: 'string' } } } } });
+      return chaves.has('data') && chaves.has('schema') && chaves.has('data.schema');
+    } },
+    { nome: 'chavesDoSchema: achata valor de enum de string', fn: () => {
+      const chaves = chavesDoSchema({ properties: { role: { type: 'string', enum: ['domain', 'gateway', 'connector'] } } });
+      return chaves.has('domain') && chaves.has('gateway') && chaves.has('connector');
+    } },
+    { nome: 'chavesDoSchema: desce em oneOf pra achar chave de campo nullable', fn: () => {
+      const chaves = chavesDoSchema({
+        properties: {
+          navigation: {
+            oneOf: [{ type: 'null' }, { type: 'object', properties: { icon: { type: 'string' }, order: { type: 'integer' } } }],
+          },
+        },
+      });
+      return chaves.has('icon') && chaves.has('order');
     } },
     // extrairPalavrasDeCodigo
     { nome: 'extrairPalavrasDeCodigo: pega chave de objeto, campo, nome importado (nao so declaracao)', fn: () => {

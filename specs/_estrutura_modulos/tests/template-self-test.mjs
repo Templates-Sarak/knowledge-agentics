@@ -69,10 +69,10 @@ export const BINDINGS = ['typescript', 'javascript', 'python'];
  * repetir a cadeia inteira quatro vezes pagaria 4× o custo já medido no K.1 sem medir nada a mais.
  */
 export const COMBINACOES_DE_MODULO = [
-  // SEM hifen de propósito: o id vira `dados.prefixo` do módulo (`<id>_`), que nomeia TABELA — e
+  // SEM hifen de propósito: o id vira `data.prefix` do módulo (`<id>_`), que nomeia TABELA — e
   // `schema-manifesto` exige `^[a-z][a-z0-9_]*$` para tabela (sem hífen), mais estrito que o do
   // próprio id (`^[a-z][a-z0-9-]*$`, que aceita hífen). Medido: `sonda-padrao` reprovava
-  // `dados.tabelas[0]: "sonda-padrao_metadados" nao casa o padrao` — o id em si era válido, a
+  // `data.tables[0]: "sonda-padrao_metadados" nao casa o padrao` — o id em si era válido, a
   // tabela derivada dele não.
   //
   // CURTO de propósito, e é a SEGUNDA medição, não só a primeira: `<modulo>` entra em comentário de

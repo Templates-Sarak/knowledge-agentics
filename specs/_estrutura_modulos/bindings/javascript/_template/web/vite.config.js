@@ -9,7 +9,7 @@
 //
 // Zero hardcoded vale AQUI TAMBEM (specs/arquitetura/01-modulo.md §4.4): nao acrescente porta, alvo de
 // proxy nem endereco literal. Se precisar, a chave vai para .env e e declarada em
-// modulo.json:envRequerido — senao o gate reprova (regra `env-declarado`).
+// module.json:envRequerido — senao o gate reprova (regra `env-declarado`).
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 

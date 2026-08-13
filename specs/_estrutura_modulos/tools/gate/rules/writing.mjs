@@ -150,7 +150,7 @@ export default [
   {
     id: 'limiar-funcao',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of [...arquivosDe(ctx, true), ...arquivosDe(ctx, false)]) {
@@ -166,7 +166,7 @@ export default [
   {
     id: 'limiar-aninhamento',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -182,7 +182,7 @@ export default [
   {
     id: 'limiar-parametros',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -201,7 +201,7 @@ export default [
   {
     id: 'excecao-engolida',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const vazio = [
         /catch\s*(?:\([^)]*\))?\s*\{\s*\}/,

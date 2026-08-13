@@ -68,7 +68,7 @@ ela. Regra que não está lá não é regra; regra que não pode ser verificada 
 
 ```
 criar-projeto.mjs <destino> [--binding b] [--escopo e]   instancia um projeto
-criar-modulo.mjs <id> [--papel p] [--sem-artefato] [--sem-web]
+criar-modulo.mjs <id> [--role p] [--sem-artefato] [--sem-web]
 gate/validar.mjs <caminho-do-modulo>                     valida UM módulo
 gate/validar.mjs --todos                                 todos + as regras globais
 gate/validar.mjs --extracao <caminho>                    vira microsserviço hoje?

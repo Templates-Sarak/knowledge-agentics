@@ -26,17 +26,17 @@ def create_app(deps: DependenciasModulo, auth: Auth, config: ConfiguracaoModulo 
     logger = create_logger(
         modulo=manifesto["id"],
         nivel_minimo=configuracao.api["nivelLog"],
-        campos_sensiveis=manifesto["camposSensiveis"],
+        campos_sensiveis=manifesto["sensitiveFields"],
     )
 
     app = FastAPI(
         title=configuracao.textos["titulo"],
-        version=manifesto["versao"],
+        version=manifesto["version"],
         docs_url=None,
         redoc_url=None,
     )
     record_middlewares(app, configuracao, ContextoDaBorda(deps.geradorId, auth, logger))
-    app.include_router(create_routes(deps, configuracao), prefix=manifesto["rotaBase"])
+    app.include_router(create_routes(deps, configuracao), prefix=manifesto["basePath"])
     return app
 
 

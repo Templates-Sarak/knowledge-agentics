@@ -10,10 +10,10 @@
  *   - `config-ports.schema.json` é INTEIRO derivado (cada propriedade É um nome de porta) — mesmo
  *     tratamento do `eslint.config.js`/`ruff.toml` em `generate-lint-config.mjs`: byte a byte, o
  *     arquivo INTEIRO é gerado, e "editar a mão" é sempre regredível por este script;
- *   - `modulo.schema.json` NÃO é inteiro derivado — tem dezenas de campos que não são de porta
+ *   - `module.schema.json` NÃO é inteiro derivado — tem dezenas de campos que não são de porta
  *     nenhuma, e regenerá-lo por inteiro tornaria ESTE script o dono de campo que não é dele
  *     (a mesma classe de defeito que a fonte única existe para evitar, um nível acima). Só a lista
- *     `properties.portas.items.enum` é tocada, por SUBSTITUIÇÃO DE TEXTO — o resto do arquivo,
+ *     `properties.ports.items.enum` é tocada, por SUBSTITUIÇÃO DE TEXTO — o resto do arquivo,
  *     inclusive espaçamento, sai bit a bit igual.
  *
  * `--conferir` não escreve nada: sai 1 se algum dos dois arquivos divergir do que seria gerado, e
@@ -27,17 +27,17 @@ import { PORTAS_CONHECIDAS } from './gate/ports-vocabulary.mjs';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const CAMINHO_CONFIG_PORTAS = join(AQUI, 'gate', 'schemas', 'config-ports.schema.json');
-const CAMINHO_MODULO = join(AQUI, 'gate', 'schemas', 'modulo.schema.json');
+const CAMINHO_MODULO = join(AQUI, 'gate', 'schemas', 'module.schema.json');
 
 const COMENTARIO_CONFIG_PORTAS =
   'UNICO lugar do modulo onde o nome de um fornecedor aparece. Lei dona: specs/arquitetura/01-modulo.md '
   + '§5. `additionalProperties: false` fecha o vocabulario de portas: nome fora do catalogo do §5.1 '
   + 'reprova. O que ele NAO faz, e nao tem como fazer, e amarrar este arquivo ao manifesto — schema nao '
-  + 'enxerga o modulo.json. Quem cobra a coincidencia nos DOIS sentidos e a regra `porta-declarada` '
+  + 'enxerga o module.json. Quem cobra a coincidencia nos DOIS sentidos e a regra `porta-declarada` '
   + '(04-regras.md §4.4): porta configurada aqui e ausente do manifesto e config morta; porta declarada '
   + 'la e ausente daqui derruba o boot.';
 
-/** `config-ports.schema.json` — cada porta vira `"nome": { "type": "string", "minLength": 1 }`. */
+/** `config-ports.schema.json` — cada porta vira `"name": { "type": "string", "minLength": 1 }`. */
 function conteudoConfigPortas() {
   const propriedades = PORTAS_CONHECIDAS
     .map((porta) => `    "${porta}": { "type": "string", "minLength": 1 }`)
@@ -56,24 +56,25 @@ function conteudoConfigPortas() {
 }
 
 /**
- * Só a linha do `enum` de `properties.portas.items`, por SUBSTITUIÇÃO DE TEXTO — não
- * `JSON.parse`/`JSON.stringify`, que reformataria o arquivo inteiro (`modulo.schema.json` é
+ * Só a linha do `enum` de `properties.ports.items`, por SUBSTITUIÇÃO DE TEXTO — não
+ * `JSON.parse`/`JSON.stringify`, que reformataria o arquivo inteiro (`module.schema.json` é
  * hand-formatted, objeto pequeno numa linha só; `JSON.stringify(obj, null, 2)` expandiria cada um
  * em várias linhas, e o diff resultante não teria nada a ver com a mudança de vocabulário).
  *
- * O padrão ancora em `"portas":` e para no PRIMEIRO `"enum":` depois dele — o bloco de `portas` só
+ * O padrão ancora em `"ports":` e para no PRIMEIRO `"enum":` depois dele — o bloco de `ports` só
  * tem um enum, então isso é seguro. `[^]` (não `.`) porque `.` não casa quebra de linha sem a flag
- * `s`, e o trecho entre `"portas": {` e `"enum":` atravessa várias linhas no arquivo real.
+ * `s`, e o trecho entre `"ports": {` e `"enum":` atravessa várias linhas no arquivo real.
  *
- * `"portas"` aqui é a CHAVE do manifesto (`modulo.schema.json`, fase AD.3 — nunca renomeada por
- * esta campanha) — não confundir com `config-ports.schema.json`, o arquivo, que já é `ports` desde
- * a fase AD.1. Achado ao rodar o Bloco K: o regex tinha virado `"ports":` junto com o resto, e como
- * `modulo.schema.json` continua com a chave em português, o padrão nunca mais casava — silencioso,
- * `--conferir` reportava OK mesmo com o enum desatualizado.
+ * `"ports"` aqui é a CHAVE do manifesto (`module.schema.json`, renomeada na fase AD.3 — antes disso
+ * era `"ports"`) — não confundir com `config-ports.schema.json`, o arquivo, que já é `ports` desde
+ * a fase AD.1. Achado ORIGINALMENTE ao rodar o Bloco K, antes do AD.3: o regex já dizia `"ports":`
+ * (a chave ainda não tinha sido renomeada), e como `module.schema.json` continuava com a chave em
+ * português, o padrão nunca casava — silencioso, `--conferir` reportava OK mesmo com o enum
+ * desatualizado. Resolvido de verdade no AD.3: agora os dois lados (regex e schema) dizem `"ports"`.
  */
 function comEnumDePortasAtualizado(textoOriginal, portas) {
   const novoEnum = `[${portas.map((p) => JSON.stringify(p)).join(', ')}]`;
-  return textoOriginal.replace(/("portas":\s*\{[^]*?"enum":\s*)\[[^\]]*\]/, `$1${novoEnum}`);
+  return textoOriginal.replace(/("ports":\s*\{[^]*?"enum":\s*)\[[^\]]*\]/, `$1${novoEnum}`);
 }
 
 // Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:lerTexto` — o `.gitattributes`
@@ -99,7 +100,7 @@ function principal() {
 
   const divergentes = [
     configPortasEmDisco !== configPortasEsperado ? 'config-ports.schema.json' : null,
-    moduloEmDisco !== moduloEsperado ? 'modulo.schema.json (portas.items.enum)' : null,
+    moduloEmDisco !== moduloEsperado ? 'module.schema.json (ports.items.enum)' : null,
   ].filter((nome) => nome !== null);
 
   if (conferir) {

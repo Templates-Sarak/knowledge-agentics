@@ -1,7 +1,7 @@
 """Raiz de composicao — o WIRING, e nada alem. Lei dona: specs/arquitetura/00-arquitetura.md §3.4.
 
 O que este modulo faz:
-  1. DESCOBRE os modulos lendo modules/*/modulo.json — nao existe lista fixa de modulos no codigo;
+  1. DESCOBRE os modulos lendo modules/*/module.json — nao existe lista fixa de modulos no codigo;
   2. resolve as portas de cada um a partir do config/ports.json DELE;
   3. INJETA os adapters e monta cada api/ sob a rotaBase do manifesto;
   4. sobe UM processo, UMA porta (specs/arquitetura/00-arquitetura.md §5).
@@ -41,8 +41,8 @@ from adapters.postgres import AuditoriaPostgres, RepositorioPostgres
 #
 # Toda fabrica recebe o manifesto do modulo que esta compondo (`dict`, o mesmo formato de
 # `discover_modules`) — `memory` ignora (nao precisa saber QUEM a chamou, por isso os `lambda`
-# descartam o argumento), `postgres` usa (`modulo["id"]` para a chave de ambiente,
-# `modulo["pasta"]` para ler `dados.schema`/`dados.prefixo` do proprio manifesto). Sem isto, um
+# descartam o argumento), `postgres` usa (`module["id"]` para a chave de ambiente,
+# `module["pasta"]` para ler `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um
 # adapter que precisa de contexto por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
 FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {
     "repositorio": {"memory": lambda modulo: RepositorioEmMemoria(), "postgres": RepositorioPostgres},
@@ -67,9 +67,9 @@ def discover_modules(raiz: Path) -> list[dict[str, Any]]:
 
     achados = []
     for pasta in sorted(base.iterdir()):
-        if pasta.name.startswith("_") or not (pasta / "modulo.json").exists():
+        if pasta.name.startswith("_") or not (pasta / "module.json").exists():
             continue
-        manifesto = _read_json(pasta / "modulo.json")
+        manifesto = _read_json(pasta / "module.json")
         manifesto["pasta"] = pasta
         achados.append(manifesto)
     return achados
@@ -83,7 +83,7 @@ def resolve_dependencies(modulo: dict[str, Any]) -> dict[str, Any]:
     escolhas = _read_json(modulo["pasta"] / "config" / "ports.json")
     dependencias: dict[str, Any] = {}
 
-    for porta in modulo["portas"]:
+    for porta in modulo["ports"]:
         provedor = escolhas.get(porta)
         fabrica = FABRICAS.get(porta, {}).get(provedor or "")
         if fabrica is None:
@@ -98,7 +98,7 @@ def resolve_dependencies(modulo: dict[str, Any]) -> dict[str, Any]:
 
 def resolve_auth() -> AuthQueNega:
     """Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem token estao
-    declaradas em `rotasPublicas` de cada modulo, e so elas passam."""
+    declaradas em `publicRoutes` de cada modulo, e so elas passam."""
     return AuthQueNega()
 
 
@@ -108,7 +108,7 @@ def verify_routes_unique(modulos: list[dict[str, Any]]) -> None:
     array de manifestos, so decide; nao toca disco nem rede."""
     por_rota: dict[str, list[str]] = {}
     for modulo in modulos:
-        por_rota.setdefault(modulo["rotaBase"], []).append(modulo["id"])
+        por_rota.setdefault(modulo["basePath"], []).append(modulo["id"])
 
     colisoes = {rota: ids for rota, ids in por_rota.items() if len(ids) > 1}
     if not colisoes:
@@ -123,7 +123,7 @@ def choose_base_route(rotas_base: list[str], caminho: str) -> str | None:
 
     Precisa disto porque o dispatcher da raiz NAO usa `Mount` do Starlette: `Mount` faz STRIP do
     prefixo casado antes de repassar, mas cada sub-app de modulo ja tem a propria rotaBase
-    embutida no roteador dela (o `create_app` do modulo aplica `prefix=manifesto["rotaBase"]`) —
+    embutida no roteador dela (o `create_app` do modulo aplica `prefix=manifesto["basePath"]`) —
     stripar de novo faria toda rota do modulo responder 404. O dispatcher, por isso, so ESCOLHE o
     app certo e repassa o `scope` intacto (`RaizAsgi` abaixo). Ordena por comprimento decrescente
     para a rotaBase mais especifica vencer primeiro, caso um dia existam rotas aninhadas.
@@ -207,7 +207,7 @@ class RaizAsgi:
 
 
 def build_system(raiz: Path) -> RaizAsgi:
-    """Monta o app do PROCESSO: um app ASGI por modulo, sob a `rotaBase` dele. Cada modulo ja
+    """Monta o app do PROCESSO: um app ASGI por modulo, sob a `basePath` dele. Cada modulo ja
     expoe suas rotas sob a propria rotaBase — `create_app` cuida disso; aqui NAO se remonta rota
     nenhuma, so se escolhe qual app atende cada requisicao (`RaizAsgi`)."""
     modulos = discover_modules(raiz)
@@ -225,7 +225,7 @@ def build_system(raiz: Path) -> RaizAsgi:
         # cima, que colidiria com o `core` de outro modulo pelo mesmo motivo do import da api.
         deps = sys.modules["core.ports"].DependenciasModulo(**deps_por_nome)
         config = api.load_configuration(modulo["pasta"])
-        apps[modulo["rotaBase"]] = api.create_app(deps, auth, config)
+        apps[modulo["basePath"]] = api.create_app(deps, auth, config)
     return RaizAsgi(apps)
 
 
@@ -256,7 +256,7 @@ def _env_required_root(chave: str) -> str:
     """Le uma variavel obrigatoria da RAIZ. Ausente = boot morre com mensagem acionavel."""
     valor = os.environ.get(chave)
     if valor is None or valor == "":
-        raise RuntimeError(f"[composicao] variavel obrigatoria ausente: {chave} (declare em projeto.json)")
+        raise RuntimeError(f"[composicao] variavel obrigatoria ausente: {chave} (declare em project.json)")
     return valor
 
 
@@ -283,20 +283,20 @@ def start_system(raiz: Path) -> None:
 
 
 def _test_manifest(id_: str, rota_base: str) -> dict[str, Any]:
-    return {"id": id_, "rotaBase": rota_base}
+    return {"id": id_, "basePath": rota_base}
 
 
 def _unique_routes_cases() -> list[dict[str, Any]]:
     return [
-        {"nome": "lista vazia", "modules": [], "espera_erro": False},
-        {"nome": "um so modulo", "modules": [_test_manifest("a", "/api/v1/a")], "espera_erro": False},
+        {"name": "lista vazia", "modules": [], "espera_erro": False},
+        {"name": "um so modulo", "modules": [_test_manifest("a", "/api/v1/a")], "espera_erro": False},
         {
-            "nome": "rotas distintas",
+            "name": "rotas distintas",
             "modules": [_test_manifest("a", "/api/v1/a"), _test_manifest("b", "/api/v1/b")],
             "espera_erro": False,
         },
         {
-            "nome": "rotas colidindo",
+            "name": "rotas colidindo",
             "modules": [_test_manifest("a", "/api/v1/a"), _test_manifest("a2", "/api/v1/a")],
             "espera_erro": True,
         },
@@ -306,20 +306,20 @@ def _unique_routes_cases() -> list[dict[str, Any]]:
 def _route_choice_cases() -> list[dict[str, Any]]:
     rotas = ["/api/v1/catalogo", "/api/v1/pedidos"]
     return [
-        {"nome": "casa exato", "rotas": rotas, "caminho": "/api/v1/catalogo", "esperado": "/api/v1/catalogo"},
+        {"name": "casa exato", "rotas": rotas, "caminho": "/api/v1/catalogo", "esperado": "/api/v1/catalogo"},
         {
-            "nome": "casa sub-caminho",
+            "name": "casa sub-caminho",
             "rotas": rotas,
             "caminho": "/api/v1/catalogo/health",
             "esperado": "/api/v1/catalogo",
         },
         {
-            "nome": "NAO casa prefixo parcial",
+            "name": "NAO casa prefixo parcial",
             "rotas": rotas,
             "caminho": "/api/v1/catalogo-x/health",
             "esperado": None,
         },
-        {"nome": "sem match", "rotas": rotas, "caminho": "/nada", "esperado": None},
+        {"name": "sem match", "rotas": rotas, "caminho": "/nada", "esperado": None},
     ]
 
 

@@ -28,7 +28,7 @@ requestId → headers de segurança → CORS → rate limit → autenticação �
 4. **Rate limit** — janela e limites em `config/seguranca.json`, com limites distintos para leitura, escrita
    e operações caras. Estouro devolve `LIMITE_EXCEDIDO` com `Retry-After`.
 5. **Autenticação — deny by default.** Toda rota exige token, **exceto** as declaradas em
-   `modulo.json:rotasPublicas`. Rota pública é **opt-in explícito**, e o método faz parte da declaração:
+   `module.json:publicRoutes`. Rota pública é **opt-in explícito**, e o método faz parte da declaração:
    abrir a leitura nunca pode abrir a escrita do mesmo caminho por descuido.
 6. **Autorização** — a rota exige uma permissão nomeada (`<modulo>:ler`, `<modulo>:escrever`), verificada
    contra as claims. Autorização é da `api/` do módulo; RLS no banco é defesa em profundidade, não o controle
@@ -41,14 +41,14 @@ requestId → headers de segurança → CORS → rate limit → autenticação �
 - Segredo **só** em `.env`. Nunca em `config/*.json` (versionado), nunca no código, nunca no bundle do front.
 - Variável exposta ao browser tem prefixo próprio do build (`VITE_`, `NEXT_PUBLIC_`) e **nunca** contém chave,
   token ou credencial. O que vai para o browser é público, por definição.
-- Credencial de serviço externo pago só existe em módulo com `papel: "gateway"` ([[00-arquitetura]] §3.1).
+- Credencial de serviço externo pago só existe em módulo com `role: "gateway"` ([[00-arquitetura]] §3.1).
 - Rotação de credencial não pode exigir mudança de código.
 
 # 3. Log
 
-- **Estruturado**, uma linha por evento, com `requestId`, `modulo`, `nivel` e `mensagem`.
+- **Estruturado**, uma linha por evento, com `requestId`, `module`, `nivel` e `mensagem`.
 - Nível mínimo em `config/api.json`.
-- **Campos de `camposSensiveis` são redigidos automaticamente** pelo logger — não é responsabilidade de quem
+- **Campos de `sensitiveFields` são redigidos automaticamente** pelo logger — não é responsabilidade de quem
   chama lembrar.
 - **`console.*` é proibido no módulo.** Sempre o logger.
 - Mensagem de fornecedor e stack trace vão para o log, nunca para a resposta.
@@ -88,7 +88,7 @@ número é peso morto.
 O gate cobra o que **é** estruturalmente verificável: `tests/domain/` e `tests/contract/` existem e não estão
 vazios (regra `tests`).
 
-**O bypass de `envRequerido` sob teste, e por que ele não é silencioso (plan-2.md N.4).**
+**O bypass de `requiredEnv` sob teste, e por que ele não é silencioso (plan-2.md N.4).**
 `api/src/config.ts:checkEnvRequired` (TS/JS) e `api/src/config.py:_check_env_required` (Python)
 pulam a checagem de variável obrigatória quando o processo está sob teste (`NODE_ENV === 'test'`,
 `PYTEST_CURRENT_TEST` definido) — sem isso, todo `it()`/`def test_` cairia antes de rodar, porque nenhum
@@ -109,7 +109,7 @@ node tools/gate/validate.mjs --extracao modules/<modulo>
 O comando responde uma pergunta objetiva: **a ESTRUTURA deste módulo permite extraí-lo hoje?** Ele confere que:
 
 - toda porta declarada tem adapter escolhido em `config/ports.json`;
-- todo gateway tem entrada em `consome`, e existe env apontando a URL base do módulo consumido;
+- todo gateway tem entrada em `consumes`, e existe env apontando a URL base do módulo consumido;
 - o `.env.example` cobre exatamente o que o manifesto declara;
 - nenhum import sai da pasta do módulo, e nenhum SDK de fornecedor está dentro dela;
 - o contrato existe e declara os três endpoints obrigatórios.
@@ -328,9 +328,9 @@ o passo por um módulo sem `web/` — Python molde nenhum, e qualquer módulo cr
 `node tools/package.mjs <destino>` copia, para um diretório **novo**, só o que o processo
 composto lê em runtime — nada de `.ts`, nada de `tools/`, nada de `tests/`:
 
-- `modulo.json` de cada módulo — o único nome fixo, porque é o manifesto canônico;
+- `module.json` de cada módulo — o único nome fixo, porque é o manifesto canônico;
 - `config/*.json` de cada módulo — **todo** `.json` sob `config/`, mecanicamente, nunca por nome
-  enumerado. Medido contra o runtime (`api/src/config.ts`): só esses cinco arquivos e `modulo.json`
+  enumerado. Medido contra o runtime (`api/src/config.ts`): só esses cinco arquivos e `module.json`
   são lidos fora de teste — `contract/openapi.yaml`, `core/templates/*.html` e `database/**` **não**
   são, e por isso ficam de fora do artefato (inchá-lo com o que ninguém lê rodando é o erro oposto);
 - `dist/` — o que `tsc` emitiu. A lista de arquivos `.ts` vira lista de ativos de graça: quem decide o
@@ -377,12 +377,12 @@ importada por `composicao.*` — mudar `adapters/memory` não afeta o caminho de
 `tools/affected.mjs` não precisou mudar por isso (medido: o runner não importa `adapters/`
 em lugar nenhum).
 
-**A URL vem do ambiente, sempre `<MODULO>_DB_URL`** (já em `modulo.json:envRequerido` desde o
+**A URL vem do ambiente, sempre `<MODULO>_DB_URL`** (já em `module.json:requiredEnv` desde o
 molde) — o runner não sabe de onde ela veio nem como o Postgres subiu (ADR-005: o template traz o
 contrato, não o provedor). Ausente, o runner falha nomeando a chave exata, antes de tentar
 conectar.
 
 **Estado por módulo** (02-contrato-e-dados.md §6.3, plan-2.2.md Bloco Y): a migration `0001` do
-molde cria `<schema>.<prefixo>migrations` — `up` aplica só as pendentes, `down` reverte só a
+molde cria `<schema>.<prefix>migrations` — `up` aplica só as pendentes, `down` reverte só a
 última. Continua **não** sendo um framework de migração completo (sem *dry-run*, sem migração de
 dado automática, sem *lock* multi-processo) — os limites que restam estão em 04-regras.md §7.2.

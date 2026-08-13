@@ -2,7 +2,7 @@
 /**
  * create-module.mjs — scaffold determinístico de módulo. Lei dona: specs/arquitetura/01-modulo.md §8
  *
- *   node tools/create-module.mjs <id> [--binding typescript] [--papel dominio]
+ *   node tools/create-module.mjs <id> [--binding typescript] [--role dominio]
  *                                          [--escopo acme] [--sem-artefato] [--sem-web]
  *
  * Ninguém cria módulo à mão: módulo manual nasce sem manifesto e com nome divergente — as duas
@@ -17,7 +17,14 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ_FERRAMENTA = join(AQUI, '..');
 const PASTAS_DE_ARTEFATO = ['core/engine', 'core/templates', 'database', 'generated'];
 const BINDINGS = ['typescript', 'javascript', 'python'];
+// A flag e o valor moram em fronteiras DIFERENTES da doutrina (decisoes.md §233, decisao 5 vs
+// decisao 8): `--role` e SUPERFICIE DE CLI ("a porta") — decisao 5, ingles, o mesmo motivo de
+// `tools/`/`create-module.mjs` serem ingles. O VALOR digitado e "a sala": fica portugues, a
+// convencao historica da CLI, nao coberta pela decisao 8 (que fala do valor DENTRO DO MANIFESTO,
+// nao do que o usuario digita). `PAPEL_PARA_ROLE` e a fronteira entre as duas — traduz so na
+// escrita do manifesto, onde a decisao 8 manda ingles de verdade.
 const PAPEIS = ['dominio', 'gateway', 'conector'];
+const PAPEL_PARA_ROLE = { dominio: 'domain', gateway: 'gateway', conector: 'connector' };
 
 function abortar(mensagem) {
   process.stderr.write(`erro: ${mensagem}\n`);
@@ -44,7 +51,7 @@ function lerOpcoes() {
   return {
     id: brutos.find((a) => !a.startsWith('--') && brutos[brutos.indexOf(a) - 1]?.startsWith('--') !== true) ?? brutos[0],
     binding: valorDe('binding', 'typescript'),
-    papel: valorDe('papel', 'dominio'),
+    role: valorDe('role', 'dominio'),
     escopo: valorDe('escopo', null),
     semArtefato: brutos.includes('--sem-artefato'),
     semWeb: brutos.includes('--sem-web'),
@@ -73,7 +80,7 @@ function acharMolde(raizProjeto, binding) {
     join(raizProjeto, 'modules', '_template'),
     join(RAIZ_FERRAMENTA, 'bindings', binding, '_template'),
   ];
-  return candidatos.find((caminho) => existsSync(join(caminho, 'modulo.json'))) ?? null;
+  return candidatos.find((caminho) => existsSync(join(caminho, 'module.json'))) ?? null;
 }
 
 /** Escopo dos packages: flag, senão o nome do package da raiz, senão o nome da pasta. */
@@ -115,20 +122,20 @@ function aplicarMarcadores(destino, id, escopo) {
 }
 
 function ajustarManifesto(destino, opcoes) {
-  const caminho = join(destino, 'modulo.json');
+  const caminho = join(destino, 'module.json');
   const manifesto = JSON.parse(lerTexto(caminho));
-  manifesto.papel = opcoes.papel;
+  manifesto.role = PAPEL_PARA_ROLE[opcoes.role];
   manifesto.binding = opcoes.binding;
   if (opcoes.semArtefato) {
-    manifesto.geraArtefato = false;
-    manifesto.dados.tabelas = [];
+    manifesto.generatesArtifact = false;
+    manifesto.data.tables = [];
   }
   if (opcoes.semWeb) {
-    // As DUAS juntas (Bloco O, plan-2.md) — nao so `rotaWeb`. `navegacao` sozinha, sem `rotaWeb`,
+    // As DUAS juntas (Bloco O, plan-2.md) — nao so `webPath`. `navigation` sozinha, sem `webPath`,
     // e uma entrada de menu apontando para o nada: `navegacao-declarada` reprova, e reprova com
     // razao (o modulo pediu tela removida e deixou o menu para tras).
-    manifesto.rotaWeb = null;
-    manifesto.navegacao = null;
+    manifesto.webPath = null;
+    manifesto.navigation = null;
   }
   writeFileSync(caminho, `${JSON.stringify(manifesto, null, 2)}\n`, 'utf8');
 }
@@ -266,10 +273,10 @@ function instalarDependencias(raizProjeto, binding) {
 }
 
 function validarOpcoes(opcoes) {
-  if (opcoes.id === undefined) abortar('uso: create-module.mjs <id> [--binding b] [--papel p] [--sem-artefato]');
+  if (opcoes.id === undefined) abortar('uso: create-module.mjs <id> [--binding b] [--role p] [--sem-artefato]');
   if (!/^[a-z][a-z0-9-]*$/.test(opcoes.id)) abortar(`id "${opcoes.id}" invalido — use kebab-case minusculo`);
   if (!BINDINGS.includes(opcoes.binding)) abortar(`binding "${opcoes.binding}" invalido — use ${BINDINGS.join(', ')}`);
-  if (!PAPEIS.includes(opcoes.papel)) abortar(`papel "${opcoes.papel}" invalido — use ${PAPEIS.join(', ')}`);
+  if (!PAPEIS.includes(opcoes.role)) abortar(`role "${opcoes.role}" invalido — use ${PAPEIS.join(', ')}`);
 }
 
 function principal() {

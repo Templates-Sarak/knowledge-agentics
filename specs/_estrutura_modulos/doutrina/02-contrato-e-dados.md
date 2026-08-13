@@ -15,7 +15,7 @@ Esta lei define a forma do contrato, a identidade dos registros, a forma dos dad
 
 # 2. Forma das rotas
 
-- Prefixo `/api/v1/<modulo>` (= `modulo.json:rotaBase`), recursos no **plural kebab-case**, **sem verbo** no
+- Prefixo `/api/v1/<modulo>` (= `module.json:basePath`), recursos no **plural kebab-case**, **sem verbo** no
   path. A ação é o método HTTP: `POST /api/v1/catalogo`, nunca `/criarItem`.
 - Filtro por query string; paginação `?pagina=&tamanho=`, com padrão e teto em `config/api.json`.
 - O identificador na URL é o **hash universal** (§4), nunca o `id` interno do banco.
@@ -24,31 +24,31 @@ Esta lei define a forma do contrato, a identidade dos registros, a forma dos dad
 
 | Rota | Papel |
 |---|---|
-| `GET <rotaBase>/health` | vivo? portas resolvidas? |
-| `GET <rotaBase>/meta` | metadados PÚBLICOS do módulo, por **allowlist** — `id`, `nome`, `versao`, `papel`, `rotaBase`, `rotaWeb`, `navegacao`, `exportaResumo`, e nada além. Nunca `dados` (schema/prefixo/tabelas), `envRequerido`, `portas`, `permissoes`, `rotasPublicas`, `camposSensiveis` nem `consome` — o que falta é reconhecimento, não descoberta |
-| `GET <rotaBase>/resumo` | contagem e indicadores que o conector agrega |
+| `GET <basePath>/health` | vivo? portas resolvidas? |
+| `GET <basePath>/meta` | metadados PÚBLICOS do módulo, por **allowlist** — `id`, `name`, `version`, `role`, `basePath`, `webPath`, `navigation`, `exportsSummary`, e nada além. Nunca `data` (schema/prefix/tables), `requiredEnv`, `ports`, `permissions`, `publicRoutes`, `sensitiveFields` nem `consumes` — o que falta é reconhecimento, não descoberta |
+| `GET <basePath>/resumo` | contagem e indicadores que o conector agrega |
 
 O conector consome **apenas** esses três — nunca endpoint específico de um módulo.
 
 **A forma mínima de `/resumo`, e por que ela existe.** O agregador cross-módulo compõe **sem lista fixa**
-([[01-modulo]] §3.2): ele varre `modules/*/modulo.json` e não conhece módulo nenhum de antemão. Somar o que não
-se conhece exige uma forma **compartilhada** — por isso o módulo que declara `exportaResumo: true` deve declarar
+([[01-modulo]] §3.2): ele varre `modules/*/module.json` e não conhece módulo nenhum de antemão. Somar o que não
+se conhece exige uma forma **compartilhada** — por isso o módulo que declara `exportsSummary: true` deve declarar
 `total` (inteiro) no schema `200` de `GET /resumo`. Sem esse mínimo, agregar só seria possível com um caso por
 módulo dentro do conector: exatamente o acoplamento que "composição sem lista fixa" existe para proibir, e a
 razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do módulo continua livre ao lado do
 `total` — a lei fixa o **piso**, não o conjunto. Cobrado por `resumo-exportado`
-(`specs/arquitetura/04-regras.md` §4.5); `exportaResumo: false` não proíbe nada.
+(`specs/arquitetura/04-regras.md` §4.5); `exportsSummary: false` não proíbe nada.
 
 > **Decisão de segurança, tomada.** `/meta` é rota pública por necessidade — o sistema descobre módulo antes de
 > autenticar, e não há login no template ([[00-arquitetura]] §3). A saída óbvia, "ecoar o manifesto inteiro",
 > vazava topologia interna a quem perguntasse sem token: schema e prefixo do banco, os NOMES das chaves de
-> segredo em `envRequerido`, o vocabulário inteiro de `permissoes`, `rotasPublicas` (o que não exige token) e
-> `camposSensiveis` — o mapa de onde está a PII. A escolha feita foi a **projeção reduzida**, aplicada agora e
+> segredo em `requiredEnv`, o vocabulário inteiro de `permissions`, `publicRoutes` (o que não exige token) e
+> `sensitiveFields` — o mapa de onde está a PII. A escolha feita foi a **projeção reduzida**, aplicada agora e
 > não adiada para quando houver login: `/meta` devolve só os oito campos da tabela acima, cobrados por
-> `saida-crua` (`specs/arquitetura/04-regras.md` §4.5) e travados por caso em `cases.mjs`. O que sai da lista — `dados`,
-> `envRequerido`, `portas`, `permissoes`, `rotasPublicas`, `camposSensiveis`, `consome` — é reconhecimento do
+> `saida-crua` (`specs/arquitetura/04-regras.md` §4.5) e travados por caso em `cases.mjs`. O que sai da lista — `data`,
+> `requiredEnv`, `ports`, `permissions`, `publicRoutes`, `sensitiveFields`, `consumes` — é reconhecimento do
 > módulo (o front precisa saber id/rota/navegação para se montar), nunca descoberta de superfície interna.
-> Sair de `rotasPublicas` quando houver login continua disponível como **endurecimento adicional**, não como
+> Sair de `publicRoutes` quando houver login continua disponível como **endurecimento adicional**, não como
 > pendência: a projeção reduzida já fecha o vazamento sem depender de autenticação existir.
 
 # 3. Caixa e projeção
@@ -64,7 +64,7 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
   e `sensivel-em-saida` **dependem** desta convenção para achar a função (`04-regras.md` §7.2): projeção
   batizada fora dela — `montarResposta`, por exemplo — **escapa das três, inteira**, silenciosamente. Não é
   detalhe de estilo: é o nome que a regra que protege PII na borda usa para saber onde olhar.
-- Campo listado em `modulo.json:camposSensiveis` nunca aparece em resposta, log ou OpenAPI.
+- Campo listado em `module.json:sensitiveFields` nunca aparece em resposta, log ou OpenAPI.
 
 **Projeção dupla, quando o dado é sensível.** Uma projeção monta a listagem (sem o dado sensível) e outra monta
 o detalhe, com o campo **mascarado** quando ele precisa aparecer. Dado que não precisa sair não entra sequer no
@@ -132,9 +132,9 @@ depreciação anunciada no `openapi.yaml`.
 **O `contract/openapi.yaml` é a fonte do contrato**, versionado junto do código. Rota que existe no código e
 não na spec, ou o contrário, é divergência que o gate pega.
 
-Mudança de contrato afeta quem declarou `consome` do seu módulo — **consulte o grafo antes**, não depois.
+Mudança de contrato afeta quem declarou `consumes` do seu módulo — **consulte o grafo antes**, não depois.
 Remover uma rota, renomeá-la ou trocar o método dela quebra quem depende: a regra `consome-contrato`
-(`specs/arquitetura/04-regras.md` §4.2) confere cada `consome` contra a spec do dono e reprova no consumidor.
+(`specs/arquitetura/04-regras.md` §4.2) confere cada `consumes` contra a spec do dono e reprova no consumidor.
 Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (§7.2).
 
 # 6. Dados
@@ -142,8 +142,8 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
 ## 6.1 Posse e fronteira
 
 - Schema **nunca** `public`. Um schema por módulo ou schema único é decisão do projeto, declarada em
-  `dados.schema`.
-- Toda tabela é **prefixada pelo módulo dono** (`catalogo_metadados`) e declarada em `dados.tabelas`. Nome
+  `data.schema`.
+- Toda tabela é **prefixada pelo módulo dono** (`catalogo_metadados`) e declarada em `data.tables`. Nome
   genérico sem prefixo (`clientes`, `logs`) é proibido — o prefixo é o que sustenta o isolamento no schema
   único, e o que evita renomeação no dia de separar.
 - **Só o dono lê e escreve** nas suas tabelas. **Proibido JOIN, view ou foreign key cruzando módulos.**
@@ -156,7 +156,7 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
 - Toda tabela tem `id`, `hash`, `created_at` e `updated_at`.
 - **Coluna dedicada para o que se consulta.** Campo livre (JSON) só para o que é genuinamente livre — valor,
   data e status são colunas, porque precisam ser consultáveis.
-- Campo com PII é declarado em `camposSensiveis` e nunca sai por projeção.
+- Campo com PII é declarado em `sensitiveFields` e nunca sai por projeção.
 
 ## 6.3 Migrations
 
@@ -166,7 +166,7 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
 - **O bloco é executável, não decorativo.** Cada linha do rollback é a instrução comentada
   (`-- drop table if exists ...`); `scripts/migrations.{mjs,py}` (03-operação.md §9.3) descomenta e roda.
   É contrato textual preciso — não prosa que alguém lê antes de agir a mão.
-- **Estado por módulo:** a migration `0001` do molde cria `<schema>.<prefixo>migrations`
+- **Estado por módulo:** a migration `0001` do molde cria `<schema>.<prefix>migrations`
   (`arquivo text primary key`, `aplicada_em timestamptz`) — o registro do que já rodou. `up` aplica só
   as migrations **pendentes** (nunca falha por rodar duas vezes sobre um banco já migrado); `down`
   reverte só a **última aplicada**, uma de cada vez — nunca a lista inteira. É o que faz `ciclo`
@@ -194,7 +194,7 @@ O `REVOKE UPDATE, DELETE` na migration é o que torna o *append-only* real, e n�
 
 # 7. O artefato publicado
 
-Módulo com `geraArtefato: true` produz saída publicável em `generated/`. Distinto do código: é o que se entrega
+Módulo com `generatesArtifact: true` produz saída publicável em `generated/`. Distinto do código: é o que se entrega
 ao cliente final.
 
 | Regra | Detalhe |

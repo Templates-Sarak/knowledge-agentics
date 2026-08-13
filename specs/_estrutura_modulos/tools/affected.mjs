@@ -25,7 +25,7 @@
  *
  * ARQUITETURA DO ARQUIVO — duas metades, como `gate/context.mjs` e `gate/spec.mjs` já separam:
  *
- *   - `montarGrafo` é a ÚNICA função que toca disco. Lê `modulo.json` de cada módulo (via
+ *   - `montarGrafo` é a ÚNICA função que toca disco. Lê `module.json` de cada módulo (via
  *     `listarModulos`/`acharRaizProjeto`, REUSADOS de `gate/context.mjs` — a mesma definição de
  *     "o que é um módulo" em todo o template, nunca uma segunda);
  *   - `normalizarCaminho` e `calcularAfetados` são PURAS: recebem dado, devolvem dado, nunca
@@ -55,13 +55,13 @@ function lerTexto(caminho) {
  * inclusive os moldes", context.mjs). Decisão sobre `_template` (armadilha do Passo 4): entra sem
  * tratamento especial. Reusar `listarModulos` em vez de reimplementar significa aceitar a definição
  * dela inteira — e é segura aqui pelo mesmo motivo que é segura no gate: nenhum módulo REAL declara
- * `consome` apontando pra `_template` (não faria sentido semântico), então o conjunto afetado por
+ * `consumes` apontando pra `_template` (não faria sentido semântico), então o conjunto afetado por
  * uma mudança nele é, na prática, só ele mesmo — o mesmo isolamento que `validate.mjs --todos` já
  * mostra ao reportar "molde" como uma unidade própria, separada dos módulos reais.
  *
  * A CHAVE do grafo é o NOME DA PASTA, não o `id` de dentro do manifesto. É a mesma chave que
  * `context.mjs:idDaPasta` usa, e a razão é dupla: (1) é o que aparece no CAMINHO do arquivo
- * alterado (`modules/<pasta>/...`), que é o único dado que este script recebe; (2) `consome[].modulo`
+ * alterado (`modules/<pasta>/...`), que é o único dado que este script recebe; (2) `consumes[].module`
  * referencia o módulo DONO pelo nome que a regra `manifesto` já obriga a casar com a pasta — se
  * meta.json:id divergir do nome da pasta, o gate já está vermelho por outro motivo (`manifesto`), e
  * não é este script que precisa ser a segunda rede de segurança para esse defeito.
@@ -74,13 +74,13 @@ export function montarGrafo(raizProjeto) {
   for (const pasta of pastas) {
     const id = basename(pasta);
     try {
-      const manifesto = JSON.parse(lerTexto(resolve(pasta, 'modulo.json')));
-      const consome = Array.isArray(manifesto.consome)
-        ? manifesto.consome.map((entrada) => entrada.modulo).filter((alvo) => typeof alvo === 'string')
+      const manifesto = JSON.parse(lerTexto(resolve(pasta, 'module.json')));
+      const consome = Array.isArray(manifesto.consumes)
+        ? manifesto.consumes.map((entrada) => entrada.module).filter((alvo) => typeof alvo === 'string')
         : [];
       modulos.set(id, { consome });
     } catch {
-      // Armadilha do Passo 4 — "modulo.json ilegível": JSON quebrado numa pasta é grafo INCOMPLETO,
+      // Armadilha do Passo 4 — "module.json ilegível": JSON quebrado numa pasta é grafo INCOMPLETO,
       // não "módulo sem arestas". Não dá pra saber se este módulo consome alguém nem quem o
       // consome de verdade — qualquer resposta que não seja "não confio neste grafo" seria
       // inventar aresta que pode não existir, ou omitir uma que existe. `ilegivel` propaga para
@@ -141,7 +141,7 @@ export function normalizarCaminho(bruto, raizProjeto) {
  * Passo 1 sobre `tools/`, `config/`, `.env`, `package.json`/`pyproject.toml` da raiz e config
  * de linter viram a MESMA linha de código: nenhum desses é `modules/`, `adapters/`, `src/` ou
  * `packages/`, então caem aqui por construção, sem precisar nomear cada arquivo (`.env`,
- * `.gitignore`, `tsconfig.json`, `.ruff.toml`, `verificar.py`, `projeto.json`, `specs/**`, ...).
+ * `.gitignore`, `tsconfig.json`, `.ruff.toml`, `verificar.py`, `project.json`, `specs/**`, ...).
  * Medido (Passo 1): mudar o VERIFICADOR (`tools/`) ou a POLÍTICA do projeto (config raiz,
  * manifesto raiz, lint gerado) pode mudar o resultado de QUALQUER checagem — a resposta segura é
  * literalmente "tudo", e é isso que este `default` devolve sem lista para manter.
@@ -165,7 +165,7 @@ function classificarCaminho(caminho, grafo) {
     }
     const subCaminho = resto.join('/');
     const somenteTeste = subCaminho === 'tests' || subCaminho.startsWith('tests/');
-    return { tipo: 'modulo', id: segundo, somenteTeste };
+    return { tipo: 'module', id: segundo, somenteTeste };
   }
 
   if (primeiro === 'adapters' || primeiro === 'src') {
@@ -212,7 +212,7 @@ function construirReversa(grafo) {
 /**
  * O cálculo inteiro. PURA: `grafo` já vem montado, `caminhosBrutos` são strings quaisquer — nenhuma
  * chamada a `fs` aqui. Direção medida no Passo 1 e reproduzida no mundo real (ver relatório): se A
- * declara `consome: [{modulo: "B"}]`, é A quem lê o CONTRATO de B (`consome-contrato`, "Reportado
+ * declara `consumes: [{module: "B"}]`, é A quem lê o CONTRATO de B (`consome-contrato`, "Reportado
  * no consumidor") — então quando B muda, quem precisa reverificar é A, e transitivamente quem
  * consome A. A aresta salva no grafo é "A consome B" (a direção de dependência RUNTIME); a
  * propagação de afetados anda ao CONTRÁRIO dela.
@@ -224,7 +224,7 @@ function construirReversa(grafo) {
  */
 export function calcularAfetados(grafo, caminhosBrutos) {
   if (grafo.ilegivel) {
-    return { tudo: true, motivo: 'modulo.json ilegivel em pelo menos um modulo — grafo de consome incompleto' };
+    return { tudo: true, motivo: 'module.json ilegivel em pelo menos um modulo — grafo de consome incompleto' };
   }
 
   const afetados = new Set();
@@ -360,7 +360,7 @@ function casosDeAutoteste() {
       esperado: { tudo: true },
     },
     {
-      nome: 'modulo.json ilegivel vira "tudo", mesmo com o resto do grafo saudavel',
+      nome: 'module.json ilegivel vira "tudo", mesmo com o resto do grafo saudavel',
       grafo: { ilegivel: true, modulos: new Map() },
       caminhos: ['modules/a/core/domain/index.ts'],
       esperado: { tudo: true },

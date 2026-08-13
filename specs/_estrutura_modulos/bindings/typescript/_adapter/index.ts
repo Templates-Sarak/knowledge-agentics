@@ -3,7 +3,7 @@
 // Gerado por `create-adapter.mjs` a partir deste molde. Implemente aqui os metodos da interface
 // da porta "<porta>" (packages/ports/index.ts) — o TODO abaixo e o unico lugar que falta.
 //
-// Adapter NAO conhece dominio: nao existe `if (modulo === 'catalogo')` aqui dentro.
+// Adapter NAO conhece dominio: nao existe `if (module === 'catalogo')` aqui dentro.
 
 /**
  * TODO: troque `Record<string, unknown>` pela interface real da porta "<porta>"

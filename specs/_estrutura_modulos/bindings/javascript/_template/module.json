@@ -1,51 +1,51 @@
 {
   "id": "<modulo>",
-  "nome": "<Modulo>",
-  "versao": "0.1.0",
-  "descricao": "Descreva em uma linha o dominio de negocio deste modulo.",
-  "papel": "dominio",
+  "name": "<Modulo>",
+  "version": "0.1.0",
+  "description": "Descreva em uma linha o dominio de negocio deste modulo.",
+  "role": "domain",
   "binding": "javascript",
-  "rotaBase": "/api/v1/<modulo>",
-  "rotaWeb": "/<modulo>",
-  "dados": {
+  "basePath": "/api/v1/<modulo>",
+  "webPath": "/<modulo>",
+  "data": {
     "schema": "<escopo>",
-    "prefixo": "<modulo>_",
-    "tabelas": [
+    "prefix": "<modulo>_",
+    "tables": [
       "<modulo>_migrations",
       "<modulo>_metadados",
       "<modulo>_auditoria"
     ]
   },
-  "envRequerido": [
+  "requiredEnv": [
     "<MODULO>_API_PORT",
     "<MODULO>_DB_URL"
   ],
-  "portas": [
+  "ports": [
     "repositorio",
     "auditoria",
     "relogio",
     "geradorId",
     "notificador"
   ],
-  "consome": [],
+  "consumes": [],
   "ui": {
     "modo": "proprio"
   },
-  "permissoes": [
+  "permissions": [
     "<modulo>:ler",
     "<modulo>:escrever"
   ],
-  "rotasPublicas": [
+  "publicRoutes": [
     "GET /health",
     "GET /meta",
     "GET /resumo"
   ],
-  "camposSensiveis": [],
-  "navegacao": {
+  "sensitiveFields": [],
+  "navigation": {
     "label": "<Modulo>",
-    "icone": "Box",
-    "ordem": 100
+    "icon": "Box",
+    "order": 100
   },
-  "exportaResumo": true,
-  "geraArtefato": true
+  "exportsSummary": true,
+  "generatesArtifact": true
 }

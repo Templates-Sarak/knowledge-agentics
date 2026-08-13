@@ -38,11 +38,11 @@ export function createApp({ deps, auth, raiz }: OpcoesModulo): Express {
   const logger = createLogger({
     modulo: manifesto.id,
     nivelMinimo: config.api.nivelLog,
-    camposSensiveis: manifesto.camposSensiveis,
+    camposSensiveis: manifesto.sensitiveFields,
   });
 
   // COMPOSTO (raiz passada pela raiz de composicao) x STANDALONE (dev isolado, testes de contrato).
-  // A raiz de composicao MONTA este app sob a propria rotaBase (`app.use(manifesto.rotaBase, app)`)
+  // A raiz de composicao MONTA este app sob a propria rotaBase (`app.use(manifesto.basePath, app)`)
   // — e o Express, ao montar por caminho, ja STRIPA esse prefixo do request antes de entrar aqui.
   // Reaplicar o prefixo por dentro duplicaria — nenhuma rota casaria (404). Pior: SEM mudar nada
   // aqui, o app inteiro (auth incluida) responderia por QUALQUER caminho que chegasse a ele antes
@@ -50,9 +50,9 @@ export function createApp({ deps, auth, raiz }: OpcoesModulo): Express {
   // "auth nega por padrao" negaria a rota publica do vizinho antes mesmo dele ser alcancado
   // (medido: 401 num modulo composto em segundo, so por causa do primeiro montado antes dele).
   // Standalone nao tem esse prefixo tirado por ninguem — o path chega inteiro, e o app precisa
-  // aplicar `manifesto.rotaBase` ele mesmo, como sempre fez.
+  // aplicar `manifesto.basePath` ele mesmo, como sempre fez.
   const composto = raiz !== undefined;
-  const prefixo = composto ? '/' : manifesto.rotaBase;
+  const prefixo = composto ? '/' : manifesto.basePath;
 
   const app = express();
   app.use(express.json({ limit: `${config.api.corpoMaximoKb}kb` }));
@@ -60,7 +60,7 @@ export function createApp({ deps, auth, raiz }: OpcoesModulo): Express {
   app.use(securityHeaders(seguranca.headers));
   app.use(cors(seguranca.cors));
   app.use(rateLimit(seguranca.rateLimit));
-  app.use(authentication(auth, manifesto.rotasPublicas, composto ? '' : manifesto.rotaBase));
+  app.use(authentication(auth, manifesto.publicRoutes, composto ? '' : manifesto.basePath));
   app.use(prefixo, createRoutes({ deps, config }));
   app.use(errorHandler(logger));
 
@@ -77,11 +77,11 @@ export function start(opcoes: OpcoesModulo): void {
   const logger = createLogger({
     modulo: config.manifesto.id,
     nivelMinimo: config.api.nivelLog,
-    camposSensiveis: config.manifesto.camposSensiveis,
+    camposSensiveis: config.manifesto.sensitiveFields,
   });
   const porta = Number(envRequired('<MODULO>_API_PORT'));
 
   createApp(opcoes).listen(porta, () => {
-    logger.info('api no ar', { porta, rotaBase: config.manifesto.rotaBase });
+    logger.info('api no ar', { porta, rotaBase: config.manifesto.basePath });
   });
 }

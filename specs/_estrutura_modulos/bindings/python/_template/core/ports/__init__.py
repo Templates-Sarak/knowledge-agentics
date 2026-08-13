@@ -68,7 +68,7 @@ class DependenciasModulo:
     """O conjunto que o bootstrap RECEBE.
 
     Cada nome aqui corresponde a uma chave de config/ports.json e a uma entrada de
-    modulo.json:portas — o gate cobra que os tres concordem.
+    module.json:portas — o gate cobra que os tres concordem.
 
     `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
     fabrica (`FABRICAS["notificador"]`, src/composicao.py) e alcancada de verdade no boot, nao so

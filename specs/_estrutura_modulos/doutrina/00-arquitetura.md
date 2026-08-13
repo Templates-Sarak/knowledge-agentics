@@ -39,7 +39,7 @@ Confundir estas peças é a forma mais rápida de destruir a extraibilidade.
 ## 3.1 Módulo — a fatia vertical
 
 `modules/<modulo>/` contém tudo que o domínio precisa: `contract/`, `config/`, `core/`, `api/`, `web/`,
-`database/`, `tests/` e o manifesto `modulo.json`. A anatomia completa está em [[01-modulo]].
+`database/`, `tests/` e o manifesto `module.json`. A anatomia completa está em [[01-modulo]].
 
 Um módulo tem um **papel**, declarado no manifesto:
 
@@ -47,7 +47,7 @@ Um módulo tem um **papel**, declarado no manifesto:
 |---|---|---|
 | `domain` | um domínio de negócio | não pode declarar credencial de serviço externo pago |
 | `gateway` | fronteira única de serviços externos pagos | é o **único** que pode declarar essas credenciais |
-| `conector` | casca, navegação e agregação cross-módulo | não guarda schema nem regra de negócio de ninguém |
+| `connector` | casca, navegação e agregação cross-módulo | não guarda schema nem regra de negócio de ninguém |
 
 **Critério de admissão do gateway.** Um serviço externo passa pelo módulo `gateway` quando tem **qualquer uma**
 destas três propriedades:
@@ -73,7 +73,7 @@ variante de memória para cada porta, o desacoplamento não é verificável — 
 
 `adapters/postgres/` também vem pronto (plan-2.2.md Bloco Z), para as portas `repositorio` e `auditoria` —
 `memory` continua sendo o que `config/ports.json` escolhe por padrão. Cobre a forma que `create-module.mjs`
-já cria (`<prefixo>metadados`/`<prefixo>auditoria`); módulo com tabela de outra forma escreve o próprio
+já cria (`<prefix>metadados`/`<prefix>auditoria`); módulo com tabela de outra forma escreve o próprio
 adapter, do mesmo jeito que sempre escreveu para qualquer outro fornecedor (01-modulo.md §5.2).
 
 ## 3.3 Packages — a exceção mínima
@@ -89,9 +89,9 @@ Regra de negócio **nunca** entra aqui. Se dois módulos precisam da mesma regra
 
 ## 3.4 Raiz de composição — o wiring, e nada além
 
-`src/` é um entrypoint fino que **não é módulo**. Ele descobre os módulos lendo `modules/*/modulo.json`,
+`src/` é um entrypoint fino que **não é módulo**. Ele descobre os módulos lendo `modules/*/module.json`,
 resolve as portas de cada um a partir do `config/ports.json` dele, **injeta** os adapters, monta cada `api/`
-sob a `rotaBase` do manifesto e **sobe** — um processo, uma porta (§5) — servindo os módulos já montados.
+sob a `basePath` do manifesto e **sobe** — um processo, uma porta (§5) — servindo os módulos já montados.
 
 É só fiação. Nenhuma regra de negócio vive aqui, nenhum módulo importa daqui, e o front de nenhum módulo é
 servido por aqui: `web/` é build estático do próprio módulo, publicado por fora deste processo (§4.4).
@@ -128,7 +128,7 @@ isso, a porta está mal desenhada.
 ## 4.3 Fronteira de dados — só o dono toca a sua fatia
 
 - Schema **nunca** `public`. Um schema por módulo ou schema único é decisão do projeto, declarada em
-  `modulo.json:dados.schema`.
+  `module.json:data.schema`.
 - Toda tabela é prefixada `<modulo>_` **nas duas topologias**. Redundante quando há schema dedicado, e é
   justamente aí que vale mais: no dia de consolidar ou separar, nada precisa ser renomeado.
 - **Proibido JOIN, view ou foreign key cruzando módulos.** O dado de outro módulo chega pelo contrato da `api/`
@@ -145,7 +145,7 @@ API é decisão de **deploy** (reverse proxy, host estático na frente, CDN com 
 assunto desta doutrina (§5: *"modularidade não é topologia de deploy"*).
 
 Quando um módulo precisa de dado de outro, o acesso vive em `core/gateways/`, fala **exclusivamente HTTP**, e
-a dependência é declarada em `modulo.json:consome`. A pasta separada não é cosmética: *"falo com meu banco"* e
+a dependência é declarada em `module.json:consumes`. A pasta separada não é cosmética: *"falo com meu banco"* e
 *"falo com outro módulo"* são riscos diferentes, e precisam ser distinguíveis por `grep`.
 
 # 5. Modularidade não é topologia de deploy

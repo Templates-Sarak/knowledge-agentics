@@ -8,7 +8,7 @@
  *
  * As SETE últimas são sobre o PROJETO, não sobre o módulo, e por isso têm `escopo: 'root'`:
  * recebem `ctx.projeto` em vez de um contexto de módulo e rodam UMA vez por invocação. Enquanto
- * eram `escopo: 'modulo'` com guarda, o resultado era certo e a saída não: um defeito de projeto
+ * eram `escopo: 'module'` com guarda, o resultado era certo e a saída não: um defeito de projeto
  * emitia uma mensagem por módulo — dez módulos, dez mensagens idênticas para um conserto só.
  * Global nunca serviu: `analisar` descarta achado global cujo módulo não esteja entre os
  * selecionados, e a raiz não é módulo nenhum.
@@ -177,7 +177,7 @@ export default [
   {
     id: 'config-valida',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       return CONFIGS
         .filter((assunto) => ctx.configs[assunto].presente && ctx.configs[assunto].valor === null)
@@ -187,7 +187,7 @@ export default [
   {
     id: 'schema-config',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const assunto of CONFIGS) {
@@ -201,12 +201,12 @@ export default [
   },
   {
     /**
-     * As duas metades de UMA declaração: `modulo.json:ports` diz o que o módulo EXIGE,
+     * As duas metades de UMA declaração: `module.json:ports` diz o que o módulo EXIGE,
      * `config/ports.json` diz QUEM preenche cada exigência. Coincidem nos dois sentidos, como
-     * `env-exemplo` faz entre `envRequerido` e `.env.example`.
+     * `env-exemplo` faz entre `requiredEnv` e `.env.example`.
      *
      * O schema não podia cobrar isto e o `$comentario` dele afirmava que cobrava — schema nenhum
-     * enxerga o `modulo.json`. Com `additionalProperties: false` e sem `required`, as DUAS brechas
+     * enxerga o `module.json`. Com `additionalProperties: false` e sem `required`, as DUAS brechas
      * passavam: configurar `storage` sem declará-lo (está no vocabulário) e declarar `storage` sem
      * configurá-lo (não há campo obrigatório).
      *
@@ -216,9 +216,9 @@ export default [
      */
     id: 'porta-declarada',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      const declaradas = ctx.manifesto?.portas;
+      const declaradas = ctx.manifesto?.ports;
       const { presente, valor } = ctx.configs.ports;
       // Manifesto torto e do `schema-manifesto`; arquivo ausente ou ilegivel e da `estrutura` e do
       // `config-valida`. Aqui so entra declaracao legivel dos dois lados.
@@ -229,13 +229,13 @@ export default [
       const achados = [];
       for (const porta of declaradas) {
         if (configuradas.includes(porta)) continue;
-        achados.push(`porta "${porta}" declarada em modulo.json:portas e ausente de`
+        achados.push(`porta "${porta}" declarada em module.json:portas e ausente de`
           + ' config/ports.json — a composicao nao acha o provedor e DERRUBA o boot');
       }
       for (const porta of configuradas) {
         if (declaradas.includes(porta)) continue;
         achados.push(`config/ports.json escolhe provedor para "${porta}", ausente de`
-          + ' modulo.json:portas — provedor para uma porta que o modulo nao exige e config morta');
+          + ' module.json:portas — provedor para uma porta que o modulo nao exige e config morta');
       }
       return achados;
     },
@@ -243,7 +243,7 @@ export default [
   {
     id: 'cors-aberto',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const cors = ctx.configs.seguranca.valor?.cors;
       if (cors === undefined) return [];
@@ -257,7 +257,7 @@ export default [
   {
     id: 'config-morta',
     nivel: 'aviso',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const codigo = ctx.codigo.filter((a) => !a.eTeste).map((a) => a.conteudo).join('\n');
       const achados = [];
@@ -275,7 +275,7 @@ export default [
   {
     id: 'hardcode-url',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -293,7 +293,7 @@ export default [
   {
     id: 'hardcode-numero',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       // Nome que denuncia valor de INFRAESTRUTURA. Numero de negocio (aliquota, prazo) tem nome
       // de negocio e mora em config/domain.json — nao entra neste padrao.
@@ -321,7 +321,7 @@ export default [
   {
     id: 'fallback-silencioso',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -338,12 +338,12 @@ export default [
   {
     id: 'env-declarado',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const id = ctx.manifesto?.id;
       if (id === undefined) return [];
       const prefixo = id.toUpperCase().replace(/-/g, '_');
-      const declaradas = new Set(ctx.manifesto.envRequerido ?? []);
+      const declaradas = new Set(ctx.manifesto.requiredEnv ?? []);
       const usadas = new Set();
       const padrao = new RegExp(`\\b(?:VITE_)?(${prefixo}_[A-Z0-9_]+)\\b`, 'g');
 
@@ -352,17 +352,17 @@ export default [
       }
       return [...usadas]
         .filter((chave) => !declaradas.has(chave))
-        .map((chave) => `env "${chave}" usada no codigo e ausente de modulo.json:envRequerido`);
+        .map((chave) => `env "${chave}" usada no codigo e ausente de module.json:requiredEnv`);
     },
   },
   {
     id: 'env-exemplo',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const arquivo = arquivoPorNome(ctx, '.env.example');
       if (arquivo === null) return ['.env.example ausente — gere com tools/sync-env.mjs'];
-      const declaradas = ctx.manifesto?.envRequerido ?? [];
+      const declaradas = ctx.manifesto?.requiredEnv ?? [];
       const documentadas = lerParesEnv(arquivo.conteudo).map(([chave]) => chave);
       const achados = [];
       for (const chave of declaradas) {
@@ -377,7 +377,7 @@ export default [
   {
     id: 'env-modulo',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const arquivo = arquivoPorNome(ctx, '.env');
       if (arquivo === null) return [];
@@ -411,13 +411,13 @@ export default [
   {
     id: 'segredo-em-publico',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
-      // No MANIFESTO: e a declaracao, e onde o defeito nasce. Sem excecao por `papel` — o
+      // No MANIFESTO: e a declaracao, e onde o defeito nasce. Sem excecao por `role` — o
       // `gateway-credencial` isenta o gateway porque credencial e o oficio dele, mas nem o gateway
       // pode publicar a credencial no bundle.
-      for (const chave of ctx.manifesto?.envRequerido ?? []) {
+      for (const chave of ctx.manifesto?.requiredEnv ?? []) {
         if (ehPublicaComCredencial(chave)) {
           achados.push(`env "${chave}" tem prefixo PUBLICO e nome de credencial — o bundler injeta`
             + ' esse valor no bundle do front, onde qualquer visitante o le. Segredo fica no'
@@ -493,14 +493,14 @@ export default [
      * O análogo de `env-declarado` para a FIAÇÃO, e nos DOIS sentidos.
      *
      * O sentido "usada e não declarada" é o buraco que motivou o manifesto de raiz: até aqui o
-     * `.env.example` da raiz era montado só com `modulo.json:envRequerido`, então o `JWT_SECRET` do
+     * `.env.example` da raiz era montado só com `module.json:requiredEnv`, então o `JWT_SECRET` do
      * `resolverAuth()` e o `DATABASE_URL` do adapter real nasciam ÓRFÃOS — o segredo mais sensível
      * do sistema era o único que ninguém declarava.
      *
      * O sentido inverso entra porque a declaração tem consequência: chave declarada vai para o
      * `.env.example` e vira valor exigido do operador. Declarada e sem leitor, ela pede um segredo
      * que nada consome — e é exatamente o vício que esta base já pagou caro com `ui`,
-     * `exportaResumo` e `geraArtefato`.
+     * `exportsSummary` e `generatesArtifact`.
      *
      * O `.env.example` em si NÃO é cobrado aqui: `sync-env.mjs --conferir` já o compara com
      * os manifestos, e roda no `verificar` dos três bindings. Duplicar isso em regra daria duas
@@ -511,8 +511,8 @@ export default [
     escopo: 'root',
     verificar(projeto) {
       if (!projeto.ehProjeto) return [];
-      const declaradas = projeto.manifesto.valor?.envRequerido;
-      // Manifesto ausente, quebrado ou com `envRequerido` de outro tipo ja e do `manifesto-raiz` —
+      const declaradas = projeto.manifesto.valor?.requiredEnv;
+      // Manifesto ausente, quebrado ou com `requiredEnv` de outro tipo ja e do `manifesto-raiz` —
       // empilhar aqui daria duas mensagens para um conserto so.
       if (!Array.isArray(declaradas)) return [];
 
@@ -523,10 +523,10 @@ export default [
 
       const achados = [...usadas]
         .filter((chave) => !declaradas.includes(chave))
-        .map((chave) => `env "${chave}" usada no codigo da raiz e ausente de projeto.json:envRequerido`);
+        .map((chave) => `env "${chave}" usada no codigo da raiz e ausente de project.json:envRequerido`);
       for (const chave of declaradas) {
         if (usadas.has(chave)) continue;
-        achados.push(`env "${chave}" declarada em projeto.json e nunca usada em adapters/, src/ nem`
+        achados.push(`env "${chave}" declarada em project.json e nunca usada em adapters/, src/ nem`
           + ' packages/ — ela entra no .env.example e passa a exigir um valor que nada le');
       }
       return achados;
@@ -538,7 +538,7 @@ export default [
      *
      * O adapter é onde o endereço do fornecedor de verdade aparece (`https://x.supabase.co`), e até
      * a I.1 nenhuma regra o enxergava. A única diferença em relação ao módulo é para onde a
-     * mensagem aponta: no módulo, `.env` ou `config/`; aqui, `projeto.json:envRequerido`, que é
+     * mensagem aponta: no módulo, `.env` ou `config/`; aqui, `project.json:requiredEnv`, que é
      * onde a raiz declara o que exige do ambiente.
      */
     id: 'hardcode-url-raiz',
@@ -550,7 +550,7 @@ export default [
         const casado = texto.match(URL_LITERAL);
         if (casado === null) return null;
         return `URL literal ${casado[0]} na fiacao — endereco de infraestrutura vem do ambiente:`
-          + ' declare a chave em projeto.json:envRequerido e leia-a aqui';
+          + ' declare a chave em project.json:envRequerido e leia-a aqui';
       });
     },
   },
@@ -624,7 +624,7 @@ export default [
   {
     id: 'env-fora-do-carregador',
     nivel: 'aviso',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       return ctx.codigo
         .filter((a) => !a.eTeste && !ehCarregador(a.rel))

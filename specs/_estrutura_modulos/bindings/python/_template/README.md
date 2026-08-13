@@ -21,19 +21,19 @@ catálogo de regras são idênticos** ao binding TypeScript — só a materializ
 | Linter de limiares | ESLint | Ruff (`[tool.ruff]` no `pyproject.toml`) |
 | Tipos | `tsc --noEmit` | `mypy --strict` |
 
-O que **não** muda: `modulo.json`, `contract/openapi.yaml`, `config/*.json`, `database/`, a árvore de pastas,
+O que **não** muda: `module.json`, `contract/openapi.yaml`, `config/*.json`, `database/`, a árvore de pastas,
 as fronteiras e todas as regras do gate.
 
 ## Módulo Python é backend
 
-O front deste ecossistema é sempre TypeScript, então o molde Python nasce com `rotaWeb: null` e **sem `web/`**.
+O front deste ecossistema é sempre TypeScript, então o molde Python nasce com `webPath: null` e **sem `web/`**.
 Se um módulo Python precisar de tela, ela é o `web/` do binding TypeScript — mesma anatomia, mesmo
 `api-client` relativo, consumindo a `api/` deste módulo. Nada na doutrina muda.
 
 ## Anatomia
 
 ```
-modulo.json      identidade + contrato — o sistema DESCOBRE o módulo por aqui
+module.json      identidade + contrato — o sistema DESCOBRE o módulo por aqui
 pyproject.toml   dependências, pytest, ruff e mypy
 contract/        openapi.yaml — a FONTE do contrato; o código segue
 config/          5 arquivos, um por assunto. Zero valor literal no código
@@ -54,9 +54,9 @@ Idênticas ao binding TypeScript, com a sintaxe da linguagem:
 - **Zero hardcoded** — segredo no `.env`, tunable em `config/`, texto em `config/textos.json`.
 - **Falha rápida** — `os.getenv("X", "http://localhost")` é violação; falta de env **derruba o boot**.
 - **Infraestrutura desacoplada** — `core/ports` define `Protocol`; o provedor só aparece em `config/ports.json`.
-- **Módulo alheio desacoplado** — `core/gateways/`, só HTTP, declarado em `consome`.
+- **Módulo alheio desacoplado** — `core/gateways/`, só HTTP, declarado em `consumes`.
 - **Saída por allowlist** — `to_contract()` é a projeção; devolver a linha crua é proibido.
-- **Deny by default** — toda rota exige token, exceto as de `rotasPublicas`.
+- **Deny by default** — toda rota exige token, exceto as de `publicRoutes`.
 - **Log estruturado** — `print()` é proibido; o logger emite JSON com `requestId` e redige campo sensível.
 - **Determinismo** — `datetime.now()` e `random` proibidos em `core/`; use `relogio` e `geradorId`.
 

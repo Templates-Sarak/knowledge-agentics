@@ -40,7 +40,7 @@ export function domainToRow(registro) {
 
 /**
  * dominio -> CONTRATO. A allowlist e esta funcao: o que nao esta escrito aqui nao e publicado.
- * Campo declarado em modulo.json:camposSensiveis nunca entra — ou entra mascarado.
+ * Campo declarado em module.json:camposSensiveis nunca entra — ou entra mascarado.
  *
  * @param {import('../../../core/domain/index.js').Registro} registro
  */
@@ -54,23 +54,23 @@ export function toContract(registro) {
 }
 
 /**
- * manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`rotasPublicas`): o que nao
+ * manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`publicRoutes`): o que nao
  * esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
- * `permissoes`, `rotasPublicas` e `camposSensiveis` nunca saem por esta rota (plan-2.md N.1).
+ * `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota (plan-2.md N.1).
  *
- * @param {{ id: string, nome: string, versao: string, papel: string, rotaBase: string,
- *   rotaWeb: string|null, navegacao: object|null, exportaResumo: boolean }} manifesto
+ * @param {{ id: string, name: string, version: string, role: string, basePath: string,
+ *   webPath: string|null, navigation: object|null, exportsSummary: boolean }} manifesto
  */
 export function toMeta(manifesto) {
   return {
     id: manifesto.id,
-    nome: manifesto.nome,
-    versao: manifesto.versao,
-    papel: manifesto.papel,
-    rotaBase: manifesto.rotaBase,
-    rotaWeb: manifesto.rotaWeb,
-    navegacao: manifesto.navegacao,
-    exportaResumo: manifesto.exportaResumo,
+    name: manifesto.name,
+    version: manifesto.version,
+    role: manifesto.role,
+    basePath: manifesto.basePath,
+    webPath: manifesto.webPath,
+    navigation: manifesto.navigation,
+    exportsSummary: manifesto.exportsSummary,
   };
 }
 

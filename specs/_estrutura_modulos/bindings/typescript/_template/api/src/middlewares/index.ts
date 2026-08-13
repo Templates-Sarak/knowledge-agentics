@@ -78,7 +78,7 @@ export interface Auth {
 }
 
 /**
- * `rotasPublicas` e declarado RELATIVO a rotaBase ("GET /health"), mas esta cadeia roda ANTES do
+ * `publicRoutes` e declarado RELATIVO a rotaBase ("GET /health"), mas esta cadeia roda ANTES do
  * router ser montado — aqui `req.path` ainda e absoluto ("/api/v1/<modulo>/health"). Sem tirar o
  * prefixo, nenhuma rota publica casaria e /health, /meta e /resumo responderiam 401.
  */
@@ -88,7 +88,7 @@ function pathRelative(caminho: string, rotaBase: string): string {
   return resto === '' ? '/' : resto;
 }
 
-/** DENY BY DEFAULT: so as rotas de `modulo.json:rotasPublicas` passam sem token. */
+/** DENY BY DEFAULT: so as rotas de `module.json:publicRoutes` passam sem token. */
 export function authentication(auth: Auth, rotasPublicas: string[], rotaBase: string): RequestHandler {
   const publicas = new Set(rotasPublicas.map((rota) => rota.toUpperCase()));
 

@@ -1,6 +1,6 @@
 """Logger estruturado do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §3.
 
-Uma linha JSON por evento, com requestId. Campos de `camposSensiveis` sao redigidos AQUI — nao e
+Uma linha JSON por evento, com requestId. Campos de `sensitiveFields` sao redigidos AQUI — nao e
 responsabilidade de quem chama lembrar. `print()` e proibido no modulo (regra `log`): a saida vai
 por `sys.stdout`, que e o unico canal do logger.
 """
@@ -39,11 +39,11 @@ class Logger:
     def _emit(self, nivel: str, mensagem: str, dados: dict[str, Any] | None) -> None:
         if NIVEIS.index(nivel) < self._minimo:
             return
-        linha = {"nivel": nivel, "modulo": self._modulo, "mensagem": mensagem}
+        linha = {"nivel": nivel, "module": self._modulo, "mensagem": mensagem}
         linha.update(_redact(dados or {}, self._sensiveis))
         sys.stdout.write(f"{json.dumps(linha, ensure_ascii=False)}\n")
 
-    # `dados` e KEYWORD-ONLY de proposito: alem de deixar a chamada legivel, impede que o linter
+    # `data` e KEYWORD-ONLY de proposito: alem de deixar a chamada legivel, impede que o linter
     # confunda este logger com o `logging` da stdlib, cujo segundo argumento posicional e
     # argumento de format string. Sem isso, `logger.error("msg", {...})` vira falso positivo.
     def debug(self, mensagem: str, *, dados: dict[str, Any] | None = None) -> None:

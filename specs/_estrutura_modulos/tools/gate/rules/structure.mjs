@@ -9,15 +9,15 @@
 import { carregarEsquema, validar } from '../schema.mjs';
 
 const CAMPOS_OBRIGATORIOS = [
-  'id', 'nome', 'versao', 'descricao', 'papel', 'binding', 'rotaBase', 'rotaWeb',
-  'dados', 'envRequerido', 'portas', 'consome', 'ui', 'permissoes',
-  'rotasPublicas', 'camposSensiveis', 'navegacao', 'exportaResumo', 'geraArtefato',
+  'id', 'name', 'version', 'description', 'role', 'binding', 'basePath', 'webPath',
+  'data', 'requiredEnv', 'ports', 'consumes', 'ui', 'permissions',
+  'publicRoutes', 'sensitiveFields', 'navigation', 'exportsSummary', 'generatesArtifact',
 ];
 
 const BINDINGS = ['typescript', 'javascript', 'python'];
 
 const ENTRADAS_PERMITIDAS = new Set([
-  'modulo.json', 'package.json', 'pyproject.toml', 'requirements.txt', 'README.md',
+  'module.json', 'package.json', 'pyproject.toml', 'requirements.txt', 'README.md',
   '.env', '.env.example', '.gitignore', 'package-lock.json', 'node_modules',
   'tsconfig.json', 'tsconfig.build.json', 'jsconfig.json', 'vitest.config.ts', 'vitest.config.js',
   'eslint.config.mjs', 'eslint.config.js',
@@ -44,10 +44,10 @@ const ENTRADAS_PERMITIDAS = new Set([
 const CONFIGS = ['api', 'domain', 'seguranca', 'ports', 'textos'];
 
 /**
- * As três pastas que `geraArtefato` declara (01-modulo.md §2, "só se geraArtefato").
+ * As três pastas que `generatesArtifact` declara (01-modulo.md §2, "só se geraArtefato").
  *
  * `database/` fica DE FORA de propósito, embora o `create-module.mjs --sem-artefato` também a
- * descarte: quem declara banco é `dados.tabelas`, não `geraArtefato`. Módulo sem artefato COM
+ * descarte: quem declara banco é `data.tables`, não `generatesArtifact`. Módulo sem artefato COM
  * tabela própria é o caso ordinário de domínio — cobrar `database/` aqui seria falso positivo
  * garantido nele.
  */
@@ -60,9 +60,9 @@ const PASTAS_DE_ARTEFATO = ['core/engine/', 'core/templates/', 'generated/'];
  *
  * A fronteira com quem já cobra, para não haver duas mensagens para um defeito: `contract/` é do
  * `contract`; `web/` é do `web-declarado`; `core/engine`, `core/templates` e `generated/` são do
- * `artefato-declarado`; `database/` é do `migrations`; `modulo.json` é do `manifesto`
+ * `artefato-declarado`; `database/` é do `migrations`; `module.json` é do `manifesto`
  * (`ctx.manifestoErro`). Nada disso se repete aqui. `core/gateways/` também fica de fora, de
- * propósito: módulo sem `consome` legitimamente não tem gateway nenhum, e cobrá-lo seria falso
+ * propósito: módulo sem `consumes` legitimamente não tem gateway nenhum, e cobrá-lo seria falso
  * positivo garantido.
  */
 const PASTAS_OBRIGATORIAS = ['core/domain/', 'core/ports/'];
@@ -93,7 +93,7 @@ const BARRIS_DE_PASTA = ['index', '__init__'];
  * Os gateways REAIS do módulo, pelo nome do arquivo e sem os barris.
  *
  * UMA implementação, e as duas regras que a usam são as duas pontas do mesmo triângulo:
- * `gateway-declarado` casa este nome com `modulo.json:consome`, e `testes-gateway` o casa com o
+ * `gateway-declarado` casa este nome com `module.json:consumes`, e `testes-gateway` o casa com o
  * teste que o espelha. Duas listas divergiriam no primeiro barril novo que alguém acrescentasse de
  * um lado só — e a exclusão de barril é justamente a parte fácil de esquecer.
  */
@@ -139,16 +139,16 @@ function conferirIdentidade(manifesto, ctx) {
     achados.push(`id "${manifesto.id}" nao e kebab-case minusculo`);
   }
   const rotaEsperada = `/api/v1/${manifesto.id}`;
-  if (manifesto.rotaBase !== rotaEsperada) {
-    achados.push(`rotaBase "${manifesto.rotaBase}" deveria ser "${rotaEsperada}"`);
+  if (manifesto.basePath !== rotaEsperada) {
+    achados.push(`rotaBase "${manifesto.basePath}" deveria ser "${rotaEsperada}"`);
   }
   return achados;
 }
 
 /**
- * `papel` NAO entra aqui — DECIDIDO (plan-2.md Bloco R.2). `papel` e enum, e enum e o que o
+ * `role` NAO entra aqui — DECIDIDO (plan-2.md Bloco R.2). `role` e enum, e enum e o que o
  * JSON Schema expressa: quem acusa e `schema-manifesto`, e `manifesto` cala. O precedente e o
- * proprio `manifesto-raiz`, que ja e um id so com a mesma justificativa ("tudo que o `projeto.json`
+ * proprio `manifesto-raiz`, que ja e um id so com a mesma justificativa ("tudo que o `project.json`
  * afirma e FORMA"). `binding` fica de fora desta decisao — nenhum caso o cobre e o Bloco R.2 nao o
  * revisitou — e continua checado aqui.
  */
@@ -164,7 +164,7 @@ export default [
   {
     id: 'manifesto',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       if (ctx.manifestoErro !== null) return [ctx.manifestoErro];
       const manifesto = ctx.manifesto;
@@ -176,11 +176,11 @@ export default [
   {
     id: 'schema-manifesto',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       // Sem manifesto legivel, a regra `manifesto` ja reprovou — nao empilhamos ruido em cima.
       if (ctx.manifesto === null) return [];
-      return validar(ctx.manifesto, carregarEsquema('modulo'), 'modulo.json');
+      return validar(ctx.manifesto, carregarEsquema('module'), 'module.json');
     },
   },
   {
@@ -189,9 +189,9 @@ export default [
      *
      * O módulo tem dois ids para isto (`manifesto` e `schema-manifesto`), e desde o Bloco R.2
      * (plan-2.md) a fronteira entre eles deixou de ter par a resolver: `schema-manifesto` é dono da
-     * FORMA — inclusive `papel`, que é enum — e `manifesto` cala nela (`conferirVocabulario` acima).
+     * FORMA — inclusive `role`, que é enum — e `manifesto` cala nela (`conferirVocabulario` acima).
      * O `manifesto` do módulo só existe além do schema por causa das cláusulas RELACIONAIS
-     * (`id` = nome da pasta, `rotaBase` derivada do `id`), e a raiz não tem nenhuma: ela não tem
+     * (`id` = nome da pasta, `basePath` derivada do `id`), e a raiz não tem nenhuma: ela não tem
      * nome de pasta a casar nem rota a derivar — por isso ela sempre foi um id só, e é o precedente
      * que fechou o do módulo.
      */
@@ -204,18 +204,18 @@ export default [
       if (!projeto.ehProjeto) return [];
       const { presente, valor, erro } = projeto.manifesto;
       if (!presente) {
-        return ['projeto.json ausente na raiz do projeto — a raiz declara o que exige do ambiente'
-          + ' (schema em tools/gate/schemas/projeto.schema.json). Sem ele, o segredo da'
+        return ['project.json ausente na raiz do projeto — a raiz declara o que exige do ambiente'
+          + ' (schema em tools/gate/schemas/project.schema.json). Sem ele, o segredo da'
           + ' fiacao (JWT, banco, provedor) nasce fora do .env.example e ninguem o cobra'];
       }
-      if (valor === null) return [`projeto.json nao e JSON valido — ${erro}`];
-      return validar(valor, carregarEsquema('projeto'), 'projeto.json');
+      if (valor === null) return [`project.json nao e JSON valido — ${erro}`];
+      return validar(valor, carregarEsquema('project'), 'project.json');
     },
   },
   {
     id: 'estrutura',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       // `contract/openapi.yaml` NAO entra aqui: a regra `contract` e a dona do arquivo de ponta a
@@ -255,7 +255,7 @@ export default [
      */
     id: 'estrutura-estrita',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       return ctx.entradasRaiz
         .filter((nome) => !ENTRADAS_PERMITIDAS.has(nome) && !nome.endsWith('.egg-info'))
@@ -265,9 +265,9 @@ export default [
   {
     id: 'web-declarado',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      if (ctx.manifesto?.rotaWeb == null) return [];
+      if (ctx.manifesto?.webPath == null) return [];
       const paginas = ctx.arquivos.filter((a) => a.rel.startsWith('web/src/pages/') && !a.eTeste);
       if (paginas.length === 0) return ['rotaWeb declarada mas web/src/pages nao tem pagina real'];
       return [];
@@ -275,34 +275,34 @@ export default [
   },
   {
     /**
-     * `navegacao` não-nulo significa que o conector monta uma entrada de menu para este módulo
-     * (01-modulo.md §3.2, "o conector monta o menu a partir de `navegacao`"). Menu leva a uma tela,
-     * e quem declara a tela é `rotaWeb`: `navegacao` com `rotaWeb: null` é entrada apontando para o
+     * `navigation` não-nulo significa que o conector monta uma entrada de menu para este módulo
+     * (01-modulo.md §3.2, "o conector monta o menu a partir de `navigation`"). Menu leva a uma tela,
+     * e quem declara a tela é `webPath`: `navigation` com `webPath: null` é entrada apontando para o
      * nada.
      *
-     * UMA direção só, e a inversa é legítima de propósito: `rotaWeb` sem `navegacao` é a página
+     * UMA direção só, e a inversa é legítima de propósito: `webPath` sem `navigation` é a página
      * alcançável por URL direta e fora do menu. A doutrina em lugar nenhum exige que toda tela
      * esteja no menu — cobrar isso proibiria a tela de detalhe, que é o caso ordinário.
      *
-     * `icone` não é verificável e não é tentado: não existe conjunto de ícones conhecido pelo
+     * `icon` não é verificável e não é tentado: não existe conjunto de ícones conhecido pelo
      * template (§7.2).
      */
     id: 'navegacao-declarada',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      const navegacao = ctx.manifesto?.navegacao;
+      const navigation = ctx.manifesto?.navigation;
       // Forma do objeto e do `schema-manifesto`; aqui so importa a declaracao existir.
-      if (navegacao == null) return [];
-      if (ctx.manifesto?.rotaWeb != null) return [];
-      return ['navegacao declarada mas rotaWeb e null — o conector monta o menu a partir de'
-        + ' navegacao, e a entrada apontaria para o nada. Declare rotaWeb, ou zere navegacao'];
+      if (navigation == null) return [];
+      if (ctx.manifesto?.webPath != null) return [];
+      return ['navigation declarada mas webPath e null — o conector monta o menu a partir de'
+        + ' navigation, e a entrada apontaria para o nada. Declare webPath, ou zere navigation'];
     },
   },
   {
     id: 'artefato-declarado',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       // BIDIRECIONAL: `true` exige as tres, `false` proibe as tres. A doutrina autoriza os DOIS
       // consertos ("Descartar e permitido; renomear, nao"), entao a mensagem nomeia os dois — dizer
@@ -310,14 +310,14 @@ export default [
       //
       // Guarda de aplicabilidade primeiro: manifesto ausente ou ilegivel e do `manifesto`, e campo
       // ausente ou de tipo errado e do `schema-manifesto`. So declaracao booleana de verdade entra.
-      if (typeof ctx.manifesto?.geraArtefato !== 'boolean') return [];
+      if (typeof ctx.manifesto?.generatesArtifact !== 'boolean') return [];
 
       const divergentes = PASTAS_DE_ARTEFATO
-        .filter((pasta) => temPastaDeArtefato(ctx, pasta) !== ctx.manifesto.geraArtefato);
+        .filter((pasta) => temPastaDeArtefato(ctx, pasta) !== ctx.manifesto.generatesArtifact);
       if (divergentes.length === 0) return [];
 
       const todas = PASTAS_DE_ARTEFATO.join(', ');
-      if (ctx.manifesto.geraArtefato) {
+      if (ctx.manifesto.generatesArtifact) {
         return [`geraArtefato: true mas ${divergentes.join(', ')} ausente no modulo — crie o que falta, `
           + `ou declare geraArtefato: false e descarte as tres (${todas}). Descartar e permitido; renomear, nao`];
       }
@@ -328,7 +328,7 @@ export default [
   {
     id: 'testes',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       if (!temArquivoEm(ctx, 'tests/domain/')) achados.push('tests/domain/ vazio ou ausente');
@@ -339,8 +339,8 @@ export default [
   {
     /**
      * A terceira camada de teste do §5, com a MESMA guarda de `web-declarado`: quem declara a tela
-     * é `rotaWeb`, e módulo sem tela não tem o que testar. `create-module.mjs --sem-web` remove
-     * `tests/web` E zera `rotaWeb`, então a condicional casa sozinha — a regra não cobra nada de
+     * é `webPath`, e módulo sem tela não tem o que testar. `create-module.mjs --sem-web` remove
+     * `tests/web` E zera `webPath`, então a condicional casa sozinha — a regra não cobra nada de
      * quem decidiu, com razão, não ter tela.
      *
      * Verifica PRESENÇA, nunca conteúdo: o §5 pede os três estados (`loading`, `empty`, `error`) e
@@ -349,9 +349,9 @@ export default [
      */
     id: 'testes-web',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      if (ctx.manifesto?.rotaWeb == null) return [];
+      if (ctx.manifesto?.webPath == null) return [];
       if (temArquivoEm(ctx, 'tests/web/')) return [];
       return ['rotaWeb declarada mas tests/web/ vazio ou ausente — a tela declarada precisa de teste'
         + ' (§5 pede os tres estados: loading, empty, error). Ou crie o teste, ou descarte a tela'
@@ -360,8 +360,8 @@ export default [
   },
   {
     /**
-     * O terceiro lado do triângulo `gateway ⟷ consome ⟷ teste`. Os outros dois já existiam:
-     * `gateway-declarado` liga o arquivo ao `consome`, e `consome-contrato` liga o `consome` ao
+     * O terceiro lado do triângulo `gateway ⟷ consumes ⟷ teste`. Os outros dois já existiam:
+     * `gateway-declarado` liga o arquivo ao `consumes`, e `consome-contrato` liga o `consumes` ao
      * contrato do dono. Faltava o teste — e sem ele uma dependência entre módulos podia existir,
      * declarada e conforme, sem uma linha que a exercitasse.
      *
@@ -374,7 +374,7 @@ export default [
      */
     id: 'testes-gateway',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       return gatewaysDe(ctx)
         .filter((nome) => !temTesteDe(ctx, nome))

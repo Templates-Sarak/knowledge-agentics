@@ -139,13 +139,13 @@ function montarArquivo(absoluto, raiz, eMolde) {
 
 /** Lê o manifesto já com marcadores trocados. Falha de leitura vira `erro`, não exceção. */
 function lerManifesto(raiz, eMolde) {
-  const caminho = join(raiz, 'modulo.json');
-  if (!existsSync(caminho)) return { manifesto: null, erro: 'modulo.json ausente' };
+  const caminho = join(raiz, 'module.json');
+  if (!existsSync(caminho)) return { manifesto: null, erro: 'module.json ausente' };
   try {
     const bruto = trocarMarcadores(lerTexto(caminho), eMolde);
     return { manifesto: JSON.parse(bruto), erro: null };
   } catch (causa) {
-    return { manifesto: null, erro: `modulo.json invalido — ${String(causa)}` };
+    return { manifesto: null, erro: `module.json invalido — ${String(causa)}` };
   }
 }
 
@@ -181,9 +181,9 @@ const projetosLidos = new Map();
 /** Os nomes que o gerador pode produzir. Ler os dois é mais barato que descobrir o binding aqui. */
 const CONFIGS_DE_LINT = ['eslint.config.js', '.ruff.toml'];
 
-/** Lê o `projeto.json` da raiz. Ausência e JSON quebrado são estados declarados, não exceção. */
+/** Lê o `project.json` da raiz. Ausência e JSON quebrado são estados declarados, não exceção. */
 function lerManifestoDaRaiz(raizProjeto) {
-  const caminho = join(raizProjeto, 'projeto.json');
+  const caminho = join(raizProjeto, 'project.json');
   if (!existsSync(caminho)) return { presente: false, valor: null, erro: null };
   try {
     return { presente: true, valor: JSON.parse(lerTexto(caminho)), erro: null };
@@ -303,7 +303,7 @@ export function listarModulos(raizProjeto) {
   if (!existsSync(base)) return [];
   return readdirSync(base)
     .filter((nome) => statSync(join(base, nome)).isDirectory())
-    .filter((nome) => existsSync(join(base, nome, 'modulo.json')))
+    .filter((nome) => existsSync(join(base, nome, 'module.json')))
     .map((nome) => join(base, nome));
 }
 

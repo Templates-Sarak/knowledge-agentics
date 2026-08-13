@@ -7,7 +7,7 @@
  * `sql-concatenado` e `segredo-em-log` são de escopo `root` e olham a fiação. Estão nesta família
  * porque é a de SEGURANÇA operacional — a mesma de `cookie-seguro` e `token-em-armazenamento` —, e
  * porque o vocabulário de credencial que `segredo-em-log` precisa já mora aqui. `sql-no-modulo` é a
- * gêmea de escopo `modulo` da primeira, e as duas dividem o discriminador (`ehSqlInjetado`).
+ * gêmea de escopo `module` da primeira, e as duas dividem o discriminador (`ehSqlInjetado`).
  *
  * Todas leem `arquivo.linhasCodigo`, nunca o conteúdo bruto: comentário e docstring não são
  * código, e a lei escrita num comentário não pode virar violação dela mesma. No molde isso não é
@@ -37,14 +37,14 @@ const PADRAO_SQL = new RegExp(`\\b(?:${SQL_FONTE})`, 'i');
 
 /**
  * O que transforma uma string SQL em INJEÇÃO: o valor entra na própria string, em vez de ir como
- * parâmetro. É o discriminador inteiro da regra — placeholder (`$1`, `?`, `:nome`, `%s`) NÃO casa
+ * parâmetro. É o discriminador inteiro da regra — placeholder (`$1`, `?`, `:name`, `%s`) NÃO casa
  * nenhum destes padrões, e é por isso que a forma correta passa.
  *
  * Cada um foi estreitado contra um falso positivo concreto:
  *   - concatenação exige que o outro lado NÃO seja literal: `'select a' + ' from b'` é feio e não é
  *     injeção, e acusá-lo mandaria consertar o que está seguro;
  *   - a f-string exige a chave `{`, senão `f"select 1"` (sem interpolação nenhuma) cairia;
- *   - o operador `%` exige ESPAÇO depois, senão `where nome like '%joao%'` — um padrão LIKE
+ *   - o operador `%` exige ESPAÇO depois, senão `where name like '%joao%'` — um padrão LIKE
  *     perfeitamente correto — seria acusado pelo `%` literal dele.
  *
  * A primeira alternativa exige um caractere que NÃO seja aspa nem branco, e essa forma positiva é
@@ -142,14 +142,14 @@ function temContextoSecreto(texto) {
  * abaixo de uma linha que fala de token continua passando, porque não é `return`.
  */
 /**
- * O formato de `rotasPublicas` (`"MÉTODO /caminho"`, 01-modulo.md §3.1) escrito como LITERAL no
+ * O formato de `publicRoutes` (`"MÉTODO /caminho"`, 01-modulo.md §3.1) escrito como LITERAL no
  * código. É a forma exata da lista de isenção hardcoded — a que desmente "a lista vem do manifesto".
  */
 const ROTA_LITERAL = /['"`](GET|POST|PUT|PATCH|DELETE)\s+\/[^'"`]*['"`]/;
 
 /**
  * Permissão escrita como LITERAL no argumento de `requirePermission`. É a forma exata da autorização
- * que desmente o manifesto: `modulo.json:permissoes` declara uma coisa, a rota exige outra, e nada
+ * que desmente o manifesto: `module.json:permissions` declara uma coisa, a rota exige outra, e nada
  * muda quando o manifesto muda.
  *
  * `[^)]*` cobre as duas assinaturas dos moldes — `requirePermission(ler)` em TS/JS e
@@ -187,26 +187,26 @@ function contextoSecretoPerto(texto, anterior) {
  * A lista de isenção vem do MANIFESTO, e não de literal no código — as duas metades do mesmo fato.
  *
  * É a cláusula que o molde já demonstra em `permissoesDe` ("As permissoes vem do manifesto, nunca
- * de literal no codigo"): a `api/` lê `rotasPublicas` do manifesto, e nenhum lugar dela escreve a
+ * de literal no codigo"): a `api/` lê `publicRoutes` do manifesto, e nenhum lugar dela escreve a
  * lista à mão. Uma lista hardcoded desmente o manifesto sem que o manifesto mude.
  */
 function conferirOrigemDaLista(daApi) {
   const achados = [];
   // `textoDeCodigo`, e nao `conteudo`: a clausula afirma que a `api/` LE o manifesto, e prosa nao le
-  // nada. Sobre o texto cru, a docstring que EXPLICA `rotasPublicas` — o molde tem tres — satisfazia
+  // nada. Sobre o texto cru, a docstring que EXPLICA `publicRoutes` — o molde tem tres — satisfazia
   // a checagem, e um modulo que tivesse apagado a leitura de verdade passava calado por causa do
   // comentario que a descreve. Falso negativo, e do tipo que aprova em silencio, que e o que o §7
-  // inteiro existe para evitar. Nos tres moldes a leitura real esta em codigo (`manifesto.rotasPublicas`,
-  // `manifesto["rotasPublicas"]`), entao fechar o buraco nao acusa nenhum deles.
-  if (!daApi.some((a) => textoDeCodigo(a).includes('rotasPublicas'))) {
-    achados.push('api/ nunca le modulo.json:rotasPublicas — a isencao de autenticacao nao pode vir'
+  // inteiro existe para evitar. Nos tres moldes a leitura real esta em codigo (`manifesto.publicRoutes`,
+  // `manifesto["publicRoutes"]`), entao fechar o buraco nao acusa nenhum deles.
+  if (!daApi.some((a) => textoDeCodigo(a).includes('publicRoutes'))) {
+    achados.push('api/ nunca le module.json:publicRoutes — a isencao de autenticacao nao pode vir'
       + ' de outro lugar, senao o manifesto declara uma coisa e a cadeia aplica outra');
   }
   for (const arquivo of daApi) {
     for (const { numero, texto } of arquivo.linhasCodigo) {
       if (ROTA_LITERAL.test(texto)) {
         achados.push(`${arquivo.rel}:${numero}: rota no formato "METODO /caminho" literal no codigo`
-          + ' — a lista de rotas publicas vem de modulo.json:rotasPublicas, nunca do codigo');
+          + ' — a lista de rotas publicas vem de module.json:publicRoutes, nunca do codigo');
       }
     }
   }
@@ -214,7 +214,7 @@ function conferirOrigemDaLista(daApi) {
 }
 
 /**
- * Toda entrada de `rotasPublicas` aponta para uma rota que EXISTE no contrato do módulo.
+ * Toda entrada de `publicRoutes` aponta para uma rota que EXISTE no contrato do módulo.
  *
  * Entrada com typo (`GET /helth`) não isenta nada e ninguém percebe: o autor acredita que abriu a
  * rota, a cadeia continua exigindo token, e o defeito só aparece em produção. O método entra na
@@ -222,7 +222,7 @@ function conferirOrigemDaLista(daApi) {
  * escrita do mesmo caminho por descuido (03-operacao.md §2.1).
  */
 function conferirRotasPublicasReais(ctx) {
-  const declaradas = ctx.manifesto?.rotasPublicas ?? [];
+  const declaradas = ctx.manifesto?.publicRoutes ?? [];
   if (declaradas.length === 0) return [];
   const spec = specDe(ctx);
   // Spec ausente ou com `paths:` ilegivel e do `contract` — acusar aqui viraria "nao consegui ler"
@@ -308,7 +308,7 @@ export default [
   {
     id: 'log',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       return varrer(ctx, () => true, SAIDA_DIRETA, 'saida direta — use o logger estruturado');
     },
@@ -316,7 +316,7 @@ export default [
   {
     id: 'determinismo',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       return varrer(
         ctx,
@@ -329,7 +329,7 @@ export default [
   {
     id: 'random-inseguro',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -351,7 +351,7 @@ export default [
   {
     id: 'rota-publica-autenticada',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const daApi = ctx.codigo.filter((a) => !a.eTeste && a.rel.startsWith('api/'));
       // Sem `api/` nao ha cadeia de middleware para julgar — `estrutura` ja cobra a ausencia dela.
@@ -368,20 +368,20 @@ export default [
      * Cobra UMA coisa, e o nome diz qual. A outra metade — "toda permissão declarada é exigida em
      * alguma rota", o análogo do `config-morta` — foi DESCARTADA, e não por preguiça: ela é
      * incompatível com esta. O molde consome as permissões por POSIÇÃO
-     * (`const [ler, escrever] = config.manifesto.permissoes`), então a string `<modulo>:ler` nunca
+     * (`const [ler, escrever] = config.manifesto.permissions`), então a string `<modulo>:ler` nunca
      * aparece no código — e não pode aparecer, porque é exatamente o que esta regra proíbe.
      * Procurá-la seria cobrar o oposto do que se cobra na linha de cima. Registrado no §7.1.
      */
     id: 'permissao-literal',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       return varrer(
         ctx,
         (arquivo) => arquivo.rel.startsWith('api/'),
         PERMISSAO_LITERAL,
         'permissao literal em exigirPermissao — a permissao em vigor vem de'
-        + ' modulo.json:permissoes, nunca do codigo: com o literal aqui, o manifesto declara uma'
+        + ' module.json:permissions, nunca do codigo: com o literal aqui, o manifesto declara uma'
         + ' coisa e a rota exige outra, e mudar o manifesto nao muda nada',
       );
     },
@@ -389,7 +389,7 @@ export default [
   {
     id: 'cookie-seguro',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -411,7 +411,7 @@ export default [
   {
     id: 'token-em-armazenamento',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {
@@ -435,7 +435,7 @@ export default [
      * ter driver (`sdk-fornecedor`) nem importar adapter (`import-adapter`), então quem monta a query
      * é `adapters/`, que até a I.1 nenhuma regra enxergava.
      *
-     * A gêmea de escopo `modulo` é `sql-no-modulo`, e as duas nunca acusam o mesmo arquivo: esta lê
+     * A gêmea de escopo `module` é `sql-no-modulo`, e as duas nunca acusam o mesmo arquivo: esta lê
      * `projeto.codigo` (`adapters/`, `src/`, `packages/`), aquela lê `ctx.codigo` (a pasta do módulo),
      * e `context.mjs` mantém as duas coleções disjuntas por construção.
      */
@@ -469,7 +469,7 @@ export default [
      */
     id: 'sql-no-modulo',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       return varrer(
         ctx,
@@ -486,8 +486,8 @@ export default [
     /**
      * Segredo não vai para log — e o sinal vem de onde já existe declaração, não de um campo novo.
      *
-     * O módulo cruza `camposSensiveis` com a projeção e o log (`sensivel-em-saida`), e a raiz não
-     * tem esse campo: `projeto.json` declara `envRequerido` e nada mais, com
+     * O módulo cruza `sensitiveFields` com a projeção e o log (`sensivel-em-saida`), e a raiz não
+     * tem esse campo: `project.json` declara `requiredEnv` e nada mais, com
      * `additionalProperties: false` fechando a porta de propósito. O sinal aqui é melhor, porque já
      * está declarado: as chaves `RAIZ_*` do manifesto filtradas pelo MESMO vocabulário fechado de
      * sufixo de credencial que `gateway-credencial` e `segredo-em-publico` usam. `RAIZ_JWT_SECRET` é
@@ -498,7 +498,7 @@ export default [
     escopo: 'root',
     verificar(projeto) {
       if (!projeto.ehProjeto) return [];
-      const credenciais = (projeto.manifesto.valor?.envRequerido ?? [])
+      const credenciais = (projeto.manifesto.valor?.requiredEnv ?? [])
         .filter((chave) => PADRAO_CREDENCIAL.test(chave));
       if (credenciais.length === 0) return [];
 
@@ -515,10 +515,10 @@ export default [
   {
     id: 'gateway-credencial',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      if (ctx.manifesto?.papel === 'gateway') return [];
-      return (ctx.manifesto?.envRequerido ?? [])
+      if (ctx.manifesto?.role === 'gateway') return [];
+      return (ctx.manifesto?.requiredEnv ?? [])
         .filter((chave) => PADRAO_CREDENCIAL.test(chave))
         .map((chave) => `env "${chave}" e credencial de servico externo — so modulo com papel "gateway" pode declarar`);
     },

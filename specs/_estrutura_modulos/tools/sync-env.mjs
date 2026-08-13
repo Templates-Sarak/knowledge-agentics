@@ -6,8 +6,8 @@
  *   node tools/sync-env.mjs             regrava os .env.example, MESCLA o .env real
  *   node tools/sync-env.mjs --conferir  só verifica os .env.example (para o gate/CI)
  *
- * São DUAS fontes, uma por unidade que declara: `modulo.json:envRequerido` para o `.env.example` de
- * cada módulo, e `projeto.json:envRequerido` para as chaves da própria RAIZ (a fiação —
+ * São DUAS fontes, uma por unidade que declara: `module.json:requiredEnv` para o `.env.example` de
+ * cada módulo, e `project.json:requiredEnv` para as chaves da própria RAIZ (a fiação —
  * `adapters/`, `src/`, `packages/`). O `.env.example` da raiz é a união das duas.
  *
  * Enquanto a raiz não declarava, o segredo dela nascia órfão: `JWT_SECRET`, `DATABASE_URL`, chave
@@ -30,9 +30,9 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 /** `.env.example` — SEM valor, sempre. Regravado por inteiro; "nao edite a mao" e verdade aqui. */
 const CABECALHO_ENV_EXEMPLO = [
   '# .env.example da RAIZ — fonte UNICA de segredo do projeto (ADR-004).',
-  '# GERADO por `node tools/sync-env.mjs` a partir de projeto.json:envRequerido (as',
-  '# chaves da propria raiz) e de modulo.json:envRequerido de cada modulo. NAO edite a mao:',
-  '# acrescente a chave no manifesto que a EXIGE — projeto.json ou modulo.json — e rode o script.',
+  '# GERADO por `node tools/sync-env.mjs` a partir de project.json:envRequerido (as',
+  '# chaves da propria raiz) e de module.json:envRequerido de cada modulo. NAO edite a mao:',
+  '# acrescente a chave no manifesto que a EXIGE — project.json ou module.json — e rode o script.',
   '# Este arquivo e versionado (SEM segredo real); o .env real fica no .gitignore.',
 ];
 
@@ -45,7 +45,7 @@ const CABECALHO_ENV_EXEMPLO = [
 const CABECALHO_ENV_REAL = [
   '# .env da RAIZ — fonte UNICA de segredo do projeto (ADR-004). NAO versionado (.gitignore).',
   '# As CHAVES sao geradas/mescladas por `node tools/sync-env.mjs`, a partir de',
-  '# projeto.json:envRequerido e de modulo.json:envRequerido de cada modulo — rode o script sempre',
+  '# project.json:envRequerido e de module.json:envRequerido de cada modulo — rode o script sempre',
   '# que um manifesto mudar (create-module.mjs ja roda por voce). Os VALORES sao preenchidos A MAO:',
   '# e o unico jeito de um segredo real nunca virar texto versionado. O script NUNCA sobrescreve um',
   '# valor ja preenchido, e NUNCA apaga chave em silencio — chave que nenhum manifesto exige mais',
@@ -53,7 +53,7 @@ const CABECALHO_ENV_REAL = [
 ];
 
 /** Cabecalho da secao da raiz. As chaves dela sao `RAIZ_*`; as de modulo, `<MODULO>_*`. */
-const SECAO_DA_RAIZ = '# --- RAIZ: a fiacao (adapters/, src/, packages/) — projeto.json ---';
+const SECAO_DA_RAIZ = '# --- RAIZ: a fiacao (adapters/, src/, packages/) — project.json ---';
 
 /** Cabecalho da secao de chaves que nenhum manifesto exige mais. */
 const SECAO_ORFAS = '# --- ORFAS: nenhum manifesto exige mais. Comentadas, valor preservado — apague a mao se tiver certeza ---';
@@ -79,7 +79,7 @@ function montarEntrada(pasta, nome) {
     nome,
     eMolde: nome.startsWith('_'),
     pasta,
-    manifesto: JSON.parse(lerTexto(join(pasta, 'modulo.json'))),
+    manifesto: JSON.parse(lerTexto(join(pasta, 'module.json'))),
   };
 }
 
@@ -89,7 +89,7 @@ function listarModulos(raizProjeto) {
   if (!existsSync(base)) return [];
   return readdirSync(base)
     .filter((nome) => statSync(join(base, nome)).isDirectory())
-    .filter((nome) => existsSync(join(base, nome, 'modulo.json')))
+    .filter((nome) => existsSync(join(base, nome, 'module.json')))
     .map((nome) => montarEntrada(join(base, nome), nome));
 }
 
@@ -102,7 +102,7 @@ function listarMoldesDeBinding(raizProjeto) {
   if (!existsSync(base)) return [];
   return readdirSync(base)
     .map((binding) => join(base, binding, '_template'))
-    .filter((pasta) => existsSync(join(pasta, 'modulo.json')))
+    .filter((pasta) => existsSync(join(pasta, 'module.json')))
     .map((pasta) => montarEntrada(pasta, '_template'));
 }
 
@@ -110,37 +110,37 @@ function conteudoDoModulo({ manifesto }) {
   return [
     `# Chaves do modulo ${manifesto.id} — GERADO por tools/sync-env.mjs.`,
     '# O .env REAL e unico, na RAIZ do projeto (ADR-004); este arquivo so DOCUMENTA.',
-    '# Sem segredo real aqui. Para acrescentar uma chave: declare em modulo.json:envRequerido.',
+    '# Sem segredo real aqui. Para acrescentar uma chave: declare em module.json:envRequerido.',
     '',
-    ...(manifesto.envRequerido ?? []).map((chave) => `${chave}=`),
+    ...(manifesto.requiredEnv ?? []).map((chave) => `${chave}=`),
     '',
   ].join('\n');
 }
 
 /**
  * O manifesto da RAIZ. Ausente devolve `null` — projeto anterior ao template, e quem reprova isso é
- * a regra `manifesto-raiz` do gate, não este script. JSON quebrado ESTOURA, como o `modulo.json`
+ * a regra `manifesto-raiz` do gate, não este script. JSON quebrado ESTOURA, como o `module.json`
  * quebrado já estourava: gerar em cima de fonte ilegível daria um `.env.example` silenciosamente
  * incompleto, que é pior que a parada.
  */
 function lerManifestoDaRaiz(raizProjeto) {
-  const caminho = join(raizProjeto, 'projeto.json');
+  const caminho = join(raizProjeto, 'project.json');
   return existsSync(caminho) ? JSON.parse(lerTexto(caminho)) : null;
 }
 
-/** Chaves desejadas da raiz, na MESMA ordem/secao nos dois arquivos (.env.example e .env real). */
+/** Chaves desejadas da raiz, na MESMA order/secao nos dois arquivos (.env.example e .env real). */
 function chavesDaRaizPorSecao(lista, envDaRaiz) {
   const secoes = [];
   if (envDaRaiz !== null) secoes.push({ titulo: SECAO_DA_RAIZ, chaves: envDaRaiz });
   for (const { manifesto } of lista) {
-    secoes.push({ titulo: `# --- ${manifesto.nome} (${manifesto.rotaBase}) ---`, chaves: manifesto.envRequerido ?? [] });
+    secoes.push({ titulo: `# --- ${manifesto.name} (${manifesto.basePath}) ---`, chaves: manifesto.requiredEnv ?? [] });
   }
   return secoes;
 }
 
 function conteudoDaRaizExemplo(lista, envDaRaiz) {
   const linhas = [...CABECALHO_ENV_EXEMPLO, ''];
-  // A secao da raiz vem PRIMEIRO, e aparece mesmo vazia quando ha `projeto.json`: "a raiz nao exige
+  // A secao da raiz vem PRIMEIRO, e aparece mesmo vazia quando ha `project.json`: "a raiz nao exige
   // nada" e uma afirmacao, e o operador precisa distingui-la de "ninguem perguntou".
   for (const { titulo, chaves } of chavesDaRaizPorSecao(lista, envDaRaiz)) {
     linhas.push(titulo, ...chaves.map((chave) => `${chave}=`), '');

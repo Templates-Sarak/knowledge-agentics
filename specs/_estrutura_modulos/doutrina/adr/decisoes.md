@@ -45,7 +45,7 @@ com o financeiro"* — e foi assim que, num sistema real, um cliente HTTP de out
 pasta chamada `database/`, ao lado de um adapter que fazia `SELECT` direto em tabela alheia.
 
 **Decisão.** `core/ports/` é infraestrutura; `core/gateways/` é outro módulo, exclusivamente HTTP, sempre
-declarado em `modulo.json:consome`.
+declarado em `module.json:consumes`.
 
 **Consequências.** O gate consegue cobrar regras diferentes para riscos diferentes: gateway com SQL reprova, e
 gateway sem declaração reprova. O grafo de dependências entre módulos passa a ser mecânico — dá para detectar
@@ -204,7 +204,7 @@ critério de cadência deste ADR ("quando o K acender", não "porque o registry 
 **Status:** 🟢 Aceito
 
 **Contexto.** O `04-regras.md` §3 já prometia "inglês onde a linguagem ou o framework impõem" — mas o
-template usava português em oito pastas estruturais (`modules`, `tools`, `domain`, `portas`, `engine`,
+template usava português em oito pastas estruturais (`modules`, `tools`, `domain`, `ports`, `engine`,
 `contract`, `generated`, `mappers`) onde nada na linguagem ou no framework impunha nada: são vocabulário
 **estrutural** do próprio padrão Sarak, não do negócio. A pergunta que abriu esta decisão (plan-3.md) —
 *"o correto, segundo as boas práticas, não seria em inglês?"* — nasceu olhando `api/src/routes` e
@@ -237,7 +237,7 @@ nenhuma fique arbitrária por analogia:
 | 5 | Nomes de arquivo dentro de `ferramentas/` (→ `tools/`), os ~29 `.mjs` | **inglês** — `criar-projeto→create-project` `validar→validate` `sincronizar-env→sync-env` `escrita→writing` `isolamento→isolation` `contexto→context` … (lista completa no inventário) | é a árvore (linha 1 do princípio), não o conteúdo — a mesma pasta não pode ficar meio inglês, meio português um nível abaixo do que a linha 1 já resolveu. É a superfície de CLI que o dev digita |
 | 6 | Ids das 74 regras do catálogo | **português** | id de regra é nome de artigo de lei, e a lei é portuguesa — citado muito mais em prosa (§4.x, §7.2) que em código |
 | 7 | Mensagens do gate e erros de runtime | **português** | documentação entregue por código; é a UX do template |
-| 8 | Chaves do manifesto (`modulo.json`, `projeto.json`) e nome do arquivo | **inglês** — `name` `data` `ports` `requiredEnv` `basePath` … | é config lida por código — árvore, não conteúdo. Enum de valor estrutural (`papel: dominio\|gateway\|conector` → `role: domain\|gateway\|connector`) segue a mesma tradução da pasta homônima (linha 1) — é o mesmo conceito, não uma exceção |
+| 8 | Chaves do manifesto (`module.json`, `project.json`) e nome do arquivo | **inglês** — `name` `data` `ports` `requiredEnv` `basePath` … | é config lida por código — árvore, não conteúdo. Enum de valor estrutural (`papel: dominio\|gateway\|conector` → `role: domain\|gateway\|connector`) segue a mesma tradução da pasta homônima (linha 1) — é o mesmo conceito, não uma exceção |
 | 9 | Chaves de ambiente | **inglês** — `ROOT_API_PORT`, `<MODULE>_DB_URL` | convenção universal de env |
 | 10 | Rotas (`/registros`) e banco (`titulo`, `<mod>_metadados`) | **português** | domínio e dados — conteúdo, não árvore. É a boa prática de DDD, não a exceção |
 | 11 | Nomes de skill (`code-modulo`, `cyber-segredos`) | **fora de escopo** | convenção de toda a base Sarak, não do template |
@@ -269,7 +269,7 @@ pela metade que falta. `tools/` (linha 4, só o símbolo) e os ids de regra (lin
 exceções deliberadas dentro de um template majoritariamente inglês na camada técnica — registradas aqui para
 que uma futura "limpeza de consistência" não as trate como esquecimento.
 
-**Alternativa descartada.** Tudo em inglês, inclusive domínio/dados/rotas. Contradiz a lei de nomes já
+**Alternativa descartada.** Tudo em inglês, inclusive domínio/data/rotas. Contradiz a lei de nomes já
 vigente (§3: "português no domínio, nas rotas e nos dados") e o próprio ADR-001 — regra de negócio duplicada
 por módulo já é português por natureza; traduzir a camada de domínio seria tradução de conteúdo, não rename,
 fora do escopo que esta campanha se propôs (plan-3.md, "Fora deste plano").

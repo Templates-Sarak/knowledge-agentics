@@ -49,7 +49,7 @@ asyncio_mode = "auto"
 # `limiar-funcao`, `limiar-aninhamento` e `limiar-parametros`. Perde-se a verificacao PROFUNDA do
 # linter (complexidade, idiomas), nunca o piso. Fechar a janela com uma secao aqui seria pior:
 # compraria cobertura para o transitorio desligando-a no caso normal. Quem a fecha de vez e a
-# config POR MODULO gerada de cada `modulo.json`.
+# config POR MODULO gerada de cada `module.json`.
 
 [tool.mypy]
 python_version = "3.11"

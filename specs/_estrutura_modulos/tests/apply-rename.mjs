@@ -272,9 +272,32 @@ export function ehLinhaDeImportPython(linha) {
  * quando a linha também contém um marcador de que aquele bare-string é valor de manifesto/id de
  * regra (`PAPEIS`, `papel`, `id:`, `regra:`), nunca pelo literal sozinho. */
 const PADROES_DE_PROTECAO = new Map([
-  ['dominio', ['PAPEIS', 'papel']],
+  // `dominio`/`conector` (Bloco AD.3, decisao 8 de decisoes.md): os VALORES do enum `papel`/`role`
+  // NO MANIFESTO traduzem junto com a chave — "e o mesmo conceito da pasta homonima, nao uma
+  // excecao". Ate AD.3 abrir, ficam protegidos (marcador `PAPEIS`/`papel`/`"role":` na linha) pelo
+  // MESMO motivo de sempre — nao deixar a pasta `dominio→domain` (AD.1) corromper o default/enum
+  // do manifesto antes da hora. EM AD.3, a protecao se SUSPENDE SO pro `"role":` do `module.json`
+  // (aspas duplas — JSON) — o proprio valor vira alvo ali.
+  //
+  // `marcadoresSempre` (revisao pos-round do revisor, decisao #5): a CLI de `create-module.mjs`
+  // aceita `--role dominio` — flag em ingles (decisao 5, superficie de CLI), VALOR em portugues
+  // por decisao explicita, nao o manifesto. `const PAPEIS = [...]`/`valorDe('role', 'dominio')`
+  // batem os MESMOS marcadores base (`PAPEIS`) que protegiam o valor do manifesto — sem separar
+  // "sempre" de "com excecao", suspender por AD.3 suspendia a CLI tambem, e o `--aplicar` reescrevia
+  // `PAPEIS` para ingles, quebrando a flag que o revisor acabou de aprovar em portugues. JS usa
+  // aspas simples (`'role'`) e JSON usa aspas duplas (`"role":`) — os dois conjuntos de marcador
+  // nunca colidem por construcao da linguagem, entao a separacao e livre de ambiguidade.
+  ['dominio', {
+    marcadores: ['PAPEIS', 'papel', "valorDe('role'", '"role":'],
+    marcadoresSempre: ['PAPEIS', "valorDe('role'"],
+    protegidoExceto: ['AD.3'],
+  }],
   ['gateway', ['PAPEIS', 'papel']],
-  ['conector', ['PAPEIS', 'papel']],
+  ['conector', {
+    marcadores: ['PAPEIS', 'papel', "valorDe('role'", '"role":'],
+    marcadoresSempre: ['PAPEIS', "valorDe('role'"],
+    protegidoExceto: ['AD.3'],
+  }],
   ['contrato', ['id:', 'regra:']],
   ['testes', ['id:', 'regra:']],
   // 'portas' (chave de manifesto, fase AD.3 — Bloco AI, AI.5) NÃO tem marcador-de-linha confiável:
@@ -305,29 +328,69 @@ const PADROES_DE_PROTECAO = new Map([
   // e corrompe o nome de um script Python que nunca foi renomeado. Protegido sempre (`true`) — não há
   // uso bare legítimo de 'verificar' esperando substituir em doutrina/ hoje.
   ['verificar', true],
+  // `<modulo>`/`<MODULO>`/`<Modulo>` (Bloco AD.3) são o MARCADOR de template que
+  // `create-module.mjs:substituir`/`context.mjs:trocarMarcadores` procuram e trocam pelo id/nome
+  // reais — mecanismo de SCAFFOLDING, não vocabulário do manifesto, mesmo a palavra sendo a mesma
+  // que `consome[].modulo` (a chave nested que ESTE item existe pra renomear). O marcador não é
+  // código: desaparece no primeiro scaffold, e a fronteira da campanha (decisoes.md §233-243) não
+  // fala dele porque ele não está em nenhum dos dois lados — nem árvore, nem conteúdo. DECISÃO DO
+  // REVISOR (Bloco AD.3, revisão pós-round): a família fica UNIFORME em português — `<MODULO>` é a
+  // convenção de prefixo de env documentada em toda a doutrina, e dividir só `<modulo>` para inglês
+  // seria pior que o problema que motivou a proteção. Este marcador de linha (junto de
+  // `dentroDeMarcadorDeTemplate`, no ramo 'string' de `decidir`, que vence a precedência de
+  // `pareceCaminho` — ver o comentário lá) fecha os DOIS lados: `id: "<modulo>"` (sem barra, cai
+  // aqui) e `basePath: "/api/v1/<modulo>"` (com barra, precisava do desvio de precedência).
+  ['modulo', ['<modulo>', '<MODULO>', '<Modulo>']],
+  // `permissoes` em `getattr(request.state, "permissoes", [])` (Bloco AD.3, achado na verificação
+  // de pendências pós-round): `request.state.permissoes` é o MESMO conceito fora-de-escopo que
+  // `req.permissoes` em TS/JS (Request aumentado, permissões da REQUISIÇÃO autenticada, nunca a
+  // chave do manifesto) — protegido lá de graça, porque é acesso pontilhado sem base conhecida. A
+  // forma Python (`getattr(obj, "string", default)`) LÊ o mesmo atributo por STRING, e string
+  // sem espaço substitui por padrão (sem `IDENTIFICADORES_DE_MANIFESTO` pra consultar, esse
+  // mecanismo só existe pro ramo 'codigo') — a ATRIBUIÇÃO (`request.state.permissoes = ...`,
+  // pontilhada, sem base conhecida) ficava protegida OK, mas a LEITURA por `getattr` virava
+  // "permissions", os dois lados do MESMO estado divergindo — toda checagem de permissão passava a
+  // ler lista vazia, "permissao insuficiente" em toda rota autenticada (Bloco K, binding Python).
+  // Marcador `request.state` (não `true` incondicional): `permissoes` continua substituindo em
+  // TODO OUTRO contexto — `manifesto["permissoes"]`, `module.json:permissoes`, os 19 lugares que já
+  // fecharam certo.
+  ['permissoes', ['request.state']],
 ]);
 
 /** `literaisProtegidos` é o `Map` acima (lido do inventário) — devolve `true` se o LITERAL está
  * marcado como SEMPRE protegido (`true`), como protegido-por-padrão-com-exceção-de-fase (objeto
- * `{ protegidoExceto }`, sem a exceção aplicada aqui — ver `protecaoSuspensaNestaFase`), ou se tem
- * lista de marcadores E a linha onde ele ocorreu bate um deles. */
+ * `{ protegidoExceto }`, sem marcador — protege a linha inteira, exceção aplicada pelo chamador via
+ * `protecaoSuspensaNestaFase`), como protegido-por-MARCADOR-com-exceção-de-fase (objeto
+ * `{ marcadores, protegidoExceto }` — Bloco AD.3, ver `dominio`/`conector` em `PADROES_DE_PROTECAO`:
+ * o enum de `papel` precisa das DUAS coisas ao mesmo tempo, marcador PORQUE `dominio` também
+ * aparece como pasta/palavra comum fora de `papel:`, exceção de fase PORQUE o próprio valor do
+ * enum é o alvo do AD.3, decisão 8 de `decisoes.md`), ou se tem lista NUA de marcadores (sem
+ * exceção de fase nenhuma) E a linha onde ele ocorreu bate um deles. */
 export function protegidoNestaLinha(linha, nomeOcorrencia, literaisProtegidos) {
   const padroes = literaisProtegidos?.get(nomeOcorrencia);
   if (!padroes) return false;
   if (padroes === true) return true;
   if (Array.isArray(padroes)) return padroes.some((p) => linha.includes(p));
-  return true; // objeto { protegidoExceto }: protegido POR PADRÃO — a exceção é do chamador.
+  if (padroes.marcadores) return padroes.marcadores.some((p) => linha.includes(p));
+  return true; // objeto { protegidoExceto } sem marcadores: protegido POR PADRÃO — a exceção é do chamador.
 }
 
 /**
- * A FASE ATUAL é a declarada como exceção deste literal (Bloco AD, B3) — ele deixa de estar
- * protegido só agora, porque é ELE MESMO que está sendo renomeado nesta fase. Separada de
- * `protegidoNestaLinha` de propósito: a exceção tem de vetar TODA fonte de proteção por igual —
- * marcador de linha, `true` incondicional ou o bônus de `dentroDeArrayProtegido` — não só uma.
+ * `marcadoresSempre` (Bloco AD.3, revisão pós-round) — SUBCONJUNTO de `marcadores` que a exceção de
+ * fase NUNCA suspende, mesmo quando outro marcador da MESMA entrada é suspendível. Achado com
+ * `dominio`/`conector`: o VALOR do enum `papel`/`role` precisa suspender em AD.3 (decisão 8 —
+ * `"role": "dominio"` em `module.json` vira `"domain"`), mas a CLI de `create-module.mjs`
+ * (`const PAPEIS = [...]`, `valorDe('role', 'dominio')`) precisa continuar protegida SEMPRE — a
+ * flag aceita valor português por decisão do revisor (`--role dominio`), não é o manifesto. Mesma
+ * palavra, mesmo item, comportamento oposto por ARQUIVO — JSON usa `"role":` com aspas duplas, JS
+ * usa `PAPEIS`/`valorDe(` sem essa forma, os dois conjuntos de marcador nunca colidem por
+ * construção. Sem isto, suspender por fase suspendia a ENTRADA inteira — inclusive as linhas de
+ * CLI que nunca deveriam suspender.
  */
-export function protecaoSuspensaNestaFase(nomeOcorrencia, literaisProtegidos, fase) {
+export function protecaoSuspensaNestaFase(linha, nomeOcorrencia, literaisProtegidos, fase) {
   const padroes = literaisProtegidos?.get(nomeOcorrencia);
   if (padroes === true || padroes === undefined || Array.isArray(padroes)) return false;
+  if (padroes.marcadoresSempre?.some((p) => linha.includes(p))) return false;
   return (padroes.protegidoExceto ?? []).includes(fase);
 }
 
@@ -347,6 +410,136 @@ const RE_ABRE_ARRAY_PROTEGIDO = new RegExp(
 const RE_FECHA_ARRAY_PROTEGIDO = /^\s*\]\)?;?\s*$/;
 
 /**
+ * TERCEIRA FORMA (Bloco AD.3) — chave de manifesto como MEMBRO DE OBJETO/TIPO sem `.` na frente:
+ * `m.manifesto((x) => ({ ...x, papel: 'x' }))`/`m.manifestoRaiz((x) => ({ ...x, envRequerido: [] }))`
+ * (valor, `cases.mjs` — as DUAS funções do harness de teste, `tools/gate/tests/run.mjs:197,202`) e
+ * `export interface Manifesto { papel: Papel }`/`interface ManifestoDescoberto {...}` (tipo,
+ * `config.ts`/`composicao.ts`). Duas formas de GATILHO, um só reconhecedor: qualquer linha que
+ * contenha `.manifesto(`/`.manifestoRaiz(` OU `interface <algo>Manifesto<algo> {` ABRE o bloco;
+ * dali em diante toda chave nua encontrada é tratada como se estivesse precedida de `.`, até o
+ * bloco fechar.
+ *
+ * `.manifestoRaiz(` só entrou depois de um FALHA real (Bloco AD.3, segunda rodada de `--aplicar`):
+ * `\.manifesto\(` sozinho não casa `.manifestoRaiz(` (tem "Raiz" no meio, antes do `(`), então os
+ * 4 `mutar: (m) => m.manifestoRaiz((x) => ({ ...x, envRequerido: ... }))` de `cases.mjs` ficaram
+ * de fora do bloco — `x.envRequerido` continuou 'envRequerido' (base `x` não é
+ * `IDENTIFICADORES_DE_MANIFESTO`, sem a bandeira de bloco não substitui) enquanto o `project.json`
+ * de verdade já falava `requiredEnv` — `x.envRequerido is not iterable` no gate self-test.
+ *
+ * Por PROFUNDIDADE DE CHAVE, não por um booleano só (diferença deliberada do
+ * `dentroDeArrayProtegido` acima): o corpo de `.manifesto((x) => ({...}))` tem objeto ANINHADO de
+ * verdade (`consome: [{ modulo, contrato, porQue }]`) — um único par abre/fecha perderia a conta.
+ * Contando `{` menos `}` de cada linha via `profundidadeDeManifesto` (abaixo, em
+ * `classificarArquivo`), o bloco fecha exatamente na linha cujo saldo devolve a profundidade a 0,
+ * nested ou não. `[a-z]` maiúsculo em `Mm` cobre `Manifesto`/`ManifestoDescoberto` com o mesmo
+ * padrão — `\w*` dos dois lados pega qualquer prefixo/sufixo de identificador.
+ */
+const RE_ABRE_BLOCO_DE_MANIFESTO = /\.manifesto(?:Raiz)?\(|interface\s+\w*[Mm]anifesto\w*\s*\{/;
+
+/**
+ * ACESSO DE PROPRIEDADE (B2) por BASE CONHECIDA, não por "tem ponto antes" cru (Bloco AD.3,
+ * achado ao estender `chave` para `tools/`/`tests/` — ver `itemAplicaAoArquivo`). Medido no corpus
+ * inteiro (bindings/ + tools/ + tests/) ANTES de estender a fronteira: `nome`/`permissoes`/
+ * `descricao`/`rotaBase` também aparecem em ACESSO DE PROPRIEDADE de objetos que NÃO são o
+ * manifesto — `caso.nome` (nome do caso de teste, dezenas de ocorrências em `tools/*.mjs`/
+ * `tests/*.mjs`), `req.permissoes`/`claims.permissoes`/`state.permissoes` (permissões da
+ * REQUISIÇÃO autenticada, middlewares TS/JS/Python), `corpo.rotaBase` (asserção de teste de
+ * contrato sobre a RESPOSTA HTTP) — mesma palavra, objeto diferente, "tem `.` antes" sozinho não
+ * distingue. `IDENTIFICADORES_DE_MANIFESTO` é a lista FECHADA (por medição, não suposição) de
+ * quem, hoje, no template inteiro, segura de verdade o manifesto ou algo derivado dele em acesso
+ * pontilhado: `manifesto`/`ctx.manifesto` (as ~40 regras do gate), `modulo` (variável de laço em
+ * `composicao.ts/js`, iterando módulos já carregados), `valor` (`projeto.manifesto.valor`, o
+ * conteúdo destructurado do `project.json`), `opcoes` (`create-module.mjs`, as flags de CLI que
+ * espelham os mesmos campos). Fora desta lista, RECUSA — o mesmo default seguro de sempre: perder
+ * uma substituição legítima ainda não medida é resolvível (autoteste "3a forma" acrescenta caso
+ * novo); substituir `caso.nome` por `caso.name` em silêncio corrompe um campo de teste sem ninguém
+ * notar, e É EXATAMENTE a classe de defeito que motivou excluir `tools/`/`tests/` de `chave` em
+ * primeiro lugar — só reabrimos a fronteira DEPOIS de fechar este buraco.
+ */
+const IDENTIFICADORES_DE_MANIFESTO = ['manifesto', 'modulo', 'valor', 'opcoes'];
+
+/**
+ * A BASE conhecida pode estar em QUALQUER SEGMENTO da cadeia pontilhada antes de `pos`, não só no
+ * imediatamente anterior — achado real (Bloco AD.3, segunda rodada de `--aplicar`):
+ * `manifesto.data.tabelas`/`ctx.manifesto?.data?.tabelas` têm `data` (não `manifesto`) como base
+ * IMEDIATA de `tabelas`, e só checar o segmento imediato deixava esses dois de fora (`dados.tabelas`
+ * não corrigido em `create-module.mjs`/`data.mjs`, mesmo com `manifesto` presente dois segmentos
+ * atrás). Caminha a cadeia inteira (`a?.b?.c?.` — identificadores separados por `.`, cada um com
+ * `?` opcional antes do ponto) e aceita se QUALQUER segmento bate `IDENTIFICADORES_DE_MANIFESTO` —
+ * `caso.nome`/`req.permissoes` continuam recusando: a cadeia deles é só `['caso']`/`['req']`, nenhum
+ * segmento bate a lista, então nada muda para o achado original que justificou a lista fechada.
+ *
+ * COLCHETE (Bloco AD.3, achado ao estender pra f-string Python): `manifesto['prefixo']` — a forma
+ * NORMAL de acesso em Python (nunca `manifesto.prefixo`) — não tem `.` nenhum antes de `prefixo`,
+ * só aspa+colchete. Fora de f-string isso já substituía pelo ramo 'string' comum (a aspa simples
+ * vira sua PRÓPRIA string, conteúdo "prefixo" bate inteiro). DENTRO de f-string, a interpolação
+ * inteira vira 'codigo' (ver `ehFString`), e aí só o ramo de cadeia decide — sem reconhecer
+ * colchete, TODO acesso Python dentro de f-string recusaria, mesmo com base `manifesto`.
+ */
+function baseConhecidaNaCadeia(linha, pos) {
+  const antes = linha.slice(0, pos);
+  if (linha[pos - 1] === '.') {
+    const m = /(?:[A-Za-z_$][\w$]*\??\.)+$/.exec(antes);
+    if (!m) return false;
+    const segmentos = m[0].split('.').map((s) => s.replace(/\?$/, '')).filter(Boolean);
+    return segmentos.some((s) => IDENTIFICADORES_DE_MANIFESTO.includes(s));
+  }
+  if (linha[pos - 1] === "'" || linha[pos - 1] === '"') {
+    const m = /([A-Za-z_$][\w$]*)\[['"]$/.exec(antes);
+    return m !== null && IDENTIFICADORES_DE_MANIFESTO.includes(m[1]);
+  }
+  return false;
+}
+
+/**
+ * BUG REAL (Bloco AD.3, achado rodando `--aplicar` pela primeira vez com itens `chave`):
+ * `` `${nome}.schema.json` `` corrompeu `carregarEsquema` pra `${name}` — `nome` (o PARÂMETRO)
+ * ficou intacto, só a referência dentro do template literal virou `name`, uma variável que não
+ * existe. Raiz do defeito: `palavraAoRedor` (ramo 'string' de `decidir`) anda até o primeiro
+ * ESPAÇO EM BRANCO dos dois lados pra decidir se o match é "a string inteira" — mas
+ * `${nome}.schema.json` não tem espaço nenhum, então a palavra "ao redor" vira o span INTEIRO
+ * (`${nome}.schema.json`), que bate `contexto.conteudo` por igual, e o heurístico de
+ * string-sem-espaço (pensado pra `"nome"` sozinho entre aspas) trata isso como substituição seg
+ * ura. Confirmado um segundo caso, arquivo diferente: `` `${prefixo}${sufixo}` `` virou
+ * `` `${prefix}${sufixo}` `` com a declaração `const { schema, prefixo }` intocada — mesmo padrão.
+ *
+ * A FORMA, não o caso: `${...}` dentro de crase é CÓDIGO (uma expressão JS interpolada), não
+ * conteúdo de string — mistura sintaxe de string com sintaxe de identificador, e é exatamente essa
+ * mistura que confunde `palavraAoRedor`. Corrigido tratando qualquer ocorrência DENTRO de um
+ * `${...}` de uma crase como tipo `'codigo'` (mesmas regras de `manifesto.nome`/`chave` nua de
+ * sempre — precisa de `baseConhecidaDeManifesto` ou `dentroDeBlocoDeManifesto` pra substituir),
+ * nunca como `'string'`. Não-aninhado de propósito (`[^}]*` — sem caso de `${a[${b}]}` no corpus
+ * medido); crase SEM `$` continua 100% pelo ramo `'string'` de sempre, comportamento inalterado.
+ */
+function regioesDeInterpolacao(conteudo, comCifrao) {
+  const regioes = [];
+  const re = comCifrao ? /\$\{[^}]*\}/g : /\{[^}]*\}/g;
+  let m;
+  // eslint-disable-next-line no-cond-assign
+  while ((m = re.exec(conteudo)) !== null) {
+    regioes.push({ inicio: m.index, fim: m.index + m[0].length });
+  }
+  return regioes;
+}
+
+/**
+ * F-STRING PYTHON (Bloco AD.3, achado numa TERCEIRA rodada de `--aplicar` — mesma classe do bug de
+ * `${nome}` em crase, achado numa forma que a correção da crase não cobria): `f"{data['prefix']}"`
+ * tem o MESMO problema — `{...}` sem espaço em branco vira "a string inteira" pro heurístico de
+ * string-sem-espaço, e substitui `prefixo`/`dados` dentro da interpolação mesmo quando a variável
+ * do lado de fora (`dados = ...`) não foi renomeada, corrompendo `adapters/postgres/__init__.py` e
+ * `scripts/migrations.py` (`f"{dados['prefixo']}migrations"` virou `f"{data['prefix']}migrations"`
+ * — `data` nunca foi definida). Interpolação Python não tem `$` (`{expr}`, não `${expr}`) — por
+ * isso `regioesDeInterpolacao` ganhou o parâmetro `comCifrao`, e só entra neste ramo quando o
+ * caractere ANTES da aspa de abertura é `f`/`F` (aceita só o prefixo simples — `rf"..."`/`fr"..."`
+ * não têm caso conhecido no corpus medido).
+ */
+function ehFString(linha, inicioDaString) {
+  const antes = linha[inicioDaString - 1];
+  return antes === 'f' || antes === 'F';
+}
+
+/**
  * A DECISÃO — dado onde a ocorrência caiu, devolve `{ decisao: 'substitui'|'recusa', classe }`.
  *
  * `tipoItem === 'arquivo'` SEMPRE substitui, em qualquer contexto — nome composto com extensão
@@ -362,10 +555,27 @@ const RE_FECHA_ARRAY_PROTEGIDO = /^\s*\]\)?;?\s*$/;
  * especificador de import — identificador nu fica. `fase` (Bloco AD, resolução B1) estreita isso:
  * fora de AD.1, o item pode SER o próprio símbolo/chave aparecendo nu — ver comentário no ramo.
  */
-export function decidir(contexto, nomeOcorrencia, tipoItem, protegido, fase) {
+export function decidir(contexto, nomeOcorrencia, tipoItem, protegido, fase, dentroDeBlocoDeManifesto = false) {
   if (tipoItem === 'arquivo') return { decisao: 'substitui', classe: 'caminho' };
   if (contexto.tipo === 'string') {
     const palavra = palavraAoRedor(contexto.conteudo, contexto.posicao, contexto.tamanho);
+    // MARCADOR DE TEMPLATE (Bloco AD.3, revisão pós-round — decisão do revisor: a família
+    // `<modulo>`/`<MODULO>`/`<Modulo>` fica UNIFORME em português, nunca vira `<module>`): sem
+    // este desvio, `pareceCaminho` (linha abaixo) tinha PRECEDÊNCIA sobre a proteção sempre que o
+    // marcador caía dentro de um valor "parece caminho" (`"/api/v1/<modulo>"`, tem barra) —
+    // `basePath`/`webPath` viravam `<module>` enquanto `id`/`data.prefix` (sem barra) ficavam
+    // `<modulo>`, os dois convivendo no MESMO `module.json` por um critério (bateu `pareceCaminho`
+    // ou não) que ninguém infere lendo. O marcador não é código — desaparece no primeiro scaffold
+    // — e a família tem TRÊS grafias (`<MODULO>` é a convenção de prefixo de env, documentada em
+    // toda a doutrina): dividir só `<modulo>` seria pior que o problema. Verificado pelos
+    // colchetes IMEDIATOS (`<` antes, `>` depois) — não pelo marcador de linha, porque a proteção
+    // tem de vencer `pareceCaminho` ANTES dele decidir, não depois.
+    const dentroDeMarcadorDeTemplate = contexto.conteudo[contexto.posicao - 1] === '<'
+      && contexto.conteudo[contexto.posicao + contexto.tamanho] === '>';
+    if (dentroDeMarcadorDeTemplate) {
+      if (protegido) return { decisao: 'recusa', classe: 'RECUSADO-LITERAL-PROTEGIDO' };
+      return { decisao: 'substitui', classe: 'string-sem-espaco' };
+    }
     if (pareceCaminho(palavra)) return { decisao: 'substitui', classe: 'caminho' };
     if (palavra === contexto.conteudo) {
       if (protegido) return { decisao: 'recusa', classe: 'RECUSADO-LITERAL-PROTEGIDO' };
@@ -429,9 +639,21 @@ export function decidir(contexto, nomeOcorrencia, tipoItem, protegido, fase) {
   //
   // AD.3 (`chave`, campo de manifesto): palavra COMUM (`nome`, `dados`, `id`...) com risco real de
   // colidir com variável local sem nenhuma relação com manifesto. Só substitui em ACESSO DE
-  // PROPRIEDADE (precedido de `.` — `manifesto.nome`, `ctx.manifesto.envRequerido`); bare fica
-  // recusado mesmo em AD.3. Python não usa esta forma (chave sempre é string, ramo 'string' acima).
-  if (tipoItem === 'chave' && !contexto.precedidoDePonto) {
+  // PROPRIEDADE cuja BASE é uma das `IDENTIFICADORES_DE_MANIFESTO` (`manifesto.nome`,
+  // `ctx.manifesto.envRequerido`, `modulo.rotaBase`) — `.` antes sozinho NÃO basta (`caso.nome`,
+  // `req.permissoes` também têm `.` antes, e não são o manifesto; ver `baseConhecidaNaCadeia`).
+  // Bare fica recusado mesmo em AD.3. Python não usa esta forma (chave sempre é string, ramo
+  // 'string' acima).
+  //
+  // TERCEIRA FORMA (Bloco AD.3): chave nua como MEMBRO DE OBJETO/TIPO — `{ consome: [] }`,
+  // `interface Manifesto { papel: Papel }`. Não é acesso de propriedade (não tem `.` antes) nem
+  // declaração de variável solta: é um IDENTIFICADOR-CHAVE dentro de um bloco de valor/tipo de
+  // manifesto reconhecido pela casca (`dentroDeBlocoDeManifesto`, contagem de profundidade de chave
+  // desde `.manifesto(` ou `interface \w*Manifesto\w*`). Dentro do bloco, mesmo sem `.` antes, é
+  // TÃO seguro quanto `baseConhecidaDeManifesto` — é exatamente aí que `nome`/`descricao` de
+  // `cases.mjs` teriam colidido se o bloco não fosse reconhecido, e é por isso que a casca só liga
+  // esta bandeira dentro do escopo estreito do reconhecedor, nunca em qualquer `{`.
+  if (tipoItem === 'chave' && !contexto.baseConhecidaDeManifesto && !dentroDeBlocoDeManifesto) {
     return { decisao: 'recusa', classe: 'RECUSADO-IDENTIFICADOR-NU' };
   }
   if (protegido) return { decisao: 'recusa', classe: 'RECUSADO-LITERAL-PROTEGIDO' };
@@ -455,10 +677,15 @@ export function decidir(contexto, nomeOcorrencia, tipoItem, protegido, fase) {
  * chamada existente (autoteste, principalmente) continuar EXATAMENTE como antes sem precisar
  * mudar uma linha. Só quem processa uma fase de verdade (`classificarArquivo`, via `item.fase`)
  * passa outra coisa.
+ *
+ * `dentroDeBlocoDeManifesto` (Bloco AD.3, TERCEIRA FORMA) — mesmo espírito de
+ * `dentroDeArrayProtegido`: a casca sinaliza, por contagem de profundidade de chave desde a linha
+ * que abriu `.manifesto(`/`interface \w*Manifesto\w*`, que esta linha está dentro do bloco. Só
+ * afeta `tipoItem === 'chave'` sem `baseConhecidaDeManifesto` — ver `decidir`.
  */
 export function ocorrenciasClassificadasNaLinha(
   linha, antigo, tipo, formato, jaEmComentario, literaisProtegidos, dentroDeArrayProtegido = false,
-  fase = 'AD.1',
+  fase = 'AD.1', dentroDeBlocoDeManifesto = false,
 ) {
   const re = regexDoTipo(antigo, tipo);
   const strings = jaEmComentario ? [] : stringsDaLinha(linha);
@@ -478,12 +705,26 @@ export function ocorrenciasClassificadasNaLinha(
       contexto = { tipo: 'comentario', texto: textoComentario, posicao: posicaoRelativa, tamanho: antigo.length };
     } else {
       const stringEnvolvente = strings.find((s) => pos >= s.inicio && pos + antigo.length <= s.fim);
-      if (stringEnvolvente) {
+      const posicaoNaCrase = stringEnvolvente ? pos - (stringEnvolvente.inicio + 1) : -1;
+      const ehCrase = stringEnvolvente !== undefined && linha[stringEnvolvente.inicio] === '`';
+      const ehFStringPython = stringEnvolvente !== undefined && !ehCrase
+        && ehFString(linha, stringEnvolvente.inicio);
+      const ehInterpolacaoDeCrase = stringEnvolvente !== undefined
+        && (ehCrase || ehFStringPython)
+        && regioesDeInterpolacao(stringEnvolvente.conteudo, ehCrase)
+          .some((r) => posicaoNaCrase >= r.inicio && posicaoNaCrase + antigo.length <= r.fim);
+      if (stringEnvolvente && !ehInterpolacaoDeCrase) {
         contexto = {
           tipo: 'string',
           conteudo: stringEnvolvente.conteudo,
-          posicao: pos - (stringEnvolvente.inicio + 1),
+          posicao: posicaoNaCrase,
           tamanho: antigo.length,
+        };
+      } else if (stringEnvolvente && ehInterpolacaoDeCrase) {
+        contexto = {
+          tipo: 'codigo',
+          linhaEhImport,
+          baseConhecidaDeManifesto: baseConhecidaNaCadeia(linha, pos),
         };
       } else if (valorYaml && pos >= valorYaml.inicio && pos + antigo.length <= valorYaml.fim) {
         contexto = {
@@ -493,18 +734,24 @@ export function ocorrenciasClassificadasNaLinha(
           tamanho: antigo.length,
         };
       } else {
-        // `precedidoDePonto` (B2): só importa pro ramo 'codigo' de 'chave' — `manifesto.nome` tem
-        // `.` imediatamente antes de `nome`; `const nome = x` não tem. Barato de calcular sempre,
-        // ignorado pelos outros tipos.
-        contexto = { tipo: 'codigo', linhaEhImport, precedidoDePonto: linha[pos - 1] === '.' };
+        // `baseConhecidaDeManifesto` (B2, endurecido no Bloco AD.3): só importa pro ramo 'codigo'
+        // de 'chave' — `manifesto.nome` tem `.` imediatamente antes de `nome` E a base é
+        // `manifesto` (lista fechada `IDENTIFICADORES_DE_MANIFESTO`); `const nome = x` não tem
+        // ponto nenhum, `caso.nome`/`req.permissoes` têm ponto mas base FORA da lista. Barato de
+        // calcular sempre, ignorado pelos outros tipos.
+        contexto = {
+          tipo: 'codigo',
+          linhaEhImport,
+          baseConhecidaDeManifesto: baseConhecidaNaCadeia(linha, pos),
+        };
       }
     }
     const protegidoBase = protegidoNestaLinha(linha, antigo, literaisProtegidos)
       || (dentroDeArrayProtegido && (literaisProtegidos?.has(antigo) ?? false));
     // B3: a fase ATUAL sendo a exceção declarada do literal veta TODA fonte de proteção acima —
     // marcador, `true` incondicional ou o bônus de array — não só uma.
-    const protegido = protegidoBase && !protecaoSuspensaNestaFase(antigo, literaisProtegidos, fase);
-    const { decisao, classe } = decidir(contexto, antigo, tipo, protegido, fase);
+    const protegido = protegidoBase && !protecaoSuspensaNestaFase(linha, antigo, literaisProtegidos, fase);
+    const { decisao, classe } = decidir(contexto, antigo, tipo, protegido, fase, dentroDeBlocoDeManifesto);
     achados.push({ coluna: pos, decisao, classe });
   }
   return achados;
@@ -573,8 +820,17 @@ export function formatoDoArquivo(caminho) {
 // reescrita anterior tirou esta linha com a justificativa errada ("não cita a si mesmo por nome")
 // e `--aplicar --fase AD.1` voltou a corromper `"portas"` nos três `_template/modulo.json`.
 // `projeto.json` fica de fora da exclusão: não tem `portas` no vocabulário hoje (medido).
-const CAMINHOS_EXCLUIDOS = [
-  /(^|[\\/])modulo\.json$/,
+//
+// FASE-CONDICIONAL agora (Bloco AD.3, mesmo `arquivo` git-mv'd para `module.json` neste round):
+// a exclusão acima protegia o CONTEÚDO do arquivo de AD.1/AD.2 — mas AD.3 É a fase que existe pra
+// reescrever esse conteúdo (as 19 chaves). Blanket exclusion sem exceção de fase deixaria AD.3
+// incapaz de tocar o próprio arquivo que criou pra renomear — B3 de novo, um nível acima (fase do
+// ARQUIVO, não do literal). `modulo.schema.json`/`projeto.schema.json` NÃO precisam da mesma
+// exceção: já foram git-mv'd para `module.schema.json`/`project.schema.json` e reescritos à mão
+// este round (achado no `generate-port-schemas.mjs`, ver histórico), então o path antigo nunca
+// mais existe pra esta regex casar — mantidas aqui só por documentação do que já foi coberto.
+const RE_MODULO_JSON = /(^|[\\/])modulo\.json$/;
+const CAMINHOS_EXCLUIDOS_SEMPRE = [
   /(^|[\\/])modulo\.schema\.json$/,
   /(^|[\\/])projeto\.schema\.json$/,
   // Auto-referência: as fixtures do autoteste PRECISAM conter os nomes antigos de verdade (é o que
@@ -590,6 +846,11 @@ const CAMINHOS_EXCLUIDOS = [
   // achado rodando `--relatorio` duas vezes seguidas logo depois de `--gravar-recusas`.
   /(^|[\\/])rename-refusals\.json$/,
 ];
+
+function caminhoExcluido(caminho, fase) {
+  if (RE_MODULO_JSON.test(caminho) && fase !== 'AD.3') return true;
+  return CAMINHOS_EXCLUIDOS_SEMPRE.some((re) => re.test(caminho));
+}
 
 function arquivos(pasta, acc = []) {
   for (const entrada of readdirSync(pasta, { withFileTypes: true })) {
@@ -611,7 +872,7 @@ function arquivos(pasta, acc = []) {
 // inteira — a raiz da base também tem os planos, que este arquivo NÃO é.
 const ARQUIVOS_DE_DOC_VIVA_NA_RAIZ = ['funcionamento-esperado.md'];
 
-function arquivosAlvo() {
+function arquivosAlvo(fase) {
   const brutos = [
     ...arquivos(join(RAIZ_TEMPLATE, 'bindings')),
     ...arquivos(join(RAIZ_TEMPLATE, 'tools')),
@@ -619,7 +880,7 @@ function arquivosAlvo() {
     ...arquivos(join(RAIZ_TEMPLATE, 'doutrina')),
     ...ARQUIVOS_DE_DOC_VIVA_NA_RAIZ.map((nome) => join(RAIZ_BASE, nome)).filter((c) => existsSync(c)),
   ];
-  return brutos.filter((c) => !CAMINHOS_EXCLUIDOS.some((re) => re.test(c.split('\\').join('/'))));
+  return brutos.filter((c) => !caminhoExcluido(c.split('\\').join('/'), fase));
 }
 
 /** O inventário declara QUAIS literais são protegidos (com o motivo, para auditoria); o PADRÃO de
@@ -640,12 +901,12 @@ function lerInventario() {
 /** Classifica TODAS as ocorrências de um item numa linha, respeitando bloco/docstring já aberto por
  * linha anterior. `formato.comentarioTotal` pula a máquina de estado inteira: toda linha é
  * comentário (conserto (a), extensão sem marcador conhecido). */
-function classificarArquivo(texto, item, formato, literaisProtegidos) {
+export function classificarArquivo(texto, item, formato, literaisProtegidos) {
   const linhas = texto.split(/\r?\n/);
   const porLinha = [];
   if (formato.comentarioTotal) {
     linhas.forEach((linha) => {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, false, item.fase));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, false, item.fase, false));
     });
     return { linhas, porLinha };
   }
@@ -656,31 +917,43 @@ function classificarArquivo(texto, item, formato, literaisProtegidos) {
   // de classificar a própria linha de abertura (que não tem literal, mas não custa) e fecha DEPOIS
   // da linha de fechamento, pelo mesmo motivo.
   let dentroDeArrayProtegido = false;
+  // AD.3: profundidade do bloco `.manifesto(`/`interface ...Manifesto... {` — ver
+  // `RE_ABRE_BLOCO_DE_MANIFESTO`. `dentroDeBlocoDeManifesto` desta linha é lido ANTES de atualizar
+  // a profundidade (mesma ordem de `dentroDeArrayProtegido` acima: abre conta na própria linha de
+  // abertura), e só soma/subtrai chaves quando já dentro do bloco OU quando esta linha é quem abre
+  // — chave solta em código comum, fora de qualquer `.manifesto(`/`interface Manifesto`, nunca
+  // mexe na profundidade.
+  let profundidadeDeManifesto = 0;
   linhas.forEach((linha) => {
     const limpa = linha.trim();
     if (RE_ABRE_ARRAY_PROTEGIDO.test(linha)) dentroDeArrayProtegido = true;
+    const dentroDeBlocoDeManifesto = profundidadeDeManifesto > 0 || RE_ABRE_BLOCO_DE_MANIFESTO.test(linha);
+    if (dentroDeBlocoDeManifesto) {
+      const saldoDeChaves = (linha.match(/\{/g) ?? []).length - (linha.match(/\}/g) ?? []).length;
+      profundidadeDeManifesto = Math.max(0, profundidadeDeManifesto + saldoDeChaves);
+    }
     if (cerca !== null) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase, dentroDeBlocoDeManifesto));
       if (limpa.includes(cerca)) cerca = null;
       return;
     }
     if (emBloco) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase, dentroDeBlocoDeManifesto));
       if (limpa.includes('*/')) emBloco = false;
       return;
     }
     const aspas = formato.ehPython ? ['"""', "'''"].find((d) => limpa.includes(d)) : undefined;
     if (aspas !== undefined) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase, dentroDeBlocoDeManifesto));
       if ((limpa.split(aspas).length - 1) % 2 === 1) cerca = aspas;
       return;
     }
     if (formato.marcador === '//' && limpa.startsWith('/*')) {
-      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase));
+      porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, true, literaisProtegidos, dentroDeArrayProtegido, item.fase, dentroDeBlocoDeManifesto));
       if (!limpa.includes('*/')) emBloco = true;
       return;
     }
-    porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, false, literaisProtegidos, dentroDeArrayProtegido, item.fase));
+    porLinha.push(ocorrenciasClassificadasNaLinha(linha, item.antigo, item.tipo, formato, false, literaisProtegidos, dentroDeArrayProtegido, item.fase, dentroDeBlocoDeManifesto));
     if (dentroDeArrayProtegido && RE_FECHA_ARRAY_PROTEGIDO.test(linha)) dentroDeArrayProtegido = false;
   });
   return { linhas, porLinha };
@@ -709,9 +982,29 @@ function classificarArquivo(texto, item, formato, literaisProtegidos) {
  * prosa que cita o template, nunca código que o declara — sem risco de colisão de nome com função da
  * base. Comparação por item da lista (não por prefixo de pasta, que não existe pra um arquivo solto
  * na raiz).
+ *
+ * CORREÇÃO À NOTA ACIMA (Bloco AD.3): "tools/ nunca vai pro projeto gerado" está ERRADO para
+ * `tools/` — medido em `create-project.mjs`: `cpSync(join(RAIZ_TEMPLATE, 'tools'), ...)` copia
+ * `tools/` inteiro pro projeto gerado (`tests/` continua nunca copiado, essa metade da nota
+ * segue valendo). Não muda a conclusão de `simbolo` — o risco ali é NOME DE FUNÇÃO coincidindo por
+ * acaso com o de uma função da própria base, ida ou não ao projeto gerado é irrelevante pra esse
+ * risco — só corrige o FATO citado como motivo.
+ *
+ * `chave`, ao contrário de `simbolo`, ganha fronteira PRÓPRIA aqui (Bloco AD.3): `tools/gate/
+ * rules/*.mjs` (as ~40 regras que leem `ctx.manifesto.<chave>`) e `tools/gate/tests/cases.mjs` (a
+ * maior concentração da TERCEIRA FORMA, `.manifesto((x) => ({...}))`) SÃO o consumidor primário das
+ * 19 chaves do manifesto — excluí-los deixaria a citação viva pelo próprio motivo que a campanha
+ * existe pra fechar. O que motivou excluir `tools/`/`tests/` de `simbolo` (nome de função colidindo
+ * à toa) tem CONTRAPARTE PRÓPRIA pra `chave` — `caso.nome`/`req.permissoes`/`state.permissoes`/
+ * `corpo.rotaBase`, medido no corpus inteiro — mas essa é resolvida na origem, por
+ * `IDENTIFICADORES_DE_MANIFESTO` (base do acesso pontilhado) e `dentroDeBlocoDeManifesto` (terceira
+ * forma), não pela fronteira de arquivo: `decidir()` já recusa essas ocorrências onde quer que
+ * apareçam. Por isso `chave` não filtra por pasta nenhuma — a rede de segurança está na decisão,
+ * não no arquivo.
  */
-function itemAplicaAoArquivo(item, caminho) {
-  if (item.tipo !== 'simbolo' && item.tipo !== 'chave') return true;
+export function itemAplicaAoArquivo(item, caminho) {
+  if (item.tipo === 'chave') return true;
+  if (item.tipo !== 'simbolo') return true;
   const raizBindings = join(RAIZ_TEMPLATE, 'bindings') + sep;
   const raizDoutrina = join(RAIZ_TEMPLATE, 'doutrina') + sep;
   const docsVivasNaRaiz = new Set(ARQUIVOS_DE_DOC_VIVA_NA_RAIZ.map((nome) => join(RAIZ_BASE, nome)));
@@ -904,7 +1197,7 @@ function rodar(fase, aplicar, gravar) {
     process.stdout.write(`nenhum item do inventario na fase ${fase}\n`);
     return 0;
   }
-  const alvos = arquivosAlvo();
+  const alvos = arquivosAlvo(fase);
   const registros = alvos.flatMap((caminho) => processarArquivo(caminho, itens, literaisProtegidos, aplicar));
   relatarRegistros(fase, itens.length, alvos.length, registros, aplicar ? '(APLICADO)' : '(dry-run)');
 
@@ -1030,7 +1323,7 @@ function rodarDiferencial(fase, raizPristina) {
     process.stdout.write(`nenhum item do inventario na fase ${fase}\n`);
     return 0;
   }
-  const alvos = arquivosAlvo();
+  const alvos = arquivosAlvo(fase);
   let suspeitas = 0;
   let semPar = 0;
   process.stdout.write(`\n=== apply-rename --fase ${fase} --diferencial ${raizPristina} ===\n`);
@@ -1073,6 +1366,7 @@ const PROTEGIDOS_PAPEL = new Map([
   ['testes', PADROES_DE_PROTECAO.get('testes')],
 ]);
 const PROTEGIDOS_PORTAS = new Map([['portas', PADROES_DE_PROTECAO.get('portas')]]);
+const PROTEGIDOS_MODULO = new Map([['modulo', PADROES_DE_PROTECAO.get('modulo')]]);
 
 function casosDeAutoteste() {
   return [
@@ -1375,10 +1669,10 @@ function casosDeAutoteste() {
       return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
     } },
     { nome: 'B3: protecaoSuspensaNestaFase("portas", AD.3) e true — a fase alvo suspende a protecao', fn: () => (
-      protecaoSuspensaNestaFase('portas', PROTEGIDOS_PORTAS, 'AD.3') === true
+      protecaoSuspensaNestaFase('', 'portas', PROTEGIDOS_PORTAS, 'AD.3') === true
     ) },
     { nome: 'B3: protecaoSuspensaNestaFase("portas", AD.1) e false — protegido continua fora do alvo', fn: () => (
-      protecaoSuspensaNestaFase('portas', PROTEGIDOS_PORTAS, 'AD.1') === false
+      protecaoSuspensaNestaFase('', 'portas', PROTEGIDOS_PORTAS, 'AD.1') === false
     ) },
     { nome: 'B3: "portas" nu RECUSA em AD.1 (protecao normal — nao regrediu o AI.5)', fn: () => {
       const linha = 'for porta in modulo["portas"]:';
@@ -1396,6 +1690,338 @@ function casosDeAutoteste() {
       const emAD3 = ocorrenciasClassificadasNaLinha(linha, 'portas', 'chave', FMT_JS, false, PROTEGIDOS_PORTAS, true, 'AD.3');
       return emAD1.length === 1 && emAD1[0].decisao === 'recusa'
         && emAD3.length === 1 && emAD3[0].decisao === 'substitui';
+    } },
+    // B3 COMBINADO (Bloco AD.3, decisao 8 de decisoes.md): "dominio"/"conector" precisam de
+    // MARCADOR (protegem so perto de "papel"/"PAPEIS", nao em qualquer lugar) E de excecao de fase
+    // (o proprio VALOR do enum e alvo do AD.3) ao mesmo tempo — o shape novo de PADROES_DE_PROTECAO.
+    { nome: 'B3 combinado: papel: "dominio" (string, marcador "papel" na linha) RECUSA em AD.1 — nao regride o comportamento historico', fn: () => {
+      const linha = "  papel: valorDe('papel', 'dominio'),";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'pasta', FMT_JS, false, PROTEGIDOS_PAPEL);
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-LITERAL-PROTEGIDO';
+    } },
+    { nome: 'B3 combinado: MESMA linha SUBSTITUI em AD.3 — o proprio valor do enum e o alvo, protecao suspensa', fn: () => {
+      const linha = "  papel: valorDe('papel', 'dominio'),";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'chave', FMT_JS, false, PROTEGIDOS_PAPEL, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'string-sem-espaco';
+    } },
+    { nome: 'B3 combinado: "core/dominio/" (SEM marcador "papel" na linha) SUBSTITUI em AD.1 normalmente — marcador nao aparece, protecao nunca entra', fn: () => {
+      const linha = "join(RAIZ_TEMPLATE, 'core', 'dominio')";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'pasta', FMT_JS, false, PROTEGIDOS_PAPEL);
+      return oc.length === 1 && oc[0].decisao === 'substitui';
+    } },
+    { nome: 'B3 combinado: "conector" segue o MESMO par marcador+excecao que "dominio" — RECUSA em AD.1, SUBSTITUI em AD.3', fn: () => {
+      const linha = "  papel: 'conector',";
+      const emAD1 = ocorrenciasClassificadasNaLinha(linha, 'conector', 'pasta', FMT_JS, false, PROTEGIDOS_PAPEL);
+      const emAD3 = ocorrenciasClassificadasNaLinha(linha, 'conector', 'chave', FMT_JS, false, PROTEGIDOS_PAPEL, false, 'AD.3');
+      return emAD1.length === 1 && emAD1[0].decisao === 'recusa'
+        && emAD3.length === 1 && emAD3[0].decisao === 'substitui';
+    } },
+    // FALHA REAL (Bloco AD.3, revisao pos-round — decisao #5 do revisor): suspender por fase
+    // suspendia a ENTRADA inteira, inclusive a CLI de create-module.mjs, que precisa continuar
+    // protegida mesmo em AD.3 (a flag aceita "--role dominio", valor em portugues por decisao
+    // explicita). `marcadoresSempre` fecha isso sem tocar o valor do manifesto, que continua
+    // suspendendo normal.
+    { nome: 'marcadoresSempre: "const PAPEIS = [\'dominio\', ...]" (CLI de create-module.mjs) RECUSA em AD.3 — nao suspende mesmo sendo o alvo da fase', fn: () => {
+      const linha = "const PAPEIS = ['dominio', 'gateway', 'conector'];";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'chave', FMT_JS, false, PROTEGIDOS_PAPEL, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-LITERAL-PROTEGIDO';
+    } },
+    { nome: 'marcadoresSempre: "role: valorDe(\'role\', \'dominio\')" (default da CLI) RECUSA em AD.3 pelo mesmo motivo', fn: () => {
+      const linha = "  role: valorDe('role', 'dominio'),";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'chave', FMT_JS, false, PROTEGIDOS_PAPEL, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-LITERAL-PROTEGIDO';
+    } },
+    { nome: 'marcadoresSempre: \'"role": "dominio"\' (module.json, aspas duplas — JSON) SUBSTITUI em AD.3 — o valor do manifesto continua suspendendo normal', fn: () => {
+      const linha = '  "role": "dominio",';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'chave', FMT_JSON, false, PROTEGIDOS_PAPEL, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'string-sem-espaco';
+    } },
+    { nome: 'marcadoresSempre: mesma linha de module.json RECUSA fora de AD.3 (AD.1) — protecao normal, sem exceto', fn: () => {
+      const linha = '  "role": "dominio",';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'dominio', 'pasta', FMT_JSON, false, PROTEGIDOS_PAPEL);
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-LITERAL-PROTEGIDO';
+    } },
+    // TERCEIRA FORMA (Bloco AD.3): chave nua como membro de objeto/tipo, sem "." na frente — o
+    // `RECUSADO-IDENTIFICADOR-NU` de B2 acima é o comportamento CORRETO fora de um bloco de
+    // manifesto reconhecido; estes provam que DENTRO do bloco (`dentroDeBlocoDeManifesto`) a mesma
+    // chave substitui, e que o reconhecedor de bloco (`classificarArquivo`, via
+    // `RE_ABRE_BLOCO_DE_MANIFESTO`) acerta a profundidade em exemplo real, aninhado, do `cases.mjs`.
+    { nome: 'AD.3 3a forma: chave nua DENTRO de bloco de manifesto (flag simulada) SUBSTITUI mesmo sem ponto', fn: () => {
+      const linha = "m.manifesto((x) => ({ ...x, papel: 'inventado' }));";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'papel', 'chave', FMT_JS, false, undefined, false, 'AD.3', true);
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'identificador';
+    } },
+    { nome: 'AD.3 3a forma: mesma chave nua SEM a flag de bloco continua RECUSANDO — a prova inversa (nome/descricao de teste nunca tocam)', fn: () => {
+      const linha = "m.manifesto((x) => ({ ...x, papel: 'inventado' }));";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'papel', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'AD.3 3a forma: descricao: NO NIVEL EXTERNO do caso de teste (fora de .manifesto) RECUSA — nunca deve tocar campo de teste', fn: () => {
+      const item = { antigo: 'descricao', tipo: 'chave', fase: 'AD.3' };
+      const texto = [
+        '{',
+        "  regra: 'consome-ciclo',",
+        "  descricao: 'ciclo no grafo de consome',",
+        '  mutar: (m) => {',
+        '    m.manifesto((x) => ({',
+        '      ...x,',
+        "      consome: [{ modulo: 'vizinho', contrato: 'GET /resumo', porQue: 'ciclo' }],",
+        "      envRequerido: [...x.envRequerido, 'VIZINHO_URL'],",
+        '    }));',
+        '  },',
+        '},',
+      ].join('\n');
+      const { porLinha } = classificarArquivo(texto, item, FMT_JS, undefined);
+      const achadosDescricao = porLinha[2];
+      return achadosDescricao.length === 1 && achadosDescricao[0].decisao === 'recusa'
+        && achadosDescricao[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'AD.3 3a forma: modulo/contrato/porQue DENTRO do objeto aninhado de consome (linha 7, profundidade 2) SUBSTITUEM — classificarArquivo real, sem simular a flag', fn: () => {
+      const texto = [
+        '{',
+        "  regra: 'consome-ciclo',",
+        "  descricao: 'ciclo no grafo de consome',",
+        '  mutar: (m) => {',
+        '    m.manifesto((x) => ({',
+        '      ...x,',
+        "      consome: [{ modulo: 'vizinho', contrato: 'GET /resumo', porQue: 'ciclo' }],",
+        "      envRequerido: [...x.envRequerido, 'VIZINHO_URL'],",
+        '    }));',
+        '  },',
+        '},',
+      ].join('\n');
+      const linhaAninhada = texto.split('\n')[6];
+      const itemModulo = { antigo: 'modulo', tipo: 'chave', fase: 'AD.3' };
+      const { porLinha: porLinhaModulo } = classificarArquivo(texto, itemModulo, FMT_JS, undefined);
+      const okModulo = porLinhaModulo[6].length === 1 && porLinhaModulo[6][0].decisao === 'substitui';
+      // Esta linha tem DUAS ocorrencias de "envRequerido": a chave nua (`envRequerido:`, 3a forma —
+      // precisa da flag de bloco) e o acesso de propriedade (`x.envRequerido`, B2 normal, ponto na
+      // frente). As duas devem substituir, por motivos diferentes — prova que a 3a forma nao
+      // atrapalha o caminho ja existente que convivia na MESMA linha.
+      const itemEnv = { antigo: 'envRequerido', tipo: 'chave', fase: 'AD.3' };
+      const { porLinha: porLinhaEnv } = classificarArquivo(texto, itemEnv, FMT_JS, undefined);
+      const okEnv = porLinhaEnv[7].length === 2 && porLinhaEnv[7].every((oc) => oc.decisao === 'substitui');
+      return okModulo && okEnv && linhaAninhada.includes('modulo:');
+    } },
+    // FALHA REAL (Bloco AD.3, segunda rodada de --aplicar): `.manifestoRaiz(` nao casava
+    // `RE_ABRE_BLOCO_DE_MANIFESTO` (só via `.manifesto(` exato) — os 4 `mutar:` de cases.mjs que
+    // usam `m.manifestoRaiz((x) => ({ ...x, envRequerido: [...x.envRequerido, ...] }))` ficaram
+    // fora do bloco, `x.envRequerido` continuou 'envRequerido' enquanto o `project.json` real já
+    // falava `requiredEnv` — `x.envRequerido is not iterable` no gate self-test.
+    { nome: 'AD.3 3a forma: .manifestoRaiz( TAMBEM abre o bloco (nao so .manifesto() exato) — achado real no gate self-test', fn: () => {
+      const texto = [
+        '{',
+        "  regra: 'env-raiz-declarado',",
+        "  descricao: 'chave de ambiente da raiz sem leitor',",
+        '  mutar: (m) => {',
+        '    m.manifestoRaiz((x) => ({',
+        '      ...x,',
+        "      envRequerido: [...x.envRequerido, 'RAIZ_SEM_LEITOR'],",
+        '    }));',
+        '  },',
+        '},',
+      ].join('\n');
+      const item = { antigo: 'envRequerido', tipo: 'chave', fase: 'AD.3' };
+      const { porLinha } = classificarArquivo(texto, item, FMT_JS, undefined);
+      return porLinha[6].length === 2 && porLinha[6].every((oc) => oc.decisao === 'substitui');
+    } },
+    { nome: 'AD.3 3a forma: interface Manifesto {...} — membro nu de declaracao de tipo SUBSTITUI dentro do bloco', fn: () => {
+      const texto = [
+        'export interface Manifesto {',
+        '  id: string;',
+        '  papel: Papel;',
+        '  portas: Porta[];',
+        '}',
+        '',
+        'export function ler(): Manifesto {',
+        '  const papel = 1;',
+        '  return papel;',
+        '}',
+      ].join('\n');
+      const item = { antigo: 'papel', tipo: 'chave', fase: 'AD.3' };
+      const { porLinha } = classificarArquivo(texto, item, FMT_JS, undefined);
+      const dentroDaInterface = porLinha[2].length === 1 && porLinha[2][0].decisao === 'substitui';
+      // Fora da interface (corpo de funcao, linha 7/8), "papel" bare continua RECUSANDO — a
+      // profundidade fechou em "}" (linha 4) e nao vaza para o resto do arquivo.
+      const foraDaInterface = porLinha[7].length === 1 && porLinha[7][0].decisao === 'recusa';
+      return dentroDaInterface && foraDaInterface;
+    } },
+    // BASE CONHECIDA (Bloco AD.3, achado ao medir o corpus inteiro antes de estender `chave` para
+    // tools/tests): "tem ponto antes" sozinho nao basta — a base do acesso importa. Provam as DUAS
+    // direcoes com exemplos REAIS do template (tools/*.mjs, bindings/*/middlewares).
+    { nome: 'AD.3 base conhecida: caso.nome (nome do CASO DE TESTE, tools/*.mjs) RECUSA — base "caso" fora da lista', fn: () => {
+      const linha = '    registrar(caso.nome, avaliarResultado(caso.resultado).ok === caso.esperado);';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'nome', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'AD.3 base conhecida: req.permissoes (permissoes da REQUISICAO, middleware) RECUSA — base "req" fora da lista', fn: () => {
+      const linha = "    if (!req.permissoes?.includes(permissao)) {";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'permissoes', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'AD.3 base conhecida: claims.permissoes/state.permissoes (claims do JWT, nao o manifesto) RECUSAM', fn: () => {
+      const linha = '    request.state.permissoes = claims.get("permissoes", [])';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'permissoes', 'chave', FMT_PY, false, undefined, false, 'AD.3');
+      // "state.permissoes" (acesso) e "claims.get" (chamada, sem ponto antes de "permissoes" nesta
+      // ocorrencia) — a occorrencia de acesso de propriedade e so a primeira; a segunda esta dentro
+      // de aspas (ramo 'string', ja coberto por outra logica). Aqui so garantimos que NENHUMA
+      // ocorrencia de codigo (nao-string) substitui.
+      return oc.filter((o) => o.classe !== 'string-sem-espaco' && o.decisao === 'substitui').length === 0;
+    } },
+    { nome: 'AD.3 base conhecida: corpo.rotaBase (asserção de teste sobre resposta HTTP) RECUSA — base "corpo" fora da lista', fn: () => {
+      const linha = '    expect(corpo.rotaBase).toBe(ROTA_BASE);';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'rotaBase', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'AD.3 base conhecida: modulo.rotaBase/modulo.portas (variavel de laco em composicao.ts) SUBSTITUEM — base "modulo" permitida', fn: () => {
+      const linha1 = '  for (const porta of modulo.portas) {';
+      const oc1 = ocorrenciasClassificadasNaLinha(linha1, 'portas', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      const linha2 = '    porRota.set(modulo.rotaBase, [...(porRota.get(modulo.rotaBase) ?? []), modulo.id]);';
+      const oc2 = ocorrenciasClassificadasNaLinha(linha2, 'rotaBase', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc1.length === 1 && oc1[0].decisao === 'substitui'
+        && oc2.length === 2 && oc2.every((o) => o.decisao === 'substitui');
+    } },
+    { nome: 'AD.3 base conhecida: projeto.manifesto.valor?.envRequerido (conteudo destructurado do project.json) SUBSTITUI — base "valor" permitida', fn: () => {
+      const linha = '      const declaradas = projeto.manifesto.valor?.envRequerido;';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'envRequerido', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'identificador';
+    } },
+    { nome: 'AD.3 base conhecida: opcoes.papel/manifesto.papel = opcoes.papel (create-module.mjs, flag de CLI) SUBSTITUEM — base "opcoes" permitida', fn: () => {
+      const linha = '  manifesto.papel = opcoes.papel;';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'papel', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 2 && oc.every((o) => o.decisao === 'substitui');
+    } },
+    // FALHA REAL (Bloco AD.3, segunda rodada de --aplicar): base conhecida so no segmento
+    // IMEDIATO antes do ponto nao bastava — `manifesto.data.tabelas`/`ctx.manifesto?.data?.tabelas`
+    // tem `data` (nao `manifesto`) como base imediata de `tabelas`, e `dados.tabelas` (create-
+    // module.mjs:124, data.mjs) ficou sem substituir mesmo com `manifesto` dois segmentos atras.
+    // `baseConhecidaNaCadeia` caminha a cadeia inteira; estes provam a forma nos dois sentidos.
+    { nome: 'AD.3 cadeia: manifesto.data.tabelas (base imediata "data", nao "manifesto") SUBSTITUI — cadeia inteira, nao so o segmento imediato', fn: () => {
+      const linha = '    manifesto.data.tabelas = [];';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'tabelas', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'identificador';
+    } },
+    { nome: 'AD.3 cadeia: ctx.manifesto?.data?.tabelas (optional chaining nos dois pontos) SUBSTITUI — a declaracao local bare (mesma linha) continua RECUSANDO', fn: () => {
+      const linha = '      const tabelas = ctx.manifesto?.data?.tabelas ?? [];';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'tabelas', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      const declaracaoLocal = oc[0];
+      const acessoPontilhado = oc[1];
+      return oc.length === 2
+        && declaracaoLocal.decisao === 'recusa' && declaracaoLocal.classe === 'RECUSADO-IDENTIFICADOR-NU'
+        && acessoPontilhado.decisao === 'substitui' && acessoPontilhado.classe === 'identificador';
+    } },
+    { nome: 'AD.3 cadeia: caso.filho.nome (NENHUM segmento bate a lista) continua RECUSANDO — cadeia mais longa nao contorna a protecao', fn: () => {
+      const linha = '  return caso.filho.nome;';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'nome', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    // FALHA REAL (Bloco AD.3, segundo --aplicar): "<modulo>" e o MARCADOR de create-module.mjs, nao
+    // chave de manifesto — sem protecao, sobrevivia so nos ~60 cabecalhos de comentario prosa
+    // (recusa por prosa mesmo), mas substituia dentro de string-sem-espaco de verdade
+    // ("<modulo>_auditoria" em SQL), corrompendo database/schema.sql/module.json em desacordo com
+    // os cabecalhos — create-module.mjs:substituir passou a procurar "<module>", que so existia em
+    // METADE dos arquivos. Protegido agora pelo marcador com colchetes nos dois sentidos.
+    { nome: 'AD.3 marcador: "<modulo>_auditoria" (SQL, string sem espaco — RECUSARIA sem protecao) RECUSA', fn: () => {
+      const linha = 'alter table "<escopo>"."<modulo>_auditoria" enable row level security;';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'modulo', 'chave', FMT_JS, false, PROTEGIDOS_MODULO, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-LITERAL-PROTEGIDO';
+    } },
+    // FALHA REAL (Bloco AD.3, medida pelo revisor: 108 arquivos com <modulo>, 22 com <module>,
+    // convivendo dentro do MESMO module.json): dentro de um valor "parece caminho" (tem barra —
+    // basePath/webPath), pareceCaminho tinha PRECEDENCIA sobre a protecao — o marcador de linha
+    // sozinho nao bastava, porque decidir() nunca chegava a consulta-lo. `dentroDeMarcadorDeTemplate`
+    // (colchetes IMEDIATOS `<`/`>`) intercepta ANTES de pareceCaminho rodar.
+    { nome: 'AD.3 marcador: "/api/v1/<modulo>" (basePath, TEM barra — pareceCaminho tinha precedencia sobre a protecao) RECUSA', fn: () => {
+      const linha = '  "basePath": "/api/v1/<modulo>",';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'modulo', 'chave', FMT_JS, false, PROTEGIDOS_MODULO, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-LITERAL-PROTEGIDO';
+    } },
+    { nome: 'AD.3 marcador: "/<modulo>" (webPath, mesma forma) RECUSA — os dois campos ficam consistentes, nao so um', fn: () => {
+      const linha = '  "webPath": "/<modulo>",';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'modulo', 'chave', FMT_JS, false, PROTEGIDOS_MODULO, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-LITERAL-PROTEGIDO';
+    } },
+    { nome: 'AD.3 marcador: "join(RAIZ_TEMPLATE, \'modulo\')" (string comum, SEM colchetes < >) continua substituindo normal — o desvio nao vaza pra fora do marcador', fn: () => {
+      const linha = "  return join(RAIZ_TEMPLATE, 'modulo', 'contract');";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'modulo', 'chave', FMT_JS, false, PROTEGIDOS_MODULO, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'string-sem-espaco';
+    } },
+    { nome: 'AD.3 marcador: "<MODULO>_DB_URL" (uppercase) NEM CASA o item "modulo" (case-sensitive) — protecao e so redundancia defensiva pro caso maiusculo', fn: () => {
+      const linha = "const chave = '<MODULO>_DB_URL';";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'modulo', 'chave', FMT_JS, false, PROTEGIDOS_MODULO, false, 'AD.3');
+      return oc.length === 0;
+    } },
+    { nome: 'AD.3 marcador: consome[].modulo (chave de manifesto de verdade, SEM colchetes) continua SUBSTITUINDO — protecao nao vaza pra fora do marcador', fn: () => {
+      const linha = "      consome: [{ modulo: 'vizinho', contrato: 'GET /resumo', porQue: 'ciclo' }],";
+      const item = { antigo: 'modulo', tipo: 'chave', fase: 'AD.3' };
+      const texto = [
+        '  mutar: (m) => {',
+        '    m.manifesto((x) => ({',
+        '      ...x,',
+        linha,
+        '    }));',
+        '  },',
+      ].join('\n');
+      const { porLinha } = classificarArquivo(texto, item, FMT_JS, PROTEGIDOS_MODULO);
+      return porLinha[3].length === 1 && porLinha[3][0].decisao === 'substitui';
+    } },
+    // BUG REAL corrigido (Bloco AD.3): interpolacao de crase (`${nome}...`) sem espaco em branco
+    // era tratada como "string inteira" e substituia a chave nua SEM o `.`/bloco que a protegeria
+    // em qualquer outro lugar do codigo — corrompeu `carregarEsquema` (schema.mjs) e um adapter
+    // Postgres de verdade antes de ser achado e corrigido. As quatro provam a forma, nao o caso.
+    { nome: 'AD.3 bug de interpolacao: `${nome}.schema.json` (crase, SEM espaco) RECUSA — nome nu dentro de ${...} nao e "string inteira"', fn: () => {
+      const linha = '  const bruto = readFileSync(join(PASTA, `${nome}.schema.json`), "utf8");';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'nome', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'AD.3 bug de interpolacao: `${prefixo}${sufixo}` (duas interpolacoes coladas, zero espaco) RECUSA as duas', fn: () => {
+      const linha = '  return { pool, nome: qualifiedName(schema, `${prefixo}${sufixo}`) };';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'prefixo', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'recusa' && oc[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'AD.3 bug de interpolacao: `${manifesto.nome}` (interpolacao, mas COM ponto/base conhecida) SUBSTITUI normalmente', fn: () => {
+      const linha = '  process.stdout.write(`modulo: ${manifesto.nome}`);';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'nome', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'identificador';
+    } },
+    { nome: 'AD.3 bug de interpolacao: crase SEM `$` (string-sem-espaco de verdade) continua pelo ramo antigo, sem regressao', fn: () => {
+      const linha = '  const chave = `nome`;';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'nome', 'chave', FMT_JS, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'string-sem-espaco';
+    } },
+    // FALHA REAL (Bloco AD.3, terceira rodada de --aplicar): a mesma classe do bug de `${nome}` em
+    // crase, achada numa forma que a correcao da crase nao cobria — f-string Python (`{...}`, sem
+    // `$`) tem o MESMO problema. Corrompeu `adapters/postgres/__init__.py`/`scripts/migrations.py`:
+    // `f"{dados['prefixo']}migrations"` virou `f"{data['prefix']}migrations"` — `data` nunca foi
+    // definida ali, so `dados` (que ficou de fora por ser identificador nu, sem base conhecida).
+    { nome: 'AD.3 bug de f-string: `f"{dados[\'prefixo\']}migrations"` (Python, SEM espaco) RECUSA — dados/prefixo nus dentro de {} nao sao "string inteira"', fn: () => {
+      const linha = '    tabela = f"{dados[\'prefixo\']}migrations"';
+      const ocDados = ocorrenciasClassificadasNaLinha(linha, 'dados', 'chave', FMT_PY, false, undefined, false, 'AD.3');
+      const ocPrefixo = ocorrenciasClassificadasNaLinha(linha, 'prefixo', 'chave', FMT_PY, false, undefined, false, 'AD.3');
+      return ocDados.length === 1 && ocDados[0].decisao === 'recusa' && ocDados[0].classe === 'RECUSADO-IDENTIFICADOR-NU'
+        && ocPrefixo.length === 1 && ocPrefixo[0].decisao === 'recusa' && ocPrefixo[0].classe === 'RECUSADO-IDENTIFICADOR-NU';
+    } },
+    { nome: 'AD.3 bug de f-string: `f"{manifesto[\'prefixo\']}"` (base conhecida DENTRO da interpolacao) SUBSTITUI normalmente', fn: () => {
+      const linha = '    tabela = f"{manifesto[\'prefixo\']}migrations"';
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'prefixo', 'chave', FMT_PY, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'identificador';
+    } },
+    { nome: 'AD.3 bug de f-string: string Python SEM prefixo `f` (string-sem-espaco de verdade) continua pelo ramo antigo, sem regressao', fn: () => {
+      const linha = "    chave = 'prefixo'";
+      const oc = ocorrenciasClassificadasNaLinha(linha, 'prefixo', 'chave', FMT_PY, false, undefined, false, 'AD.3');
+      return oc.length === 1 && oc[0].decisao === 'substitui' && oc[0].classe === 'string-sem-espaco';
+    } },
+    { nome: 'AD.3 fronteira de arquivo: item chave APLICA a tools/gate/rules (as ~40 regras leitoras) — rede de seguranca e na decisao, nao na pasta', fn: () => {
+      const item = { tipo: 'chave' };
+      const caminhoRegra = join(RAIZ_TEMPLATE, 'tools', 'gate', 'rules', 'structure.mjs');
+      const caminhoCases = join(RAIZ_TEMPLATE, 'tools', 'gate', 'tests', 'cases.mjs');
+      return itemAplicaAoArquivo(item, caminhoRegra) === true && itemAplicaAoArquivo(item, caminhoCases) === true;
+    } },
+    { nome: 'AD.3 fronteira de arquivo: item simbolo continua RESTRITO a bindings/doutrina/docs-viva — nao regrediu o achado do AD.2', fn: () => {
+      const item = { tipo: 'simbolo' };
+      const caminhoTools = join(RAIZ_TEMPLATE, 'tools', 'gate', 'rules', 'structure.mjs');
+      const caminhoBindings = join(RAIZ_TEMPLATE, 'bindings', 'typescript', '_template', 'api', 'src', 'config.ts');
+      return itemAplicaAoArquivo(item, caminhoTools) === false && itemAplicaAoArquivo(item, caminhoBindings) === true;
     } },
     // Mapeamento `antigo→novo` numa crase so (Bloco AD.4, achado do revisor em decisoes.md §233/§237).
     { nome: 'RECUSADO-MAPEAMENTO: lado esquerdo de `ferramentas→tools` (crase unica) recusa mesmo sem marcador de protecao', fn: () => {

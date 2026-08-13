@@ -32,7 +32,7 @@ Módulo que **não gera artefato** descarta `core/engine`, `core/templates`, `da
 ## Anatomia
 
 ```
-modulo.json      identidade + contrato — o sistema DESCOBRE o módulo por aqui
+module.json      identidade + contrato — o sistema DESCOBRE o módulo por aqui
 contract/        openapi.yaml — a FONTE do contrato; o código segue
 config/          5 arquivos, um por assunto. Zero valor literal no código
 core/            engine interna, sem I/O
@@ -53,10 +53,10 @@ tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 - **Falha rápida:** env ou config ausente **derruba o boot**. `process.env['X'] ?? 'http://localhost'` é violação.
 - **Infraestrutura desacoplada:** o módulo fala com `core/ports`, nunca com fornecedor. O nome do provedor só
   aparece em `config/ports.json` — trocar de banco é editar uma linha de JSON.
-- **Módulo alheio desacoplado:** dado de outro módulo vem por `core/gateways/`, só HTTP, declarado em `consome`.
+- **Módulo alheio desacoplado:** dado de outro módulo vem por `core/gateways/`, só HTTP, declarado em `consumes`.
 - **Contrato primeiro:** `contract/openapi.yaml` antes do código, com `/health`, `/meta` e `/resumo`.
 - **Saída por allowlist:** a resposta é montada campo a campo no mapeador. Devolver registro cru é proibido.
-- **Deny by default:** toda rota exige token, exceto as de `rotasPublicas`.
+- **Deny by default:** toda rota exige token, exceto as de `publicRoutes`.
 - **Log estruturado** com `requestId` e redação automática de campo sensível. `console.*` é proibido.
 - **Determinismo:** `Math.random()` e `new Date()` proibidos em `core/` — use `geradorId` e `relogio`.
 - **Dados:** tabela `<modulo>_*` no schema declarado (**nunca** `public`), RLS ligada, trilha append-only.
@@ -73,7 +73,7 @@ npm run validar:extracao     este módulo vira microsserviço hoje?
 ## Checklist antes de dizer "pronto"
 
 - [ ] `npm run validar` passa.
-- [ ] `modulo.json` reflete o que o código usa (tabelas, env, portas, `consome`, permissões).
+- [ ] `module.json` reflete o que o código usa (tabelas, env, portas, `consumes`, permissões).
 - [ ] Rotas do código == `contract/openapi.yaml`; `/health`, `/meta` e `/resumo` respondendo.
 - [ ] Nenhum literal de config ou segredo; nenhum `process.env` fora de `api/src/config.js`.
 - [ ] Nenhum campo sensível em resposta, log ou OpenAPI.

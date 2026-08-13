@@ -35,10 +35,10 @@ function normalizar(saida, idModulo) {
   ));
 }
 
-/** Regras de escopo `modulo` sobre um contexto. */
+/** Regras de escopo `module` sobre um contexto. */
 export function rodarRegrasDeModulo(ctx) {
   const achados = [];
-  for (const regra of REGRAS.filter((r) => r.escopo === 'modulo')) {
+  for (const regra of REGRAS.filter((r) => r.escopo === 'module')) {
     for (const item of normalizar(regra.verificar(ctx), ctx.idPasta)) {
       achados.push({ ...item, regra: regra.id, nivel: regra.nivel });
     }
@@ -60,12 +60,12 @@ export function rodarRegrasGlobais(contextos) {
 /**
  * Regras de escopo `root` — fatos do PROJETO, e por isso rodam UMA vez, sobre `ctx.projeto`.
  *
- * Elas existiam antes como escopo `modulo` com guarda, e o preço estava registrado: um defeito de
+ * Elas existiam antes como escopo `module` com guarda, e o preço estava registrado: um defeito de
  * projeto emitia uma mensagem POR MÓDULO. Com dois módulos, duas mensagens idênticas; com dez, dez.
  * O escopo próprio conserta isso na ORIGEM — a regra roda uma vez porque o fato é um só —, e não na
  * impressão, que só esconderia a repetição.
  *
- * Global não servia: `analisar` descarta achado global cujo `modulo` não esteja entre os
+ * Global não servia: `analisar` descarta achado global cujo `module` não esteja entre os
  * selecionados, e a raiz não é módulo nenhum.
  */
 export function rodarRegrasDeRaiz(projeto) {
@@ -83,13 +83,13 @@ export function rodarRegrasDeRaiz(projeto) {
 export function checarExtracao(ctx) {
   const achados = [];
   const escolhidas = ctx.configs.ports.valor ?? {};
-  for (const porta of ctx.manifesto?.portas ?? []) {
+  for (const porta of ctx.manifesto?.ports ?? []) {
     if (escolhidas[porta] === undefined) {
       achados.push({ modulo: ctx.idPasta, regra: 'extracao', nivel: 'erro', mensagem: `porta "${porta}" sem adapter em config/ports.json` });
     }
   }
-  const env = (ctx.manifesto?.envRequerido ?? []).join(' ');
-  for (const { modulo } of ctx.manifesto?.consome ?? []) {
+  const env = (ctx.manifesto?.requiredEnv ?? []).join(' ');
+  for (const { modulo } of ctx.manifesto?.consumes ?? []) {
     if (!env.includes(modulo.toUpperCase().replace(/-/g, '_'))) {
       achados.push({ modulo: ctx.idPasta, regra: 'extracao', nivel: 'aviso', mensagem: `consome "${modulo}" mas nenhuma env aponta a URL base dele` });
     }

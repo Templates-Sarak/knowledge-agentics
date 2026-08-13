@@ -76,7 +76,7 @@ class AuthDeTeste:
         self._token = token_valido
 
     async def verify(self, token: str) -> dict[str, Any] | None:
-        return {"permissoes": self._permissoes} if token == self._token else None
+        return {"permissions": self._permissoes} if token == self._token else None
 
 
 def create_dependencies(iniciais: Sequence[Registro] = ()) -> DependenciasModulo:

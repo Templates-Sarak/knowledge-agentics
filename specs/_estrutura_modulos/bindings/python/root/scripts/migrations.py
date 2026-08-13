@@ -23,7 +23,7 @@ escopada ao projeto, instalada pelo MESMO `pip install -e ".[dev]"` que ja insta
 
 ESTADO POR MODULO (plan-2.2.md Bloco Y) — o limite que este arquivo declarava ("sem controle de
 versao de migration") mordeu em uso real: um projeto com tres migrations e dois ambientes nao
-conseguia rodar `up` a segunda vez. A tabela `<schema>.<prefixo>migrations` (`arquivo text primary
+conseguia rodar `up` a segunda vez. A tabela `<schema>.<prefix>migrations` (`arquivo text primary
 key`, `aplicada_em timestamptz`) e criada pela PRIMEIRA migration do molde — nao por este runner: o
 runner so LE e ESCREVE nela, nunca decide a forma dela por fora do SQL versionado. `up` aplica so o
 que falta; `down` reverte so o ULTIMO aplicado (nunca "tudo de uma vez" — e o comportamento padrao
@@ -114,7 +114,7 @@ def order_migrations(nomes: list[str], direcao: str) -> list[str]:
 
 
 def environment_key(id_do_modulo: str) -> str:
-    """`<modulo>` -> `<MODULO>_DB_URL` — a MESMA convencao de `modulo.json:envRequerido`."""
+    """`<modulo>` -> `<MODULO>_DB_URL` — a MESMA convencao de `module.json:requiredEnv`."""
     return f"{id_do_modulo.upper().replace('-', '_')}_DB_URL"
 
 
@@ -169,7 +169,7 @@ def _module_folder(id_do_modulo: str) -> Path:
     pasta = (base / id_do_modulo).resolve()
     if base not in pasta.parents:
         raise RuntimeError(f'[migrations] "{id_do_modulo}" resolve para fora de modules/ — recusado')
-    if not (pasta / "modulo.json").exists():
+    if not (pasta / "module.json").exists():
         raise RuntimeError(f'[migrations] modulo "{id_do_modulo}" nao encontrado em modules/')
     return pasta
 
@@ -182,14 +182,14 @@ def _list_migrations(pasta_modulo: Path) -> list[str]:
 
 
 def _control_table(pasta_modulo: Path) -> tuple[str, str, str]:
-    """`dados.schema`/`dados.prefixo` do manifesto — a MESMA fonte que declara as tabelas do
+    """`data.schema`/`data.prefix` do manifesto — a MESMA fonte que declara as tabelas do
     modulo, nunca um terceiro lugar para o nome da tabela de controle. Devolve `(schema, tabela,
     qualificada)` — `qualificada` (`"schema"."tabela"`) permite as funcoes abaixo passarem UM
     parametro em vez de dois (limiar de 4 parametros)."""
-    manifesto = json.loads(_read_text(pasta_modulo / "modulo.json"))
-    dados = manifesto["dados"]
+    manifesto = json.loads(_read_text(pasta_modulo / "module.json"))
+    dados = manifesto["data"]
     schema = dados["schema"]
-    tabela = f"{dados['prefixo']}migrations"
+    tabela = f"{dados['prefix']}migrations"
     return schema, tabela, f'"{schema}"."{tabela}"'
 
 
@@ -201,7 +201,7 @@ def _required_url(id_do_modulo: str) -> str:
     if not valor:
         raise RuntimeError(
             f"[migrations] variavel obrigatoria ausente: {chave}"
-            " (declare em modulo.json:envRequerido e no .env da raiz)"
+            " (declare em module.json:envRequerido e no .env da raiz)"
         )
     return valor
 
@@ -321,7 +321,7 @@ def run_cycle(id_do_modulo: str) -> None:
 def _split_up_down_cases() -> list[dict[str, Any]]:
     return [
         {
-            "nome": "bloco simples (o molde de verdade)",
+            "name": "bloco simples (o molde de verdade)",
             "entrada": "\n".join(
                 [
                     'create table "acme"."x_metadados" (id uuid);',
@@ -337,7 +337,7 @@ def _split_up_down_cases() -> list[dict[str, Any]]:
             ),
         },
         {
-            "nome": "ADVERSARIAL: linha em branco, comentario que NAO e rollback, indentacao no bloco",
+            "name": "ADVERSARIAL: linha em branco, comentario que NAO e rollback, indentacao no bloco",
             "entrada": "\n".join(
                 [
                     'create table "acme"."x" (id uuid);',
@@ -361,12 +361,12 @@ def _split_up_down_cases() -> list[dict[str, Any]]:
             ),
         },
         {
-            "nome": "sem bloco de rollback: down vazio, up e o arquivo inteiro",
+            "name": "sem bloco de rollback: down vazio, up e o arquivo inteiro",
             "entrada": 'create table "acme"."x" (id uuid);',
             "esperado": ('create table "acme"."x" (id uuid);', ""),
         },
         {
-            "nome": "bloco de rollback vazio (so a marca, nada depois)",
+            "name": "bloco de rollback vazio (so a marca, nada depois)",
             "entrada": 'create table "acme"."x" (id uuid);\n-- rollback\n',
             "esperado": ('create table "acme"."x" (id uuid);', ""),
         },
@@ -376,13 +376,13 @@ def _split_up_down_cases() -> list[dict[str, Any]]:
 def _ordering_cases() -> list[dict[str, Any]]:
     return [
         {
-            "nome": "up: ordem crescente",
+            "name": "up: ordem crescente",
             "nomes": ["0002-acrescenta-status.sql", "0001-cria-metadados.sql"],
             "direcao": "up",
             "esperado": ["0001-cria-metadados.sql", "0002-acrescenta-status.sql"],
         },
         {
-            "nome": "down: ordem INVERSA",
+            "name": "down: ordem INVERSA",
             "nomes": ["0001-cria-metadados.sql", "0002-acrescenta-status.sql"],
             "direcao": "down",
             "esperado": ["0002-acrescenta-status.sql", "0001-cria-metadados.sql"],
@@ -392,8 +392,8 @@ def _ordering_cases() -> list[dict[str, Any]]:
 
 def _environment_key_cases() -> list[dict[str, Any]]:
     return [
-        {"nome": "simples", "id": "catalogo", "esperado": "CATALOGO_DB_URL"},
-        {"nome": "com hifen", "id": "linha-de-producao", "esperado": "LINHA_DE_PRODUCAO_DB_URL"},
+        {"name": "simples", "id": "catalogo", "esperado": "CATALOGO_DB_URL"},
+        {"name": "com hifen", "id": "linha-de-producao", "esperado": "LINHA_DE_PRODUCAO_DB_URL"},
     ]
 
 
@@ -404,27 +404,27 @@ def _state_cases() -> list[dict[str, Any]]:
     nomes = ["0001-cria-metadados.sql", "0002-acrescenta-status.sql", "0003-cria-indice.sql"]
     return [
         {
-            "nome": "pending: banco vazio -> as tres, em ordem",
+            "name": "pending: banco vazio -> as tres, em ordem",
             "fn": lambda: pending(nomes, set()) == nomes,
         },
         {
-            "nome": "pending: banco ja migrado por completo -> nenhuma (isto e o que travava antes)",
+            "name": "pending: banco ja migrado por completo -> nenhuma (isto e o que travava antes)",
             "fn": lambda: pending(nomes, set(nomes)) == [],
         },
         {
-            "nome": "pending: so a primeira aplicada -> falta a segunda e a terceira, em ordem",
+            "name": "pending: so a primeira aplicada -> falta a segunda e a terceira, em ordem",
             "fn": lambda: pending(nomes, {nomes[0]}) == [nomes[1], nomes[2]],
         },
         {
-            "nome": "last_applied: nenhuma aplicada -> None (down nao tem o que reverter)",
+            "name": "last_applied: nenhuma aplicada -> None (down nao tem o que reverter)",
             "fn": lambda: last_applied(nomes, set()) is None,
         },
         {
-            "nome": "last_applied: todas aplicadas -> a TERCEIRA (maior prefixo), nunca a primeira",
+            "name": "last_applied: todas aplicadas -> a TERCEIRA (maior prefixo), nunca a primeira",
             "fn": lambda: last_applied(nomes, set(nomes)) == nomes[2],
         },
         {
-            "nome": "last_applied: aplicadas fora de ordem no set -> ainda assim a de MAIOR prefixo",
+            "name": "last_applied: aplicadas fora de ordem no set -> ainda assim a de MAIOR prefixo",
             "fn": lambda: last_applied(nomes, {nomes[2], nomes[0]}) == nomes[2],
         },
     ]

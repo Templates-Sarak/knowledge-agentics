@@ -43,9 +43,9 @@ function imprimirHumano(achados, alvos, excecoesInvalidas) {
 
 function resolverAlvo(argumento, raizPadrao) {
   const bruto = isAbsolute(argumento) ? argumento : resolve(process.cwd(), argumento);
-  if (existsSync(join(bruto, 'modulo.json'))) return bruto;
+  if (existsSync(join(bruto, 'module.json'))) return bruto;
   const porNome = join(raizPadrao, 'modules', argumento);
-  if (existsSync(join(porNome, 'modulo.json'))) return porNome;
+  if (existsSync(join(porNome, 'module.json'))) return porNome;
   return null;
 }
 

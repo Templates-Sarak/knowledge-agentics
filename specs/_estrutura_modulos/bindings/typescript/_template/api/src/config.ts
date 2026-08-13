@@ -22,19 +22,19 @@ export interface ConfigSeguranca {
 
 export interface Manifesto {
   id: string;
-  nome: string;
-  versao: string;
-  papel: string;
-  rotaBase: string;
-  rotaWeb: string | null;
-  navegacao: { label: string; icone: string; ordem: number } | null;
-  exportaResumo: boolean;
-  dados: { schema: string; prefixo: string; tabelas: string[] };
-  envRequerido: string[];
-  portas: string[];
-  permissoes: string[];
-  rotasPublicas: string[];
-  camposSensiveis: string[];
+  name: string;
+  version: string;
+  role: string;
+  basePath: string;
+  webPath: string | null;
+  navigation: { label: string; icon: string; order: number } | null;
+  exportsSummary: boolean;
+  data: { schema: string; prefix: string; tables: string[] };
+  requiredEnv: string[];
+  ports: string[];
+  permissions: string[];
+  publicRoutes: string[];
+  sensitiveFields: string[];
 }
 
 export interface ConfiguracaoModulo {
@@ -47,16 +47,16 @@ export interface ConfiguracaoModulo {
   textos: Record<string, string>;
 }
 
-/** Sobe a partir de um ponto ate achar o `modulo.json`. Funciona em dev, em teste e ja extraido. */
+/** Sobe a partir de um ponto ate achar o `module.json`. Funciona em dev, em teste e ja extraido. */
 export function findRootModule(partida: string = process.cwd()): string {
   let atual = partida;
   for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'modulo.json'))) return atual;
+    if (existsSync(join(atual, 'module.json'))) return atual;
     const pai = dirname(atual);
     if (pai === atual) break;
     atual = pai;
   }
-  throw new Error(`[config] modulo.json nao encontrado a partir de "${partida}"`);
+  throw new Error(`[config] module.json nao encontrado a partir de "${partida}"`);
 }
 
 /** Le removendo o BOM: editor e shell do Windows gravam por padrao, e `JSON.parse` rejeita. */
@@ -117,21 +117,21 @@ function resolveEnvironment(raizModulo: string): void {
 export function envRequired(chave: string): string {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
-    throw new Error(`[config] variavel obrigatoria ausente: ${chave} (declare em modulo.json:envRequerido)`);
+    throw new Error(`[config] variavel obrigatoria ausente: ${chave} (declare em module.json:envRequerido)`);
   }
   return valor;
 }
 
 /**
  * Exportada só para o teste direto (plan-2.md N.4): sem `.env` real, TODO teste rodaria sob
- * `NODE_ENV=test` sem uma unica variavel de `envRequerido` preenchida — e sem o bypass abaixo,
+ * `NODE_ENV=test` sem uma unica variavel de `requiredEnv` preenchida — e sem o bypass abaixo,
  * `loadConfiguration()` derrubaria a suite inteira antes do primeiro `it()`. O preco declarado:
  * "suite verde" nunca prova, por si so, que a fiacao de ambiente esta correta — quem prova isso e o
  * boot real (`npm run start`) ou este mesmo teste, chamando a funcao com `NODE_ENV` diferente de
  * `test` de proposito.
  */
 export function checkEnvRequired(manifesto: Manifesto): void {
-  const faltando = manifesto.envRequerido.filter((chave) => process.env[chave] === undefined);
+  const faltando = manifesto.requiredEnv.filter((chave) => process.env[chave] === undefined);
   if (faltando.length > 0 && process.env['NODE_ENV'] !== 'test') {
     throw new Error(`[config] ${manifesto.id}: variaveis ausentes no ambiente: ${faltando.join(', ')}`);
   }
@@ -139,7 +139,7 @@ export function checkEnvRequired(manifesto: Manifesto): void {
 
 /** Carrega e valida TUDO no boot; qualquer falta derruba o processo antes de servir. */
 export function loadConfiguration(raiz: string = findRootModule()): ConfiguracaoModulo {
-  const manifesto = readJson<Manifesto>(raiz, 'modulo.json');
+  const manifesto = readJson<Manifesto>(raiz, 'module.json');
   resolveEnvironment(raiz);
   checkEnvRequired(manifesto);
 

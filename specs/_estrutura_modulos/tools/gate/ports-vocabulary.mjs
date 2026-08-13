@@ -4,13 +4,13 @@
  *
  * Três lugares precisavam concordar e nada verificava (plan-2.md Bloco S): eram **8 em cada, por
  * sorte** — `packages/ports/index.ts:PORTAS_CONHECIDAS`, `schemas/config-ports.schema.json:properties`
- * e `schemas/modulo.schema.json:ports.items.enum`. Acrescentar uma nona porta editando dois dos
+ * e `schemas/module.schema.json:ports.items.enum`. Acrescentar uma nona porta editando dois dos
  * três falhava em silêncio numa direção.
  *
  * **Impedir é melhor que acusar** — o template já escolheu isso uma vez ao gerar a config do linter
  * em vez de conferi-la por regra (`generate-lint-config.mjs`). Os DOIS schemas
  * (`tools/gate/schemas/config-ports.schema.json` e a metade `ports.items.enum` de
- * `modulo.schema.json`) são GERADOS desta lista por `tools/generate-port-schemas.mjs`, com
+ * `module.schema.json`) são GERADOS desta lista por `tools/generate-port-schemas.mjs`, com
  * `--conferir` para detectar edição manual — o mesmo padrão do `lint-derivado`.
  *
  * O TERCEIRO lugar, `packages/ports/index.{ts,js,py}` de cada binding, **não é gerado**: é

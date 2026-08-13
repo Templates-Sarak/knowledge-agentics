@@ -222,9 +222,9 @@ function propriedadesDeResposta(yaml) {
   return nomes;
 }
 
-/** `servers[0].url` da spec confere com o `rotaBase` do manifesto. */
+/** `servers[0].url` da spec confere com o `basePath` do manifesto. */
 function conferirServidor(ctx, yaml) {
-  const esperado = ctx.manifesto?.rotaBase ?? null;
+  const esperado = ctx.manifesto?.basePath ?? null;
   // Manifesto ausente ou sem rotaBase e do `manifesto`/`schema-manifesto` — nao acusamos duas vezes.
   if (esperado === null) return [];
   const declarado = servidorDaSpec(yaml);
@@ -304,9 +304,9 @@ const PALAVRAS_DE_CONTROLE = new Set([
  *   - precedido de palavra-chave (`function`/`def`/`const`/`let`/`var`/`class`, com `export`/
  *     `default`/`async` opcionais antes dela);
  *   - identificador no INÍCIO da linha lógica (nada antes dele na linha, além de espaço).
- * A segunda forma é a LARGA: aceita, da mesma maneira, método de objeto/classe (`nome(...)`),
- * propriedade-arrow (`nome: (...) => ({…})`) e atribuição de módulo em Python
- * (`nome = lambda r: {...}`) — é o que agora fecha a janela num `nome: (...)` que antes só o sítio
+ * A segunda forma é a LARGA: aceita, da mesma maneira, método de objeto/classe (`name(...)`),
+ * propriedade-arrow (`name: (...) => ({…})`) e atribuição de módulo em Python
+ * (`name = lambda r: {...}`) — é o que agora fecha a janela num `name: (...)` que antes só o sítio
  * enxergava. `class` entra na lista de palavras-chave: sem ela, `export class X { … }` era invisível
  * ao reconhecedor, e a janela de uma função de topo ANTES da classe atravessava a declaração inteira
  * sem nada em recuo zero para fechá-la (N.2.1).
@@ -470,7 +470,7 @@ export default [
   {
     id: 'contrato',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const spec = specDe(ctx);
       if (spec === null) return ['contract/openapi.yaml ausente'];
@@ -487,7 +487,7 @@ export default [
   {
     id: 'rota-nomenclatura',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const spec = specDe(ctx);
       // Spec ausente OU ilegivel e do `contract`; acusar aqui tambem so duplica o mesmo defeito.
@@ -505,7 +505,7 @@ export default [
   {
     id: 'contrato-sincronizado',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const spec = specDe(ctx);
       // Spec ausente OU com `paths:` ilegivel e do `contract`. Sem este silencio, uma spec que o
@@ -537,7 +537,7 @@ export default [
   {
     id: 'projecao-contrato',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const spec = specDe(ctx);
       // Spec ausente OU com `paths:` ilegivel e do `contract`; acusar aqui so duplica o defeito.
@@ -563,7 +563,7 @@ export default [
   {
     id: 'payload-camelcase',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const { chave, arquivo } of chavesDaProjecao(ctx)) {
@@ -584,9 +584,9 @@ export default [
   {
     id: 'saida-sensivel',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      const sensiveis = ctx.manifesto?.camposSensiveis ?? [];
+      const sensiveis = ctx.manifesto?.sensitiveFields ?? [];
       const spec = specDe(ctx);
       if (sensiveis.length === 0 || spec === null) return [];
       const resposta = trechosDeResposta(spec.conteudo);
@@ -598,9 +598,9 @@ export default [
   {
     id: 'sensivel-em-saida',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
-      const sensiveis = new Set(ctx.manifesto?.camposSensiveis ?? []);
+      const sensiveis = new Set(ctx.manifesto?.sensitiveFields ?? []);
       if (sensiveis.size === 0) return [];
       const achados = [];
 
@@ -623,11 +623,11 @@ export default [
   {
     id: 'resumo-exportado',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       // UMA direcao so, como `projecao-contrato`: `false` nao proibe nada. O modulo que nao entra
       // no dashboard pode ter `total` no `/resumo` dele sem que isso seja defeito de coisa alguma.
-      if (ctx.manifesto?.exportaResumo !== true) return [];
+      if (ctx.manifesto?.exportsSummary !== true) return [];
 
       const spec = specDe(ctx);
       // Spec ausente OU com `paths:` ilegivel e do `contract`. Sem este silencio, "nao consegui ler"
@@ -646,7 +646,7 @@ export default [
   {
     id: 'entrada-allowlist',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       // A simetrica da `saida-crua`, na direcao da ENTRADA (02-contrato-e-dados §3.2: "allowlist de
       // campos — payload com campo desconhecido e rejeitado, nao ignorado").
@@ -679,7 +679,7 @@ export default [
   {
     id: 'saida-crua',
     nivel: 'erro',
-    escopo: 'modulo',
+    escopo: 'module',
     verificar(ctx) {
       const achados = [];
       for (const arquivo of ctx.codigo) {

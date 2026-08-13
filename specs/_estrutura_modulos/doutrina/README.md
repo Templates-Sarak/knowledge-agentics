@@ -47,7 +47,7 @@ quem cobra sem esse furo é o CI (`03-operacao.md` §7).
 ## 3. A ordem ao criar módulo
 
 ```sh
-node tools/create-module.mjs <id> --binding <b> --papel <p> [--sem-artefato]
+node tools/create-module.mjs <id> --binding <b> --role <p> [--sem-artefato]
 ```
 
 Depois do scaffold, a ordem de preenchimento e o motivo dela estão em `01-modulo.md` §8 —
@@ -61,7 +61,7 @@ ao lado, na mesma pasta.
 
 | Erro comum | Regra |
 |---|---|
-| importar outro módulo em vez de declarar `consome` (HTTP) | `import-lateral` |
+| importar outro módulo em vez de declarar `consumes` (HTTP) | `import-lateral` |
 | importar um adapter dentro do módulo — o adapter é injetado | `import-adapter` |
 | porta, permissão ou tabela usada e não declarada no manifesto | `porta-declarada` / `permissao-literal` / `tabela-declarada` |
 | rota no código sem contrato, ou no contrato sem código | `contrato-sincronizado` |

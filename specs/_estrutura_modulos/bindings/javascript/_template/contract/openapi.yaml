@@ -25,7 +25,7 @@ paths:
                 type: object
                 properties:
                   ok: { type: boolean }
-                  modulo: { type: string }
+                  module: { type: string }
 
   /meta:
     get:
@@ -39,13 +39,13 @@ paths:
                 type: object
                 properties:
                   id: { type: string }
-                  nome: { type: string }
-                  versao: { type: string }
-                  papel: { type: string }
-                  rotaBase: { type: string }
-                  rotaWeb: { type: [string, 'null'] }
-                  navegacao: { type: [object, 'null'] }
-                  exportaResumo: { type: boolean }
+                  name: { type: string }
+                  version: { type: string }
+                  role: { type: string }
+                  basePath: { type: string }
+                  webPath: { type: [string, 'null'] }
+                  navigation: { type: [object, 'null'] }
+                  exportsSummary: { type: boolean }
 
   /resumo:
     get:

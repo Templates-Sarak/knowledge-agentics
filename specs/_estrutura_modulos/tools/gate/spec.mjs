@@ -3,7 +3,7 @@
  *
  * Vive fora de `rules/` porque DUAS famílias precisam dela: `Contrato` verifica a spec contra o
  * código do próprio módulo, e `Isolamento` (`consome-contrato`) verifica a spec do módulo DONO
- * contra o `consome` de quem depende dele. Copiar o leitor para o segundo lugar faria a família
+ * contra o `consumes` de quem depende dele. Copiar o leitor para o segundo lugar faria a família
  * Isolamento divergir da Contrato sem ninguém notar — exatamente o defeito que o gate existe
  * para impedir.
  *
@@ -247,7 +247,7 @@ function refsDeSchema(linhas) {
   return [...linhas.join('\n').matchAll(/#\/components\/schemas\/(\w+)/g)].map((achado) => achado[1]);
 }
 
-/** As linhas de `components.schemas.<nome>`. */
+/** As linhas de `components.schemas.<name>`. */
 function schemaDeComponente(yaml, nome) {
   const schemas = subBloco(dentroDe(yaml, /^components:\s*$/), /^\s*schemas:\s*$/);
   return subBloco(schemas, new RegExp(`^\\s*${comoLiteral(nome)}:\\s*$`));

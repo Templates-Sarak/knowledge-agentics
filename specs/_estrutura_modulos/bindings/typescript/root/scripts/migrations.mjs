@@ -22,7 +22,7 @@
 //
 // ESTADO POR MODULO (plan-2.2.md Bloco Y) — o limite que o plan.md original declarava ("sem
 // controle de versao de migration") mordeu em uso real: um projeto com tres migrations e dois
-// ambientes nao consegue rodar `up` a segunda vez. A tabela `<schema>.<prefixo>migrations`
+// ambientes nao consegue rodar `up` a segunda vez. A tabela `<schema>.<prefix>migrations`
 // (`arquivo text primary key`, `aplicada_em timestamptz`) e criada pela PRIMEIRA migration do
 // molde — nao pelo runner: o runner so LE e ESCREVE nela, nunca decide a forma dela por fora do
 // SQL versionado. `up` aplica só o que falta; `down` reverte só o ÚLTIMO aplicado (nunca "tudo de
@@ -109,7 +109,7 @@ export function orderMigrations(nomes, direcao) {
   return direcao === 'down' ? ordenados.reverse() : ordenados;
 }
 
-/** `<modulo>` -> `<MODULO>_DB_URL` — a MESMA convencao de `modulo.json:envRequerido`. */
+/** `<modulo>` -> `<MODULO>_DB_URL` — a MESMA convencao de `module.json:requiredEnv`. */
 export function environmentKey(idDoModulo) {
   return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
@@ -168,7 +168,7 @@ function moduleFolder(idDoModulo) {
   if (!pasta.startsWith(base + sep)) {
     throw new Error(`[migrations] "${idDoModulo}" resolve para fora de modules/ — recusado`);
   }
-  if (!existsSync(join(pasta, 'modulo.json'))) {
+  if (!existsSync(join(pasta, 'module.json'))) {
     throw new Error(`[migrations] modulo "${idDoModulo}" nao encontrado em modules/`);
   }
   return pasta;
@@ -180,14 +180,14 @@ function listMigrations(pastaModulo) {
   return readdirSync(base).filter((nome) => nome.endsWith('.sql'));
 }
 
-/** `dados.schema`/`dados.prefixo` do manifesto — a MESMA fonte que declara as tabelas do módulo,
- * nunca um terceiro lugar para o nome da tabela de controle. Devolve `{ schema, tabela, nome }` —
- * `nome` já qualificado (`"schema"."tabela"`), para as funções abaixo passarem UM parâmetro em vez
+/** `data.schema`/`data.prefix` do manifesto — a MESMA fonte que declara as tabelas do módulo,
+ * nunca um terceiro lugar para o nome da tabela de controle. Devolve `{ schema, tabela, name }` —
+ * `name` já qualificado (`"schema"."tabela"`), para as funções abaixo passarem UM parâmetro em vez
  * de dois (limiar de 4 parâmetros). */
 function controlTable(pastaModulo) {
-  const manifesto = JSON.parse(readText(join(pastaModulo, 'modulo.json')));
-  const schema = manifesto.dados.schema;
-  const tabela = `${manifesto.dados.prefixo}migrations`;
+  const manifesto = JSON.parse(readText(join(pastaModulo, 'module.json')));
+  const schema = manifesto.data.schema;
+  const tabela = `${manifesto.data.prefix}migrations`;
   return { schema, tabela, nome: `"${schema}"."${tabela}"` };
 }
 
@@ -198,7 +198,7 @@ function requiredUrl(idDoModulo) {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
-      `[migrations] variavel obrigatoria ausente: ${chave} (declare em modulo.json:envRequerido e no .env da raiz)`,
+      `[migrations] variavel obrigatoria ausente: ${chave} (declare em module.json:envRequerido e no .env da raiz)`,
     );
   }
   return valor;
@@ -225,7 +225,7 @@ async function appliedMigrations(client, schema, tabela) {
 
 /** UMA migration, dentro de UMA transação: roda o SQL, depois grava a linha de controle — nessa
  * ordem, porque a migration 0001 CRIA a tabela de controle no próprio SQL que acabou de rodar.
- * `tabelaControle` já vem qualificada (`{ nome }` de `controlTable`) — um parâmetro, não dois. */
+ * `tabelaControle` já vem qualificada (`{ name }` de `controlTable`) — um parâmetro, não dois. */
 async function applyOne(client, pastaModulo, nome, tabelaControle) {
   const conteudo = readText(join(pastaModulo, 'database', 'migrations', nome));
   const { up } = splitUpDown(conteudo);

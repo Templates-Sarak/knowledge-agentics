@@ -20,10 +20,10 @@ Todo módulo tem exatamente esta forma. Divergir dela exige decisão registrada 
 
 ```
 modules/<modulo>/
-├── modulo.json          identidade + contrato — o sistema DESCOBRE o módulo por aqui
+├── module.json          identidade + contrato — o sistema DESCOBRE o módulo por aqui
 ├── package.json         @<escopo>/<modulo>        (pyproject.toml no binding Python)
 ├── .env                 ENV_RAIZ + overrides — NÃO versionado, criado pelo scaffold
-├── .env.example         GERADO de modulo.json:envRequerido — nunca editado à mão
+├── .env.example         GERADO de module.json:envRequerido — nunca editado à mão
 ├── README.md
 │
 ├── contract/
@@ -76,7 +76,7 @@ do módulo reprova no gate.
 Dependência interna: `web/` depende só do próprio `api-client/`; `api/` depende de `core/`; `core/` não depende
 de ninguém. `core/` é compartilhamento **dentro** do módulo — nunca entre módulos.
 
-# 3. O manifesto — `modulo.json`
+# 3. O manifesto — `module.json`
 
 O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna isso possível.
 
@@ -85,42 +85,42 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | Campo | Tipo | Papel |
 |---|---|---|
 | `id` | kebab-case | identificador único; **igual** à pasta, ao package, à rota e ao prefixo de tabela |
-| `nome` | string | rótulo humano |
-| `versao` | semver | versão do módulo |
-| `descricao` | string | uma linha sobre o domínio |
-| `papel` | enum | `dominio` \| `gateway` \| `conector` — ver [[00-arquitetura]] §3.1 |
+| `name` | string | rótulo humano |
+| `version` | semver | versão do módulo |
+| `description` | string | uma linha sobre o domínio |
+| `role` | enum | `domain` \| `gateway` \| `connector` — ver [[00-arquitetura]] §3.1 |
 | `binding` | enum | `typescript` \| `javascript` \| `python` — define o molde e as regras de linguagem |
-| `rotaBase` | string | prefixo da API — sempre `/api/v1/<id>` |
-| `rotaWeb` | string \| null | prefixo do front; `null` = módulo sem tela |
-| `dados.schema` | string | schema do banco — **nunca** `public` |
-| `dados.prefixo` | string | sempre `<id>_` |
-| `dados.tabelas` | string[] | tabelas **possuídas**; toda começa com o prefixo |
-| `envRequerido` | string[] | chaves `<ID>_*` que o módulo consome |
-| `portas` | string[] | portas de infraestrutura que exige (§5) |
-| `consome` | objeto[] | contratos de **outros módulos** dos quais depende (§6) |
+| `basePath` | string | prefixo da API — sempre `/api/v1/<id>` |
+| `webPath` | string \| null | prefixo do front; `null` = módulo sem tela |
+| `data.schema` | string | schema do banco — **nunca** `public` |
+| `data.prefix` | string | sempre `<id>_` |
+| `data.tables` | string[] | tabelas **possuídas**; toda começa com o prefixo |
+| `requiredEnv` | string[] | chaves `<ID>_*` que o módulo consome |
+| `ports` | string[] | portas de infraestrutura que exige (§5) |
+| `consumes` | objeto[] | contratos de **outros módulos** dos quais depende (§6) |
 | `ui.modo` | enum | `proprio` \| `kit` — de onde vêm os componentes visuais (§7) |
-| `permissoes` | string[] | permissões que a API exige (`<id>:ler`, `<id>:escrever`) |
-| `rotasPublicas` | string[] | rotas sem autenticação, no formato `"MÉTODO /caminho"` — **opt-in explícito** |
-| `camposSensiveis` | string[] | campos que nunca saem em resposta, log ou OpenAPI |
-| `navegacao` | objeto \| null | `{ label, icone, ordem }` — o que o conector monta no menu |
-| `exportaResumo` | boolean | se entra no dashboard cross-módulo. `true` **obriga** o schema `200` de `GET /resumo` a declarar `total` (inteiro) — a forma mínima que o agregador lê sem conhecer o módulo ([[02-contrato-e-dados]] §2) |
-| `geraArtefato` | boolean | se possui `core/engine`, `core/templates` e `generated/` |
+| `permissions` | string[] | permissões que a API exige (`<id>:ler`, `<id>:escrever`) |
+| `publicRoutes` | string[] | rotas sem autenticação, no formato `"MÉTODO /caminho"` — **opt-in explícito** |
+| `sensitiveFields` | string[] | campos que nunca saem em resposta, log ou OpenAPI |
+| `navigation` | objeto \| null | `{ label, icon, order }` — o que o conector monta no menu |
+| `exportsSummary` | boolean | se entra no dashboard cross-módulo. `true` **obriga** o schema `200` de `GET /resumo` a declarar `total` (inteiro) — a forma mínima que o agregador lê sem conhecer o módulo ([[02-contrato-e-dados]] §2) |
+| `generatesArtifact` | boolean | se possui `core/engine`, `core/templates` e `generated/` |
 
 ## 3.2 O que o manifesto habilita
 
-- **Composição sem lista fixa:** a raiz de composição varre `modules/*/modulo.json` e monta cada `api/` sob a
-  sua `rotaBase`. **Acrescentar um módulo não pode exigir editar código compartilhado.**
-- **Navegação declarada:** o conector monta o menu a partir de `navegacao`.
-- **Grafo de dependências mecânico:** `consome` permite detectar ciclo e calcular a ordem de extração.
-- **Auditoria automática:** tabela sem prefixo, env não declarada, rota fora da `rotaBase`, campo sensível em
+- **Composição sem lista fixa:** a raiz de composição varre `modules/*/module.json` e monta cada `api/` sob a
+  sua `basePath`. **Acrescentar um módulo não pode exigir editar código compartilhado.**
+- **Navegação declarada:** o conector monta o menu a partir de `navigation`.
+- **Grafo de dependências mecânico:** `consumes` permite detectar ciclo e calcular a ordem de extração.
+- **Auditoria automática:** tabela sem prefixo, env não declarada, rota fora da `basePath`, campo sensível em
   resposta — tudo vira erro mecânico.
 
 ## 3.3 Regras
 
-- **Não declarado, não existe.** Módulo sem `modulo.json` válido não é montado.
+- **Não declarado, não existe.** Módulo sem `module.json` válido não é montado.
 - O manifesto é **contrato, não configuração**: não muda em runtime e não guarda tunable — esses vão para `config/`.
 - Um módulo declara **só o que possui**: não lista tabela, env ou permissão de outro módulo.
-- Alterar `dados`, `rotaBase` ou `permissoes` é mudança de contrato ([[02-contrato-e-dados]] §5).
+- Alterar `data`, `basePath` ou `permissions` é mudança de contrato ([[02-contrato-e-dados]] §5).
 
 # 4. Configuração e ambiente
 
@@ -136,7 +136,7 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | Rate limit, CORS, headers | `config/seguranca.json` | `"limiteEscrita": 20` |
 | Qual adapter atende cada porta | `config/ports.json` | `"repositorio": "postgres"` |
 | Rótulo e mensagem exibidos ao usuário | `config/textos.json` | `"listaVazia": "Nada por aqui."` |
-| Identidade e contrato do módulo | `modulo.json` | §3 |
+| Identidade e contrato do módulo | `module.json` | §3 |
 
 ## 4.2 O `.env` em cascata
 
@@ -162,13 +162,13 @@ porque o carregador simplesmente não acha o ponteiro e usa o que está local. A
 escrito dentro do módulo.
 
 **Regras:** o `.env` do módulo só aceita `ENV_RAIZ` e chaves `<MODULO>_*` — chave de outro módulo ali é erro.
-O `.env.example` é **gerado** de `envRequerido`; ninguém o edita à mão, então ele nunca mente sobre o que o
+O `.env.example` é **gerado** de `requiredEnv`; ninguém o edita à mão, então ele nunca mente sobre o que o
 módulo exige.
 
 ## 4.3 Falha rápida, nunca fallback silencioso
 
 O carregador roda **uma vez, no boot**: lê o manifesto, resolve o `.env`, confere que toda chave de
-`envRequerido` existe e lê os cinco `config/*.json`. Qualquer falta **derruba o processo** com mensagem
+`requiredEnv` existe e lê os cinco `config/*.json`. Qualquer falta **derruba o processo** com mensagem
 acionável.
 
 Fica proibido o padrão `process.env['X'] ?? 'http://localhost:3000'`: um default de infraestrutura embutido faz
@@ -176,7 +176,7 @@ o sistema subir apontando para o lugar errado em vez de falhar. Default só é l
 endereço, credencial ou identidade.
 
 ```
-boot → lê modulo.json → resolve .env → confere envRequerido → lê config/*.json
+boot → lê module.json → resolve .env → confere envRequerido → lê config/*.json
      → resolve portas → injeta adapters → sobe a api
                       ↘ qualquer etapa falha → o processo morre com erro nomeado
 ```
@@ -228,7 +228,7 @@ ADR.
 - **O módulo nunca importa SDK de fornecedor.** O SDK só existe dentro do adapter.
 - **`memory` é obrigatório para toda porta.** Os testes do módulo rodam inteiros sem infraestrutura; se não
   rodam, o desacoplamento é ficção.
-- **O adapter não conhece domínio.** Não existe `if (modulo === 'catalogo')` dentro de adapter.
+- **O adapter não conhece domínio.** Não existe `if (module === 'catalogo')` dentro de adapter.
 - **Erro de fornecedor não vaza.** O adapter traduz a falha para a taxonomia fechada antes de devolver.
 - **Trocar de fornecedor é editar `config/ports.json`.** Se for preciso mais que isso, a porta está mal desenhada.
 - **Adapter novo nasce por `create-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
@@ -236,10 +236,10 @@ ADR.
   `src/composicao.*` e roda o gate antes de devolver o controle.
 - **`postgres` (`repositorio`/`auditoria`) já vem PRONTO, ao lado de `memory`** (plan-2.2.md
   Bloco Z) — não nasce por `create-adapter.mjs`, porque já existe: materializa a forma que
-  `create-module.mjs` já cria (`<prefixo>metadados`/`<prefixo>auditoria`). `memory` continua o
+  `create-module.mjs` já cria (`<prefix>metadados`/`<prefix>auditoria`). `memory` continua o
   DEFAULT de todo módulo; trocar é a mesma linha de `config/ports.json`, agora verdadeira nos dois
   sentidos. A fábrica recebe o **manifesto do módulo** (`ManifestoDescoberto`/`dict`), não zero
-  argumentos — é o que permite um adapter genérico saber `dados.schema`/`dados.prefixo`/`<MODULO>_DB_URL`
+  argumentos — é o que permite um adapter genérico saber `data.schema`/`data.prefix`/`<MODULO>_DB_URL`
   de quem o está chamando; `memory` ignora o argumento.
 
 # 6. Gateways — todo módulo alheio desacoplado
@@ -257,7 +257,7 @@ diferentes, para que a diferença seja visível e verificável.
 
 - **Arquivo em `core/gateways/` fala exclusivamente HTTP.** Nenhum SQL, nenhuma conexão, nenhum acesso a
   tabela — nem à própria.
-- **Todo gateway tem entrada em `consome`.** Dependência não declarada não existe, e o gate reprova.
+- **Todo gateway tem entrada em `consumes`.** Dependência não declarada não existe, e o gate reprova.
 - **Sem ciclo.** `A` consome `B` e `B` consome `A` é erro — resolva a direção ou extraia o conceito comum
   para um terceiro módulo.
 - **O consumidor projeta a fatia mínima.** O contrato do dono devolve o recurso inteiro; o consumidor guarda
@@ -290,7 +290,7 @@ que importa todos os módulos quanto um SPA por módulo funcionam sem estrutura 
 # 8. Criar um módulo novo
 
 ```
-node tools/create-module.mjs <id> --binding <b> --papel <p> [--sem-artefato]
+node tools/create-module.mjs <id> --binding <b> --role <p> [--sem-artefato]
 ```
 
 O script copia o molde do binding, substitui os marcadores (`<modulo>` → id, `<MODULO>` → id em maiúscula,
@@ -301,7 +301,7 @@ quebram o gate e que o gate não consegue consertar sozinho.
 
 Depois do scaffold, a ordem de preenchimento é: `contract/openapi.yaml` → `core/domain` → `api/src/routes` →
 `api/src/mappers` → `database/` → `web/src/pages` → `tests/`. O contrato antes do código é deliberado: é a
-**fronteira que outros consomem** (`modulo.json:consome`), o gate cobra rota do código × rota da spec **nos
+**fronteira que outros consomem** (`module.json:consumes`), o gate cobra rota do código × rota da spec **nos
 dois sentidos** (`contrato-sincronizado`), e `contract-compatible.mjs` compara o contrato contra o baseline
 git. Escrever código primeiro faz a spec ser redigida **para descrever o código** — e aí a fonte de verdade
 inverte sem ninguém decidir isso.
@@ -336,7 +336,7 @@ evita o erro clássico: mexer no banco e esquecer a borda, ou publicar campo que
 **A regra que atravessa tudo:** o campo só existe para fora quando alguém o acrescenta **deliberadamente** à
 projeção. Schema não publica nada sozinho.
 
-**Se o campo for PII:** declare em `camposSensiveis`, mantenha-o fora da projeção (ou publique mascarado) e
+**Se o campo for PII:** declare em `sensitiveFields`, mantenha-o fora da projeção (ou publique mascarado) e
 nunca o cite em schema de resposta.
 
 ## 9.2 Rota nova
@@ -344,13 +344,13 @@ nunca o cite em schema de resposta.
 1. `contract/openapi.yaml` **primeiro** — o contrato é a fonte, o código segue.
 2. `api/src/routes/`: valide a entrada na borda, exija permissão, monte a resposta pelo mapeador, lance o erro
    da taxonomia fechada — nunca `status(...)` ad hoc.
-3. Se a rota for pública, declare `"MÉTODO /caminho"` em `rotasPublicas`. O método faz parte da declaração:
+3. Se a rota for pública, declare `"MÉTODO /caminho"` em `publicRoutes`. O método faz parte da declaração:
    abrir a leitura nunca pode abrir a escrita do mesmo caminho por descuido.
 4. Teste de contrato cobrindo o sucesso e o erro esperado.
 
 ## 9.3 Infraestrutura nova
 
-1. `modulo.json:portas` — declare a porta.
+1. `module.json:ports` — declare a porta.
 2. `core/ports/` — estenda a interface canônica.
 3. `config/ports.json` — escolha o adapter.
 4. `api/src/index` — receba por parâmetro. Nunca importe adapter nem SDK.
@@ -359,21 +359,21 @@ nunca o cite em schema de resposta.
 
 ## 9.4 Dependência de outro módulo
 
-1. `modulo.json:consome` — declare módulo, contrato e motivo.
+1. `module.json:consumes` — declare módulo, contrato e motivo.
 2. `core/gateways/<outro>.ts` — o cliente HTTP, projetando a fatia mínima.
-3. `modulo.json:envRequerido` — a URL base do outro módulo.
+3. `module.json:requiredEnv` — a URL base do outro módulo.
 4. Verifique que não criou ciclo.
 
 ## 9.5 Variável de ambiente
 
-1. `modulo.json:envRequerido`.
+1. `module.json:requiredEnv`.
 2. `node tools/sync-env.mjs` — regenera os `.env.example`. **Não edite esses arquivos à mão.**
 3. Preencha o valor no `.env` da raiz.
 4. Leia só pelo carregador. Ausência derruba o boot — nunca use `?? 'valor'`.
 
 ## 9.6 Tabela nova
 
-1. `modulo.json:dados.tabelas`, com o prefixo `<modulo>_`.
+1. `module.json:data.tables`, com o prefixo `<modulo>_`.
 2. Migration + `schema.sql`.
 3. Acesso pela porta `repositorio`; nada de SQL de fornecedor dentro do módulo.
 4. **Nunca** referencie tabela de outro módulo — o dado alheio vem pela `api/` dele.
@@ -388,5 +388,5 @@ como qualquer outra ([[02-contrato-e-dados]] §6.3).
 
 1. `web/src/pages/` — a tela, com os três estados (`loading`, `empty`, `error`).
 2. `web/src/hooks/` — o estado; `web/src/api-client/` — o acesso, sempre por caminho relativo.
-3. `modulo.json:rotaWeb` e `navegacao`.
+3. `module.json:webPath` e `navigation`.
 4. Teste cobrindo os três estados.

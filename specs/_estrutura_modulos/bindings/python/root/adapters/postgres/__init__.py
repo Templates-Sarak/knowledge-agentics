@@ -3,7 +3,7 @@ para uso (plan-2.2.md Bloco Z). `memory` continua o DEFAULT de todo modulo (conf
 trocar para este adapter e editar UMA linha ali, nunca este arquivo.
 
 Materializa a FORMA que o molde cria (database/migrations/0001-cria-metadados.sql):
-`<prefixo>metadados` (hash, titulo, status, created_at) e `<prefixo>auditoria` (hash, acao,
+`<prefix>metadados` (hash, titulo, status, created_at) e `<prefix>auditoria` (hash, acao,
 sujeito, campos_alterados, request_id). Nao e codigo especifico de dominio — e a porta
 materializada sobre a tabela que o molde ja cria. Modulo que criar tabela com outra forma escreve
 o proprio adapter (declarado, nao escondido — ver o rodape deste arquivo).
@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 # ====================================================================================================
-# CONFIGURACAO — env, manifesto (schema/prefixo), nome qualificado.
+# CONFIGURACAO — env, manifesto (schema/prefix), nome qualificado.
 # ====================================================================================================
 
 
@@ -46,7 +46,7 @@ def _required_url(id_do_modulo: str) -> str:
     if not valor:
         raise RuntimeError(
             f"[adapters/postgres] variavel obrigatoria ausente: {chave}"
-            " (declare em modulo.json:envRequerido e no .env da raiz)"
+            " (declare em module.json:envRequerido e no .env da raiz)"
         )
     return valor
 
@@ -55,14 +55,14 @@ _dados_cache: dict[str, dict[str, str]] = {}
 
 
 def _read_data(modulo: dict[str, Any]) -> dict[str, str]:
-    """`dados.schema`/`dados.prefixo` do PROPRIO manifesto do modulo — a mesma fonte que a
+    """`data.schema`/`data.prefix` do PROPRIO manifesto do modulo — a mesma fonte que a
     migration 0001 usa para nomear as tabelas. Cacheada por pasta: o manifesto nao muda em runtime."""
     pasta = str(modulo["pasta"])
     existente = _dados_cache.get(pasta)
     if existente is not None:
         return existente
-    texto = Path(pasta, "modulo.json").read_text(encoding="utf-8-sig")
-    dados: dict[str, str] = json.loads(texto)["dados"]
+    texto = Path(pasta, "module.json").read_text(encoding="utf-8-sig")
+    dados: dict[str, str] = json.loads(texto)["data"]
     _dados_cache[pasta] = dados
     return dados
 
@@ -101,7 +101,7 @@ async def _table_context(modulo: dict[str, Any], sufixo: str) -> tuple[Any, str]
     duas coisas."""
     dados = _read_data(modulo)
     conexao = await _connection_for(_required_url(modulo["id"]))
-    nome = _qualified_name(dados["schema"], f"{dados['prefixo']}{sufixo}")
+    nome = _qualified_name(dados["schema"], f"{dados['prefix']}{sufixo}")
     return conexao, nome
 
 
@@ -189,7 +189,7 @@ async def _count_records(modulo: dict[str, Any]) -> int:
 
 
 class RepositorioPostgres:
-    """`Repositorio` real, sobre a tabela `<prefixo>metadados` que o molde cria. Recebe o manifesto
+    """`Repositorio` real, sobre a tabela `<prefix>metadados` que o molde cria. Recebe o manifesto
     do modulo (`dict`, o mesmo formato de `discover_modules`) — nunca o tipo de `src/composicao.py`."""
 
     def __init__(self, modulo: dict[str, Any]) -> None:
@@ -231,7 +231,7 @@ async def _record_audit_event(modulo: dict[str, Any], evento: dict[str, Any]) ->
 
 
 class AuditoriaPostgres:
-    """`Auditoria` real, sobre a tabela `<prefixo>auditoria` que o molde cria."""
+    """`Auditoria` real, sobre a tabela `<prefix>auditoria` que o molde cria."""
 
     def __init__(self, modulo: dict[str, Any]) -> None:
         self._modulo = modulo
@@ -246,6 +246,6 @@ class AuditoriaPostgres:
 # Este adapter cobre a FORMA DO MOLDE — as duas tabelas que `create-module.mjs` ja entrega. O que
 # fica de fora: *pool* de conexoes (usa UMA conexao persistente por URL, nao um pool com tuning),
 # *retry* de conexao, migracao de DADO (isso e `expand-contract`, 02-contrato-e-dados.md §6.3), e
-# qualquer modulo que declare `dados.tabelas` alem de `<prefixo>metadados`/`<prefixo>auditoria` com
+# qualquer modulo que declare `data.tables` alem de `<prefix>metadados`/`<prefix>auditoria` com
 # forma diferente — esse modulo escreve o proprio adapter, com o mesmo cuidado de parametrizacao.
 # ====================================================================================================

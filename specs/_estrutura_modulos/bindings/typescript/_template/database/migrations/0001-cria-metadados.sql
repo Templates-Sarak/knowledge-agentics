@@ -1,7 +1,7 @@
 -- Primeira migration do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §6.3.
 --
 -- Regras materializadas aqui:
---   - schema DECLARADO em modulo.json:dados.schema. NUNCA "public".
+--   - schema DECLARADO em module.json:dados.schema. NUNCA "public".
 --   - toda tabela prefixada <modulo>_ e declarada no manifesto.
 --   - toda tabela com id, hash, created_at, updated_at.
 --   - RLS ligada: defesa em profundidade (o controle primario e a autorizacao na api/).

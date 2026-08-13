@@ -1,7 +1,7 @@
 // Raiz de composicao — o WIRING, e nada alem. Lei dona: specs/arquitetura/00-arquitetura.md §3.4.
 //
 // O que este arquivo faz:
-//   1. DESCOBRE os modulos lendo modules/*/modulo.json — nao existe lista fixa de modulos no codigo;
+//   1. DESCOBRE os modulos lendo modules/*/module.json — nao existe lista fixa de modulos no codigo;
 //   2. resolve as portas de cada um a partir do config/ports.json DELE;
 //   3. INJETA os adapters e MONTA cada api/ sob a rotaBase do manifesto — um Express por modulo,
 //      pendurado no Express raiz sob a propria rotaBase (nunca em "/": middleware de modulo roda
@@ -34,8 +34,8 @@ import { createPostgresAudit, createPostgresRepository } from '../adapters/postg
  * Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so.
  *
  * Recebe o manifesto do modulo que esta compondo — `memory` ignora (nao precisa saber QUEM a
- * chamou), `postgres` usa (`modulo.id` para a chave de ambiente, `modulo.pasta` para ler
- * `dados.schema`/`dados.prefixo` do proprio manifesto). Sem isto, um adapter que precisa de
+ * chamou), `postgres` usa (`module.id` para a chave de ambiente, `module.pasta` para ler
+ * `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um adapter que precisa de
  * contexto por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
  */
 const FABRICAS = {
@@ -61,8 +61,8 @@ export function discoverModules(raiz) {
 
   return readdirSync(base)
     .filter((nome) => !nome.startsWith('_'))
-    .filter((nome) => existsSync(join(base, nome, 'modulo.json')))
-    .map((nome) => ({ ...readJson(join(base, nome, 'modulo.json')), pasta: join(base, nome) }));
+    .filter((nome) => existsSync(join(base, nome, 'module.json')))
+    .map((nome) => ({ ...readJson(join(base, nome, 'module.json')), pasta: join(base, nome) }));
 }
 
 /**
@@ -73,7 +73,7 @@ export function resolveDependencies(modulo) {
   const escolhas = readJson(join(modulo.pasta, 'config', 'ports.json'));
   const dependencias = {};
 
-  for (const porta of modulo.portas) {
+  for (const porta of modulo.ports) {
     const provedor = escolhas[porta];
     const fabrica = FABRICAS[porta]?.[provedor ?? ''];
     if (fabrica === undefined) {
@@ -88,7 +88,7 @@ export function resolveDependencies(modulo) {
 
 /**
  * Auth do sistema. Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem
- * token estao declaradas em `rotasPublicas` de cada modulo, e so elas passam.
+ * token estao declaradas em `publicRoutes` de cada modulo, e so elas passam.
  */
 export function resolveAuth() {
   return createDenyingAuth();
@@ -102,7 +102,7 @@ export function resolveAuth() {
 export function verifyRoutesUnique(modulos) {
   const porRota = new Map();
   for (const modulo of modulos) {
-    porRota.set(modulo.rotaBase, [...(porRota.get(modulo.rotaBase) ?? []), modulo.id]);
+    porRota.set(modulo.basePath, [...(porRota.get(modulo.basePath) ?? []), modulo.id]);
   }
   const colisoes = [...porRota.entries()].filter(([, ids]) => ids.length > 1);
   if (colisoes.length === 0) return;
@@ -145,7 +145,7 @@ function loadEnvRoot(raiz) {
 }
 
 /**
- * Monta o app do PROCESSO: um Express por modulo, cada um montado sob a PROPRIA `rotaBase` — nunca
+ * Monta o app do PROCESSO: um Express por modulo, cada um montado sob a PROPRIA `basePath` — nunca
  * em "/". `createApp`, quando composto (recebe `root`), ja sabe que o Express externo tira o prefixo
  * antes de entregar a requisicao a ele; aqui so se ESCOLHE onde montar, nenhuma rota e remontada.
  */
@@ -164,7 +164,7 @@ export async function buildSystem(raiz) {
     // PRIMEIRO modulo responderia (errado) por caminho de OUTRO modulo antes de "no match" —
     // medido: 401 na rota publica de um segundo modulo, negada pela auth do primeiro. Montando na
     // rotaBase, o Express so entrega ao app do modulo a requisicao que ja e dele.
-    app.use(modulo.rotaBase, api.createApp({ deps, auth, raiz: modulo.pasta }));
+    app.use(modulo.basePath, api.createApp({ deps, auth, raiz: modulo.pasta }));
   }
   return app;
 }
@@ -174,7 +174,7 @@ function envRequiredRoot(chave) {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
-      `[composicao] variavel obrigatoria ausente: ${chave} (declare em projeto.json:envRequerido)`,
+      `[composicao] variavel obrigatoria ausente: ${chave} (declare em project.json:envRequerido)`,
     );
   }
   return valor;
@@ -203,7 +203,7 @@ export async function startSystem(raiz) {
 // ================================================================================================
 
 function testManifest(id, rotaBase) {
-  return { id, nome: id, rotaBase, papel: 'dominio', portas: [], pasta: `/fake/${id}` };
+  return { id, nome: id, rotaBase, papel: 'domain', portas: [], pasta: `/fake/${id}` };
 }
 
 function uniqueRoutesCases() {

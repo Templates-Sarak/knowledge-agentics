@@ -3,7 +3,7 @@
 // trocar para este adapter e editar UMA linha ali, nunca este arquivo.
 //
 // Materializa a FORMA que o molde cria (database/migrations/0001-cria-metadados.sql):
-// `<prefixo>metadados` (hash, titulo, status, created_at) e `<prefixo>auditoria` (hash, acao,
+// `<prefix>metadados` (hash, titulo, status, created_at) e `<prefix>auditoria` (hash, acao,
 // sujeito, campos_alterados, request_id). Nao e codigo especifico de dominio — e a porta
 // materializada sobre a tabela que o molde ja cria. Modulo que criar tabela com outra forma
 // escreve o proprio adapter (declarado, nao escondido — ver o rodape deste arquivo).
@@ -26,13 +26,13 @@ function requiredUrl(idDoModulo) {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
-      `[adapters/postgres] variavel obrigatoria ausente: ${chave} (declare em modulo.json:envRequerido e no .env da raiz)`,
+      `[adapters/postgres] variavel obrigatoria ausente: ${chave} (declare em module.json:envRequerido e no .env da raiz)`,
     );
   }
   return valor;
 }
 
-/** `dados.schema`/`dados.prefixo` do PRÓPRIO manifesto do módulo — a mesma fonte que a migration
+/** `data.schema`/`data.prefix` do PRÓPRIO manifesto do módulo — a mesma fonte que a migration
  * 0001 usa para nomear as tabelas, nunca um terceiro lugar (mesmo raciocínio de `migrations.mjs`).
  * Cacheada por pasta — o manifesto não muda em runtime, e cada operação chamaria isto de novo. */
 const dadosCache = new Map();
@@ -42,10 +42,10 @@ async function readData(modulo) {
   if (existente !== undefined) return existente;
   const { readFile } = await import('node:fs/promises');
   const { join } = await import('node:path');
-  const texto = await readFile(join(modulo.pasta, 'modulo.json'), 'utf8');
+  const texto = await readFile(join(modulo.pasta, 'module.json'), 'utf8');
   const manifesto = JSON.parse(texto.replace(/^﻿/, ''));
-  dadosCache.set(modulo.pasta, manifesto.dados);
-  return manifesto.dados;
+  dadosCache.set(modulo.pasta, manifesto.data);
+  return manifesto.data;
 }
 
 /** `"<schema>"."<tabela>"` — nunca interpolado numa linha que também tenha um verbo SQL (ver o
@@ -172,6 +172,6 @@ export function createPostgresAudit(modulo) {
 // Este adapter cobre a FORMA DO MOLDE — as duas tabelas que `create-module.mjs` já entrega. O que
 // fica de fora: *pool* com tuning (tamanho, timeout — usa os defaults de `pg.Pool`), *retry* de
 // conexão, migração de DADO (isso é `expand-contract`, 02-contrato-e-dados.md §6.3), e qualquer
-// módulo que declare `dados.tabelas` além de `<prefixo>metadados`/`<prefixo>auditoria` com forma
+// módulo que declare `data.tables` além de `<prefix>metadados`/`<prefix>auditoria` com forma
 // diferente — esse módulo escreve o próprio adapter, com o mesmo cuidado de parametrização deste.
 // ================================================================================================

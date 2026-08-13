@@ -1,30 +1,30 @@
 {
-  "$comentario": "Forma do modulo.json. Lei dona: specs/arquitetura/01-modulo.md §3. Campo nao previsto REPROVA: o manifesto e contrato, e contrato nao aceita campo inventado em silencio.",
+  "$comentario": "Forma do module.json. Lei dona: specs/arquitetura/01-modulo.md §3. Campo nao previsto REPROVA: o manifesto e contrato, e contrato nao aceita campo inventado em silencio.",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "id", "nome", "versao", "descricao", "papel", "binding", "rotaBase", "rotaWeb",
-    "dados", "envRequerido", "portas", "consome", "ui", "permissoes",
-    "rotasPublicas", "camposSensiveis", "navegacao", "exportaResumo", "geraArtefato"
+    "id", "name", "version", "description", "role", "binding", "basePath", "webPath",
+    "data", "requiredEnv", "ports", "consumes", "ui", "permissions",
+    "publicRoutes", "sensitiveFields", "navigation", "exportsSummary", "generatesArtifact"
   ],
   "properties": {
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-    "nome": { "type": "string", "minLength": 1 },
-    "versao": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
-    "descricao": { "type": "string", "minLength": 1 },
-    "papel": { "type": "string", "enum": ["dominio", "gateway", "conector"] },
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "description": { "type": "string", "minLength": 1 },
+    "role": { "type": "string", "enum": ["domain", "gateway", "connector"] },
     "binding": { "type": "string", "enum": ["typescript", "javascript", "python"] },
-    "rotaBase": { "type": "string", "pattern": "^/api/v1/[a-z][a-z0-9-]*$" },
-    "rotaWeb": { "type": ["string", "null"], "pattern": "^/[a-z][a-z0-9-]*$" },
+    "basePath": { "type": "string", "pattern": "^/api/v1/[a-z][a-z0-9-]*$" },
+    "webPath": { "type": ["string", "null"], "pattern": "^/[a-z][a-z0-9-]*$" },
 
-    "dados": {
+    "data": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema", "prefixo", "tabelas"],
+      "required": ["schema", "prefix", "tables"],
       "properties": {
         "schema": { "type": "string", "minLength": 1 },
-        "prefixo": { "type": "string", "pattern": "^[a-z][a-z0-9-]*_$" },
-        "tabelas": {
+        "prefix": { "type": "string", "pattern": "^[a-z][a-z0-9-]*_$" },
+        "tables": {
           "type": "array",
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
@@ -32,13 +32,13 @@
       }
     },
 
-    "envRequerido": {
+    "requiredEnv": {
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
     },
 
-    "portas": {
+    "ports": {
       "type": "array",
       "uniqueItems": true,
       "items": {
@@ -47,16 +47,16 @@
       }
     },
 
-    "consome": {
+    "consumes": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["modulo", "contrato", "porQue"],
+        "required": ["module", "contract", "why"],
         "properties": {
-          "modulo": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-          "contrato": { "type": "string", "pattern": "^(GET|POST|PATCH|PUT|DELETE) /" },
-          "porQue": { "type": "string", "minLength": 1 }
+          "module": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "contract": { "type": "string", "pattern": "^(GET|POST|PATCH|PUT|DELETE) /" },
+          "why": { "type": "string", "minLength": 1 }
         }
       }
     },
@@ -71,41 +71,41 @@
       }
     },
 
-    "permissoes": {
+    "permissions": {
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*:[a-z]+$" }
     },
 
-    "rotasPublicas": {
+    "publicRoutes": {
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^(GET|POST|PATCH|PUT|DELETE) /" }
     },
 
-    "camposSensiveis": {
+    "sensitiveFields": {
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 1 }
     },
 
-    "navegacao": {
+    "navigation": {
       "oneOf": [
         { "type": "null" },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["label", "icone", "ordem"],
+          "required": ["label", "icon", "order"],
           "properties": {
             "label": { "type": "string", "minLength": 1 },
-            "icone": { "type": "string", "minLength": 1 },
-            "ordem": { "type": "integer", "minimum": 0 }
+            "icon": { "type": "string", "minLength": 1 },
+            "order": { "type": "integer", "minimum": 0 }
           }
         }
       ]
     },
 
-    "exportaResumo": { "type": "boolean" },
-    "geraArtefato": { "type": "boolean" }
+    "exportsSummary": { "type": "boolean" },
+    "generatesArtifact": { "type": "boolean" }
   }
 }

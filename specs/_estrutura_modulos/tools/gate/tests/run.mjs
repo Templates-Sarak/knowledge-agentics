@@ -84,7 +84,7 @@ const ALVOS = {
   },
   /**
    * A pasta de teste de tela. **Não declarada para o Python de propósito**, e o silêncio é o ponto:
-   * aquele molde nasce sem `web/` e com `rotaWeb: null`, então `testes-web` é vacuamente satisfeita
+   * aquele molde nasce sem `web/` e com `webPath: null`, então `testes-web` é vacuamente satisfeita
    * ali. Um caso que apenas apagasse a pasta (`removerPasta` usa `force`) não acharia nada no Python
    * e REPROVARIA por "nenhum achado" — culpando a regra por um molde que não tem a peça. Sem o alvo,
    * `removerPastaEm` estoura `SEM_COBERTURA` com o motivo, que é a verdade: ausência de cobertura,
@@ -195,12 +195,12 @@ function operacoes(raiz, binding) {
       rmSync(join(raiz, rel), { recursive: true, force: true });
     },
     manifesto: (transformar) => {
-      const caminho = join(raiz, 'modulo.json');
+      const caminho = join(raiz, 'module.json');
       gravarJson(caminho, transformar(lerJson(caminho)));
     },
-    /** O manifesto da RAIZ (`projeto.json`), que fica dois níveis acima da pasta do módulo. */
+    /** O manifesto da RAIZ (`project.json`), que fica dois níveis acima da pasta do módulo. */
     manifestoRaiz: (transformar) => {
-      const caminho = join(raiz, '..', '..', 'projeto.json');
+      const caminho = join(raiz, '..', '..', 'project.json');
       gravarJson(caminho, transformar(lerJson(caminho)));
     },
     config: (assunto, transformar) => {
@@ -228,10 +228,10 @@ function montarRaizDoProjeto(temporario, binding) {
   // caso — de novo o fixture sendo um projeto incompleto, não a regra estando errada.
   cpSync(join(raiz, '.gitignore'), join(temporario, '.gitignore'));
   // O manifesto da raiz, pelo mesmo motivo: `manifesto-raiz` o exige em todo projeto.
-  cpSync(join(raiz, 'projeto.json'), join(temporario, 'projeto.json'));
+  cpSync(join(raiz, 'project.json'), join(temporario, 'project.json'));
   // O hook de pre-commit, pelo mesmo motivo: `pre-commit-instalado` o exige em todo projeto, e sem
   // copiá-lo aqui o fixture voltaria a ser um projeto incompleto — a mesma classe de defeito que as
-  // duas linhas acima já corrigiram para `.gitignore` e `projeto.json`.
+  // duas linhas acima já corrigiram para `.gitignore` e `project.json`.
   cpSync(join(raiz, '.githooks'), join(temporario, '.githooks'), { recursive: true });
   // A FIAÇÃO. Ela entra por duas razões, e a segunda é a que importa mais: `env-raiz-declarado`
   // precisa de código de raiz para ter o que ler, E este é o único lugar onde se prova, caso a
@@ -245,15 +245,15 @@ function montarRaizDoProjeto(temporario, binding) {
 function criarVizinho(pastaModulos, molde, consome) {
   const raiz = join(pastaModulos, 'vizinho');
   cpSync(molde, raiz, { recursive: true });
-  const caminho = join(raiz, 'modulo.json');
+  const caminho = join(raiz, 'module.json');
   const manifesto = lerJson(caminho);
   manifesto.id = 'vizinho';
-  manifesto.rotaBase = '/api/v1/vizinho';
-  manifesto.rotaWeb = '/vizinho';
-  manifesto.dados = { schema: 'escopo', prefixo: 'vizinho_', tabelas: ['vizinho_metadados'] };
-  manifesto.permissoes = ['vizinho:ler', 'vizinho:escrever'];
+  manifesto.basePath = '/api/v1/vizinho';
+  manifesto.webPath = '/vizinho';
+  manifesto.data = { schema: 'escopo', prefix: 'vizinho_', tables: ['vizinho_metadados'] };
+  manifesto.permissions = ['vizinho:ler', 'vizinho:escrever'];
   // `/resumo` e obrigatoria em todo modulo: o vizinho fecha o ciclo sem violar `consome-contrato`.
-  manifesto.consome = consome ? [{ modulo: 'molde', contrato: 'GET /resumo', porQue: 'ciclo' }] : [];
+  manifesto.consumes = consome ? [{ module: 'molde', contract: 'GET /resumo', why: 'ciclo' }] : [];
   gravarJson(caminho, manifesto);
   return raiz;
 }
