@@ -36,7 +36,7 @@ Versão expandida do workflow de `SKILL.md`. Este documento detalha como orquest
 1. **NÃO PEÇA DESCULPAS AO USUÁRIO NEM MOSTRE O LOG.** O usuário quer o código pronto e conforme.
 2. Vá diretamente aos arquivos apontados e refatore-os.
    - Se a função passou de 40 linhas, extraia trechos menores obedecendo o SRP.
-   - Se o import cruzou a fronteira de outro módulo (qualquer caminho interno dele), troque por consumo do **contrato**: num projeto com o template, isso é um gateway HTTP em `core/gateways/<provider>` declarado em `modulo.json:consome`; num legado sem template, a superfície pública que o outro módulo publicar.
+   - Se o import cruzou a fronteira de outro módulo (qualquer caminho interno dele), troque por consumo do **contrato**: num projeto com o template, isso é um gateway HTTP em `core/gateways/<provider>` declarado em `module.json:consumes`; num legado sem template, a superfície pública que o outro módulo publicar.
    - Se o arquivo fonte não tem testes de paridade, crie-os imediatamente.
 3. Rode o script de validação novamente (Passo 2).
 4. O ciclo só se encerra quando o output for limpo (Exit Code 0).
@@ -44,10 +44,10 @@ Versão expandida do workflow de `SKILL.md`. Este documento detalha como orquest
 **Exemplo Prático (Simulação de Output e Correção):**
 *O agente roda o script e recebe:*
 \`\`\`
-[FATAL] modulos/faturas/core/motor/emissao.ts:L45 - Função "emitirEnotificar" excede 40 linhas (total: 55).
-[FATAL] modulos/faturas/core/motor/emissao.ts:L12 - Import ilegal de "modulos/catalogo/core/dominio". Módulo não importa código de outro módulo.
+[FATAL] modules/faturas/core/engine/emissao.ts:L45 - Função "emitirEnotificar" excede 40 linhas (total: 55).
+[FATAL] modules/faturas/core/engine/emissao.ts:L12 - Import ilegal de "modules/catalogo/core/domain". Módulo não importa código de outro módulo.
 Exit code 1.
 \`\`\`
 *Ação:* o agente refatora `emissao.ts` separando a notificação numa função auxiliar, e troca o import por um
-gateway HTTP em `core/gateways/catalogo`, com a entrada correspondente em `modulo.json:consome`. Em seguida,
+gateway HTTP em `core/gateways/catalogo`, com a entrada correspondente em `module.json:consumes`. Em seguida,
 re-executa a validação.

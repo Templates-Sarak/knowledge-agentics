@@ -43,7 +43,7 @@ extracao: OK — 1 modulo(s), 0 erro(s)
 ```
 
 **Por que é bom:** o módulo é dono da regra de preço e a publica pelo contrato. Quando `pedidos` precisar
-dela, consome `GET /api/v1/catalogo/itens/{hash}/preco-vigente` e declara `consome` — sem uma linha duplicada
+dela, consome `GET /api/v1/catalogo/itens/{hash}/preco-vigente` e declara `consumes` — sem uma linha duplicada
 e sem um `SELECT` em tabela alheia.
 
 ---

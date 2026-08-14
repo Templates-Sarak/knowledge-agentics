@@ -14,7 +14,7 @@ onde há **verificador executável**.
 |---|---|---|
 | **A lei** (5 documentos) | `specs/_estrutura_modulos/doutrina/` | `specs/arquitetura/` |
 | **As decisões** (ADR-001..007) | `specs/_estrutura_modulos/doutrina/adr/decisoes.md` | `specs/adr/000-decisoes-do-template.md` |
-| **O verificador** | `specs/_estrutura_modulos/ferramentas/gate/` | `ferramentas/gate/` |
+| **O verificador** | `specs/_estrutura_modulos/tools/gate/` | `tools/gate/` |
 | **Os moldes por linguagem** | `specs/_estrutura_modulos/bindings/<linguagem>/` | — (já materializados) |
 
 **`04-regras.md` é a única fonte normativa do Nível 1.** Regra que não está lá não é regra; regra que não
@@ -29,7 +29,7 @@ pode ser verificada por máquina não entra lá.
 | De que peças o sistema é feito? Onde estão as fronteiras? | `00-arquitetura.md` | §3, §4 |
 | Qual a diferença entre módulo, adapter, package e raiz de composição? | `00-arquitetura.md` | §3 |
 | Como um módulo é por dentro? Qual a árvore? | `01-modulo.md` | §2 |
-| O que declaro no `modulo.json`? | `01-modulo.md` | §3 |
+| O que declaro no `module.json`? | `01-modulo.md` | §3 |
 | Onde ponho cada valor de configuração? Como funciona o `.env`? | `01-modulo.md` | §4 |
 | Como desacoplo infraestrutura (banco, storage, auth)? | `01-modulo.md` | §5 |
 | Como pego dado de **outro módulo**? | `01-modulo.md` | §6 |
@@ -72,9 +72,9 @@ As quatro fronteiras que a tornam verdadeira, cada uma com regra de gate própri
 |---|---|
 | Criar um sistema modular do zero | skill **`code-modulo`** (Fluxo A) — ou `/sarak:meta-iniciar-repositorio`, que faz a inicialização completa |
 | Criar um módulo num projeto que já adota o template | skill **`code-modulo`** (Fluxo B) |
-| Saber se o que escrevi está conforme | `node ferramentas/gate/validar.mjs <caminho-do-modulo>` |
-| Verificar o repositório inteiro | `node ferramentas/gate/validar.mjs --todos` |
-| Saber se um módulo já pode virar serviço | `node ferramentas/gate/validar.mjs --extracao <caminho>` |
+| Saber se o que escrevi está conforme | `node tools/gate/validate.mjs <caminho-do-modulo>` |
+| Verificar o repositório inteiro | `node tools/gate/validate.mjs --todos` |
+| Saber se um módulo já pode virar serviço | `node tools/gate/validate.mjs --extracao <caminho>` |
 | Adequar um projeto **legado** que não segue o template | skill `code-diagnostico` → `code-adequacao` |
 
 **Ninguém cria módulo copiando a pasta do molde à mão.** Módulo manual nasce sem manifesto e com nome

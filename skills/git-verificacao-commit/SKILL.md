@@ -15,8 +15,8 @@ primeira linha de defesa — rápida (sem varrer histórico). O check-up profund
 > Escopo deliberadamente estreito: **apenas o commit atual**. Os padrões de segredo e nomes sensíveis em
 > `scripts/config.json` são **GERADOS** do catálogo canônico da skill `cyber-segredos` (fonte única do
 > ecossistema) por `scripts/gerar_config.py` — nunca editados à mão. Depois de mudar o catálogo canônico,
-> rode `python scripts/gerar_config.py`; `--conferir` prova que os dois não divergiram (plan-2.2.md
-> Bloco X). Princípios globais em `CLAUDE.md`.
+> rode `python scripts/gerar_config.py`; `--conferir` prova que os dois não divergiram.
+> Princípios globais em `CLAUDE.md`.
 
 ## Quando usar
 - Para **instalar/configurar** o gate num repositório (hook + script).

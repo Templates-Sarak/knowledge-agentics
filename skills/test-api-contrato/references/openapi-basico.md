@@ -1,12 +1,12 @@
-# Ler o `contrato/openapi.yaml` — o que o gate já garante nele
+# Ler o `contract/openapi.yaml` — o que o gate já garante nele
 
 **A spec de referência é a do molde, e não uma cópia:**
 
 ```
-specs/_estrutura_modulos/bindings/<binding>/_template/contrato/openapi.yaml
+specs/_estrutura_modulos/bindings/<binding>/_template/contract/openapi.yaml
 ```
 
-Num projeto instanciado, o contrato de cada módulo mora em `modulos/<modulo>/contrato/openapi.yaml` —
+Num projeto instanciado, o contrato de cada módulo mora em `modules/<modulo>/contract/openapi.yaml` —
 **não** em `api/`. `api/` é quem implementa; `core/` é interno e nunca aparece no contrato.
 
 Este documento não é template copiável. Ele diz **o que já está garantido** por máquina, para você não
@@ -20,7 +20,7 @@ Norma dona: `specs/arquitetura/04-regras.md` §4.5 (na base, `specs/_estrutura_m
 |---|---|
 | `/health`, `/meta` e `/resumo` declarados | `contrato` |
 | a spec é legível pelo leitor de bloco do gate | `contrato` |
-| `servers[0].url` igual ao `rotaBase` do `modulo.json` | `rota-nomenclatura` |
+| `servers[0].url` igual ao `basePath` do `module.json` | `rota-nomenclatura` |
 | nenhum segmento de path carrega verbo (PT ou EN) | `rota-nomenclatura` |
 | segmento em kebab-case; parâmetro de caminho em camelCase | `rota-nomenclatura` |
 | rotas do código e do `paths:` coincidem nos dois sentidos | `contrato-sincronizado` |
@@ -43,7 +43,7 @@ paths:
 ```
 
 Escrever `/api/v1/<modulo>/registros` dentro de `paths:` é erro — `rota-nomenclatura` compara
-`servers[0].url` com o `rotaBase`, e o path sai relativo dali.
+`servers[0].url` com o `basePath`, e o path sai relativo dali.
 
 **Bloco, nunca flow style.** O leitor do gate é linha a linha, sem dependência externa — é o que permite o
 gate viajar junto do módulo extraído. `paths: {"/x": {...}}` numa linha é reprovado como ilegível, e o recuo

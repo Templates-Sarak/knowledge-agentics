@@ -21,7 +21,7 @@ Cada regra do ecossistema tem **um** dono. Ninguém copia ninguém; quem não é
 | **1** | arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento | **catálogo de regras do template** | `specs/_estrutura_modulos/doutrina/04-regras.md` (vira `specs/arquitetura/04-regras.md` no projeto) |
 | **2** | idiomas e linter de cada linguagem | `padrao-typescript` · `padrao-python` | skills irmãs |
 
-**O Nível 1 tem verificador executável.** O gate do template (`ferramentas/gate/validar.mjs`) cobra as ~40
+**O Nível 1 tem verificador executável.** O gate do template (`tools/gate/validate.mjs`) cobra as ~75
 regras de arquitetura mecanicamente, e **repete** os quatro limiares de escrita do Nível 0 porque viaja com o
 módulo extraído. Se os números divergirem, **esta skill está certa** — o catálogo é que está desatualizado.
 
@@ -81,9 +81,9 @@ Corolário: **sem estado global mutável** — dado compartilhado que muda é de
 
 | Onde | O quê |
 |---|---|
-| `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~40 regras, cada uma com id e verificador |
+| `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~75 regras, cada uma com id e verificador |
 | `specs/_estrutura_modulos/doutrina/` — `00-arquitetura.md` · `01-modulo.md` · `02-contrato-e-dados.md` · `03-operacao.md` | por que a regra existe e como trabalhar dentro dela |
-| `ferramentas/gate/validar.mjs` | **o verificador** — a regra é cobrada por máquina, não por memória |
+| `tools/gate/validate.mjs` | **o verificador** — a regra é cobrada por máquina, não por memória |
 
 No projeto instanciado, essas leis vivem em `specs/arquitetura/`; as decisões, em `specs/adr/`.
 Mapa de qual lei responde a quê: `references/PADRAO-ORGANIZACAO.md`.
@@ -129,8 +129,8 @@ que reprovam no gate e que o gate não conserta sozinho. A porta é a skill **`c
 - [ ] Assinaturas públicas tipadas e contrato (`api/`) documentado?
 
 **Nível 1 — a verificação por máquina.** Não confira de cabeça o que o gate cobra melhor:
-- [ ] `node ferramentas/gate/validar.mjs <caminho-do-modulo>` verde?
-- [ ] `node ferramentas/gate/validar.mjs --todos` verde (inclui `import-lateral` e `consome-ciclo`)?
+- [ ] `node tools/gate/validate.mjs <caminho-do-modulo>` verde?
+- [ ] `node tools/gate/validate.mjs --todos` verde (inclui `import-lateral` e `consome-ciclo`)?
 - [ ] Projeto **sem** o template de módulos? Então o Nível 1 não se aplica — só a lista acima vale.
 
 **Nível 2 — o idioma da linguagem:** `padrao-typescript` · `padrao-python`. São as duas com idioma documentado
@@ -143,5 +143,5 @@ tem nenhum dos dois fica no Nível 0 conferido por pessoa — a lista acima é a
 - `references/examples.md` — módulo bem desacoplado (bom) × módulo acoplado (ruim).
 
 > **Aposentados nesta versão:** `scripts/scaffold_modulo.py` (+ `scripts/config.json`) e
-> `assets/config_modulo.json`. Substitutos: `ferramentas/criar-modulo.mjs` do template, conduzido pela skill
-> **`code-modulo`**; e o `config/` de cinco arquivos com JSON Schema em `ferramentas/gate/schemas/`.
+> `assets/config_modulo.json`. Substitutos: `tools/create-module.mjs` do template, conduzido pela skill
+> **`code-modulo`**; e o `config/` de cinco arquivos com JSON Schema em `tools/gate/schemas/`.

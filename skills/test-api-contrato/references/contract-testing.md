@@ -5,13 +5,13 @@ O contrato só vale se **as duas pontas o respeitam**: o **provider** entrega o 
 
 Estes testes **executam**. É essa a divisão de trabalho com o gate: o gate compara textos e não roda nada;
 estes testes rodam o app e olham a resposta de verdade. Só entram depois de
-`node ferramentas/gate/validar.mjs <modulo>` estar verde.
+`node tools/gate/validate.mjs <modulo>` estar verde.
 
 ## As duas direções
 
 | Direção | Pergunta | Como testar | Pega |
 |---|---|---|---|
-| **Provider** | a implementação conforma à spec **em runtime**? | validar a resposta real contra o schema do `contrato/openapi.yaml` | resposta fora do schema ou com código não declarado |
+| **Provider** | a implementação conforma à spec **em runtime**? | validar a resposta real contra o schema do `contract/openapi.yaml` | resposta fora do schema ou com código não declarado |
 | **Consumer** | o consumidor casa com o contrato? | mock derivado **do contrato**, nunca da implementação | consumidor assumindo campo ou shape que o contrato não garante |
 
 ## Provider — conformidade em runtime
@@ -19,7 +19,7 @@ estes testes rodam o app e olham a resposta de verdade. Só entram depois de
 - **Asserção de schema no teste de endpoint**: em `tests/`, cada resposta é validada contra o schema
   declarado — a `200` casa com `#/components/schemas/Registro`, o erro casa com `Erro` e o `codigo` está no
   enum fechado.
-- **Property-based contra o próprio app**: `schemathesis run contrato/openapi.yaml --base-url http://localhost:PORT`
+- **Property-based contra o próprio app**: `schemathesis run contract/openapi.yaml --base-url http://localhost:PORT`
   gera requisições a partir da spec e acusa respostas que a violam. **Só** contra o próprio app ou staging autorizado.
 - Divergência → conserte **o lado errado**: se o código mudou de propósito, atualize a spec; se a spec está
   certa, conserte o código. Nunca silencie.
@@ -30,7 +30,7 @@ estes testes rodam o app e olham a resposta de verdade. Só entram depois de
 ## Consumer — dependência só do contrato
 
 - O consumidor fala com o provider por `core/gateways/<provider>`, **só HTTP**, e a dependência está
-  declarada em `modulo.json:consome`. Nunca importa `core/` alheio nem lê tabela alheia — isso o gate já
+  declarada em `module.json:consumes`. Nunca importa `core/` alheio nem lê tabela alheia — isso o gate já
   cobra (`import-lateral`, `gateway-http`, `gateway-declarado`, `tabela-alheia`).
 - **Mock derivado do contrato**: o test double sai da spec, não da implementação. Mock copiado da
   implementação testa o acidente, não a promessa — e passa a mentir no dia em que o provider muda.

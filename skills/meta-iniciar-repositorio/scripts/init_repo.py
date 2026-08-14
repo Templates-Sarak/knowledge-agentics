@@ -165,7 +165,7 @@ def compor_pre_commit(existente: str | None, nosso: str) -> str:
 
 
 def _casos_de_autoteste_pre_commit() -> list[dict]:
-    """Os quatro estados exigidos pela plan-2.1 (Bloco T), mais o caso de idempotencia."""
+    """Os quatro estados exigidos, mais o caso de idempotencia."""
     template_isolado = (
         "#!/bin/sh\n"
         "# Sarak - pre-commit (gate de conformidade)\n"
@@ -247,7 +247,7 @@ def get_args():
 
 def _motivo_alvo_perigoso(target: Path) -> str | None:
     """`None` quando o alvo e seguro para criar; senao, o motivo para a mensagem de erro nomear
-    (plan-2.2.md Bloco AA — o mesmo cuidado que a skill ja exige na entrevista HITL: nunca raiz do
+    (o mesmo cuidado que a skill ja exige na entrevista HITL: nunca raiz do
     SO, nunca HOME, so pasta especifica confirmada)."""
     if target.parent == target:
         return "raiz do sistema de arquivos"

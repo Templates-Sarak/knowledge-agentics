@@ -167,7 +167,7 @@ Não é dívida da base: é dívida entregue ao usuário.
 
 ---
 
-## Bloco BC — `doutrina/`, e o ADR que vira convenção ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
+## Bloco BC — `doutrina/`, e o ADR que vira convenção ✅ **FECHADO** *(commit `6107c2f`, revisado e reproduzido)*
 
 > A doutrina é **copiada para dentro de cada projeto** como `specs/arquitetura/`. É a lei que o usuário
 > lê, e hoje ela cita rodadas de um plano que ele não tem.
@@ -188,7 +188,7 @@ Não é dívida da base: é dívida entregue ao usuário.
 
 ---
 
-## Bloco BD — os nomes de caso, que são saída de ferramenta ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
+## Bloco BD — os nomes de caso, que são saída de ferramenta ✅ **FECHADO** *(commit `1571f91`, revisado e reproduzido)*
 
 > **27 casos de `cases.mjs` se chamam pela rodada que os produziu**, e esse nome é o que aparece na
 > saída do autoteste do gate — a primeira coisa que alguém lê quando o gate reprova.
@@ -225,7 +225,7 @@ depois: 'tipo de retorno inline não desvia o extrator'
 
 ---
 
-## Bloco BF — `skills/`, os ponteiros que sobraram *(dívida contada, não região desconhecida)*
+## Bloco BF — `skills/`, os ponteiros que sobraram *(dívida contada, não região desconhecida)* ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > **Não é arqueologia — é ponteiro quebrado ativo.** Onze arquivos de `skills/` ainda citam
 > `ferramentas/`, `criar-modulo.mjs`, `core/dominio`, `--papel`. Quem seguir `padrao-python/SKILL.md` ou
@@ -243,14 +243,14 @@ depois: 'tipo de retorno inline não desvia o extrator'
 
 - [x] ✅ **DECIDIDO PELO DONO: as skills são atualizadas.** Não viram lacuna declarada — instrução
       errada não se declara, se conserta.
-- [ ] Os **9 arquivos `.md`** — `padrao-escrita` (SKILL + 2 references), `padrao-python/SKILL.md`,
+- [x] Os **9 arquivos `.md`** — `padrao-escrita` (SKILL + 2 references), `padrao-python/SKILL.md`,
       `test-api-contrato` (SKILL + 2 references), `code-diagnostico/SKILL.md`,
       `code-auditoria-padrao/references/workflow.md`. Prosa: mesma regra deste plano
-- [ ] ⚠️ **Os 2 arquivos `.py` são CÓDIGO, não prosa** — `git-verificacao-commit/scripts/gerar_config.py`
+- [x] ⚠️ **Os 2 arquivos `.py` são CÓDIGO, não prosa** — `git-verificacao-commit/scripts/gerar_config.py`
       e `meta-verificacao-base/scripts/ponteiros.py`. Caminho errado ali não é documentação
       desatualizada: é **ferramenta apontando para o nada**. Confira se o `--autoteste` de cada um
       cobre o caminho corrigido; se não cobrir, o conserto é cego e precisa de caso
-- [ ] **`--depois-estrito` sem nenhuma entrada de `skills/`** ao final — as 21 drenadas, e a linha de
+- [x] **`--depois-estrito` sem nenhuma entrada de `skills/`** ao final — as 21 drenadas, e a linha de
       base regravada com o número novo declarado
 
 ---
@@ -266,18 +266,46 @@ depois: 'tipo de retorno inline não desvia o extrator'
 > `create-project.mjs` não o cita). Mas é o que o **mantenedor** do template lê, e a regra deste plano
 > não faz distinção de público: *legível por quem nunca viu este repositório*.
 
-- [ ] As **88 marcas** em `tests/*.mjs`, pela regra do plano — `template-self-test.mjs` 40 ·
+- [x] As **88 marcas** em `tests/*.mjs`, pela regra do plano — `template-self-test.mjs` 40 ·
       `verify-citations.mjs` 27 · `no-comments-diff.mjs` 13 · `run-all-selftests.mjs` 5 · `verify-map.mjs` 3
-- [ ] ⚠️ **A comparação com precedente apagado morre junto.** Sobraram 9 menções do tipo *"mesma
+- [x] ⚠️ **A comparação com precedente apagado morre junto.** Sobraram 9 menções do tipo *"mesma
       disciplina de `rename-refusals.json` (Bloco AI, `apply-rename.mjs`)"* — não são ponteiro quebrado
       (não afirmam onde algo mora hoje), mas comparam o desenho a um arquivo que **o Bloco BE apagou**.
       Para quem nunca viu o repositório, é referência a nada. **O que a frase ensina fica; o precedente
       sai** — *"começa vazia e cresce só por decisão explícita"* é a carga, *"igual ao `rename-refusals`"*
       não é
-- [ ] **O instrumento deste plano é o caso mais irônico e não escapa:** `no-comments-diff.mjs` nasceu
+- [x] **O instrumento deste plano é o caso mais irônico e não escapa:** `no-comments-diff.mjs` nasceu
       nesta campanha e já carrega 13 marcas de *"Bloco BA"*. Ele se limpa como qualquer outro
-- [ ] `no-comments-diff` verde ao final do bloco — com `verify-citations.mjs` e `run-all-selftests.mjs`
+- [x] `no-comments-diff` verde ao final do bloco — com `verify-citations.mjs` e `run-all-selftests.mjs`
       cobertos pela impressão digital do Bloco BB, **não** pela autorização em branco de hoje
+
+---
+
+## Bloco BI — o manual, e os exemplos da lei *(achado na rodada BF — a maior dívida que restou)*
+
+> **O `README.md` do template está inteiro no vocabulário de antes do rename.** É o primeiro documento que
+> alguém abre, e **todo comando dele falha**: `node ferramentas/criar-projeto.mjs`, `ferramentas/criar-modulo.mjs`,
+> `ferramentas/gate/validar.mjs --todos`, `ferramentas/gate/testes/executar.mjs`, e **dois links markdown para
+> `ferramentas/`**, pasta que não existe. São **13 entradas na linha de base** — a maior concentração das 131.
+>
+> **A lei ensina chave de manifesto que o gate rejeita:** `01-modulo.md:251-252` mostra `"consome"`,
+> `"modulo"`, `"contrato"`, `"porQue"` num exemplo `jsonc`, e `04-regras.md:297` repete `"modulo"`. Isso
+> **vira o `specs/arquitetura/` de todo projeto gerado**.
+>
+> **Por que nada pegou.** O `--depois-estrito` MEDIU e a catraca ACEITOU, porque nenhum bloco reivindicava
+> o `README.md` e porque as três varreduras do BC (citação de plano, id nu, tempo verbal) **não alcançam
+> exemplo em JSON**: `distintivo()` devolve `false` para `consome`, `modulo`, `contrato` — o falso negativo
+> declarado do §7.2. Lacuna de escopo do plano, minha, não do executor.
+
+- [ ] `specs/_estrutura_modulos/README.md` inteiro na forma atual — **cada comando RODADO**, não relido.
+      Comando de manual que ninguém executa é exatamente o `autoteste:template` outra vez
+- [ ] Os **dois links markdown** para `ferramentas/` resolvendo
+- [ ] Os exemplos de manifesto de `doutrina/01-modulo.md` e `04-regras.md` **conferidos contra
+      `module.schema.json`**, chave por chave — a fonte é o schema, não a memória
+- [ ] **A classe, não os sítios:** todo exemplo `json`/`jsonc` da doutrina e dos `README.md` validado
+      contra o schema que o gate usa. Chave que o schema não conhece reprova
+- [ ] A linha de base cai de **131** para o que sobrar, com o número declarado e as 13 do `README.md`
+      **zeradas** — dívida que este bloco existe para pagar, não para redeclarar
 
 ---
 

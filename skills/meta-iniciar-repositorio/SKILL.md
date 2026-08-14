@@ -62,7 +62,7 @@ python skills/meta-iniciar-repositorio/scripts/init_repo.py \
   --modulos <id> [<id>...] --git-init
 ```
 
-O script **cria o diretório-alvo** se ele ainda não existir (plan-2.2.md Bloco AA) — não precisa de
+O script **cria o diretório-alvo** se ele ainda não existir — não precisa de
 `mkdir` manual antes. Ele mesmo recusa (`[ERRO] Alvo recusado`) raiz do sistema de arquivos e a pasta
 HOME, como backstop do que a entrevista já confirmou — mas essa checagem mecânica nunca substitui a
 confirmação HITL do passo 1, que continua obrigatória.

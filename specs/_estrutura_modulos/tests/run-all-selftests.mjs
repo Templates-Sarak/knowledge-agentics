@@ -18,8 +18,9 @@
  * mesma disciplina de `citation-baseline.json`/`rename-refusals.json`: o artefato tem de ficar
  * MENOR ou igual ao que a varredura acha, nunca o contrário sem alguém decidir.
  *
- * Fora de `tools/` de propósito — mesmo motivo de `template-self-test.mjs`/`verify-map.mjs` (D3):
- * ferramenta de quem MANTÉM a base, nunca de um projeto gerado.
+ * Cobre `tools/`, `tests/`, `bindings/<binding>/root/` e `skills/<skill>/scripts/`: ferramenta de quem
+ * MANTÉM a base, nunca de um projeto gerado — um `--autoteste` de skill que ninguém roda apodrece
+ * do mesmo jeito que um de `tools/`, e é o mesmo defeito que este arquivo existe para impedir.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -36,9 +37,13 @@ const BINDINGS = ['typescript', 'javascript', 'python'];
 // ================================================================================================
 
 /** Um arquivo SUPORTA `--autoteste` quando o texto compara literalmente contra o argv nessa forma
- * — `'--autoteste'` (aspas simples ou duplas) seguido de comparação (`===`, `in`, `.includes(`).
- * Não casa menção em docstring solta (`--autoteste prova...` sem comparação ao lado). */
-const PADRAO_SUPORTE = /(?:===|\.includes\()\s*['"]--autoteste['"]|['"]--autoteste['"]\s*(?:===|in\b)/;
+ * — `'--autoteste'` (aspas simples ou duplas) seguido de comparação (`===`, `in`, `.includes(`) —
+ * ou quando declara a flag via `argparse.add_argument('--autoteste', ...)` (o idioma Python
+ * equivalente: `add_argument` É o ponto de reconhecimento da flag, mesmo sem comparação direta a
+ * `sys.argv` — achado ao varrer `skills/**`, onde os dois scripts baseados em argparse escapavam
+ * do padrão pensado para `sys.argv` cru). Não casa menção em docstring solta
+ * (`--autoteste prova...` sem comparação ao lado). */
+const PADRAO_SUPORTE = /(?:===|\.includes\()\s*['"]--autoteste['"]|['"]--autoteste['"]\s*(?:===|in\b)|add_argument\(\s*['"]--autoteste['"]/;
 
 export function suportaAutoteste(texto) {
   return PADRAO_SUPORTE.test(texto);
@@ -76,11 +81,12 @@ function arquivosSob(pasta, extensoes) {
 }
 
 /** Onde `--autoteste` pode legitimamente morar: `tools/**`, `tests/**` (a própria pasta deste
- * arquivo) e `bindings/<binding>/root/**` (os runners que viajam com o projeto —
- * `migrations.{mjs,py}`, o achado do AG). NÃO desce em `_template/**`: é conteúdo de MÓDULO
- * gerado, o gate já cobre. */
+ * arquivo), `bindings/<binding>/root/**` (os runners que viajam com o projeto —
+ * `migrations.{mjs,py}`, o achado do AG) e `skills/**` (todo `.mjs`/`.py` da base mora em
+ * `skills/<skill>/scripts/`, e a varredura recursiva chega lá sem precisar saber o nome de cada
+ * skill). NÃO desce em `_template/**`: é conteúdo de MÓDULO gerado, o gate já cobre. */
 function raizesDeVarredura() {
-  const raizes = [join(RAIZ_TEMPLATE, 'tools'), join(RAIZ_TEMPLATE, 'tests')];
+  const raizes = [join(RAIZ_TEMPLATE, 'tools'), join(RAIZ_TEMPLATE, 'tests'), join(RAIZ_BASE, 'skills')];
   for (const binding of BINDINGS) raizes.push(join(RAIZ_TEMPLATE, 'bindings', binding, 'root'));
   return raizes;
 }
@@ -128,6 +134,10 @@ const REGISTRO = [
   { caminho: 'specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py', runtime: 'python' },
+  { caminho: 'skills/git-verificacao-commit/scripts/gerar_config.py', runtime: 'python' },
+  { caminho: 'skills/meta-iniciar-repositorio/scripts/comparar_arvore.py', runtime: 'python' },
+  { caminho: 'skills/meta-iniciar-repositorio/scripts/init_repo.py', runtime: 'python' },
+  { caminho: 'skills/meta-verificacao-base/scripts/audit_base.py', runtime: 'python' },
 ];
 
 const DECLARADOS_FORA = new Set(['specs/_estrutura_modulos/bindings/python/root/src/composicao.py']);
@@ -180,6 +190,7 @@ function casosDeAutoteste() {
     { nome: 'suportaAutoteste: comparacao === casa', fn: () => suportaAutoteste("if (argv === '--autoteste')") === true },
     { nome: 'suportaAutoteste: .includes( casa', fn: () => suportaAutoteste("argv.includes('--autoteste')") === true },
     { nome: 'suportaAutoteste: "in" casa', fn: () => suportaAutoteste('"--autoteste" in argv') === true },
+    { nome: 'suportaAutoteste: argparse add_argument casa', fn: () => suportaAutoteste("parser.add_argument('--autoteste', action='store_true')") === true },
     { nome: 'suportaAutoteste: mencao solta em prosa NAO casa', fn: () => suportaAutoteste('roda com --autoteste para conferir') === false },
     { nome: 'compararRegistro: achado registrado -> nem orfao nem obsoleto', fn: () => {
       const r = compararRegistro(['a.mjs'], [{ caminho: 'a.mjs' }]);

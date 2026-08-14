@@ -11,7 +11,7 @@ import os
 import re
 
 # Só estes prefixos são resolvidos a partir da RAIZ da base. Caminho de projeto GERADO
-# (`specs/arquitetura/`, `contrato/`, `core/`, `modulos/`, `api/`, `ferramentas/`) nunca entra:
+# (`specs/arquitetura/`, `contract/`, `core/`, `modules/`, `api/`, `tools/`) nunca entra:
 # ele existe no molde ou no projeto instalado, jamais aqui, e é a maioria das citações.
 PREFIXOS_DA_BASE = ("skills/", "agents/", "commands/", "hooks/", "plugin/", "specs/_estrutura")
 

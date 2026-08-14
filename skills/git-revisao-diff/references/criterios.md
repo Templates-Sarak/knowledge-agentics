@@ -34,7 +34,7 @@ Revise **só o que mudou** contra o `padrao-escrita`. Foco na mudança, não no 
 - **Testes**: funcionalidade nova vem **com testes** (norma §9)? (ver `test-unitario`)
 - **Erros**: exceção tratada (não engolida)? log sem segredo?
 - **Encapsulamento**: importou caminho interno de outro módulo, ou leu tabela alheia? → dado alheio vem por
-  **HTTP**, num gateway em `core/gateways/<provider>` declarado em `modulo.json:consome`. Gate: `import-lateral`,
+  **HTTP**, num gateway em `core/gateways/<provider>` declarado em `module.json:consumes`. Gate: `import-lateral`,
   `gateway-http`, `gateway-declarado`, `tabela-alheia`.
 
 ## Severidade

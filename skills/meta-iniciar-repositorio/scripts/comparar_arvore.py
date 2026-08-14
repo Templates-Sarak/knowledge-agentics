@@ -1,9 +1,9 @@
-"""comparar_arvore.py — diferenca duas arvores de arquivos (uso: Bloco AF, plan-3.1.md).
+"""comparar_arvore.py — diferenca duas arvores de arquivos.
 
     python comparar_arvore.py <arvore-a> <arvore-b> [--ignorar <glob> ...]
     python comparar_arvore.py --autoteste
 
-Pensado para a pergunta do Bloco AF: a arvore que a skill produz (com a entrevista do code-modulo no
+Pensado para a pergunta: a arvore que a skill produz (com a entrevista do code-modulo no
 meio) diverge da que o script produz sozinho (init_repo.py rodando os dois modulos de uma vez)? A
 resposta certa nao e binaria — cada divergencia e "so em A", "so em B" ou "presente nos dois com
 conteudo diferente", e o item do plano manda classificar cada uma: prosa desatualizada, ou passo que

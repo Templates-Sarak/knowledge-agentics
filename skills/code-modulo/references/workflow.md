@@ -26,7 +26,7 @@ binding (`package.json`, `pyproject.toml`, `tsconfig.json`, `jsconfig.json`, `.g
 
 ## A2: Entrevista
 
-Bloco A de `references/templates.md`. Não pergunte o que dá para ler: se há um repositório git, o **nome** e o
+§0 de `references/templates.md` (entrevista do Fluxo A). Não pergunte o que dá para ler: se há um repositório git, o **nome** e o
 **escopo** saem do nome da pasta e do remoto.
 
 **O que detectar:**

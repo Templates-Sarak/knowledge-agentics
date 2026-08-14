@@ -6,12 +6,38 @@ import argparse
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ponteiros import auditar_ponteiros  # noqa: E402
+from ponteiros import alvo_de_caminho, auditar_ponteiros  # noqa: E402
 
 def get_args():
     parser = argparse.ArgumentParser(description="Auditoria Sarak X-Skills Base")
-    parser.add_argument("--raiz", required=True, help="Caminho raiz do repositório X-Skills")
+    parser.add_argument("--raiz", help="Caminho raiz do repositório X-Skills")
+    parser.add_argument("--autoteste", action="store_true", help="Roda a suite interna, nao toca disco fora do repo")
     return parser.parse_args()
+
+def autoteste():
+    """Prova que `alvo_de_caminho` trata caminho de PROJETO GERADO (`specs/arquitetura/`,
+    `contract/`, `core/`, `modules/`, `api/`, `tools/` — a mesma lista do comentario acima de
+    PREFIXOS_DA_BASE) como fora de alcance, e caminho da BASE como resolvivel."""
+    falhas = []
+    de_projeto_gerado = (
+        "specs/arquitetura/04-regras.md", "contract/openapi.yaml", "core/domain/item.ts",
+        "modules/catalogo/module.json", "api/src/index.ts", "tools/gate/validate.mjs",
+    )
+    for token in de_projeto_gerado:
+        alvo = alvo_de_caminho(token, dono=None)
+        if alvo is not None:
+            falhas.append(f"caminho de projeto gerado deveria ficar fora de alcance: {token!r} -> {alvo!r}")
+    da_base = "skills/git-verificacao-commit/scripts/gerar_config.py"
+    if alvo_de_caminho(da_base, dono=None) != da_base:
+        falhas.append(f"caminho da base deveria resolver identico: {da_base!r}")
+
+    for falha in falhas:
+        print(f"  falha  {falha}")
+    if falhas:
+        print(f"autoteste (audit_base): {len(falhas)} falha(s)")
+        return 1
+    print("autoteste (audit_base): 7/7 ok")
+    return 0
 
 def audit_base(base_dir):
     report = {
@@ -117,7 +143,9 @@ def audit_base(base_dir):
 
 if __name__ == "__main__":
     args = get_args()
-    if not os.path.exists(args.raiz):
+    if args.autoteste:
+        exit(autoteste())
+    if not args.raiz or not os.path.exists(args.raiz):
         print(json.dumps({"error": "Caminho raiz não encontrado"}))
         exit(1)
     audit_base(args.raiz)

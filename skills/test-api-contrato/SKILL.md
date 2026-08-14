@@ -9,7 +9,7 @@ description: Testa o contrato de API onde o gate estático não alcança — con
 > é **Nível 1** e vive em `specs/arquitetura/04-regras.md` §4.5 — na base, em
 > `specs/_estrutura_modulos/doutrina/04-regras.md`. Esta skill **não a reenuncia**.
 
-O contrato de um módulo é o `contrato/openapi.yaml` dele. Boa parte da conformidade já é **cobrada por
+O contrato de um módulo é o `contract/openapi.yaml` dele. Boa parte da conformidade já é **cobrada por
 máquina, estaticamente**, pelo gate do template. Esta skill existe para a metade que um verificador
 estático não consegue afirmar: **o que exige executar o app ou julgar compatibilidade**.
 
@@ -19,14 +19,14 @@ Aditiva (cria testes de contrato) → HITL leve. Teste ativo **só no próprio a
 
 | Regra do gate | O que já é cobrado, sem executar nada |
 |---|---|
-| `contrato` | o `contrato/openapi.yaml` existe, é legível e declara `/health`, `/meta`, `/resumo` |
-| `rota-nomenclatura` | `servers[0].url` = `rotaBase`; segmento sem verbo (PT e EN); kebab-case; parâmetro camelCase |
+| `contrato` | o `contract/openapi.yaml` existe, é legível e declara `/health`, `/meta`, `/resumo` |
+| `rota-nomenclatura` | `servers[0].url` = `basePath`; segmento sem verbo (PT e EN); kebab-case; parâmetro camelCase |
 | `contrato-sincronizado` | as rotas do código e as do `paths:` coincidem **nos dois sentidos** |
 | `projecao-contrato` | todo campo que o mapeador projeta está declarado em algum schema de **resposta** |
-| `consome-contrato` | quem declara `consome` aponta para rota e método que o dono realmente declara |
+| `consome-contrato` | quem declara `consumes` aponta para rota e método que o dono realmente declara |
 
 ```
-node ferramentas/gate/validar.mjs <caminho-do-modulo>     # antes de escrever teste nenhum
+node tools/gate/validate.mjs <caminho-do-modulo>     # antes de escrever teste nenhum
 ```
 
 **Rodar esta skill não substitui o gate, e o gate não substitui esta skill.** Se o gate está vermelho,
@@ -51,19 +51,19 @@ Daí sai o escopo desta skill, e só ele:
 ## Anatomia do módulo (para não procurar no lugar errado)
 
 ```
-modulos/<modulo>/
-  contrato/openapi.yaml     <- O CONTRATO mora aqui, nao em api/
+modules/<modulo>/
+  contract/openapi.yaml     <- O CONTRATO mora aqui, nao em api/
   api/                      <- a borda que implementa o contrato (rotas, mapeadores, middlewares)
-  core/{dominio,motor,portas,gateways,templates}
+  core/{domain,engine,ports,gateways,templates}
   config/  database/  tests/  web/
 ```
 
-O contrato é `contrato/openapi.yaml`. `api/` é quem o **implementa**; `core/` é interno e nunca aparece
+O contrato é `contract/openapi.yaml`. `api/` é quem o **implementa**; `core/` é interno e nunca aparece
 no contrato. Consumidor fala com o `api/` do provider via `core/gateways/` — nunca com o `core/` dele.
 
 ## Quando usar
 - Ao montar contract testing provider/consumer num módulo que já passa no gate.
-- **Antes** de alterar schema de um módulo que alguém declara em `consome` — é a mudança que o gate deixa passar.
+- **Antes** de alterar schema de um módulo que alguém declara em `consumes` — é a mudança que o gate deixa passar.
 - Antes de extrair um módulo como serviço, para provar que o contrato se sustenta sozinho.
 
 ## Workflow
@@ -71,10 +71,10 @@ no contrato. Consumidor fala com o `api/` do provider via `core/gateways/` — n
 Um módulo por vez. Matriz e ferramentas em `references/contract-testing.md`; leitura da spec do molde
 em `references/openapi-basico.md`.
 
-1. **Gate verde primeiro** — `node ferramentas/gate/validar.mjs <modulo>`. Vermelho? Pare e conserte lá.
+1. **Gate verde primeiro** — `node tools/gate/validate.mjs <modulo>`. Vermelho? Pare e conserte lá.
    Estrutura, nomenclatura e projeção não são trabalho desta skill.
-2. **Ler o contrato** — `contrato/openapi.yaml`: rotas, schemas de resposta, taxonomia de erro. Identifique
-   quem consome o módulo (`grep` por `"modulo": "<id>"` nos `consome` dos outros `modulo.json`).
+2. **Ler o contrato** — `contract/openapi.yaml`: rotas, schemas de resposta, taxonomia de erro. Identifique
+   quem consome o módulo (`grep` por `"module": "<id>"` nos `consumes` dos outros `module.json`).
 3. **Provider — conformidade em runtime** — valide a resposta **real** contra o schema, no próprio app:
    asserção de schema nos testes de `tests/`, ou `schemathesis` contra `localhost`. Divergência → conserte
    o lado errado (código **ou** spec), nunca silencie.
@@ -102,7 +102,7 @@ em `references/openapi-basico.md`.
 
 ## Checklist "pronta"
 - [ ] Gate verde no módulo **antes** de escrever teste de contrato?
-- [ ] Resposta real do provider validada contra o schema do `contrato/openapi.yaml`, executando?
+- [ ] Resposta real do provider validada contra o schema do `contract/openapi.yaml`, executando?
 - [ ] Cada consumidor testado contra mock **derivado do contrato**, não da implementação?
 - [ ] Mudança de schema comparada com a versão em uso (tipo, obrigatoriedade, enum, remoção)?
 - [ ] Breaking change versionado, com `v1` convivendo pela janela anunciada?
@@ -110,6 +110,6 @@ em `references/openapi-basico.md`.
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/contract-testing.md` — matriz provider/consumer, ferramentas por binding, e o que cada teste cobre.
-- `references/openapi-basico.md` — como ler o `contrato/openapi.yaml` do template e o que o gate já garante nele.
+- `references/openapi-basico.md` — como ler o `contract/openapi.yaml` do template e o que o gate já garante nele.
 - **A spec de referência é a do molde**, nunca uma cópia local:
-  `specs/_estrutura_modulos/bindings/<binding>/_template/contrato/openapi.yaml`.
+  `specs/_estrutura_modulos/bindings/<binding>/_template/contract/openapi.yaml`.

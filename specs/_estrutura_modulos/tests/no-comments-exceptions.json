@@ -3,9 +3,9 @@
   "excecoes": [
     {
       "arquivo": "specs/_estrutura_modulos/tests/run-all-selftests.mjs",
-      "bloco": "BA+BE",
-      "oQueMudou": "BA acrescenta specs/_estrutura_modulos/tests/no-comments-diff.mjs ao REGISTRO (o proprio Bloco BA precisa disso para o novo --autoteste nao virar orfao, Bloco AJ.1b); BE remove apply-rename.mjs do REGISTRO (arquivo excluido, residuo de campanha encerrada — autoteste:tudo cai de 14/14 para 13/13). Uma entrada so: as duas mudancas resultam no MESMO hash atual, uma entrada por bloco seria proveniencia duplicada que nunca reprova sozinha",
-      "hashCodigo": "76d00a55a89fc615028a914111c403baddb641c06d97787fd541f16ac355fdb3"
+      "bloco": "BA+BE+BF",
+      "oQueMudou": "BA acrescenta specs/_estrutura_modulos/tests/no-comments-diff.mjs ao REGISTRO (o proprio Bloco BA precisa disso para o novo --autoteste nao virar orfao, Bloco AJ.1b); BE remove apply-rename.mjs do REGISTRO (arquivo excluido, residuo de campanha encerrada — autoteste:tudo cai de 14/14 para 13/13); BF acrescenta join(RAIZ_BASE, 'skills') as raizes de varredura, alarga PADRAO_SUPORTE para tambem casar `argparse.add_argument('--autoteste', ...)` (os dois scripts baseados em argparse escapavam do padrao pensado so para sys.argv cru — achado ao rodar contra skills/, nao suposto), acrescenta o caso de autoteste correspondente, e registra os quatro scripts de skills/**/scripts/ que a varredura achou orfaos (gerar_config.py, audit_base.py, novos; comparar_arvore.py, init_repo.py, ja tinham --autoteste sem ninguem rodar) — autoteste:tudo sobe de 13 para 17. Uma entrada so: todas as mudancas resultam no MESMO hash atual, uma entrada por bloco seria proveniencia duplicada que nunca reprova sozinha",
+      "hashCodigo": "5499b5754919c2742e7ef25e678d48f9ac91ec52e2d0d4f36a99d22d0d750343"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
@@ -18,6 +18,18 @@
       "bloco": "BD",
       "oQueMudou": "os 27 valores de descricao: que se chamavam pela rodada que os produziu (\"Bloco M\", \"N.2 forma N\", \"N.2.1\"/\"N.2.2\", \"N.3\", \"plan-2.md N.1\") passam a dizer o que o caso prova, sem citar rodada nenhuma. contem: e a asercao de cada caso NAO mudam, so o rotulo. Zero colisao de nome medida programaticamente apos a troca (129 descricoes, 129 unicas)",
       "hashCodigo": "95c26c7d16d3d6bebb31c8173e9eadbceb5fc26ce576ef632c46ae41af8ab265"
+    },
+    {
+      "arquivo": "skills/git-verificacao-commit/scripts/gerar_config.py",
+      "bloco": "BF",
+      "oQueMudou": "ponteiro quebrado corrigido no docstring (ferramentas/gerar-config-lint.mjs -> tools/generate-lint-config.mjs; ferramentas/ci-seguranca.mjs -> tools/ci-security.mjs) nao muda comportamento sozinho. O que muda CODIGO de verdade: acrescenta a funcao autoteste() (nova, chamada por --autoteste) que prova CANONICO.exists() e que gerar() extrai so os TRES campos declarados — nao havia --autoteste nenhum antes desta entrada",
+      "hashCodigo": "20607d60396c7c289e3873501bb55abf0518912be6b739da271625207ec92d06"
+    },
+    {
+      "arquivo": "skills/meta-verificacao-base/scripts/audit_base.py",
+      "bloco": "BF",
+      "oQueMudou": "acrescenta --autoteste (novo: nao existia) que importa alvo_de_caminho de ponteiros.py e prova que caminho de PROJETO GERADO (specs/arquitetura/, contract/, core/, modules/, api/, tools/) fica fora do alcance de PREFIXOS_DA_BASE, e caminho da propria base resolve identico. --raiz deixa de ser required para --autoteste funcionar sem argumento extra",
+      "hashCodigo": "bfc2771bee46301cf914b430fc5944ec90719f480ef4c3c26d9c92403d630566"
     }
   ]
 }

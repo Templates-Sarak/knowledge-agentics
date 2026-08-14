@@ -13,23 +13,23 @@ extraível; o ruim mostra os acoplamentos que impedem a futura separação.
 ### Estrutura
 
 ```
-modulos/catalogo/
-├── modulo.json              id, papel, dados, portas, consome, camposSensiveis…
-├── contrato/openapi.yaml    a FONTE do contrato — o código segue
+modules/catalogo/
+├── module.json              id, role, data, ports, consumes, sensitiveFields…
+├── contract/openapi.yaml    a FONTE do contrato — o código segue
 ├── config/
 │   ├── api.json             { "paginaTamanhoMaximo": 100 }
-│   ├── dominio.json         { "statusValidos": ["rascunho","vigente"] }
+│   ├── domain.json          { "statusValidos": ["rascunho","vigente"] }
 │   ├── seguranca.json       rate limit, CORS declarado, headers
-│   ├── portas.json          { "repositorio": "postgres" }  ← único lugar com nome de fornecedor
+│   ├── ports.json           { "repositorio": "postgres" }  ← único lugar com nome de fornecedor
 │   └── textos.json          rótulos exibidos ao usuário
 ├── core/
-│   ├── dominio/             tipos + validação
-│   ├── portas/              o que preciso de INFRAESTRUTURA
+│   ├── domain/              tipos + validação
+│   ├── ports/                o que preciso de INFRAESTRUTURA
 │   └── gateways/            o que preciso de OUTRO MÓDULO — só HTTP
-├── api/src/{index,config,logger}.ts  routes/  middlewares/  mapeadores/
+├── api/src/{index,config,logger}.ts  routes/  middlewares/  mappers/
 ├── web/src/{pages,components,hooks,api-client}/
 ├── database/{schema.sql,migrations/}  tabelas catalogo_*
-└── tests/{dominio,contrato,web,fixtures}/
+└── tests/{domain,contract,web,fixtures}/
 ```
 
 ### Como consome outro módulo
@@ -45,9 +45,9 @@ export async function buscarAliquotaVigente(deps: Deps): Promise<Aliquota> {
 ```
 
 ```jsonc
-// modulo.json                        ✅ dependência DECLARADA — sem isso, o gate reprova
-"consome": [
-  { "modulo": "financeiro", "contrato": "GET /aliquotas/vigente", "porQue": "alíquota do mês na conciliação" }
+// module.json                        ✅ dependência DECLARADA — sem isso, o gate reprova
+"consumes": [
+  { "module": "financeiro", "contract": "GET /aliquotas/vigente", "why": "alíquota do mês na conciliação" }
 ]
 ```
 
@@ -58,13 +58,13 @@ export async function buscarAliquotaVigente(deps: Deps): Promise<Aliquota> {
 export function montar(deps: DependenciasDoModulo) { … }
 ```
 
-Trocar Postgres por Supabase é **editar uma linha** de `config/portas.json`. Se for preciso mais que isso,
+Trocar Postgres por Supabase é **editar uma linha** de `config/ports.json`. Se for preciso mais que isso,
 a porta está mal desenhada.
 
 ### Regra de negócio
 
 ```ts
-// core/dominio/item.ts
+// core/domain/item.ts
 export function criarItem(entrada: EntradaItem, deps: Deps): Item {
   if (entrada.itens.length === 0) throw new ErroValidacao('pedido sem itens');   // ✅ guard clause
   if (entrada.itens.length > deps.config.dominio.itensMaximo) {                  // ✅ limite em config
@@ -75,7 +75,7 @@ export function criarItem(entrada: EntradaItem, deps: Deps): Item {
 ```
 
 **Por que está conforme:** depende do **contrato HTTP** de `financeiro` (não do schema dele), tabelas
-prefixadas `catalogo_*`, nome de fornecedor só em `config/portas.json`, `relogio`/`geradorId` no lugar de
+prefixadas `catalogo_*`, nome de fornecedor só em `config/ports.json`, `relogio`/`geradorId` no lugar de
 `new Date()`/`Math.random()`, e todos os testes rodam com adapters de memória — sem rede, sem banco. Extrair
 o módulo é copiar a pasta e recortar as chaves `CATALOGO_*` do `.env`.
 
@@ -84,8 +84,8 @@ o módulo é copiar a pasta e recortar as chaves `CATALOGO_*` do `.env`.
 ## Exemplo ruim — módulo `catalogo` acoplado
 
 ```ts
-// modulos/catalogo/api/src/rotas.ts
-import { buscarCliente } from '../../../financeiro/core/dominio/cliente';  // import lateral
+// modules/catalogo/api/src/routes.ts
+import { buscarCliente } from '../../../financeiro/core/domain/cliente';  // import lateral
 import { Pool } from 'pg';                                                  // SDK do fornecedor dentro do módulo
 
 const pool = new Pool({ connectionString: process.env.DB_URL ?? 'postgres://localhost:5432/app' });
@@ -125,4 +125,4 @@ Rota: `POST /api/criarItem` → `{ "user_id": "...", "order_items": [...] }`
 
 **Consequência:** o módulo não pode ser extraído sem reescrever quem o consome — exatamente o que o padrão
 microservice-ready existe para evitar. **E nada disso depende de alguém lembrar:** cada linha da tabela tem
-um id de regra, e `validar.mjs` reprova com exit 1.
+um id de regra, e `validate.mjs` reprova com exit 1.

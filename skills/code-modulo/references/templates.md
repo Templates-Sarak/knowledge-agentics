@@ -103,7 +103,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
   "ports": ["repositorio", "auditoria", "relogio", "geradorId"],
 
   "consumes": [
-    { "modulo": "<outro>", "contrato": "GET /<recurso>", "porQue": "<motivo de negócio>" }
+    { "module": "<outro>", "contract": "GET /<recurso>", "why": "<motivo de negócio>" }
   ],
 
   "ui": { "modo": "proprio" },

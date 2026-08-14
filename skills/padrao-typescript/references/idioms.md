@@ -22,7 +22,7 @@ a detecta**. TS é superset; **JS = TS sem tipos**.
 - **Contrato camelCase nativo:** no front/Node o contrato de API já é camelCase — não há conversão de casing
   (diferente do backend Python, que converte na borda).
 - **Imports:** **nunca** importe código de outro módulo — nem o `api/` dele. Dado alheio vem por **HTTP**, num
-  gateway em `core/gateways/<provider>`, declarado em `modulo.json:consome`. A anatomia e a regra estão em
+  gateway em `core/gateways/<provider>`, declarado em `module.json:consumes`. A anatomia e a regra estão em
   `specs/arquitetura/01-modulo.md` §6 (na base, `specs/_estrutura_modulos/doutrina/01-modulo.md`).
 
 ---
