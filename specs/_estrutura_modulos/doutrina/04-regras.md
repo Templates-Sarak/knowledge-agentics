@@ -431,7 +431,7 @@ vitest); **contraexemplo deliberado** (proposta de regra recusada e discutida em
 campo/arquivo de um exemplo ilustrativo — módulo fictício `catalogo`, arquivo `engine.test.ts` — que a
 doutrina inventa pra explicar uma regra, nunca existiu de verdade). Por isso ela não confere prosa
 aberta: confere só o INVENTÁRIO FECHADO que o plan-3 Bloco AC declara em
-`tests/rename-inventory.json` — `--antes`/`--depois` provam que um rename não deixa nome antigo
+`tests/citation-terms.json` — `--antes`/`--depois` provam que um rename não deixa nome antigo
 pra trás nem cita nome novo que não existe, e nada além disso. Falso positivo sobre prosa legítima
 continuaria sendo a direção proibida se a ferramenta tentasse ir além do inventário.**
 
@@ -449,7 +449,7 @@ primeiro grupo reprova. Medido: **271 dos 330** itens do inventário são distin
 **Corte 2 — por ARQUIVO, achado ao medir o corte 1 em cima de si mesmo.** `lerTexto`/
 `rodarAutoteste`/`envRequerido` dentro de `tools/`/`tests/` são distintivos por forma E não são
 resíduo nenhum — são símbolo da PRÓPRIA base, exatamente onde a decisão 4 da fronteira (ADR-009)
-manda ficar em português. `--depois-estrito` reusa `itemAplicaAoArquivo` (`apply-rename.mjs`, a
+manda ficar em português. `--depois-estrito` reusa `itemAplicaAoArquivo` (em `verify-citations.mjs`, a
 MESMA fronteira que a campanha de rename já usa pra decidir o que é renomeado): item tipo `simbolo`
 só conta dentro de `bindings/` + `doutrina/` + as docs vivas da raiz; `chave`/`pasta`/`arquivo`
 continuam sem filtro de caminho — só `simbolo` tem risco de colidir com o vocabulário da ferramenta.

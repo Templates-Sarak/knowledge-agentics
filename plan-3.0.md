@@ -141,7 +141,20 @@ Não é dívida da base: é dívida entregue ao usuário.
       fica** — é ponteiro vivo para a doutrina que viaja junto. O **bloco de plano sai**
 - [ ] **Não invente resumo.** Comentário que perder a citação e ficar sem sentido é comentário cujo
       conteúdo estava só na citação — nesse caso ele **sai inteiro**, não vira paráfrase vaga
+- [ ] ⚠️ **Primeiro item do bloco: a exceção da catraca passa a carregar a IMPRESSÃO DIGITAL do código
+      autorizado** *(defeito de desenho do revisor, medido na rodada BE)*. Hoje a autorização é **por
+      arquivo**: com `verify-citations.mjs` e `run-all-selftests.mjs` na catraca, **qualquer** mudança de
+      código neles passa em silêncio pelo resto da campanha — reproduzido, mutei a assinatura de
+      `itemAplicaAoArquivo` e o `no-comments-diff` saiu **0**. Cada entrada guarda o hash de
+      `textoDeCodigo` no momento da autorização: bate → autorizada; não bate com o hash **nem** com a
+      referência → **REPROVA** como mudança nova; voltou a bater com a referência → exceção morta,
+      reprova (já funciona)
 - [ ] `no-comments-diff` verde ao final deste bloco, contra a linha de base do BA
+- [ ] **`package.json` da raiz entra no escopo deste bloco** *(decisão do revisor, rodada BE)*. As chaves
+      `"//verificar:citacoes:*"` são comentário por convenção — JSON não tem comentário, e essas duas
+      moram **dentro de `scripts`**. Carregam arqueologia (*"Rodada AB / plan-3 Bloco AC"*, *"Inventario
+      comeca vazio, e --antes fica verde por vacuidade ate…"*) e o `no-comments-diff` **não as alcança**
+      (`.json` fica fora por desenho). Nenhum outro bloco as reivindicava
 - [ ] **A linha de base de citação do `plan-3.1` §AJ.0 é ENTRADA deste bloco.** `--depois-estrito`
       registra **200 achados em 50 arquivos** — nome antigo distintivo ainda citado. **48 deles morrem
       sozinhos** com a remoção do `apply-rename.mjs` (Bloco BE), então a superfície real aqui e no BC é
@@ -191,24 +204,24 @@ depois: 'tipo de retorno inline não desvia o extrator'
 - [ ] **O `contem:` e a asserção não mudam** — só o rótulo. Se algum caso perder a identidade ao perder
       o prefixo (dois casos com o mesmo nome), o nome estava carregando informação: reescreva o nome,
       não o caso
-- [ ] Autoteste do gate continua **122/122 · 122/122 · 119/119**, com os mesmos ids
+- [ ] Autoteste do gate continua **126/126 · 126/126 · 122/122**, com os mesmos ids
 
 ---
 
-## Bloco BE — o resíduo de campanha
+## Bloco BE — o resíduo de campanha ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > Campanha encerrada (`plan-3.md`, Bloco AD fechado). O que ela deixou em `tests/` são **artefatos de
 > processo**, não do template.
 
-- [ ] **Remover** `tests/apply-rename.mjs` (142 KB), `tests/rename-inventory.json` (47 KB) e
+- [x] **Remover** `tests/apply-rename.mjs` (142 KB), `tests/rename-inventory.json` (47 KB) e
       `tests/rename-refusals.json` (1,16 MB). O git guarda o histórico, e é onde esse tipo de coisa deve
       ficar
-- [ ] **Fica o que tem uso corrente:** `template-self-test.mjs` (Bloco K), `verify-map.mjs`,
+- [x] **Fica o que tem uso corrente:** `template-self-test.mjs` (Bloco K), `verify-map.mjs`,
       `verify-citations.mjs`
-- [ ] ⚠️ **`verify-citations.mjs` consome o inventário.** Ou ele perde essa dependência e passa a
+- [x] ⚠️ **`verify-citations.mjs` consome o inventário.** Ou ele perde essa dependência e passa a
       verificar só o que resolve hoje, ou sai junto. **Decidir e registrar** — não deixar um verificador
       apontando para um arquivo removido, que é o defeito que este template inteiro existe para não ter
-- [ ] Conferir que nada em `tools/`, `package.json` ou hook chama o que foi removido
+- [x] Conferir que nada em `tools/`, `package.json` ou hook chama o que foi removido
 
 ---
 
@@ -239,6 +252,32 @@ depois: 'tipo de retorno inline não desvia o extrator'
       cobre o caminho corrigido; se não cobrir, o conserto é cego e precisa de caso
 - [ ] **`--depois-estrito` sem nenhuma entrada de `skills/`** ao final — as 21 drenadas, e a linha de
       base regravada com o número novo declarado
+
+---
+
+## Bloco BH — `tests/`, a máquina que construiu a campanha *(escopo que faltava, achado na rodada BE)*
+
+> **Nenhum bloco reivindicava a prosa de `tests/`** — o executor levantou isso e estava certo. BB é
+> `tools/` + `bindings/`, BC é `doutrina/`, BD é `cases.mjs`, BF é `skills/`. `tests/` ficou de fora, e é
+> onde a arqueologia é mais densa: **88 marcas** (*"Bloco X"*, `plan-*.md`, *"Rodada N"*) contra 182 em
+> `tools/` + `bindings/` — **um terço da superfície inteira**, invisível no plano até agora.
+>
+> **Por que importa mesmo não viajando.** `tests/` não é copiado para o projeto gerado (medido:
+> `create-project.mjs` não o cita). Mas é o que o **mantenedor** do template lê, e a regra deste plano
+> não faz distinção de público: *legível por quem nunca viu este repositório*.
+
+- [ ] As **88 marcas** em `tests/*.mjs`, pela regra do plano — `template-self-test.mjs` 40 ·
+      `verify-citations.mjs` 27 · `no-comments-diff.mjs` 13 · `run-all-selftests.mjs` 5 · `verify-map.mjs` 3
+- [ ] ⚠️ **A comparação com precedente apagado morre junto.** Sobraram 9 menções do tipo *"mesma
+      disciplina de `rename-refusals.json` (Bloco AI, `apply-rename.mjs`)"* — não são ponteiro quebrado
+      (não afirmam onde algo mora hoje), mas comparam o desenho a um arquivo que **o Bloco BE apagou**.
+      Para quem nunca viu o repositório, é referência a nada. **O que a frase ensina fica; o precedente
+      sai** — *"começa vazia e cresce só por decisão explícita"* é a carga, *"igual ao `rename-refusals`"*
+      não é
+- [ ] **O instrumento deste plano é o caso mais irônico e não escapa:** `no-comments-diff.mjs` nasceu
+      nesta campanha e já carrega 13 marcas de *"Bloco BA"*. Ele se limpa como qualquer outro
+- [ ] `no-comments-diff` verde ao final do bloco — com `verify-citations.mjs` e `run-all-selftests.mjs`
+      cobertos pela impressão digital do Bloco BB, **não** pela autorização em branco de hoje
 
 ---
 

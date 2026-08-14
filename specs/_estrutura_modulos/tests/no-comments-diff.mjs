@@ -41,10 +41,10 @@
  * código, e a regra que rege a edição delas é a regra do plano (legível, sem citação de rodada), não
  * esta. `.json` também fica fora: não tem sintaxe de comentário nesta base.
  *
- * ARQUIVO REMOVIDO NÃO REPROVA: o Bloco BE remove `apply-rename.mjs`/`rename-inventory.json`/
- * `rename-refusals.json` por decisão — este arquivo só compara o que existe nos DOIS lados (item 1,
- * "para todo arquivo de código dos dois lados"). Remoção e adição aparecem como informativo, nunca
- * como falha.
+ * ARQUIVO REMOVIDO NÃO REPROVA: o Bloco BE remove `apply-rename.mjs` e `rename-refusals.json`, e
+ * substitui o antigo inventário de renomes por `citation-terms.json` — este arquivo só compara o
+ * que existe nos DOIS lados (item 1, "para todo arquivo de código dos dois lados"). Remoção e
+ * adição aparecem como informativo, nunca como falha.
  *
  * NÚCLEO × CASCA, precedente de `verify-map.mjs`/`affected.mjs`: `linhasDeCodigo`, `textoDeCodigo`,
  * `primeiraDivergencia`, `compararArquivo`, `compararArvore` e `reconciliarExcecoes` são puras —
@@ -180,6 +180,7 @@ export function linhasDeCodigo(conteudo, caminho) {
   let emBloco = false;
   let cerca = null;
   let linhaDeAbertura = null;
+  let linhaDeAberturaBloco = null;
 
   conteudo.split(/\r?\n/).forEach((texto, indice) => {
     const limpa = texto.trim();
@@ -192,11 +193,11 @@ export function linhasDeCodigo(conteudo, caminho) {
       if (resultado.tocouCerca) return;
     }
     if (emBloco) {
-      if (limpa.includes('*/')) emBloco = false;
+      if (limpa.includes('*/')) { emBloco = false; linhaDeAberturaBloco = null; }
       return;
     }
     if (limpa.startsWith('/*')) {
-      if (!limpa.includes('*/')) emBloco = true;
+      if (!limpa.includes('*/')) { emBloco = true; linhaDeAberturaBloco = indice + 1; }
       return;
     }
     if (estilo.linha.some((prefixo) => limpa.startsWith(prefixo))) return;
@@ -204,7 +205,13 @@ export function linhasDeCodigo(conteudo, caminho) {
     linhas.push({ numero: indice + 1, texto });
   });
 
-  const cercaAberta = cerca === null ? null : { delimitador: cerca, linha: linhaDeAbertura };
+  // Mesma guarda dos dois lados: docstring Python tem `cerca`; bloco `/* */` da família JS tem
+  // `emBloco`. Um arquivo termina com QUALQUER UM aberto é o mesmo problema — "cerca de texto que
+  // nunca fecha" —, e a revisão D1 já provou que "extração que se perde e segue calada" é falso
+  // verde. `emBloco` nunca fica `true` ao mesmo tempo que `cerca !== null` (um estilo só liga um dos
+  // dois — `docstringPython` XOR `blocoAsterisco`/`/* */`), então as duas checagens não colidem.
+  const cercaAberta = cerca !== null ? { delimitador: cerca, linha: linhaDeAbertura }
+    : (emBloco ? { delimitador: '/*', linha: linhaDeAberturaBloco } : null);
   return { linhas, cercaAberta };
 }
 
@@ -237,9 +244,11 @@ export function primeiraDivergencia(linhasAntes, linhasDepois) {
 /**
  * O veredito de UM arquivo. Três formas:
  *   `{ ok: true, caminho }`                                            código idêntico
- *   `{ ok: false, tipo: 'cerca-aberta', caminho, linha, motivo }`      cerca de docstring nunca fecha
- *                                                                       de um dos dois lados — nunca
- *                                                                       passa pela catraca (não é uma
+ *   `{ ok: false, tipo: 'cerca-aberta', caminho, linha, motivo }`      cerca de comentário — docstring
+ *                                                                       Python OU bloco `/* *\/` da
+ *                                                                       família JS — nunca fecha de um
+ *                                                                       dos dois lados. Nunca passa
+ *                                                                       pela catraca (não é uma
  *                                                                       mudança de código para
  *                                                                       autorizar, é problema)
  *   `{ ok: false, tipo: 'codigo-mudou', caminho, linha, antes, depois }` a primeira linha divergente —
@@ -390,7 +399,7 @@ function commitDeReferencia() {
 }
 
 /** Lê `no-comments-exceptions.json` — ausente é lista vazia (mesma disciplina de
- * `config/conformidade.json`/`rename-inventory.json`: começar vazio é o estado correto). */
+ * `config/conformidade.json`: começar vazio é o estado correto). */
 function lerExcecoes() {
   if (!existsSync(CAMINHO_EXCECOES)) return [];
   const bruto = JSON.parse(readFileSync(CAMINHO_EXCECOES, 'utf8').replace(/^\uFEFF/, ''));
@@ -466,8 +475,8 @@ function rodarComparacao() {
     for (const a of autorizadas) process.stdout.write(formatarDivergencia(a));
   }
   if (cercaQuebrada.length > 0) {
-    process.stdout.write(`\n=== CERCA DE DOCSTRING NUNCA FECHA (${cercaQuebrada.length}) — nunca passa `
-      + 'pela catraca ===\n');
+    process.stdout.write(`\n=== CERCA DE COMENTÁRIO NUNCA FECHA (${cercaQuebrada.length}) — docstring `
+      + "Python ou bloco /* */, nunca passa pela catraca ===\n");
     for (const d of cercaQuebrada) process.stdout.write(formatarDivergencia(d));
   }
   if (semExcecao.length > 0) {
@@ -579,6 +588,24 @@ function casosDeAutoteste() {
       const r = linhasDeCodigo(py, 'x.py');
       return r.cercaAberta === null && textoDeCodigo(r.linhas).includes('CODIGO_REAL = 3')
         && textoDeCodigo(r.linhas).includes('def g():');
+    } },
+
+    // ============================================================================================
+    // CARRY-OVER do Bloco BA (fechado junto do BE) — a guarda de cerca aberta era ASSIMÉTRICA:
+    // cobria a docstring Python e não o bloco `/* */` da família JS. Fixture exigido pelo revisor.
+    // ============================================================================================
+    { nome: 'CARRY-OVER: bloco /* */ aberto ate o EOF (familia JS) tambem reporta cercaAberta, simetrico a docstring', fn: () => {
+      const r = linhasDeCodigo('const a=1;\n/* nunca fecha\nconst b=2;', 'x.mjs');
+      return r.cercaAberta !== null && r.cercaAberta.delimitador === '/*' && r.cercaAberta.linha === 2
+        && textoDeCodigo(r.linhas) === 'const a=1;';
+    } },
+    { nome: 'CARRY-OVER: compararArquivo REPROVA o bloco /* */ aberto, tipo cerca-aberta, nomeando a linha que abriu', fn: () => {
+      const r = compararArquivo('x.mjs', 'const a=1;', 'const a=1;\n/* nunca fecha\nconst b=2;');
+      return r.ok === false && r.tipo === 'cerca-aberta' && r.linha === 2;
+    } },
+    { nome: 'CARRY-OVER: bloco /* */ que FECHA normalmente nao deixa cercaAberta (nao regrediu o caso comum)', fn: () => {
+      const r = linhasDeCodigo('const a=1;\n/* fecha\n   normal */\nconst b=2;', 'x.mjs');
+      return r.cercaAberta === null && textoDeCodigo(r.linhas) === 'const a=1;\nconst b=2;';
     } },
 
     // compararArquivo — o caso central: so comentario mudou

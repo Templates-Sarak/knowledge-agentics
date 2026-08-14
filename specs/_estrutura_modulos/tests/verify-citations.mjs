@@ -18,7 +18,7 @@
  *                                                    aceita os achados atuais como linha de base nova
  *   node tests/verify-citations.mjs --autoteste   prova o núcleo com fixtures em memória
  *
- * INVENTÁRIO COMO ENTRADA (`rename-inventory.json`, mesma pasta): a lista FECHADA de nomes que a
+ * INVENTÁRIO COMO ENTRADA (`citation-terms.json`, mesma pasta): a lista FECHADA de nomes que a
  * campanha renomeia — pasta, arquivo de ferramenta, chave de manifesto/env, símbolo do esqueleto. Só é
  * candidato o que está nela; tudo o mais é FORA DE ESCOPO por construção, não exceção nem isenção —
  * simplesmente não é uma citação SOBRE ESTE TEMPLATE tratada por esta ferramenta. Falso positivo passa
@@ -62,16 +62,14 @@
  * escrever nada.
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-import { itemAplicaAoArquivo } from './apply-rename.mjs';
 
 const AQUI = fileURLToPath(new URL('.', import.meta.url));
 const RAIZ_TEMPLATE = resolve(AQUI, '..');
 const RAIZ_BASE = resolve(RAIZ_TEMPLATE, '..', '..');
 const BINDINGS = ['typescript', 'javascript', 'python'];
-const CAMINHO_INVENTARIO = join(AQUI, 'rename-inventory.json');
+const CAMINHO_INVENTARIO = join(AQUI, 'citation-terms.json');
 const CAMINHO_LINHA_BASE = join(AQUI, 'citation-baseline.json');
 
 // ================================================================================================
@@ -143,12 +141,29 @@ export function distintivo(nome) {
  * SEGUNDO corte, achado ao medir o primeiro em cima de si mesmo: `distintivo` sozinho ainda conta
  * `lerTexto`/`rodarAutoteste`/`envRequerido` DENTRO de `tools/`/`tests/` — símbolo que está exatamente
  * onde a decisão 4 da fronteira (ADR-009) manda ficar em português, não resíduo nenhum. `--depois-
- * estrito` reusa `itemAplicaAoArquivo` (`apply-rename.mjs`): item tipo `simbolo` só conta dentro de
+ * estrito` reusa `itemAplicaAoArquivo` (definida neste mesmo arquivo): item tipo `simbolo` só conta dentro de
  * `bindings/` + `doutrina/` + as docs vivas da raiz — a MESMA fronteira que a campanha de rename já
  * usa pra decidir o que é RENOMEADO. Medido contra a linha de base do Bloco AJ: **177 das 317
  * entradas saem — 56%.** `chave`/`pasta`/`arquivo` continuam sem filtro de caminho (mesma regra de
  * `itemAplicaAoArquivo`): só `simbolo` tem risco de colisão com o vocabulário PRÓPRIO da ferramenta.
  */
+/** As docs vivas da raiz da base — fora de `bindings/`/`doutrina/`, mas ainda escopo válido pra um
+ * item tipo `simbolo` (a doutrina do template referenciada de fora dela). */
+const ARQUIVOS_DE_DOC_VIVA_NA_RAIZ = ['funcionamento-esperado.md'];
+
+/** Um item tipo `simbolo` só conta dentro de `bindings/` + `doutrina/` + as docs vivas da raiz —
+ * nome de função da própria base (`tools/`, `tests/`) não é risco de colisão com vocabulário
+ * renomeado, é só a base citando a si mesma. `chave`, `pasta` e `arquivo` não têm essa restrição:
+ * aplicam em qualquer caminho. PURA apesar de usar `path.join`/`sep`: matemática de string sobre
+ * caminhos já resolvidos (`RAIZ_TEMPLATE`/`RAIZ_BASE`), nunca toca `fs`. */
+export function itemAplicaAoArquivo(item, caminho) {
+  if (item.tipo !== 'simbolo') return true;
+  const raizBindings = join(RAIZ_TEMPLATE, 'bindings') + sep;
+  const raizDoutrina = join(RAIZ_TEMPLATE, 'doutrina') + sep;
+  const docsVivasNaRaiz = new Set(ARQUIVOS_DE_DOC_VIVA_NA_RAIZ.map((nome) => join(RAIZ_BASE, nome)));
+  return caminho.startsWith(raizBindings) || caminho.startsWith(raizDoutrina) || docsVivasNaRaiz.has(caminho);
+}
+
 function dentroDoEscopoDeItem(item, arquivoRelativo) {
   if (arquivoRelativo === undefined) return true;
   const caminhoAbsoluto = join(RAIZ_BASE, ...arquivoRelativo.split('/'));
@@ -507,7 +522,7 @@ function resolveNome(tipo, nome, contexto) {
   return false;
 }
 
-/** Lê `rename-inventory.json` — mesma disciplina de `config/conformidade.json`: começa vazio, e
+/** Lê `citation-terms.json` — mesma disciplina de `config/conformidade.json`: começa vazio, e
  * esse é o estado correto. Conteúdo real é definido pelo plan-3 Bloco AC, não por esta ferramenta. */
 function lerInventario() {
   const bruto = JSON.parse(lerTexto(CAMINHO_INVENTARIO));
@@ -528,7 +543,7 @@ function gravarLinhaBase(atuais) {
   const achados = [...atuais].sort((a, b) => chaveDoAchado(a).localeCompare(chaveDoAchado(b)));
   const conteudo = {
     _comentario: 'Lista VERSIONADA dos achados de --depois-estrito ja revisados e aceitos — mesma '
-      + 'disciplina de rename-refusals.json (Bloco AI, apply-rename.mjs): comeca vazia, cresce so por '
+      + 'disciplina de artefato versionado por decisao: comeca vazia, cresce so por '
       + 'decisao explicita (--gravar-linha-base), nunca por heuristica. --depois-estrito compara os '
       + 'achados ATUAIS contra esta lista: achado NOVO (arquivo+linha+nome ausente daqui) reprova e '
       + 'exige revisao humana — e ou (a) prosa legitima nunca vista nesta forma, ou (b) residuo real '
@@ -743,7 +758,7 @@ function rodar(modo) {
   const inventario = lerInventario();
   if (inventario.itens.length === 0) {
     process.stdout.write(
-      'rename-inventory.json vazio — nada a conferir. Estado correto antes do plan-3 Bloco AC\n'
+      'citation-terms.json vazio — nada a conferir. Estado correto antes do plan-3 Bloco AC\n'
       + 'popular a lista fechada de renomes.\n',
     );
     return 0;
@@ -785,7 +800,7 @@ function rodarDepoisEstrito(gravar) {
   const inventario = lerInventario();
   if (inventario.itens.length === 0) {
     process.stdout.write(
-      'rename-inventory.json vazio — nada a conferir. Estado correto antes do plan-3 Bloco AC\n'
+      'citation-terms.json vazio — nada a conferir. Estado correto antes do plan-3 Bloco AC\n'
       + 'popular a lista fechada de renomes.\n',
     );
     return 0;

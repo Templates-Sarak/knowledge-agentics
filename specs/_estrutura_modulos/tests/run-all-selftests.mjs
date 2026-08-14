@@ -121,7 +121,6 @@ const REGISTRO = [
   { caminho: 'specs/_estrutura_modulos/tools/contract-compatible.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/package.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/verify-commit.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/apply-rename.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/no-comments-diff.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/verify-citations.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/verify-map.mjs', runtime: 'node' },

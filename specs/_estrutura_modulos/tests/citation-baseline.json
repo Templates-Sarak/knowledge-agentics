@@ -1,5 +1,5 @@
 {
-  "_comentario": "Lista VERSIONADA dos achados de --depois-estrito ja revisados e aceitos — mesma disciplina de rename-refusals.json (Bloco AI, apply-rename.mjs): comeca vazia, cresce so por decisao explicita (--gravar-linha-base), nunca por heuristica. --depois-estrito compara os achados ATUAIS contra esta lista: achado NOVO (arquivo+linha+nome ausente daqui) reprova e exige revisao humana — e ou (a) prosa legitima nunca vista nesta forma, ou (b) residuo real (plan-3.1.md Bloco AJ). So a linha de base comeca populada com os 305 medidos ao criar este modo: e o estado JA CONHECIDO, nao o alvo — verde contra a linha de base no dia 1, nunca vermelho parado (o problema que o --depois cru, com 4508 achados nunca revisados, tem).",
+  "_comentario": "Lista VERSIONADA dos achados de --depois-estrito ja revisados e aceitos — mesma disciplina de artefato versionado por decisao: comeca vazia, cresce so por decisao explicita (--gravar-linha-base), nunca por heuristica. --depois-estrito compara os achados ATUAIS contra esta lista: achado NOVO (arquivo+linha+nome ausente daqui) reprova e exige revisao humana — e ou (a) prosa legitima nunca vista nesta forma, ou (b) residuo real (plan-3.1.md Bloco AJ). So a linha de base comeca populada com os 305 medidos ao criar este modo: e o estado JA CONHECIDO, nao o alvo — verde contra a linha de base no dia 1, nunca vermelho parado (o problema que o --depois cru, com 4508 achados nunca revisados, tem).",
   "_exemplo": {
     "arquivo": "skills/exemplo/SKILL.md",
     "linha": 42,
@@ -19,8 +19,7 @@
       "item": {
         "antigo": "modulo.json",
         "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
+        "tipo": "arquivo"
       },
       "nome": "modulo.json",
       "motivo": "nome-antigo-ainda-presente"
@@ -31,8 +30,7 @@
       "item": {
         "antigo": "modulo.json",
         "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
+        "tipo": "arquivo"
       },
       "nome": "modulo.json",
       "motivo": "nome-antigo-ainda-presente"
@@ -43,8 +41,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -55,8 +52,7 @@
       "item": {
         "antigo": "porQue",
         "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "porQue",
       "motivo": "nome-antigo-ainda-presente"
@@ -67,8 +63,7 @@
       "item": {
         "antigo": "modulo.json",
         "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
+        "tipo": "arquivo"
       },
       "nome": "modulo.json",
       "motivo": "nome-antigo-ainda-presente"
@@ -79,8 +74,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -91,8 +85,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -103,8 +96,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -115,8 +107,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -127,8 +118,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -139,8 +129,7 @@
       "item": {
         "antigo": "criar-modulo.mjs",
         "novo": "create-module.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "criar-modulo.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -151,8 +140,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -163,8 +151,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -175,8 +162,7 @@
       "item": {
         "antigo": "modulo.json",
         "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
+        "tipo": "arquivo"
       },
       "nome": "modulo.json",
       "motivo": "nome-antigo-ainda-presente"
@@ -187,8 +173,7 @@
       "item": {
         "antigo": "modulo.json",
         "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
+        "tipo": "arquivo"
       },
       "nome": "modulo.json",
       "motivo": "nome-antigo-ainda-presente"
@@ -199,8 +184,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -211,8 +195,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -223,8 +206,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -235,8 +217,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -247,8 +228,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -259,8 +239,7 @@
       "item": {
         "antigo": "modulo.json",
         "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
+        "tipo": "arquivo"
       },
       "nome": "modulo.json",
       "motivo": "nome-antigo-ainda-presente"
@@ -271,8 +250,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -283,8 +261,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -295,8 +272,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -307,8 +283,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -319,8 +294,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -331,8 +305,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -343,8 +316,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -355,8 +327,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -367,8 +338,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -379,8 +349,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -391,8 +360,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -403,8 +371,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -415,8 +382,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -427,8 +393,7 @@
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotasPublicas",
       "motivo": "nome-antigo-ainda-presente"
@@ -439,8 +404,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -451,8 +415,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -463,8 +426,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -475,8 +437,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -487,8 +448,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -499,8 +459,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -511,8 +470,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -523,8 +481,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -535,8 +492,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -547,8 +503,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -559,8 +514,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -571,8 +525,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -583,8 +536,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -595,8 +547,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -607,8 +558,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -619,8 +569,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -631,8 +580,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -643,8 +591,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -655,8 +602,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -667,8 +613,7 @@
       "item": {
         "antigo": "obter_aliquota_vigente_pct",
         "novo": "get_current_rate_pct",
-        "tipo": "simbolo",
-        "fase": "AD.2"
+        "tipo": "simbolo"
       },
       "nome": "obter_aliquota_vigente_pct",
       "motivo": "nome-antigo-ainda-presente"
@@ -679,8 +624,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -691,8 +635,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -703,8 +646,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -715,8 +657,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -727,8 +668,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -739,8 +679,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -751,8 +690,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -763,8 +701,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -775,8 +712,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -787,8 +723,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -799,8 +734,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -811,8 +745,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -823,8 +756,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -835,8 +767,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -847,8 +778,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -859,8 +789,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -871,8 +800,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -883,8 +811,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -895,8 +822,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -907,8 +833,7 @@
       "item": {
         "antigo": "camposSensiveis",
         "novo": "sensitiveFields",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "camposSensiveis",
       "motivo": "nome-antigo-ainda-presente"
@@ -919,8 +844,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -931,8 +855,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -943,8 +866,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -955,8 +877,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -967,8 +888,7 @@
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotasPublicas",
       "motivo": "nome-antigo-ainda-presente"
@@ -979,8 +899,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -991,8 +910,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -1003,8 +921,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -1015,8 +932,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -1027,8 +943,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -1039,8 +954,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -1051,8 +965,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -1063,8 +976,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -1075,8 +987,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -1087,8 +998,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -1099,8 +1009,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -1111,8 +1020,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -1123,8 +1031,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -1135,8 +1042,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -1147,8 +1053,7 @@
       "item": {
         "antigo": "porQue",
         "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "porQue",
       "motivo": "nome-antigo-ainda-presente"
@@ -1159,8 +1064,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -1171,8 +1075,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -1183,8 +1086,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -1195,8 +1097,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -1207,8 +1108,7 @@
       "item": {
         "antigo": "lerTexto",
         "novo": "readText",
-        "tipo": "simbolo",
-        "fase": "AD.2"
+        "tipo": "simbolo"
       },
       "nome": "lerTexto",
       "motivo": "nome-antigo-ainda-presente"
@@ -1219,8 +1119,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -1231,8 +1130,7 @@
       "item": {
         "antigo": "rodarAutoteste",
         "novo": "runSelftest",
-        "tipo": "simbolo",
-        "fase": "AD.2"
+        "tipo": "simbolo"
       },
       "nome": "rodarAutoteste",
       "motivo": "nome-antigo-ainda-presente"
@@ -1243,8 +1141,7 @@
       "item": {
         "antigo": "paraContrato",
         "novo": "toContract",
-        "tipo": "simbolo",
-        "fase": "AD.2"
+        "tipo": "simbolo"
       },
       "nome": "paraContrato",
       "motivo": "nome-antigo-ainda-presente"
@@ -1255,8 +1152,7 @@
       "item": {
         "antigo": "resolverDependencias",
         "novo": "resolveDependencies",
-        "tipo": "simbolo",
-        "fase": "AD.2"
+        "tipo": "simbolo"
       },
       "nome": "resolverDependencias",
       "motivo": "nome-antigo-ainda-presente"
@@ -1267,8 +1163,7 @@
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaWeb",
       "motivo": "nome-antigo-ainda-presente"
@@ -1279,8 +1174,7 @@
       "item": {
         "antigo": "executar.mjs",
         "novo": "run.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "executar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1291,8 +1185,7 @@
       "item": {
         "antigo": "casos.mjs",
         "novo": "cases.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "casos.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1303,8 +1196,7 @@
       "item": {
         "antigo": "criar-projeto.mjs",
         "novo": "create-project.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "criar-projeto.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1315,8 +1207,7 @@
       "item": {
         "antigo": "criar-modulo.mjs",
         "novo": "create-module.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "criar-modulo.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1327,8 +1218,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1339,8 +1229,7 @@
       "item": {
         "antigo": "portas.json",
         "novo": "ports.json",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "portas.json",
       "motivo": "nome-antigo-ainda-presente"
@@ -1351,8 +1240,7 @@
       "item": {
         "antigo": "criar-projeto.mjs",
         "novo": "create-project.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "criar-projeto.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1363,8 +1251,7 @@
       "item": {
         "antigo": "criar-modulo.mjs",
         "novo": "create-module.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "criar-modulo.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1375,8 +1262,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1387,8 +1273,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1399,8 +1284,7 @@
       "item": {
         "antigo": "validar.mjs",
         "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "validar.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -1411,645 +1295,62 @@
       "item": {
         "antigo": "sincronizar-env.mjs",
         "novo": "sync-env.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "sincronizar-env.mjs",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 109,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1266,
-      "item": {
-        "antigo": "empacotar.mjs",
-        "novo": "package.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "empacotar.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1379,
-      "item": {
-        "antigo": "porQue",
-        "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1380,
-      "item": {
-        "antigo": "porQue",
-        "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1430,
-      "item": {
-        "antigo": "contrato.mjs",
-        "novo": "contract.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "contrato.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1431,
-      "item": {
-        "antigo": "contrato.mjs",
-        "novo": "contract.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "contrato.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1432,
-      "item": {
-        "antigo": "contrato.mjs",
-        "novo": "contract.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "contrato.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1485,
-      "item": {
-        "antigo": "limiares.mjs",
-        "novo": "thresholds.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "limiares.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1490,
-      "item": {
-        "antigo": "sincronizar-env.mjs",
-        "novo": "sync-env.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "sincronizar-env.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1495,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1500,
-      "item": {
-        "antigo": "validar.mjs",
-        "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "validar.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1501,
-      "item": {
-        "antigo": "validar.mjs",
-        "novo": "validate.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "validar.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1516,
-      "item": {
-        "antigo": "verificar-commit.mjs",
-        "novo": "verify-commit.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "verificar-commit.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1592,
-      "item": {
-        "antigo": "porQue",
-        "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1688,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1768,
-      "item": {
-        "antigo": "porQue",
-        "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1769,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1779,
-      "item": {
-        "antigo": "porQue",
-        "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1787,
-      "item": {
-        "antigo": "porQue",
-        "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1788,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1797,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1801,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1808,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1809,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1819,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1824,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1873,
-      "item": {
-        "antigo": "rotaBase",
-        "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "rotaBase",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1880,
-      "item": {
-        "antigo": "rotaBase",
-        "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "rotaBase",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1886,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 1955,
-      "item": {
-        "antigo": "porQue",
-        "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 267,
-      "item": {
-        "antigo": "dominio.json",
-        "novo": "domain.json",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "dominio.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 305,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 315,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 414,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 424,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 425,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 431,
-      "item": {
-        "antigo": "porQue",
-        "novo": "why",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "porQue",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 443,
-      "item": {
-        "antigo": "rotaBase",
-        "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
-      },
-      "nome": "rotaBase",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 50,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 546,
-      "item": {
-        "antigo": "empacotar.mjs",
-        "novo": "package.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "empacotar.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 55,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 67,
-      "item": {
-        "antigo": "dominio.json",
-        "novo": "domain.json",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "dominio.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 784,
-      "item": {
-        "antigo": "verificar-commit.mjs",
-        "novo": "verify-commit.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
-      },
-      "nome": "verificar-commit.mjs",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 817,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 821,
-      "item": {
-        "antigo": "modulo.json",
-        "novo": "module.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 822,
-      "item": {
-        "antigo": "projeto.json",
-        "novo": "project.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "projeto.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 828,
-      "item": {
-        "antigo": "modulo.schema.json",
-        "novo": "module.schema.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "modulo.schema.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/apply-rename.mjs",
-      "linha": 828,
-      "item": {
-        "antigo": "projeto.schema.json",
-        "novo": "project.schema.json",
-        "tipo": "arquivo",
-        "fase": "AD.3"
-      },
-      "nome": "projeto.schema.json",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 144,
+      "linha": 142,
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 539,
+      "linha": 554,
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 540,
+      "linha": 555,
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 628,
+      "linha": 643,
       "item": {
         "antigo": "mapeadores.py",
         "novo": "mappers.py",
-        "tipo": "arquivo",
-        "fase": "AD.1",
-        "_nota": "so python: js/ts tem pasta api/src/mapeadores/ (tipo pasta, ja coberta acima); python e um unico arquivo flat."
+        "tipo": "arquivo"
       },
       "nome": "mapeadores.py",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 629,
+      "linha": 644,
       "item": {
         "antigo": "criar-modulo.mjs",
         "novo": "create-module.mjs",
-        "tipo": "arquivo",
-        "fase": "AD.1"
+        "tipo": "arquivo"
       },
       "nome": "criar-modulo.mjs",
       "motivo": "nome-antigo-ainda-presente"
@@ -2060,8 +1361,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -2072,8 +1372,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -2084,8 +1383,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -2096,8 +1394,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -2108,8 +1405,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -2120,8 +1416,7 @@
       "item": {
         "antigo": "exportaResumo",
         "novo": "exportsSummary",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "exportaResumo",
       "motivo": "nome-antigo-ainda-presente"
@@ -2132,8 +1427,7 @@
       "item": {
         "antigo": "exportaResumo",
         "novo": "exportsSummary",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "exportaResumo",
       "motivo": "nome-antigo-ainda-presente"
@@ -2144,8 +1438,7 @@
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotasPublicas",
       "motivo": "nome-antigo-ainda-presente"
@@ -2156,8 +1449,7 @@
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotasPublicas",
       "motivo": "nome-antigo-ainda-presente"
@@ -2168,8 +1460,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -2180,8 +1471,7 @@
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaWeb",
       "motivo": "nome-antigo-ainda-presente"
@@ -2192,8 +1482,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -2204,8 +1493,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -2216,8 +1504,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -2228,8 +1515,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -2240,8 +1526,7 @@
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaWeb",
       "motivo": "nome-antigo-ainda-presente"
@@ -2252,8 +1537,7 @@
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaWeb",
       "motivo": "nome-antigo-ainda-presente"
@@ -2264,8 +1548,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -2276,8 +1559,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -2288,8 +1570,7 @@
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotasPublicas",
       "motivo": "nome-antigo-ainda-presente"
@@ -2300,8 +1581,7 @@
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotasPublicas",
       "motivo": "nome-antigo-ainda-presente"
@@ -2312,8 +1592,7 @@
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaWeb",
       "motivo": "nome-antigo-ainda-presente"
@@ -2324,8 +1603,7 @@
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaWeb",
       "motivo": "nome-antigo-ainda-presente"
@@ -2336,8 +1614,7 @@
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaWeb",
       "motivo": "nome-antigo-ainda-presente"
@@ -2348,8 +1625,7 @@
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaWeb",
       "motivo": "nome-antigo-ainda-presente"
@@ -2360,8 +1636,7 @@
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "rotaBase",
       "motivo": "nome-antigo-ainda-presente"
@@ -2372,8 +1647,7 @@
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
@@ -2384,8 +1658,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -2396,8 +1669,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"
@@ -2408,8 +1680,7 @@
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
-        "tipo": "chave",
-        "fase": "AD.3"
+        "tipo": "chave"
       },
       "nome": "envRequerido",
       "motivo": "nome-antigo-ainda-presente"

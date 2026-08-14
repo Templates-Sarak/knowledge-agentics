@@ -8,7 +8,7 @@
     "autoteste:template": "node specs/_estrutura_modulos/tests/template-self-test.mjs",
     "//autoteste:template:rapido": "So os bindings Node (typescript, javascript) — cabe em pre-commit. O python roda so na agenda (workflow), nunca aqui.",
     "autoteste:template:rapido": "node specs/_estrutura_modulos/tests/template-self-test.mjs --rapido",
-    "//verificar:citacoes:antes": "Rodada AB / plan-3 Bloco AC: roda ANTES do rename da campanha de idioma — todo nome ANTIGO do inventario fechado (tests/rename-inventory.json) e citado no corpus da base e a citacao resolve (sanidade: o alvo do rename e real). NAO e gate continuo — nao ha pre-commit rastreado na base (so o local, fora do repo) nem workflow por commit; roda manual, uma vez por lado do rename. Inventario comeca vazio, e --antes fica verde por vacuidade ate o plan-3 Bloco AC popular a lista.",
+    "//verificar:citacoes:antes": "Rodada AB / plan-3 Bloco AC: roda ANTES do rename da campanha de idioma — todo nome ANTIGO do inventario fechado (tests/citation-terms.json) e citado no corpus da base e a citacao resolve (sanidade: o alvo do rename e real). NAO e gate continuo — nao ha pre-commit rastreado na base (so o local, fora do repo) nem workflow por commit; roda manual, uma vez por lado do rename. Inventario comeca vazio, e --antes fica verde por vacuidade ate o plan-3 Bloco AC popular a lista.",
     "verificar:citacoes:antes": "node specs/_estrutura_modulos/tests/verify-citations.mjs --antes",
     "//verificar:citacoes:depois": "Par do --antes acima — roda DEPOIS do rename: zero ocorrencia de nome antigo em qualquer arquivo do corpus, e todo nome novo citado resolve.",
     "verificar:citacoes:depois": "node specs/_estrutura_modulos/tests/verify-citations.mjs --depois",

@@ -5,6 +5,16 @@
       "arquivo": "specs/_estrutura_modulos/tests/run-all-selftests.mjs",
       "bloco": "BA",
       "oQueMudou": "acrescenta specs/_estrutura_modulos/tests/no-comments-diff.mjs ao REGISTRO — o proprio Bloco BA precisa disso para o novo --autoteste nao virar orfao (Bloco AJ.1b)"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/tests/run-all-selftests.mjs",
+      "bloco": "BE",
+      "oQueMudou": "remove apply-rename.mjs do REGISTRO — o arquivo foi excluido (residuo de campanha encerrada); autoteste:tudo cai de 14/14 para 13/13"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
+      "bloco": "BE",
+      "oQueMudou": "apply-rename.mjs foi removido (residuo de campanha encerrada): itemAplicaAoArquivo deixa de ser importado de la e passa a viver aqui, e CAMINHO_INVENTARIO aponta para citation-terms.json (dado proprio desta ferramenta, so antigo/novo/tipo por item) em vez de rename-inventory.json"
     }
   ]
 }
