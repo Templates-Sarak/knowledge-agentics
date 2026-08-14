@@ -188,7 +188,7 @@ Não é dívida da base: é dívida entregue ao usuário.
 
 ---
 
-## Bloco BD — os nomes de caso, que são saída de ferramenta
+## Bloco BD — os nomes de caso, que são saída de ferramenta ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > **27 casos de `cases.mjs` se chamam pela rodada que os produziu**, e esse nome é o que aparece na
 > saída do autoteste do gate — a primeira coisa que alguém lê quando o gate reprova.
@@ -200,11 +200,11 @@ depois: 'tipo de retorno inline não desvia o extrator'
         'core/domain/ vazio ou ausente'
 ```
 
-- [ ] Os **27 nomes** passam a dizer **o que o caso prova**, não de onde veio
-- [ ] **O `contem:` e a asserção não mudam** — só o rótulo. Se algum caso perder a identidade ao perder
+- [x] Os **27 nomes** passam a dizer **o que o caso prova**, não de onde veio
+- [x] **O `contem:` e a asserção não mudam** — só o rótulo. Se algum caso perder a identidade ao perder
       o prefixo (dois casos com o mesmo nome), o nome estava carregando informação: reescreva o nome,
       não o caso
-- [ ] Autoteste do gate continua **126/126 · 126/126 · 122/122**, com os mesmos ids
+- [x] Autoteste do gate continua **126/126 · 126/126 · 122/122**, com os mesmos ids
 
 ---
 

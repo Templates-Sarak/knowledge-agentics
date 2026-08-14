@@ -1412,7 +1412,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 703,
+      "linha": 704,
       "item": {
         "antigo": "exportaResumo",
         "novo": "exportsSummary",
@@ -1423,7 +1423,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 706,
+      "linha": 707,
       "item": {
         "antigo": "exportaResumo",
         "novo": "exportsSummary",

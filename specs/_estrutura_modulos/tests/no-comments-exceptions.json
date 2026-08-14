@@ -12,6 +12,12 @@
       "bloco": "BE",
       "oQueMudou": "apply-rename.mjs foi removido (residuo de campanha encerrada): itemAplicaAoArquivo deixa de ser importado de la e passa a viver aqui, e CAMINHO_INVENTARIO aponta para citation-terms.json (dado proprio desta ferramenta, so antigo/novo/tipo por item) em vez de rename-inventory.json",
       "hashCodigo": "1728b5b6638de394e784919232025fbf28487e771311b636d58b8c244b609af8"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
+      "bloco": "BD",
+      "oQueMudou": "os 27 valores de descricao: que se chamavam pela rodada que os produziu (\"Bloco M\", \"N.2 forma N\", \"N.2.1\"/\"N.2.2\", \"N.3\", \"plan-2.md N.1\") passam a dizer o que o caso prova, sem citar rodada nenhuma. contem: e a asercao de cada caso NAO mudam, so o rotulo. Zero colisao de nome medida programaticamente apos a troca (129 descricoes, 129 unicas)",
+      "hashCodigo": "95c26c7d16d3d6bebb31c8173e9eadbceb5fc26ce576ef632c46ae41af8ab265"
     }
   ]
 }

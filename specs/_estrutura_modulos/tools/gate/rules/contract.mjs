@@ -471,7 +471,8 @@ function achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis) {
  * arquivo de mapeador — nunca o conteúdo da projeção (`projecao-contrato`) nem o caixa
  * (`payload-camelcase`). Por isso não tem heurística: nome bate um dos dois moldes, ou reprova.
  *
- * Método de classe e propriedade de objeto (`chaveDeCache` nos casos N.2.1/N.2.2 de `cases.mjs`)
+ * Método de classe e propriedade de objeto (`chaveDeCache` — casos "metodo de classe que NAO
+ * publica" e "propriedade-arrow que NAO publica" de `cases.mjs`)
  * ficam FORA — não são "função exportada", é a classe/objeto que carrega o `export`. É o mesmo
  * limite, já declarado, do extrator de projeção (§7.2): esta regra fecha a lacuna do NOME solto,
  * não a da forma sintática.

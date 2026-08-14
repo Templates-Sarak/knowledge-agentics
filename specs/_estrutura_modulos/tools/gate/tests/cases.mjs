@@ -114,7 +114,7 @@ export const CASOS = [
   // --- estrutura obrigatoria da arvore do modulo -----------------------------------------------
   {
     regra: 'estrutura',
-    descricao: 'Bloco M — core/domain/ vazio ou ausente',
+    descricao: 'core/domain/ vazio ou ausente',
     // `contem`: a familia `estrutura` tem QUATRO casos vizinhos sob o mesmo id
     // ("core/domain/", "core/ports/", "README.md", arquivo do binding) — sem isto, um extrator que
     // confunda pasta com pasta (ex.: acuse so "core/ports/" quando quem sumiu foi
@@ -124,7 +124,7 @@ export const CASOS = [
   },
   {
     regra: 'estrutura',
-    descricao: 'Bloco M — core/ports/ vazio ou ausente',
+    descricao: 'core/ports/ vazio ou ausente',
     // Cascata legitima: `core/ports/index.*` e o UNICO lugar do modulo onde
     // a palavra "notificador" aparece em codigo (a interface da porta) — sem a pasta, config-morta
     // deixa de achar quem "le" a chave `notificador` de config/ports.json, e acusa TAMBEM.
@@ -134,13 +134,13 @@ export const CASOS = [
   },
   {
     regra: 'estrutura',
-    descricao: 'Bloco M — README.md ausente',
+    descricao: 'README.md ausente',
     contem: 'README.md ausente',
     mutar: (m) => m.remover('README.md'),
   },
   {
     regra: 'estrutura',
-    descricao: 'Bloco M — arquivo obrigatorio do binding ausente (tsconfig.json/package.json em TS, '
+    descricao: 'arquivo obrigatorio do binding ausente (tsconfig.json/package.json em TS, '
       + 'package.json em JS, pyproject.toml em PY)',
     // `remover` usa `force: true` — arquivo que o binding em teste nao tem (ex.: pyproject.toml num
     // molde TS) e um no-op silencioso, entao as tres chamadas cobrem os tres bindings de um caso so.
@@ -156,7 +156,7 @@ export const CASOS = [
   },
   {
     regra: 'schema-manifesto',
-    descricao: 'Bloco M — CHAMARIZ: campo nao previsto, com core/gateways/ ausente (opcional, NAO acusa)',
+    descricao: 'CHAMARIZ: campo nao previsto, com core/gateways/ ausente (opcional, NAO acusa)',
     // Prova, POR MAQUINA, que `core/gateways/` continua FORA do conjunto obrigatorio: modulo sem
     // `consumes` legitimamente nao tem gateway nenhum, e cobra-lo em `estrutura` seria falso positivo
     // garantido. Se a exclusao regredir, `estrutura` acusa TAMBEM — um id que este caso nao declara
@@ -959,7 +959,7 @@ export const CASOS = [
   // --- as 18 formas do extrator de projecao ------------------------------------------------
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 1 — tipo de retorno inline desvia o extrator antigo',
+    descricao: 'tipo de retorno inline nao desvia o extrator',
     // `): { hash: string; campoForma1: string } {` — sob um extrator ancorado na assinatura, a
     // primeira `{` depois do nome seria a do TIPO, nao a do corpo. O separador `;` do tipo (nao
     // `,`) faz "hash" escapar por acidente as vezes e "campoForma1" nunca ser visto. O extrator
@@ -972,7 +972,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 2 — um parametro com tipo inline',
+    descricao: 'um parametro com tipo inline',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma2.ts',
       'export function toContractForma2(o: { a: string }): Record<string, unknown> {\n'
@@ -981,7 +981,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 3 — dois parametros com tipo inline',
+    descricao: 'dois parametros com tipo inline',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma3.ts',
       'export function toContractForma3(o: { a: string }, p: { b: string }): Record<string, unknown> {\n'
@@ -990,7 +990,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 4 — generico com objeto (<T extends { id: string }>)',
+    descricao: 'generico com objeto (<T extends { id: string }>)',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma4.ts',
       'export function toContractForma4<T extends { id: string }>(o: T): Record<string, unknown> {\n'
@@ -999,7 +999,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 5 — Array<{ … }> no retorno',
+    descricao: 'Array<{ … }> no retorno',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma5.ts',
       'export function toContractForma5(r: { hash: string }): Array<{ hash: string }> {\n'
@@ -1008,7 +1008,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 6 — Promise<{ … }> no retorno',
+    descricao: 'Promise<{ … }> no retorno',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma6.ts',
       'export async function toContractForma6(r: { hash: string }): Promise<{ hash: string }> {\n'
@@ -1017,7 +1017,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 7 — default de parametro "= {}", nos tres bindings',
+    descricao: 'default de parametro "= {}", nos tres bindings',
     mutar: (m) => m.acrescentarEm('mappers', {
       js: "\nexport function toContractForma7(opcoes: Record<string, unknown> = {}): Record<string, unknown> {\n"
         + "  return { campoForma7: 'x' };\n}\n",
@@ -1026,7 +1026,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 8 — tipo inline COM default',
+    descricao: 'tipo inline COM default',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma8.ts',
       "export function toContractForma8(o: { a: string } = { a: 'x' }): Record<string, unknown> {\n"
@@ -1035,7 +1035,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 9 — corpo canonico "): Record<string, unknown> {" nao pode regredir',
+    descricao: 'corpo canonico "): Record<string, unknown> {" nao pode regredir',
     // E a forma que o proprio molde usa (toContract) — este caso trava que uma violacao SOB essa
     // forma continua sendo pega, nao so que a forma boa passa.
     mutar: (m) => m.escrever(
@@ -1046,7 +1046,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 11 — objeto aninhado dentro da projecao nao pode regredir',
+    descricao: 'objeto aninhado dentro da projecao nao pode regredir',
     mutar: (m) => m.escrever(
       'api/src/mapper-forma11.ts',
       "export function toContractForma11(r: { hash: string }): Record<string, unknown> {\n"
@@ -1055,7 +1055,7 @@ export const CASOS = [
   },
   {
     regra: 'projecao-contrato',
-    descricao: 'N.2 forma 12 — dois "return" na mesma funcao rendem DUAS regioes',
+    descricao: 'dois "return" na mesma funcao rendem DUAS regioes',
     // `vezes: 2`: afirma que as DUAS regioes viram DUAS mensagens, nao uma —
     // sem isto, um extrator que voltasse a enxergar só a primeira `return` passaria calado, porque
     // "acusou `projecao-contrato`" já bastava para o caso antigo, não importa quantas vezes.
@@ -1069,7 +1069,7 @@ export const CASOS = [
   },
   {
     regra: 'log',
-    descricao: 'N.2 forma 14 — "const interno = { … }" dentro da funcao NAO e projecao (chamariz)',
+    descricao: '"const interno = { … }" dentro da funcao NAO e projecao (chamariz)',
     // O objeto intermediario nao esta em posicao de `return` nem de `=>`, entao nunca casa
     // PADRAO_RETORNO_OBJETO — nenhuma guarda nova precisou existir para isso. `console.log` arma o
     // chamariz: se `campoInterno` fosse (erradamente) visto como projetado, apareceria um id extra
@@ -1084,7 +1084,7 @@ export const CASOS = [
   },
   {
     regra: 'log',
-    descricao: 'N.2.1 — metodo de classe que NAO publica, DEPOIS de um metodo que publica (chamariz)',
+    descricao: 'metodo de classe que NAO publica, DEPOIS de um metodo que publica (chamariz)',
     // O defeito que so aparece com METODO: sem recuo na janela, tudo depois da primeira projecao (o
     // metodo `para*`) e atribuido a ela — `chaveDeCache`, que devolve so campo de BANCO
     // (`created_at`) e nao e projecao nenhuma, tem seu `return` inteiro somado a projecao do
@@ -1101,7 +1101,7 @@ export const CASOS = [
   },
   {
     regra: 'log',
-    descricao: 'N.2.1 — "cpf" num metodo de classe que NAO publica nada continua CALADO (sensivel-em-saida)',
+    descricao: '"cpf" num metodo de classe que NAO publica nada continua CALADO (sensivel-em-saida)',
     // A reproducao exata do revisor: `chaveDeCache` devolve "created_at" E "cpf", e nenhum dos dois
     // pode ser visto como projetado — o metodo nao e "para*", entao nunca e sitio. Se a janela
     // regredisse, `sensivel-em-saida` apareceria NAO DECLARADO ao lado de `log` e o caso reprovaria.
@@ -1120,7 +1120,7 @@ export const CASOS = [
   },
   {
     regra: 'sensivel-em-saida',
-    descricao: 'N.2.1 — "cpf" publicado DE VERDADE num metodo de classe continua ACUSANDO',
+    descricao: '"cpf" publicado DE VERDADE num metodo de classe continua ACUSANDO',
     // O outro lado do conserto: a janela fecha, mas nao cega a regra. Um SEGUNDO metodo "para*" na
     // mesma classe, depois do que nao publica, e a projecao dele publica cpf de verdade.
     tambem: ['projecao-contrato'],
@@ -1142,7 +1142,7 @@ export const CASOS = [
   },
   {
     regra: 'log',
-    descricao: 'N.2.2 — propriedade-arrow que NAO publica, DEPOIS de propriedade-arrow que publica (chamariz)',
+    descricao: 'propriedade-arrow que NAO publica, DEPOIS de propriedade-arrow que publica (chamariz)',
     // O defeito que so aparece em objeto literal de arrows: um fechador que exigisse
     // `identificador(` depois do nome ficaria cego aqui — `chaveDeCache: (r) => (...)` tem `:`
     // entre os dois, nunca fechando a janela de `toGama`. `console.log`/`print` arma o chamariz:
@@ -1162,7 +1162,7 @@ export const CASOS = [
   },
   {
     regra: 'sensivel-em-saida',
-    descricao: 'N.2.2 — "cpf" publicado DE VERDADE numa propriedade-arrow DEPOIS de uma que nao publica',
+    descricao: '"cpf" publicado DE VERDADE numa propriedade-arrow DEPOIS de uma que nao publica',
     // O outro lado do conserto: a janela fecha, mas nao cega a regra. Uma
     // TERCEIRA entrada "para*" no mesmo objeto/module, depois da que nao publica, projeta cpf de
     // verdade — se a janela da primeira regredisse e engolisse a segunda, "created_at" apareceria
@@ -1182,7 +1182,7 @@ export const CASOS = [
   },
   {
     regra: 'sensivel-em-saida',
-    descricao: 'N.2 item 1(a) — "cpf" vazado em toMeta, a rota SEM TOKEN (regressao que a N.1 fechou)',
+    descricao: '"cpf" vazado em toMeta, a rota SEM TOKEN',
     // toMeta serve /meta, rota sem token. Sob uma ancora de nome ESTREITA (so toContract*) a
     // funcao inteira ficaria invisivel ao extrator, e um campo sensivel acrescentado aqui nunca
     // seria pego por regra nenhuma. Tenta os tres caminhos; so o
@@ -1206,7 +1206,7 @@ export const CASOS = [
   },
   {
     regra: 'sensivel-em-saida',
-    descricao: 'N.2 item 1(a) — "cpf" vazado em toCollection (pre-existente, nunca medido antes)',
+    descricao: '"cpf" vazado em toCollection',
     tambem: ['projecao-contrato'],
     mutar: (m) => {
       m.manifesto((x) => ({ ...x, sensitiveFields: ['cpf'] }));
@@ -1230,7 +1230,7 @@ export const CASOS = [
   },
   {
     regra: 'log',
-    descricao: 'N.2 — "created_at" em rowToDomain/domainToRow (direcao BANCO) NAO acusa (chamariz)',
+    descricao: '"created_at" em rowToDomain/domainToRow (direcao BANCO) NAO acusa (chamariz)',
     // As duas funcoes de direcao BANCO usam "created_at" (campo do banco, snake_case) e nao devem
     // ser lidas como projecao de SAIDA — o nome delas nao COMECA com "to" (comeca no MEIO:
     // rowToDomain, domainToRow). Ja estao no molde, sem mutacao nenhuma; o chamariz so
@@ -1327,7 +1327,7 @@ export const CASOS = [
   },
   {
     regra: 'sensivel-em-saida',
-    descricao: 'N.3 — verbo "warning" (lista unificada com segredo-em-log) nao escapa mais',
+    descricao: 'verbo "warning" (lista unificada com segredo-em-log) nao escapa',
     // Uma lista estreita (logger|log com debug|info|warn|error) nao casaria "logging.warning(...)"
     // (nem o objeto "logging" nem o verbo "warning" estariam nela). `sensivel-em-saida` usa
     // CHAMADA_DE_LOG_VERBOS, a mesma fonte de `segredo-em-log`.
@@ -1375,7 +1375,7 @@ export const CASOS = [
   },
   {
     regra: 'saida-crua',
-    descricao: 'devolve "manifesto" cru — a metade BORDA, sem lista de isentos (plan-2.md N.1)',
+    descricao: 'devolve "manifesto" cru — a metade BORDA, sem lista de isentos',
     // Trava um defeito medido de verdade: `res.json(<identificador>)` acusa SEMPRE, sem
     // vocabulario. Se a borda regredir para o vocabulario fechado antigo, "manifesto" volta a
     // escapar e este caso reprova.
