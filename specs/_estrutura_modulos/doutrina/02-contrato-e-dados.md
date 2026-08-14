@@ -41,7 +41,7 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
 
 > **Decisão de segurança, tomada.** `/meta` é rota pública por necessidade — o sistema descobre módulo antes de
 > autenticar, e não há login no template ([[00-arquitetura]] §3). A saída óbvia, "ecoar o manifesto inteiro",
-> vazava topologia interna a quem perguntasse sem token: schema e prefixo do banco, os NOMES das chaves de
+> vazaria topologia interna a quem perguntasse sem token: schema e prefixo do banco, os NOMES das chaves de
 > segredo em `requiredEnv`, o vocabulário inteiro de `permissions`, `publicRoutes` (o que não exige token) e
 > `sensitiveFields` — o mapa de onde está a PII. A escolha feita foi a **projeção reduzida**, aplicada agora e
 > não adiada para quando houver login: `/meta` devolve só os oito campos da tabela acima, cobrados por
@@ -72,11 +72,11 @@ tipo de domínio.
 
 **A consequência que se aceita de propósito:** campo novo exige tocar em dois lugares — schema e mapeador.
 
-Esquecer o **schema** deixou de ser falha silenciosa: publicar campo que o contrato não promete é erro de
+Esquecer o **schema** não é falha silenciosa: publicar campo que o contrato não promete é erro de
 gate (`projecao-contrato`, `specs/arquitetura/04-regras.md` §4.5). Esquecer o **mapeador** continua silencioso
 por escolha — o campo simplesmente não aparece, e cobrar essa direção acusaria toda resposta que a `api/` monta
 sem passar pelo mapeador (§7.2). Essa metade é do teste de contrato, que exercita a resposta de verdade.
-Assimetria deliberada: publicar por omissão é o risco grave, e é o que o gate agora fecha.
+Assimetria deliberada: publicar por omissão é o risco grave, e é o que o gate fecha.
 
 ## 3.1 Envelope e taxonomia de erro
 

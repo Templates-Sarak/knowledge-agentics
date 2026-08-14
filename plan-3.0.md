@@ -82,7 +82,7 @@ Não é dívida da base: é dívida entregue ao usuário.
 
 ---
 
-## Bloco BA — a ferramenta de aceite, e ela vem primeiro ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
+## Bloco BA — a ferramenta de aceite, e ela vem primeiro ✅ **FECHADO** *(commit `6d8a277`, revisado e reproduzido)*
 
 > **A prova mecânica de "zero mudança funcional" já existe neste repositório.** `textoDeCodigo`
 > (`tools/gate/text.mjs`) remove comentário e docstring de qualquer arquivo. Então a pergunta *"mexi só
@@ -127,7 +127,7 @@ Não é dívida da base: é dívida entregue ao usuário.
 
 ---
 
-## Bloco BB — `tools/` e `bindings/`, as 89 citações que viajam ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
+## Bloco BB — `tools/` e `bindings/`, as 89 citações que viajam ✅ **FECHADO** *(commit `4862bf3`, revisado e reproduzido)*
 
 > São as que entram no projeto do usuário. `tools/` é copiado inteiro; `bindings/<b>/root` vira a raiz
 > do projeto e `_template` vira o molde de módulo.
@@ -167,22 +167,22 @@ Não é dívida da base: é dívida entregue ao usuário.
 
 ---
 
-## Bloco BC — `doutrina/`, e o ADR que vira convenção
+## Bloco BC — `doutrina/`, e o ADR que vira convenção ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > A doutrina é **copiada para dentro de cada projeto** como `specs/arquitetura/`. É a lei que o usuário
 > lê, e hoje ela cita rodadas de um plano que ele não tem.
 
-- [ ] As **24 citações** nos seis documentos de doutrina, pela mesma regra
-- [ ] **As 10 lacunas declaradas do §7** — a lacuna **fica**, com a forma exata que escapa e a medição.
+- [x] As **24 citações** nos seis documentos de doutrina, pela mesma regra
+- [x] **As 10 lacunas declaradas do §7** — a lacuna **fica**, com a forma exata que escapa e a medição.
       A referência ao plano **sai**. Lacuna declarada continua sendo o padrão desta casa; o que muda é
       que ela para de depender de um documento externo para ser entendida
-- [ ] **O ADR-009 vira a convenção de nomenclatura deste template**, escrita no **presente**: *a árvore
+- [x] **O ADR-009 vira a convenção de nomenclatura deste template**, escrita no **presente**: *a árvore
       de arquivos é inglês; o conteúdo dela é português; `specs/arquitetura/` é a única exceção*. Com a
       tabela de fronteira item a item — que é o que o usuário precisa para decidir um caso novo — e
       **sem a narrativa de que houve uma migração**
-- [ ] **Os outros ADRs do template** recebem a mesma leitura: decisão e consequência, no presente. ADR
+- [x] **Os outros ADRs do template** recebem a mesma leitura: decisão e consequência, no presente. ADR
       é registro de **decisão**, não de **processo**
-- [ ] ⚠️ **A tabela de mapeamento do ADR-009 (`antigo→novo`) é o alvo natural deste bloco e some com
+- [x] ⚠️ **A tabela de mapeamento do ADR-009 (`antigo→novo`) é o alvo natural deste bloco e some com
       ele** — ela existe para documentar uma migração que deixa de ser mencionada. Confirme que nada
       mais aponta para ela antes de removê-la
 
@@ -208,7 +208,7 @@ depois: 'tipo de retorno inline não desvia o extrator'
 
 ---
 
-## Bloco BE — o resíduo de campanha ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
+## Bloco BE — o resíduo de campanha ✅ **FECHADO** *(`8cfd180` + `bea1ed8`, revisado e reproduzido)*
 
 > Campanha encerrada (`plan-3.md`, Bloco AD fechado). O que ela deixou em `tests/` são **artefatos de
 > processo**, não do template.

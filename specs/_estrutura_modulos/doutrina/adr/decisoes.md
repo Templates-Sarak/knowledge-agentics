@@ -148,54 +148,53 @@ por módulo, que só monta a raiz já exportada.
 **Contexto.** Um projeto gerado *hoje* precisa nascer com a mesma cadeia de dependências que um gerado
 *daqui a seis meses*, ou dois times não conseguem comparar builds. Ao mesmo tempo, `^` (caret) deixa a versão
 resolvida depender do **relógio** do `npm install`: o mesmo `package.json`, instalado em datas diferentes, gera
-árvores diferentes — e uma delas pode trazer CVE nova sem ninguém ter decidido nada (medido, Bloco P,
-plan-2.md: `vitest`/`vite` presos a `^2`/`^5` chegaram a nascer com 1 critical + 1 high + 3 moderate, exigindo
-salto de major para sair — `npm audit fix` sozinho não resolve breaking change).
+árvores diferentes — e uma delas pode trazer CVE nova sem ninguém ter decidido nada (medido: `vitest`/`vite`
+presos a `^2`/`^5` chegaram a nascer com 1 critical + 1 high + 3 moderate, exigindo salto de major para
+sair — `npm audit fix` sozinho não resolve breaking change).
 
 **Decisão.** Toda dependência do esqueleto (`package.json` da raiz e do `_template`, `pyproject.toml`) é
 **pinada exata** — sem `^`, sem `>=`. A versão é decisão do padrão, tomada e datada, nunca do relógio.
 Quem sobe a versão é o **template**, nunca o projeto gerado: `tools/generate-port-schemas.mjs` já
 estabeleceu o precedente de "gerado, não escrito à mão" para config mecânica; aqui a mesma disciplina vale
 para número de versão. O sensor de envelhecimento é `ci:dependencias`/`verificar.py --dependencias`, que
-agora roda **dentro do Bloco K** (D2, plan-2.md — só entrou depois que este ADR fechou a cadeia, para o K não
+roda **dentro do autoteste do template** (entrou depois desta decisão fechar a cadeia, para o autoteste não
 nascer vermelho por CVE de terceiro): CVE nova em qualquer binding derruba o `knowledge-agentics` na sua
-própria agenda, nunca o projeto de quem já gerou o dele. A cadência é *quando o K acender*, não calendário —
-uma CVE que não afeta versão nenhuma do pin atual não exige nada.
+própria agenda, nunca o projeto de quem já gerou o dele. A cadência é *quando o autoteste acender*, não
+calendário — uma CVE que não afeta versão nenhuma do pin atual não exige nada.
 
 **O procedimento do bump**, sempre nesta ordem: `npm outdated`/`npm audit`/`pip-audit` apontam o alvo →
 sobe a versão fixada nos `package.json`/`pyproject.toml` do esqueleto → `npm run autoteste:template` (ou
 `node specs/_estrutura_modulos/tests/template-self-test.mjs`) nos três bindings → **verde** vira commit datado
 aqui; **vermelho** e a versão não entra, com o motivo escrito na tentativa. É o que torna o salto de major
-barato o bastante para acontecer: sem essa contraprova, a única atualização segura era nenhuma — e foi
-exatamente por isso que a cadeia ficou presa a majors antigos até acumular CVE.
+barato o bastante para acontecer: sem essa contraprova, a única atualização segura seria nenhuma.
 
 **Dois limites, declarados:** pin exato prende o **topo** da árvore, não os transitivos (`esbuild` chega
 pelo `vite`, e uma CVE ali só é vista quando `npm audit` a relaciona a um pacote de topo) — quem prende
-transitivo é o **lockfile do projeto gerado**, e é por isso que ele é do projeto, não do template (D1,
-plan-2.md — sem `workspaces` resolvidos no momento da cópia, um lock copiado descreveria uma árvore que não
+transitivo é o **lockfile do projeto gerado**, e é por isso que ele é do projeto, não do template (sem
+`workspaces` resolvidos no momento da cópia, um lock copiado descreveria uma árvore que não
 é a do destino). E **o template nunca empurra atualização para projeto já criado**: a promessa é *"projeto
 novo nasce limpo"*, não *"projeto antigo se mantém limpo"* — a segunda exigiria o template ser dependência
 instalada, e ele é cópia por decisão de arquitetura (ADR-005).
 
 **Alternativa descartada.** Manter `^` e versionar lockfile no template. Cai no mesmo problema dos
-`workspaces` que ADR-005/D1 já registraram para o lockfile do projeto: o lock do template nasceria descrevendo
+`workspaces` já registrado acima para o lockfile do projeto: o lock do template nasceria descrevendo
 uma árvore que ainda não existe no destino, e devolveria ao relógio uma decisão que é do padrão.
 
 **Consequências.** Dois projetos gerados com meses de distância recebem a mesma cadeia — e quando divergirem
 foi porque alguém decidiu e datou, não porque o `npm install` de terça foi diferente do de quinta. O custo:
-subir de major é trabalho de verdade (medido, Bloco P: `vitest` 2→4 exigiu trocar `environmentMatchGlobs`,
+subir de major é trabalho de verdade (medido: `vitest` 2→4 exigiu trocar `environmentMatchGlobs`,
 removido no Vitest 3+, pela forma `// @vitest-environment jsdom` por arquivo — API antiga, config morta,
-sem aviso), mas é trabalho pago **uma vez**, pelo template, sob o K — nunca por cada projeto gerado
+sem aviso), mas é trabalho pago **uma vez**, pelo template, sob o autoteste — nunca por cada projeto gerado
 separadamente. O `pip` que `python -m venv` instala fica de fora deste pin (não é dependência declarada, é o
 gerenciador que cria o ambiente): o conserto é `pip install --upgrade pip` como primeiro passo depois de criar
 o venv, documentado nos "próximos passos" que `create-project.mjs` imprime.
 
-**Pendência registrada, fora desta rodada:** `typescript`, `express`, `eslint` e `react` têm majors mais
+**Pendência registrada:** `typescript`, `express`, `eslint` e `react` têm majors mais
 novos que o pin atual (medido: ts 5→7, express 4→5, eslint 9→10, react 18→19), nenhum deles com CVE aberta —
 só `vitest`/`vite`/`@vitest/coverage-v8`/`@vitejs/plugin-react` tinham. Subir os quatro sem CVE é trabalho de
 compatibilização real (majors desse tamanho costumam trazer breaking change de verdade), não conserto de
-segurança, e fica para uma rodada dedicada — subir todos de uma vez só porque "dá para" contradiz o próprio
-critério de cadência deste ADR ("quando o K acender", não "porque o registry tem versão nova").
+segurança, e fica para um esforço dedicado — subir todos de uma vez só porque "dá para" contradiz o próprio
+critério de cadência deste ADR ("quando o autoteste acender", não "porque o registry tem versão nova").
 
 ---
 
@@ -203,58 +202,38 @@ critério de cadência deste ADR ("quando o K acender", não "porque o registry 
 
 **Status:** 🟢 Aceito
 
-**Contexto.** O `04-regras.md` §3 já prometia "inglês onde a linguagem ou o framework impõem" — mas o
-template usava português em oito pastas estruturais (`modules`, `tools`, `domain`, `ports`, `engine`,
-`contract`, `generated`, `mappers`) onde nada na linguagem ou no framework impunha nada: são vocabulário
-**estrutural** do próprio padrão Sarak, não do negócio. A pergunta que abriu esta decisão (plan-3.md) —
-*"o correto, segundo as boas práticas, não seria em inglês?"* — nasceu olhando `api/src/routes` e
-`api/src/mappers` lado a lado na mesma pasta: a mesma árvore misturando os dois vocabulários sem critério
-explícito. Uma varredura completa do disco, feita ao redigir esta decisão, achou mais quatro pastas na mesma
-situação que a lista inicial não citava: `tools/gate/rules/`, `tests/` (em dois lugares) e
-`adapters/memory/` — a mesma categoria, só não tinham sido contadas.
+**Contexto.** Uma árvore que mistura os dois vocabulários sem critério deixa a fronteira implícita — e por
+isso arbitrária: `api/src/routes` e `api/src/mappers` lado a lado com pasta em português, na mesma árvore,
+não diz por si só onde termina o vocabulário técnico e começa o de domínio.
 
 **A boa prática não é "tudo em inglês".** É a distinção clássica: **vocabulário técnico em inglês,
-vocabulário de domínio no idioma do negócio**. O erro do template não era usar português — era usá-lo sem
-critério, deixando a fronteira implícita e por isso arbitrária.
+vocabulário de domínio no idioma do negócio**. Português na árvore não é o erro — usá-lo sem critério,
+deixando a fronteira implícita, é.
 
-**O princípio que resolve a fronteira inteira, numa frase:** **a árvore de arquivos é inglês; o conteúdo
-dela é português.** "Árvore" é pasta, nome de arquivo, chave de manifesto/config, símbolo do esqueleto —
-tudo que é **estrutura** que o padrão Sarak impõe. "Conteúdo" é o que um módulo real guarda dentro dessa
-estrutura — texto de negócio, nome de tabela, rota, mensagem ao usuário. `doutrina/`/`specs/arquitetura/` é
-a **única exceção** ao princípio (decisão 2 abaixo): não é conteúdo de módulo, é documentação do próprio
-padrão, mas o nome é vocabulário do fluxo SDD compartilhado com `_estrutura_base` — renomear sai do escopo
-deste template.
+**Decisão — o princípio que resolve a fronteira inteira, numa frase:** **a árvore de arquivos é inglês; o
+conteúdo dela é português.** "Árvore" é pasta, nome de arquivo, chave de manifesto/config, símbolo do
+esqueleto — tudo que é **estrutura** que o padrão Sarak impõe. "Conteúdo" é o que um módulo real guarda
+dentro dessa estrutura — texto de negócio, nome de tabela, rota, mensagem ao usuário. `doutrina/`/
+`specs/arquitetura/` é a **única exceção** ao princípio (linha 2 da tabela): não é conteúdo de módulo, é
+documentação do próprio padrão, mas o nome é vocabulário do fluxo SDD compartilhado com `_estrutura_base`
+— fora do escopo deste template mudar.
 
-**Decisão.** A fronteira, artefato por artefato — onze categorias, cada uma com decisão explícita para que
-nenhuma fique arbitrária por analogia:
+**A fronteira, artefato por artefato** — onze categorias, cada uma com decisão explícita para que nenhuma
+fique arbitrária por analogia:
 
 | # | Artefato | Decisão | Motivo |
 |---|---|---|---|
-| 1 | Pastas estruturais (12) | **inglês** — `ferramentas→tools` `dominio→domain` `portas→ports` `motor→engine` `contrato→contract` `gerados→generated` `mapeadores→mappers` `modulos→modules` `raiz→root` `regras→rules` `testes→tests` `memoria→memory` | é a árvore — o que se lê em cada import. Lista fechada pela varredura completa do disco, não pelos oito exemplos originais do plan-3.md |
-| 2 | `doutrina/` / `specs/arquitetura/` | **português** — **única exceção ao princípio** | é a **documentação**, não conteúdo de módulo nem árvore de código; o nome é vocabulário do fluxo SDD, compartilhado com `_estrutura_base` — renomear sai do template |
+| 1 | Pastas estruturais (12) — `tools`, `domain`, `ports`, `engine`, `contract`, `generated`, `mappers`, `modules`, `root`, `rules`, `tests`, `memory` | **inglês** | é a árvore — o que se lê em cada import |
+| 2 | `doutrina/` / `specs/arquitetura/` | **português** — **única exceção ao princípio** | é a **documentação**, não conteúdo de módulo nem árvore de código; o nome é vocabulário do fluxo SDD, compartilhado com `_estrutura_base` |
 | 3 | Funções do **esqueleto** (`bindings/**`) | **inglês** | é o código que o dev escreve todo dia |
-| 4 | Símbolos (funções/variáveis) **dentro de** `ferramentas/` (→ `tools/`) | **português** | ferramental vendorizado — o dono é outro repositório. Por isso já é **isento do linter** no projeto gerado: a porta em inglês, a sala em português, e a sala é declarada como não-sua. Vale só para o SÍMBOLO — o arquivo que o contém segue a linha 5 |
-| 5 | Nomes de arquivo dentro de `ferramentas/` (→ `tools/`), os ~29 `.mjs` | **inglês** — `criar-projeto→create-project` `validar→validate` `sincronizar-env→sync-env` `escrita→writing` `isolamento→isolation` `contexto→context` … (lista completa no inventário) | é a árvore (linha 1 do princípio), não o conteúdo — a mesma pasta não pode ficar meio inglês, meio português um nível abaixo do que a linha 1 já resolveu. É a superfície de CLI que o dev digita |
-| 6 | Ids das 74 regras do catálogo | **português** | id de regra é nome de artigo de lei, e a lei é portuguesa — citado muito mais em prosa (§4.x, §7.2) que em código |
+| 4 | Símbolos (funções/variáveis) **dentro de** `tools/` | **português** | ferramental vendorizado — o dono é outro repositório. Por isso já é **isento do linter** no projeto gerado: a porta em inglês, a sala em português, e a sala é declarada como não-sua. Vale só para o SÍMBOLO — o arquivo que o contém segue a linha 5 |
+| 5 | Nomes de arquivo dentro de `tools/` | **inglês** | é a árvore (linha 1 do princípio), não o conteúdo — a mesma pasta não pode ficar meio inglês, meio português um nível abaixo do que a linha 1 já resolveu. É a superfície de CLI que o dev digita |
+| 6 | Ids das 75 regras do catálogo | **português** | id de regra é nome de artigo de lei, e a lei é portuguesa — citado muito mais em prosa (§4.x, §7.2) que em código |
 | 7 | Mensagens do gate e erros de runtime | **português** | documentação entregue por código; é a UX do template |
-| 8 | Chaves do manifesto (`module.json`, `project.json`) e nome do arquivo | **inglês** — `name` `data` `ports` `requiredEnv` `basePath` … | é config lida por código — árvore, não conteúdo. Enum de valor estrutural (`papel: dominio\|gateway\|conector` → `role: domain\|gateway\|connector`) segue a mesma tradução da pasta homônima (linha 1) — é o mesmo conceito, não uma exceção |
+| 8 | Chaves do manifesto (`module.json`, `project.json`) e nome do arquivo | **inglês** — `name` `data` `ports` `requiredEnv` `basePath` … | é config lida por código — árvore, não conteúdo. Enum de valor estrutural (como `role: domain\|gateway\|connector`) segue a mesma tradução da pasta homônima (linha 1) — é o mesmo conceito, não uma exceção |
 | 9 | Chaves de ambiente | **inglês** — `ROOT_API_PORT`, `<MODULE>_DB_URL` | convenção universal de env |
 | 10 | Rotas (`/registros`) e banco (`titulo`, `<mod>_metadados`) | **português** | domínio e dados — conteúdo, não árvore. É a boa prática de DDD, não a exceção |
 | 11 | Nomes de skill (`code-modulo`, `cyber-segredos`) | **fora de escopo** | convenção de toda a base Sarak, não do template |
-
-**Dois casos que não são git mv nem rename simples de arquivo, e o inventário precisa marcá-los com um
-`tipo` próprio para não confundir com pasta física:**
-
-- **`modules` (linha 1) não é uma pasta que exista na base.** Ela só nasce dentro de um projeto **gerado**
-  (`modules/<id>/`); na base, o equivalente é `bindings/<binding>/_template/`. A palavra `modules` aparece
-  na base como **string literal** dentro de ferramentas (o que `create-module.mjs` escreve no projeto de
-  saída) e como **caminho de exemplo em prosa** na doutrina — nenhuma das duas ocorrências é um `git mv`.
-  Tipo de inventário: `simbolo`, resolvido contra o corpus de código real da base — a rodada AB.1 (achado
-  do revisor) já garante que esse corpus inclui `.json`/`.yaml`/dotfile, não só `.mjs`/`.ts`/`.py`.
-- **`memory` (linha 1) é duas coisas ao mesmo tempo.** É pasta física (`adapters/memoria/` → `adapters/memory/`,
-  git mv normal) **e** é nome de provedor citado como **valor de string** em `config/ports.json` e nos
-  `switch`/`if` de `FABRICAS` que escolhem o adapter, lado a lado com `postgres`. A pasta segue a linha 1; o
-  valor de config é a mesma palavra, mesmo tipo `pasta` — resolve contra o mesmo corpus ampliado pelo AB.1.
 
 **A régua que decide os casos não listados aqui:** se o nome descreve **como o padrão Sarak é construído**
 (pasta, arquivo, chave de config, símbolo de código — a **árvore**), é técnico — inglês. Se o nome descreve
@@ -263,13 +242,12 @@ nenhuma fique arbitrária por analogia:
 é conteúdo: citam-se majoritariamente em prosa portuguesa, e mudar o idioma deles trocaria a UX do template
 sem ganho de leitura de código — por isso ficam de fora, com o motivo escrito, não por omissão.
 
-**Consequências.** A fronteira deixa de ser arbitrária e vira lei citável (`04-regras.md` §3). O custo é a
-campanha do plan-3.md Bloco AD — atômica, porque uma fronteira só decidida em parte volta a ser arbitrária
-pela metade que falta. `tools/` (linha 4, só o símbolo) e os ids de regra (linha 6) são as duas
-exceções deliberadas dentro de um template majoritariamente inglês na camada técnica — registradas aqui para
-que uma futura "limpeza de consistência" não as trate como esquecimento.
+**Consequências.** A fronteira é lei citável (`04-regras.md` §3). `tools/` (linha 4, só o símbolo) e os
+ids de regra (linha 6) são as duas exceções deliberadas dentro de um template majoritariamente inglês na
+camada técnica — registradas aqui para que uma futura "limpeza de consistência" não as trate como
+esquecimento.
 
-**Alternativa descartada.** Tudo em inglês, inclusive domínio/data/rotas. Contradiz a lei de nomes já
+**Alternativa descartada.** Tudo em inglês, inclusive domínio/dados/rotas. Contradiz a lei de nomes já
 vigente (§3: "português no domínio, nas rotas e nos dados") e o próprio ADR-001 — regra de negócio duplicada
-por módulo já é português por natureza; traduzir a camada de domínio seria tradução de conteúdo, não rename,
-fora do escopo que esta campanha se propôs (plan-3.md, "Fora deste plano").
+por módulo já é português por natureza; traduzir a camada de domínio traduziria o conteúdo do negócio, não
+ajustaria a árvore — muda o que o módulo significa, não como ele é organizado.

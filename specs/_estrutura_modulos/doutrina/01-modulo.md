@@ -212,11 +212,11 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 `new Date()` e `Math.random()` voltam para dentro do domínio e o motor deixa de ser reproduzível.
 
 Fonte NORMATIVA do vocabulário: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do
-gate são GERADOS dela, e cada `packages/ports/index.*` por binding a espelha à mão (plan-2.md Bloco S).
+gate são GERADOS dela, e cada `packages/ports/index.*` por binding a espelha à mão.
 A decisão foi **impedir a divergência em vez de acusá-la** — nenhuma regra de raiz compara os três
 lugares; quem impede é `tools/generate-port-schemas.mjs --conferir`, que roda dentro do `verificar`
 de cada binding (script `validar:schemas`, logo depois de `validar:env`) e do `pre-commit`
-(`tools/verify-commit.mjs`, plan-2.md Bloco S.1) — o mesmo lugar e a mesma forma de
+(`tools/verify-commit.mjs`) — o mesmo lugar e a mesma forma de
 `sync-env.mjs --conferir`, o precedente que este mecanismo segue. `fila` SAIU do catálogo: arrasta
 retry, *dead-letter*, idempotência e ordem de entrega — desenho de TOPOLOGIA, que [[00-arquitetura]] §5
 diz que o template não escolhe. Volta no dia em que houver um projeto com a decisão tomada, e volta como
@@ -234,8 +234,8 @@ ADR.
 - **Adapter novo nasce por `create-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
   `create-module.mjs`: copia o molde (`adapters/_template`), substitui marcadores, registra a fábrica em
   `src/composicao.*` e roda o gate antes de devolver o controle.
-- **`postgres` (`repositorio`/`auditoria`) já vem PRONTO, ao lado de `memory`** (plan-2.2.md
-  Bloco Z) — não nasce por `create-adapter.mjs`, porque já existe: materializa a forma que
+- **`postgres` (`repositorio`/`auditoria`) já vem PRONTO, ao lado de `memory`** — não nasce
+  por `create-adapter.mjs`, porque já existe: materializa a forma que
   `create-module.mjs` já cria (`<prefix>metadados`/`<prefix>auditoria`). `memory` continua o
   DEFAULT de todo módulo; trocar é a mesma linha de `config/ports.json`, agora verdadeira nos dois
   sentidos. A fábrica recebe o **manifesto do módulo** (`ManifestoDescoberto`/`dict`), não zero
@@ -308,8 +308,8 @@ inverte sem ninguém decidir isso.
 
 **Recusada, com o motivo:** domínio primeiro. O argumento — *"a regra de negócio não deve ser moldada pelo
 transporte"* — é real, e continua valendo **dentro** do passo: `core/domain` não importa nada da `api/`, e
-o gate cobra isso. O que esta ordem fixa é a **ordem de escrita**, não a direção da dependência, que já era
-e continua sendo domínio ← borda.
+o gate cobra isso. O que esta ordem fixa é a **ordem de escrita**, não a direção da dependência, que é
+domínio ← borda.
 
 A skill **`code-modulo`** do ecossistema Sarak conduz esse fluxo com HITL. Sem o plugin `sarak` (repositório
 gerado, sem a skill), a ordem acima e as sete sub-seções de alteração em §9 bastam — `code-modulo` só

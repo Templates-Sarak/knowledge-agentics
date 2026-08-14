@@ -88,7 +88,7 @@ número é peso morto.
 O gate cobra o que **é** estruturalmente verificável: `tests/domain/` e `tests/contract/` existem e não estão
 vazios (regra `tests`).
 
-**O bypass de `requiredEnv` sob teste, e por que ele não é silencioso (plan-2.md N.4).**
+**O bypass de `requiredEnv` sob teste, e por que ele não é silencioso.**
 `api/src/config.ts:checkEnvRequired` (TS/JS) e `api/src/config.py:_check_env_required` (Python)
 pulam a checagem de variável obrigatória quando o processo está sob teste (`NODE_ENV === 'test'`,
 `PYTEST_CURRENT_TEST` definido) — sem isso, todo `it()`/`def test_` cairia antes de rodar, porque nenhum
@@ -374,7 +374,7 @@ dependência externa (§3 do catálogo). O runner é devDependency de **projeto*
 isso viaja com o projeto (`scripts/`), não com a base. `adapters/` continua sendo só para o
 processo composto trocar de provedor em **runtime**; migration é ferramenta de **operação**, nunca
 importada por `composicao.*` — mudar `adapters/memory` não afeta o caminho de migrations, e
-`tools/affected.mjs` não precisou mudar por isso (medido: o runner não importa `adapters/`
+`tools/affected.mjs` não precisa mudar por isso (medido: o runner não importa `adapters/`
 em lugar nenhum).
 
 **A URL vem do ambiente, sempre `<MODULO>_DB_URL`** (já em `module.json:requiredEnv` desde o
@@ -382,7 +382,7 @@ molde) — o runner não sabe de onde ela veio nem como o Postgres subiu (ADR-00
 contrato, não o provedor). Ausente, o runner falha nomeando a chave exata, antes de tentar
 conectar.
 
-**Estado por módulo** (02-contrato-e-dados.md §6.3, plan-2.2.md Bloco Y): a migration `0001` do
+**Estado por módulo** (02-contrato-e-dados.md §6.3): a migration `0001` do
 molde cria `<schema>.<prefix>migrations` — `up` aplica só as pendentes, `down` reverte só a
 última. Continua **não** sendo um framework de migração completo (sem *dry-run*, sem migração de
 dado automática, sem *lock* multi-processo) — os limites que restam estão em 04-regras.md §7.2.
