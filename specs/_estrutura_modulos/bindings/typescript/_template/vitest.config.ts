@@ -5,9 +5,9 @@
 // dubles de `tests/fixtures/`, e e isso que prova o desacoplamento.
 //
 // jsdom NAO e ligado aqui: `environmentMatchGlobs` (a forma de ligar por PASTA) foi REMOVIDO no
-// Vitest 3+ — medido, Bloco P (plan-2.md): o campo simplesmente nao existe mais em
-// `node_modules/vitest/dist/**`, e o teste de tela falhava com "document is not defined" sem
-// avisar que a config tinha ficado morta. Cada teste de `tests/web/**` liga o proprio ambiente
+// Vitest 3+ — medido: o campo simplesmente nao existe mais em
+// `node_modules/vitest/dist/**`, e o teste de tela falha com "document is not defined" sem
+// avisar que a config ficou morta. Cada teste de `tests/web/**` liga o proprio ambiente
 // com o comentario `// @vitest-environment jsdom` na PRIMEIRA linha do arquivo — a forma que
 // continua funcionando no Vitest 4, testada empiricamente antes de trocar.
 import { readFileSync } from 'node:fs';

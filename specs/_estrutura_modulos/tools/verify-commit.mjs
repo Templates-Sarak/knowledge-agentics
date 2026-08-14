@@ -17,22 +17,20 @@
  * `.githooks/pre-commit` e `.githooks/pre-push` são o MESMO arquivo, byte a byte, nos três bindings
  * — prova em `gate/tests/cases.mjs`. Cada um só delega para cá com duas linhas de shell. Detectar o
  * binding (package.json × pyproject.toml) e decidir os comandos é trabalho DESTE script, não do
- * hook: a alternativa — três pares de hook com lógica própria — é exatamente o custo medido que
- * cancelou a G.2 (seis arquivos que precisam concordar, nada verificando que concordam). Aqui há uma
+ * hook: a alternativa — três pares de hook com lógica própria — tem um custo medido que a descarta
+ * (seis arquivos que precisam concordar, nada verificando que concordam). Aqui há uma
  * fonte só, e os hooks não podem divergir porque não carregam lógica nenhuma para divergir.
  * ============================================================================================
  *
- * ZERO SHELL, DE PROPÓSITO — histórico do defeito, para quem for mexer aqui de novo.
- *
- * A primeira versão rodava `spawnSync(comando, args, { shell: true })` porque, sem shell, `npm` no
- * Windows dava `ENOENT` (resolve para `.cmd`, que `spawnSync` sem shell não encontra). O diagnóstico
- * estava certo; a saída, não: `shell: true` concatena `args` numa STRING ÚNICA sem citação, e o id do
- * módulo — nome de PASTA, vindo de `readdirSync` via `listarModulos`, nunca validado antes de virar
- * argumento — entra ali inteiro. Uma pasta `modules/x&echo INJETADO/` bastava para rodar `echo
- * INJETADO` como comando separado, E o resultado ainda saía "ok" — porque com shell o `status` é do
- * ÚLTIMO comando da cadeia (`echo`, que sempre sai 0), não do `validate.mjs` que já tinha falhado.
- * Ferramenta ausente/comando errado virando "ok" é a lei 7 do gate quebrada por dentro do hook que
- * existe para cobri-la.
+ * ZERO SHELL, DE PROPÓSITO — a tentação óbvia é `spawnSync(comando, args, { shell: true })`, porque
+ * sem shell `npm` no Windows dá `ENOENT` (resolve para `.cmd`, que `spawnSync` sem shell não
+ * encontra). Mas `shell: true` concatena `args` numa STRING ÚNICA sem citação, e o id do módulo —
+ * nome de PASTA, vindo de `readdirSync` via `listarModulos`, nunca validado antes de virar
+ * argumento — entraria ali inteiro. Uma pasta `modules/x&echo INJETADO/` bastaria para rodar `echo
+ * INJETADO` como comando separado, E o resultado ainda sairia "ok" — porque com shell o `status` é
+ * do ÚLTIMO comando da cadeia (`echo`, que sempre sai 0), não do `validate.mjs` que já teria
+ * falhado. Ferramenta ausente/comando errado virando "ok" quebraria a lei 7 do gate por dentro do
+ * hook que existe para cobri-la.
  *
  * O conserto: NUNCA shell. `npm`/`npx`/`tsc` são scripts Node — resolvidos pelo campo `bin` do
  * `package.json` deles e rodados com `process.execPath` direto no arquivo `.js`, sem passar pelo shim

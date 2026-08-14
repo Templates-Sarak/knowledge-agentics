@@ -60,10 +60,10 @@ export function rodarRegrasGlobais(contextos) {
 /**
  * Regras de escopo `root` — fatos do PROJETO, e por isso rodam UMA vez, sobre `ctx.projeto`.
  *
- * Elas existiam antes como escopo `module` com guarda, e o preço estava registrado: um defeito de
- * projeto emitia uma mensagem POR MÓDULO. Com dois módulos, duas mensagens idênticas; com dez, dez.
- * O escopo próprio conserta isso na ORIGEM — a regra roda uma vez porque o fato é um só —, e não na
- * impressão, que só esconderia a repetição.
+ * Se fossem escopo `module` com guarda, o preço seria: um defeito de projeto emitiria uma mensagem
+ * POR MÓDULO. Com dois módulos, duas mensagens idênticas; com dez, dez. O escopo próprio conserta
+ * isso na ORIGEM — a regra roda uma vez porque o fato é um só —, e não na impressão, que só
+ * esconderia a repetição.
  *
  * Global não servia: `analisar` descarta achado global cujo `module` não esteja entre os
  * selecionados, e a raiz não é módulo nenhum.

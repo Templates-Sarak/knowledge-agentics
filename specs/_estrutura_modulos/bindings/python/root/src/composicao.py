@@ -43,7 +43,7 @@ from adapters.postgres import AuditoriaPostgres, RepositorioPostgres
 # `discover_modules`) — `memory` ignora (nao precisa saber QUEM a chamou, por isso os `lambda`
 # descartam o argumento), `postgres` usa (`module["id"]` para a chave de ambiente,
 # `module["pasta"]` para ler `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um
-# adapter que precisa de contexto por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
+# adapter que precisa de contexto por-modulo nao teria como sabe-lo.
 FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {
     "repositorio": {"memory": lambda modulo: RepositorioEmMemoria(), "postgres": RepositorioPostgres},
     "auditoria": {"memory": lambda modulo: AuditoriaEmMemoria(), "postgres": AuditoriaPostgres},

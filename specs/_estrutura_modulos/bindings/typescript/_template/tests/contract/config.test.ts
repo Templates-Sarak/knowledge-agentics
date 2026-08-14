@@ -1,4 +1,4 @@
-// Prova que `checkEnvRequired` DE FATO derruba o boot quando falta variavel — plan-2.md N.4.
+// Prova que `checkEnvRequired` DE FATO derruba o boot quando falta variavel.
 // Sob `NODE_ENV=test` (todo o resto da suite) o bypass cala a checagem de proposito: sem `.env`
 // real, qualquer teste derrubaria antes do primeiro `it()`. Isso deixa "suite verde" incapaz de
 // provar, sozinha, que a fiacao de ambiente esta correta — so o boot real prova. Este teste fecha

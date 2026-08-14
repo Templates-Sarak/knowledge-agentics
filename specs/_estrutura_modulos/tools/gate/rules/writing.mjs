@@ -4,15 +4,15 @@
  *
  * Por que no gate e não só no linter: o gate viaja com o módulo e roda sem `npm install`. Delegar
  * 100% ao ESLint/Ruff significa que num repositório sem linter instalado estes limites não são
- * cobrados por ninguém — que era exatamente o estado do template antes desta família existir.
+ * cobrados por ninguém.
  *
  * O linter continua sendo a verificação PROFUNDA (complexidade ciclomática, tipos, regras de
  * idioma). Aqui ficam os quatro limiares que dá para medir por estrutura de bloco, de forma
  * conservadora: na dúvida, esta família não acusa.
  *
- * Os números vêm de `../thresholds.mjs`, a fonte única — a config do linter é GERADA de lá. Enquanto
- * cada lado guardava a sua cópia, o §7.2 mandava o linter vencer o gate numa divergência que
- * ninguém tinha como notar.
+ * Os números vêm de `../thresholds.mjs`, a fonte única — a config do linter é GERADA de lá. Se
+ * cada lado guardasse a própria cópia, o §7.2 mandaria o linter vencer o gate numa divergência
+ * que ninguém teria como notar.
  */
 import { LIMIARES } from '../thresholds.mjs';
 
@@ -117,7 +117,7 @@ function aninhamentoPorChaves(linhas) {
     let primeiraAbertura = true;
 
     // O maximo DENTRO da linha, nao o saldo no fim dela: `if (a) { return 1; }` abre e fecha na
-    // mesma linha, e era exatamente esse caso que escapava quando so o saldo final era medido.
+    // mesma linha, e e exatamente esse caso que escaparia se so o saldo final fosse medido.
     let maximo = pilha.filter(Boolean).length;
     for (const caractere of semTexto) {
       if (caractere === '{') {

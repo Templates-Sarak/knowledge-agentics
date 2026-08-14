@@ -7,9 +7,9 @@
  *      hardcode-url-raiz, fallback-raiz, pre-commit-instalado
  *
  * As SETE últimas são sobre o PROJETO, não sobre o módulo, e por isso têm `escopo: 'root'`:
- * recebem `ctx.projeto` em vez de um contexto de módulo e rodam UMA vez por invocação. Enquanto
- * eram `escopo: 'module'` com guarda, o resultado era certo e a saída não: um defeito de projeto
- * emitia uma mensagem por módulo — dez módulos, dez mensagens idênticas para um conserto só.
+ * recebem `ctx.projeto` em vez de um contexto de módulo e rodam UMA vez por invocação. Com
+ * `escopo: 'module'` e uma guarda, o resultado seria certo mas a saída não: um defeito de projeto
+ * emitiria uma mensagem por módulo — dez módulos, dez mensagens idênticas para um conserto só.
  * Global nunca serviu: `analisar` descarta achado global cujo módulo não esteja entre os
  * selecionados, e a raiz não é módulo nenhum.
  */
@@ -22,7 +22,7 @@ import { carregarEsquema, validar } from '../schema.mjs';
 // divergiriam no primeiro filtro novo (`eTeste` foi exatamente esse filtro).
 import { PADRAO_CREDENCIAL, varrerRaiz } from './operation.mjs';
 // `textoDeCodigo` remove comentario e docstring. Regra que julga CODIGO nao pode ler o texto cru:
-// a chave citada num comentario ("nunca leia MODULO_SEGREDO aqui") virava uso de verdade.
+// a chave citada num comentario ("nunca leia MODULO_SEGREDO aqui") vira uso de verdade.
 import { textoDeCodigo } from '../text.mjs';
 // A MESMA função que o `--conferir` do gerador usa. Importar (e não reimplementar) é o que impede
 // a regra e o gerador de divergirem — o defeito que o gerador existe para eliminar, um nível acima.
@@ -205,10 +205,10 @@ export default [
      * `config/ports.json` diz QUEM preenche cada exigência. Coincidem nos dois sentidos, como
      * `env-exemplo` faz entre `requiredEnv` e `.env.example`.
      *
-     * O schema não podia cobrar isto e o `$comentario` dele afirmava que cobrava — schema nenhum
-     * enxerga o `module.json`. Com `additionalProperties: false` e sem `required`, as DUAS brechas
-     * passavam: configurar `storage` sem declará-lo (está no vocabulário) e declarar `storage` sem
-     * configurá-lo (não há campo obrigatório).
+     * O schema não pode cobrar isto — schema nenhum enxerga o `module.json`. Com
+     * `additionalProperties: false` e sem `required`, as DUAS brechas passam: configurar `storage`
+     * sem declará-lo (está no vocabulário) e declarar `storage` sem configurá-lo (não há campo
+     * obrigatório).
      *
      * As duas pontas têm consequências diferentes, e a mensagem diz qual: declarada e não
      * configurada DERRUBA O BOOT — `resolverDependencias` não acha o provedor e lança; configurada
@@ -492,10 +492,10 @@ export default [
     /**
      * O análogo de `env-declarado` para a FIAÇÃO, e nos DOIS sentidos.
      *
-     * O sentido "usada e não declarada" é o buraco que motivou o manifesto de raiz: até aqui o
-     * `.env.example` da raiz era montado só com `module.json:requiredEnv`, então o `JWT_SECRET` do
-     * `resolverAuth()` e o `DATABASE_URL` do adapter real nasciam ÓRFÃOS — o segredo mais sensível
-     * do sistema era o único que ninguém declarava.
+     * O sentido "usada e não declarada" é o buraco que motiva o manifesto de raiz: sem esta regra,
+     * o `.env.example` da raiz é montado só com `module.json:requiredEnv`, então o `JWT_SECRET` do
+     * `resolverAuth()` e o `DATABASE_URL` do adapter real nascem ÓRFÃOS — o segredo mais sensível
+     * do sistema fica o único que ninguém declara.
      *
      * O sentido inverso entra porque a declaração tem consequência: chave declarada vai para o
      * `.env.example` e vira valor exigido do operador. Declarada e sem leitor, ela pede um segredo
@@ -536,8 +536,8 @@ export default [
     /**
      * O gêmeo de `hardcode-url` na fiação — a MESMA `URL_LITERAL`, outro território.
      *
-     * O adapter é onde o endereço do fornecedor de verdade aparece (`https://x.supabase.co`), e até
-     * a I.1 nenhuma regra o enxergava. A única diferença em relação ao módulo é para onde a
+     * O adapter é onde o endereço do fornecedor de verdade aparece (`https://x.supabase.co`).
+     * A única diferença em relação ao módulo é para onde a
      * mensagem aponta: no módulo, `.env` ou `config/`; aqui, `project.json:requiredEnv`, que é
      * onde a raiz declara o que exige do ambiente.
      */
@@ -562,7 +562,7 @@ export default [
      * sistema, e um default embutido não "ajuda no desenvolvimento" — ele VIRA o valor de produção
      * no dia em que a chave falta, calado, com o boot subindo normalmente.
      *
-     * Não briga com `env-raiz-declarado` (I.1): aquela cobra a chave USADA e não declarada, e não
+     * Não briga com `env-raiz-declarado`: aquela cobra a chave USADA e não declarada, e não
      * proíbe a leitura. Ler `process.env` é o ofício de `src/composicao` — é o inverso do que
      * `env-fora-do-carregador` cobra no módulo. O que esta regra proíbe é o DEFAULT, nunca a leitura.
      */

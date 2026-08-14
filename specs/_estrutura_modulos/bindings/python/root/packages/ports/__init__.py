@@ -30,7 +30,7 @@ CODIGOS_DE_ERRO: dict[str, int] = {
 # Fonte NORMATIVA: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do gate
 # (`config-ports.schema.json`, `module.schema.json:ports.items.enum`) sao GERADOS dela. Esta
 # lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
-# mantenha as duas iguais a mao (plan-2.md Bloco S). `fila` SAIU do vocabulario: arrasta retry,
+# mantenha as duas iguais a mao. `fila` NAO ESTA no vocabulario: arrasta retry,
 # dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz
 # que o template nao escolhe.
 PORTAS_CONHECIDAS = (
@@ -98,7 +98,7 @@ class Auth(Protocol):
 
 class Storage(Protocol):
     """Guarda e recupera CONTEUDO por caminho — upload, o caso mais comum de quase todo projeto
-    real (plan-2.md Bloco S). Superficie MINIMA e tipada por operacao, no precedente de
+    real. Superficie MINIMA e tipada por operacao, no precedente de
     `Repositorio`: nada de `executar(comando: str)` — o desenho que sustenta `sql-no-modulo` do
     lado do banco."""
 
@@ -110,6 +110,6 @@ class Storage(Protocol):
 
 
 class Notificador(Protocol):
-    """Envia mensagem a um destinatario — e-mail, o outro caso mais comum (plan-2.md Bloco S)."""
+    """Envia mensagem a um destinatario — e-mail, o outro caso mais comum."""
 
     async def send(self, destinatario: str, assunto: str, corpo: str) -> None: ...

@@ -55,7 +55,7 @@ def to_contract(registro: Registro) -> dict[str, Any]:
 def to_meta(manifesto: dict[str, Any]) -> dict[str, Any]:
     """manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`publicRoutes`): o que
     nao esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
-    `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota (plan-2.md N.1).
+    `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota.
     """
     return {
         "id": manifesto["id"],

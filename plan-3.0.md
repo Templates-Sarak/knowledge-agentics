@@ -127,21 +127,21 @@ Não é dívida da base: é dívida entregue ao usuário.
 
 ---
 
-## Bloco BB — `tools/` e `bindings/`, as 89 citações que viajam
+## Bloco BB — `tools/` e `bindings/`, as 89 citações que viajam ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > São as que entram no projeto do usuário. `tools/` é copiado inteiro; `bindings/<b>/root` vira a raiz
 > do projeto e `_template` vira o molde de módulo.
 
-- [ ] As **43 citações em `tools/`** e as **46 em `bindings/`** — comentário por comentário, pela regra
+- [x] As **43 citações em `tools/`** e as **46 em `bindings/`** — comentário por comentário, pela regra
       deste plano. Não é varredura por palavra-chave: cada uma se lê e se decide
-- [ ] **O aviso permanece; a proveniência sai.** Onde a frase depende de uma medição, a **medição fica**
+- [x] **O aviso permanece; a proveniência sai.** Onde a frase depende de uma medição, a **medição fica**
       (*"sem isto, `npm run test --workspaces` roda zero testes e sai 0"*); o **onde e quando ela foi
       feita, não**
-- [ ] **Cabeçalho de arquivo:** hoje vários abrem com *"Lei dona: … (plan-2.md Bloco S)"*. A **lei dona
+- [x] **Cabeçalho de arquivo:** hoje vários abrem com *"Lei dona: … (plan-2.md Bloco S)"*. A **lei dona
       fica** — é ponteiro vivo para a doutrina que viaja junto. O **bloco de plano sai**
-- [ ] **Não invente resumo.** Comentário que perder a citação e ficar sem sentido é comentário cujo
+- [x] **Não invente resumo.** Comentário que perder a citação e ficar sem sentido é comentário cujo
       conteúdo estava só na citação — nesse caso ele **sai inteiro**, não vira paráfrase vaga
-- [ ] ⚠️ **Primeiro item do bloco: a exceção da catraca passa a carregar a IMPRESSÃO DIGITAL do código
+- [x] ⚠️ **Primeiro item do bloco: a exceção da catraca passa a carregar a IMPRESSÃO DIGITAL do código
       autorizado** *(defeito de desenho do revisor, medido na rodada BE)*. Hoje a autorização é **por
       arquivo**: com `verify-citations.mjs` e `run-all-selftests.mjs` na catraca, **qualquer** mudança de
       código neles passa em silêncio pelo resto da campanha — reproduzido, mutei a assinatura de
@@ -149,18 +149,18 @@ Não é dívida da base: é dívida entregue ao usuário.
       `textoDeCodigo` no momento da autorização: bate → autorizada; não bate com o hash **nem** com a
       referência → **REPROVA** como mudança nova; voltou a bater com a referência → exceção morta,
       reprova (já funciona)
-- [ ] `no-comments-diff` verde ao final deste bloco, contra a linha de base do BA
-- [ ] **`package.json` da raiz entra no escopo deste bloco** *(decisão do revisor, rodada BE)*. As chaves
+- [x] `no-comments-diff` verde ao final deste bloco, contra a linha de base do BA
+- [x] **`package.json` da raiz entra no escopo deste bloco** *(decisão do revisor, rodada BE)*. As chaves
       `"//verificar:citacoes:*"` são comentário por convenção — JSON não tem comentário, e essas duas
       moram **dentro de `scripts`**. Carregam arqueologia (*"Rodada AB / plan-3 Bloco AC"*, *"Inventario
       comeca vazio, e --antes fica verde por vacuidade ate…"*) e o `no-comments-diff` **não as alcança**
       (`.json` fica fora por desenho). Nenhum outro bloco as reivindicava
-- [ ] **A linha de base de citação do `plan-3.1` §AJ.0 é ENTRADA deste bloco.** `--depois-estrito`
+- [x] **A linha de base de citação do `plan-3.1` §AJ.0 é ENTRADA deste bloco.** `--depois-estrito`
       registra **200 achados em 50 arquivos** — nome antigo distintivo ainda citado. **48 deles morrem
       sozinhos** com a remoção do `apply-rename.mjs` (Bloco BE), então a superfície real aqui e no BC é
       **~152**. Citação morta é **ponteiro quebrado**, não arqueologia — mas mora na mesma linha que a
       arqueologia, e quem lê para tirar uma lê a outra no mesmo movimento
-- [ ] ⚠️ **Nem toda entrada da linha de base é resíduo.** Algumas são MENÇÃO DELIBERADA — o `§7.2` cita
+- [x] ⚠️ **Nem toda entrada da linha de base é resíduo.** Algumas são MENÇÃO DELIBERADA — o `§7.2` cita
       `rotaBase`, `lerTexto`, `envRequerido` como **exemplos do que o corte encontra**, e o
       `verify-citations.mjs` documenta o próprio mecanismo. **Essas sobrevivem.** Não zere a linha de
       base por zerar: cada entrada se decide, como todo o resto deste plano
@@ -409,6 +409,15 @@ AH `3ebed84` · AJ `9128037`+`78db148`), e o que ele escreveu já nasceu na regr
       DEPOIS do `plan-3.1` §AH, que acrescentou `mapeador-nomenclatura` ao catálogo (75 regras).
       *Critério com número velho é a forma mais silenciosa de aceitar regressão*
 - [ ] **Bloco K 13/13 nos três bindings**
+- [ ] ⚠️ **O grep é piso, não teto** *(corrigido na rodada BB, onde o critério greppável foi satisfeito
+      e a regra do plano não foi aplicada)*. Três formas, e as duas últimas nenhum grep de citação pega:
+      **(a)** `plan-*.md` e *"Bloco \<letra\>"*; **(b)** o **id de bloco NU** — `I.1`, `B.3`, `N.1`,
+      `N.2`, `N.3`, `I.2`, `J.2`, `G.2` — que cita plano sem dizer *"Bloco"* nem *"plan-"*; **(c)** a
+      **narração em passado sem citação nenhuma**: *"virava"*, *"nunca chegava"*, *"a regra ficava
+      limpa"*, *"o extrator antigo"*, *"a regra estreita anterior deixava passar"*. A (c) é a regra
+      deste plano e só se cobra lendo. **Cuidado com o falso positivo:** passado que descreve o
+      **diff do usuário** fica — *"campo passou a ser OBRIGATORIO na requisicao"*
+      (`contract-compatible.mjs`) é mensagem de runtime sobre o contrato dele, não história do repo
 - [ ] Zero ocorrência de `plan-*.md` e de *"Bloco \<letra\>"* dentro de `specs/_estrutura_modulos/` —
       **medido, não afirmado**
 - [ ] **Zero ponteiro morto em `skills/`** (Bloco BF), medido pelo `--depois-estrito`: nenhuma das 21

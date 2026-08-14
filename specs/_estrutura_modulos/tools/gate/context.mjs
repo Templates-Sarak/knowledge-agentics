@@ -13,7 +13,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
 
 // Gerado por ferramenta, nunca escrito por pessoa. Precisa cobrir TODO cache de linter e de
-// runner: sem `.ruff_cache` aqui, rodar o linter fazia o gate reprovar em seguida por
+// runner: sem `.ruff_cache` aqui, rodar o linter faz o gate reprovar em seguida por
 // "entrada nao prevista" — a verificacao brigando com a verificacao.
 const NAO_PERCORRER = new Set([
   'node_modules', '.git', '.turbo', 'dist', 'build', 'coverage', 'generated',
@@ -24,8 +24,8 @@ const NAO_PERCORRER = new Set([
 // "Nao percorra o conteudo" e "nao conte como entrada da arvore" sao DUAS decisoes, e `generated/` as
 // separa: o conteudo dela e saida de maquina — varre-lo faria `hardcode-url`, `limiar-funcao` e
 // `log` julgarem HTML gerado —, mas a PASTA e item declarado da arvore (`01-modulo.md` §2, "so se
-// geraArtefato") e ja consta de `ENTRADAS_PERMITIDAS`. Enquanto as duas decisoes eram uma so, a
-// pasta era invisivel ao gate: entrada permitida que nunca chegava a existir para regra nenhuma.
+// geraArtefato") e ja consta de `ENTRADAS_PERMITIDAS`. Se as duas decisoes voltarem a ser uma so, a
+// pasta fica invisivel ao gate: entrada permitida que nunca chega a existir para regra nenhuma.
 const CONTEUDO_IGNORADO_MAS_ENTRADA = new Set(['generated']);
 
 const EXT_CODIGO = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py']);
@@ -49,9 +49,9 @@ const PASTAS_DA_RAIZ = ['adapters', 'src', 'packages'];
  * `.gitattributes` de cada binding, que forca `eol=lf` no checkout). Ela cobre o que o
  * `.gitattributes` nao alcanca: um clone que ainda nao foi renormalizado, ou uma copia de disco
  * feita fora do git (`create-project.mjs` copia bytes crus ANTES do primeiro commit). Toda regra
- * que compara texto lido daqui byte a byte contra saida de gerador (`lint-derivado`) dependia de
- * os dois lados concordarem em EOL — sem isto, `core.autocrlf=true` (Windows) fazia o gate
- * reprovar 121 dos 122 casos do autoteste so por causa da quebra de linha (plan-3.md Bloco AE).
+ * que compara texto lido daqui byte a byte contra saida de gerador (`lint-derivado`) depende de
+ * os dois lados concordarem em EOL — sem isto, `core.autocrlf=true` (Windows) faz o gate
+ * reprovar 121 dos 122 casos do autoteste so por causa da quebra de linha.
  */
 function lerTexto(caminho) {
   return readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n');

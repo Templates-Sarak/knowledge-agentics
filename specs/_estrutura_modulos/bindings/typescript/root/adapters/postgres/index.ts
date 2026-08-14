@@ -1,5 +1,5 @@
 // Adapter Postgres para as portas "repositorio" e "auditoria" — ENTREGUE pelo template, pronto
-// para uso (plan-2.2.md Bloco Z). `memory` continua o DEFAULT de todo modulo (config/ports.json);
+// para uso. `memory` continua o DEFAULT de todo modulo (config/ports.json);
 // trocar para este adapter e editar UMA linha ali, nunca este arquivo.
 //
 // Materializa a FORMA que o molde cria (database/migrations/0001-cria-metadados.sql):
@@ -206,7 +206,7 @@ export function createPostgresAudit(modulo: ModuloParaAdapter): Auditoria {
 }
 
 // ================================================================================================
-// DECLARADO, NÃO ESCONDIDO (plan-2.2.md Bloco Z)
+// DECLARADO, NÃO ESCONDIDO
 //
 // Este adapter cobre a FORMA DO MOLDE — as duas tabelas que `create-module.mjs` já entrega. O que
 // fica de fora: *pool* com tuning (tamanho, timeout — usa os defaults de `pg.Pool`), *retry* de

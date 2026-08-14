@@ -18,13 +18,12 @@ relatorios/
 # em diretorio excluido). O prefixo `**/` e OBRIGATORIO nos dois: `generated/` mora dentro de
 # `modules/<modulo>/`, nunca na raiz — e um padrao com `/` no MEIO (nao so no fim) ancora na pasta
 # do .gitignore por semantica gitignore, casando so `<root>/generated/*`. Medido com
-# `git check-ignore -v`: sem o `**/`, `modules/sonda/generated/lixo.pdf` NAO era ignorado nenhum —
+# `git check-ignore -v`: sem o `**/`, `modules/sonda/generated/lixo.pdf` NAO e ignorado nenhum —
 # a mesma classe de erro que este item existe para consertar, so que no sentido oposto.
-# M.1, plan-2.md.
 **/generated/*
 !**/generated/.gitkeep
 
 # .coverage: `estrutura-estrita` ja tolera esta entrada nos TRES bindings (o Set e compartilhado);
-# so faltava o .gitignore que a acompanhasse aqui — e este E saida de maquina de verdade (o banco
-# SQLite do coverage.py), nao estrutura — Bloco M, plan-2.md.
+# aqui o motivo e que isto E saida de maquina de verdade (o banco SQLite do coverage.py), nao
+# estrutura.
 .coverage

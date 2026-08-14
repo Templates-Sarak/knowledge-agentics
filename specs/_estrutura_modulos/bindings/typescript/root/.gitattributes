@@ -1,11 +1,12 @@
 # TODO arquivo de texto sai do checkout em LF, em qualquer SO. Windows com core.autocrlf=true (o
 # padrao) converteria para CRLF, e o gate compara disco contra saida de gerador BYTE A BYTE
 # (`lint-derivado`, `gerar-schemas-portas --conferir`) — reprovaria so pela quebra de linha, nunca
-# pelo conteudo (plan-3.md Bloco AE: clone limpo em CRLF media 1/122 no autoteste do gate).
+# pelo conteudo (medido: clone limpo em CRLF media 1/122 no autoteste do gate).
 #
 # `text=auto` deixa o git decidir texto x binario (nao corrompe asset binario, se algum entrar);
 # `eol=lf` fixa a normalizacao independente do `core.autocrlf` de quem clona. Amplo de proposito —
 # cobre `.githooks/*` (shell script: sem LF nao executa, "sh: bad interpreter") e TODO arquivo
-# GERADO (eslint.config.js, .ruff.toml, os dois schemas de porta) sem listar cada um por nome, que
-# e o que a regra estreita anterior deixava passar.
+# GERADO (eslint.config.js, .ruff.toml, os dois schemas de porta) sem listar cada um por nome —
+# uma regra estreita, listando cada um, deixaria escapar o proximo arquivo gerado que ninguem
+# lembrar de acrescentar.
 * text=auto eol=lf

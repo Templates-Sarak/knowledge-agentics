@@ -21,13 +21,13 @@ nao um cliente isolado). Instalar um Postgres inteiro no sistema so para ter o C
 dificil de reverter — desproporcional para um cliente. `psycopg` como optional-dependency e comum,
 escopada ao projeto, instalada pelo MESMO `pip install -e ".[dev]"` que ja instala tudo mais.
 
-ESTADO POR MODULO (plan-2.2.md Bloco Y) — o limite que este arquivo declarava ("sem controle de
-versao de migration") mordeu em uso real: um projeto com tres migrations e dois ambientes nao
-conseguia rodar `up` a segunda vez. A tabela `<schema>.<prefix>migrations` (`arquivo text primary
-key`, `aplicada_em timestamptz`) e criada pela PRIMEIRA migration do molde — nao por este runner: o
-runner so LE e ESCREVE nela, nunca decide a forma dela por fora do SQL versionado. `up` aplica so o
-que falta; `down` reverte so o ULTIMO aplicado (nunca "tudo de uma vez" — e o comportamento padrao
-de runner de migration, e o que faz `ciclo` funcionar de QUALQUER estado inicial).
+ESTADO POR MODULO — sem controle de versao de migration, um projeto com tres migrations e dois
+ambientes nao consegue rodar `up` a segunda vez. A tabela `<schema>.<prefix>migrations`
+(`arquivo text primary key`, `aplicada_em timestamptz`) e criada pela PRIMEIRA migration do
+molde — nao por este runner: o runner so LE e ESCREVE nela, nunca decide a forma dela por fora do
+SQL versionado. `up` aplica so o que falta; `down` reverte so o ULTIMO aplicado (nunca "tudo de
+uma vez" — e o comportamento padrao de runner de migration, e o que faz `ciclo` funcionar de
+QUALQUER estado inicial).
 
 ORDEM DENTRO DE CADA MIGRATION, POR TRANSACAO: `up` roda o SQL da migration e SO DEPOIS insere a
 linha de controle (a tabela pode ter acabado de nascer NAQUELE up); `down` faz o INVERSO — apaga a
@@ -399,8 +399,8 @@ def _environment_key_cases() -> list[dict[str, Any]]:
 
 def _state_cases() -> list[dict[str, Any]]:
     """`pending`/`last_applied` contra os TRES estados que `ciclo` atravessa: banco vazio,
-    parcialmente migrado, e totalmente migrado (o caso que travava `up` antes deste bloco — medido
-    no teste real, plan-2.2.md Bloco Y)."""
+    parcialmente migrado, e totalmente migrado (o caso que trava `up` sem este controle de
+    estado — medido no teste real)."""
     nomes = ["0001-cria-metadados.sql", "0002-acrescenta-status.sql", "0003-cria-indice.sql"]
     return [
         {

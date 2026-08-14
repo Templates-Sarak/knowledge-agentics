@@ -10,16 +10,16 @@
  * cada módulo, e `project.json:requiredEnv` para as chaves da própria RAIZ (a fiação —
  * `adapters/`, `src/`, `packages/`). O `.env.example` da raiz é a união das duas.
  *
- * Enquanto a raiz não declarava, o segredo dela nascia órfão: `JWT_SECRET`, `DATABASE_URL`, chave
+ * Sem a raiz declarar, o segredo dela nasce órfão: `JWT_SECRET`, `DATABASE_URL`, chave
  * de provedor — todos fora do `.env.example`, todos invisíveis a `env-declarado` e `env-exemplo`,
- * que são regras por módulo. O mais sensível do sistema era o único que ninguém documentava.
+ * que são regras por módulo. O mais sensível do sistema fica o único que ninguém documenta.
  *
  * O `.env.example` nunca guarda valor real — regravá-lo por inteiro a cada chamada é seguro, e é
  * o que mantém `chaves === manifesto` sem intervenção. O `.env` REAL é outra história: ele guarda
  * segredo de verdade, preenchido à mão (é o único jeito de um segredo nunca virar texto versionado).
  * Por isso este script MESCLA nele — nunca sobrescreve valor já preenchido, nunca apaga chave em
- * silêncio (medido: `create-module.mjs` do segundo módulo em diante não tinha como fazer a chave
- * nova chegar ao `.env` real; só ao `.env.example`, que ninguém lê para subir o processo).
+ * silêncio (medido: sem isto, `create-module.mjs` do segundo módulo em diante não teria como fazer
+ * a chave nova chegar ao `.env` real; só ao `.env.example`, que ninguém lê para subir o processo).
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

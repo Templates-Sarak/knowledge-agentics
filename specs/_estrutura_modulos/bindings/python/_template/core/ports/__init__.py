@@ -58,7 +58,7 @@ class Auth(Protocol):
 
 class Notificador(Protocol):
     """Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
-    modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1, plan-2.md Bloco S)."""
+    modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1)."""
 
     async def send(self, destinatario: str, assunto: str, corpo: str) -> None: ...
 

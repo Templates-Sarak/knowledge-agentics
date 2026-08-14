@@ -455,7 +455,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs",
-      "linha": 201,
+      "linha": 200,
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
@@ -950,7 +950,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs",
-      "linha": 201,
+      "linha": 200,
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
@@ -1412,7 +1412,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 709,
+      "linha": 703,
       "item": {
         "antigo": "exportaResumo",
         "novo": "exportsSummary",
@@ -1423,7 +1423,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/contract.mjs",
-      "linha": 712,
+      "linha": 706,
       "item": {
         "antigo": "exportaResumo",
         "novo": "exportsSummary",
@@ -1434,7 +1434,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 241,
+      "linha": 238,
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
@@ -1445,7 +1445,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/operation.mjs",
-      "linha": 246,
+      "linha": 243,
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
@@ -1467,13 +1467,24 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/structure.mjs",
-      "linha": 272,
+      "linha": 271,
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
         "tipo": "chave"
       },
       "nome": "rotaWeb",
+      "motivo": "nome-antigo-ainda-presente"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/structure.mjs",
+      "linha": 320,
+      "item": {
+        "antigo": "geraArtefato",
+        "novo": "generatesArtifact",
+        "tipo": "chave"
+      },
+      "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
     },
     {
@@ -1489,7 +1500,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/structure.mjs",
-      "linha": 322,
+      "linha": 323,
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",
@@ -1511,18 +1522,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/structure.mjs",
-      "linha": 325,
-      "item": {
-        "antigo": "geraArtefato",
-        "novo": "generatesArtifact",
-        "tipo": "chave"
-      },
-      "nome": "geraArtefato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/rules/structure.mjs",
-      "linha": 356,
+      "linha": 355,
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
@@ -1533,7 +1533,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/rules/structure.mjs",
-      "linha": 358,
+      "linha": 357,
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
@@ -1555,18 +1555,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 100,
-      "item": {
-        "antigo": "geraArtefato",
-        "novo": "generatesArtifact",
-        "tipo": "chave"
-      },
-      "nome": "geraArtefato",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 1498,
+      "linha": 1495,
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
@@ -1577,7 +1566,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 1509,
+      "linha": 1506,
       "item": {
         "antigo": "rotasPublicas",
         "novo": "publicRoutes",
@@ -1588,7 +1577,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 524,
+      "linha": 522,
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
@@ -1599,7 +1588,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 688,
+      "linha": 686,
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
@@ -1610,7 +1599,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 77,
+      "linha": 76,
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
@@ -1621,7 +1610,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 85,
+      "linha": 84,
       "item": {
         "antigo": "rotaWeb",
         "novo": "webPath",
@@ -1632,7 +1621,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 864,
+      "linha": 860,
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
@@ -1643,7 +1632,18 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
-      "linha": 94,
+      "linha": 93,
+      "item": {
+        "antigo": "geraArtefato",
+        "novo": "generatesArtifact",
+        "tipo": "chave"
+      },
+      "nome": "geraArtefato",
+      "motivo": "nome-antigo-ainda-presente"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
+      "linha": 99,
       "item": {
         "antigo": "geraArtefato",
         "novo": "generatesArtifact",

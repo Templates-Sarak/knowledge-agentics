@@ -7,8 +7,8 @@
  * É a família que sustenta a extraibilidade. Se ela passa, o módulo sai da pasta sem refactor.
  *
  * As TRÊS últimas são de escopo `root` e olham a **fiação**, não o módulo. Estão nesta família
- * porque a pergunta é a mesma — quem pode depender de quem —, só que na direção que faltava:
- * `import-lateral` e `import-adapter` cobram o módulo, e até aqui ninguém cobrava a raiz.
+ * porque a pergunta é a mesma — quem pode depender de quem —, só que na direção complementar:
+ * `import-lateral` e `import-adapter` cobram o módulo; estas três cobram a raiz.
  *
  * O `ui.modo` do manifesto tem duas cláusulas (01-modulo.md §7) e só UMA delas ganha regra própria:
  * a do modo `proprio` ("proibido importar componente de outro módulo") **é** a `import-lateral`
@@ -80,8 +80,8 @@ const FONTE_LITERAL = new RegExp(`\\b(?:${PROPRIEDADES_DE_FONTE.join('|')})\\s*:
 
 /**
  * Folha de estilo entra na varredura, e não é detalhe: em `ui.modo: "kit"` ela é o lugar MAIS
- * provável de a cor literal aparecer, e `ctx.codigo` é filtrado por extensão de linguagem — um
- * `.css` nunca chegava aqui. A regra ficava limpa exatamente onde o defeito mora.
+ * provável de a cor literal aparecer, e `ctx.codigo` é filtrado por extensão de linguagem — sem
+ * esta lista, um `.css` nunca chega aqui, e a regra fica limpa exatamente onde o defeito mora.
  *
  * `.module.css` entra por `.css`: `ext` é a última extensão do nome.
  */
@@ -363,7 +363,7 @@ export default [
       const proibidos = new RegExp(`\\b(${SQL_FONTE}|createClient|new\\s+Pool|\\.query\\()`, 'i');
       return ctx.codigo
         // `textoDeCodigo`, nao `conteudo`: o barril da pasta DOCUMENTA em comentario o que o
-        // gateway nao pode fazer, e sobre o texto cru essa documentacao virava a violacao dela mesma.
+        // gateway nao pode fazer, e sobre o texto cru essa documentacao vira a violacao dela mesma.
         .filter((a) => a.rel.startsWith('core/gateways/') && proibidos.test(textoDeCodigo(a)))
         .map((a) => `${a.rel}: gateway fala com banco — gateway e HTTP sobre o contrato do outro modulo`);
     },

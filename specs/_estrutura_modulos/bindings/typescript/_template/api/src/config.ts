@@ -123,7 +123,7 @@ export function envRequired(chave: string): string {
 }
 
 /**
- * Exportada só para o teste direto (plan-2.md N.4): sem `.env` real, TODO teste rodaria sob
+ * Exportada só para o teste direto: sem `.env` real, TODO teste rodaria sob
  * `NODE_ENV=test` sem uma unica variavel de `requiredEnv` preenchida — e sem o bypass abaixo,
  * `loadConfiguration()` derrubaria a suite inteira antes do primeiro `it()`. O preco declarado:
  * "suite verde" nunca prova, por si so, que a fiacao de ambiente esta correta — quem prova isso e o

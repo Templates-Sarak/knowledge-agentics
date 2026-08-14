@@ -5,7 +5,7 @@
   "required": ["qualidade", "formatacao", "cobertura", "dependencias", "linguagens"],
   "properties": {
     "qualidade": {
-      "$comentario": "Severidade com que o hook `padrao-limiares` cobra o padrao de escrita. E politica porque a dureza depende do momento do projeto — legado em adequacao trabalha em `warn`, projeto novo em `block`. Tem `modo` e NADA MAIS — nem `limiares`, nem `proibir`, e `additionalProperties: false` faz declarar qualquer um dos dois REPROVAR. `limiares` esta fora porque os 40/3/4 sao LEI (§4.7), com fonte unica em tools/gate/thresholds.mjs. `proibir` (printConsole/excecaoEngolida) esta fora pelo mesmo argumento com o sinal trocado: generate-lint-config.mjs emite no-console, no-empty, T20 e E INCONDICIONALMENTE, sem ler politica, entao o campo nunca acrescentava cobertura — so escondia do agente um erro que o proprio lint do projeto acusava.",
+      "$comentario": "Severidade com que o hook `padrao-limiares` cobra o padrao de escrita. E politica porque a dureza depende do momento do projeto — legado em adequacao trabalha em `warn`, projeto novo em `block`. Tem `modo` e NADA MAIS — nem `limiares`, nem `proibir`, e `additionalProperties: false` faz declarar qualquer um dos dois REPROVAR. `limiares` esta fora porque os 40/3/4 sao LEI (§4.7), com fonte unica em tools/gate/thresholds.mjs. `proibir` (printConsole/excecaoEngolida) esta fora pelo mesmo argumento com o sinal trocado: generate-lint-config.mjs emite no-console, no-empty, T20 e E INCONDICIONALMENTE, sem ler politica, entao o campo nunca acrescentaria cobertura — so esconderia do agente um erro que o proprio lint do projeto acusa.",
       "type": "object",
       "additionalProperties": false,
       "required": ["modo"],
@@ -23,7 +23,7 @@
       }
     },
     "cobertura": {
-      "$comentario": "Alvo de cobertura de teste. E politica porque depende da maturidade e do risco do projeto. NEM o gate NEM o `verificar`/`verificar.py` local a medem — custa dezenas de segundos por modulo (03-operacao.md §7), e por isso e passo de CI (`ci:cobertura`/`--cobertura`), nunca do feedback rapido local. `modo` e OPCIONAL (Bloco R.2, plan-2.md): `hooks/_lib.js:politicaDoProjeto` ja repassa `cobertura` inteiro do projeto por cima do default da base (`ask`) — sem esta linha o schema recusava o campo como 'nao previsto', e a decisao so podia vir da base, nunca do projeto que os hooks protegem.",
+      "$comentario": "Alvo de cobertura de teste. E politica porque depende da maturidade e do risco do projeto. NEM o gate NEM o `verificar`/`verificar.py` local a medem — custa dezenas de segundos por modulo (03-operacao.md §7), e por isso e passo de CI (`ci:cobertura`/`--cobertura`), nunca do feedback rapido local. `modo` e OPCIONAL: `hooks/_lib.js:politicaDoProjeto` ja repassa `cobertura` inteiro do projeto por cima do default da base (`ask`) — sem esta linha o schema recusa o campo como 'nao previsto', e a decisao so pode vir da base, nunca do projeto que os hooks protegem.",
       "type": "object",
       "additionalProperties": false,
       "required": ["minima"],
@@ -33,7 +33,7 @@
       }
     },
     "dependencias": {
-      "$comentario": "Piso de severidade que reprova numa auditoria de dependencia. E politica porque o corte aceitavel depende da exposicao do sistema, e porque o vocabulario e do ecossistema (npm/pip), nao da doutrina. `modo` e OPCIONAL (Bloco R.2, plan-2.md), mesmo motivo do `cobertura.modo` acima: sem a linha, `hooks/cyber-dependencias.js` so podia herdar o `modo` da base, nunca do projeto.",
+      "$comentario": "Piso de severidade que reprova numa auditoria de dependencia. E politica porque o corte aceitavel depende da exposicao do sistema, e porque o vocabulario e do ecossistema (npm/pip), nao da doutrina. `modo` e OPCIONAL, mesmo motivo do `cobertura.modo` acima: sem a linha, `hooks/cyber-dependencias.js` so pode herdar o `modo` da base, nunca do projeto.",
       "type": "object",
       "additionalProperties": false,
       "required": ["severidadeMinima"],

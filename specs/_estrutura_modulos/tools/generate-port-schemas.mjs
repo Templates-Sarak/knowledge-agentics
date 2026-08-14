@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * generate-port-schemas.mjs — deriva os dois schemas de porta de `ports-vocabulary.mjs`.
- * Lei dona: specs/arquitetura/01-modulo.md §5.1 (plan-2.md Bloco S).
+ * Lei dona: specs/arquitetura/01-modulo.md §5.1.
  *
  *   node tools/generate-port-schemas.mjs [--conferir]
  *
@@ -65,12 +65,10 @@ function conteudoConfigPortas() {
  * tem um enum, então isso é seguro. `[^]` (não `.`) porque `.` não casa quebra de linha sem a flag
  * `s`, e o trecho entre `"ports": {` e `"enum":` atravessa várias linhas no arquivo real.
  *
- * `"ports"` aqui é a CHAVE do manifesto (`module.schema.json`, renomeada na fase AD.3 — antes disso
- * era `"ports"`) — não confundir com `config-ports.schema.json`, o arquivo, que já é `ports` desde
- * a fase AD.1. Achado ORIGINALMENTE ao rodar o Bloco K, antes do AD.3: o regex já dizia `"ports":`
- * (a chave ainda não tinha sido renomeada), e como `module.schema.json` continuava com a chave em
- * português, o padrão nunca casava — silencioso, `--conferir` reportava OK mesmo com o enum
- * desatualizado. Resolvido de verdade no AD.3: agora os dois lados (regex e schema) dizem `"ports"`.
+ * `"ports"` aqui é a CHAVE do manifesto (`module.schema.json`) — não confundir com
+ * `config-ports.schema.json`, o arquivo. Os dois lados (este regex e o schema) têm de dizer
+ * `"ports"` — se um lado divergir do outro, o padrão nunca casa e `--conferir` reporta OK mesmo
+ * com o enum desatualizado, em silêncio.
  */
 function comEnumDePortasAtualizado(textoOriginal, portas) {
   const novoEnum = `[${portas.map((p) => JSON.stringify(p)).join(', ')}]`;
@@ -78,7 +76,7 @@ function comEnumDePortasAtualizado(textoOriginal, portas) {
 }
 
 // Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:lerTexto` — o `.gitattributes`
-// e o conserto estrutural, isto cobre clone ainda nao renormalizado (plan-3.md Bloco AE).
+// e o conserto estrutural, isto cobre clone ainda nao renormalizado.
 function lerOuNulo(caminho) {
   return existsSync(caminho)
     ? readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n')

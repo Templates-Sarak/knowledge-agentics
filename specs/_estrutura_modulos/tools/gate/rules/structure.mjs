@@ -54,9 +54,9 @@ const CONFIGS = ['api', 'domain', 'seguranca', 'ports', 'textos'];
 const PASTAS_DE_ARTEFATO = ['core/engine/', 'core/templates/', 'generated/'];
 
 /**
- * O conjunto obrigatório do molde que hoje NÃO TEM DONO — plan-2.md Bloco M. A árvore era fechada
- * por CIMA (`estrutura-estrita` reprova entrada não prevista) e aberta por BAIXO: um módulo podia
- * perder o domínio inteiro, as portas, o banco e a config de tipos, e o gate dizia "conforme".
+ * O conjunto obrigatório do molde — sem esta lista, a árvore fica fechada por CIMA
+ * (`estrutura-estrita` reprova entrada não prevista) e aberta por BAIXO: um módulo pode perder o
+ * domínio inteiro, as portas, o banco e a config de tipos, e o gate diz "conforme".
  *
  * A fronteira com quem já cobra, para não haver duas mensagens para um defeito: `contract/` é do
  * `contract`; `web/` é do `web-declarado`; `core/engine`, `core/templates` e `generated/` são do
@@ -68,7 +68,7 @@ const PASTAS_DE_ARTEFATO = ['core/engine/', 'core/templates/', 'generated/'];
 const PASTAS_OBRIGATORIAS = ['core/domain/', 'core/ports/'];
 
 /**
- * O arquivo de manifesto/tipos que só o binding declarado exige (a tabela do plan-2.md Bloco M).
+ * O arquivo de manifesto/tipos que só o binding declarado exige (a tabela abaixo).
  * `requirements.txt` fica de fora: `pyproject.toml` já é o manifesto de dependência do binding
  * Python, e exigir os dois seria redundância sem verificador que a justifique.
  */
@@ -146,11 +146,10 @@ function conferirIdentidade(manifesto, ctx) {
 }
 
 /**
- * `role` NAO entra aqui — DECIDIDO (plan-2.md Bloco R.2). `role` e enum, e enum e o que o
- * JSON Schema expressa: quem acusa e `schema-manifesto`, e `manifesto` cala. O precedente e o
- * proprio `manifesto-raiz`, que ja e um id so com a mesma justificativa ("tudo que o `project.json`
- * afirma e FORMA"). `binding` fica de fora desta decisao — nenhum caso o cobre e o Bloco R.2 nao o
- * revisitou — e continua checado aqui.
+ * `role` NAO entra aqui — `role` e enum, e enum e o que o JSON Schema expressa: quem acusa e
+ * `schema-manifesto`, e `manifesto` cala. O precedente e o proprio `manifesto-raiz`, que ja e um id
+ * so com a mesma justificativa ("tudo que o `project.json` afirma e FORMA"). `binding` fica de fora
+ * desta decisao — nenhum caso o cobre — e continua checado aqui.
  */
 function conferirVocabulario(manifesto) {
   const achados = [];
@@ -187,8 +186,8 @@ export default [
     /**
      * O manifesto da RAIZ — existência, JSON válido e forma, sob UM id só.
      *
-     * O módulo tem dois ids para isto (`manifesto` e `schema-manifesto`), e desde o Bloco R.2
-     * (plan-2.md) a fronteira entre eles deixou de ter par a resolver: `schema-manifesto` é dono da
+     * O módulo tem dois ids para isto (`manifesto` e `schema-manifesto`), e a fronteira entre eles
+     * não tem par a resolver: `schema-manifesto` é dono da
      * FORMA — inclusive `role`, que é enum — e `manifesto` cala nela (`conferirVocabulario` acima).
      * O `manifesto` do módulo só existe além do schema por causa das cláusulas RELACIONAIS
      * (`id` = nome da pasta, `basePath` derivada do `id`), e a raiz não tem nenhuma: ela não tem
@@ -360,10 +359,10 @@ export default [
   },
   {
     /**
-     * O terceiro lado do triângulo `gateway ⟷ consumes ⟷ teste`. Os outros dois já existiam:
+     * O terceiro lado do triângulo `gateway ⟷ consumes ⟷ teste`. Os outros dois já existem:
      * `gateway-declarado` liga o arquivo ao `consumes`, e `consome-contrato` liga o `consumes` ao
-     * contrato do dono. Faltava o teste — e sem ele uma dependência entre módulos podia existir,
-     * declarada e conforme, sem uma linha que a exercitasse.
+     * contrato do dono. Falta o teste — e sem ele uma dependência entre módulos pode existir,
+     * declarada e conforme, sem uma linha que a exercite.
      *
      * NÃO é "tem arquivo na pasta" com outro nome: `tests` cobra a PASTA (`tests/domain/`,
      * `tests/contract/` não-vazias), e esta cobra UM teste POR gateway. Um módulo com três gateways

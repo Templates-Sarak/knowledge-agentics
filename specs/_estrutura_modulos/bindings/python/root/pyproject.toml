@@ -65,4 +65,4 @@ exclude = ["^modules/"]
 # `.ruff.toml` vence o `pyproject.toml` por inteiro — nao ha merge. Manter uma secao `[tool.ruff]`
 # aqui a deixaria silenciosamente morta, que e pior que duplicar: duas fontes, e a que o autor
 # edita nao e a que vale. Os limiares 40/3/4 sao LEI (specs/arquitetura/04-regras.md §4.7) e por
-# isso sao derivados, nunca escritos a mao — era este arquivo que os repetia antes.
+# isso sao derivados, nunca escritos a mao.

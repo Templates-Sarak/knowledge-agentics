@@ -143,8 +143,8 @@ Pasta iniciada por `_` (o `_template` de cada binding) é tratada como **molde**
 marcadores `<modulo>`, `<MODULO>` e `<Modulo>` **em memória** por um id sintético, e o molde passa pelas mesmas
 regras que um módulo real. Nada é escrito de volta.
 
-Isso não é preciosismo. Num sistema real, o molde era a única pasta que o validador pulava — apodreceu sem
-ninguém notar, e todo módulo criado a partir dele nascia quebrado (ADR-006 (`specs/adr/000-decisoes-do-template.md`)).
+Isso não é preciosismo. Sem esta verificação, o molde seria a única pasta que o validador pula — apodrece
+sem ninguém notar, e todo módulo criado a partir dele nasce quebrado (ADR-006 — `specs/adr/000-decisoes-do-template.md`).
 
 ## Exceções
 

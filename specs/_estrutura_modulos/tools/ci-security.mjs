@@ -20,11 +20,11 @@
  * (lista de caminhos rastreados, pares {caminho, conteúdo} do delta), nunca toca `fs`/`child_process`.
  * A casca (`git`, `arquivosRastreados`, `arquivosMudados`, `lerConteudoAtual`) isola TODO acesso a
  * disco/git em pontos nomeados — `execFileSync` sempre com ARRAY de argumentos, nunca `shell: true`
- * (a etapa anterior deste plano foi reprovada exatamente por isso: nome de pasta virando comando).
+ * (nome de pasta virando comando é o mesmo risco que `verify-commit.mjs` documenta).
  *
  * O DELTA REUSADO, NÃO INVENTADO: mesma forma de `contract-compatible.mjs` — `git diff --name-only
  * <ref>` —, que por sua vez já é a mesma pergunta de `affected.mjs:caminhosAlteradosDesde` (privada,
- * não exportada; `contract-compatible.mjs` já tinha resolvido isso escrevendo a MESMA chamada em vez
+ * não exportada; `contract-compatible.mjs` resolve isso escrevendo a MESMA chamada em vez
  * de reimplementar o grafo — o precedente é literal, não análogo). Não é staged: este passo é CI, e
  * staged é conceito de working tree local (é o que `verify-commit.mjs:pre-commit` usa, porque ali
  * SIM há um índice local). Default `HEAD~1`, a mesma escolha e o mesmo argumento de
@@ -163,8 +163,8 @@ function arquivosRastreados() {
 /**
  * O hash da ÁRVORE VAZIA — constante do Git, igual em todo repositório que existe (não precisa ser
  * alcançável por nenhum commit para funcionar como base de `git diff`). Comparar contra ela faz TODO
- * arquivo rastreado contar como delta — é "tudo", não "nada" (plan-2.2.md Bloco AA: mais verificação
- * nunca fere o fail-closed, menos verificação sim).
+ * arquivo rastreado contar como delta — é "tudo", não "nada": mais verificação nunca fere o
+ * fail-closed, menos verificação sim.
  */
 const ARVORE_VAZIA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
@@ -182,7 +182,7 @@ function refValida(ref) {
 
 /**
  * Repositório com um commit só não tem `HEAD~1` — sem isto, o PRIMEIRO pipeline de todo repositório
- * Sarak nasceria vermelho aqui (medido no teste real, plan-2.2.md Bloco AA). `--desde` explícito
+ * Sarak nasce vermelho aqui (medido no teste real). `--desde` explícito
  * NUNCA é substituído em silêncio: só o DEFAULT cai para a árvore vazia quando não resolve — uma ref
  * que o usuário escolheu errada continua reprovando, para não esconder o erro dele.
  */
@@ -354,12 +354,12 @@ function casosDeAutoteste() {
 
 /**
  * Estas duas fixtures precisam PARECER segredo de verdade para o vocabulário reconhecer — mas
- * `tools/` agora entra na própria varredura (`create-project.mjs` copia a pasta inteira para o
- * projeto gerado; medido: `ci-seguranca` acusava A SI MESMO, apontando estas duas linhas literais).
- * Por isso são MONTADAS em tempo de execução — o texto-FONTE deste arquivo nunca contém o padrão
- * contíguo, só o valor já concatenado em memória o contém. Nenhuma ofuscação: mesmo motivo de um
- * scanner de vírus não guardar a própria assinatura em texto puro dentro do binário. O valor
- * RESULTANTE, e o que os testes exercitam, é idêntico ao de antes — só o texto-fonte mudou.
+ * `tools/` entra na própria varredura (`create-project.mjs` copia a pasta inteira para o
+ * projeto gerado); medido: escritas literais, `ci-seguranca` acusa A SI MESMO, apontando estas
+ * duas linhas. Por isso são MONTADAS em tempo de execução — o texto-FONTE deste arquivo nunca
+ * contém o padrão contíguo, só o valor já concatenado em memória o contém. Nenhuma ofuscação:
+ * mesmo motivo de um scanner de vírus não guardar a própria assinatura em texto puro dentro do
+ * binário. O valor RESULTANTE, que os testes exercitam, é sempre o literal esperado.
  */
 function montar(...partes) {
   return partes.join('');

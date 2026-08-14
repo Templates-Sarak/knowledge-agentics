@@ -36,7 +36,7 @@ function abortar(mensagem) {
  * normalizando CRLF para LF — defesa em profundidade, mesma de `tools/gate/context.mjs:lerTexto`.
  * O molde é copiado de disco, não de um clone git (`core.autocrlf` não protege aqui), e
  * `podarTesteDeArtefatoPy` casa texto por `\n` literal: sem isto, um molde ainda em CRLF faz o
- * `.replace()` de lá virar noop silencioso (plan-3.md Bloco AE.e).
+ * `.replace()` de lá virar noop silencioso.
  */
 function lerTexto(caminho) {
   return readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n');
@@ -131,7 +131,7 @@ function ajustarManifesto(destino, opcoes) {
     manifesto.data.tables = [];
   }
   if (opcoes.semWeb) {
-    // As DUAS juntas (Bloco O, plan-2.md) — nao so `webPath`. `navigation` sozinha, sem `webPath`,
+    // As DUAS juntas — nao so `webPath`. `navigation` sozinha, sem `webPath`,
     // e uma entrada de menu apontando para o nada: `navegacao-declarada` reprova, e reprova com
     // razao (o modulo pediu tela removida e deixou o menu para tras).
     manifesto.webPath = null;
@@ -153,8 +153,8 @@ function podarTextosDeTela(destino) {
 /**
  * Remove `agulha` de `texto` (regex ou string) e EXIGE que algo tenha mudado. Sem isto,
  * `String.replace()`/`RegExp.replace()` que não casam devolvem o texto igual em silêncio — a poda
- * vira noop, o import órfão sobra no arquivo, e só o `tsc`/`ruff` do Bloco K acusa, três passos
- * adiante (o defeito real do AD.1 em `create-module.mjs:162`, plan-3.md Bloco AE.c/AE.e).
+ * vira noop, o import órfão sobra no arquivo, e só o `tsc`/`ruff` do autoteste do template acusa,
+ * passos adiante.
  */
 function podarOuFalhar(texto, agulha, contexto) {
   const podado = texto.replace(agulha, '');
@@ -165,7 +165,7 @@ function podarOuFalhar(texto, agulha, contexto) {
 }
 
 /**
- * O teste de domínio importa `core/engine` para exercitar `generateArtifact` (Bloco O, plan-2.md).
+ * O teste de domínio importa `core/engine` para exercitar `generateArtifact`.
  * `--sem-artefato` apaga a PASTA e deixa o teste importando o nada — `tsc`/`import` reprova antes
  * mesmo do `vitest` rodar. Poda o import E o bloco de teste, por binding; o teste de domínio
  * (`buildRecord`/`build_record`) fica intacto, porque não depende do motor.
@@ -316,8 +316,8 @@ function finalizar(opcoes, raizProjeto) {
   // manifestos, inclusive as deste modulo novo — nao so o `.env.example`. Ele nunca sobrescreve
   // valor ja preenchido, entao chamar em todo `criar-modulo` (nao so no primeiro) e seguro; e o
   // que faz o `.env` real acompanhar o segundo modulo em diante, o que uma criacao unica (so no
-  // primeiro modulo, com early-return se o arquivo ja existisse) nao fazia — medido: chave do
-  // segundo modulo nunca chegava ao `.env` real por esse caminho.
+  // primeiro modulo, com early-return se o arquivo ja existisse) nao faria — medido: chave do
+  // segundo modulo nunca chega ao `.env` real por esse caminho.
   process.stdout.write(rodar('sync-env.mjs', [], raizProjeto));
   process.stdout.write('instalando dependencias do modulo novo...\n');
   instalarDependencias(raizProjeto, opcoes.binding);

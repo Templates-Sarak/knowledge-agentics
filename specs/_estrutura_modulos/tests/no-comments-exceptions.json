@@ -1,20 +1,17 @@
 {
-  "_comentario": "Catraca de exceção declarada para no-comments-diff.mjs (plan-3.0.md Bloco BA, revisão D2) — mesma disciplina de citation-baseline.json: código autorizado a mudar por decisão do plano (não por acidente) entra aqui, nunca regravando no-comments-baseline.json. Cada entrada nomeia o ARQUIVO + o BLOCO que autorizou + O QUE mudou. O conjunto é EXATO nos dois sentidos: arquivo que diverge sem entrada aqui reprova (mudança sem autorização); entrada cujo arquivo não diverge mais TAMBÉM reprova (exceção morta) — regrave/pode esta lista sempre que um arquivo autorizado voltar a bater com a referência.",
+  "_comentario": "Catraca de exceção declarada para no-comments-diff.mjs (plan-3.0.md Bloco BA, revisão D2/BB.0) — mesma disciplina de citation-baseline.json: código autorizado a mudar por decisão do plano (não por acidente) entra aqui, nunca regravando no-comments-baseline.json. Cada entrada nomeia o ARQUIVO + o BLOCO que autorizou + O QUE mudou + hashCodigo (sha256 de textoDeCodigo do arquivo NO MOMENTO em que a mudança descrita foi autorizada). A autorização é por HASH, não por arquivo (BB.0): uma divergência só é 'autorizada' se o hashAtual bater com o hashCodigo de ALGUMA entrada do mesmo arquivo — mudança de código NOVA no mesmo arquivo, mesmo com uma entrada antiga presente, reprova como sem exceção. Quando um arquivo recebe uma SEGUNDA autorização (caso de run-all-selftests.mjs abaixo), as entradas anteriores passam a descrever um estado intermediário que não existe mais isolado em disco — por isso todas as entradas do mesmo arquivo carregam o hashCodigo do estado ATUAL (a única imagem reproduzível), preservando o histórico de QUEM autorizou o quê no oQueMudou. O conjunto é EXATO nos dois sentidos: divergência cujo hash não bate com entrada nenhuma reprova (mudança sem autorização); entrada cujo arquivo não diverge mais TAMBÉM reprova (exceção morta).",
   "excecoes": [
     {
       "arquivo": "specs/_estrutura_modulos/tests/run-all-selftests.mjs",
-      "bloco": "BA",
-      "oQueMudou": "acrescenta specs/_estrutura_modulos/tests/no-comments-diff.mjs ao REGISTRO — o proprio Bloco BA precisa disso para o novo --autoteste nao virar orfao (Bloco AJ.1b)"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tests/run-all-selftests.mjs",
-      "bloco": "BE",
-      "oQueMudou": "remove apply-rename.mjs do REGISTRO — o arquivo foi excluido (residuo de campanha encerrada); autoteste:tudo cai de 14/14 para 13/13"
+      "bloco": "BA+BE",
+      "oQueMudou": "BA acrescenta specs/_estrutura_modulos/tests/no-comments-diff.mjs ao REGISTRO (o proprio Bloco BA precisa disso para o novo --autoteste nao virar orfao, Bloco AJ.1b); BE remove apply-rename.mjs do REGISTRO (arquivo excluido, residuo de campanha encerrada — autoteste:tudo cai de 14/14 para 13/13). Uma entrada so: as duas mudancas resultam no MESMO hash atual, uma entrada por bloco seria proveniencia duplicada que nunca reprova sozinha",
+      "hashCodigo": "76d00a55a89fc615028a914111c403baddb641c06d97787fd541f16ac355fdb3"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
       "bloco": "BE",
-      "oQueMudou": "apply-rename.mjs foi removido (residuo de campanha encerrada): itemAplicaAoArquivo deixa de ser importado de la e passa a viver aqui, e CAMINHO_INVENTARIO aponta para citation-terms.json (dado proprio desta ferramenta, so antigo/novo/tipo por item) em vez de rename-inventory.json"
+      "oQueMudou": "apply-rename.mjs foi removido (residuo de campanha encerrada): itemAplicaAoArquivo deixa de ser importado de la e passa a viver aqui, e CAMINHO_INVENTARIO aponta para citation-terms.json (dado proprio desta ferramenta, so antigo/novo/tipo por item) em vez de rename-inventory.json",
+      "hashCodigo": "1728b5b6638de394e784919232025fbf28487e771311b636d58b8c244b609af8"
     }
   ]
 }

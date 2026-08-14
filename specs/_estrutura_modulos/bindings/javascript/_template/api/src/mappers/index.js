@@ -56,7 +56,7 @@ export function toContract(registro) {
 /**
  * manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`publicRoutes`): o que nao
  * esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
- * `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota (plan-2.md N.1).
+ * `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota.
  *
  * @param {{ id: string, name: string, version: string, role: string, basePath: string,
  *   webPath: string|null, navigation: object|null, exportsSummary: boolean }} manifesto

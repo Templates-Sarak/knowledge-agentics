@@ -47,7 +47,7 @@ export interface ManifestoDescoberto {
  * Recebe o `ManifestoDescoberto` do modulo que esta compondo — `memory` ignora (nao precisa saber
  * QUEM a chamou), `postgres` usa (`module.id` para a chave de ambiente, `module.pasta` para ler
  * `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um adapter que precisa de contexto
- * por-modulo nao teria como sabe-lo (plan-2.2.md Bloco Z).
+ * por-modulo nao teria como sabe-lo.
  */
 const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {
   repositorio: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },

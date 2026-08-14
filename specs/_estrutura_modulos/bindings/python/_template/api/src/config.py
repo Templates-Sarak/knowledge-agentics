@@ -99,7 +99,7 @@ def env_required(chave: str) -> str:
 
 
 def _check_env_required(manifesto: dict[str, Any]) -> None:
-    """Importada direto pelo teste (plan-2.md N.4, `api.src.config._check_env_required`): sem
+    """Importada direto pelo teste (`api.src.config._check_env_required`): sem
     `.env` real, TODA a suite rodaria sob `PYTEST_CURRENT_TEST` sem uma unica variavel de
     `requiredEnv` preenchida — sem o bypass abaixo, `load_configuration()` derrubaria a suite
     inteira antes do primeiro teste. O preco declarado: "suite verde" nunca prova, por si so, que a

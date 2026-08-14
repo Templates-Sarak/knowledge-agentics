@@ -7,7 +7,7 @@
  * Duas afirmações, e o gate só está saudável se as duas valerem:
  *   1. o molde CONFORME produz ZERO erro — senão o gate acusa o que não deve;
  *   2. cada mutação de `cases.mjs` produz o id esperado e **NENHUM id não declarado** — senão ou a
- *      regra não cobra nada, ou outra regra passou a acusar onde não devia.
+ *      regra não cobra nada, ou outra regra passa a acusar onde não devia.
  *
  * A mutação que cria um segundo defeito de verdade declara o co-achado em `tambem: [...]`. Declarar
  * é permitido; surpreender, não. Extra fora da lista REPROVA, e é assim que uma regra nova que
@@ -120,10 +120,10 @@ function semCobertura(motivo) {
  * Irmã de `semCobertura`: a agulha de `substituir` não foi achada no arquivo. Diferente de
  * SEM_COBERTURA (o caso não se aplica a este binding), aqui o caso SE APLICA e a mutação falhou —
  * é reprovação do CASO, não ausência de cobertura, e por isso `verificarCaso` a trata como `FALHA`
- * comum: reprova só este caso, os demais continuam medidos (plan-3.md Bloco AE, acerto pós-AE.c).
+ * comum: reprova só este caso, os demais continuam medidos.
  *
  * Quando a causa é DETECTÁVEL — agulha com `\n` literal contra um arquivo em CRLF — a mensagem
- * nomeia a causa provável em vez de deixar quem lê decifrar de novo os três sintomas do Bloco AE.
+ * nomeia a causa provável em vez de deixar quem lê decifrar os sintomas de novo.
  */
 function mutacaoInvalida(rel, de, conteudo) {
   const base = `substituir: texto nao encontrado em ${rel}: ${JSON.stringify(de)}`;
@@ -172,7 +172,7 @@ function operacoes(raiz, binding) {
     /**
      * `String.replace(agulha)` que nao acha devolve a string IGUAL, em silencio — a mutacao vira
      * noop e o caso reporta "nenhum achado", apontando a REGRA quando o defeito esta na MUTACAO
-     * (plan-3.md Bloco AE.c). Lanca `MUTACAO_INVALIDA` em vez de aceitar noop: quem escreve um caso
+     * Lanca `MUTACAO_INVALIDA` em vez de aceitar noop: quem escreve um caso
      * novo com agulha errada (typo, `\n` que o molde nao tem mais) descobre no proprio `substituir`,
      * nao tres camadas depois — e so ESTE caso reprova, os outros continuam medidos.
      */
@@ -187,7 +187,7 @@ function operacoes(raiz, binding) {
     /**
      * Remove uma pasta por alvo LÓGICO. Diferente de `removerPasta`, ela EXIGE que o binding declare
      * o alvo: onde o molde não tem a peça, o caso vira SEM COBERTURA declarada em vez de apagar o
-     * nada e depois cobrar da regra um achado que não podia existir.
+     * nada e depois cobrar da regra um achado que não poderia existir.
      */
     removerPastaEm: (alvo) => {
       const rel = ALVOS[alvo]?.[binding];
@@ -214,9 +214,9 @@ function operacoes(raiz, binding) {
  * A RAIZ do projeto temporário — `config/` e a config de lint gerada, como `create-project.mjs` as
  * instala.
  *
- * O fixture já tinha `modules/`, e por isso era um projeto aos olhos do gate; só que um projeto
- * INCOMPLETO, sem nada do que a raiz carrega. Enquanto nenhuma regra olhava para fora do módulo
- * isso não aparecia — `verificacao-declarada` e `lint-derivado` olham, e acusariam em TODO caso.
+ * O fixture já tem `modules/`, e por isso é um projeto aos olhos do gate; só que um projeto
+ * INCOMPLETO, sem nada do que a raiz carrega. `verificacao-declarada` e `lint-derivado` olham para
+ * fora do módulo, e acusariam em TODO caso um fixture que ficasse assim incompleto.
  * O conserto é o fixture ficar fiel ao projeto real, nunca a regra deixar de cobrar.
  */
 function montarRaizDoProjeto(temporario, binding) {
@@ -293,7 +293,7 @@ function verificarConforme(binding) {
 
 /**
  * O caso passa a poder afirmar mais que o id — `{ arquivo?, contem?, vezes? }`, os três opcionais
- * (Bloco Q, plan-2.md). Sem eles, `null` sempre: nenhum caso existente muda de comportamento.
+ * Sem eles, `null` sempre: nenhum caso existente muda de comportamento.
  *
  * O harness hoje só compara CONJUNTO DE IDS: se uma regra acusasse a linha errada, ou o arquivo
  * errado, ou o número errado de vezes, ela sairia sob o MESMO id e o autoteste passaria do mesmo
@@ -339,7 +339,7 @@ function verificarCaso(binding, caso) {
     }
     if (causa?.code === 'SEM_COBERTURA') return { pulado: true, rotulo, motivo: causa.message };
     // A agulha de `substituir` nao foi achada: o CASO se aplica a este binding e a mutacao falhou —
-    // reprova so ele, no vocabulario comum de FALHA, sem cegar os demais (plan-3.md Bloco AE).
+    // reprova so ele, no vocabulario comum de FALHA, sem cegar os demais.
     if (causa?.code === 'MUTACAO_INVALIDA') return { ok: false, rotulo, detalhe: causa.message };
     throw causa;
   }

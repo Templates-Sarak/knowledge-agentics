@@ -48,10 +48,10 @@ const PADRAO_SQL = new RegExp(`\\b(?:${SQL_FONTE})`, 'i');
  *     perfeitamente correto — seria acusado pelo `%` literal dele.
  *
  * A primeira alternativa exige um caractere que NÃO seja aspa nem branco, e essa forma positiva é
- * deliberada: escrita como lookahead negativo (`\s*(?!['"`])`) ela acusava `'select x' + ' where y'`,
+ * deliberada: escrita como lookahead negativo (`\s*(?!['"`])`), ela acusaria `'select x' + ' where y'`,
  * porque o `\s*` RETROCEDE para zero e o lookahead passa a olhar o espaço em vez da aspa seguinte.
- * Exigir o caractere de verdade fecha a porta ao retrocesso — o falso positivo apareceu na prova de
- * que a forma correta não é acusada, e é o motivo de essa prova existir.
+ * Exigir o caractere de verdade fecha a porta ao retrocesso — é por isso que a forma correta não é
+ * acusada.
  */
 const INTERPOLACAO_EM_SQL = [
   /\$\{/,
@@ -64,7 +64,7 @@ const INTERPOLACAO_EM_SQL = [
 
 /**
  * Onde um valor sai do processo e vai para o log. Duas peças, uma fonte cada, compostas de dois
- * jeitos diferentes por escopo (plan-2.md N.3 — a lista deixou de ser duas):
+ * jeitos diferentes por escopo:
  *
  *   - o LOGGER estruturado (`CHAMADA_DE_LOG_VERBOS_FONTE`), que é o certo em toda linguagem — os
  *     SETE verbos (`logger|log|logging` × `debug|info|warn|warning|error|critical|exception`) são
@@ -154,9 +154,6 @@ const ROTA_LITERAL = /['"`](GET|POST|PUT|PATCH|DELETE)\s+\/[^'"`]*['"`]/;
  *
  * `[^)]*` cobre as duas assinaturas dos moldes — `requirePermission(ler)` em TS/JS e
  * `require_permission(request, permissao)` em Python, onde o literal seria o SEGUNDO argumento.
- *
- * Bloco AD, Rodada 1 (AD.2) — âncora trocado de `exigir_?[Pp]ermissao` (português) para
- * `require_?[Pp]ermission` (inglês), passo isolado, antes de fixture/molde mudar de nome.
  */
 const PERMISSAO_LITERAL = /require_?[Pp]ermission\s*\([^)]*['"`]/;
 
@@ -193,8 +190,8 @@ function contextoSecretoPerto(texto, anterior) {
 function conferirOrigemDaLista(daApi) {
   const achados = [];
   // `textoDeCodigo`, e nao `conteudo`: a clausula afirma que a `api/` LE o manifesto, e prosa nao le
-  // nada. Sobre o texto cru, a docstring que EXPLICA `publicRoutes` — o molde tem tres — satisfazia
-  // a checagem, e um modulo que tivesse apagado a leitura de verdade passava calado por causa do
+  // nada. Sobre o texto cru, a docstring que EXPLICA `publicRoutes` — o molde tem tres — satisfaria
+  // a checagem, e um modulo que tivesse apagado a leitura de verdade passaria calado por causa do
   // comentario que a descreve. Falso negativo, e do tipo que aprova em silencio, que e o que o §7
   // inteiro existe para evitar. Nos tres moldes a leitura real esta em codigo (`manifesto.publicRoutes`,
   // `manifesto["publicRoutes"]`), entao fechar o buraco nao acusa nenhum deles.
@@ -433,7 +430,7 @@ export default [
     /**
      * SQL parametrizado, nunca concatenado — na FIAÇÃO, que é onde a query nasce: o módulo não pode
      * ter driver (`sdk-fornecedor`) nem importar adapter (`import-adapter`), então quem monta a query
-     * é `adapters/`, que até a I.1 nenhuma regra enxergava.
+     * é `adapters/`.
      *
      * A gêmea de escopo `module` é `sql-no-modulo`, e as duas nunca acusam o mesmo arquivo: esta lê
      * `projeto.codigo` (`adapters/`, `src/`, `packages/`), aquela lê `ctx.codigo` (a pasta do módulo),

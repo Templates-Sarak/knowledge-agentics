@@ -263,8 +263,7 @@ function git(args) {
 /**
  * O hash da ÁRVORE VAZIA — constante do Git, válida em todo repositório sem precisar ser alcançável
  * por commit nenhum. Comparar contra ela faz todo `contract/openapi.yaml` existente contar como
- * "novo, sem baseline" — nunca "não verificado" (plan-2.2.md Bloco AA, mesmo raciocínio de
- * `ci-security.mjs`).
+ * "novo, sem baseline" — nunca "não verificado" (mesmo raciocínio de `ci-security.mjs`).
  */
 const ARVORE_VAZIA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 

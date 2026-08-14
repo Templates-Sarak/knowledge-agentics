@@ -29,7 +29,7 @@ paths:
 
   /meta:
     get:
-      summary: Metadados PUBLICOS do modulo, por allowlist — nunca o manifesto inteiro (N.1)
+      summary: Metadados PUBLICOS do modulo, por allowlist — nunca o manifesto inteiro
       responses:
         '200':
           description: ok

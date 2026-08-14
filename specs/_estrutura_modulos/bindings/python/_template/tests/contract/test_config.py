@@ -1,4 +1,4 @@
-"""Prova que `_check_env_required` DE FATO derruba o boot quando falta variavel — plan-2.md N.4.
+"""Prova que `_check_env_required` DE FATO derruba o boot quando falta variavel.
 
 Sob `PYTEST_CURRENT_TEST` setado (pytest o define automaticamente, em toda a suite) o bypass cala a
 checagem de proposito: sem `.env` real, qualquer teste derrubaria antes do primeiro `def test_...`.

@@ -44,7 +44,7 @@ export interface GeradorId {
 }
 
 /** Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
- * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1, plan-2.md Bloco S). */
+ * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1). */
 export interface Notificador {
   send(destinatario: string, assunto: string, corpo: string): Promise<void>;
 }

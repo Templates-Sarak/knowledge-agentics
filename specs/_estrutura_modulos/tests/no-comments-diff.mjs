@@ -35,6 +35,17 @@
  * REPROVA (mudança sem autorização), entrada cujo arquivo não diverge mais TAMBÉM reprova (exceção
  * morta, a mesma poda que `citation-baseline.json` já faz para achado resolvido).
  *
+ * A EXCEÇÃO É POR IMPRESSÃO DIGITAL, NÃO POR ARQUIVO (defeito de desenho medido na revisão do Bloco
+ * BB): autorizar por ARQUIVO cega o arquivo pelo resto da campanha — uma vez que `verify-citations.mjs`
+ * tem uma entrada, QUALQUER mudança de código futura nele passaria em silêncio, porque a catraca só
+ * perguntava "existe entrada para este caminho?", nunca "esta mudança específica é a que foi
+ * autorizada?". Cada entrada guarda `hashCodigo`: o hash de `textoDeCodigo` do arquivo NO MOMENTO da
+ * autorização. Três estados, não dois: hash atual bate com o da entrada → autorizada; não bate com o
+ * hash da entrada NEM com o hash da REFERÊNCIA → REPROVA, é mudança nova sem autorização; hash atual
+ * volta a bater com a REFERÊNCIA → exceção morta (o arquivo não diverge mais, já coberto por
+ * `mortas`). O hash é de `textoDeCodigo` (código sem comentário) — comentário editado depois da
+ * autorização não invalida o hash, porque não muda o que ele mede.
+ *
  * O QUE CONTA COMO "CÓDIGO": todo arquivo cuja extensão está em `ESTILOS_POR_EXTENSAO` — as três
  * sintaxes de comentário de linha que este template usa (`//` em TS/JS, `#` em Python, `--` em SQL)
  * mais bloco `/* *\/` e docstring Python `'''`/`"""`. Doutrina e skills (`.md`) ficam FORA — não são
@@ -76,6 +87,7 @@
  * extração (ou o arquivo) tem um problema real.
  */
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   existsSync, readFileSync, readdirSync, writeFileSync,
 } from 'node:fs';
@@ -222,6 +234,13 @@ export function textoDeCodigo(linhas) {
   return linhas.map((linha) => linha.texto).join('\n');
 }
 
+/** O hash de `textoDeCodigo` de um lado — a impressão digital que a catraca guarda por entrada
+ * (BB.0). SHA-256, determinístico: mesmo texto, mesmo hash, sempre — é matemática pura sobre a
+ * string, não toca `fs`/`child_process`/relógio. */
+export function hashDeTexto(texto) {
+  return createHash('sha256').update(texto, 'utf8').digest('hex');
+}
+
 /** A primeira linha de CÓDIGO (não comentário) onde `antes` e `depois` divergem — `null` quando as
  * duas sequências de texto são idênticas. Cobre também divergência de TAMANHO (linha de código
  * acrescentada ou removida no meio do que deveria ser só corte de comentário): a linha que falta de
@@ -251,9 +270,12 @@ export function primeiraDivergencia(linhasAntes, linhasDepois) {
  *                                                                       pela catraca (não é uma
  *                                                                       mudança de código para
  *                                                                       autorizar, é problema)
- *   `{ ok: false, tipo: 'codigo-mudou', caminho, linha, antes, depois }` a primeira linha divergente —
- *                                                                       item 2 do Bloco BA, passa pela
- *                                                                       catraca
+ *   `{ ok: false, tipo: 'codigo-mudou', caminho, linha, antes, depois,
+ *      hashReferencia, hashAtual }`                                    a primeira linha divergente —
+ *                                                                       item 2 do Bloco BA — mais o
+ *                                                                       hash de cada lado, o que a
+ *                                                                       catraca casa por IMPRESSÃO
+ *                                                                       DIGITAL (BB.0), não por arquivo
  * Extensão sem estilo declarado é `ok` por vacuidade — a CASCA nunca deveria oferecer um desses aqui,
  * mas núcleo puro não confia, testa.
  */
@@ -270,12 +292,14 @@ export function compararArquivo(caminho, conteudoAntes, conteudoDepois) {
       tipo: 'cerca-aberta',
       caminho,
       linha: ladoComCercaAberta.cerca.linha,
-      motivo: `cerca de docstring ${JSON.stringify(ladoComCercaAberta.cerca.delimitador)} abre e nunca `
+      motivo: `cerca de comentário ${JSON.stringify(ladoComCercaAberta.cerca.delimitador)} abre e nunca `
         + `fecha até o fim do arquivo (lado ${ladoComCercaAberta.lado})`,
     };
   }
 
-  if (textoDeCodigo(antes.linhas) === textoDeCodigo(depois.linhas)) return { ok: true, caminho };
+  const textoAntes = textoDeCodigo(antes.linhas);
+  const textoDepois = textoDeCodigo(depois.linhas);
+  if (textoAntes === textoDepois) return { ok: true, caminho };
   const divergencia = primeiraDivergencia(antes.linhas, depois.linhas);
   return {
     ok: false,
@@ -284,6 +308,8 @@ export function compararArquivo(caminho, conteudoAntes, conteudoDepois) {
     linha: divergencia.linha,
     antes: divergencia.antes,
     depois: divergencia.depois,
+    hashReferencia: hashDeTexto(textoAntes),
+    hashAtual: hashDeTexto(textoDepois),
   };
 }
 
@@ -308,20 +334,31 @@ export function compararArvore(antesPorCaminho, atualPorCaminho) {
 }
 
 /**
- * A CATRACA — reconcilia `divergentes` (só os de `tipo: 'codigo-mudou'`; `cerca-aberta` nunca chega
- * aqui, ver o cabeçalho do arquivo) contra `no-comments-exceptions.json`. Mesma disciplina de
- * `verify-citations.mjs:compararComLinhaBase`, mas o conjunto tem de ser EXATO nos dois sentidos, não
- * só "achado novo reprova": `semExcecao` é o acidente (código mudou, ninguém autorizou); `mortas` é a
- * exceção que sobrou depois que o código voltou a bater (ou nunca bateu) — sem podar isso, a catraca
- * vira uma lista que só cresce e para de significar "autorizado", igual uma citação nunca resolvida em
- * `citation-baseline.json`. `autorizadas` é informativo: sempre impressa, nunca escondida.
+ * A CATRACA — reconcilia `divergentes` (só os de `tipo: 'codigo-mudou'`, cada um já com `hashAtual`;
+ * `cerca-aberta` nunca chega aqui, ver o cabeçalho do arquivo) contra `no-comments-exceptions.json`.
+ * Mesma disciplina de `verify-citations.mjs:compararComLinhaBase`, mas o conjunto tem de ser EXATO nos
+ * dois sentidos, não só "achado novo reprova".
+ *
+ * CASADA POR HASH, NÃO POR ARQUIVO (BB.0) — o defeito medido na revisão do Bloco BB: autorizar por
+ * ARQUIVO cegava o arquivo pelo resto da campanha, porque a pergunta era só "existe entrada para este
+ * caminho?". Agora é "existe entrada cujo `hashCodigo` bate com o `hashAtual` desta divergência?" —
+ * `semExcecao` é o acidente (código mudou para um estado que NENHUMA entrada autorizou, mesmo que o
+ * arquivo já tenha outra entrada para uma mudança ANTERIOR); `mortas` é a exceção cujo arquivo voltou
+ * a bater com a referência (não diverge mais) — sem podar isso, a catraca vira uma lista que só cresce
+ * e para de significar "autorizado", igual uma citação nunca resolvida em `citation-baseline.json`.
+ * `autorizadas` é informativo: sempre impressa, nunca escondida.
  */
 export function reconciliarExcecoes(divergentes, excecoes) {
   const arquivosDivergentes = new Set(divergentes.map((d) => d.caminho));
-  const arquivosAutorizados = new Set(excecoes.map((e) => e.arquivo));
+  const autorizadas = [];
+  const semExcecao = [];
+  for (const d of divergentes) {
+    const bateComAlgumaEntrada = excecoes.some((e) => e.arquivo === d.caminho && e.hashCodigo === d.hashAtual);
+    (bateComAlgumaEntrada ? autorizadas : semExcecao).push(d);
+  }
   return {
-    semExcecao: divergentes.filter((d) => !arquivosAutorizados.has(d.caminho)),
-    autorizadas: divergentes.filter((d) => arquivosAutorizados.has(d.caminho)),
+    semExcecao,
+    autorizadas,
     mortas: excecoes.filter((e) => !arquivosDivergentes.has(e.arquivo)),
   };
 }
@@ -663,30 +700,64 @@ function casosDeAutoteste() {
     // ============================================================================================
     // D2 — a CATRACA de exceção declarada
     // ============================================================================================
-    { nome: 'reconciliarExcecoes: arquivo diverge COM entrada correspondente -> autorizada, nao reprova', fn: () => {
-      const divergentes = [{ caminho: 'a.py', tipo: 'codigo-mudou' }];
-      const excecoes = [{ arquivo: 'a.py', bloco: 'BF', oQueMudou: 'caminho corrigido' }];
+    { nome: 'reconciliarExcecoes: hash atual bate com o hash da entrada -> autorizada, nao reprova', fn: () => {
+      const divergentes = [{ caminho: 'a.py', tipo: 'codigo-mudou', hashAtual: 'hash-x' }];
+      const excecoes = [{ arquivo: 'a.py', bloco: 'BF', oQueMudou: 'caminho corrigido', hashCodigo: 'hash-x' }];
       const r = reconciliarExcecoes(divergentes, excecoes);
       return r.semExcecao.length === 0 && r.autorizadas.length === 1 && r.mortas.length === 0;
     } },
-    { nome: 'reconciliarExcecoes: arquivo diverge SEM entrada -> semExcecao (o acidente que a catraca pega)', fn: () => {
-      const r = reconciliarExcecoes([{ caminho: 'a.py', tipo: 'codigo-mudou' }], []);
+    { nome: 'reconciliarExcecoes: arquivo diverge SEM entrada nenhuma -> semExcecao (o acidente que a catraca pega)', fn: () => {
+      const r = reconciliarExcecoes([{ caminho: 'a.py', tipo: 'codigo-mudou', hashAtual: 'hash-x' }], []);
       return r.semExcecao.length === 1 && r.autorizadas.length === 0 && r.mortas.length === 0;
     } },
     { nome: 'reconciliarExcecoes: entrada autorizada mas o arquivo NAO diverge mais -> exececao MORTA, reprova', fn: () => {
-      const r = reconciliarExcecoes([], [{ arquivo: 'a.py', bloco: 'BF', oQueMudou: 'caminho corrigido' }]);
+      const r = reconciliarExcecoes([], [{ arquivo: 'a.py', bloco: 'BF', oQueMudou: 'caminho corrigido', hashCodigo: 'hash-x' }]);
       return r.mortas.length === 1 && r.semExcecao.length === 0 && r.autorizadas.length === 0;
     } },
-    { nome: 'reconciliarExcecoes: mistura — um autorizado, um sem excecao, uma morta, todos ao mesmo tempo', fn: () => {
-      const divergentes = [{ caminho: 'autorizado.py', tipo: 'codigo-mudou' }, { caminho: 'acidente.ts', tipo: 'codigo-mudou' }];
+    { nome: 'reconciliarExcecoes: mistura — um autorizado (hash bate), um sem excecao, uma morta, todos ao mesmo tempo', fn: () => {
+      const divergentes = [
+        { caminho: 'autorizado.py', tipo: 'codigo-mudou', hashAtual: 'hash-a' },
+        { caminho: 'acidente.ts', tipo: 'codigo-mudou', hashAtual: 'hash-b' },
+      ];
       const excecoes = [
-        { arquivo: 'autorizado.py', bloco: 'BF', oQueMudou: 'x' },
-        { arquivo: 'ja-nao-diverge.py', bloco: 'BG', oQueMudou: 'y' },
+        { arquivo: 'autorizado.py', bloco: 'BF', oQueMudou: 'x', hashCodigo: 'hash-a' },
+        { arquivo: 'ja-nao-diverge.py', bloco: 'BG', oQueMudou: 'y', hashCodigo: 'hash-c' },
       ];
       const r = reconciliarExcecoes(divergentes, excecoes);
       return r.autorizadas.length === 1 && r.autorizadas[0].caminho === 'autorizado.py'
         && r.semExcecao.length === 1 && r.semExcecao[0].caminho === 'acidente.ts'
         && r.mortas.length === 1 && r.mortas[0].arquivo === 'ja-nao-diverge.py';
+    } },
+    // BB.0 — o defeito medido pelo revisor: exceção por ARQUIVO cegava o arquivo pelo resto da
+    // campanha. Reproduzido aqui com fixture, e a contraprova real (mutar itemAplicaAoArquivo em
+    // verify-citations.mjs) fica registrada no relatório do bloco, fora do autoteste.
+    { nome: 'BB.0: arquivo TEM entrada, mas o hash atual NAO bate com o hash da entrada NEM com a referencia -> semExcecao, REPROVA (o defeito que a catraca por arquivo escondia)', fn: () => {
+      const divergentes = [{ caminho: 'verify-citations.mjs', tipo: 'codigo-mudou', hashAtual: 'hash-mutado-de-novo' }];
+      const excecoes = [{ arquivo: 'verify-citations.mjs', bloco: 'BE', oQueMudou: 'mudanca autorizada anterior', hashCodigo: 'hash-autorizado-do-BE' }];
+      const r = reconciliarExcecoes(divergentes, excecoes);
+      return r.semExcecao.length === 1 && r.semExcecao[0].caminho === 'verify-citations.mjs' && r.autorizadas.length === 0;
+    } },
+    { nome: 'BB.0: DUAS entradas no mesmo arquivo (BA e BE) — hash atual bate com QUALQUER uma das duas -> autorizada', fn: () => {
+      const divergentes = [{ caminho: 'run-all-selftests.mjs', tipo: 'codigo-mudou', hashAtual: 'hash-do-BE' }];
+      const excecoes = [
+        { arquivo: 'run-all-selftests.mjs', bloco: 'BA', oQueMudou: 'x', hashCodigo: 'hash-do-BA' },
+        { arquivo: 'run-all-selftests.mjs', bloco: 'BE', oQueMudou: 'y', hashCodigo: 'hash-do-BE' },
+      ];
+      const r = reconciliarExcecoes(divergentes, excecoes);
+      return r.autorizadas.length === 1 && r.semExcecao.length === 0;
+    } },
+    // hashDeTexto
+    { nome: 'hashDeTexto: determinístico — mesmo texto, mesmo hash', fn: () => (
+      hashDeTexto('const a = 1;') === hashDeTexto('const a = 1;')
+    ) },
+    { nome: 'hashDeTexto: textos diferentes, hashes diferentes', fn: () => (
+      hashDeTexto('const a = 1;') !== hashDeTexto('const a = 2;')
+    ) },
+    // compararArquivo carrega hashReferencia/hashAtual reais (não fixture) para codigo-mudou
+    { nome: 'compararArquivo: codigo-mudou carrega hashReferencia e hashAtual, diferentes entre si', fn: () => {
+      const r = compararArquivo('x.ts', 'const a = 1;', 'const a = 2;');
+      return r.hashReferencia === hashDeTexto('const a = 1;') && r.hashAtual === hashDeTexto('const a = 2;')
+        && r.hashReferencia !== r.hashAtual;
     } },
   ];
 }

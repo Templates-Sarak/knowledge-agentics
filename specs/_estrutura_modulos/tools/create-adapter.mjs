@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * create-adapter.mjs — scaffold determinístico de adapter. Lei dona: specs/arquitetura/01-modulo.md
- * §5.2 (plan-2.md Bloco S).
+ * §5.2.
  *
  *   node tools/create-adapter.mjs <porta> <provedor> [--binding typescript]
  *

@@ -1,5 +1,5 @@
 """Adapter Postgres para as portas "repositorio" e "auditoria" — ENTREGUE pelo template, pronto
-para uso (plan-2.2.md Bloco Z). `memory` continua o DEFAULT de todo modulo (config/ports.json);
+para uso. `memory` continua o DEFAULT de todo modulo (config/ports.json);
 trocar para este adapter e editar UMA linha ali, nunca este arquivo.
 
 Materializa a FORMA que o molde cria (database/migrations/0001-cria-metadados.sql):
@@ -241,7 +241,7 @@ class AuditoriaPostgres:
 
 
 # ====================================================================================================
-# DECLARADO, NAO ESCONDIDO (plan-2.2.md Bloco Z)
+# DECLARADO, NAO ESCONDIDO
 #
 # Este adapter cobre a FORMA DO MOLDE — as duas tabelas que `create-module.mjs` ja entrega. O que
 # fica de fora: *pool* de conexoes (usa UMA conexao persistente por URL, nao um pool com tuning),

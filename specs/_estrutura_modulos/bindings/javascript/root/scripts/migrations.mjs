@@ -20,8 +20,7 @@
 // e dificil de reverter — desproporcional para um cliente. `pg` como devDependency e comum, escopada
 // ao projeto, instalada pelo MESMO `npm install` que ja instala tudo mais, sem tocar o sistema.
 //
-// ESTADO POR MODULO (plan-2.2.md Bloco Y) — o limite que o plan.md original declarava ("sem
-// controle de versao de migration") mordeu em uso real: um projeto com tres migrations e dois
+// ESTADO POR MODULO — sem controle de versao de migration, um projeto com tres migrations e dois
 // ambientes nao consegue rodar `up` a segunda vez. A tabela `<schema>.<prefix>migrations`
 // (`arquivo text primary key`, `aplicada_em timestamptz`) e criada pela PRIMEIRA migration do
 // molde — nao pelo runner: o runner so LE e ESCREVE nela, nunca decide a forma dela por fora do
@@ -405,8 +404,8 @@ function environmentKeyCases() {
 }
 
 /** `pending`/`lastApplied` contra os TRES estados que `ciclo` atravessa: banco vazio (nada
- * aplicado), banco parcialmente migrado, e banco totalmente migrado (o caso que travava `up`
- * antes deste bloco — medido no teste real, plan-2.2.md Bloco Y). */
+ * aplicado), banco parcialmente migrado, e banco totalmente migrado (o caso que trava `up` sem
+ * este controle de estado — medido no teste real). */
 function stateCases() {
   const nomes = ['0001-cria-metadados.sql', '0002-acrescenta-status.sql', '0003-cria-indice.sql'];
   return [

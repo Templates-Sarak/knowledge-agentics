@@ -6,9 +6,9 @@
  *   node tools/generate-lint-config.mjs [--binding b] [--destino dir] [--conferir]
  *
  * A fonte é `tools/gate/thresholds.mjs`, e só ela. O linter e o gate cobram os MESMOS três
- * números porque um é gerado do outro — enquanto cada lado guardava a sua cópia, a precedência do
- * §7.2 ("onde o gate e o linter discordarem, o linter tem razão") apontava para uma autoridade que
- * ninguém tinha como manter em dia.
+ * números porque um é gerado do outro — se cada lado guardasse a sua cópia, a precedência do
+ * §7.2 ("onde o gate e o linter discordarem, o linter tem razão") apontaria para uma autoridade que
+ * ninguém teria como manter em dia.
  *
  * A saída é VERSIONADA, não gerada a cada execução: editor e CI precisam de arquivo real em disco.
  * O mesmo padrão do `.env.example` — gerado dos manifestos e commitado. Por isso este script é
@@ -69,9 +69,9 @@ const CABECALHO = [
 /** Flat config do ESLint. TypeScript precisa de parser proprio; JavaScript, so de JSX ligado. */
 function eslintConfig(binding) {
   // `'${p}/**'` (sem o `**/` na frente) ancora na RAIZ do config — so casa `<root>/dist/**`, nunca
-  // `modules/*/web/dist/**`. Medido (plan-2.md Bloco L.2): `npm run build` gera bundle minificado em
-  // `modules/*/web/dist/`, e sem o prefixo o eslint lintava esse bundle — 419 problemas, 1 real.
-  // `.prettierignore` ja usava semantica gitignore (casa em qualquer nivel); so o eslint tinha o furo.
+  // `modules/*/web/dist/**`. Medido: `npm run build` gera bundle minificado em
+  // `modules/*/web/dist/`, e sem o prefixo o eslint linta esse bundle — 419 problemas, 1 real.
+  // `.prettierignore` usa semantica gitignore (casa em qualquer nivel); sem o prefixo, so o eslint teria o furo.
   const ignores = IGNORADOS.map((p) => `'**/${p}/**'`).join(', ');
   const partes = [CABECALHO, ''];
 
@@ -87,9 +87,9 @@ function eslintConfig(binding) {
   partes.push('    languageOptions: {');
   if (binding === 'typescript') partes.push('      parser: parserTs,');
   // 'latest', nao um ano fixo: o molde JS usa `import ... with { type: 'json' }` (atributos de
-  // import) em web/src/pages/*.jsx e tests/web/*.test.jsx — medido (Bloco L), `ecmaVersion: 2023`
-  // fazia o espree (parser default, sem @typescript-eslint) rejeitar essa sintaxe com "Unexpected
-  // token with". O binding TypeScript nao pegava o mesmo erro porque usa outro parser.
+  // import) em web/src/pages/*.jsx e tests/web/*.test.jsx — medido: `ecmaVersion: 2023`
+  // faz o espree (parser default, sem @typescript-eslint) rejeitar essa sintaxe com "Unexpected
+  // token with". O binding TypeScript nao pega o mesmo erro porque usa outro parser.
   partes.push("      ecmaVersion: 'latest',");
   partes.push("      sourceType: 'module',");
   partes.push('      parserOptions: { ecmaFeatures: { jsx: true } },');
@@ -127,8 +127,8 @@ function ruffConfig() {
     'line-length = 110',
     'target-version = "py311"',
     // MESMA lista do eslint (IGNORADOS inteiro), sem filtro — uma fonte unica produzindo duas listas
-    // diferentes e a fonte unica desmentida (medido, Bloco L.2): o filtro anterior (so `.` ou
-    // `tools`) deixava `dist`/`build`/`coverage`/`generated`/`node_modules` de fora do ruff.
+    // diferentes e a fonte unica desmentida: um filtro por prefixo (so `.` ou
+    // `tools`) deixa `dist`/`build`/`coverage`/`generated`/`node_modules` de fora do ruff.
     `exclude = [${IGNORADOS.map((p) => `"${p}"`).join(', ')}]`,
     '',
     '[lint]',
@@ -213,7 +213,7 @@ function principal() {
   const { nome, conteudo } = saidaDe(binding);
   const caminho = join(destino, nome);
   // Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:lerTexto` — o `.gitattributes`
-  // e o conserto estrutural, isto cobre clone ainda nao renormalizado (plan-3.md Bloco AE).
+  // e o conserto estrutural, isto cobre clone ainda nao renormalizado.
   const emDisco = existsSync(caminho)
     ? readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n')
     : null;

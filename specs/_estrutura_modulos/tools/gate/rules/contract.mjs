@@ -10,8 +10,8 @@
  *
  * Os dois extratores que julgam CODIGO — `rotasDoCodigo` e `chavesDaProjecao` — leem
  * `textoDeCodigo`, nunca `arquivo.conteudo`. Sobre o texto cru, um comentario que DOCUMENTA a lei
- * ("`paraContrato` nunca deve projetar `{ cpf }`") virava a violacao que ele proibe, e uma rota
- * desativada citada em comentario virava rota fora do contrato. Quem le a SPEC continua em
+ * ("`paraContrato` nunca deve projetar `{ cpf }`") vira a violacao que ele proibe, e uma rota
+ * desativada citada em comentario vira rota fora do contrato. Quem le a SPEC continua em
  * `spec.conteudo`, de proposito: em YAML nao ha comentario a descontar do que importa aqui.
  */
 import {
@@ -72,13 +72,13 @@ const VERBOS_PROIBIDOS = new Set([
 ]);
 
 /**
- * `saida-crua` (plan-2.md N.1) — duas metades, duas âncoras. Uma primeira formulação invertia as
- * DUAS ("qualquer identificador em `return`, em qualquer lugar") e falhou o próprio critério de
- * reversão do bloco: medida contra o molde de referência SEM MUTAÇÃO NENHUMA, produziu 14
- * identificadores exigindo isenção — muito acima do teto de ~6. A causa é a âncora, não o raio:
- * `return <id>` sem escopo casa qualquer função que devolve uma variável, não só resposta HTTP.
+ * `saida-crua` — duas metades, duas âncoras. Inverter as DUAS ("qualquer identificador em
+ * `return`, em qualquer lugar") falha o critério de reversão do bloco: medido contra o molde de
+ * referência SEM MUTAÇÃO NENHUMA, produz 14 identificadores exigindo isenção — muito acima do teto
+ * de ~6. A causa é a âncora, não o raio: `return <id>` sem escopo casa qualquer função que devolve
+ * uma variável, não só resposta HTTP.
  *
- * MAPEADOR — vocabulário fechado, INTACTO desde antes do N.1. Nunca teve queixa; não muda.
+ * MAPEADOR — vocabulário fechado. Nunca teve queixa; não muda.
  */
 const PADRAO_MAPEADOR_RETURN = /return\s+(linha|linhas|row|rows)\s*$/;
 
@@ -179,7 +179,7 @@ function blocoDe(yaml, padraoChave) {
 /**
  * Texto de tudo que sai numa RESPOSTA — incluindo os schemas de `components` alcançados por
  * `$ref` de dentro de `responses:`. Sem seguir o `$ref`, um campo sensível descrito num schema
- * compartilhado passava despercebido, que é o caso mais comum num contrato bem escrito.
+ * compartilhado passa despercebido, que é o caso mais comum num contrato bem escrito.
  */
 function trechosDeResposta(yaml) {
   const direto = blocoDe(yaml, /^\s*responses:\s*$/);
@@ -202,8 +202,8 @@ function trechosDeResposta(yaml) {
  * alcançado por `$ref` de dentro de `requestBody:`, nunca de `responses:`, e não entra no texto.
  *
  * A pilha de recuos existe para o aninhamento (`Erro.erro.codigo`): sem ela, entrar num
- * `properties:` interno perdia o escopo externo, e propriedade legítima ficava fora do conjunto —
- * o que viraria falso positivo, a direção de erro que esta regra não pode ter.
+ * `properties:` interno perde o escopo externo, e propriedade legítima fica fora do conjunto —
+ * vira falso positivo, a direção de erro que esta regra não pode ter.
  */
 function propriedadesDeResposta(yaml) {
   const nomes = new Set();
@@ -279,10 +279,9 @@ function fimBalanceado(texto, inicio) {
 
 /**
  * Palavras que têm a FORMA de um sítio de definição sem definir nada — controle de fluxo (JS/PY) e
- * o próprio `return`. A exclusão mora aqui, dentro do reconhecedor único (plan-2.md N.2.2): antes só
- * o fechador precisava dela — o sítio nomeado nunca busca controle de fluxo, porque nenhuma dessas
- * palavras casa `PADRAO_NOME_PROJECAO`. Com os dois lados lendo a MESMA lista de candidatos, ela só
- * precisa existir uma vez.
+ * o próprio `return`. A exclusão mora aqui, dentro do reconhecedor único: o sítio nomeado nunca
+ * busca controle de fluxo, porque nenhuma dessas palavras casa `PADRAO_NOME_PROJECAO`. Com os dois
+ * lados lendo a MESMA lista de candidatos, ela só precisa existir uma vez.
  */
 const PALAVRAS_DE_CONTROLE = new Set([
   'if', 'for', 'while', 'switch', 'case', 'default', 'catch', 'do', 'else', 'elif', 'try',
@@ -290,15 +289,14 @@ const PALAVRAS_DE_CONTROLE = new Set([
 ]);
 
 /**
- * UM reconhecedor de "sítio de definição" — plan-2.md N.2.2. Antes existiam DOIS: o SÍTIO nomeado
- * (confirmar que um nome casado, `paraGama`, é definição e não referência) e o FECHADOR (achar
- * QUALQUER definição vizinha para fechar a janela). Os dois quase concordavam, e "quase" já rendeu
- * três defeitos — um por forma de sintaxe nova: função de topo (N.2), método de classe (N.2.1),
- * propriedade-arrow (N.2.2). O sítio era LARGO (identificador no início de linha lógica, sem olhar o
- * que vem depois) e o fechador ESTREITO (exigia `identificador(` depois) — toda forma que o primeiro
- * aceitava e o segundo não virava falso positivo sobre código correto. Consumido nos dois lados
- * agora, a divergência deixa de ser possível por CONSTRUÇÃO, em vez de precisar ser notada de novo a
- * cada sintaxe nova.
+ * UM reconhecedor de "sítio de definição", nunca dois: um SÍTIO nomeado (confirmar que um nome
+ * casado, `paraGama`, é definição e não referência) e um FECHADOR (achar QUALQUER definição vizinha
+ * para fechar a janela) separados podem divergir na fronteira — sítio LARGO (identificador no
+ * início de linha lógica, sem olhar o que vem depois) e fechador ESTREITO (exigia `identificador(`
+ * depois), por exemplo, faz toda forma que o primeiro aceita e o segundo não virar falso positivo
+ * sobre código correto. Consumido nos dois lados a partir da MESMA lista de candidatos, a
+ * divergência deixa de ser possível por CONSTRUÇÃO, em vez de precisar ser notada de novo a cada
+ * sintaxe nova.
  *
  * Um candidato casa de duas formas, sem olhar o que vem DEPOIS do nome:
  *   - precedido de palavra-chave (`function`/`def`/`const`/`let`/`var`/`class`, com `export`/
@@ -306,10 +304,10 @@ const PALAVRAS_DE_CONTROLE = new Set([
  *   - identificador no INÍCIO da linha lógica (nada antes dele na linha, além de espaço).
  * A segunda forma é a LARGA: aceita, da mesma maneira, método de objeto/classe (`name(...)`),
  * propriedade-arrow (`name: (...) => ({…})`) e atribuição de módulo em Python
- * (`name = lambda r: {...}`) — é o que agora fecha a janela num `name: (...)` que antes só o sítio
- * enxergava. `class` entra na lista de palavras-chave: sem ela, `export class X { … }` era invisível
- * ao reconhecedor, e a janela de uma função de topo ANTES da classe atravessava a declaração inteira
- * sem nada em recuo zero para fechá-la (N.2.1).
+ * (`name = lambda r: {...}`) — é o que fecha a janela também num `name: (...)`. `class` entra na
+ * lista de palavras-chave: sem ela, `export class X { … }` é invisível ao reconhecedor, e a janela
+ * de uma função de topo ANTES da classe atravessa a declaração inteira sem nada em recuo zero para
+ * fechá-la.
  *
  * O guarda de RECUO (na chamadora, `proximaDefinicaoNoRecuo`) é o que torna a largura segura: uma
  * chave de objeto devolvido em várias linhas (`hash: registro.hash,`) também casa a forma larga, mas
@@ -339,7 +337,7 @@ function sitiosDeDefinicao(conteudo, padraoNome) {
 }
 
 /** `return {`, `return ({` (TS/JS/Python), `=> ({` (arrow com retorno implícito de objeto) ou
- * `lambda ...: {` — o mesmo retorno implícito, forma Python (plan-2.md N.2.2). */
+ * `lambda ...: {` — o mesmo retorno implícito, forma Python. */
 const PADRAO_RETORNO_OBJETO = /\breturn\s*\(?\s*\{|=>\s*\(\s*\{|\blambda\b[^:{}]*:\s*\{/g;
 
 /** A próxima definição (qualquer nome) de recuo `<= recuoMaximo`, estritamente depois de
@@ -388,7 +386,7 @@ function regioesDeProjecao(conteudo, padraoNome) {
  * segunda não dizia ao autor nada que a primeira já não dissesse: um defeito, uma mensagem. Um
  * mapeador com projeção de detalhe e de resumo publicando o mesmo campo é o caso ordinário disso.
  *
- * Aqui, e não em cada regra: `divergenciasDaProjecao` já tinha o `vistos` dela, e as outras duas
+ * Aqui, e não em cada regra: `divergenciasDaProjecao` já tem o `vistos` dela; as outras duas
  * teriam de ganhar cópias — três guardas para um dado que nasce duplicado num lugar só.
  */
 /** O laco de `achado` isolado do de `chavesDaProjecao` — so por isso o aninhamento cabe no limiar
@@ -396,7 +394,7 @@ function regioesDeProjecao(conteudo, padraoNome) {
 function chavesDaRegiao(arquivo, regiao, vistos) {
   const chaves = [];
   // Chave apos `{` ou `,` — nao apenas no inicio da linha. Objeto escrito numa linha so
-  // (`{ hash: x, criado_em: y }`) escapava inteiro quando a extracao exigia inicio de linha.
+  // (`{ hash: x, criado_em: y }`) escaparia inteiro se a extracao exigisse inicio de linha.
   // A regiao COMECA na `{`, entao a primeira chave tem o mesmo delimitador que as demais.
   for (const achado of regiao.matchAll(/[{,]\s*["']?([A-Za-z_]\w*)["']?\s*:/g)) {
     const par = `${arquivo.rel}|${achado[1]}`;
@@ -413,10 +411,6 @@ function chavesDaRegiao(arquivo, regiao, vistos) {
  * `toCollection`) em TS/JS, ou `to_` em Python. Direção BANCO fica de fora por CONSTRUÇÃO, não por
  * lista: `rowToDomain`/`domainToRow` têm "To"/"to" no MEIO do nome, nunca no início — `\b` garante
  * que o casador não pare no meio de um identificador maior.
- *
- * Bloco AD, Rodada 1 (AD.2) — âncora trocado de `para[A-Z]`/`para_` (português) para `to[A-Z]`/
- * `to_` (inglês), no MESMO passo isolado que muda só a regra, antes de qualquer fixture ou molde
- * mudar de nome — é o que prova o vermelho intermediário exigido pelo método.
  */
 const PADRAO_NOME_PROJECAO = /\bto[A-Z]\w*|\bto_\w+/g;
 
@@ -467,11 +461,11 @@ function achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis) {
 }
 
 /**
- * `mapeador-nomenclatura` (plan-3.1.md Bloco AH) — a convenção de nome do mapeador (§3, `to*`/
- * `*To*`) tinha lei mas nunca teve verificador: `projecao-contrato`, `payload-camelcase` e
+ * `mapeador-nomenclatura` — a convenção de nome do mapeador (§3, `to*`/
+ * `*To*`) tem lei, mas nenhum outro verificador a cobra: `projecao-contrato`, `payload-camelcase` e
  * `sensivel-em-saida` só ENXERGAM função cujo nome já casa `PADRAO_NOME_PROJECAO` — uma função de
  * saída chamada `buildResponse` ou `serialize` nunca é sítio de projeção para as três, e um campo
- * sensível publicado por ela escapava das três, inclusive da que existe para bloquear PII.
+ * sensível publicado por ela escapa das três, inclusive da que existe para bloquear PII.
  *
  * Esta regra é a fronteira: julga só o NOME de toda função EXPORTADA de nível de módulo num
  * arquivo de mapeador — nunca o conteúdo da projeção (`projecao-contrato`) nem o caixa

@@ -95,12 +95,12 @@ export default [
   },
   {
     /**
-     * `data.tables` é declaração, e até aqui nada a confrontava com o disco — o
+     * `data.tables` é declaração — sem esta regra, nada a confronta com o disco. O
      * `artefato-declarado` chega a justificar deixar `database/` de fora dizendo que *"quem declara
-     * banco é `data.tables`"*, o que só é verdade se alguém cobrar isso. Agora cobra.
+     * banco é `data.tables`"*, o que só é verdade se alguém cobrar isso. Esta regra cobra.
      *
-     * A metade "declara tabelas e não tem `database/migrations/`" já era do `migrations`, e continua
-     * dele: quando NÃO HÁ SQL nenhum, esta regra cala. Sem isso, um módulo com tabelas e sem banco
+     * A metade "declara tabelas e não tem `database/migrations/`" é do `migrations`, não desta
+     * regra: quando NÃO HÁ SQL nenhum, esta regra cala. Sem isso, um módulo com tabelas e sem banco
      * receberia uma mensagem do `migrations` mais uma por tabela daqui — N+1 mensagens para um
      * conserto só.
      */
@@ -127,7 +127,7 @@ export default [
       const sql = juntarSql(ctx);
       return (ctx.manifesto?.data?.tables ?? [])
         // Tabela que NAO EXISTE no SQL e do `tabela-declarada`, e a fronteira e explicita: sem
-        // isto, a tabela ausente caia aqui com a mensagem errada — "sem RLS", quando o problema e
+        // isto, a tabela ausente cai aqui com a mensagem errada — "sem RLS", quando o problema e
         // que ela nao existe. Um defeito, uma mensagem, e a mensagem certa.
         .filter((tabela) => criaTabela(sql, tabela))
         .filter((tabela) => {

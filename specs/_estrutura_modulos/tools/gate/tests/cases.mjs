@@ -26,17 +26,16 @@ export const CASOS = [
   {
     regra: 'schema-manifesto',
     descricao: 'papel fora do vocabulario',
-    // DECIDIDO (plan-2.md Bloco R.2): `role` e enum, e enum e o que o JSON Schema expressa — quem
-    // acusa e SO `schema-manifesto`, `manifesto` cala (conferirVocabulario, structure.mjs). Ate aqui
-    // o caso esperava as DUAS mensagens (`tambem: ['manifesto']`); a duplicacao saiu porque o
-    // precedente de `manifesto-raiz` ja era um id so com a mesma justificativa.
+    // `role` e enum, e enum e o que o JSON Schema expressa — quem acusa e SO `schema-manifesto`,
+    // `manifesto` cala (conferirVocabulario, structure.mjs). Nao declarar `tambem: ['manifesto']`
+    // aqui e proposital: o precedente de `manifesto-raiz` ja e um id so com a mesma justificativa.
     mutar: (m) => m.manifesto((x) => ({ ...x, role: 'inventado' })),
   },
   {
     regra: 'estrutura',
     descricao: 'arquivo previsto na arvore ausente',
-    // Era `contract/openapi.yaml`, do qual a regra `contract` passou a ser dona sozinha.
-    // `config/textos.json` segue sendo item da arvore que so a `estrutura` cobra.
+    // `config/textos.json` e item da arvore que so a `estrutura` cobra — `contract/openapi.yaml`
+    // e coberto por outra regra (`contract`), nunca por esta.
     mutar: (m) => m.remover('config/textos.json'),
   },
   {
@@ -51,7 +50,7 @@ export const CASOS = [
     // `ENTRADAS_PERMITIDAS` (structure.mjs) — sem depender de olhar o `Set` a olho. A regra
     // esperada aqui e OUTRA (schema-manifesto); se a tolerancia de qualquer uma das duas
     // regredir, `estrutura-estrita` acusa TAMBEM, um id que este caso nao declara em `tambem`, e
-    // `run.mjs` reprova com "id NAO declarado" — o mesmo chamariz de J.2/F.2a/F.2d.
+    // `run.mjs` reprova com "id NAO declarado" — o mesmo tipo de chamariz usado em outros casos.
     //
     // Sem pasta de verdade: o harness nao tem operacao de `mkdir` (so `escrever` grava ARQUIVO), e
     // a regra `estrutura-estrita` julga so o NOME de topo (`ctx.entradasRaiz`, por `readdirSync`),
@@ -112,21 +111,21 @@ export const CASOS = [
     descricao: 'tests/contract vazio',
     mutar: (m) => m.removerPasta('tests/contract'),
   },
-  // --- Bloco M: a arvore fechada por baixo (plan-2.md) ----------------------------------------
+  // --- estrutura obrigatoria da arvore do modulo -----------------------------------------------
   {
     regra: 'estrutura',
     descricao: 'Bloco M — core/domain/ vazio ou ausente',
-    // `contem` (Bloco Q, plan-2.md): a familia `estrutura` tem QUATRO casos vizinhos sob o mesmo id
+    // `contem`: a familia `estrutura` tem QUATRO casos vizinhos sob o mesmo id
     // ("core/domain/", "core/ports/", "README.md", arquivo do binding) — sem isto, um extrator que
-    // confundisse pasta com pasta (ex.: acusasse so "core/ports/" quando quem sumiu foi
-    // "core/domain/") passava calado, porque "acusou `estrutura`" ja bastava.
+    // confunda pasta com pasta (ex.: acuse so "core/ports/" quando quem sumiu foi
+    // "core/domain/") passa calado, porque "acusou `estrutura`" ja basta.
     contem: 'core/domain/ vazia ou ausente',
     mutar: (m) => m.removerPasta('core/domain'),
   },
   {
     regra: 'estrutura',
     descricao: 'Bloco M — core/ports/ vazio ou ausente',
-    // Cascata legitima, so depois do Bloco S: `core/ports/index.*` e o UNICO lugar do modulo onde
+    // Cascata legitima: `core/ports/index.*` e o UNICO lugar do modulo onde
     // a palavra "notificador" aparece em codigo (a interface da porta) — sem a pasta, config-morta
     // deixa de achar quem "le" a chave `notificador` de config/ports.json, e acusa TAMBEM.
     tambem: ['config-morta'],
@@ -185,7 +184,7 @@ export const CASOS = [
     descricao: 'importa adapter pela forma pontilhada do Python ("adapters.memory")',
     // `EXT_CODIGO` (context.mjs) e universal aos tres bindings, entao um `.py` cai em `ctx.codigo`
     // mesmo dentro do molde TS/JS — o mesmo por que o caso acima usa `.ts` nos tres. Sem este caso,
-    // a forma pontilhada (`from adapters.memory import x`) passava limpa pela regra inteira.
+    // a forma pontilhada (`from adapters.memory import x`) passaria limpa pela regra inteira.
     mutar: (m) => m.escrever('core/domain/mau_pontilhado.py', 'from adapters.memory import criar\n\ny = criar\n'),
   },
   {
@@ -207,7 +206,7 @@ export const CASOS = [
     // Cascata legitima: o gateway novo tambem nasce sem teste que o espelhe.
     tambem: ['testes-gateway'],
     // O SQL em COMENTARIO trava a nao-acusacao de `gateway-http`: o barril da pasta documenta em
-    // comentario o que o gateway nao pode fazer, e sobre o texto cru essa documentacao virava
+    // comentario o que o gateway nao pode fazer, e sobre o texto cru essa documentacao vira
     // violacao dela mesma. Se a regra regredir, emite id nao declarado e este caso reprova.
     mutar: (m) => m.escrever(
       'core/gateways/vizinho.ts',
@@ -221,7 +220,7 @@ export const CASOS = [
     // Cascata legitima: declarar `consumes` sem criar `core/gateways/vizinho.*` e defeito de verdade.
     tambem: ['gateway-declarado'],
     // O contrato declarado tem de EXISTIR na spec do vizinho (`/resumo` e obrigatoria em todo
-    // modulo). Com `GET /x`, este caso violava tambem `consome-contrato` e deixava de exercitar
+    // modulo). Com `GET /x`, este caso violaria tambem `consome-contrato` e deixaria de exercitar
     // uma regra so — caso de teste com duas violacoes nao prova qual das duas esta viva.
     mutar: (m) => {
       m.manifesto((x) => ({
@@ -258,7 +257,7 @@ export const CASOS = [
     regra: 'adapter-isolado',
     descricao: 'adapter importando de modules/',
     // O defeito que mata a extraibilidade em silencio: no dia em que o adapter conhece um modulo,
-    // ele deixa de ser substituivel e o modulo deixa de sair da pasta — e ate aqui nada acusava.
+    // ele deixa de ser substituivel e o modulo deixa de sair da pasta.
     mutar: (m) => m.acrescentarEm('adapterRaiz', {
       js: "\nimport { algo } from '../../modules/_template/core/domain/index.js';\n",
       py: '\nfrom modules._template.core.domain import algo\n',
@@ -351,9 +350,9 @@ export const CASOS = [
   {
     regra: 'ui-token',
     descricao: 'literal de cor em folha de estilo (.css), que nao e arquivo de codigo',
-    // O `.css` nao entra em `ctx.codigo` (filtrado por extensao de linguagem), entao antes desta
-    // varredura ele nunca chegava a regra — e `color: #ff0000` em CSS e `propriedade: valor`, a
-    // forma exata que o recorte persegue. Ficava limpo onde, em `ui.modo: "kit"`, a cor mais vive.
+    // O `.css` nao entra em `ctx.codigo` (filtrado por extensao de linguagem), entao sem esta
+    // varredura ele nunca chega a regra — e `color: #ff0000` em CSS e `propriedade: valor`, a
+    // forma exata que o recorte persegue. Fica limpo onde, em `ui.modo: "kit"`, a cor mais vive.
     //
     // O `.tsx` importa o kit para a clausula (b) do `ui-kit` nao acusar junto: este caso emite UM id.
     mutar: (m) => {
@@ -381,22 +380,21 @@ export const CASOS = [
     descricao: 'tabela declarada sem o prefixo do modulo',
     // Cascata legitima: a tabela nova nao existe no SQL do modulo.
     //
-    // Este `tambem` era `['rls']`, e a troca REGISTRA a mudanca de dono: a tabela ausente do SQL
-    // caia no `rls` com a mensagem errada — "sem ENABLE ROW LEVEL SECURITY" —, quando o problema
-    // e que ela nao existe. Agora `rls` so pergunta de tabela que o SQL cria, e o achado tem a
-    // mensagem certa.
+    // Sem cobrir `tabela-declarada` aqui, a tabela ausente do SQL cairia no `rls` com a mensagem
+    // errada — "sem ENABLE ROW LEVEL SECURITY" —, quando o problema e que ela nao existe. `rls`
+    // so pergunta de tabela que o SQL cria, e o achado tem a mensagem certa.
     tambem: ['tabela-declarada'],
     mutar: (m) => m.manifesto((x) => ({ ...x, data: { ...x.data, tables: [...x.data.tables, 'clientes'] } })),
   },
   {
     regra: 'tabela-declarada',
     descricao: 'tabela declarada em dados.tabelas e sem CREATE TABLE no SQL',
-    // O achado que a `artefato-declarado` pressupunha existir quando deixou `database/` de fora
-    // ("quem declara banco e dados.tabelas") e que nao existia.
+    // `dados.tabelas` declara a tabela sem `CREATE TABLE` correspondente no SQL — gap que
+    // `artefato-declarado` nao cobre (ela nao entra em `database/`).
     //
-    // Com o PREFIXO certo, senao `tabela-prefixo` acusaria junto. E `rls` fica CALADA de proposito:
-    // e a prova de que a troca de dono funcionou — antes ela acusava esta mesma tabela dizendo
-    // "sem ENABLE ROW LEVEL SECURITY", que e a mensagem errada para uma tabela que nao existe.
+    // Com o PREFIXO certo, senao `tabela-prefixo` acusaria junto. `rls` fica CALADA de proposito:
+    // se acusasse esta mesma tabela, a mensagem seria "sem ENABLE ROW LEVEL SECURITY" — errada
+    // para uma tabela que nao existe.
     mutar: (m) => m.manifesto((x) => ({
       ...x,
       data: { ...x.data, tables: [...x.data.tables, '<modulo>_inexistente'] },
@@ -417,12 +415,12 @@ export const CASOS = [
     regra: 'rls',
     descricao: 'tabela declarada sem ENABLE ROW LEVEL SECURITY',
     // `rls` e AVISO, e o harness coleta achado de qualquer nivel — `analisar` nao filtra por nivel
-    // e `verificarCaso` compara ids. Antes deste caso a regra so aparecia como `tambem` alheio, e
-    // `tambem` e TETO: se ela parasse de acusar, nada falharia.
+    // e `verificarCaso` compara ids. `tambem` e TETO: se `rls` parasse de acusar aqui, nada
+    // falharia sem este caso proprio.
     //
     // O ALTER sai dos DOIS arquivos: a regra le TODO o SQL do modulo junto (`ctx.sql`), entao
-    // apaga-lo so do `schema.sql` deixava a copia da migration responder por ele e a regra
-    // continuava — com razao — calada. Um so lugar nao e o defeito; o defeito e a tabela nao ter
+    // apaga-lo so do `schema.sql` deixa a copia da migration responder por ele e a regra
+    // continua — com razao — calada. Um so lugar nao e o defeito; o defeito e a tabela nao ter
     // RLS em lugar nenhum, que e o esquecimento real que a regra persegue.
     //
     // Agnostico de binding: os dois arquivos sao identicos nos tres moldes. `migrations` segue
@@ -568,9 +566,9 @@ export const CASOS = [
   {
     regra: 'env-raiz-declarado',
     descricao: 'env da raiz usada na fiacao e ausente de project.json',
-    // O buraco que motivou o manifesto: ate aqui o `.env.example` da raiz saia so dos manifestos de
-    // MODULO, entao o `JWT_SECRET` do `resolverAuth()` nascia orfao — invisivel a `env-declarado` e
-    // a `env-exemplo`, que sao regras por modulo. O segredo mais sensivel era o unico sem dono.
+    // Sem esta regra, o `.env.example` da raiz sai so dos manifestos de MODULO, entao o
+    // `JWT_SECRET` do `resolverAuth()` nasce orfao — invisivel a `env-declarado` e a
+    // `env-exemplo`, que sao regras por modulo. O segredo mais sensivel fica o unico sem dono.
     //
     // Alvo logico + trecho por sintaxe: a fiacao le env de forma diferente em cada binding.
     mutar: (m) => m.acrescentarEm('composicaoRaiz', {
@@ -589,8 +587,8 @@ export const CASOS = [
     regra: 'sql-concatenado',
     descricao: 'query montada por concatenacao no adapter',
     // A fiacao e onde a query NASCE: o modulo nao pode ter driver (`sdk-fornecedor`) nem importar
-    // adapter (`import-adapter`), entao quem fala com o banco e este arquivo — e ate a I.1 nenhuma
-    // regra o enxergava. A metade que sobrava (SQL montado DENTRO do modulo) e da `sql-no-modulo`,
+    // adapter (`import-adapter`), entao quem fala com o banco e este arquivo. A metade que sobra
+    // (SQL montado DENTRO do modulo) e da `sql-no-modulo`,
     // logo abaixo: a MESMA linha, na outra colecao, e nenhum arquivo cai nas duas.
     mutar: (m) => m.acrescentarEm('adapterRaiz', {
       js: "\nexport const buscar = (db, id) => db.query('select * from registros where hash = ' + id);\n",
@@ -600,7 +598,7 @@ export const CASOS = [
   {
     regra: 'sql-no-modulo',
     descricao: 'SQL montado dentro do modulo e entregue a uma porta',
-    // O vetor residual da B.3, medido: a superficie canonica de `packages/ports/` e tipada por
+    // Vetor residual medido: a superficie canonica de `packages/ports/` e tipada por
     // OPERACAO e nao aceita comando, mas o `core/ports/` do MODULO e escrito pelo autor dele e
     // ninguem compara as duas formas. Com um `executarConsulta(sql)` declarado la, a concatenacao
     // fica no modulo e a execucao na raiz — e a `sql-concatenado` ve o `.query(sql)` do adapter sem
@@ -628,7 +626,7 @@ export const CASOS = [
     regra: 'fallback-raiz',
     descricao: 'default silencioso de env na composicao',
     // A chave e DECLARADA no manifesto da raiz de proposito: sem isso o caso acusaria tambem
-    // `env-raiz-declarado` (I.1), e deixaria de provar qual das duas esta viva. E a declaracao
+    // `env-raiz-declarado`, e deixaria de provar qual das duas esta viva. E a declaracao
     // mostra que as duas nao brigam — `env-raiz-declarado` cobra a chave nao declarada e NAO proibe
     // a leitura; ler o ambiente e o oficio da composicao. O que esta regra proibe e o DEFAULT.
     mutar: (m) => {
@@ -679,7 +677,7 @@ export const CASOS = [
     regra: 'porta-declarada',
     descricao: 'porta DECLARADA no manifesto e ausente de config/ports.json',
     // A segunda brecha: o schema nao tem `required`, entao porta declarada e nunca configurada
-    // passava. `storage` esta no enum do module.schema.json, entao `schema-manifesto` tambem cala.
+    // passaria. `storage` esta no enum do module.schema.json, entao `schema-manifesto` tambem cala.
     // Esta e a direcao que DERRUBA O BOOT — `resolverDependencias` nao acha o provedor e lanca.
     mutar: (m) => m.manifesto((x) => ({ ...x, ports: [...x.ports, 'storage'] })),
   },
@@ -774,7 +772,7 @@ export const CASOS = [
     // O `servers:` e as `properties:` entram na spec minima de proposito: sem eles o caso acusaria
     // tambem `rota-nomenclatura` e `projecao-contrato`, e deixaria de provar a ausencia das rotas
     // OBRIGATORIAS, que e o dele. As propriedades sao TODAS as que os mapeadores do molde projetam
-    // (toContract, toMeta, toCollection — desde o N.2, os tres sao vistos, nao so o primeiro).
+    // (toContract, toMeta, toCollection — os tres sao vistos, nao so o primeiro).
     mutar: (m) => m.escrever(
       'contract/openapi.yaml',
       [
@@ -832,9 +830,7 @@ export const CASOS = [
   {
     regra: 'contrato',
     descricao: 'paths em bloco, com recuo diferente de 2',
-    // Substitui o caso "description antes de url", que deixou de ser ilegivel quando o leitor de
-    // `servers:` passou a aceitar essa forma. O proposito e o mesmo, e continua necessario: provar
-    // que a deteccao NAO e "flow style" e que a mensagem nomeia a secao certa. Este YAML e bloco
+    // Prova que a deteccao NAO e "flow style" e que a mensagem nomeia a secao certa. Este YAML e bloco
     // valido, indentado com 4 — e o leitor exige recuo 2 na rota e 4 no metodo.
     mutar: (m) => m.escrever('contract/openapi.yaml', [
       'openapi: 3.1.0',
@@ -893,7 +889,7 @@ export const CASOS = [
     descricao: 'rota no codigo e ausente do contrato',
     // Alvo LOGICO + trecho por sintaxe: o caminho do arquivo de rotas muda por binding
     // (`api/src/rotas.py` no Python) e a forma de registrar rota tambem (decorator). Fixar os dois
-    // deixava esta regra provada so em TypeScript.
+    // deixaria esta regra provada so em TypeScript.
     mutar: (m) => m.acrescentarEm('rotas', {
       js: "\nrouter.get('/nao-declarada', () => undefined);\n",
       py: '\n\n@router.get("/nao-declarada")\ndef nao_declarada():\n    return {}\n',
@@ -911,10 +907,11 @@ export const CASOS = [
   {
     regra: 'projecao-contrato',
     descricao: 'PRIMEIRA chave da projecao nao declarada (molde Python)',
-    // Escrito para o binding Python de proposito: e o unico em que a primeira chave nao tinha um
-    // `{` sobrando antes dela, e por isso era invisivel ao extrator antigo. Com o extrator antigo
-    // este caso NAO acusa nada — e a diferenca entre consertar de verdade e mover o sintoma.
-    // `contem` (Bloco Q, plan-2.md): afirma que a mensagem nomeia o CAMPO certo — sem isto, o caso
+    // Escrito para o binding Python de proposito: e o unico em que a primeira chave nao tem um
+    // `{` sobrando antes dela — um extrator que lesse a assinatura da funcao, em vez de procurar
+    // `return {` direto, ficaria cego para esta forma. E a diferenca entre consertar de verdade e
+    // mover o sintoma.
+    // `contem`: afirma que a mensagem nomeia o CAMPO certo — sem isto, o caso
     // passaria igual se a regra acusasse qualquer outro campo por engano, contanto que fosse a
     // mesma regra.
     contem: 'campoFantasma',
@@ -927,9 +924,9 @@ export const CASOS = [
   {
     regra: 'projecao-contrato',
     descricao: 'projecao em arrow de UMA linha, com campo nao declarado',
-    // A forma que o extrator antigo nao sabia terminar: fecha na mesma linha, sem `\n` antes do
-    // `}`. Prova que o balanceamento continua LENDO a projecao — o conserto da sobre-captura nao
-    // pode ter virado cegueira para a forma que a causava.
+    // A forma limite do balanceamento: fecha na mesma linha, sem `\n` antes do `}`. Prova que o
+    // balanceamento continua LENDO a projecao — o conserto da sobre-captura nao pode virar
+    // cegueira para a forma que a causava.
     mutar: (m) => m.escrever(
       'api/src/mapper-arrow.ts',
       'export const toContractArrow = (r) => ({ hash: r.hash, campoArrow: r.extra });\n',
@@ -947,7 +944,7 @@ export const CASOS = [
     // REFERENCIA a `toContract*` como sitio de projecao, o `map(...)` engata na abertura da funcao
     // seguinte, `payload-camelcase` acusa `created_at`, e o id extra reprova este caso na hora.
     //
-    // `naoPublica` tambem e o nome ERRADO pela convencao do Bloco AH — funcao exportada de nivel
+    // `naoPublica` tambem e o nome ERRADO pela convencao de nomenclatura do mapeador — funcao exportada de nivel
     // de modulo, num arquivo `/mapper/i`, que nao comeca com "to" nem tem "To" no meio. Co-achado
     // LEGITIMO de `mapeador-nomenclatura`, nao efeito colateral: e exatamente o tipo de nome que a
     // regra existe para pegar, so que aqui o proposito do caso e outro.
@@ -959,14 +956,14 @@ export const CASOS = [
         + 'export function naoPublica(r) {\n  return { created_at: r.criadoEm };\n}\n',
     ),
   },
-  // --- N.2: as 18 formas do extrator de projecao (plan-2.md) ----------------------------------
+  // --- as 18 formas do extrator de projecao ------------------------------------------------
   {
     regra: 'projecao-contrato',
     descricao: 'N.2 forma 1 — tipo de retorno inline desvia o extrator antigo',
-    // `): { hash: string; campoForma1: string } {` — sob o extrator antigo a primeira `{` depois
-    // do nome era a do TIPO, nao a do corpo. O separador `;` do tipo (nao `,`) e por isso que so
-    // "hash" as vezes escapava por acidente e "campoForma1" nunca era visto (medido no plano, com
-    // "cpf"). O extrator novo nunca olha a assinatura: procura `return {` direto.
+    // `): { hash: string; campoForma1: string } {` — sob um extrator ancorado na assinatura, a
+    // primeira `{` depois do nome seria a do TIPO, nao a do corpo. O separador `;` do tipo (nao
+    // `,`) faz "hash" escapar por acidente as vezes e "campoForma1" nunca ser visto. O extrator
+    // atual nunca olha a assinatura: procura `return {` direto.
     mutar: (m) => m.escrever(
       'api/src/mapper-forma1.ts',
       'export function toContractForma1(r: { hash: string }): { hash: string; campoForma1: string } {\n'
@@ -1059,7 +1056,7 @@ export const CASOS = [
   {
     regra: 'projecao-contrato',
     descricao: 'N.2 forma 12 — dois "return" na mesma funcao rendem DUAS regioes',
-    // `vezes: 2` (Bloco Q, plan-2.md): afirma que as DUAS regioes viram DUAS mensagens, nao uma —
+    // `vezes: 2`: afirma que as DUAS regioes viram DUAS mensagens, nao uma —
     // sem isto, um extrator que voltasse a enxergar só a primeira `return` passaria calado, porque
     // "acusou `projecao-contrato`" já bastava para o caso antigo, não importa quantas vezes.
     vezes: 2,
@@ -1089,8 +1086,8 @@ export const CASOS = [
     regra: 'log',
     descricao: 'N.2.1 — metodo de classe que NAO publica, DEPOIS de um metodo que publica (chamariz)',
     // O defeito que so aparece com METODO: sem recuo na janela, tudo depois da primeira projecao (o
-    // metodo `para*`) era atribuido a ela — `chaveDeCache`, que devolve so campo de BANCO
-    // (`created_at`) e nao e projecao nenhuma, tinha seu `return` inteiro somado a projecao do
+    // metodo `para*`) e atribuido a ela — `chaveDeCache`, que devolve so campo de BANCO
+    // (`created_at`) e nao e projecao nenhuma, tem seu `return` inteiro somado a projecao do
     // metodo anterior. `console.log` arma o chamariz: se `created_at` fosse (erradamente) visto
     // como projetado, apareceria `payload-camelcase` NAO DECLARADO e o caso reprovaria.
     mutar: (m) => m.acrescentarEm('mappers', {
@@ -1146,13 +1143,14 @@ export const CASOS = [
   {
     regra: 'log',
     descricao: 'N.2.2 — propriedade-arrow que NAO publica, DEPOIS de propriedade-arrow que publica (chamariz)',
-    // O defeito que so aparece em objeto literal de arrows: o FECHADOR antigo exigia `identificador(`
-    // depois do nome, e `chaveDeCache: (r) => (...)` tem `:` entre os dois — nunca fechava a janela
-    // de `toGama`. `console.log`/`print` arma o chamariz: se "created_at" fosse (erradamente) visto
-    // como projetado por `toGama`, apareceria `payload-camelcase` NAO DECLARADO e o caso reprovaria.
+    // O defeito que so aparece em objeto literal de arrows: um fechador que exigisse
+    // `identificador(` depois do nome ficaria cego aqui — `chaveDeCache: (r) => (...)` tem `:`
+    // entre os dois, nunca fechando a janela de `toGama`. `console.log`/`print` arma o chamariz:
+    // se "created_at" fosse (erradamente) visto como projetado por `toGama`, apareceria
+    // `payload-camelcase` NAO DECLARADO e o caso reprovaria.
     // No Python o analogo e a atribuicao de modulo (`name = lambda r: {...}`, sem `def` nem `class`):
-    // `chave_de_cache` bare, seguida de "=" (nao "("), era invisivel ao fechador antigo pelo MESMO
-    // motivo.
+    // `chave_de_cache` bare, seguida de "=" (nao "("), fica invisivel a esse mesmo fechador
+    // estreito, pelo MESMO motivo.
     mutar: (m) => m.acrescentarEm('mappers', {
       js: "\nexport const ProjecoesN22 = {\n  toGama: (registro) => {\n    console.log('x');\n"
         + '    return { hash: registro.hash };\n  },\n\n'
@@ -1165,7 +1163,7 @@ export const CASOS = [
   {
     regra: 'sensivel-em-saida',
     descricao: 'N.2.2 — "cpf" publicado DE VERDADE numa propriedade-arrow DEPOIS de uma que nao publica',
-    // O outro lado do conserto, no padrao da N.2.1: a janela fecha, mas nao cega a regra. Uma
+    // O outro lado do conserto: a janela fecha, mas nao cega a regra. Uma
     // TERCEIRA entrada "para*" no mesmo objeto/module, depois da que nao publica, projeta cpf de
     // verdade — se a janela da primeira regredisse e engolisse a segunda, "created_at" apareceria
     // como `payload-camelcase` NAO DECLARADO e o caso reprovaria antes mesmo de chegar no cpf.
@@ -1185,9 +1183,9 @@ export const CASOS = [
   {
     regra: 'sensivel-em-saida',
     descricao: 'N.2 item 1(a) — "cpf" vazado em toMeta, a rota SEM TOKEN (regressao que a N.1 fechou)',
-    // toMeta serve /meta, rota sem token — o mesmo vazamento que a N.1 fechou. Sob a ancora de
-    // nome ESTREITA (so toContract*) a funcao inteira era invisivel ao extrator, e um campo
-    // sensivel acrescentado aqui nunca seria pego por regra nenhuma. Tenta os tres caminhos; so o
+    // toMeta serve /meta, rota sem token. Sob uma ancora de nome ESTREITA (so toContract*) a
+    // funcao inteira ficaria invisivel ao extrator, e um campo sensivel acrescentado aqui nunca
+    // seria pego por regra nenhuma. Tenta os tres caminhos; so o
     // do binding em teste existe, os outros dois viram ENOENT e sao ignorados aqui mesmo.
     tambem: ['projecao-contrato'],
     mutar: (m) => {
@@ -1240,7 +1238,7 @@ export const CASOS = [
     // arquivo inteiro", `payload-camelcase` acusa "created_at" e este caso reprova com id NAO
     // declarado — e essa nao-acusacao vira verificacao, nao impressao.
     //
-    // `logarChamariz` tambem e o nome ERRADO pela convencao do Bloco AH (arquivo `/mapper/i`,
+    // `logarChamariz` tambem e o nome ERRADO pela convencao de nomenclatura do mapeador (arquivo `/mapper/i`,
     // funcao exportada, nome fora dos dois moldes) — co-achado LEGITIMO de `mapeador-nomenclatura`.
     tambem: ['mapeador-nomenclatura'],
     mutar: (m) => m.escrever(
@@ -1248,14 +1246,14 @@ export const CASOS = [
       "export function logarChamariz() {\n  console.log('x');\n}\n",
     ),
   },
-  // --- Bloco AH: mapeador-nomenclatura (plan-3.1.md) ------------------------------------------
+  // --- mapeador-nomenclatura ---------------------------------------------------------------
   {
     regra: 'mapeador-nomenclatura',
     descricao: 'reproducao exata do achado — funcao de saida fora da convencao publica campo sensivel',
-    // O caso que abriu o Bloco AH: "buildResponse"/"build_response" nao comeca com "to" nem tem
-    // "To"/"_to_" no meio — nenhuma das tres regras de projecao a enxerga, entao "cpf" vazava com
-    // 0 erro(s) (medido no relatorio do bloco, cole a saida antes/depois). Esta regra julga SO o
-    // nome: nao precisa de `sensitiveFields` nem de contrato para acusar.
+    // Exemplo motivador: "buildResponse"/"build_response" nao comeca com "to" nem tem
+    // "To"/"_to_" no meio — nenhuma das tres regras de projecao a enxerga, entao "cpf" vaza com
+    // 0 erro(s). Esta regra julga SO o nome: nao precisa de `sensitiveFields` nem de contrato
+    // para acusar.
     mutar: (m) => m.acrescentarEm('mappers', {
       js: '\nexport function buildResponse(registro) {\n  return { hash: registro.hash, cpf: registro.hash };\n}\n',
       py: '\n\ndef build_response(registro):\n    return {"hash": registro["hash"], "cpf": registro["hash"]}\n',
@@ -1286,7 +1284,7 @@ export const CASOS = [
   {
     regra: 'log',
     descricao: 'CHAMARIZ: funcao de conversao de BANCO (<algo>To<Algo>) acrescentada ao mapeador NAO acusa',
-    // O chamariz que a decisao do dono (AH.1, item 3) pede explicitamente: prova, por MUTACAO nova
+    // O chamariz que a decisao do dono pede explicitamente: prova, por MUTACAO nova
     // (nao so pelo molde intocado), que a forma banco continua calada. "itemToRegistro"/
     // "item_to_registro" tem "To"/"_to_" no MEIO, nunca no inicio — `ehNomeDeConversaoBanco` aceita,
     // `mapeador-nomenclatura` fica muda. Se `mapeador-nomenclatura` aparecesse aqui, seria id NAO
@@ -1311,9 +1309,8 @@ export const CASOS = [
     descricao: 'campo sensivel citado em schema de resposta do OpenAPI',
     // `module` e declarado na resposta de /health e NUNCA projetado nem logado — isola o lado do
     // CONTRATO. Com `status` (que o mapeador projeta) o caso acusaria tambem `sensivel-em-saida`.
-    // NAO usar `total`: desde o N.2 (ancora de nome larga), `toCollection` projeta `total` de
-    // verdade — o proprio campo que este caso precisa NUNCA estar projetado deixou de servir,
-    // porque o extrator novo enxerga exatamente o que antes era ponto cego.
+    // NAO usar `total`: `toCollection` projeta `total` de verdade (ancora de nome larga) — o
+    // proprio campo que este caso precisa NUNCA estar projetado nao serve mais.
     mutar: (m) => m.manifesto((x) => ({ ...x, sensitiveFields: ['module'] })),
   },
   {
@@ -1331,9 +1328,9 @@ export const CASOS = [
   {
     regra: 'sensivel-em-saida',
     descricao: 'N.3 — verbo "warning" (lista unificada com segredo-em-log) nao escapa mais',
-    // Antes da N.3, sensivel-em-saida so reconhecia logger|log com debug|info|warn|error —
-    // "logging.warning(...)" nao casava (nem o objeto "logging" nem o verbo "warning" estavam na
-    // lista estreita). Agora usa CHAMADA_DE_LOG_VERBOS, a mesma fonte de segredo-em-log.
+    // Uma lista estreita (logger|log com debug|info|warn|error) nao casaria "logging.warning(...)"
+    // (nem o objeto "logging" nem o verbo "warning" estariam nela). `sensivel-em-saida` usa
+    // CHAMADA_DE_LOG_VERBOS, a mesma fonte de `segredo-em-log`.
     mutar: (m) => {
       m.manifesto((x) => ({ ...x, sensitiveFields: ['segredoDeLog'] }));
       m.escrever('api/src/vaza-warning.ts',
@@ -1379,7 +1376,7 @@ export const CASOS = [
   {
     regra: 'saida-crua',
     descricao: 'devolve "manifesto" cru — a metade BORDA, sem lista de isentos (plan-2.md N.1)',
-    // Trava o defeito que a N.1 mediu de verdade: `res.json(<identificador>)` acusa SEMPRE, sem
+    // Trava um defeito medido de verdade: `res.json(<identificador>)` acusa SEMPRE, sem
     // vocabulario. Se a borda regredir para o vocabulario fechado antigo, "manifesto" volta a
     // escapar e este caso reprova.
     mutar: (m) => m.acrescentarEm('rotas', {
@@ -1401,7 +1398,7 @@ export const CASOS = [
   {
     regra: 'saida-crua',
     descricao: 'return "linha" sem chamada, nos TRES bindings — prova que a metade MAPEADOR nao regrediu',
-    // O padrao do mapeador (`return (linha|linhas|row|rows)$`) nao muda com a N.1. Trava isso nos
+    // O padrao do mapeador (`return (linha|linhas|row|rows)$`) nao muda. Trava isso nos
     // tres bindings, nao so no Python que o caso acima ja cobre.
     mutar: (m) => m.acrescentarEm('rotas', {
       js: '\nexport function outraRota(linha) {\n  return linha\n}\n',
@@ -1424,8 +1421,8 @@ export const CASOS = [
     regra: 'log',
     descricao: 'Python: saida-crua CALA fora de handler roteado e em chamada (chamariz de log)',
     // `return router` (fim de `criar_rotas`, MESMO recuo do ultimo decorator) e `return
-    // to_contract(...)` (chamada, nao identificador puro) sao os dois casos que a formulacao por
-    // "qualquer return" acusava errado e a formulacao por indentacao/decorator cala corretamente.
+    // to_contract(...)` (chamada, nao identificador puro) sao os dois casos que uma formulacao por
+    // "qualquer return" acusaria errado, e a formulacao por indentacao/decorator cala corretamente.
     // Ambos ja existem no molde conforme; o chamariz aqui e so para o caso ter um id esperado.
     mutar: (m) => m.acrescentarEm('rotas', {
       py: '\n\ndef _fora_de_handler():\n    print("x")\n    return None\n',
@@ -1437,12 +1434,12 @@ export const CASOS = [
     regra: 'log',
     descricao: 'a lei escrita em COMENTARIO nao vira violacao dela mesma',
     // O caso existe para travar uma NAO-acusacao, e o harness nao sabe afirmar isso: ele exige
-    // exatamente um id. O truque e o mesmo da I.2 (o SDK legitimo em `adapters/`) — o id esperado e
+    // exatamente um id. O truque e o mesmo do caso do SDK legitimo em `adapters/` — o id esperado e
     // de OUTRA regra, e as formas proibidas entram em COMENTARIO ao lado.
     //
     // Se `importesDe`, `env-declarado`, `env-fora-do-carregador` ou `tabela-alheia` voltarem a ler
     // `conteudo` cru, cada uma emite um id NAO DECLARADO e este caso reprova na hora. Sem ele, a
-    // nao-acusacao ficaria garantida so por inspecao — a lacuna do harness registrada no Bloco H.
+    // nao-acusacao ficaria garantida so por inspecao — a lacuna que o harness tem por natureza.
     //
     // As DUAS ultimas linhas do bloco js e o `mapeador-doc` cobrem a familia Contrato, e cada um
     // trava um extrator diferente de `contract.mjs`: a rota comentada acusaria
@@ -1507,10 +1504,10 @@ export const CASOS = [
   {
     regra: 'rota-publica-autenticada',
     descricao: 'api/ para de ler rotasPublicas do manifesto: docstring que so EXPLICA nao basta (Python)',
-    // Fecha a estritura da J.2: a clausula de origem trocou `conteudo` por `textoDeCodigo`
-    // (linhasCodigo, sem comentario/docstring) porque um docstring que so EXPLICA `publicRoutes`
-    // satisfazia a checagem mesmo com a leitura de verdade apagada — falso negativo que aprova em
-    // silencio. O molde Python tem UM UNICO site de codigo real (`middlewares.py:48`,
+    // A clausula de origem usa `textoDeCodigo` (linhasCodigo, sem comentario/docstring), nao
+    // `conteudo`: um docstring que so EXPLICA `publicRoutes` satisfaria a checagem mesmo com a
+    // leitura de verdade apagada — falso negativo que aprovaria em silencio. O molde Python tem
+    // UM UNICO site de codigo real (`middlewares.py:48`,
     // `manifesto["publicRoutes"]`); os outros dois usos sao docstring (linhas 26 e 119, ja fora de
     // `linhasCodigo`). Substituir so essa linha por uma lista fixa apaga a ULTIMA ocorrencia em
     // codigo, mantem as docstrings intocadas, e o achado tem que aparecer.
