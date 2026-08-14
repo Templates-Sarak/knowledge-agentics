@@ -1,0 +1,10 @@
+{
+  "_comentario": "Catraca de exceção declarada para no-comments-diff.mjs (plan-3.0.md Bloco BA, revisão D2) — mesma disciplina de citation-baseline.json: código autorizado a mudar por decisão do plano (não por acidente) entra aqui, nunca regravando no-comments-baseline.json. Cada entrada nomeia o ARQUIVO + o BLOCO que autorizou + O QUE mudou. O conjunto é EXATO nos dois sentidos: arquivo que diverge sem entrada aqui reprova (mudança sem autorização); entrada cujo arquivo não diverge mais TAMBÉM reprova (exceção morta) — regrave/pode esta lista sempre que um arquivo autorizado voltar a bater com a referência.",
+  "excecoes": [
+    {
+      "arquivo": "specs/_estrutura_modulos/tests/run-all-selftests.mjs",
+      "bloco": "BA",
+      "oQueMudou": "acrescenta specs/_estrutura_modulos/tests/no-comments-diff.mjs ao REGISTRO — o proprio Bloco BA precisa disso para o novo --autoteste nao virar orfao (Bloco AJ.1b)"
+    }
+  ]
+}

@@ -63,7 +63,24 @@
 
 ---
 
-## Bloco AF — a camada que nunca rodou
+## Bloco AF — a camada que nunca rodou ✅ **FECHADO** *(commit `3132c2c`, revisado e reproduzido)*
+
+> **Ela não estava sem prova — estava QUEBRADA.** No HEAD, depois da campanha de idioma inteira
+> aprovada: `init_repo.py` com 10 ocorrências do vocabulário antigo, `code-modulo/SKILL.md` com 18.
+> **100% das instalações via skill falhavam**, e o `code-modulo` teria guiado o usuário a digitar
+> comandos igualmente mortos. O rename nunca foi propagado para as skills que orquestram o template.
+>
+> **E o `npm run autoteste:template` estava morto desde o AD.1** — os quatro scripts do `package.json`
+> apontavam para `testes/autoteste-template.mjs`, caminho que deixou de existir naquele commit. É o
+> comando que o revisor exigiu como aceite em TODAS as rodadas da campanha, e que nunca rodou uma vez:
+> a verificação era feita chamando o arquivo direto. **Critério de aceite que nomeia um comando tem de
+> ser satisfeito RODANDO AQUELE COMANDO** — a lição fica, e é do revisor.
+>
+> **Achado sem conserto, para decisão:** `init_repo.py:criar_modulos()` nunca passa `--sem-artefato` e
+> decide o papel por `papel = "conector" if modulo == "conector" else "dominio"` — **adivinha pelo
+> nome**. `gateway-pagamentos` sai com `role: dominio` em silêncio. O modo em lote CHUTA o que a
+> entrevista PERGUNTA; ou ele pergunta, ou declara que entrega o default e nada mais.
+
 
 > O teste real rodou `init_repo.py` direto. Ficaram de fora a **entrevista HITL**, o **plano com
 > `⚠️ Confirma?`**, o **handoff**, e a **`code-modulo`** para o segundo módulo. Ou seja: a prosa que
@@ -115,7 +132,29 @@
 
 ---
 
-## Bloco AG — as migrations nos outros dois bindings
+## Bloco AG — as migrations nos outros dois bindings ✅ **FECHADO** *(commit `1c805d7`, revisado e reproduzido)*
+
+> **Verificado pelo revisor direto no container:** 6 tabelas nos dois schemas, **RLS ligado nas seis**,
+> índice em `status` e em `hash`, `unique` em `metadados.hash`, e a tabela de controle com
+> `0001-cria-metadados.sql` registrada nos dois bindings. Ciclo `up → up → down → up → ciclo` completo.
+>
+> **O achado, e a atribuição correta:** `migrations.py --autoteste` estava quebrado — `KeyError: 'nome'`
+> na primeira linha. **Foi o AD.3**, rastreado por commit (`b8d48a7` 0 · `3d98906` 0 · **`0b657e9` 14** ·
+> `cee117c` 0): `nome→name` é a chave nº 1 das 19, aplicada dentro de dicionário de fixture que não é
+> manifesto nenhum.
+>
+> **A causa é generalizável, e é o limite do tipo `chave`:**
+> ```
+> JS      nome: `...`     → chave NUA: o tipo `chave` recusa. Protegido POR ACIDENTE —
+>                           a regra existe por outro motivo
+> Python  "nome": "..."   → string entre ASPAS: indistinguível de chave de manifesto → substitui
+> ```
+> Mesmo construto, sintaxes diferentes, tratamentos opostos. **Raio medido: um arquivo** — o revisor
+> rodou os 14 pontos de `--autoteste` do template, todos verdes.
+>
+> **Decidido:** vira passo de CI (`verificar-migrations` em `autoteste-template.yml`, service container).
+> **Pendente de prova até o primeiro disparo real** — mesma classe do *"verde neste worktree"*.
+
 
 > O Bloco Y do `plan-2.2` reescreveu os três runners para ter estado (tabela de controle por módulo,
 > `up` que pula o aplicado, `down` que reverte o último). **Só o `migrations.mjs` do TypeScript foi
@@ -167,7 +206,25 @@
 
 ---
 
-## Bloco AH — a convenção de nome, e o §3 que promete o que não existe
+## Bloco AH — a convenção de nome, e o §3 ✅ **FECHADO** *(commit `3ebed84`, revisado e reproduzido)*
+
+> **A regra `mapeador-nomenclatura` entrou no catálogo: 74 → 75 regras**, e o autoteste do gate foi de
+> `122/122 · 122/122 · 119/119` para **`126/126 · 126/126 · 122/122`**, zero FALHA. Bloco K 3/3.
+>
+> **A contraprova que dá sentido à regra:** o `cpf` publicado por `buildResponse` — que saía com o gate
+> dizendo `0 erro(s)` — passa a reprovar nomeando arquivo e função.
+>
+> **A construção dos chamarizes é melhor do que o item pedia.** `toRegistroExtra` e `itemToRegistro`
+> declaram `regra: 'log'` como id esperado: se `mapeador-nomenclatura` disparasse ali, viraria *"id NÃO
+> declarado"* e o caso reprovaria. **A não-acusação é cobrada pelo mecanismo da própria bancada**, não
+> por asserção paralela.
+>
+> **Dois limites declarados no §7.2, e o segundo é o que mantém a regra honesta:** método de classe e
+> propriedade de objeto ficam fora (é a classe/objeto que carrega o `export`); e a seleção de *arquivo
+> de mapeador* é `/mapper/i` sobre o CAMINHO — **um projeto que nomeie o arquivo `serializers.ts`
+> escapa da regra nova também.** Ela fecha o escape por NOME DE FUNÇÃO, o caso comum; o escape por NOME
+> DE ARQUIVO continua aberto e não fica escondido. *Cobertura aparente é pior que ausência declarada.*
+
 
 > **O defeito, e é de segurança.** Três regras — `projecao-contrato`, `payload-camelcase`,
 > `sensivel-em-saida` — só enxergam funções cujo nome segue a convenção do mapeador. Depois do
@@ -230,7 +287,38 @@
 
 ---
 
-## Bloco AJ — mudou de escopo ao fechar o AH: dois itens, não um
+## Bloco AJ ✅ **FECHADO** *(AJ.0 `9128037` · AJ.1+AJ.1b `78db148`, revisado e reproduzido)*
+
+> **AJ.0 — o corte por identificador distintivo.** `--depois-estrito` com linha de base versionada,
+> mesma disciplina do `rename-refusals.json`: começa populada, cresce só por decisão, achado novo
+> reprova nomeando arquivo:linha. A fronteira do `distintivo()` está calibrada nos dois sentidos —
+> `rotaBase` `mapeadores.py` `envRequerido` `paraContrato` `modulo.json` dentro; `dominio` `raiz`
+> `estado` `verificar` `core` `contrato` fora. **O limite declarado:** `dominio` fica de fora mesmo
+> quando é resíduo real, porque capturá-lo por contexto reabre os 360/407 já medidos.
+>
+> **O segundo corte, e ele veio da revisão:** o modo estrito não conhecia o escopo por tipo/caminho que
+> o codemod conhece. Reusando `itemAplicaAoArquivo`, a linha de base caiu de **317 para 200** (50
+> arquivos). O que saiu não era resíduo — era `lerTexto`, `rodarAutoteste` e companhia em `tools/` e
+> `tests/`, **símbolo que fica em português por decisão 4**. Sem o escopo, todo arquivo novo escrito na
+> convenção CORRETA geraria entrada nova, e a catraca perderia fio.
+>
+> **AJ.1 — medido antes de decidir, com V8 coverage real:** 10198 linhas em `tools/**`, **1063 nunca
+> executadas (10,4%)**, 90 funções nunca chamadas; pior caso `package.mjs`, 45,51% de linhas.
+> Escolhida a saída **(a)** — `checkJs` via `tsconfig.tools-check.json` —, que não toca decisão nenhuma
+> da fronteira e é a única que alcança ramo não executado. Contraprova reproduzida pelo revisor:
+> símbolo inexistente em `acharRaizProjeto` (0% de cobertura) → o `--autoteste` do arquivo **passa**, o
+> `typecheck:tools` acusa `package.mjs(43,39) TS2304`.
+>
+> **AJ.1b — o achado do AG, generalizado.** 13 arquivos com `--autoteste` de verdade, **11 órfãos** —
+> inclusive o do próprio `template-self-test.mjs`, o driver do Bloco K. `run-all-selftests.mjs`
+> descobre por varredura e compara contra registro explícito: **achado sem entrada reprova como ÓRFÃO
+> antes de rodar qualquer teste.** É a classe que deixou `migrations.py` quebrado por dois commits com
+> todas as redes verdes.
+>
+> **Bug achado de brinde, e não é pequeno:** `chaveDoAchado` tinha bytes NUL literais — chave de
+> comparação corrompida faz duas entradas iguais parecerem diferentes, e a catraca acusaria achado novo
+> onde não havia. Só apareceu porque o arquivo foi tocado por outro motivo.
+
 
 ### AJ.0 — o corte por identificador distintivo *(achado ao fechar o AH — três resíduos do AD.2
 que a leitura achou e a varredura não, mais um quarto no `padrao-python` que nem tinha sido tocado)*
