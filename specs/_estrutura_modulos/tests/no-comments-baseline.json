@@ -1,4 +1,0 @@
-{
-  "_comentario": "Commit de REFERÊNCIA do no-comments-diff (plan-3.0.md Bloco BA) — a árvore ANTES do primeiro comentário removido pelos Blocos BB-BF. Gravado uma única vez, com --gravar-linha-base; regravar depois de já ter editado comentário invalida a prova (a ferramenta passaria a comparar a árvore editada contra ela mesma).",
-  "commit": "a6c2e25e07fc466200627cc1484abed3097ef4bf"
-}
