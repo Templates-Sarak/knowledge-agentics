@@ -41,7 +41,7 @@ pythonpath = ["."]
 asyncio_mode = "auto"
 
 # NAO ha `testpaths` apontando para `modules/` de proposito: cada modulo e testado a partir da
-# PASTA DELE (`python verify.py` faz isso), e e justamente isso que prova que ele roda isolado
+# PASTA DELE (`python verificar.py` faz isso), e e justamente isso que prova que ele roda isolado
 # — a condicao pratica de "pronto para extracao" (specs/arquitetura/03-operacao.md §6).
 
 [tool.mypy]

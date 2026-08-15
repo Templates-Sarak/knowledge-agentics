@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-"""verify.py — o comando composto de verificacao do projeto (binding Python).
+"""verificar.py — o comando composto de verificacao do projeto (binding Python).
 
-    python verify.py [--rapido]
-    python verify.py --cobertura          so cobertura (dezenas de segundos por modulo) — CI,
+    python verificar.py [--rapido]
+    python verificar.py --cobertura          so cobertura (dezenas de segundos por modulo) — CI,
                                               nunca o `verify` de cima: ver 03-operacao.md §7
-    python verify.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
-    python verify.py --seguranca          .env versionado + segredo no delta — CI, fail-closed
-    python verify.py --dependencias       pip-audit contra o piso de severidade — CI
+    python verificar.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
+    python verificar.py --seguranca          .env versionado + segredo no delta — CI, fail-closed
+    python verificar.py --dependencias       pip-audit contra o piso de severidade — CI
 
 Equivalente ao `npm run verify` do binding TypeScript. Roda, nesta ordem:
 
@@ -210,7 +210,7 @@ def _run_migrations(resto: list[str]) -> int:
     (`scripts/migrations.py` é arquivo solto, não módulo instalado) — mesmo motivo de `_resolve`
     para os outros passos Python: um venv não ativado não aparece pelo PATH."""
     if not resto:
-        _write("uso: python verify.py --migrations up|down|ciclo <modulo>\n")
+        _write("uso: python verificar.py --migrations up|down|ciclo <modulo>\n")
         return 1
     resultado = subprocess.run([sys.executable, "scripts/migrations.py", *resto], cwd=RAIZ, check=False)
     return resultado.returncode

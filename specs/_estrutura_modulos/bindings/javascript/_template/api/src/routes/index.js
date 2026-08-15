@@ -43,7 +43,7 @@ function readBody(corpo) {
 function permissionsFor(config) {
   const [ler, escrever] = config.manifesto.permissions;
   if (ler === undefined || escrever === undefined) {
-    throw new Error('[rotas] module.json:permissoes precisa declarar leitura e escrita');
+    throw new Error('[rotas] module.json:permissions precisa declarar leitura e escrita');
   }
   return { ler, escrever };
 }

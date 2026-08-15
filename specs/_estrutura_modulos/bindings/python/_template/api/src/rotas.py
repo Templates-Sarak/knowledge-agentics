@@ -27,7 +27,7 @@ def _permissions_for(config: Any) -> tuple[str, str]:
     """As permissoes vem do manifesto, nunca de literal. Manifesto incompleto derruba o boot."""
     permissoes = config.manifesto["permissions"]
     if len(permissoes) < _PERMISSOES_MINIMAS:
-        raise RuntimeError("[rotas] module.json:permissoes precisa declarar leitura e escrita")
+        raise RuntimeError("[rotas] module.json:permissions precisa declarar leitura e escrita")
     return permissoes[0], permissoes[1]
 
 

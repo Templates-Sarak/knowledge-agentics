@@ -309,7 +309,7 @@ depois: 'tipo de retorno inline não desvia o extrator'
 
 ---
 
-## Bloco BJ — o rename que passou por cima do código *(achado na rodada BI — é correção, não limpeza)*
+## Bloco BJ — o rename que passou por cima do código *(achado na rodada BI — é correção, não limpeza)* ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > **A campanha de renomeação reescreveu TEXTO em arquivos cujo CÓDIGO nunca foi migrado.** Não é
 > arqueologia: são instruções e chaves que **falham hoje**, e que **viajam no projeto do usuário**. Os dois
@@ -330,20 +330,20 @@ depois: 'tipo de retorno inline não desvia o extrator'
   escreve uma exceção que **o gate silenciosamente ignora** — falso positivo de conformidade, a direção
   proibida. A doutrina (`04-regras.md:297`) já está **certa** e bate com o código; é o JSON que ficou errado.
 
-- [ ] **Decida o `verificar.py` e declare:** ou o arquivo passa a se chamar `verify.py` (e o `README.md:92`,
+- [x] **Decida o `verificar.py` e declare:** ou o arquivo passa a se chamar `verify.py` (e o `README.md:92`,
       o `pyproject.toml` e o `create-project` acompanham), ou as 7 strings voltam a dizer `verificar.py`.
       A régua é o ADR-009 (a **árvore** é inglês). Escolha uma e aplique inteira — meia migração é o que
       criou o defeito
-- [ ] **`conformidade.json` ×3:** `_exemplo` bate com o que `validate.mjs` LÊ. A fonte é o código, não o
+- [x] **`conformidade.json` ×3:** `_exemplo` bate com o que `validate.mjs` LÊ. A fonte é o código, não o
       schema (não há schema formal para este arquivo)
-- [ ] ⚠️ **A CLASSE, não os dois sítios.** Para **cada** item de tipo `chave` do `citation-terms.json`:
+- [x] ⚠️ **A CLASSE, não os dois sítios.** Para **cada** item de tipo `chave` do `citation-terms.json`:
       o nome novo está no dado e o **leitor** ainda usa o antigo? Varra os `config/*.json` que viajam e o
       código que os lê. Para cada item de tipo `simbolo` cujo texto casa um **nome de arquivo**: o arquivo
       foi renomeado junto? Traga a tabela — item | onde o texto mudou | o que o código lê | veredito
-- [ ] **Contraprova por execução, não por leitura:** escreva a exceção do `_exemplo` num
+- [x] **Contraprova por execução, não por leitura:** escreva a exceção do `_exemplo` num
       `conformidade.json` de projeto gerado e prove que o gate **passa a perdoar** a regra. Antes do
       conserto ela é ignorada; depois, vale. Sem isso, o conserto é alegado
-- [ ] `no-comments-diff` verde · gate ×3 · `autoteste:template` 3/3 — nada disso pode mexer em regra
+- [x] `no-comments-diff` verde · gate ×3 · `autoteste:template` 3/3 — nada disso pode mexer em regra
 
 ---
 

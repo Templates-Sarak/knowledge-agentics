@@ -1211,39 +1211,6 @@
       },
       "nome": "geraArtefato",
       "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
-      "linha": 33,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
-      "linha": 34,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
-    },
-    {
-      "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
-      "linha": 48,
-      "item": {
-        "antigo": "envRequerido",
-        "novo": "requiredEnv",
-        "tipo": "chave"
-      },
-      "nome": "envRequerido",
-      "motivo": "nome-antigo-ainda-presente"
     }
   ]
 }

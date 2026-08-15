@@ -30,8 +30,8 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 /** `.env.example` — SEM valor, sempre. Regravado por inteiro; "nao edite a mao" e verdade aqui. */
 const CABECALHO_ENV_EXEMPLO = [
   '# .env.example da RAIZ — fonte UNICA de segredo do projeto (ADR-004).',
-  '# GERADO por `node tools/sync-env.mjs` a partir de project.json:envRequerido (as',
-  '# chaves da propria raiz) e de module.json:envRequerido de cada modulo. NAO edite a mao:',
+  '# GERADO por `node tools/sync-env.mjs` a partir de project.json:requiredEnv (as',
+  '# chaves da propria raiz) e de module.json:requiredEnv de cada modulo. NAO edite a mao:',
   '# acrescente a chave no manifesto que a EXIGE — project.json ou module.json — e rode o script.',
   '# Este arquivo e versionado (SEM segredo real); o .env real fica no .gitignore.',
 ];
@@ -45,7 +45,7 @@ const CABECALHO_ENV_EXEMPLO = [
 const CABECALHO_ENV_REAL = [
   '# .env da RAIZ — fonte UNICA de segredo do projeto (ADR-004). NAO versionado (.gitignore).',
   '# As CHAVES sao geradas/mescladas por `node tools/sync-env.mjs`, a partir de',
-  '# project.json:envRequerido e de module.json:envRequerido de cada modulo — rode o script sempre',
+  '# project.json:requiredEnv e de module.json:requiredEnv de cada modulo — rode o script sempre',
   '# que um manifesto mudar (create-module.mjs ja roda por voce). Os VALORES sao preenchidos A MAO:',
   '# e o unico jeito de um segredo real nunca virar texto versionado. O script NUNCA sobrescreve um',
   '# valor ja preenchido, e NUNCA apaga chave em silencio — chave que nenhum manifesto exige mais',
@@ -110,7 +110,7 @@ function conteudoDoModulo({ manifesto }) {
   return [
     `# Chaves do modulo ${manifesto.id} — GERADO por tools/sync-env.mjs.`,
     '# O .env REAL e unico, na RAIZ do projeto (ADR-004); este arquivo so DOCUMENTA.',
-    '# Sem segredo real aqui. Para acrescentar uma chave: declare em module.json:envRequerido.',
+    '# Sem segredo real aqui. Para acrescentar uma chave: declare em module.json:requiredEnv.',
     '',
     ...(manifesto.requiredEnv ?? []).map((chave) => `${chave}=`),
     '',
@@ -201,7 +201,7 @@ function montarAlvos(raizProjeto, lista) {
   // recém-criado antes do primeiro módulo) não ganha arquivo de raiz — não haveria chave nenhuma
   // nele. Basta a raiz declarar UMA chave para o arquivo passar a existir.
   const reais = lista.filter((m) => !m.eMolde);
-  const envDaRaiz = lerManifestoDaRaiz(raizProjeto)?.envRequerido ?? null;
+  const envDaRaiz = lerManifestoDaRaiz(raizProjeto)?.requiredEnv ?? null;
   if (reais.length === 0 && (envDaRaiz === null || envDaRaiz.length === 0)) return doModulo;
   return [
     ...doModulo,
@@ -217,7 +217,7 @@ function montarAlvos(raizProjeto, lista) {
  */
 function montarAlvoEnvReal(raizProjeto, lista) {
   const reais = lista.filter((m) => !m.eMolde);
-  const envDaRaiz = lerManifestoDaRaiz(raizProjeto)?.envRequerido ?? null;
+  const envDaRaiz = lerManifestoDaRaiz(raizProjeto)?.requiredEnv ?? null;
   if (reais.length === 0 && (envDaRaiz === null || envDaRaiz.length === 0)) return null;
 
   const caminho = join(raizProjeto, '.env');

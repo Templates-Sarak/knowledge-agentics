@@ -30,6 +30,36 @@
       "bloco": "BF",
       "oQueMudou": "acrescenta --autoteste (novo: nao existia) que importa alvo_de_caminho de ponteiros.py e prova que caminho de PROJETO GERADO (specs/arquitetura/, contract/, core/, modules/, api/, tools/) fica fora do alcance de PREFIXOS_DA_BASE, e caminho da propria base resolve identico. --raiz deixa de ser required para --autoteste funcionar sem argumento extra",
       "hashCodigo": "bfc2771bee46301cf914b430fc5944ec90719f480ef4c3c26d9c92403d630566"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/bindings/python/root/verificar.py",
+      "bloco": "BJ",
+      "oQueMudou": "meia migracao do rename verificar->verify (Bloco BB/BC) tinha reescrito a mensagem de erro de RUNTIME da linha 213 (`_write(\"uso: python verify.py --migrations ...\")`) para o nome novo, mas o ARQUIVO nunca foi renomeado (nao existe item tipo `arquivo` para ele no inventario — so `simbolo`). Resultado: a mensagem de erro citava um comando que nao existe no disco. BJ reverte a string para `verificar.py`, o nome real e o que `template-self-test.mjs`/`create-project.mjs`/`affected.mjs`/a doutrina ja citam. As 6 ocorrencias em docstring (linhas 2-9) nao entram aqui: textoDeCodigo despreza docstring, so a string literal da linha 213 e codigo de verdade",
+      "hashCodigo": "5cabc4b8ef2d348b00423b34ffd161c1ed82a1738b3480eae909933976cd4e81"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/tools/sync-env.mjs",
+      "bloco": "BJ",
+      "oQueMudou": "o rename module.json/project.json `envRequerido -> requiredEnv` (Bloco BB) trocou a CHAVE nos manifestos e no schema, mas nao alcancou este leitor: `montarAlvos`/`montarAlvoEnvReal` (linhas 204 e 220) liam `lerManifestoDaRaiz(raizProjeto)?.envRequerido`, campo que nao existe mais em `project.json` — `envDaRaiz` era SEMPRE null. Consequencia medida: chave declarada em `project.json:requiredEnv` (ex. RAIZ_API_PORT) nunca aparecia no `.env.example`/`.env` da raiz, em NENHUM projeto gerado — exatamente o modo de falha que o proprio docstring do arquivo (linhas 13-15) descreve como o que o mecanismo existe para evitar. Trocado `.envRequerido` por `.requiredEnv` nas duas leituras, e os 6 textos de comentario gerado (CABECALHO_ENV_EXEMPLO, CABECALHO_ENV_REAL, conteudoDoModulo) que citavam `project.json:envRequerido`/`module.json:envRequerido` corrigidos para `requiredEnv`, ja que viram texto real dentro do `.env.example`/`.env` gerado. Contraprova por execucao: projeto gerado do zero, RAIZ_API_PORT some do .env.example antes do conserto e aparece depois",
+      "hashCodigo": "58b2d2b89fb76770fcc90ff48a01093a21083da2eec1c4c8c292d68f618c2e1c"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/bindings/javascript/_template/api/src/routes/index.js",
+      "bloco": "BJ",
+      "oQueMudou": "o rename module.json `permissoes -> permissions` (Bloco BB) trocou a chave do manifesto e no schema, mas a mensagem de erro de RUNTIME que valida o minimo de duas permissoes (`_permissions_for`/equivalente) ainda citava o nome antigo: `[rotas] module.json:permissoes precisa declarar leitura e escrita`, mesmo o codigo duas linhas acima ja lendo `manifesto.permissions` (o nome certo). Quem lesse o erro procuraria a chave errada no proprio module.json. Mesmo defeito, identico, nos tres bindings (TS/JS/PY) — corrigido nos tres juntos nesta entrada e nas duas seguintes",
+      "hashCodigo": "0fb65d4fb4a31c4e04622aed6e2bf21b783ffc1ef94efbb52e1f18c0567a1ed3"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/bindings/python/_template/api/src/rotas.py",
+      "bloco": "BJ",
+      "oQueMudou": "mesmo defeito de specs/_estrutura_modulos/bindings/javascript/_template/api/src/routes/index.js (ver aquela entrada) — mensagem de erro de runtime citava `module.json:permissoes` (nome antigo) enquanto `_permissions_for` ja lia `config.manifesto[\"permissions\"]` (nome certo) duas linhas acima",
+      "hashCodigo": "d17a14ef74bc7bd4bde2444d9dc1e4b0128d1e05b3f90d9245be836b71f26abc"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/bindings/typescript/_template/api/src/routes/index.ts",
+      "bloco": "BJ",
+      "oQueMudou": "mesmo defeito de specs/_estrutura_modulos/bindings/javascript/_template/api/src/routes/index.js (ver aquela entrada) — mensagem de erro de runtime citava `module.json:permissoes` (nome antigo)",
+      "hashCodigo": "b101d04de2f2de852bd4a4556fafc626232fa0339789cabb5efee3c61790aab3"
     }
   ]
 }
