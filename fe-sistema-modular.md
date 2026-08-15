@@ -672,21 +672,27 @@ teste é o tempo verbal — **"virava" é história e sai; "vira" é aviso e fic
 4. **`.claude/settings.json`** cita caminhos antigos em allowlist de permissão. Cache local, não engana
    leitor.
 
-## T.5 Este documento absorveu o `funcionamento-esperado.md`
+## T.5 Este é o único documento solto da raiz — e por quê
 
-O `funcionamento-esperado.md` da raiz era a visão de conjunto anterior. **Não era obsoleto** — trouxe
-para cá o ciclo de vida (§6), a criação e extração de módulo (§7), o que o template deliberadamente não
-faz (§8), os dois limites (§9), as três camadas de custo (§4.5) e a direção hexagonal (§3).
+A raiz tinha, além dele, o `funcionamento-esperado.md` (a visão de conjunto anterior) e sete planos de
+construção. **Todos foram removidos**; restam só `CLAUDE.md` (o gancho sempre-ativo), `README.md` (o
+manual da base) e este arquivo.
+
+**O `funcionamento-esperado.md` não era obsoleto** — foi absorvido. Vieram dele o ciclo de vida (§6), a
+criação e extração de módulo (§7), o que o template deliberadamente não faz (§8), os dois limites (§9),
+as três camadas de custo (§4.5) e a direção hexagonal (§3). E ele **corrigiu um erro deste documento**:
+o `config/` do módulo tem **cinco** arquivos — `api.json`, `domain.json`, `ports.json`, `seguranca.json`,
+`textos.json` — e a primeira versão do §2 listava só `ports.json`.
 
 **O que estava desatualizado nele e NÃO foi trazido:** *"74 regras"* (são 75, desde
 `mapeador-nomenclatura`), `geraArtefato` (hoje `generatesArtifact`) e `config/dominio` (hoje
 `config/domain.json`).
 
-**Ele corrigiu um erro deste documento:** o `config/` do módulo tem **cinco** arquivos — `api.json`,
-`domain.json`, `ports.json`, `seguranca.json`, `textos.json` — e a primeira versão do §2 aqui listava só
-`ports.json`.
+**Por que só um documento.** Manter dois é o defeito que a §10.2 enuncia: **regra escrita em dois lugares
+é a garantia de que os dois vão divergir.** Foi exatamente o que aconteceu — o documento anterior dizia
+74 regras enquanto o catálogo tinha 75.
 
-⚠️ **Os dois não podem coexistir.** Manter ambos é exatamente o defeito que a §10.2 enuncia: regra
-escrita em dois lugares diverge. **Remova o `funcionamento-esperado.md`** — mas confira antes quem o
-cita: `verify-citations.mjs` foi removido no `plan-3.2`, então o citador conhecido já não existe; um
-`grep -rn "funcionamento-esperado"` fecha a questão.
+**Onde está o registro da obra.** Os planos de construção (`plan.md`, `plan-2*`, `plan-3*`) e os
+relatórios de cada bloco **vivem no histórico do git**, não na árvore de trabalho. Quem precisar do
+"por quê" de uma decisão específica encontra ali; quem precisar do "o que vale hoje" está lendo o
+documento certo.
