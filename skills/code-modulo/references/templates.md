@@ -32,7 +32,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 | id | role | o que faz | generatesArtifact | webPath |
 |---|---|---|---|---|
 | `<id>` | dominio | <uma linha> | não | `/<id>` |
-| `conector` | conector | casca, navegação e agregação | não | `/` |
+| `hub` | conector | casca, navegação e agregação | não | `/` |
 
 **Será criado:** `tools/`, `packages/ports`, `adapters/memory`, `src/composicao`,
 `modules/{_template,<ids>}`, `specs/arquitetura/` (5 leis), `specs/adr/000-decisoes-do-template.md`,

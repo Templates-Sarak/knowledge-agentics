@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * verify-citations.mjs — prova que a campanha de rename (plan-3 Bloco AC) não deixa citação órfã
- * pra trás: todo NOME ANTIGO listado no inventário some do corpus depois do rename, e todo NOME NOVO
- * citado é real (existe de verdade — pasta, arquivo, chave de manifesto/env, símbolo do esqueleto).
+ * verify-citations.mjs — prova que um rename de vocabulário não deixa citação órfã pra trás: todo
+ * NOME ANTIGO listado no inventário some do corpus depois do rename, e todo NOME NOVO citado é real
+ * (existe de verdade — pasta, arquivo, chave de manifesto/env, símbolo do esqueleto).
  *
  *   node tests/verify-citations.mjs --antes      sanidade ANTES do rename: todo nome antigo do
  *                                                    inventário é citado no corpus, e a citação resolve
@@ -10,51 +10,48 @@
  *                                                    antigo em qualquer arquivo do corpus, e todo nome
  *                                                    novo citado resolve
  *   node tests/verify-citations.mjs --depois-estrito [--gravar-linha-base]
- *                                                  plan-3.1.md Bloco AJ — `--depois` filtrado pelo
- *                                                    corte de IDENTIFICADOR DISTINTIVO (camelCase,
+ *                                                  o mesmo `--depois`, filtrado pelo corte de
+ *                                                    IDENTIFICADOR DISTINTIVO (camelCase,
  *                                                    snake_case, extensão, hífen — nunca palavra
  *                                                    comum do léxico português), comparado contra
  *                                                    `citation-baseline.json`. `--gravar-linha-base`
  *                                                    aceita os achados atuais como linha de base nova
  *   node tests/verify-citations.mjs --autoteste   prova o núcleo com fixtures em memória
  *
- * INVENTÁRIO COMO ENTRADA (`citation-terms.json`, mesma pasta): a lista FECHADA de nomes que a
- * campanha renomeia — pasta, arquivo de ferramenta, chave de manifesto/env, símbolo do esqueleto. Só é
- * candidato o que está nela; tudo o mais é FORA DE ESCOPO por construção, não exceção nem isenção —
- * simplesmente não é uma citação SOBRE ESTE TEMPLATE tratada por esta ferramenta. Falso positivo passa
- * a ser zero por desenho, não por heurística afinada: a Rodada AB tentou classificar "o que É uma
- * citação" por FORMA (caminho com barra, kebab-case perto da palavra "regra", identificador com
- * maiúscula interna) e mediu 360 achados numa base conforme — todos prosa legítima (vocabulário HTTP/
- * AST de terceiro, contraexemplo deliberado em ADR, instância hipotética de exemplo), nenhum órfão real.
- * O limite está declarado em `04-regras.md` §7.2, não escondido. O conteúdo do inventário é definido
- * pelo plan-3 Bloco AC — este arquivo só define o CONTRATO que ele preenche; começa vazio, e esse é o
- * estado correto (mesma disciplina de `config/conformidade.json` em cada binding).
+ * INVENTÁRIO COMO ENTRADA (`citation-terms.json`, mesma pasta): a lista FECHADA de nomes que um
+ * rename desta base cobre — pasta, arquivo de ferramenta, chave de manifesto/env, símbolo do
+ * esqueleto. Só é candidato o que está nela; tudo o mais é FORA DE ESCOPO por construção, não
+ * exceção nem isenção — simplesmente não é uma citação SOBRE ESTE TEMPLATE tratada por esta
+ * ferramenta. Falso positivo passa a ser zero por desenho, não por heurística afinada: classificar
+ * "o que É uma citação" por FORMA (caminho com barra, kebab-case perto da palavra "regra",
+ * identificador com maiúscula interna) mede centenas de achados numa base conforme — todos prosa
+ * legítima (vocabulário HTTP/AST de terceiro, contraexemplo deliberado em ADR, instância hipotética
+ * de exemplo), nenhum órfão real. O limite está declarado em `04-regras.md` §7.2, não escondido. O
+ * conteúdo do inventário é curado à mão, por decisão — este arquivo só define o CONTRATO que ele
+ * preenche; começa vazio, e esse é o estado correto (mesma disciplina de `config/conformidade.json`
+ * em cada binding).
  *
  * Fora de `tools/` DE PROPÓSITO — mesmo motivo e mesma pasta de `verify-map.mjs` e
- * `template-self-test.mjs` (D3, plan-2.md): ferramenta de quem MANTÉM a base, nunca de um projeto
- * gerado. `create-project.mjs` copia `tools/` inteiro para dentro de cada projeto — se este
- * arquivo morasse lá, o defeito que ele existe para caçar (citação apontando pro nome ERRADO depois do
- * rename) viajaria junto, verificando um alvo que não é mais o dele.
+ * `template-self-test.mjs`: ferramenta de quem MANTÉM a base, nunca de um projeto gerado.
+ * `create-project.mjs` copia `tools/` inteiro para dentro de cada projeto — se este arquivo morasse
+ * lá, o defeito que ele existe para caçar (citação apontando pro nome ERRADO depois do rename)
+ * viajaria junto, verificando um alvo que não é mais o dele.
  *
- * DIFERENÇA DELIBERADA para `verify-map.mjs` (plan-2.1.md Bloco U): aquele confere o MAPA
- * INSTALADO num projeto gerado — um por projeto, por isso entra no Bloco K. Este confere a BASE — um
- * alvo só, que não nasce de novo a cada projeto. Por isso não entra no Bloco K: `--antes`/`--depois`
+ * DIFERENÇA DELIBERADA para `verify-map.mjs`: aquele confere o MAPA INSTALADO num projeto gerado —
+ * um por projeto, por isso entra no `autoteste:template`. Este confere a BASE — um alvo só, que não
+ * nasce de novo a cada projeto. Por isso não entra no `autoteste:template`: `--antes`/`--depois`
  * rodam uma vez por rename da base, não uma vez por projeto gerado.
  *
- * UM BUG DE AUTO-REFERÊNCIA vale registrar aqui — não é hipotético, aconteceu durante o desenvolvimento
- * desta própria ferramenta: `classificarLinhas` (abaixo) separa comentário de código pra montar o corpus
- * de símbolo da Classe `simbolo`, usando a MESMA regra de cerca `"""`/`'''` que `gate/context.mjs`
- * usa pra Python. Aplicada sem filtro de linguagem, essa regra confunde `['"""', "'''"]` — a própria
- * ferramenta ESCREVENDO os delimitadores como dado, em código JS real — com a ABERTURA de um docstring,
- * e o resto do arquivo inteiro vira "comentário" a partir dali; a mesma regra também quebra em Python
- * quando um docstring abre NO MEIO da linha (`VAR = '''`) se a checagem for restrita ao início da linha.
- * As primeiras medições desta ferramenta rodaram com essa corrupção silenciosa ativa — o corpus de
- * código estava sistematicamente menor do que deveria, e cada medição seguinte que reduzia o número de
- * achados podia estar consertando o discriminador OU só reduzindo o dano do bug, sem diferença visível
- * de fora. Corrigido restringindo a cerca a `ehPython` (JS/TS nunca têm essa sintaxe) e usando
- * `.includes()`, não `.startsWith()`, dentro do Python (docstring pode abrir no meio da linha). Lição:
- * uma ferramenta que lê a si mesma pra montar seu próprio corpus tem que se tratar como qualquer outro
- * arquivo do corpus — incluindo o risco de se autoconfundir com o texto que a descreve.
+ * RISCO DE AUTO-REFERÊNCIA: `classificarLinhas` (abaixo) separa comentário de código pra montar o
+ * corpus de símbolo da classe `simbolo`, usando a MESMA regra de cerca `"""`/`'''` que
+ * `gate/context.mjs` usa pra Python. Aplicada sem filtro de linguagem, essa regra confunde
+ * `['"""', "'''"]` — a própria ferramenta ESCREVENDO os delimitadores como dado, em código JS real —
+ * com a ABERTURA de um docstring, e o resto do arquivo inteiro viraria "comentário" a partir dali; a
+ * mesma regra também quebraria em Python se um docstring abrir NO MEIO da linha (`VAR = '''`) e a
+ * checagem ficar restrita ao início da linha. A cerca fica restrita a `ehPython` (JS/TS nunca têm
+ * essa sintaxe) e usa `.includes()`, não `.startsWith()`, dentro do Python. Lição: uma ferramenta
+ * que lê a si mesma pra montar seu próprio corpus tem que se tratar como qualquer outro arquivo do
+ * corpus — incluindo o risco de se autoconfundir com o texto que a descreve.
  *
  * NÚCLEO × CASCA, precedente de `verify-map.mjs`/`affected.mjs`: toda função de extração e
  * avaliação é pura (recebe texto/listas, nunca toca `fs`); só a casca (leitura de arquivo, varredura de
@@ -123,15 +120,15 @@ export function avaliarAntes(item, corpus, resolveAntigo) {
  * contrato pedido.
  */
 /**
- * `--depois-estrito` (plan-3.1.md Bloco AJ) — o mesmo `--depois`, mas conta como ERRO só o achado
+ * `--depois-estrito` — o mesmo `--depois`, mas conta como ERRO só o achado
  * `nome-antigo-ainda-presente` cujo nome antigo é um IDENTIFICADOR DISTINTIVO: camelCase interno,
  * snake_case, com extensão, ou hífen — nunca palavra comum do léxico português (`raiz`, `nome`,
- * `contrato`, `consome`). É o corte que o AD.4 mediu como inviável para o `--depois` cru (`raiz`
- * sozinho eram 407 de 1863 achados, e a mesma palavra é prosa legítima DENTRO do escopo — esse
- * argumento vale para PALAVRA COMUM, nunca para identificador); medido contra o corpus real deste
- * bloco: 4508 achados brutos → 305 distintivos em 65 arquivos, ~93% do bruto é ruído de palavra
- * comum. `nome-novo-citado-mas-nao-resolve` nunca é filtrado — não é da MESMA classe de ambiguidade
- * (não existe "nome novo comum" competindo com prosa), então sempre conta.
+ * `contrato`, `consome`). É o corte que torna o `--depois` cru inviável como gate contínuo: palavra
+ * comum como `raiz` sozinha já responde por uma fatia grande de qualquer medição bruta, e é prosa
+ * legítima DENTRO do escopo — esse argumento vale para PALAVRA COMUM, nunca para identificador. Rode
+ * `--depois` sem `--depois-estrito` para ver o bruto de hoje contra o filtrado. `nome-novo-citado-
+ * mas-nao-resolve` nunca é filtrado — não é da MESMA classe de ambiguidade (não existe "nome novo
+ * comum" competindo com prosa), então sempre conta.
  */
 export function distintivo(nome) {
   return /[a-z][A-Z]/.test(nome) || nome.includes('_') || nome.includes('.') || nome.includes('-');
@@ -142,10 +139,10 @@ export function distintivo(nome) {
  * `lerTexto`/`rodarAutoteste`/`envRequerido` DENTRO de `tools/`/`tests/` — símbolo que está exatamente
  * onde a decisão 4 da fronteira (ADR-009) manda ficar em português, não resíduo nenhum. `--depois-
  * estrito` reusa `itemAplicaAoArquivo` (definida neste mesmo arquivo): item tipo `simbolo` só conta dentro de
- * `bindings/` + `doutrina/` + as docs vivas da raiz — a MESMA fronteira que a campanha de rename já
- * usa pra decidir o que é RENOMEADO. Medido contra a linha de base do Bloco AJ: **177 das 317
- * entradas saem — 56%.** `chave`/`pasta`/`arquivo` continuam sem filtro de caminho (mesma regra de
- * `itemAplicaAoArquivo`): só `simbolo` tem risco de colisão com o vocabulário PRÓPRIO da ferramenta.
+ * `bindings/` + `doutrina/` + as docs vivas da raiz — a MESMA fronteira que um rename desta base usa
+ * pra decidir o que é RENOMEADO. `chave`/`pasta`/`arquivo` continuam sem filtro de caminho (mesma
+ * regra de `itemAplicaAoArquivo`): só `simbolo` tem risco de colisão com o vocabulário PRÓPRIO da
+ * ferramenta.
  */
 /** As docs vivas da raiz da base — fora de `bindings/`/`doutrina/`, mas ainda escopo válido pra um
  * item tipo `simbolo` (a doutrina do template referenciada de fora dela). */
@@ -190,9 +187,9 @@ export function chaveDoAchado(a) {
 
 /** `novos`: achado atual que a linha de base não conhece — exige revisão antes de
  * `--gravar-linha-base` aceitar. `resolvidos`: achado da linha de base que sumiu (a citação foi
- * consertada) — boa notícia, só informativa, nunca reprova. Mesma forma de `compararRecusas`
- * (`apply-rename.mjs`, Bloco AI) — mesmo problema (achado versionado, cresce só por decisão
- * explícita), arquivo diferente porque este mora em `tests/` (D3) e aquele em `apply-rename.mjs`. */
+ * consertada) — boa notícia, só informativa, nunca reprova. Mesmo desenho de achado VERSIONADO que
+ * só cresce por decisão explícita, nunca por heurística — a mesma disciplina de
+ * `no-comments-exceptions.json`. */
 export function compararComLinhaBase(atuais, salvos) {
   const chavesSalvas = new Set(salvos.map(chaveDoAchado));
   const chavesAtuais = new Set(atuais.map(chaveDoAchado));
@@ -448,8 +445,8 @@ function arquivosDeScriptsDeSkills(arquivosSkill) {
   return [...raizes].flatMap((raiz) => arquivosSob(join(raiz, 'scripts'), EXT_FONTE));
 }
 
-/** `plan.md`/`plan-2*.md`/`plan-3*.md` na raiz da base — REGISTRO HISTÓRICO da campanha, nunca alvo
- * de citação (Bloco AD.5). Padrão explícito, não um `endsWith('.md')` genérico: um plano cita o nome
+/** `plan.md`/`plan-2*.md`/`plan-3*.md` na raiz da base — REGISTRO HISTÓRICO, nunca alvo de citação.
+ * Padrão explícito, não um `endsWith('.md')` genérico: um plano cita o nome
  * ANTIGO porque é o nome que existia quando aquele parágrafo foi escrito, e é isso que um registro
  * deve fazer — reescrevê-lo pra acompanhar o rename destruiria a própria razão de existir. */
 const RE_ARQUIVO_DE_PLANO = /^plan(-\d+(\.\d+)?)?\.md$/;
@@ -471,8 +468,8 @@ function arquivosDePlanos() {
  * `{ arquivo, texto }` bruto, sem separar comentário de código: `--depois` quer ZERO ocorrência de nome
  * antigo em QUALQUER lugar, comentário incluído (um comentário parado no nome velho é rot igual).
  *
- * Os planos (`arquivosDePlanos`) são achados e DESCARTADOS aqui, por decisão (Bloco AD.5) — não
- * porque nenhuma das fontes acima os alcance. */
+ * Os planos (`arquivosDePlanos`) são achados e DESCARTADOS aqui, por decisão — não porque nenhuma
+ * das fontes acima os alcance. */
 function corpusBruto() {
   const arquivosSkill = arquivosDeSkills();
   const excluidos = new Set(arquivosDePlanos());
@@ -523,22 +520,20 @@ function resolveNome(tipo, nome, contexto) {
 }
 
 /** Lê `citation-terms.json` — mesma disciplina de `config/conformidade.json`: começa vazio, e
- * esse é o estado correto. Conteúdo real é definido pelo plan-3 Bloco AC, não por esta ferramenta. */
+ * esse é o estado correto. O conteúdo é curado à mão, por decisão — nunca gerado por esta ferramenta. */
 function lerInventario() {
   const bruto = JSON.parse(lerTexto(CAMINHO_INVENTARIO));
   return { itens: bruto.itens ?? [] };
 }
 
-/** Lê `citation-baseline.json` — mesma disciplina de `rename-refusals.json` (Bloco AI,
- * `apply-rename.mjs`): ausente ou vazio é estado válido (nada aceito ainda). */
+/** Lê `citation-baseline.json` — ausente ou vazio é estado válido (nada aceito ainda). */
 function lerLinhaBase() {
   if (!existsSync(CAMINHO_LINHA_BASE)) return [];
   const bruto = JSON.parse(lerTexto(CAMINHO_LINHA_BASE));
   return bruto.achados ?? [];
 }
 
-/** Escreve a linha de base — decisão EXPLÍCITA, só quando `--gravar-linha-base` está no argv, o
- * mesmo padrão de `--gravar-recusas` (`apply-rename.mjs`, Bloco AI). */
+/** Escreve a linha de base — decisão EXPLÍCITA, só quando `--gravar-linha-base` está no argv. */
 function gravarLinhaBase(atuais) {
   const achados = [...atuais].sort((a, b) => chaveDoAchado(a).localeCompare(chaveDoAchado(b)));
   const conteudo = {
@@ -546,13 +541,13 @@ function gravarLinhaBase(atuais) {
       + 'disciplina de artefato versionado por decisao: comeca vazia, cresce so por '
       + 'decisao explicita (--gravar-linha-base), nunca por heuristica. --depois-estrito compara os '
       + 'achados ATUAIS contra esta lista: achado NOVO (arquivo+linha+nome ausente daqui) reprova e '
-      + 'exige revisao humana — e ou (a) prosa legitima nunca vista nesta forma, ou (b) residuo real '
-      + '(plan-3.1.md Bloco AJ). So a linha de base comeca populada com os 305 medidos ao criar este '
-      + 'modo: e o estado JA CONHECIDO, nao o alvo — verde contra a linha de base no dia 1, nunca '
-      + 'vermelho parado (o problema que o --depois cru, com 4508 achados nunca revisados, tem).',
+      + 'exige revisao humana — e ou (a) prosa legitima nunca vista nesta forma, ou (b) residuo real. '
+      + 'A linha de base comeca populada com os achados ja revisados no dia em que este modo foi '
+      + 'criado: e o estado JA CONHECIDO, nao o alvo — verde contra a linha de base no dia 1, nunca '
+      + 'vermelho parado (o problema que o --depois cru, com achado nenhum revisado, tem).',
     _exemplo: {
       arquivo: 'skills/exemplo/SKILL.md', linha: 42, nome: 'rotaBase',
-      item: { antigo: 'rotaBase', novo: 'basePath', tipo: 'chave', fase: 'AD.3' },
+      item: { antigo: 'rotaBase', novo: 'basePath', tipo: 'chave' },
       motivo: 'nome-antigo-ainda-presente',
     },
     achados,
@@ -637,7 +632,7 @@ function casosDeAutoteste() {
     { nome: 'avaliarDepois: novo NUNCA citado nao e falha (fora do contrato pedido)', fn: () => (
       avaliarDepois({ antigo: 'doutrina', novo: 'doctrine', tipo: 'pasta' }, [{ arquivo: 'x.md', texto: 'nada aqui' }], false).length === 0
     ) },
-    // distintivo — o corte do --depois-estrito (Bloco AJ)
+    // distintivo — o corte do --depois-estrito
     { nome: 'distintivo: camelCase interno -> true', fn: () => distintivo('paraGama') === true },
     { nome: 'distintivo: snake_case -> true', fn: () => distintivo('para_gama') === true },
     { nome: 'distintivo: com extensao -> true', fn: () => distintivo('mapeadores.py') === true },
@@ -758,7 +753,7 @@ function rodar(modo) {
   const inventario = lerInventario();
   if (inventario.itens.length === 0) {
     process.stdout.write(
-      'citation-terms.json vazio — nada a conferir. Estado correto antes do plan-3 Bloco AC\n'
+      'citation-terms.json vazio — nada a conferir. Estado correto antes de\n'
       + 'popular a lista fechada de renomes.\n',
     );
     return 0;
@@ -773,8 +768,7 @@ function rodar(modo) {
   return achados.length === 0 ? 0 : 1;
 }
 
-/** Relata `novos`/`resolvidos` contra a linha de base — mesma forma de
- * `relatarComparacaoDeRecusas` (`apply-rename.mjs`, Bloco AI). */
+/** Relata `novos`/`resolvidos` contra a linha de base. */
 function relatarComparacaoComLinhaBase(novos, resolvidos) {
   const rel = relative(RAIZ_BASE, CAMINHO_LINHA_BASE).split('\\').join('/');
   if (resolvidos.length > 0) {
@@ -793,14 +787,13 @@ function relatarComparacaoComLinhaBase(novos, resolvidos) {
 }
 
 /** `--depois-estrito`: `--depois` filtrado pelo corte de identificador distintivo (`filtrarEstrito`),
- * comparado contra `citation-baseline.json` — mesmo padrão de `apply-rename.mjs --relatorio` contra
- * `rename-refusals.json` (Bloco AI). `gravar` grava a linha de base quando `--gravar-linha-base`
- * está no argv; nunca chamado sozinho por `--depois-estrito`. */
+ * comparado contra `citation-baseline.json`. `gravar` grava a linha de base quando
+ * `--gravar-linha-base` está no argv; nunca chamado sozinho por `--depois-estrito`. */
 function rodarDepoisEstrito(gravar) {
   const inventario = lerInventario();
   if (inventario.itens.length === 0) {
     process.stdout.write(
-      'citation-terms.json vazio — nada a conferir. Estado correto antes do plan-3 Bloco AC\n'
+      'citation-terms.json vazio — nada a conferir. Estado correto antes de\n'
       + 'popular a lista fechada de renomes.\n',
     );
     return 0;
@@ -812,8 +805,8 @@ function rodarDepoisEstrito(gravar) {
   const { novos, resolvidos } = compararComLinhaBase(atuais, lerLinhaBase());
   relatarComparacaoComLinhaBase(novos, resolvidos);
   if (gravar) gravarLinhaBase(atuais);
-  // Gravar E' a aceitacao explicita — reprovar por achado novo depois de aceita-lo seria a mesma
-  // volta que `apply-rename.mjs --gravar-recusas` (Bloco AI) ja resolveu: `!gravar && novos.length > 0`.
+  // Gravar E' a aceitacao explicita — reprovar por achado novo depois de aceita-lo seria dar a
+  // volta na propria aceitacao: `!gravar && novos.length > 0`.
   const reprova = !gravar && novos.length > 0;
   process.stdout.write(reprova
     ? `\n--depois-estrito: REPROVADO — ${novos.length} achado(s) novo(s)\n`

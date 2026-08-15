@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * no-comments-diff.mjs — plan-3.0.md Bloco BA. A prova mecânica de que a limpeza de comentário
- * (Blocos BB–BF) não mudou uma linha de código executável: recebe a árvore de REFERÊNCIA (o commit
- * gravado antes do primeiro comentário removido) e a árvore ATUAL, e para todo arquivo de código
- * presente dos DOIS lados exige `textoDeCodigo(referência) === textoDeCodigo(atual)`, byte a byte.
- * Diferença de um byte reprova, nomeando arquivo e linha — não há "diferença aceitável" aqui, exceto
- * a que está declarada na CATRACA (ver mais abaixo).
+ * no-comments-diff.mjs — a prova mecânica de que uma limpeza de comentário não muda uma linha de
+ * código executável: recebe a árvore de REFERÊNCIA (o commit gravado antes do primeiro comentário
+ * removido) e a árvore ATUAL, e para todo arquivo de código presente dos DOIS lados exige
+ * `textoDeCodigo(referência) === textoDeCodigo(atual)`, byte a byte. Diferença de um byte reprova,
+ * nomeando arquivo e linha — não há "diferença aceitável" aqui, exceto a que está declarada na
+ * CATRACA (ver mais abaixo).
  *
  *   node tests/no-comments-diff.mjs                    compara a árvore atual contra a linha de base
  *   node tests/no-comments-diff.mjs --gravar-linha-base grava o commit ATUAL (HEAD) como referência —
@@ -21,40 +21,37 @@
  *
  * A REFERÊNCIA É UM COMMIT, NÃO UMA SEGUNDA PASTA: `git show <commit>:<caminho>` lê o conteúdo
  * pristino direto do objeto git, sem precisar manter um segundo clone em disco — mesmo precedente de
- * `affected.mjs`/`contract-compatible.mjs` (`execFileSync('git', ...)`). "Linha de base gravada antes
- * do primeiro comentário removido" (item 5 do Bloco BA) é só isso: o hash do HEAD no momento em que
- * este arquivo nasceu, guardado em `no-comments-baseline.json`.
+ * `affected.mjs`/`contract-compatible.mjs` (`execFileSync('git', ...)`). A linha de base é gravada
+ * ANTES do primeiro comentário removido: o hash do HEAD naquele momento, guardado em
+ * `no-comments-baseline.json`.
  *
  * A CATRACA DE EXCEÇÃO DECLARADA (`no-comments-exceptions.json`, mesma disciplina de
- * `citation-baseline.json`): os Blocos BF e BG mudam código de VERDADE por decisão do plano — BF
- * conserta caminho morto em dois `.py`, BG reescreve `init_repo.py` — e este próprio Bloco BA precisa
- * registrar `no-comments-diff.mjs` em `run-all-selftests.mjs` para não virar `--autoteste` órfão
- * (Bloco AJ.1b). O instrumento não pode ficar cego a essas três mudanças, mas também não pode deixar
- * de nomeá-las: cada entrada da catraca nomeia ARQUIVO + BLOCO QUE AUTORIZOU + O QUE MUDOU, é impressa
- * à parte (nunca escondida) e o conjunto é EXATO nos dois sentidos — arquivo que diverge sem entrada
- * REPROVA (mudança sem autorização), entrada cujo arquivo não diverge mais TAMBÉM reprova (exceção
- * morta, a mesma poda que `citation-baseline.json` já faz para achado resolvido).
+ * `citation-baseline.json`): uma limpeza de comentário pode vir acompanhada de mudança de código de
+ * VERDADE, autorizada por decisão explícita — e este próprio instrumento precisa estar registrado em
+ * `run-all-selftests.mjs` para não virar `--autoteste` órfão. O instrumento não pode ficar cego a
+ * mudanças autorizadas, mas também não pode deixar de nomeá-las: cada entrada da catraca nomeia
+ * ARQUIVO + O QUE AUTORIZOU + O QUE MUDOU, é impressa à parte (nunca escondida) e o conjunto é EXATO
+ * nos dois sentidos — arquivo que diverge sem entrada REPROVA (mudança sem autorização), entrada cujo
+ * arquivo não diverge mais TAMBÉM reprova (exceção morta, a mesma poda que `citation-baseline.json`
+ * já faz para achado resolvido).
  *
- * A EXCEÇÃO É POR IMPRESSÃO DIGITAL, NÃO POR ARQUIVO (defeito de desenho medido na revisão do Bloco
- * BB): autorizar por ARQUIVO cega o arquivo pelo resto da campanha — uma vez que `verify-citations.mjs`
- * tem uma entrada, QUALQUER mudança de código futura nele passaria em silêncio, porque a catraca só
- * perguntava "existe entrada para este caminho?", nunca "esta mudança específica é a que foi
- * autorizada?". Cada entrada guarda `hashCodigo`: o hash de `textoDeCodigo` do arquivo NO MOMENTO da
- * autorização. Três estados, não dois: hash atual bate com o da entrada → autorizada; não bate com o
- * hash da entrada NEM com o hash da REFERÊNCIA → REPROVA, é mudança nova sem autorização; hash atual
- * volta a bater com a REFERÊNCIA → exceção morta (o arquivo não diverge mais, já coberto por
- * `mortas`). O hash é de `textoDeCodigo` (código sem comentário) — comentário editado depois da
- * autorização não invalida o hash, porque não muda o que ele mede.
+ * A EXCEÇÃO É POR IMPRESSÃO DIGITAL, NÃO POR ARQUIVO: autorizar por ARQUIVO cegaria o arquivo daí em
+ * diante — uma vez que um arquivo tivesse uma entrada, QUALQUER mudança de código futura nele
+ * passaria em silêncio, porque a catraca só perguntaria "existe entrada para este caminho?", nunca
+ * "esta mudança específica é a que foi autorizada?". Cada entrada guarda `hashCodigo`: o hash de
+ * `textoDeCodigo` do arquivo NO MOMENTO da autorização. Três estados, não dois: hash atual bate com o
+ * da entrada → autorizada; não bate com o hash da entrada NEM com o hash da REFERÊNCIA → REPROVA, é
+ * mudança nova sem autorização; hash atual volta a bater com a REFERÊNCIA → exceção morta (o arquivo
+ * não diverge mais, já coberto por `mortas`). O hash é de `textoDeCodigo` (código sem comentário) —
+ * comentário editado depois da autorização não invalida o hash, porque não muda o que ele mede.
  *
  * O QUE CONTA COMO "CÓDIGO": todo arquivo cuja extensão está em `ESTILOS_POR_EXTENSAO` — as três
  * sintaxes de comentário de linha que este template usa (`//` em TS/JS, `#` em Python, `--` em SQL)
  * mais bloco `/* *\/` e docstring Python `'''`/`"""`. Doutrina e skills (`.md`) ficam FORA — não são
- * código, e a regra que rege a edição delas é a regra do plano (legível, sem citação de rodada), não
- * esta. `.json` também fica fora: não tem sintaxe de comentário nesta base.
+ * código, e a regra que rege a edição delas é legível sem citação de plano, não esta. `.json` também
+ * fica fora: não tem sintaxe de comentário nesta base.
  *
- * ARQUIVO REMOVIDO NÃO REPROVA: o Bloco BE remove `apply-rename.mjs` e `rename-refusals.json`, e
- * substitui o antigo inventário de renomes por `citation-terms.json` — este arquivo só compara o
- * que existe nos DOIS lados (item 1, "para todo arquivo de código dos dois lados"). Remoção e
+ * ARQUIVO REMOVIDO NÃO REPROVA: este arquivo só compara o que existe nos DOIS lados — remoção e
  * adição aparecem como informativo, nunca como falha.
  *
  * NÚCLEO × CASCA, precedente de `verify-map.mjs`/`affected.mjs`: `linhasDeCodigo`, `textoDeCodigo`,
@@ -62,9 +59,9 @@
  * nenhuma toca `fs` nem `child_process`. A CASCA só lê (disco, `git show` e a catraca) e escreve
  * (`--gravar-linha-base`).
  *
- * MESMA EXTRAÇÃO DE `gate/context.mjs:extrairLinhasDeCodigo` — copiada, não importada (D3: este
+ * MESMA EXTRAÇÃO DE `gate/context.mjs:extrairLinhasDeCodigo` — copiada, não importada: este
  * arquivo mora em `tests/`, fora do alcance de `tools/gate/`, mesmo motivo de `verify-citations.mjs:
- * classificarLinhas`). A cópia é da REGRA (o que conta como comentário — lei dona: `specs/arquitetura/
+ * classificarLinhas`. A cópia é da REGRA (o que conta como comentário — lei dona: `specs/arquitetura/
  * 04-regras.md` §7.2), não da fonte de verdade. Estendida em DOIS eixos que o original não tinha:
  *
  *   1. despacho por extensão (TS/JS/Python continuam exatamente com a regra de sempre, SQL ganha o
@@ -138,7 +135,7 @@ export function extensaoSuportada(caminho) {
  * Avança o reconhecimento de cerca de docstring por UMA linha, a partir do estado (`cercaInicial`,
  * `null` ou o delimitador aberto) com que a linha começou. POSICIONAL: com a cerca fechada, procura os
  * DOIS delimitadores e usa o que aparece mais à ESQUERDA no texto — nunca "o primeiro do array" nem "a
- * paridade de um delimitador sozinho", o bug medido pelo revisor (D1). Com a cerca aberta, só o
+ * paridade de um delimitador sozinho" (ver o cabeçalho do arquivo). Com a cerca aberta, só o
  * delimitador QUE ABRIU fecha; o outro tipo, se aparecer no meio, é dado, nunca um evento de cerca —
  * docstring Python não aninha.
  *
@@ -234,8 +231,8 @@ export function textoDeCodigo(linhas) {
   return linhas.map((linha) => linha.texto).join('\n');
 }
 
-/** O hash de `textoDeCodigo` de um lado — a impressão digital que a catraca guarda por entrada
- * (BB.0). SHA-256, determinístico: mesmo texto, mesmo hash, sempre — é matemática pura sobre a
+/** O hash de `textoDeCodigo` de um lado — a impressão digital que a catraca guarda por entrada.
+ * SHA-256, determinístico: mesmo texto, mesmo hash, sempre — é matemática pura sobre a
  * string, não toca `fs`/`child_process`/relógio. */
 export function hashDeTexto(texto) {
   return createHash('sha256').update(texto, 'utf8').digest('hex');
@@ -271,11 +268,11 @@ export function primeiraDivergencia(linhasAntes, linhasDepois) {
  *                                                                       mudança de código para
  *                                                                       autorizar, é problema)
  *   `{ ok: false, tipo: 'codigo-mudou', caminho, linha, antes, depois,
- *      hashReferencia, hashAtual }`                                    a primeira linha divergente —
- *                                                                       item 2 do Bloco BA — mais o
+ *      hashReferencia, hashAtual }`                                    a primeira linha divergente,
+ *                                                                       nomeada e localizada — mais o
  *                                                                       hash de cada lado, o que a
  *                                                                       catraca casa por IMPRESSÃO
- *                                                                       DIGITAL (BB.0), não por arquivo
+ *                                                                       DIGITAL, não por arquivo
  * Extensão sem estilo declarado é `ok` por vacuidade — a CASCA nunca deveria oferecer um desses aqui,
  * mas núcleo puro não confia, testa.
  */
@@ -317,7 +314,7 @@ export function compararArquivo(caminho, conteudoAntes, conteudoDepois) {
  * O veredito da ÁRVORE inteira. `antesPorCaminho`/`atualPorCaminho` são `Map<caminho, conteudo>`.
  * `divergentes`: arquivo presente dos dois lados cujo código mudou (ou cuja cerca não fecha) — o que
  * reprova, antes da catraca. `removidos`: arquivo que a referência tinha e o atual não tem mais —
- * informativo, remoção declarada (Bloco BE) não é código mudado. `novos`: arquivo que só existe no
+ * informativo, remoção declarada não é código mudado. `novos`: arquivo que só existe no
  * atual — informativo, sem "antes" contra o que comparar.
  */
 export function compararArvore(antesPorCaminho, atualPorCaminho) {
@@ -339,9 +336,9 @@ export function compararArvore(antesPorCaminho, atualPorCaminho) {
  * Mesma disciplina de `verify-citations.mjs:compararComLinhaBase`, mas o conjunto tem de ser EXATO nos
  * dois sentidos, não só "achado novo reprova".
  *
- * CASADA POR HASH, NÃO POR ARQUIVO (BB.0) — o defeito medido na revisão do Bloco BB: autorizar por
- * ARQUIVO cegava o arquivo pelo resto da campanha, porque a pergunta era só "existe entrada para este
- * caminho?". Agora é "existe entrada cujo `hashCodigo` bate com o `hashAtual` desta divergência?" —
+ * CASADA POR HASH, NÃO POR ARQUIVO — autorizar por ARQUIVO cegaria o arquivo dali em diante, porque
+ * a pergunta seria só "existe entrada para este caminho?". A pergunta é "existe entrada cujo
+ * `hashCodigo` bate com o `hashAtual` desta divergência?" —
  * `semExcecao` é o acidente (código mudou para um estado que NENHUMA entrada autorizou, mesmo que o
  * arquivo já tenha outra entrada para uma mudança ANTERIOR); `mortas` é a exceção cujo arquivo voltou
  * a bater com a referência (não diverge mais) — sem podar isso, a catraca vira uma lista que só cresce
@@ -444,18 +441,18 @@ function lerExcecoes() {
 }
 
 /** Grava o HEAD atual como referência — decisão EXPLÍCITA, só quando `--gravar-linha-base` está no
- * argv. Só faz sentido rodar isto UMA VEZ, antes do primeiro comentário tocado (item 5 do Bloco BA);
- * rodar de novo depois de editar comentário move a régua e o critério de aceite perde o sentido. Para
- * uma mudança de código AUTORIZADA (BF, BG, ou o registro deste próprio arquivo), a saída é a catraca
- * (`no-comments-exceptions.json`), nunca regravar isto. */
+ * argv. Só faz sentido rodar isto UMA VEZ, antes do primeiro comentário tocado; rodar de novo depois
+ * de editar comentário move a régua e o critério de aceite perde o sentido. Para uma mudança de
+ * código AUTORIZADA (inclusive o registro deste próprio arquivo em `run-all-selftests.mjs`), a saída
+ * é a catraca (`no-comments-exceptions.json`), nunca regravar isto. */
 function gravarLinhaBase() {
   const commit = git(['rev-parse', 'HEAD']).trim();
   const conteudo = {
-    _comentario: 'Commit de REFERÊNCIA do no-comments-diff (plan-3.0.md Bloco BA) — a árvore ANTES '
-      + 'do primeiro comentário removido pelos Blocos BB-BF. Gravado uma única vez, com '
+    _comentario: 'Commit de REFERÊNCIA do no-comments-diff — a árvore ANTES do primeiro comentário '
+      + 'removido por uma limpeza de comentário. Gravado uma única vez, com '
       + '--gravar-linha-base; regravar depois de já ter editado comentário invalida a prova (a '
       + 'ferramenta passaria a comparar a árvore editada contra ela mesma). Mudança de código '
-      + 'AUTORIZADA (BF, BG, ou o registro deste arquivo em run-all-selftests.mjs) se declara em '
+      + 'AUTORIZADA (inclusive o registro deste arquivo em run-all-selftests.mjs) se declara em '
       + 'no-comments-exceptions.json, nunca regravando isto.',
     commit,
   };
@@ -628,19 +625,19 @@ function casosDeAutoteste() {
     } },
 
     // ============================================================================================
-    // CARRY-OVER do Bloco BA (fechado junto do BE) — a guarda de cerca aberta era ASSIMÉTRICA:
-    // cobria a docstring Python e não o bloco `/* */` da família JS. Fixture exigido pelo revisor.
+    // A guarda de cerca aberta cobre a docstring Python E o bloco `/* */` da família JS — sem esta
+    // simetria, um bloco `/* */` aberto até o EOF na família JS passaria batido.
     // ============================================================================================
-    { nome: 'CARRY-OVER: bloco /* */ aberto ate o EOF (familia JS) tambem reporta cercaAberta, simetrico a docstring', fn: () => {
+    { nome: 'bloco /* */ aberto ate o EOF (familia JS) tambem reporta cercaAberta, simetrico a docstring', fn: () => {
       const r = linhasDeCodigo('const a=1;\n/* nunca fecha\nconst b=2;', 'x.mjs');
       return r.cercaAberta !== null && r.cercaAberta.delimitador === '/*' && r.cercaAberta.linha === 2
         && textoDeCodigo(r.linhas) === 'const a=1;';
     } },
-    { nome: 'CARRY-OVER: compararArquivo REPROVA o bloco /* */ aberto, tipo cerca-aberta, nomeando a linha que abriu', fn: () => {
+    { nome: 'compararArquivo REPROVA o bloco /* */ aberto, tipo cerca-aberta, nomeando a linha que abriu', fn: () => {
       const r = compararArquivo('x.mjs', 'const a=1;', 'const a=1;\n/* nunca fecha\nconst b=2;');
       return r.ok === false && r.tipo === 'cerca-aberta' && r.linha === 2;
     } },
-    { nome: 'CARRY-OVER: bloco /* */ que FECHA normalmente nao deixa cercaAberta (nao regrediu o caso comum)', fn: () => {
+    { nome: 'bloco /* */ que FECHA normalmente nao deixa cercaAberta (nao regrediu o caso comum)', fn: () => {
       const r = linhasDeCodigo('const a=1;\n/* fecha\n   normal */\nconst b=2;', 'x.mjs');
       return r.cercaAberta === null && textoDeCodigo(r.linhas) === 'const a=1;\nconst b=2;';
     } },
@@ -652,7 +649,7 @@ function casosDeAutoteste() {
     { nome: 'compararArquivo: comentario REMOVIDO por completo (o caso de uso real do plano) -> ok', fn: () => (
       compararArquivo('x.ts', '// nota\nconst a = 1;\nconst b = 2;', 'const a = 1;\nconst b = 2;').ok === true
     ) },
-    // CONTRAPROVA POR REVERSAO (item 4 do Bloco BA) — verde que nao sabe ficar vermelho nao provou nada
+    // CONTRAPROVA POR REVERSAO — verde que nao sabe ficar vermelho nao provou nada
     { nome: 'CONTRAPROVA: identificador mudou dentro de arquivo que so deveria ter perdido comentario -> REPROVA nomeando a linha', fn: () => {
       const r = compararArquivo('x.ts', '// nota\nconst total = 1;\nreturn total;', 'const soma = 1;\nreturn total;');
       return r.ok === false && r.tipo === 'codigo-mudou' && r.linha === 1
@@ -728,20 +725,18 @@ function casosDeAutoteste() {
         && r.semExcecao.length === 1 && r.semExcecao[0].caminho === 'acidente.ts'
         && r.mortas.length === 1 && r.mortas[0].arquivo === 'ja-nao-diverge.py';
     } },
-    // BB.0 — o defeito medido pelo revisor: exceção por ARQUIVO cegava o arquivo pelo resto da
-    // campanha. Reproduzido aqui com fixture, e a contraprova real (mutar itemAplicaAoArquivo em
-    // verify-citations.mjs) fica registrada no relatório do bloco, fora do autoteste.
-    { nome: 'BB.0: arquivo TEM entrada, mas o hash atual NAO bate com o hash da entrada NEM com a referencia -> semExcecao, REPROVA (o defeito que a catraca por arquivo escondia)', fn: () => {
+    // Exceção por ARQUIVO cegaria o arquivo daí em diante — por isso a catraca casa por HASH.
+    { nome: 'arquivo TEM entrada, mas o hash atual NAO bate com o hash da entrada NEM com a referencia -> semExcecao, REPROVA (o defeito que a catraca por arquivo escondia)', fn: () => {
       const divergentes = [{ caminho: 'verify-citations.mjs', tipo: 'codigo-mudou', hashAtual: 'hash-mutado-de-novo' }];
-      const excecoes = [{ arquivo: 'verify-citations.mjs', bloco: 'BE', oQueMudou: 'mudanca autorizada anterior', hashCodigo: 'hash-autorizado-do-BE' }];
+      const excecoes = [{ arquivo: 'verify-citations.mjs', bloco: 'X', oQueMudou: 'mudanca autorizada anterior', hashCodigo: 'hash-autorizado-anterior' }];
       const r = reconciliarExcecoes(divergentes, excecoes);
       return r.semExcecao.length === 1 && r.semExcecao[0].caminho === 'verify-citations.mjs' && r.autorizadas.length === 0;
     } },
-    { nome: 'BB.0: DUAS entradas no mesmo arquivo (BA e BE) — hash atual bate com QUALQUER uma das duas -> autorizada', fn: () => {
-      const divergentes = [{ caminho: 'run-all-selftests.mjs', tipo: 'codigo-mudou', hashAtual: 'hash-do-BE' }];
+    { nome: 'DUAS entradas no mesmo arquivo, de autorizacoes diferentes — hash atual bate com QUALQUER uma das duas -> autorizada', fn: () => {
+      const divergentes = [{ caminho: 'run-all-selftests.mjs', tipo: 'codigo-mudou', hashAtual: 'hash-da-segunda' }];
       const excecoes = [
-        { arquivo: 'run-all-selftests.mjs', bloco: 'BA', oQueMudou: 'x', hashCodigo: 'hash-do-BA' },
-        { arquivo: 'run-all-selftests.mjs', bloco: 'BE', oQueMudou: 'y', hashCodigo: 'hash-do-BE' },
+        { arquivo: 'run-all-selftests.mjs', bloco: 'X', oQueMudou: 'x', hashCodigo: 'hash-da-primeira' },
+        { arquivo: 'run-all-selftests.mjs', bloco: 'Y', oQueMudou: 'y', hashCodigo: 'hash-da-segunda' },
       ];
       const r = reconciliarExcecoes(divergentes, excecoes);
       return r.autorizadas.length === 1 && r.semExcecao.length === 0;

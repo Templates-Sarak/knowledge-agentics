@@ -3,15 +3,21 @@
   "excecoes": [
     {
       "arquivo": "specs/_estrutura_modulos/tests/run-all-selftests.mjs",
-      "bloco": "BA+BE+BF",
-      "oQueMudou": "BA acrescenta specs/_estrutura_modulos/tests/no-comments-diff.mjs ao REGISTRO (o proprio Bloco BA precisa disso para o novo --autoteste nao virar orfao, Bloco AJ.1b); BE remove apply-rename.mjs do REGISTRO (arquivo excluido, residuo de campanha encerrada — autoteste:tudo cai de 14/14 para 13/13); BF acrescenta join(RAIZ_BASE, 'skills') as raizes de varredura, alarga PADRAO_SUPORTE para tambem casar `argparse.add_argument('--autoteste', ...)` (os dois scripts baseados em argparse escapavam do padrao pensado so para sys.argv cru — achado ao rodar contra skills/, nao suposto), acrescenta o caso de autoteste correspondente, e registra os quatro scripts de skills/**/scripts/ que a varredura achou orfaos (gerar_config.py, audit_base.py, novos; comparar_arvore.py, init_repo.py, ja tinham --autoteste sem ninguem rodar) — autoteste:tudo sobe de 13 para 17. Uma entrada so: todas as mudancas resultam no MESMO hash atual, uma entrada por bloco seria proveniencia duplicada que nunca reprova sozinha",
-      "hashCodigo": "5499b5754919c2742e7ef25e678d48f9ac91ec52e2d0d4f36a99d22d0d750343"
+      "bloco": "BA+BE+BF+BH",
+      "oQueMudou": "BA acrescenta specs/_estrutura_modulos/tests/no-comments-diff.mjs ao REGISTRO (o proprio Bloco BA precisa disso para o novo --autoteste nao virar orfao); BE remove apply-rename.mjs do REGISTRO (arquivo excluido, residuo de campanha encerrada — autoteste:tudo cai de 14/14 para 13/13); BF acrescenta join(RAIZ_BASE, 'skills') as raizes de varredura, alarga PADRAO_SUPORTE para tambem casar `argparse.add_argument('--autoteste', ...)` (os dois scripts baseados em argparse escapavam do padrao pensado so para sys.argv cru — achado ao rodar contra skills/, nao suposto), acrescenta o caso de autoteste correspondente, e registra os quatro scripts de skills/**/scripts/ que a varredura achou orfaos (gerar_config.py, audit_base.py, novos; comparar_arvore.py, init_repo.py, ja tinham --autoteste sem ninguem rodar) — autoteste:tudo sobe de 13 para 17; BH alarga arquivosSob de ['.mjs','.py'] para tambem ['.js','.ts'] (medido: composicao.js/composicao.ts dos bindings JS/TS suportam --autoteste e nunca eram descobertos, defeito preexistente identico ao ja declarado de composicao.py) e acrescenta os dois a DECLARADOS_FORA (mesma razao do .py: precisam de node_modules/projeto instanciado, `ERR_MODULE_NOT_FOUND` medido ao rodar direto da base) — autoteste:tudo permanece 17/17, so os DECLARADOS_FORA crescem de 1 para 3. Uma entrada so: todas as mudancas resultam no MESMO hash atual, uma entrada por bloco seria proveniencia duplicada que nunca reprova sozinha",
+      "hashCodigo": "e30df36360fa55cadb15aef3f8e2ce967a685ffad3c3b5db42f17d4c4548cda2"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "bloco": "BE",
-      "oQueMudou": "apply-rename.mjs foi removido (residuo de campanha encerrada): itemAplicaAoArquivo deixa de ser importado de la e passa a viver aqui, e CAMINHO_INVENTARIO aponta para citation-terms.json (dado proprio desta ferramenta, so antigo/novo/tipo por item) em vez de rename-inventory.json",
-      "hashCodigo": "1728b5b6638de394e784919232025fbf28487e771311b636d58b8c244b609af8"
+      "bloco": "BE+BH",
+      "oQueMudou": "BE: apply-rename.mjs foi removido (residuo de campanha encerrada): itemAplicaAoArquivo deixa de ser importado de la e passa a viver aqui, e CAMINHO_INVENTARIO aponta para citation-terms.json (dado proprio desta ferramenta, so antigo/novo/tipo por item) em vez de rename-inventory.json. BH: limpeza de citacao de plano/bloco no cabeçalho e nos comentarios (prosa, sem exceção) MAIS tres strings literais de codigo de verdade: o objeto `_comentario`/`_exemplo` que `gravarLinhaBase` escreve em citation-baseline.json (citava `plan-3.1.md Bloco AJ` e os numeros stale `305`/`4508` — o mesmo par de numeros que a propria tarefa cita como exemplo de numero errado ja visto nesta campanha), e as duas ocorrencias identicas de `'citation-terms.json vazio — nada a conferir. Estado correto antes do plan-3 Bloco AC\\n'`",
+      "hashCodigo": "d67010ca8bedd1577a7624e227a61974a28918b8ec4133852fb53d665db6c859"
+    },
+    {
+      "arquivo": "specs/_estrutura_modulos/tests/template-self-test.mjs",
+      "bloco": "BH",
+      "oQueMudou": "limpeza de citacao de plano/bloco no cabeçalho e nos comentarios (prosa, sem exceção) MAIS os `nome:` de 4 casos de `casosDeAutoteste()` que citavam bloco/round (mesma classe de defeito que o Bloco BD ja corrigiu em tools/gate/tests/cases.mjs, so que este arquivo tem seu PROPRIO array de casos e nunca tinha sido varrido) — contem: e a asercao de cada caso nao mudam, so o rotulo",
+      "hashCodigo": "4b4e26b1e8d6ebfddf2ba8256e065b6e2f35dd43d5044c90748e62cb9600f8ce"
     },
     {
       "arquivo": "specs/_estrutura_modulos/tools/gate/tests/cases.mjs",
@@ -60,6 +66,12 @@
       "bloco": "BJ",
       "oQueMudou": "mesmo defeito de specs/_estrutura_modulos/bindings/javascript/_template/api/src/routes/index.js (ver aquela entrada) — mensagem de erro de runtime citava `module.json:permissoes` (nome antigo)",
       "hashCodigo": "b101d04de2f2de852bd4a4556fafc626232fa0339789cabb5efee3c61790aab3"
+    },
+    {
+      "arquivo": "skills/meta-iniciar-repositorio/scripts/init_repo.py",
+      "bloco": "BG",
+      "oQueMudou": "MUDANCA DE COMPORTAMENTO, declarada e decidida pelo dono (unico bloco funcional do plano, fora do criterio de igualdade que rege os demais). `criar_modulos()` parava de adivinhar: `papel = \"conector\" if modulo == \"conector\" else \"dominio\"` e nunca passava `--sem-artefato`, entao `gateway-pagamentos` saia com role=dominio em silencio e todo modulo em lote saia com generatesArtifact=true. Substituido por `--modulos <id>:<role>[:artefato]` com sufixo de papel OBRIGATORIO (validar_modulos): sem ele, erro com a forma certa; role fora de {domain,gateway,connector} erro; \":artefato\" em gateway/connector erro (nao geram artefato por arquitetura); ausencia do token em domain = --sem-artefato (direcao conservadora). Ordem passa a ser pelo PAPEL declarado (connector por ultimo), nao mais pelo nome do id. PAPEL_CLI_CREATE_MODULE e a fronteira nomeada entre o vocabulario ingles de --modulos (decisao 5, o mesmo do manifesto) e o vocabulario PT que create-module.mjs --role exige (decisao 8). Acrescenta rodar_autoteste_modulos() (12 casos, fixtures em memoria) ao --autoteste existente — o comportamento novo estava sem cobertura nenhuma, so o compor_pre_commit antigo era provado. Contraprova por execucao: gateway-pagamentos sem role saia role=dominio, generatesArtifact=true; com role=gateway declarado sai role=gateway, generatesArtifact=false — reproduzido nos dois lados, mais instalacao completa via script real (2 dominios + 1 connector) ate o pre-commit composto verde (segredos + conformidade)",
+      "hashCodigo": "22e5153b3e0d396c85087c6287277e57e6579fcbd784dd628381dfa4d8902454"
     }
   ]
 }

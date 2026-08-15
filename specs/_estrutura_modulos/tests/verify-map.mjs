@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * verify-map.mjs — prova que `specs/arquitetura/README.md` (o mapa, plan-2.1.md Bloco U) está
- * instalado e que todo `§` que ele cita resolve a um título real do arquivo que ele nomeia.
+ * verify-map.mjs — prova que `specs/arquitetura/README.md` (o mapa) está instalado e que todo `§`
+ * que ele cita resolve a um título real do arquivo que ele nomeia.
  * Lei dona: nenhuma — ferramenta de manutenção do TEMPLATE, como `template-self-test.mjs` (mesmo
- * motivo de ficar fora de `tools/`: D3 daquele arquivo — um projeto gerado não gera projeto,
- * e não precisa reverificar o PRÓPRIO mapa depois de instalado).
+ * motivo de ficar fora de `tools/`: um projeto gerado não gera projeto, e não precisa reverificar o
+ * PRÓPRIO mapa depois de instalado).
  *
  *   node tests/verify-map.mjs --conferir <pastaArquitetura>   confere um specs/arquitetura/ real
  *   node tests/verify-map.mjs --autoteste                     prova o núcleo com fixtures em memória
  *
- * A TRAVA É O PONTEIRO, NÃO O BYTE (Bloco U): não compara o mapa byte a byte com uma cópia de
+ * A TRAVA É O PONTEIRO, NÃO O BYTE: não compara o mapa byte a byte com uma cópia de
  * referência — isso pegaria edição manual, que não é o risco. O risco é `§` citado que deixou de
  * existir quando a lei for reorganizada. Por isso o núcleo lê os TÍTULOS reais de cada arquivo citado
  * e confere que a seção referida ainda está lá — precedente de `skills/meta-verificacao-base/scripts/

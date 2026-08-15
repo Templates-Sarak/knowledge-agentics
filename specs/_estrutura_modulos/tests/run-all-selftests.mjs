@@ -1,22 +1,20 @@
 #!/usr/bin/env node
 /**
- * run-all-selftests.mjs — plan-3.1.md Bloco AJ.1. O achado do AG generalizado: `migrations.py`
- * ficou com `--autoteste` QUEBRADO por dois commits inteiros, gate verde, Bloco K verde, porque
- * nada no template roda `--autoteste` de ninguém automaticamente. Não é só `tools/**` (AJ.1
- * original) — é QUALQUER arquivo com `--autoteste` que nenhum CI, hook ou script invoca. Um
- * `--autoteste` que ninguém roda é indistinguível de não ter `--autoteste` nenhum, e MAIS caro:
- * ele existe, alguém confiou nele, e ninguém percebeu quando parou de significar algo.
+ * run-all-selftests.mjs — roda todo `--autoteste` registrado no template e na base, e reprova se
+ * achar um `--autoteste` fora do REGISTRO: nada aqui roda `--autoteste` de ninguém automaticamente
+ * por conta própria, e um `--autoteste` que nenhum CI, hook ou script invoca é indistinguível de não
+ * ter `--autoteste` nenhum — e MAIS caro: ele existe, alguém confiou nele, e ninguém percebe quando
+ * ele parar de significar algo.
  *
  *   node tests/run-all-selftests.mjs             roda o REGISTRO inteiro, exige 0 falhas
  *   node tests/run-all-selftests.mjs --autoteste  prova o núcleo (descoberta, comparação) com
  *                                                  fixtures em memória
  *
- * NÃO é uma lista à mão que apodrece como as que este bloco existe para substituir: a CASCA
- * VARRE o corpus atrás do padrão `--autoteste` em posição de comparação de CLI (não qualquer
- * menção em prosa/comentário) e compara contra o REGISTRO abaixo — arquivo achado E não
- * registrado é `ORFAO` e REPROVA sozinho, nomeando o arquivo, antes mesmo de rodar um teste. É a
- * mesma disciplina de `citation-baseline.json`/`rename-refusals.json`: o artefato tem de ficar
- * MENOR ou igual ao que a varredura acha, nunca o contrário sem alguém decidir.
+ * NÃO é uma lista à mão que apodrece: a CASCA VARRE o corpus atrás do padrão `--autoteste` em
+ * posição de comparação de CLI (não qualquer menção em prosa/comentário) e compara contra o
+ * REGISTRO abaixo — arquivo achado E não registrado é `ORFAO` e REPROVA sozinho, nomeando o
+ * arquivo, antes mesmo de rodar um teste. É a mesma disciplina de `citation-baseline.json`: o
+ * artefato tem de ficar MENOR ou igual ao que a varredura acha, nunca o contrário sem alguém decidir.
  *
  * Cobre `tools/`, `tests/`, `bindings/<binding>/root/` e `skills/<skill>/scripts/`: ferramenta de quem
  * MANTÉM a base, nunca de um projeto gerado — um `--autoteste` de skill que ninguém roda apodrece
@@ -51,7 +49,7 @@ export function suportaAutoteste(texto) {
 
 /** `registrados` que a varredura não achou mais: RESOLVIDO (arquivo sumiu ou perdeu `--autoteste`),
  * informativo. `achados` sem entrada em `registrados`: ORFAO, reprova sozinho. Mesma forma de
- * `compararComLinhaBase` (`verify-citations.mjs`, Bloco AJ.0) — comparação de dois conjuntos por
+ * `verify-citations.mjs:compararComLinhaBase` — comparação de dois conjuntos por
  * chave, chave aqui é só o caminho relativo (um arquivo, um comando). */
 export function compararRegistro(achados, registrados) {
   const achadosSet = new Set(achados);
@@ -100,7 +98,7 @@ const CAMINHO_DESTE_ARQUIVO = fileURLToPath(import.meta.url);
 function arquivosComAutoteste() {
   const achados = [];
   for (const raiz of raizesDeVarredura()) {
-    for (const caminho of arquivosSob(raiz, ['.mjs', '.py'])) {
+    for (const caminho of arquivosSob(raiz, ['.mjs', '.py', '.js', '.ts'])) {
       if (caminho === CAMINHO_DESTE_ARQUIVO) continue;
       const texto = readFileSync(caminho, 'utf8');
       if (suportaAutoteste(texto)) achados.push(relative(RAIZ_BASE, caminho).split('\\').join('/'));
@@ -115,10 +113,13 @@ function arquivosComAutoteste() {
  * caminho absoluto, de qualquer diretório, é seguro). Cresce só de propósito: um arquivo NOVO com
  * `--autoteste` reprova como ÓRFÃO até alguém decidir o runtime dele e acrescentar aqui.
  *
- * `composicao.py` fica DE FORA de propósito (declarado, não esquecido — mesma disciplina de
- * `config/conformidade.json`): `--autoteste` ali é `python -m src.composicao --autoteste`, e só
- * roda dentro de um projeto instanciado (o módulo `src` não existe solto na base). Cobri-lo exige
- * o passo `criar-modulo` do Bloco K, não este runner — registrado como pendência, não escondido.
+ * `composicao.py`/`.js`/`.ts` ficam DE FORA de propósito (declarados, não esquecidos — mesma
+ * disciplina de `config/conformidade.json`): o `--autoteste` de cada um só roda dentro de um projeto
+ * INSTANCIADO — `python -m src.composicao --autoteste` depende do módulo `src`, que não existe
+ * solto na base; `composicao.js`/`.ts` importam `express` de `node_modules`, que também não existe
+ * solto na base (medido: os dois estouram `ERR_MODULE_NOT_FOUND` ao rodar direto daqui). Cobri-los
+ * exige um projeto gerado — o passo `criar-modulo` de `autoteste:template`, não este runner —
+ * registrado como pendência, não escondido.
  */
 const REGISTRO = [
   { caminho: 'specs/_estrutura_modulos/tools/affected.mjs', runtime: 'node' },
@@ -140,7 +141,11 @@ const REGISTRO = [
   { caminho: 'skills/meta-verificacao-base/scripts/audit_base.py', runtime: 'python' },
 ];
 
-const DECLARADOS_FORA = new Set(['specs/_estrutura_modulos/bindings/python/root/src/composicao.py']);
+const DECLARADOS_FORA = new Set([
+  'specs/_estrutura_modulos/bindings/python/root/src/composicao.py',
+  'specs/_estrutura_modulos/bindings/javascript/root/src/composicao.js',
+  'specs/_estrutura_modulos/bindings/typescript/root/src/composicao.ts',
+]);
 
 function rodarUm(registro) {
   const caminhoAbsoluto = join(RAIZ_BASE, registro.caminho);

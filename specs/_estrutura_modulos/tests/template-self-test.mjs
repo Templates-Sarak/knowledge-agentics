@@ -1,53 +1,49 @@
 #!/usr/bin/env node
 /**
  * template-self-test.mjs — prova que o TEMPLATE gera projeto que passa na própria cadeia que ele
- * prescreve. Lei dona: plan-2.md, Bloco K.
+ * prescreve.
  *
  *   node template-self-test.mjs [--binding typescript] [--manter] [--autoteste]
  *
- * Fora de `tools/` DE PROPÓSITO (plan-2.md D3): este script é consumido por quem MANTÉM o
- * template, nunca por um projeto gerado — `create-project.mjs` copia `tools/` inteiro para o
- * destino (foi assim que a F.2d.1 aconteceu: fixture de ferramenta viajando e nascendo vermelha em
- * todo projeto novo). Um projeto gerado não gera projetos; este script ali seria peso sem consumidor.
+ * Fora de `tools/` DE PROPÓSITO: este script é consumido por quem MANTÉM o template, nunca por um
+ * projeto gerado — `create-project.mjs` copia `tools/` inteiro para o destino, e um script de teste
+ * ali viajaria como fixture morta, nascendo vermelha em todo projeto novo. Um projeto gerado não
+ * gera projetos; este script ali seria peso sem consumidor.
  *
- * ESCOPO DESTA VERSÃO (decidido com o usuário ao abrir o Bloco K): só o módulo PADRÃO, sem flags.
- * `--sem-artefato`/`--sem-web` são bugs do Bloco O (a ferramenta de entrada, não o esqueleto) — se
- * este script já cobrasse as 4 combinações, corrigir só o Bloco L nunca deixaria o K verde, e K.0
- * promete exatamente isso: "consertar o L vira o K verde, sem tocar no K". A cobertura das 4
- * combinações é ACRESCENTADA a este arquivo dentro do próprio Bloco O — ele já anuncia isso
- * ("é a razão de o K criar módulos com combinações diferentes, e não iguais").
+ * ESCOPO: as quatro combinações de flag de `create-module.mjs` (padrão, `--sem-artefato`,
+ * `--sem-web`, as duas juntas) — ver `COMBINACOES_DE_MODULO` abaixo.
  *
  * NÚCLEO × CASCA, precedente de `tools/affected.mjs`/`ci-dependencies.mjs`/`ci-security.mjs`:
  * `passosDoBinding` (que passos rodam, em que ordem) e `classificarPasso` (como um resultado de
  * processo vira ok/reprovado) são puros — nenhuma linha toca `fs`, `child_process` ou o relógio. A
  * casca executa CADA passo por um único despachante (`executarPasso`) e nunca usa `shell: true`.
  *
- * TRÊS FORMAS DE "NÃO RODOU", NENHUMA VIRA "ok" (lei 7 aplicada ao próprio K): `error` (o executável
- * não resolveu — ENOENT), `status === null` (matado por sinal/timeout, nunca terminou) e
- * `status !== 0` (rodou e reprovou). As três passam por `classificarPasso` e as três reprovam.
+ * TRÊS FORMAS DE "NÃO RODOU", NENHUMA VIRA "ok" (lei 7 do gate, aplicada a este autoteste): `error`
+ * (o executável não resolveu — ENOENT), `status === null` (matado por sinal/timeout, nunca
+ * terminou) e `status !== 0` (rodou e reprovou). As três passam por `classificarPasso` e as três
+ * reprovam.
  *
  * LIMPEZA: a pasta temporária de cada binding é removida no `finally`, e uma falha de limpeza NUNCA
  * troca o exit code da verificação pelo da faxina (ela só avisa em stderr e seque adiante).
  *
- * `clone-simulado` (M.1, plan-2.md) — o passo que prova a outra metade da promessa. Até aqui o K só
- * media "o projeto NASCE verde"; nunca "o projeto CONTINUA verde depois de CLONADO", porque este
- * script gera, verifica e apaga — nunca clona. O revisor mediu o furo: `generated/` entrou no
- * `.gitignore` da raiz (Bloco M) do jeito que anula o `.gitkeep` do molde, e um projeto clonado de
- * verdade nasce SEM a pasta que `artefato-declarado` exige. Sem rede nem remoto (o script não pode
- * depender de nenhum dos dois): `git init` + `git add -A` + `git ls-files` na própria pasta
- * temporária, e então apaga do disco, DENTRO de `modules/`, tudo que não ficou rastreado — é a
- * simulação mínima de "o que sobrevive a um clone", sem virar um projeto git de verdade. O passo
- * `verificar`, que já vem a seguir no pipeline, é quem lê o resultado: se o `.gitignore` comeu
- * estrutura, ele reprova ali, não aqui.
+ * `clone-simulado` — o passo que prova a outra metade da promessa: não basta o projeto NASCER
+ * verde, ele precisa CONTINUAR verde depois de CLONADO, e gerar+verificar+apagar (sem nunca clonar)
+ * não mede isso. `generated/` entra no `.gitignore` da raiz do jeito que anula o `.gitkeep` do
+ * molde, e um projeto clonado de verdade nasce SEM a pasta que `artefato-declarado` exige. Sem rede
+ * nem remoto (o script não pode depender de nenhum dos dois): `git init` + `git add -A` + `git
+ * ls-files` na própria pasta temporária, e então apaga do disco, DENTRO de `modules/`, tudo que não
+ * ficou rastreado — é a simulação mínima de "o que sobrevive a um clone", sem virar um projeto git
+ * de verdade. O passo `verificar`, que já vem a seguir no pipeline, é quem lê o resultado: se o
+ * `.gitignore` comeu estrutura, ele reprova ali, não aqui.
  *
- * `primeiro-commit` (plan-2.2.md Bloco X) — a EXCEÇÃO deliberada de fronteira deste arquivo: é o
- * único passo do K que sai de `specs/_estrutura_modulos/` e chama `skills/git-verificacao-commit/
- * scripts/verificar_commit.py`, na BASE. Todo o resto deste script só toca o TEMPLATE (tools/,
- * bindings/) porque só ele decide se um projeto gerado nasce verde; mas "o repositório nasce
- * COMMITÁVEL?" é uma pergunta sobre o template **e** o gate de segredos **compostos** — e a base é
- * dona dos dois. Medir isso sem sair da base seria fingir medir. Roda sobre o STAGED que
- * `clone-simulado` acabou de produzir (`git init` + `git add -A`) e exige ZERO achado — nenhuma
- * allowlist, nenhum `--no-verify`: achado aqui é o template instalando o próprio vazamento.
+ * `primeiro-commit` — a EXCEÇÃO deliberada de fronteira deste arquivo: é o único passo que sai de
+ * `specs/_estrutura_modulos/` e chama `skills/git-verificacao-commit/scripts/verificar_commit.py`,
+ * na BASE. Todo o resto deste script só toca o TEMPLATE (tools/, bindings/) porque só ele decide se
+ * um projeto gerado nasce verde; mas "o repositório nasce COMMITÁVEL?" é uma pergunta sobre o
+ * template **e** o gate de segredos **compostos** — e a base é dona dos dois. Medir isso sem sair
+ * da base seria fingir medir. Roda sobre o STAGED que `clone-simulado` acabou de produzir (`git
+ * init` + `git add -A`) e exige ZERO achado — nenhuma allowlist, nenhum `--no-verify`: achado aqui
+ * é o template instalando o próprio vazamento.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -62,24 +58,24 @@ import { fileURLToPath } from 'node:url';
 export const BINDINGS = ['typescript', 'javascript', 'python'];
 
 /**
- * As QUATRO combinações de flag de `create-module.mjs` (Bloco O, plan-2.md) — o invariante do bloco é
- * *qualquer* combinação produz módulo que passa em `verificar`, e "qualquer" só vira prova rodando
- * as quatro, não uma. Um id por combinação, para os quatro módulos conviverem no MESMO projeto (um
- * só `npm install`/`pip install`, um só `verificar` cobrindo os quatro via workspace/descoberta) —
- * repetir a cadeia inteira quatro vezes pagaria 4× o custo já medido no K.1 sem medir nada a mais.
+ * As QUATRO combinações de flag de `create-module.mjs` — o invariante é que *qualquer* combinação
+ * produz módulo que passa em `verificar`, e "qualquer" só vira prova rodando as quatro, não uma. Um
+ * id por combinação, para os quatro módulos conviverem no MESMO projeto (um só
+ * `npm install`/`pip install`, um só `verificar` cobrindo os quatro via workspace/descoberta) —
+ * repetir a cadeia inteira quatro vezes pagaria 4× o custo sem medir nada a mais.
  */
 export const COMBINACOES_DE_MODULO = [
   // SEM hifen de propósito: o id vira `data.prefix` do módulo (`<id>_`), que nomeia TABELA — e
   // `schema-manifesto` exige `^[a-z][a-z0-9_]*$` para tabela (sem hífen), mais estrito que o do
   // próprio id (`^[a-z][a-z0-9-]*$`, que aceita hífen). Medido: `sonda-padrao` reprovava
-  // `data.tables[0]: "sonda-padrao_metadados" nao casa o padrao` — o id em si era válido, a
+  // `data.tables[0]: "sonda-padrao_metadados" nao casa o padrao` — o id em si é válido, a
   // tabela derivada dele não.
   //
   // CURTO de propósito, e é a SEGUNDA medição, não só a primeira: `<modulo>` entra em comentário de
   // CABEÇALHO em vários arquivos do molde Python (`api/src/erros.py:1`, o mais apertado, tem só 13
   // caracteres de folga antes de estourar os 110 do ruff). Ids mais longos ("sondasemartefato",
-  // 16 chars) reprovavam `ruff check` (E501) e `ruff format --check` num binding que nunca teve
-  // nada a ver com o Bloco O — o comprimento do id é que importava, não a flag. `sonda` (5) tinha
+  // 16 chars) reprovam `ruff check` (E501) e `ruff format --check` no binding Python, sem relação
+  // nenhuma com a flag testada — o comprimento do id é que importa. `sonda` (5) tinha
   // folga; estes quatro (6–8) mantêm a mesma folga.
   { id: 'sondapad', flags: [] },
   { id: 'sondaart', flags: ['--sem-artefato'] },
@@ -90,53 +86,50 @@ export const COMBINACOES_DE_MODULO = [
 /**
  * Os passos de UM binding, em ordem — a decisão de "o que rodar" separada de "como rodar".
  *
- * `verificar` ANTES de `build`, `build` ANTES de `lint` NÃO É ARBITRÁRIO: é o próprio furo do
- * Bloco L.2 (`npm run build` quebra `npm run lint` porque o bundle minificado em `dist/` passa a
- * ser lintado). Trocar a ordem faria o K deixar de medir esse defeito.
+ * `verificar` ANTES de `build`, `build` ANTES de `lint` NÃO É ARBITRÁRIO: `npm run build` quebra
+ * `npm run lint` porque o bundle minificado em `dist/` passa a ser lintado. Trocar a ordem faria
+ * este autoteste deixar de medir esse defeito.
  *
  * Python não tem passo `build`/`lint` separado: o binding não empacota front-end (sem `web/` nos
  * módulos Python — medido, `bindings/python/_template` não tem pasta `web`), e `verificar.py` já
  * cobre forma + limiares + tipos + testes num só passo, como o `npm run verify` do lado Node.
  *
  * `rapido`: só a combinação PADRÃO (sem flag) — medido, as quatro juntas custam ~70s (TS) / ~52s
- * (JS), e o `--rapido` combinado (TS+JS) foi de ~25s para ~1m58s — bem em cima do teto de ~2min que
- * o K.1 fixou para caber em pre-commit. Mesma solução que o binding Python já usa (`--rapido` pula
- * Python inteiro, cobrindo-o só na agenda): a combinatória cara fica para o run COMPLETO (agenda),
- * pre-commit continua rápido. Sem isso, o K.1 nasceria violado pelo próprio bloco que o cita.
+ * (JS), e o `--rapido` combinado (TS+JS) foi de ~25s para ~1m58s — bem em cima do teto de ~2min
+ * para caber em pre-commit. Mesma solução que o binding Python já usa (`--rapido` pula Python
+ * inteiro, cobrindo-o só na agenda): a combinatória cara fica para o run COMPLETO (agenda),
+ * pre-commit continua rápido.
  *
- * `ci-dependencias` é o ÚLTIMO passo, nos três — só entra AGORA que o Bloco P fechou (D2, plan-2.md:
- * "`ci:dependencias` fica fora do K até o Bloco P fechar... quando P fechar, ele entra — e passa a
- * ser o sensor de envelhecimento"). Antes disso, incluí-lo faria o K nascer vermelho por CVE de
- * terceiro — um portão que nasce vermelho é um portão que se aprende a ignorar.
+ * `ci-dependencias` é o ÚLTIMO passo, nos três: incluí-lo cedo faria este autoteste nascer vermelho
+ * por CVE de terceiro antes mesmo de o resto ser medido — um portão que nasce vermelho é um portão
+ * que se aprende a ignorar.
  */
 export function passosDoBinding(binding, { rapido = false } = {}) {
   const combinacoes = rapido ? COMBINACOES_DE_MODULO.slice(0, 1) : COMBINACOES_DE_MODULO;
   const gerarProjeto = { nome: 'gerar-projeto', tipo: 'gerar-projeto' };
-  // As QUATRO combinações (Bloco O) — extensão do gerador do K, não do K em si (D2, plan-2.md): o K
-  // nasceu cobrindo só o módulo padrão, e esta lista é o que o Bloco O acrescenta a ela.
+  // As QUATRO combinações — ver COMBINACOES_DE_MODULO acima.
   const passosDeModulo = combinacoes.map((combinacao) => ({
     nome: `criar-modulo:${combinacao.id}`,
     tipo: 'criar-modulo',
     moduloId: combinacao.id,
     flags: combinacao.flags,
   }));
-  // Depois do ÚLTIMO `criar-modulo`, antes de `verificar` (M.1): o passo em si só poda o disco —
-  // quem lê o resultado é o `verificar` que já vem a seguir no pipeline, nos dois bindings.
+  // Depois do ÚLTIMO `criar-modulo`, antes de `verificar`: o passo em si só poda o disco — quem lê
+  // o resultado é o `verificar` que já vem a seguir no pipeline, nos dois bindings.
   const cloneSimulado = { nome: 'clone-simulado', tipo: 'clone-simulado' };
 
-  // Logo depois do `clone-simulado` (plan-2.2.md Bloco X) — a pergunta "este repositório nasce
-  // commitável?" só faz sentido sobre o STAGED de um `git init` + `git add -A` reais, que é
-  // exatamente o que `clone-simulado` acabou de produzir. Roda ANTES de `verificar`/`build`/`lint`
-  // de propósito: se o repositório não commita, nada do resto importa — é o próprio impedimento que
-  // o Bloco X descreve. Alcança a skill `git-verificacao-commit` (fora de `tools/`, fora do
-  // template) — deliberado: a pergunta só tem sentido com o template e o gate de segredos COMPOSTOS,
-  // e a base é dona dos dois (declarado aqui, exceção ao D3 do cabeçalho deste arquivo).
+  // Logo depois do `clone-simulado` — a pergunta "este repositório nasce commitável?" só faz
+  // sentido sobre o STAGED de um `git init` + `git add -A` reais, que é exatamente o que
+  // `clone-simulado` acabou de produzir. Roda ANTES de `verificar`/`build`/`lint` de propósito: se
+  // o repositório não commita, nada do resto importa. Alcança a skill `git-verificacao-commit`
+  // (fora de `tools/`, fora do template) — deliberado: a pergunta só tem sentido com o template e o
+  // gate de segredos COMPOSTOS, e a base é dona dos dois (declarado aqui, exceção de fronteira
+  // declarada no cabeçalho deste arquivo).
   const primeiroCommit = { nome: 'primeiro-commit', tipo: 'primeiro-commit' };
 
-  // Depois de `verificar`, nos dois bindings — o mapa instalado (plan-2.1.md Bloco U) é doutrina, não
-  // código do módulo, então não precisa esperar o `clone-simulado`: entra assim que o projeto existe.
-  // "Entra no Bloco K" É esta linha — sem ela, `verify-map.mjs --conferir` seria um `--conferir`
-  // que existe e ninguém chama (a mesma lacuna que a S.1 do plan-2.md já corrigiu uma vez).
+  // Depois de `verificar`, nos dois bindings — o mapa instalado é doutrina, não código do módulo,
+  // então não precisa esperar o `clone-simulado`: entra assim que o projeto existe. Sem esta linha,
+  // `verify-map.mjs --conferir` seria um `--conferir` que existe e ninguém chama.
   const mapaInstalado = { nome: 'mapa', tipo: 'mapa-instalado' };
 
   if (binding === 'python') {
@@ -206,7 +199,7 @@ const CRIAR_PROJETO = join(RAIZ_TEMPLATE, 'tools', 'create-project.mjs');
 const CRIAR_MODULO = join(RAIZ_TEMPLATE, 'tools', 'create-module.mjs');
 const VERIFICAR_MAPA = join(AQUI, 'verify-map.mjs');
 // A ÚNICA referência deste arquivo a `skills/` (fora do template) — ver o parágrafo "primeiro-commit"
-// no cabeçalho, a exceção de fronteira que o Bloco X declara por escrito.
+// no cabeçalho, a exceção de fronteira declarada por escrito.
 const RAIZ_BASE = join(RAIZ_TEMPLATE, '..', '..');
 const VERIFICAR_COMMIT_PY = join(RAIZ_BASE, 'skills', 'git-verificacao-commit', 'scripts', 'verificar_commit.py');
 const CONFIG_SEGREDOS = join(RAIZ_BASE, 'skills', 'git-verificacao-commit', 'scripts', 'config.json');
@@ -221,7 +214,7 @@ function rodarNode(args, cwd) {
  * O entrypoint JS do `npm` pelo campo `bin` de `node_modules/npm/package.json`, ao lado do `node`
  * atual — nunca pelo `PATH`. Copiado de `tools/ci-dependencies.mjs:entrypointDoNpm`
  * (que por sua vez cita `verify-commit.mjs:entrypointDoNpm`) porque este script mora fora de
- * `tools/` (D3) e não pode importar de lá — o gate `sql-no-modulo`/isolamento aplicado ao
+ * `tools/` e não pode importar de lá — o gate `sql-no-modulo`/isolamento aplicado ao
  * próprio template.
  */
 function entrypointDoPacote(raizNode, pastaPacote, chaveBin = pastaPacote) {
@@ -254,7 +247,8 @@ function rodarNpm(args, cwd) {
 }
 
 /** `SARAK_PYTHON` (caminho do binário) sobrepõe; senão, `python`/`python3` no PATH — mesma técnica
- * de `ci-dependencies.mjs:resolverPython`, copiada pelo mesmo motivo de fronteira (D3). */
+ * de `ci-dependencies.mjs:resolverPython`, copiada pelo mesmo motivo de fronteira: `tools/` é
+ * vendorizado e este script mora fora dele. */
 function resolverPythonBase() {
   const candidatos = [process.env.SARAK_PYTHON, 'python', 'python3'].filter(Boolean);
   return candidatos.find((c) => spawnSync(c, ['--version'], { shell: false }).status === 0) ?? null;
@@ -286,14 +280,13 @@ function caminhoNoFormatoGit(absoluto, raiz) {
  * formato do git) não está em `rastreados` — e, na volta da recursão (pós-ordem), remove a própria
  * pasta se ela ficou vazia.
  *
- * A remoção da pasta vazia NÃO é cosmética — é a correção de uma primeira versão que a deixava no
- * disco e por isso não pegava nada: `artefato-declarado` (`temPastaDeArtefato`, para `generated/`)
- * julga a ENTRADA da raiz (`ctx.entradasRaiz`, um `readdirSync` que lista nome de pasta, vazia ou
- * não), não o conteúdo. Medido revertendo o `.gitignore` para o `generated/` antigo (a contraprova
- * deste item): com a pasta vazia sobrevivendo no disco, o K continuava VERDE — a poda tinha comido
- * o `.gitkeep`, mas `generated` ainda aparecia como entrada, e a regra nunca via a ausência. Git, num
- * clone de verdade, não materializa diretório sem arquivo rastreado dentro — é essa ausência que
- * precisa ser reproduzida, não só a do arquivo.
+ * A remoção da pasta vazia NÃO é cosmética: `artefato-declarado` (`temPastaDeArtefato`, para
+ * `generated/`) julga a ENTRADA da raiz (`ctx.entradasRaiz`, um `readdirSync` que lista nome de
+ * pasta, vazia ou não), não o conteúdo. Deixar a pasta vazia sobrevivendo no disco (contraprova:
+ * revertendo o `.gitignore` para o `generated/` antigo) mantém a entrada visível para a regra — a
+ * poda comeu o `.gitkeep`, mas `generated` continua aparecendo, e a regra nunca vê a ausência. Git,
+ * num clone de verdade, não materializa diretório sem arquivo rastreado dentro — é essa ausência
+ * que precisa ser reproduzida, não só a do arquivo.
  */
 function podarNaoRastreado(pasta, raizProjeto, rastreados) {
   if (!existsSync(pasta)) return;
@@ -310,7 +303,7 @@ function podarNaoRastreado(pasta, raizProjeto, rastreados) {
 
 /**
  * `git init` + `git add -A` + `git ls-files`, e então poda `modules/` do que não ficou rastreado —
- * a simulação mínima de "sobreviveu a um clone" (M.1, plan-2.md). Cada comando git que falhar
+ * a simulação mínima de "sobreviveu a um clone". Cada comando git que falhar
  * devolve o resultado dele mesmo, sem seguir adiante — é o `classificarPasso` de quem chamou que
  * decide se aquilo é falha (e decide que sim: `error`/`status` não-zero nunca vira `ok`).
  */
@@ -357,9 +350,9 @@ function executarPasso(passo, ctx) {
       return rodarPython(ctx.pythonBase, ['-m', 'venv', ctx.venvDir], ctx.destino);
     case 'pip-upgrade':
       // O `pip` que `python -m venv` instala vem do INTERPRETADOR do sistema, nunca do template —
-      // e pode estar velho o bastante para ter CVE própria (Bloco P, plan-2.md: medido, pip 25.2
-      // tinha 6, corrigidas em 26.1+). `ci:dependencias` reprova nisso mesmo com toda dependência
-      // do projeto em dia, porque `pip-audit` audita o AMBIENTE inteiro, pip incluso.
+      // e pode estar velho o bastante para ter CVE própria (medido: pip 25.2 tinha 6, corrigidas em
+      // 26.1+). `ci:dependencias` reprova nisso mesmo com toda dependência do projeto em dia, porque
+      // `pip-audit` audita o AMBIENTE inteiro, pip incluso.
       return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['-m', 'pip', 'install', '--upgrade', 'pip'], ctx.destino);
     case 'pip-install':
       return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['-m', 'pip', 'install', '-e', '.[dev]'], ctx.destino);
@@ -454,12 +447,11 @@ function lerOpcoes(argv) {
 }
 
 /**
- * `--rapido` faz DUAS coisas, as duas para caber no teto de ~2min de pre-commit (K.1, plan-2.md):
- * só os bindings Node (typescript, javascript) — o binding python sozinho leva ~2m40s (venv + pip
- * install do zero) —, e só a combinação PADRÃO de `criar-modulo` (a extensão do Bloco O, com as
- * quatro combinações, custa ~70s/~52s a mais). Uso pretendido: pre-commit da base roda `--rapido`;
- * a agenda (workflow) roda sem essa flag, cobrindo os três bindings × as quatro combinações — é o
- * consumidor que paga o custo cheio.
+ * `--rapido` faz DUAS coisas, as duas para caber no teto de ~2min de pre-commit: só os bindings
+ * Node (typescript, javascript) — o binding python sozinho leva ~2m40s (venv + pip install do
+ * zero) —, e só a combinação PADRÃO de `criar-modulo` (as quatro combinações custam ~70s/~52s a
+ * mais). Uso pretendido: pre-commit da base roda `--rapido`; a agenda (workflow) roda sem essa
+ * flag, cobrindo os três bindings × as quatro combinações — é o consumidor que paga o custo cheio.
  */
 function bindingsAlvo(opcoes) {
   if (opcoes.binding !== null) return [opcoes.binding];
@@ -499,7 +491,7 @@ function principal() {
 
 function casosDeAutoteste() {
   return [
-    { nome: 'passosDoBinding(typescript): build, depois lint, depois ci-dependencias por ULTIMO (furo do L.2 + Bloco P)', fn: () => {
+    { nome: 'passosDoBinding(typescript): build, depois lint, depois ci-dependencias por ULTIMO', fn: () => {
       const nomes = passosDoBinding('typescript').map((p) => p.nome);
       return nomes.at(-3) === 'build' && nomes.at(-2) === 'lint' && nomes.at(-1) === 'ci-dependencias';
     } },
@@ -517,7 +509,7 @@ function casosDeAutoteste() {
       const nomes = passos.map((p) => p.nome);
       return nomes.indexOf('venv') < iPrimeiroModulo && nomes.indexOf('instalar') < iPrimeiroModulo;
     } },
-    { nome: 'passosDoBinding: clone-simulado depois do ULTIMO criar-modulo, nos tres bindings (M.1)', fn: () => (
+    { nome: 'passosDoBinding: clone-simulado depois do ULTIMO criar-modulo, nos tres bindings', fn: () => (
       BINDINGS.every((binding) => {
         const passos = passosDoBinding(binding);
         const nomes = passos.map((p) => p.nome);
@@ -526,7 +518,7 @@ function casosDeAutoteste() {
         return iUltimoModulo !== -1 && iClone === iUltimoModulo + 1;
       })
     ) },
-    { nome: 'passosDoBinding: primeiro-commit logo depois de clone-simulado e antes de verificar/verify, nos tres bindings (Bloco X, plan-2.2.md)', fn: () => (
+    { nome: 'passosDoBinding: primeiro-commit logo depois de clone-simulado e antes de verificar/verify, nos tres bindings', fn: () => (
       BINDINGS.every((binding) => {
         const nomes = passosDoBinding(binding).map((p) => p.nome);
         const nomeVerificar = binding === 'python' ? 'verificar' : 'verify';
@@ -534,14 +526,14 @@ function casosDeAutoteste() {
         return iCommit === nomes.indexOf('clone-simulado') + 1 && iCommit === nomes.indexOf(nomeVerificar) - 1;
       })
     ) },
-    { nome: 'passosDoBinding: mapa (Bloco U, plan-2.1.md) roda logo depois de verificar/verify, nos tres bindings', fn: () => (
+    { nome: 'passosDoBinding: mapa roda logo depois de verificar/verify, nos tres bindings', fn: () => (
       BINDINGS.every((binding) => {
         const nomes = passosDoBinding(binding).map((p) => p.nome);
         const nomeVerificar = binding === 'python' ? 'verificar' : 'verify';
         return nomes.indexOf('mapa') === nomes.indexOf(nomeVerificar) + 1;
       })
     ) },
-    { nome: 'passosDoBinding: as QUATRO combinacoes de flag do Bloco O, nos tres bindings', fn: () => (
+    { nome: 'passosDoBinding: as QUATRO combinacoes de flag de criar-modulo, nos tres bindings', fn: () => (
       BINDINGS.every((binding) => {
         const passosDeModulo = passosDoBinding(binding).filter((p) => p.tipo === 'criar-modulo');
         if (passosDeModulo.length !== COMBINACOES_DE_MODULO.length) return false;

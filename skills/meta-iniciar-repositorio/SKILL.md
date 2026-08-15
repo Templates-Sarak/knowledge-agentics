@@ -45,7 +45,7 @@ Se você vir uma pasta `doutrina/` na raiz do alvo, algo rodou errado.
 | Nome oficial do sistema | se houver git com remoto, proponha o nome do repo e peça só confirmação |
 | **Binding**: `typescript` \| `javascript` \| `python` | **não há binding para Go/Java** — ver Limites |
 | Escopo dos packages (`@acme`) | derive do nome do sistema e confirme |
-| Primeiros módulos e o papel de cada um | mínimo um `dominio`; `conector` se houver mais de um módulo com tela |
+| Primeiros módulos e o papel de cada um | mínimo um `dominio`; um `conector` se houver mais de um módulo com tela — id sugerido: `hub` |
 
 **Sem binding** (repositório que não é um sistema modular — um site, uma lib, uma base de conhecimento):
 rode sem `--binding`. O script instala só `specs/` e `.agents/`, e o Nível 1 não se aplica.
@@ -59,8 +59,14 @@ Apresente: alvo, binding, escopo, módulos com papel, **o que será criado** e *
 python skills/meta-iniciar-repositorio/scripts/init_repo.py \
   --target "<caminho-alvo>" --name "<nome>" \
   --binding <typescript|javascript|python> --escopo <escopo> \
-  --modulos <id> [<id>...] --git-init
+  --modulos <id>:<role>[:artefato] [<id>:<role>[:artefato]...] --git-init
 ```
+
+Cada módulo é `<id>:<role>[:artefato]` — o sufixo de papel é **obrigatório**
+(`role` em `domain`\|`gateway`\|`connector`, o vocabulário do próprio manifesto). Sem ele, o script
+recusa com a forma correta na mensagem, nunca adivinha pelo nome. `:artefato` só é aceito para
+`domain` — `gateway`/`connector` nunca geram artefato, por arquitetura. Se o sistema tiver um módulo
+agregador (menu + `/resumo` cross-módulo), o id sugerido é `hub`: `catalogo:domain hub:connector`.
 
 O script **cria o diretório-alvo** se ele ainda não existir — não precisa de
 `mkdir` manual antes. Ele mesmo recusa (`[ERRO] Alvo recusado`) raiz do sistema de arquivos e a pasta

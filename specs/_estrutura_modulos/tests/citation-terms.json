@@ -1,5 +1,5 @@
 {
-  "_comentario": "Vocabulario renomeado que verify-citations.mjs guarda contra regressao — dado PROPRIO desta ferramenta (plan-3.0.md Bloco BE), dimensionado ao que ela le: soh antigo/novo/tipo por item, sem fase nem _nota (campos que so apply-rename.mjs usava, removido junto com o resto do andaime da campanha de rename). Para cada item, --depois-estrito confere que o nome ANTIGO nao reaparece no corpus e que o nome NOVO, quando citado, resolve a algo real. Lista fechada: cresce so se um rename novo precisar da mesma protecao.",
+  "_comentario": "Vocabulario renomeado que verify-citations.mjs guarda contra regressao — dado PROPRIO desta ferramenta, dimensionado ao que ela le: soh antigo/novo/tipo por item, sem campo a mais. Para cada item, --depois-estrito confere que o nome ANTIGO nao reaparece no corpus e que o nome NOVO, quando citado, resolve a algo real. Lista fechada: cresce so se um rename novo precisar da mesma protecao.",
   "itens": [
     {
       "antigo": "ferramentas",

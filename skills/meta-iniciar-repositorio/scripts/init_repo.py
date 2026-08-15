@@ -1,9 +1,16 @@
 """init_repo.py — inicializacao completa de um repositorio Sarak.
 
     python init_repo.py --target <caminho> [--binding typescript] [--escopo acme]
-                        [--modulos catalogo conector] [--name "Meu Sistema"]
-                        [--git-init]
+                        [--modulos catalogo:domain hub:connector pagamentos:gateway]
+                        [--name "Meu Sistema"] [--git-init]
     python init_repo.py --autoteste   prova compor_pre_commit com fixtures em memoria (sem --target)
+
+Cada item de --modulos e "<id>:<role>[:artefato]" — o sufixo de papel e OBRIGATORIO (role em
+domain|gateway|connector, o vocabulario do proprio manifesto). Sem ele, erro — nunca um papel
+adivinhado pelo nome do id. O terceiro token so existe para "domain": presente, o modulo nasce
+COM core/engine/core/templates/generated; ausente, nasce sem (a direcao conservadora). Declarar
+":artefato" em "gateway"/"connector" reprova — os dois nao geram artefato por arquitetura (agregam
+ou traduzem, nunca publicam).
 
 Monta, nesta ordem:
 
@@ -239,7 +246,11 @@ def get_args():
     parser.add_argument("--name", default="Sistema Sarak", help="Nome do sistema")
     parser.add_argument("--binding", choices=BINDINGS, help="Binding do template de modulos")
     parser.add_argument("--escopo", help="Escopo dos packages (ex: acme)")
-    parser.add_argument("--modulos", nargs="*", default=[], help="Primeiros modulos a criar")
+    parser.add_argument(
+        "--modulos", nargs="*", default=[],
+        help='Primeiros modulos, um "<id>:<role>[:artefato]" por item (role obrigatorio: '
+             "domain|gateway|connector)",
+    )
     parser.add_argument("--git-init", action="store_true", help="Roda git init se nao houver .git")
     parser.add_argument("--forcar", action="store_true", help="Sobrescreve arquivos de raiz existentes")
     return parser.parse_args()
@@ -329,19 +340,146 @@ def instalar_base_de_linguagem(target: Path, xskills_root: Path, binding: str, n
     print(f"[OK] Base arquitetural injetada: {destino.name}")
 
 
+ROLES_VALIDOS = ("domain", "gateway", "connector")
+# `--role` de create-module.mjs e digitado em PT (decisao 8, ADR-009); --modulos deste script usa o
+# vocabulario do PROPRIO manifesto (decisao 5), ingles — a mesma forma que sai gravada em module.json.
+# Esta tabela e a fronteira entre os dois, nunca reaberta em outro lugar.
+PAPEL_CLI_CREATE_MODULE = {"domain": "dominio", "gateway": "gateway", "connector": "conector"}
+
+
+def _parse_modulo_spec(spec: str) -> tuple[str, str, bool] | None:
+    """Decompoe um item de --modulos ("<id>:<role>[:artefato]"). `None` = formato invalido — o
+    chamador imprime o erro e ABORTA antes de criar qualquer modulo (nunca aplica parte da lista)."""
+    partes = spec.split(":")
+    if len(partes) not in (2, 3):
+        return None
+    id_modulo, role = partes[0], partes[1]
+    if role not in ROLES_VALIDOS:
+        return None
+    if len(partes) == 3 and partes[2] != "artefato":
+        return None
+    return id_modulo, role, len(partes) == 3
+
+
+def validar_modulos(modulos: list) -> list | None:
+    """Valida e decompoe cada item de --modulos. `None` (com o erro ja impresso) se algum item for
+    invalido — a lista so volta preenchida quando TODOS os itens estao corretos, porque criar metade
+    dos modulos e abortar no meio deixaria o projeto num estado que ninguem pediu."""
+    decompostos = []
+    for spec in modulos:
+        parseado = _parse_modulo_spec(spec)
+        if parseado is None:
+            print(
+                f'[ERRO] "--modulos {spec}" invalido. Forma exigida: <id>:<role>[:artefato], com '
+                f'role em {{{", ".join(ROLES_VALIDOS)}}} — nunca um id sozinho (o papel adivinhado '
+                "pelo nome e o defeito que esta forma existe para fechar)."
+            )
+            return None
+        id_modulo, role, quer_artefato = parseado
+        if quer_artefato and role != "domain":
+            print(
+                f'[ERRO] "--modulos {spec}": {role} nao gera artefato por arquitetura (agrega ou '
+                'traduz, nunca publica) — ":artefato" so vale para domain.'
+            )
+            return None
+        decompostos.append((id_modulo, role, quer_artefato))
+    return decompostos
+
+
 def criar_modulos(target: Path, template: Path, modulos: list, binding: str) -> None:
-    """Passo 5: os primeiros modulos, um por vez. O conector vai por ultimo — ele agrega os outros."""
+    """Passo 5: os primeiros modulos, um por vez, na ordem PELO PAPEL declarado — connector por
+    ultimo, porque agrega o que os outros publicam. `modulos` ja chegou validado por
+    `validar_modulos`: cada item e (id, role, quer_artefato), role no vocabulario do manifesto."""
     criar_modulo = target / "tools" / "create-module.mjs"
     if not criar_modulo.exists():
         criar_modulo = template / "tools" / "create-module.mjs"
-    ordenados = sorted(modulos, key=lambda m: m == "conector")
-    for modulo in ordenados:
-        papel = "conector" if modulo == "conector" else "dominio"
-        rodar(
-            f"Modulo '{modulo}' ({papel})",
-            ["node", str(criar_modulo), modulo, "--binding", binding, "--role", papel],
-            target,
-        )
+    ordenados = sorted(modulos, key=lambda m: m[1] == "connector")
+    for id_modulo, role, quer_artefato in ordenados:
+        papel_cli = PAPEL_CLI_CREATE_MODULE[role]
+        comando = ["node", str(criar_modulo), id_modulo, "--binding", binding, "--role", papel_cli]
+        # `quer_artefato` so e True quando role == "domain" (validar_modulos ja recusa ":artefato"
+        # em gateway/connector) — entao "nao quer artefato" cobre os dois casos sozinho: domain sem
+        # o token, e gateway/connector, que NUNCA geram artefato por arquitetura.
+        if not quer_artefato:
+            comando.append("--sem-artefato")
+        rodar(f"Modulo '{id_modulo}' ({role})", comando, target)
+
+
+def _casos_de_autoteste_modulos() -> list[dict]:
+    """Cobre a contraprova por reversao do defeito original (papel adivinhado pelo nome do id) e as
+    duas formas de erro que substituem o chute: sufixo ausente, e ":artefato" fora de "domain"."""
+    return [
+        {
+            "nome": "sem sufixo de papel -> None, nunca um default silencioso",
+            "fn": lambda: _parse_modulo_spec("catalogo") is None,
+        },
+        {
+            "nome": "role fora do vocabulario -> None",
+            "fn": lambda: _parse_modulo_spec("catalogo:dominio") is None,
+        },
+        {
+            "nome": "id com nome de agregador mas SEM role declarado -> None (reversao do defeito original: nao adivinha mais pelo nome)",
+            "fn": lambda: _parse_modulo_spec("conector") is None,
+        },
+        {
+            "nome": "id que PARECE dominio mas declara gateway -> respeita o declarado, nao o nome",
+            "fn": lambda: _parse_modulo_spec("catalogo:gateway") == ("catalogo", "gateway", False),
+        },
+        {
+            "nome": "terceiro token ':artefato' em domain -> aceito, quer_artefato=True",
+            "fn": lambda: _parse_modulo_spec("catalogo:domain:artefato") == ("catalogo", "domain", True),
+        },
+        {
+            "nome": "domain sem terceiro token -> quer_artefato=False (direcao conservadora)",
+            "fn": lambda: _parse_modulo_spec("catalogo:domain") == ("catalogo", "domain", False),
+        },
+        {
+            "nome": "terceiro token que nao e 'artefato' -> None",
+            "fn": lambda: _parse_modulo_spec("catalogo:domain:x") is None,
+        },
+        {
+            "nome": "validar_modulos: ':artefato' em connector -> None, gateway/connector nao geram artefato",
+            "fn": lambda: validar_modulos(["hub:connector:artefato"]) is None,
+        },
+        {
+            "nome": "validar_modulos: ':artefato' em gateway -> None",
+            "fn": lambda: validar_modulos(["pagamentos:gateway:artefato"]) is None,
+        },
+        {
+            "nome": "validar_modulos: um item invalido reprova a lista INTEIRA, nunca aplica so os validos",
+            "fn": lambda: validar_modulos(["catalogo:domain", "semrole"]) is None,
+        },
+        {
+            "nome": "validar_modulos: lista toda valida -> decompoe todos, na ordem digitada",
+            "fn": lambda: validar_modulos(["catalogo:domain", "hub:connector"]) == [
+                ("catalogo", "domain", False), ("hub", "connector", False),
+            ],
+        },
+        {
+            "nome": "ordem de criacao: connector no MEIO da lista vai para o FIM (agrega os outros, precisa que existam)",
+            "fn": lambda: [
+                m[0] for m in sorted(
+                    [("a", "domain", False), ("hub", "connector", False), ("b", "domain", False)],
+                    key=lambda m: m[1] == "connector",
+                )
+            ] == ["a", "b", "hub"],
+        },
+    ]
+
+
+def rodar_autoteste_modulos() -> int:
+    """`--autoteste`: prova `_parse_modulo_spec`/`validar_modulos`/a ordem de `criar_modulos` com
+    fixtures em memoria — a contraprova por reversao do defeito original fica registrada aqui, nao
+    só no relatorio do bloco, porque relatorio nao roda em CI e --autoteste roda."""
+    falhas = 0
+    casos = _casos_de_autoteste_modulos()
+    for caso in casos:
+        ok = caso["fn"]() is True
+        print(f"  {'ok   ' if ok else 'FALHA'} {caso['nome']}")
+        if not ok:
+            falhas += 1
+    print(f"\nautoteste (validar_modulos/ordem): {len(casos) - falhas}/{len(casos)} ok")
+    return 0 if falhas == 0 else 1
 
 
 def instalar_estrutura_agents(target: Path, xskills_root: Path) -> Path:
@@ -443,7 +581,10 @@ def proximos_passos(modular: bool) -> None:
 
 def main() -> int:
     if "--autoteste" in sys.argv[1:]:
-        return rodar_autoteste_pre_commit()
+        resultado_pre_commit = rodar_autoteste_pre_commit()
+        print()
+        resultado_modulos = rodar_autoteste_modulos()
+        return 0 if resultado_pre_commit == 0 and resultado_modulos == 0 else 1
 
     args = get_args()
     target = Path(args.target).resolve()
@@ -452,6 +593,12 @@ def main() -> int:
     if perigo is not None:
         print(f"[ERRO] Alvo recusado ({perigo}): {target}. Confirme um caminho especifico, nunca este.")
         return 1
+
+    modulos_validados = None
+    if args.modulos:
+        modulos_validados = validar_modulos(args.modulos)
+        if modulos_validados is None:
+            return 1
 
     if not target.exists():
         try:
@@ -478,8 +625,8 @@ def main() -> int:
     instalar_specs(target, xskills_root, args.name)
     if args.binding:
         instalar_base_de_linguagem(target, xskills_root, args.binding, args.name)
-    if args.binding and args.modulos:
-        criar_modulos(target, template, args.modulos, args.binding)
+    if args.binding and modulos_validados:
+        criar_modulos(target, template, modulos_validados, args.binding)
 
     instalar_estrutura_agents(target, xskills_root)
     escrever_entrypoint(target, modular)

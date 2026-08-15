@@ -255,7 +255,7 @@ depois: 'tipo de retorno inline não desvia o extrator'
 
 ---
 
-## Bloco BH — `tests/`, a máquina que construiu a campanha *(escopo que faltava, achado na rodada BE)*
+## Bloco BH — `tests/`, a máquina que construiu a campanha ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > **Nenhum bloco reivindicava a prosa de `tests/`** — o executor levantou isso e estava certo. BB é
 > `tools/` + `bindings/`, BC é `doutrina/`, BD é `cases.mjs`, BF é `skills/`. `tests/` ficou de fora, e é
@@ -266,17 +266,17 @@ depois: 'tipo de retorno inline não desvia o extrator'
 > `create-project.mjs` não o cita). Mas é o que o **mantenedor** do template lê, e a regra deste plano
 > não faz distinção de público: *legível por quem nunca viu este repositório*.
 
-- [ ] As **88 marcas** em `tests/*.mjs`, pela regra do plano — `template-self-test.mjs` 40 ·
+- [x] As **88 marcas** em `tests/*.mjs`, pela regra do plano — `template-self-test.mjs` 40 ·
       `verify-citations.mjs` 27 · `no-comments-diff.mjs` 13 · `run-all-selftests.mjs` 5 · `verify-map.mjs` 3
-- [ ] ⚠️ **A comparação com precedente apagado morre junto.** Sobraram 9 menções do tipo *"mesma
+- [x] ⚠️ **A comparação com precedente apagado morre junto.** Sobraram 9 menções do tipo *"mesma
       disciplina de `rename-refusals.json` (Bloco AI, `apply-rename.mjs`)"* — não são ponteiro quebrado
       (não afirmam onde algo mora hoje), mas comparam o desenho a um arquivo que **o Bloco BE apagou**.
       Para quem nunca viu o repositório, é referência a nada. **O que a frase ensina fica; o precedente
       sai** — *"começa vazia e cresce só por decisão explícita"* é a carga, *"igual ao `rename-refusals`"*
       não é
-- [ ] **O instrumento deste plano é o caso mais irônico e não escapa:** `no-comments-diff.mjs` nasceu
+- [x] **O instrumento deste plano é o caso mais irônico e não escapa:** `no-comments-diff.mjs` nasceu
       nesta campanha e já carrega 13 marcas de *"Bloco BA"*. Ele se limpa como qualquer outro
-- [ ] `no-comments-diff` verde ao final do bloco — com `verify-citations.mjs` e `run-all-selftests.mjs`
+- [x] `no-comments-diff` verde ao final do bloco — com `verify-citations.mjs` e `run-all-selftests.mjs`
       cobertos pela impressão digital do Bloco BB, **não** pela autorização em branco de hoje
 
 ---
@@ -347,7 +347,7 @@ depois: 'tipo de retorno inline não desvia o extrator'
 
 ---
 
-## Bloco BG — o instalador que ADIVINHA *(o único bloco FUNCIONAL deste plano)*
+## Bloco BG — o instalador que ADIVINHA *(o único bloco FUNCIONAL deste plano)* ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > **Achado no `plan-3.1` §AF, conserto segurado de propósito para decisão do dono.**
 > `init_repo.py:criar_modulos()` tem dois chutes no modo em lote:
@@ -369,7 +369,7 @@ depois: 'tipo de retorno inline não desvia o extrator'
       a primeira mata o atalho (que existe para rodar dentro de script, sem interação), a segunda
       mantém o defeito de pé com uma etiqueta
 
-- [ ] **A forma:** `--modulos <id>:<role>[:artefato]`, e o **sufixo de papel é OBRIGATÓRIO**.
+- [x] **A forma:** `--modulos <id>:<role>[:artefato]`, e o **sufixo de papel é OBRIGATÓRIO**.
 
       ```
       node init_repo.py --modulos catalogo:domain hub:connector pagamentos:gateway
@@ -378,14 +378,14 @@ depois: 'tipo de retorno inline não desvia o extrator'
       Sem sufixo, **erro** com a forma correta na mensagem — nunca um default silencioso. *Default
       documentado ainda é escolha feita por quem não estava lá; a diferença entre chute e declaração é
       quem digitou.*
-- [ ] **O terceiro token só existe para `domain`, e é o único ponto ambíguo.** `connector` e `gateway`
+- [x] **O terceiro token só existe para `domain`, e é o único ponto ambíguo.** `connector` e `gateway`
       **não geram artefato por arquitetura**, não por convenção: a doutrina (§) descreve o conector como
       quem **agrega o que os outros publicam**, consumindo apenas `/health`, `/meta` e `/resumo` — quem
       agrega não publica. Declarar `:artefato` num deles **reprova**, com a razão na mensagem.
       Para `domain`, ausência do token = **sem artefato**: é a direção conservadora, porque módulo que
       ganha o esqueleto depois não perde nada, e módulo que nasce com esqueleto morto carrega
       `core/engine`, `core/templates`, `database/` e uma **migração para tabela que nunca usa**
-- [ ] **A ORDEM deixa de ser adivinhada junto.** Hoje `sorted(modulos, key=lambda m: m == "conector")`
+- [x] **A ORDEM deixa de ser adivinhada junto.** Hoje `sorted(modulos, key=lambda m: m == "conector")`
       põe por último o módulo **chamado** `conector` — o agregador tem de vir depois dos agregados.
       Passa a ordenar **pelo papel declarado**: `connector` por último. Mesma intenção, zero inferência
 
@@ -399,10 +399,10 @@ depois: 'tipo de retorno inline não desvia o extrator'
 > (inglês, decisão 8 reinterpretada no `plan-3.md` §AD.3) enquanto o id seguiu `conector` (português,
 > como todo id e rota). `conector:connector` é literalmente o mesmo conceito duas vezes, em duas línguas.
 
-- [ ] **O instalador para de criar um módulo agregador por conta própria.** Quem quiser um declara
+- [x] **O instalador para de criar um módulo agregador por conta própria.** Quem quiser um declara
       `<id>:connector`. Nenhum módulo é inventado por default — **inventar módulo é a forma mais cara de
       chute**, porque o usuário herda uma pasta que ele não pediu e não sabe para que serve
-- [ ] ✅ **DECIDIDO PELO DONO: o id sugerido é `hub`.** A doutrina descreve a função — monta o menu a
+- [x] ✅ **DECIDIDO PELO DONO: o id sugerido é `hub`.** A doutrina descreve a função — monta o menu a
       partir de `navigation` e soma `/resumo` **sem lista fixa** —, e `hub` a nomeia:
 
       ```
@@ -413,19 +413,19 @@ depois: 'tipo de retorno inline não desvia o extrator'
       **E `hub` tem uma propriedade que os outros candidatos não tinham:** é a mesma palavra em
       português e em inglês. Ela não reabre a fronteira de idioma em lugar nenhum — nem no id (que é
       vocabulário do projeto, português) nem na leitura de quem chega de fora
-- [ ] **Atualize os exemplos junto**, senão a mudança não chega a ninguém: `init_repo.py` §uso,
+- [x] **Atualize os exemplos junto**, senão a mudança não chega a ninguém: `init_repo.py` §uso,
       `meta-iniciar-repositorio/SKILL.md`, `code-modulo` (SKILL + `examples.md`), e a doutrina onde ela
       cita o agregador por nome. **É a mesma classe de ponteiro morto do Bloco BF** — troca de nome sem
       troca de exemplo é o defeito que este plano inteiro existe para não deixar passar
-- [ ] ⚠️ **`connector` como VALOR do enum não muda** — é vocabulário de arquitetura e está no schema.
+- [x] ⚠️ **`connector` como VALOR do enum não muda** — é vocabulário de arquitetura e está no schema.
       O que muda é o **id sugerido**, que é vocabulário do projeto. *O papel descreve a categoria; o id
       descreve a coisa.*
-- [ ] Depois de decidido: contraprova por reversão — um módulo com papel não-inferível pelo nome
+- [x] Depois de decidido: contraprova por reversão — um módulo com papel não-inferível pelo nome
       (`gateway-pagamentos`) sai com o papel CERTO, e o gate concorda
-- [ ] ⚠️ **Este bloco é declaradamente FUNCIONAL e fica FORA do `no-comments-diff`** (ver o critério de
+- [x] ⚠️ **Este bloco é declaradamente FUNCIONAL e fica FORA do `no-comments-diff`** (ver o critério de
       aceite). A prova dele é outra: **reexecução do §AF** — instalação limpa pela skill, do zero, até o
       primeiro commit verde
-- [ ] **A divergência de profundidade entre as duas entrevistas fica REGISTRADA, não consertada:**
+- [x] **A divergência de profundidade entre as duas entrevistas fica REGISTRADA, não consertada:**
       `meta-iniciar-repositorio` monta o equivalente ao Fluxo A do `code-modulo` mas não pergunta
       topologia de schema, `ui.modo` nem idioma — decisões que o `code-modulo` trata como ADR. **Não é
       defeito** (o handoff já declara a pendência de registrar ADRs); é divergência estrutural entre
@@ -464,18 +464,35 @@ AH `3ebed84` · AJ `9128037`+`78db148`), e o que ele escreveu já nasceu na regr
 
 ---
 
+## ⚠️ Achado registrado, fora do plano — o último metro não é o repositório
+
+> **A skill é carregada do cache do plugin, não do repositório.** Medido na rodada BG:
+> `~/.claude/plugins/cache/knowledge-agentics/sarak/1.0.0/skills/meta-iniciar-repositorio/SKILL.md:62`
+> ainda diz `--modulos <id> [<id>...]` — a sintaxe que o Bloco BG acabou de fechar. O repositório diz
+> `--modulos <id>:<role>[:artefato]`.
+>
+> **Consequência:** um usuário que invoque a skill hoje ainda bate no defeito original, mesmo com a
+> campanha inteira commitada. Nenhum bloco cobre isso porque nenhum bloco olha para fora do repositório —
+> e é a versão de último metro do mesmo defeito que este plano existe para matar: **o conserto que não
+> chega a quem usa não é conserto.**
+>
+> **Não consertado de propósito:** o script está certo, o cache é que está velho. Sincronizar (via
+> `meta-atualizar-base` ou `plugin/sync_ide.py`) é decisão de operação do dono, não edição de template.
+
+---
+
 ## Critério de aceite
 
-- [ ] **`no-comments-diff` verde** contra a linha de base do BA, **para os Blocos BA–BF** — a prova de
+- [x] **`no-comments-diff` verde** contra a linha de base do BA, **para os Blocos BA–BF** — a prova de
       que **nenhuma linha de código executável mudou**. É o item que sustenta todos os outros.
       **O Bloco BG está declaradamente FORA**: ele muda comportamento por decisão, e a prova dele é a
       reexecução do `plan-3.1` §AF (instalação limpa pela skill, do zero, até o primeiro commit verde).
       *Exceção declarada é aceitável; exceção diluída no critério não é*
-- [ ] Autoteste do gate **126/126 · 126/126 · 122/122**, com os **mesmos ids** — este é o número
+- [x] Autoteste do gate **126/126 · 126/126 · 122/122**, com os **mesmos ids** — este é o número
       DEPOIS do `plan-3.1` §AH, que acrescentou `mapeador-nomenclatura` ao catálogo (75 regras).
       *Critério com número velho é a forma mais silenciosa de aceitar regressão*
-- [ ] **Bloco K 13/13 nos três bindings**
-- [ ] ⚠️ **O grep é piso, não teto** *(corrigido na rodada BB, onde o critério greppável foi satisfeito
+- [x] **Bloco K 13/13 nos três bindings**
+- [x] ⚠️ **O grep é piso, não teto** *(corrigido na rodada BB, onde o critério greppável foi satisfeito
       e a regra do plano não foi aplicada)*. Três formas, e as duas últimas nenhum grep de citação pega:
       **(a)** `plan-*.md` e *"Bloco \<letra\>"*; **(b)** o **id de bloco NU** — `I.1`, `B.3`, `N.1`,
       `N.2`, `N.3`, `I.2`, `J.2`, `G.2` — que cita plano sem dizer *"Bloco"* nem *"plan-"*; **(c)** a
@@ -484,15 +501,15 @@ AH `3ebed84` · AJ `9128037`+`78db148`), e o que ele escreveu já nasceu na regr
       deste plano e só se cobra lendo. **Cuidado com o falso positivo:** passado que descreve o
       **diff do usuário** fica — *"campo passou a ser OBRIGATORIO na requisicao"*
       (`contract-compatible.mjs`) é mensagem de runtime sobre o contrato dele, não história do repo
-- [ ] Zero ocorrência de `plan-*.md` e de *"Bloco \<letra\>"* dentro de `specs/_estrutura_modulos/` —
+- [x] Zero ocorrência de `plan-*.md` e de *"Bloco \<letra\>"* dentro de `specs/_estrutura_modulos/` —
       **medido, não afirmado**
-- [ ] **Zero ponteiro morto em `skills/`** (Bloco BF), medido pelo `--depois-estrito`: nenhuma das 21
+- [x] **Zero ponteiro morto em `skills/`** (Bloco BF), medido pelo `--depois-estrito`: nenhuma das 21
       entradas de `skills/` sobrevive na linha de base
-- [ ] Um projeto gerado do zero: `verify` → `build` → `lint` → **primeiro commit**, e a `specs/arquitetura/`
+- [x] Um projeto gerado do zero: `verify` → `build` → `lint` → **primeiro commit**, e a `specs/arquitetura/`
       dele **não cita documento nenhum que ele não tenha**
-- [ ] **`--depois-estrito` com a linha de base reduzida ao que é menção deliberada** — e o número final
+- [x] **`--depois-estrito` com a linha de base reduzida ao que é menção deliberada** — e o número final
       declarado. É a prova de que os ponteiros mortos foram drenados, não silenciados
-- [ ] **`npm run autoteste:tudo` 13/13 e `npm run typecheck:tools` limpo** — as duas redes que o
+- [x] **`npm run autoteste:tudo` 13/13 e `npm run typecheck:tools` limpo** — as duas redes que o
       `plan-3.1` §AJ acrescentou. E rode-as **pelo comando**, não chamando o arquivo direto: foi
       exatamente essa substituição que manteve o `npm run autoteste:template` morto por seis rodadas
 

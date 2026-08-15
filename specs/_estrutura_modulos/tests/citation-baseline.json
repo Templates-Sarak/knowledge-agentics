@@ -1,5 +1,5 @@
 {
-  "_comentario": "Lista VERSIONADA dos achados de --depois-estrito ja revisados e aceitos — mesma disciplina de artefato versionado por decisao: comeca vazia, cresce so por decisao explicita (--gravar-linha-base), nunca por heuristica. --depois-estrito compara os achados ATUAIS contra esta lista: achado NOVO (arquivo+linha+nome ausente daqui) reprova e exige revisao humana — e ou (a) prosa legitima nunca vista nesta forma, ou (b) residuo real (plan-3.1.md Bloco AJ). So a linha de base comeca populada com os 305 medidos ao criar este modo: e o estado JA CONHECIDO, nao o alvo — verde contra a linha de base no dia 1, nunca vermelho parado (o problema que o --depois cru, com 4508 achados nunca revisados, tem).",
+  "_comentario": "Lista VERSIONADA dos achados de --depois-estrito ja revisados e aceitos — mesma disciplina de artefato versionado por decisao: comeca vazia, cresce so por decisao explicita (--gravar-linha-base), nunca por heuristica. --depois-estrito compara os achados ATUAIS contra esta lista: achado NOVO (arquivo+linha+nome ausente daqui) reprova e exige revisao humana — e ou (a) prosa legitima nunca vista nesta forma, ou (b) residuo real. A linha de base comeca populada com os achados ja revisados no dia em que este modo foi criado: e o estado JA CONHECIDO, nao o alvo — verde contra a linha de base no dia 1, nunca vermelho parado (o problema que o --depois cru, com achado nenhum revisado, tem).",
   "_exemplo": {
     "arquivo": "skills/exemplo/SKILL.md",
     "linha": 42,
@@ -7,8 +7,7 @@
     "item": {
       "antigo": "rotaBase",
       "novo": "basePath",
-      "tipo": "chave",
-      "fase": "AD.3"
+      "tipo": "chave"
     },
     "motivo": "nome-antigo-ainda-presente"
   },
@@ -862,7 +861,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 142,
+      "linha": 139,
       "item": {
         "antigo": "envRequerido",
         "novo": "requiredEnv",
@@ -873,7 +872,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 554,
+      "linha": 549,
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
@@ -884,7 +883,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 555,
+      "linha": 550,
       "item": {
         "antigo": "rotaBase",
         "novo": "basePath",
@@ -895,7 +894,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 643,
+      "linha": 638,
       "item": {
         "antigo": "mapeadores.py",
         "novo": "mappers.py",
@@ -906,7 +905,7 @@
     },
     {
       "arquivo": "specs/_estrutura_modulos/tests/verify-citations.mjs",
-      "linha": 644,
+      "linha": 639,
       "item": {
         "antigo": "criar-modulo.mjs",
         "novo": "create-module.mjs",

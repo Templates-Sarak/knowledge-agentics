@@ -149,14 +149,14 @@ manifesto, cria o `.env` com o ponteiro `ENV_RAIZ` e roda o gate ao final.
 ```
 modules/
 ├── _template/
-└── conector/
+└── hub/
 ```
 
 **Depois:**
 ```
 modules/
 ├── _template/
-├── conector/
+├── hub/
 └── catalogo/          ← árvore completa, manifesto preenchido, gate verde
 ```
 
