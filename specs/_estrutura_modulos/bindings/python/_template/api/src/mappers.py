@@ -42,7 +42,7 @@ def to_contract(registro: Registro) -> dict[str, Any]:
     """dominio -> CONTRATO (camelCase).
 
     A allowlist E esta funcao: o que nao esta escrito aqui nao e publicado. Campo declarado em
-    module.json:camposSensiveis nunca entra — ou entra mascarado.
+    module.json:sensitiveFields nunca entra — ou entra mascarado.
     """
     return {
         "hash": registro.hash,

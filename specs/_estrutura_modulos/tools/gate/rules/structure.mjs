@@ -44,7 +44,7 @@ const ENTRADAS_PERMITIDAS = new Set([
 const CONFIGS = ['api', 'domain', 'seguranca', 'ports', 'textos'];
 
 /**
- * As três pastas que `generatesArtifact` declara (01-modulo.md §2, "só se geraArtefato").
+ * As três pastas que `generatesArtifact` declara (01-modulo.md §2, "só se generatesArtifact").
  *
  * `database/` fica DE FORA de propósito, embora o `create-module.mjs --sem-artefato` também a
  * descarte: quem declara banco é `data.tables`, não `generatesArtifact`. Módulo sem artefato COM
@@ -268,7 +268,7 @@ export default [
     verificar(ctx) {
       if (ctx.manifesto?.webPath == null) return [];
       const paginas = ctx.arquivos.filter((a) => a.rel.startsWith('web/src/pages/') && !a.eTeste);
-      if (paginas.length === 0) return ['rotaWeb declarada mas web/src/pages nao tem pagina real'];
+      if (paginas.length === 0) return ['webPath declarada mas web/src/pages nao tem pagina real'];
       return [];
     },
   },
@@ -317,11 +317,11 @@ export default [
 
       const todas = PASTAS_DE_ARTEFATO.join(', ');
       if (ctx.manifesto.generatesArtifact) {
-        return [`geraArtefato: true mas ${divergentes.join(', ')} ausente no modulo — crie o que falta, `
-          + `ou declare geraArtefato: false e descarte as tres (${todas}). Descartar e permitido; renomear, nao`];
+        return [`generatesArtifact: true mas ${divergentes.join(', ')} ausente no modulo — crie o que falta, `
+          + `ou declare generatesArtifact: false e descarte as tres (${todas}). Descartar e permitido; renomear, nao`];
       }
-      return [`geraArtefato: false mas ${divergentes.join(', ')} presente no modulo — descarte o que sobra, `
-        + `ou declare geraArtefato: true e tenha as tres (${todas}). Descartar e permitido; renomear, nao`];
+      return [`generatesArtifact: false mas ${divergentes.join(', ')} presente no modulo — descarte o que sobra, `
+        + `ou declare generatesArtifact: true e tenha as tres (${todas}). Descartar e permitido; renomear, nao`];
     },
   },
   {
@@ -352,9 +352,9 @@ export default [
     verificar(ctx) {
       if (ctx.manifesto?.webPath == null) return [];
       if (temArquivoEm(ctx, 'tests/web/')) return [];
-      return ['rotaWeb declarada mas tests/web/ vazio ou ausente — a tela declarada precisa de teste'
+      return ['webPath declarada mas tests/web/ vazio ou ausente — a tela declarada precisa de teste'
         + ' (§5 pede os tres estados: loading, empty, error). Ou crie o teste, ou descarte a tela'
-        + ' zerando rotaWeb'];
+        + ' zerando webPath'];
     },
   },
   {

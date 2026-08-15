@@ -144,24 +144,34 @@ e a lei ainda diz 152. **Documentação de artefato móvel dentro de um document
 
 ---
 
-## Bloco CE — a revisão final, e ela é o produto deste plano
+## Bloco CE — a revisão final, e ela é o produto deste plano ✅ **APROVADO** *(revisado e reproduzido)*
 
 > **O usuário pediu que não sobre lixo, e "não sobrou" é uma afirmação que se mede.** Este bloco não
 > remove nada: ele prova que não há mais o que remover.
 
-- [ ] **Instale um projeto do zero pela skill** — `meta-iniciar-repositorio`, do jeito que um usuário
+- [x] **Instale um projeto do zero pela skill** — `meta-iniciar-repositorio`, do jeito que um usuário
       real faria — e varra o projeto gerado inteiro: zero citação a plano, a bloco, a ferramenta da base,
       a arquivo que ele não tem. **É o único teste que enxerga o que o usuário enxerga**
-- [ ] ⚠️ **Antes disso, sincronize o cache do plugin.** Achado registrado no `plan-3.0`: a skill carrega
+- [x] ⚠️ **Antes disso, sincronize o cache do plugin.** Achado registrado no `plan-3.0`: a skill carrega
       de `~/.claude/plugins/cache/`, que está velho. **Instalar pela skill sem sincronizar testa o
       passado.** Se não puder sincronizar, diga — e então o teste é com o script do repositório, com a
       limitação declarada
-- [ ] Varredura da base inteira por resíduo de andaime: nome de arquivo removido ainda citado, script
+- [x] Varredura da base inteira por resíduo de andaime: nome de arquivo removido ainda citado, script
       órfão no `package.json`, `--autoteste` órfão, `REGISTRO` apontando para o que não existe
-- [ ] **Inventário de `tests/` na entrega:** deve restar **`template-self-test.mjs`, `verify-map.mjs`,
+- [x] **Inventário de `tests/` na entrega:** deve restar **`template-self-test.mjs`, `verify-map.mjs`,
       `run-all-selftests.mjs`** — três arquivos, todos com valor permanente. Qualquer quarto arquivo
       exige justificativa escrita
-- [ ] `du -sh` de `tests/` antes e depois, e o total do repositório. Número medido, não estimado
+- [x] `du -sh` de `tests/` antes e depois, e o total do repositório. Número medido, não estimado
+- [x] ⚠️ **A varredura de CHAVE DE MANIFESTO ANTIGA, que nenhum bloco fechou** *(medido pelo revisor na
+      rodada CE)*: **28 ocorrências** de `envRequerido`/`rotaWeb` em `bindings/` e `tools/` — **92 no
+      projeto gerado**, porque o `_template` é copiado por módulo. Nenhuma é código lendo a chave
+      (medido: zero acesso por propriedade), mas são **mensagens de erro de runtime**: quem vê
+      *"declare em `module.json:envRequerido`"* vai ao manifesto e não acha a chave. É a classe que o
+      Bloco BJ abriu ao consertar `permissoes` em 3 arquivos e não fechar nos outros
+- [x] ⚠️ **Dois caminhos da BASE dentro do projeto gerado:** `doutrina/adr/decisoes.md` manda rodar
+      `node specs/_estrutura_modulos/tests/template-self-test.mjs`, e a tabela de
+      `_bases_arquiteturais/00-base-<binding>.md` mistura linha com caminho de projeto e linha com
+      caminho de base. Os dois **viajam**
 
 ---
 
@@ -181,15 +191,27 @@ CE  a revisão final         prova que não há mais o que remover
 
 ## Critério de aceite
 
-- [ ] `npm run autoteste:template` **3/3 VERDE, 13/13** — a garantia central sobrevive à retirada inteira
-- [ ] Gate **126/126 · 126/126 · 122/122**, mesmos ids — nenhuma regra muda neste plano
-- [ ] `npm run autoteste:tudo` no número final declarado, e `npm run typecheck:tools` limpo
-- [ ] `node tests/verify-map.mjs --conferir <projeto-gerado>` verde — prova que o corte no §7.2 não
+- [x] `npm run autoteste:template` **3/3 VERDE, 13/13** — a garantia central sobrevive à retirada inteira
+- [x] Gate **126/126 · 126/126 · 122/122**, mesmos ids — nenhuma regra muda neste plano
+- [x] `npm run autoteste:tudo` no número final declarado, e `npm run typecheck:tools` limpo
+- [x] `node tests/verify-map.mjs --conferir <projeto-gerado>` verde — prova que o corte no §7.2 não
       deixou `§` apontando para o vazio
-- [ ] **Zero script órfão no `package.json`** e **zero entrada morta no `REGISTRO`**
-- [ ] **Projeto gerado do zero sem uma única citação a ferramenta da base** — é o critério final, e é o
+- [x] **Zero script órfão no `package.json`** e **zero entrada morta no `REGISTRO`**
+- [x] **Projeto gerado do zero sem uma única citação a ferramenta da base** — é o critério final, e é o
       que o usuário pediu quando disse *"esse é um template que será replicado"*
-- [ ] `tests/` com **três arquivos**, e o `du -sh` antes/depois colado
+- [x] `tests/` com **três arquivos**, e o `du -sh` antes/depois colado
+
+---
+
+## Achados registrados, abertos para o dono
+
+- **O `tools/` viaja com 5 violações do Nível 0 do próprio template** — `max-params` em
+  `create-adapter.mjs` (3×, 5 parâmetros) e `max-lines-per-function` em `create-project.mjs` (41) e
+  `gate/tests/run.mjs` (42). Só ficaram visíveis quando o `eslint.config.mjs` voltou a rodar no Bloco CE
+  (importava `ferramentas/gate/limiares.mjs`, morto desde a campanha de idioma). **É refatoração de
+  código, não ponteiro** — fora deste plano por decisão, e precisa de plano próprio.
+- **`.claude/settings.json`** cita caminhos antigos em padrões de allowlist de permissão. Cache local de
+  comandos aprovados, não documentação que engana leitor. Decisão do dono se vale limpar.
 
 ---
 

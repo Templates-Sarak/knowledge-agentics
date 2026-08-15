@@ -77,7 +77,7 @@ function resolveEnvironment(raizModulo) {
 export function envRequired(chave) {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
-    throw new Error(`[config] variavel obrigatoria ausente: ${chave} (declare em module.json:envRequerido)`);
+    throw new Error(`[config] variavel obrigatoria ausente: ${chave} (declare em module.json:requiredEnv)`);
   }
   return valor;
 }

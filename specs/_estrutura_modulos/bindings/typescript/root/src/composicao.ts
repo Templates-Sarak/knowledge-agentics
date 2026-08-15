@@ -205,7 +205,7 @@ function envRequiredRoot(chave: string): string {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
-      `[composicao] variavel obrigatoria ausente: ${chave} (declare em project.json:envRequerido)`,
+      `[composicao] variavel obrigatoria ausente: ${chave} (declare em project.json:requiredEnv)`,
     );
   }
   return valor;

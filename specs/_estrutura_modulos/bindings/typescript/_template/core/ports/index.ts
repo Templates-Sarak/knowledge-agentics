@@ -51,7 +51,7 @@ export interface Notificador {
 
 /**
  * O conjunto que o bootstrap RECEBE. Cada nome aqui corresponde a uma chave de config/ports.json
- * e a uma entrada de module.json:portas — o gate cobra que os tres concordem.
+ * e a uma entrada de module.json:ports — o gate cobra que os tres concordem.
  *
  * `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
  * fabrica (`FABRICAS.notificador`, src/composicao.ts) e alcancada de verdade no boot, nao so

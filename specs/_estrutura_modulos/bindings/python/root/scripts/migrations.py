@@ -201,7 +201,7 @@ def _required_url(id_do_modulo: str) -> str:
     if not valor:
         raise RuntimeError(
             f"[migrations] variavel obrigatoria ausente: {chave}"
-            " (declare em module.json:envRequerido e no .env da raiz)"
+            " (declare em module.json:requiredEnv e no .env da raiz)"
         )
     return valor
 

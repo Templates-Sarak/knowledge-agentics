@@ -86,7 +86,7 @@ Cada regra tem **um** dono. Quem não é dono, aponta; ninguém copia.
 | Nível | Assunto | Dono | Verificador |
 |---|---|---|---|
 | **0** | escrita: SRP, limiares, zero hardcoded, segredos, erro, log | `padrao-escrita` | validador da `padrao-<linguagem>` + hook `padrao-limiares` |
-| **1** | arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento | `arquitetura/04-regras.md` **do projeto** | `node ferramentas/gate/validar.mjs` |
+| **1** | arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento | `arquitetura/04-regras.md` **do projeto** | `node tools/gate/validate.mjs` |
 | **2** | idiomas de cada linguagem | `padrao-<linguagem>` | linter configurado da linguagem |
 
 O Nível 1 só existe em projeto que adota o **template de módulos**. Onde ele não existe, o padrão em vigor é

@@ -93,7 +93,7 @@ def env_required(chave: str) -> str:
     valor = os.environ.get(chave)
     if valor is None or valor == "":
         raise RuntimeError(
-            f"[config] variavel obrigatoria ausente: {chave} (declare em module.json:envRequerido)"
+            f"[config] variavel obrigatoria ausente: {chave} (declare em module.json:requiredEnv)"
         )
     return valor
 

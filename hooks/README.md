@@ -42,7 +42,7 @@ Política em `qualidade.modo`: **block** (cobra correção) · **warn** (só avi
 linter/formatter de `linguagens`.
 
 **O limiar não vem daqui, e isso é o desenho.** `padrao-limiares` roda o linter do projeto **com a config
-do projeto**, cujos 40/3/4 são derivados de `ferramentas/gate/limiares.mjs` — a fonte única da lei. Ele
+do projeto**, cujos 40/3/4 são derivados de `tools/gate/thresholds.mjs` — a fonte única da lei. Ele
 não injeta mais `--rule`/`--config`: enquanto injetava, o número vivia numa quarta cópia dentro de
 `hooks/` e essa cópia **vencia** a config gerada, então o hook e o `npm run lint` do mesmo repositório
 podiam cobrar valores diferentes. **Projeto sem config de linter** não tem limiar a aplicar: o hook
@@ -115,7 +115,7 @@ O vocabulário difere de propósito entre os dois: o template nomeia **binding**
 {
   "qualidade": {
     // `modo` e so. `limiares` esta fora (40/3/4 sao LEI, fonte unica em
-    // ferramentas/gate/limiares.mjs) e `proibir` tambem (a config gerada ja emite
+    // tools/gate/thresholds.mjs) e `proibir` tambem (a config gerada ja emite
     // no-console/no-empty sem ler politica — o campo so escondia erro que o lint acusa)
     "modo": "warn"                   // block | warn | off
   },

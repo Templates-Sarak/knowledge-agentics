@@ -362,7 +362,7 @@ function imprimirHumano(ref, resultados) {
     if (r.consumidores.length > 0) {
       process.stdout.write(`        consumidores afetados: ${r.consumidores.join(', ')}\n`);
     } else if (!r.compativel) {
-      process.stdout.write('        consumidores afetados: nenhum modulo atual declara "consome" para este\n');
+      process.stdout.write('        consumidores afetados: nenhum modulo atual declara "consumes" para este\n');
     }
   }
 }

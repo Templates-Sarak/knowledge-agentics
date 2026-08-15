@@ -73,7 +73,7 @@ export const CASOS = [
   },
   {
     regra: 'web-declarado',
-    descricao: 'rotaWeb declarada sem pagina real',
+    descricao: 'webPath declarada sem pagina real',
     // Cascata legitima: sem as paginas, as chaves de `config/textos.json` ficam sem leitor. So em
     // TS/JS — o molde Python nasce sem `web/`, e por isso `tambem` e teto, nao obrigacao.
     //
@@ -81,7 +81,7 @@ export const CASOS = [
     // tela passa a exigir `tests/web/`, que ele nao tem. E defeito real do fixture mutado, nao
     // ruido — tela declarada sem teste e exatamente o que a regra persegue.
     tambem: ['config-morta', 'testes-web'],
-    // Declara a rotaWeb no proprio caso: assim vale tambem para molde que nasce sem tela
+    // Declara a webPath no proprio caso: assim vale tambem para molde que nasce sem tela
     // (o binding Python), em vez de depender do default de um binding especifico.
     mutar: (m) => {
       m.manifesto((x) => ({ ...x, webPath: '/molde' }));
@@ -90,13 +90,13 @@ export const CASOS = [
   },
   {
     regra: 'artefato-declarado',
-    descricao: 'geraArtefato false com as pastas de artefato presentes',
+    descricao: 'generatesArtifact false com as pastas de artefato presentes',
     // Direcao "proibe": o molde nasce com as tres pastas, entao basta desligar a declaracao.
     mutar: (m) => m.manifesto((x) => ({ ...x, generatesArtifact: false })),
   },
   {
     regra: 'artefato-declarado',
-    descricao: 'geraArtefato true com generated/ ausente',
+    descricao: 'generatesArtifact true com generated/ ausente',
     // Direcao "exige" — e de proposito e a pasta `generated/`, cuja presenca so e visivel pela ENTRADA
     // da raiz: o conteudo dela fica fora de `ctx.arquivos`, entao `temArquivoEm` nunca a acharia.
     // Liga a condicao no proprio manifesto, como o `web-declarado`, para o caso nao depender do
@@ -519,7 +519,7 @@ export const CASOS = [
   },
   {
     regra: 'testes-web',
-    descricao: 'rotaWeb declarada e tests/web/ apagada',
+    descricao: 'webPath declarada e tests/web/ apagada',
     // Nao mexe no manifesto: o molde de TS/JS ja nasce com `webPath`, e usar a declaracao REAL e o
     // que faz o caso provar a condicional em vez de fabrica-la. `removerPastaEm` (e nao
     // `removerPasta`) porque no Python o alvo nao existe: la o caso vira SEM COBERTURA declarada, e
@@ -683,7 +683,7 @@ export const CASOS = [
   },
   {
     regra: 'navegacao-declarada',
-    descricao: 'navegacao declarada com rotaWeb nula',
+    descricao: 'navegacao declarada com webPath nula',
     // Declara os DOIS lados no proprio caso, como o `web-declarado` faz: assim vale nos tres
     // bindings, e nao depende de o molde daquele binding nascer com tela (o Python nao nasce).
     //
@@ -1492,7 +1492,7 @@ export const CASOS = [
   },
   {
     regra: 'rota-publica-autenticada',
-    descricao: 'rotasPublicas declara rota que o contrato nao tem',
+    descricao: 'publicRoutes declara rota que o contrato nao tem',
     // Entrada com typo NAO isenta nada: o autor acredita que abriu a rota, a cadeia continua
     // exigindo token, e o defeito so aparece em producao. A forma passa no JSON Schema
     // (`^(GET|POST|PATCH|PUT|DELETE) /`), entao `schema-manifesto` cala e o caso acusa UM id.
@@ -1503,7 +1503,7 @@ export const CASOS = [
   },
   {
     regra: 'rota-publica-autenticada',
-    descricao: 'api/ para de ler rotasPublicas do manifesto: docstring que so EXPLICA nao basta (Python)',
+    descricao: 'api/ para de ler publicRoutes do manifesto: docstring que so EXPLICA nao basta (Python)',
     // A clausula de origem usa `textoDeCodigo` (linhasCodigo, sem comentario/docstring), nao
     // `conteudo`: um docstring que so EXPLICA `publicRoutes` satisfaria a checagem mesmo com a
     // leitura de verdade apagada — falso negativo que aprovaria em silencio. O molde Python tem

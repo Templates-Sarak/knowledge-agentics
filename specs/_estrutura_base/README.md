@@ -51,7 +51,7 @@ de arquitetura, e por isso não ganham uma árvore paralela:
 
 **Estas seis não se editam à mão como as demais specs.** As cinco primeiras vêm do template e são atualizadas
 por ele; mudar de ideia sobre uma delas é ADR novo em `adr/`. E, diferente de toda outra spec deste
-diretório, elas têm **verificador executável**: `node ferramentas/gate/validar.mjs`.
+diretório, elas têm **verificador executável**: `node tools/gate/validate.mjs`.
 
 As decisões que as justificam estão em `adr/000-decisoes-do-template.md`.
 

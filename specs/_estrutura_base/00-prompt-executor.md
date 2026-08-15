@@ -67,7 +67,7 @@ suposição. Suposição não registrada é reprovação garantida.
      zero hardcoded, segredo só em `.env`, nenhuma exceção engolida.
    - **Nível 1** (`specs/arquitetura/04-regras.md`, se este projeto adota o template de módulos): anatomia,
      manifesto, contrato, dados e isolamento. **É cobrado por máquina** —
-     `node ferramentas/gate/validar.mjs <modulo>`. Rode antes de entregar.
+     `node tools/gate/validate.mjs <modulo>`. Rode antes de entregar.
    - **Nível 2** (`padrao-<linguagem>`): idiomas e limiares da linguagem do alvo.
 5. **Escreva o código como o código vizinho.** Mesma nomenclatura, mesmos idiomas, mesma densidade de
    comentário. Não introduza estilo, biblioteca ou paradigma novos — nada que a plan não autorize.

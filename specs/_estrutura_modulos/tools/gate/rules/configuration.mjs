@@ -229,13 +229,13 @@ export default [
       const achados = [];
       for (const porta of declaradas) {
         if (configuradas.includes(porta)) continue;
-        achados.push(`porta "${porta}" declarada em module.json:portas e ausente de`
+        achados.push(`porta "${porta}" declarada em module.json:ports e ausente de`
           + ' config/ports.json — a composicao nao acha o provedor e DERRUBA o boot');
       }
       for (const porta of configuradas) {
         if (declaradas.includes(porta)) continue;
         achados.push(`config/ports.json escolhe provedor para "${porta}", ausente de`
-          + ' module.json:portas — provedor para uma porta que o modulo nao exige e config morta');
+          + ' module.json:ports — provedor para uma porta que o modulo nao exige e config morta');
       }
       return achados;
     },
@@ -523,7 +523,7 @@ export default [
 
       const achados = [...usadas]
         .filter((chave) => !declaradas.includes(chave))
-        .map((chave) => `env "${chave}" usada no codigo da raiz e ausente de project.json:envRequerido`);
+        .map((chave) => `env "${chave}" usada no codigo da raiz e ausente de project.json:requiredEnv`);
       for (const chave of declaradas) {
         if (usadas.has(chave)) continue;
         achados.push(`env "${chave}" declarada em project.json e nunca usada em adapters/, src/ nem`
@@ -550,7 +550,7 @@ export default [
         const casado = texto.match(URL_LITERAL);
         if (casado === null) return null;
         return `URL literal ${casado[0]} na fiacao — endereco de infraestrutura vem do ambiente:`
-          + ' declare a chave em project.json:envRequerido e leia-a aqui';
+          + ' declare a chave em project.json:requiredEnv e leia-a aqui';
       });
     },
   },

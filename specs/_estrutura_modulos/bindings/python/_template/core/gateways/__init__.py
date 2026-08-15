@@ -6,7 +6,7 @@ Sao riscos diferentes, por isso moram em pastas diferentes — e o gate cobra re
 
   - arquivo aqui fala EXCLUSIVAMENTE HTTP (regra `gateway-http`);
     nenhum SQL, nenhuma conexao, nenhum acesso a tabela — nem a propria;
-  - cada arquivo aqui TEM entrada em module.json:consome (regra `gateway-declarado`);
+  - cada arquivo aqui TEM entrada em module.json:consumes (regra `gateway-declarado`);
   - o grafo de `consumes` nao pode ter ciclo (regra `consome-ciclo`);
   - a URL base vem do ambiente, nunca literal (regra `hardcode-url`).
 

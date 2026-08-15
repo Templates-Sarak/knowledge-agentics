@@ -6,7 +6,7 @@ Isso deixa "suite verde" incapaz de provar, sozinha, que a fiacao de ambiente es
 boot real prova. Este teste fecha essa lacuna removendo `PYTEST_CURRENT_TEST` do ambiente, de
 proposito, so durante a chamada.
 
-Usa `<MODULO>_API_PORT` (ja declarada em module.json:envRequerido pelo molde) em vez de inventar uma
+Usa `<MODULO>_API_PORT` (ja declarada em module.json:requiredEnv pelo molde) em vez de inventar uma
 chave nova: uma chave sintetica usada via `os.environ[...]` seria acusada por `env-declarado` — "usada
 no codigo e ausente do manifesto" — por um vazamento que nao tem nada a ver com este teste.
 

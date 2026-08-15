@@ -701,10 +701,10 @@ export default [
       const declaradas = propriedadesDaResposta(spec.conteudo, '/resumo', 'get', '200');
       // `/resumo` ausente da spec e do `contract`, que ja a cobra como rota obrigatoria.
       if (declaradas === null || declaradas.has('total')) return [];
-      return ['exportaResumo: true mas o schema 200 de GET /resumo nao declara "total" — o agregador '
+      return ['exportsSummary: true mas o schema 200 de GET /resumo nao declara "total" — o agregador '
         + 'cross-modulo compoe SEM lista fixa e so conhece a forma minima; sem ela, agregar exigiria '
         + 'um caso por modulo dentro do conector. Declare "total" (inteiro) na resposta de /resumo, '
-        + 'ou exportaResumo: false'];
+        + 'ou exportsSummary: false'];
     },
   },
   {

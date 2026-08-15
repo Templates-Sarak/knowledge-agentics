@@ -235,12 +235,12 @@ function conferirRotasPublicasReais(ctx) {
     if (caminho === undefined) continue;
     const rota = [...operacoes.keys()].find((r) => normalizar(r) === normalizar(caminho));
     if (rota === undefined) {
-      achados.push(`rotasPublicas declara "${entrada}" mas o contrato nao tem o caminho "${caminho}"`
+      achados.push(`publicRoutes declara "${entrada}" mas o contrato nao tem o caminho "${caminho}"`
         + ' — a entrada nao isenta nada, e a rota que se queria publica segue exigindo token');
       continue;
     }
     if (!operacoes.get(rota).has(metodo)) {
-      achados.push(`rotasPublicas declara "${entrada}" mas o contrato nao declara ${metodo} em "${rota}"`
+      achados.push(`publicRoutes declara "${entrada}" mas o contrato nao declara ${metodo} em "${rota}"`
         + ` (declara: ${[...operacoes.get(rota)].join(', ') || 'nenhum'})`);
     }
   }

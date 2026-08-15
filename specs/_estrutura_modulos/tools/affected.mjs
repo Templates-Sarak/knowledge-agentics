@@ -15,7 +15,7 @@
  *
  * Selecionar demais custa minutos de CI. Selecionar de menos deixa código NAO VERIFICADO passar
  * com o pipeline verde — e "verde indistinguível de não verificou" é exatamente a doença que todo
- * o template em `specs/_estrutura_modulos/` existe para tratar (04-regras.md §7). Toda dúvida, todo
+ * o template de módulos existe para tratar (04-regras.md §7). Toda dúvida, todo
  * caminho não reconhecido, toda falha de leitura resolve em "verificar TUDO", nunca em "não afeta
  * nada". Quem mexer neste arquivo depois: a direção proibida é fazer o cálculo mais preciso à
  * custa de arriscar um falso negativo. Precisão que arrisca esconder código não verificado NAO

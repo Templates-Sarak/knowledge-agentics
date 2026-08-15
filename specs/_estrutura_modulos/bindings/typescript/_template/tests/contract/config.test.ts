@@ -4,7 +4,7 @@
 // provar, sozinha, que a fiacao de ambiente esta correta — so o boot real prova. Este teste fecha
 // essa lacuna chamando a funcao com `NODE_ENV` DIFERENTE de "test", de proposito.
 //
-// Usa `<MODULO>_API_PORT` (ja declarada em module.json:envRequerido pelo molde) em vez de inventar
+// Usa `<MODULO>_API_PORT` (ja declarada em module.json:requiredEnv pelo molde) em vez de inventar
 // uma chave nova: uma chave sintetica usada via `process.env[...]` seria acusada por `env-declarado`
 // — "usada no codigo e ausente do manifesto" — por um vazamento que nao tem nada a ver com este teste.
 import { afterEach, describe, expect, it } from 'vitest';

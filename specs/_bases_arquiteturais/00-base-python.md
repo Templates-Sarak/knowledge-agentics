@@ -17,17 +17,20 @@ A fundação **da linguagem** neste repositório: stack, ferramental e convenç�
 
 # 2. Onde a lei vira código
 
-| Camada | Onde | Papel |
-|---|---|---|
-| Lei (agnóstica) | `specs/arquitetura/00-arquitetura.md` … `04-regras.md` | o que vale em qualquer linguagem |
-| **Binding** | `specs/_estrutura_modulos/bindings/python/` | como a lei se materializa aqui |
-| Molde de módulo | `bindings/python/_template/` | validado pelo gate **como módulo real** (ADR-006) |
-| Esqueleto de raiz | `bindings/python/raiz/` | `packages/portas`, `adapters/memoria`, `src/composicao`, `verificar.py` |
+**Tabela do repositório da base** (`knowledge-agentics`) — os caminhos abaixo não existem no projeto gerado;
+ele recebe o *conteúdo* de cada linha, não a árvore do template.
 
-Módulo novo **não se escreve à mão**: `node ferramentas/criar-modulo.mjs <id> --binding python`,
+| Camada | Onde, na base | Papel |
+|---|---|---|
+| Lei (agnóstica) | `specs/_estrutura_modulos/doutrina/00-arquitetura.md` … `04-regras.md` (instalada no projeto como `specs/arquitetura/`) | o que vale em qualquer linguagem |
+| **Binding** | `specs/_estrutura_modulos/bindings/python/` | como a lei se materializa aqui |
+| Molde de módulo | `specs/_estrutura_modulos/bindings/python/_template/` | validado pelo gate **como módulo real** (ADR-006) |
+| Esqueleto de raiz | `specs/_estrutura_modulos/bindings/python/root/` | `packages/ports`, `adapters/memory`, `src/composicao`, `verificar.py` |
+
+Módulo novo **não se escreve à mão**: `node tools/create-module.mjs <id> --binding python`,
 conduzido pela skill `code-modulo`.
 
-**O binding Python nasce backend-only** (`rotaWeb: null`): o front do ecossistema é sempre TypeScript. Módulo
+**O binding Python nasce backend-only** (`webPath: null`): o front do ecossistema é sempre TypeScript. Módulo
 Python que precise de tela usa o `web/` do binding TS — a doutrina não muda por causa disso.
 
 # 3. Skills obrigatórias
@@ -37,7 +40,7 @@ Python que precise de tela usa o `web/` do binding TS — a doutrina não muda p
 | `padrao-escrita` | **Nível 0** — SRP, limiares, zero hardcoded, segredos, erro, log, testes |
 | `padrao-python` | **Nível 2** — idiomas Python + validador self-contained (`scripts/validate.py`, stdlib `ast`) |
 
-O **Nível 1** (arquitetura de módulos) é cobrado por máquina: `node ferramentas/gate/validar.mjs`.
+O **Nível 1** (arquitetura de módulos) é cobrado por máquina: `node tools/gate/validate.mjs`.
 
 # 4. Stack
 
@@ -65,7 +68,7 @@ Preparar o ambiente: `python -m venv .venv && .venv/bin/pip install -e ".[dev]"`
 | Verificação | Comando |
 |---|---|
 | Tudo, na ordem certa | `python verificar.py` — gate + `.env.example` + `ruff` + `mypy` + pytest por módulo |
-| Só conformidade de arquitetura | `node ferramentas/gate/validar.mjs --todos` |
+| Só conformidade de arquitetura | `node tools/gate/validate.mjs --todos` |
 | Limiares e idiomas | `ruff` (do projeto) · validador da `padrao-python` (do Sarak) |
 | Testes de um módulo | `pytest`, **a partir da pasta do módulo** |
 
@@ -92,5 +95,5 @@ já tem Node, do mesmo modo que já tem Python. Override explícito: `SARAK_NODE
 
 - Zero segredo hardcoded (`cyber-segredos`); gate de commit pela `git-verificacao-commit`.
 - Segredo só em `.env`, nunca em `config/*.json` (versionado).
-- `.env.example` é **gerado** de `modulo.json:envRequerido` (`node ferramentas/sincronizar-env.mjs`).
+- `.env.example` é **gerado** de `module.json:requiredEnv` (`node tools/sync-env.mjs`).
 - Query **sempre** parametrizada, e sempre dentro do adapter — nenhum SQL de fornecedor no módulo.

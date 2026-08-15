@@ -40,7 +40,7 @@ export function domainToRow(registro) {
 
 /**
  * dominio -> CONTRATO. A allowlist e esta funcao: o que nao esta escrito aqui nao e publicado.
- * Campo declarado em module.json:camposSensiveis nunca entra — ou entra mascarado.
+ * Campo declarado em module.json:sensitiveFields nunca entra — ou entra mascarado.
  *
  * @param {import('../../../core/domain/index.js').Registro} registro
  */

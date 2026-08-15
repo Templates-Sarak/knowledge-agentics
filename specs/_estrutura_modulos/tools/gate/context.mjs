@@ -24,7 +24,7 @@ const NAO_PERCORRER = new Set([
 // "Nao percorra o conteudo" e "nao conte como entrada da arvore" sao DUAS decisoes, e `generated/` as
 // separa: o conteudo dela e saida de maquina — varre-lo faria `hardcode-url`, `limiar-funcao` e
 // `log` julgarem HTML gerado —, mas a PASTA e item declarado da arvore (`01-modulo.md` §2, "so se
-// geraArtefato") e ja consta de `ENTRADAS_PERMITIDAS`. Se as duas decisoes voltarem a ser uma so, a
+// generatesArtifact") e ja consta de `ENTRADAS_PERMITIDAS`. Se as duas decisoes voltarem a ser uma so, a
 // pasta fica invisivel ao gate: entrada permitida que nunca chega a existir para regra nenhuma.
 const CONTEUDO_IGNORADO_MAS_ENTRADA = new Set(['generated']);
 

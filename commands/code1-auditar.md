@@ -25,7 +25,7 @@ consolida os achados num **plano de adequação** e **persiste** em `.sarak/audi
    | 4 | nenhum acima | **monólito simples** | o repo inteiro; avise que o Nível 1 não se aplica |
 
    **Nenhum módulo encontrado nunca é "está conforme"** — é sinal de que a topologia é outra. Declare qual é
-   antes de seguir. Se for **template**, rode `node ferramentas/gate/validar.mjs --todos --json` primeiro e
+   antes de seguir. Se for **template**, rode `node tools/gate/validate.mjs --todos --json` primeiro e
    passe o resultado aos agentes: eles complementam o gate, não o repetem.
 
    Capture a data com `Bash`: `date +%F` (use como `<data>`).

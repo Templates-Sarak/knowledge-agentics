@@ -45,7 +45,7 @@ function requiredUrl(idDoModulo: string): string {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
-      `[adapters/postgres] variavel obrigatoria ausente: ${chave} (declare em module.json:envRequerido e no .env da raiz)`,
+      `[adapters/postgres] variavel obrigatoria ausente: ${chave} (declare em module.json:requiredEnv e no .env da raiz)`,
     );
   }
   return valor;

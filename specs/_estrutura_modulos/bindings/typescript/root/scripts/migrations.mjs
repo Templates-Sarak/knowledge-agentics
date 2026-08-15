@@ -197,7 +197,7 @@ function requiredUrl(idDoModulo) {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
-      `[migrations] variavel obrigatoria ausente: ${chave} (declare em module.json:envRequerido e no .env da raiz)`,
+      `[migrations] variavel obrigatoria ausente: ${chave} (declare em module.json:requiredEnv e no .env da raiz)`,
     );
   }
   return valor;

@@ -162,11 +162,13 @@ nascer vermelho por CVE de terceiro): CVE nova em qualquer binding derruba o `kn
 própria agenda, nunca o projeto de quem já gerou o dele. A cadência é *quando o autoteste acender*, não
 calendário — uma CVE que não afeta versão nenhuma do pin atual não exige nada.
 
-**O procedimento do bump**, sempre nesta ordem: `npm outdated`/`npm audit`/`pip-audit` apontam o alvo →
+**O procedimento do bump**, sempre nesta ordem — no repositório do **template**, nunca no projeto gerado
+(§ acima: quem sobe a versão é o template): `npm outdated`/`npm audit`/`pip-audit` apontam o alvo →
 sobe a versão fixada nos `package.json`/`pyproject.toml` do esqueleto → `npm run autoteste:template` (ou
-`node specs/_estrutura_modulos/tests/template-self-test.mjs`) nos três bindings → **verde** vira commit datado
-aqui; **vermelho** e a versão não entra, com o motivo escrito na tentativa. É o que torna o salto de major
-barato o bastante para acontecer: sem essa contraprova, a única atualização segura seria nenhuma.
+`node specs/_estrutura_modulos/tests/template-self-test.mjs`, caminho do repositório do template) nos três
+bindings → **verde** vira commit datado aqui; **vermelho** e a versão não entra, com o motivo escrito na
+tentativa. É o que torna o salto de major barato o bastante para acontecer: sem essa contraprova, a única
+atualização segura seria nenhuma.
 
 **Dois limites, declarados:** pin exato prende o **topo** da árvore, não os transitivos (`esbuild` chega
 pelo `vite`, e uma CVE ali só é vista quando `npm audit` a relaciona a um pacote de topo) — quem prende
