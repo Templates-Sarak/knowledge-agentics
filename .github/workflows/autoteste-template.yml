@@ -1,12 +1,12 @@
-name: Autoteste do template (Bloco K)
+name: Autoteste do template
 
-# Sensor de envelhecimento da D1 (plan-2.md): prova, a cada rodada, que `criar-projeto.mjs` ainda
-# gera projeto que passa na propria cadeia que o template prescreve — gate, formato, lint, tipos,
-# testes, build, nos tres bindings. CVE novo ou breakage de major deixa este workflow vermelho,
-# NUNCA o projeto de quem ja usou o template (o template e copia, nao dependencia — ADR-005).
+# Sensor de envelhecimento: prova, a cada rodada, que `create-project.mjs` ainda gera projeto que
+# passa na propria cadeia que o template prescreve — gate, formato, lint, tipos, testes, build, nos
+# tres bindings. CVE novo ou breakage de major deixa este workflow vermelho, NUNCA o projeto de quem
+# ja usou o template (o template e copia, nao dependencia — ADR-005).
 #
 # So agenda + manual: o `--rapido` (so typescript/javascript) e quem cabe em pre-commit; o binding
-# python sozinho mede ~2m40s (K.1) e por isso so roda aqui, nao no pre-commit da base.
+# python sozinho mede ~2m40s e por isso so roda aqui, nao no pre-commit da base.
 
 on:
   schedule:
@@ -25,18 +25,18 @@ jobs:
         with:
           python-version: '3.11'
       - run: npm ci
-      # plan-3.1.md Bloco AJ.1 — os dois baratos primeiro (segundos, sem scaffold): tipo estatico
-      # em tools/** (simbolo inexistente em ramo nao percorrido) e todo --autoteste do template
-      # (--autoteste que nada invoca e o achado do AG — migrations.py ficou quebrado com tudo verde).
+      # Os dois baratos primeiro (segundos, sem scaffold): tipo estatico em tools/** (simbolo
+      # inexistente em ramo nao percorrido) e todo --autoteste do template (--autoteste que nada
+      # invoca e indistinguivel de nao ter).
       - run: npm run typecheck:tools
       - run: npm run autoteste:tudo
       - run: npm run autoteste:template
 
-  # plan-3.1.md Bloco AG: os runners de migrations (scripts/migrations.mjs, scripts/migrations.py)
-  # precisam de Postgres real — o Bloco K acima nao tem banco e nunca exercita isto. Medido a mao
-  # (Bloco AG): ciclo completo (up -> up[pula] -> down -> up) e o estado no banco (tabelas, indice,
-  # unique, RLS, tabela de controle) batem nos dois bindings. Job separado do Bloco K de proposito —
-  # nao arrisca o 13/13 ja provado só para acrescentar uma dependencia de servico.
+  # Os runners de migrations (scripts/migrations.mjs, scripts/migrations.py) precisam de Postgres
+  # real — o job acima nao tem banco e nunca exercita isto. Medido: ciclo completo
+  # (up -> up[pula] -> down -> up) e o estado no banco (tabelas, indice, unique, RLS, tabela de
+  # controle) batem nos dois bindings. Job separado de proposito — nao arrisca o 13/13 ja provado
+  # só para acrescentar uma dependencia de servico.
   verificar-migrations:
     runs-on: ubuntu-latest
     services:
@@ -65,7 +65,7 @@ jobs:
         run: |
           python skills/meta-iniciar-repositorio/scripts/init_repo.py \
             --target /tmp/ci-migrations-js --name "CI Migrations JS" \
-            --binding javascript --escopo cimig --modulos itens --git-init
+            --binding javascript --escopo cimig --modulos itens:domain --git-init
 
       - name: Configurar .env (javascript)
         run: |
@@ -84,7 +84,7 @@ jobs:
         run: |
           python skills/meta-iniciar-repositorio/scripts/init_repo.py \
             --target /tmp/ci-migrations-py --name "CI Migrations PY" \
-            --binding python --escopo cimig --modulos itens --git-init
+            --binding python --escopo cimig --modulos itens:domain --git-init
 
       - name: Configurar .env e instalar dependencias (python)
         run: |

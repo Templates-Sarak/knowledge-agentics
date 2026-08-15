@@ -45,7 +45,7 @@ em vez de reconfigurar tudo do zero. O destino é empacotar como **plugin** e im
 | **agents/** | **Subagente** com contexto próprio | Modelo **delega** (`Task`) ou você cita pelo nome | `agents/<nome>.md` |
 | **hooks** | Comando shell em **eventos** do harness | **Automático/determinístico** no evento | `settings.json` (scripts em `hooks/`) |
 | **plugin/** | **Instalador Global** (Sincroniza X-Skills nas IDEs) | **Manual** (rodar `sync_ide.py`) | `plugin/sync_ide.py` |
-| **specs** | Especificações e **a lei da arquitetura de módulos** (Nível 1) + seu gate | Manual (referência humana) + `validar.mjs` | `specs/` — template em `specs/_estrutura_modulos/` |
+| **specs** | Especificações e **a lei da arquitetura de módulos** (Nível 1) + seu gate | Manual (referência humana) + `validate.mjs` | `specs/` — template em `specs/_estrutura_modulos/` |
 | **settings.json** | Configuração (permissões, env, model, hooks) | **Automático** | `.claude/settings.json` |
 | **MCP** | Servidores de **ferramentas externas** (Gmail, DB, APIs) | Ferramentas ficam disponíveis ao modelo | `.mcp.json` |
 

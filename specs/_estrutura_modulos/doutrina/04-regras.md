@@ -419,63 +419,6 @@ regras de `ui` não são heurísticas — `ui-kit` lê import, e o modo `proprio
 | `rota-nomenclatura` | lê `servers:` e `paths:` linha a linha; contrato ilegível é do `contract`, e aqui ela silencia. O verbo sai de vocabulário fechado (PT e EN): verbo fora da lista passa, e substantivo homógrafo de verbo acusa. **Plural não é verificado** (§3.1) |
 | `consome-contrato` | compara **rota**: pega renome, remoção e troca de método. Mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor) passa — a regra lê o caminho e o método, nunca o corpo. Contrato compatível na rota e incompatível no payload continua sendo trabalho de revisão **na maior parte** — `tools/contract-compatible.mjs` (FERRAMENTA, não regra: compara DOIS estados via git, o gate compara um só) cobre uma fatia do payload desde que passou a existir; o parágrafo logo abaixo da tabela lista exatamente o que ela cobre e o que continua sendo revisão humana. Spec do **dono** ilegível não acusa no consumidor: o defeito é do dono, e o `contrato` dele o reporta |
 
-**`verify-citations.mjs` (fora do gate — ferramenta de manutenção da base, `tests/`) não é regra, e o
-limite dela é da mesma família: não tenta decidir por FORMA se um caminho/identificador em prosa de
-doutrina É uma citação sobre o template. Medido: classificar por forma — caminho com barra,
-kebab-case perto da palavra "regra", identificador com maiúscula interna — e resolver contra disco/
-catálogo/corpus de código achou dezenas de ocorrências nesta doutrina, **nenhuma órfã real**. Essas
-ocorrências caem em três categorias, sem exceção: **vocabulário externo** (termo HTTP como `Retry-After`, nome de nó de AST
-de terceiro como `CallExpression`, chave de config de outra ferramenta como `environmentMatchGlobs` do
-vitest); **contraexemplo deliberado** (proposta de regra recusada e discutida em tabela de ADR, como
-`dependencia-fixada`; API citada só pra dizer que não é usada); e **instância hipotética** (nome de
-campo/arquivo de um exemplo ilustrativo — módulo fictício `catalogo`, arquivo `engine.test.ts` — que a
-doutrina inventa pra explicar uma regra, nunca existiu de verdade). Por isso ela não confere prosa
-aberta: confere só o INVENTÁRIO FECHADO declarado em
-`tests/citation-terms.json` — `--antes`/`--depois` provam que um rename não deixa nome antigo
-pra trás nem cita nome novo que não existe, e nada além disso. Falso positivo sobre prosa legítima
-continuaria sendo a direção proibida se a ferramenta tentasse ir além do inventário.**
-
-**`--depois-estrito` são DOIS cortes, e nenhum reabre a discussão acima.**
-`--depois` cru afirma "zero ocorrência de nome antigo", e essa afirmação é inalcançável — medido:
-**3856** achados, dos quais só palavra comum do léxico português (`raiz`, `nome`,
-`contrato`, `consome`, `prefixo`, `tabelas`, `dominio`, `ordem`, `registrar`, `descricao`...) explica
-a esmagadora maioria, e é prosa legítima **dentro** do escopo pelo mesmo motivo do parágrafo acima.
-
-**Corte 1 — por forma do nome ANTIGO.** Um item do inventário é **IDENTIFICADOR DISTINTIVO**
-(camelCase interno, `snake_case`, extensão de arquivo, ou hífen) ou é **palavra comum**, e só o
-primeiro grupo reprova. Medido: **271 dos 330** itens do inventário são distintivos; aplicado aos
-3856 achados brutos, sobram 261.
-
-**Corte 2 — por ARQUIVO, achado ao medir o corte 1 em cima de si mesmo.** `lerTexto`/
-`rodarAutoteste`/`envRequerido` dentro de `tools/`/`tests/` são distintivos por forma E não são
-resíduo nenhum — são símbolo da PRÓPRIA base, exatamente onde a decisão 4 da fronteira (ADR-009)
-manda ficar em português. `--depois-estrito` reusa `itemAplicaAoArquivo` (em `verify-citations.mjs`, a
-MESMA fronteira que a campanha de rename já usa pra decidir o que é renomeado): item tipo `simbolo`
-só conta dentro de `bindings/` + `doutrina/` + as docs vivas da raiz; `chave`/`pasta`/`arquivo`
-continuam sem filtro de caminho — só `simbolo` tem risco de colidir com o vocabulário da ferramenta.
-Medido: **109 das 261 saem — ~42%**. Sem este corte, todo arquivo novo escrito **na convenção
-correta** (símbolo em português dentro de `tools/`/`tests/`) geraria achado novo e exigiria decisão
-humana — a catraca perderia o fio exatamente no caso que ela existe pra deixar passar calado.
-
-**O que os dois cortes NÃO fecham:** identificador antigo que TAMBÉM é palavra comum (`dominio` —
-"domínio" é português de dicionário) fica de fora mesmo citado como resíduo real (`core/dominio` num
-caminho, por exemplo) — tentar capturar esse caso por contexto (posição depois de `/`, dentro de
-crase) reabriria exatamente o problema já medido: dos 3856 achados brutos, só 261 sobrevivem ao corte
-de identificador distintivo — o resto é a mesma palavra comum aparecendo como prosa legítima na
-esmagadora maioria das próprias ocorrências (`dominio` sozinho aparece centenas de vezes em
-`bindings/**` como o conceito de negócio, não como resíduo). Os cortes trocam **recall por
-precisão** de propósito — é o mesmo acordo da opção B, só que mais estreito: aquele argumento vale
-para **palavra comum**, nunca para **identificador**.
-
-**O artefato:** `tests/citation-baseline.json` — começa com os **152** achados já medidos e revisados
-depois dos dois cortes (não vazio: o estado NÃO revisado, com 3856 achados nunca olhados, é o próprio problema que
-motivou o corte), cresce só por `--gravar-linha-base`, e achado novo reprova nomeando arquivo e
-linha. Contraprova feita nos dois sentidos, para os dois cortes: um resíduo distintivo novo
-introduzido de propósito FORA do escopo (`paraContrato` numa linha de `doutrina/`) reprova nomeando
-o arquivo; o mesmo tipo de símbolo introduzido DENTRO do escopo excluído (`resolverDependencias` em
-`tools/`) não aparece — nem como achado, nem como falso alerta. Os dois revertidos, volta a **0
-achados novos, exit 0**.
-
 ### 7.2.1 — O extrator de projeção
 
 **O extrator tem DUAS âncoras, e as duas têm limite próprio.** As duas se apoiam num

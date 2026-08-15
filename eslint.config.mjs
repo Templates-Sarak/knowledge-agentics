@@ -1,9 +1,8 @@
-// Lint da BASE sobre si mesma (plan-2.md, Bloco L.3 — "ferramentas/ e vendorizado no projeto
-// gerado e PROPRIO na base"). O template exclui `ferramentas/` do lint de todo projeto gerado
-// (ferramental vendorizado, o dono e outro repositorio) — mas AQUI a base E o dono, e o precedente
-// que fecha essa exclusao e a F.2d.1: recusar excluir `ferramentas/` do scanner de segredo com o
-// mesmo argumento. Ponto cego num linter e tolerável num projeto que so consome; na casa do
-// dono, nao.
+// Lint da BASE sobre si mesma — `ferramentas/` e vendorizado no projeto gerado e PROPRIO na base.
+// O template exclui `ferramentas/` do lint de todo projeto gerado (ferramental vendorizado, o dono
+// e outro repositorio) — mas AQUI a base E o dono, e o mesmo argumento fecha a exclusao no scanner
+// de segredo: recusar excluir `ferramentas/` dele tambem. Ponto cego num linter e tolerável num
+// projeto que so consome; na casa do dono, nao.
 //
 // So `specs/_estrutura_modulos/ferramentas/**` entra — NAO o repo inteiro. `hooks/`, `skills/`,
 // `plugin/`, `mcp-servers/`, `agents/`, `commands/` sao areas com dono e ritmo proprios, fora do

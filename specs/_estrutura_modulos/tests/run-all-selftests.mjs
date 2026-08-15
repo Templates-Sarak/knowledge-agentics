@@ -13,8 +13,8 @@
  * NÃO é uma lista à mão que apodrece: a CASCA VARRE o corpus atrás do padrão `--autoteste` em
  * posição de comparação de CLI (não qualquer menção em prosa/comentário) e compara contra o
  * REGISTRO abaixo — arquivo achado E não registrado é `ORFAO` e REPROVA sozinho, nomeando o
- * arquivo, antes mesmo de rodar um teste. É a mesma disciplina de `citation-baseline.json`: o
- * artefato tem de ficar MENOR ou igual ao que a varredura acha, nunca o contrário sem alguém decidir.
+ * arquivo, antes mesmo de rodar um teste. O artefato (o REGISTRO) tem de ficar MENOR ou igual ao
+ * que a varredura acha, nunca o contrário sem alguém decidir.
  *
  * Cobre `tools/`, `tests/`, `bindings/<binding>/root/` e `skills/<skill>/scripts/`: ferramenta de quem
  * MANTÉM a base, nunca de um projeto gerado — um `--autoteste` de skill que ninguém roda apodrece
@@ -48,9 +48,8 @@ export function suportaAutoteste(texto) {
 }
 
 /** `registrados` que a varredura não achou mais: RESOLVIDO (arquivo sumiu ou perdeu `--autoteste`),
- * informativo. `achados` sem entrada em `registrados`: ORFAO, reprova sozinho. Mesma forma de
- * `verify-citations.mjs:compararComLinhaBase` — comparação de dois conjuntos por
- * chave, chave aqui é só o caminho relativo (um arquivo, um comando). */
+ * informativo. `achados` sem entrada em `registrados`: ORFAO, reprova sozinho. Comparação de dois
+ * conjuntos por chave — chave aqui é só o caminho relativo (um arquivo, um comando). */
 export function compararRegistro(achados, registrados) {
   const achadosSet = new Set(achados);
   const registradosSet = new Set(registrados.map((r) => r.caminho));
@@ -93,8 +92,7 @@ const CAMINHO_DESTE_ARQUIVO = fileURLToPath(import.meta.url);
 
 /** Todo caminho (relativo à raiz da BASE, barra normal) sob as raízes de varredura cujo texto
  * suporta `--autoteste` — exclui este próprio arquivo: ele CITA `'--autoteste'` várias vezes
- * (docstring, `suportaAutoteste`, `principal`) sem ser, ele mesmo, um alvo do REGISTRO — o mesmo
- * bug de auto-referência que `verify-citations.mjs` documenta no próprio cabeçalho. */
+ * (docstring, `suportaAutoteste`, `principal`) sem ser, ele mesmo, um alvo do REGISTRO. */
 function arquivosComAutoteste() {
   const achados = [];
   for (const raiz of raizesDeVarredura()) {
@@ -128,8 +126,6 @@ const REGISTRO = [
   { caminho: 'specs/_estrutura_modulos/tools/contract-compatible.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/package.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/verify-commit.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/no-comments-diff.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/verify-citations.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/verify-map.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/template-self-test.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs', runtime: 'node' },

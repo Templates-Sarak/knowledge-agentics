@@ -19,7 +19,7 @@
 ## Inegociáveis (Nível 1 — arquitetura de módulos)
 - **O princípio** — o único que este gancho afirma: **a fronteira física de pastas É a fronteira de dependência**. Extrair um módulo é copiar uma pasta e recortar chaves `<MODULO>_*` do `.env`, nunca reescrever import.
 - **A lei não está aqui, e não deve ser reproduzida aqui**: o catálogo normativo é o `04-regras.md` — na base, `specs/_estrutura_modulos/doutrina/04-regras.md`; no projeto instanciado, `specs/arquitetura/04-regras.md`. Regra que não está lá não é regra.
-- **Cobrada por máquina**, não de cabeça: `node ferramentas/gate/validar.mjs --todos` (ou `<caminho-do-modulo>` para um só).
+- **Cobrada por máquina**, não de cabeça: `node tools/gate/validate.mjs --todos` (ou `<caminho-do-modulo>` para um só).
 - **Só se aplica a projeto que adota o template de módulos** (`specs/_estrutura_modulos/README.md`). Sem o template, vale o Nível 0 acima mais a `padrao-<linguagem>` — não improvise meia estrutura modular.
 
 ## Como trabalhar
