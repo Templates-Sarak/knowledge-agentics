@@ -23,7 +23,7 @@ modules/<modulo>/
 ├── module.json          identidade + contrato — o sistema DESCOBRE o módulo por aqui
 ├── package.json         @<escopo>/<modulo>        (pyproject.toml no binding Python)
 ├── .env                 ENV_RAIZ + overrides — NÃO versionado, criado pelo scaffold
-├── .env.example         GERADO de module.json:envRequerido — nunca editado à mão
+├── .env.example         GERADO de module.json:requiredEnv — nunca editado à mão
 ├── README.md
 │
 ├── contract/
@@ -40,8 +40,8 @@ modules/<modulo>/
 │   ├── domain/         tipos + validação
 │   ├── ports/          o que preciso de INFRAESTRUTURA
 │   ├── gateways/        o que preciso de OUTRO MÓDULO — exclusivamente HTTP
-│   ├── engine/           geração determinística do artefato   (só se geraArtefato)
-│   └── templates/       base + blocos                        (só se geraArtefato)
+│   ├── engine/           geração determinística do artefato   (só se generatesArtifact)
+│   └── templates/       base + blocos                        (só se generatesArtifact)
 │
 ├── api/                 a ÚNICA superfície pública
 │   └── src/
@@ -66,7 +66,7 @@ modules/<modulo>/
 ├── tests/               tudo roda com adapters de memória — sem rede, sem banco
 │   ├── domain/  contract/  web/  fixtures/
 │
-└── generated/             saída publicável                     (só se geraArtefato)
+└── generated/             saída publicável                     (só se generatesArtifact)
 ```
 
 **Descartar é permitido; renomear, não.** Módulo sem artefato descarta `core/engine`, `core/templates`,
@@ -176,7 +176,7 @@ o sistema subir apontando para o lugar errado em vez de falhar. Default só é l
 endereço, credencial ou identidade.
 
 ```
-boot → lê module.json → resolve .env → confere envRequerido → lê config/*.json
+boot → lê module.json → resolve .env → confere requiredEnv → lê config/*.json
      → resolve portas → injeta adapters → sobe a api
                       ↘ qualquer etapa falha → o processo morre com erro nomeado
 ```
@@ -248,8 +248,8 @@ Porta é infraestrutura. **Gateway é outro módulo.** São fronteiras de risco 
 diferentes, para que a diferença seja visível e verificável.
 
 ```jsonc
-"consome": [
-  { "modulo": "catalogo", "contrato": "GET /aliquotas/vigente", "porQue": "alíquota do mês na conciliação" }
+"consumes": [
+  { "module": "catalogo", "contract": "GET /aliquotas/vigente", "why": "alíquota do mês na conciliação" }
 ]
 ```
 

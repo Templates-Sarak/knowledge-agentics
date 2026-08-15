@@ -266,22 +266,22 @@ depois: 'tipo de retorno inline não desvia o extrator'
 > `create-project.mjs` não o cita). Mas é o que o **mantenedor** do template lê, e a regra deste plano
 > não faz distinção de público: *legível por quem nunca viu este repositório*.
 
-- [x] As **88 marcas** em `tests/*.mjs`, pela regra do plano — `template-self-test.mjs` 40 ·
+- [ ] As **88 marcas** em `tests/*.mjs`, pela regra do plano — `template-self-test.mjs` 40 ·
       `verify-citations.mjs` 27 · `no-comments-diff.mjs` 13 · `run-all-selftests.mjs` 5 · `verify-map.mjs` 3
-- [x] ⚠️ **A comparação com precedente apagado morre junto.** Sobraram 9 menções do tipo *"mesma
+- [ ] ⚠️ **A comparação com precedente apagado morre junto.** Sobraram 9 menções do tipo *"mesma
       disciplina de `rename-refusals.json` (Bloco AI, `apply-rename.mjs`)"* — não são ponteiro quebrado
       (não afirmam onde algo mora hoje), mas comparam o desenho a um arquivo que **o Bloco BE apagou**.
       Para quem nunca viu o repositório, é referência a nada. **O que a frase ensina fica; o precedente
       sai** — *"começa vazia e cresce só por decisão explícita"* é a carga, *"igual ao `rename-refusals`"*
       não é
-- [x] **O instrumento deste plano é o caso mais irônico e não escapa:** `no-comments-diff.mjs` nasceu
+- [ ] **O instrumento deste plano é o caso mais irônico e não escapa:** `no-comments-diff.mjs` nasceu
       nesta campanha e já carrega 13 marcas de *"Bloco BA"*. Ele se limpa como qualquer outro
-- [x] `no-comments-diff` verde ao final do bloco — com `verify-citations.mjs` e `run-all-selftests.mjs`
+- [ ] `no-comments-diff` verde ao final do bloco — com `verify-citations.mjs` e `run-all-selftests.mjs`
       cobertos pela impressão digital do Bloco BB, **não** pela autorização em branco de hoje
 
 ---
 
-## Bloco BI — o manual, e os exemplos da lei *(achado na rodada BF — a maior dívida que restou)*
+## Bloco BI — o manual, e os exemplos da lei *(achado na rodada BF)* ✅ **APROVADO** *(revisado e reproduzido — aguardando commit)*
 
 > **O `README.md` do template está inteiro no vocabulário de antes do rename.** É o primeiro documento que
 > alguém abre, e **todo comando dele falha**: `node ferramentas/criar-projeto.mjs`, `ferramentas/criar-modulo.mjs`,
@@ -297,15 +297,53 @@ depois: 'tipo de retorno inline não desvia o extrator'
 > exemplo em JSON**: `distintivo()` devolve `false` para `consome`, `modulo`, `contrato` — o falso negativo
 > declarado do §7.2. Lacuna de escopo do plano, minha, não do executor.
 
-- [ ] `specs/_estrutura_modulos/README.md` inteiro na forma atual — **cada comando RODADO**, não relido.
+- [x] `specs/_estrutura_modulos/README.md` inteiro na forma atual — **cada comando RODADO**, não relido.
       Comando de manual que ninguém executa é exatamente o `autoteste:template` outra vez
-- [ ] Os **dois links markdown** para `ferramentas/` resolvendo
-- [ ] Os exemplos de manifesto de `doutrina/01-modulo.md` e `04-regras.md` **conferidos contra
+- [x] Os **dois links markdown** para `ferramentas/` resolvendo
+- [x] Os exemplos de manifesto de `doutrina/01-modulo.md` e `04-regras.md` **conferidos contra
       `module.schema.json`**, chave por chave — a fonte é o schema, não a memória
-- [ ] **A classe, não os sítios:** todo exemplo `json`/`jsonc` da doutrina e dos `README.md` validado
+- [x] **A classe, não os sítios:** todo exemplo `json`/`jsonc` da doutrina e dos `README.md` validado
       contra o schema que o gate usa. Chave que o schema não conhece reprova
-- [ ] A linha de base cai de **131** para o que sobrar, com o número declarado e as 13 do `README.md`
+- [x] A linha de base cai de **131** para o que sobrar, com o número declarado e as 13 do `README.md`
       **zeradas** — dívida que este bloco existe para pagar, não para redeclarar
+
+---
+
+## Bloco BJ — o rename que passou por cima do código *(achado na rodada BI — é correção, não limpeza)*
+
+> **A campanha de renomeação reescreveu TEXTO em arquivos cujo CÓDIGO nunca foi migrado.** Não é
+> arqueologia: são instruções e chaves que **falham hoje**, e que **viajam no projeto do usuário**. Os dois
+> instrumentos são estruturalmente cegos a isso — `.json` fica fora do `no-comments-diff` por desenho, e
+> `distintivo('modulo')` é `false`, então o `--depois-estrito` não enxerga chave curta em português.
+
+**Os dois sítios já medidos, e a mesma causa raiz nos dois:**
+
+- **`bindings/python/root/verificar.py`** — o inventário tem `verificar → verify` como **`simbolo`**, e
+  `itemAplicaAoArquivo` aplica `simbolo` dentro de `bindings/`. O rename reescreveu as strings de uso do
+  arquivo, e **o arquivo nunca foi renomeado** (não existe item `arquivo` para ele). Resultado: **7
+  ocorrências** de `python verify.py` dentro de um arquivo chamado `verificar.py` — docstring, linhas de
+  uso e a **mensagem de erro de runtime da linha 213**. Mais `pyproject.toml:44` e
+  `_template/api/src/config.py:106`. O `README.md:92` diz `python verificar.py`, que é o nome real.
+- **`config/conformidade.json` nos TRÊS bindings** — `_exemplo` diz `"module": "legado"`, e
+  `tools/gate/validate.mjs:24` lê `e.modulo === a.modulo`. O item `modulo → module` é do tipo **`chave`**,
+  e `chave` é aplicado a **todo arquivo** sem filtro de caminho. Quem copiar o `_exemplo` para `excecoes`
+  escreve uma exceção que **o gate silenciosamente ignora** — falso positivo de conformidade, a direção
+  proibida. A doutrina (`04-regras.md:297`) já está **certa** e bate com o código; é o JSON que ficou errado.
+
+- [ ] **Decida o `verificar.py` e declare:** ou o arquivo passa a se chamar `verify.py` (e o `README.md:92`,
+      o `pyproject.toml` e o `create-project` acompanham), ou as 7 strings voltam a dizer `verificar.py`.
+      A régua é o ADR-009 (a **árvore** é inglês). Escolha uma e aplique inteira — meia migração é o que
+      criou o defeito
+- [ ] **`conformidade.json` ×3:** `_exemplo` bate com o que `validate.mjs` LÊ. A fonte é o código, não o
+      schema (não há schema formal para este arquivo)
+- [ ] ⚠️ **A CLASSE, não os dois sítios.** Para **cada** item de tipo `chave` do `citation-terms.json`:
+      o nome novo está no dado e o **leitor** ainda usa o antigo? Varra os `config/*.json` que viajam e o
+      código que os lê. Para cada item de tipo `simbolo` cujo texto casa um **nome de arquivo**: o arquivo
+      foi renomeado junto? Traga a tabela — item | onde o texto mudou | o que o código lê | veredito
+- [ ] **Contraprova por execução, não por leitura:** escreva a exceção do `_exemplo` num
+      `conformidade.json` de projeto gerado e prove que o gate **passa a perdoar** a regra. Antes do
+      conserto ela é ignorada; depois, vale. Sem isso, o conserto é alegado
+- [ ] `no-comments-diff` verde · gate ×3 · `autoteste:template` 3/3 — nada disso pode mexer em regra
 
 ---
 

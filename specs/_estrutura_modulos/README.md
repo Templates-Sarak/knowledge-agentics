@@ -11,14 +11,14 @@ copiar uma pasta e recortar as chaves `<MODULO>_*` do `.env` — não reescrever
 
 ```bash
 # 1. instanciar um projeto novo
-node ferramentas/criar-projeto.mjs ../meu-sistema --binding typescript --escopo acme
+node tools/create-project.mjs ../meu-sistema --binding typescript --escopo acme
 
 # 2. criar o primeiro módulo
 cd ../meu-sistema
-node ferramentas/criar-modulo.mjs catalogo
+node tools/create-module.mjs catalogo
 
 # 3. verificar
-node ferramentas/gate/validar.mjs --todos
+node tools/gate/validate.mjs --todos
 ```
 
 O projeto nasce com a **doutrina** e as **ferramentas** dentro dele. A verificabilidade viaja junto e não
@@ -38,7 +38,7 @@ depende de nenhum provedor de CI.
 |---|---|---|
 | **0 — Doutrina** | [`doutrina/`](doutrina/) — anatomia, manifesto, contrato, nomenclatura, catálogo de regras | **Não** |
 | **1 — Binding** | [`bindings/<linguagem>/`](bindings/) — como a doutrina se materializa numa stack | Sim |
-| **2 — Ferramentas** | [`ferramentas/`](ferramentas/) — scaffold, gate, sincronizador de ambiente | Não |
+| **2 — Ferramentas** | [`tools/`](tools/) — scaffold, gate, sincronizador de ambiente | Não |
 
 A lei é agnóstica de linguagem; a prova é concreta.
 
@@ -59,20 +59,20 @@ ela. Regra que não está lá não é regra; regra que não pode ser verificada 
 ## As quatro fronteiras
 
 1. **Código** — nenhum módulo importa código de outro. Lógica de negócio nunca é compartilhada; duplica-se.
-2. **Infraestrutura** — o módulo declara `core/portas/` e o provedor é escolhido em `config/portas.json`.
+2. **Infraestrutura** — o módulo declara `core/ports/` e o provedor é escolhido em `config/ports.json`.
    O nome do fornecedor não aparece em nenhum outro lugar do módulo.
-3. **Módulo alheio** — dado de outro módulo vem por `core/gateways/`, **só HTTP**, declarado em `consome`.
+3. **Módulo alheio** — dado de outro módulo vem por `core/gateways/`, **só HTTP**, declarado em `consumes`.
 4. **Dados** — schema nunca `public`, tabela sempre prefixada `<modulo>_`, sem JOIN ou FK cruzando módulos.
 
 ## Ferramentas
 
 ```
-criar-projeto.mjs <destino> [--binding b] [--escopo e]   instancia um projeto
-criar-modulo.mjs <id> [--role p] [--sem-artefato] [--sem-web]
-gate/validar.mjs <caminho-do-modulo>                     valida UM módulo
-gate/validar.mjs --todos                                 todos + as regras globais
-gate/validar.mjs --extracao <caminho>                    vira microsserviço hoje?
-sincronizar-env.mjs [--conferir]                         regenera os .env.example
+create-project.mjs <destino> [--binding b] [--escopo e]   instancia um projeto
+create-module.mjs <id> [--role p] [--sem-artefato] [--sem-web]
+gate/validate.mjs <caminho-do-modulo>                      valida UM módulo
+gate/validate.mjs --todos                                  todos + as regras globais
+gate/validate.mjs --extracao <caminho>                     vira microsserviço hoje?
+sync-env.mjs [--conferir]                                  regenera os .env.example
 ```
 
 **A unidade de verificação é o módulo, não o repositório.** Se o verificador só funcionasse no repositório
@@ -81,14 +81,14 @@ a arquitetura foi cobrada.
 
 **O template não traz pipeline de CI/CD**, de propósito. Config de CI é específica de provedor, e a regra não
 pode morar num lugar que se perde ao trocar de provedor. Plugar o gate em qualquer executor é uma linha — ver
-[`ferramentas/gate/README.md`](ferramentas/gate/README.md).
+[`tools/gate/README.md`](tools/gate/README.md).
 
 ## Bindings
 
 | Binding | Comando de verificação | Estado |
 |---|---|---|
-| `typescript` | `npm run verificar` | **verde** — gate + env + `tsc` + 24 testes |
-| `javascript` | `npm run verificar` | **verde** — gate + env + `tsc --checkJs` (JSDoc) + 24 testes |
+| `typescript` | `npm run verify` | **verde** — gate + env + `tsc` + 24 testes |
+| `javascript` | `npm run verify` | **verde** — gate + env + `tsc --checkJs` (JSDoc) + 24 testes |
 | `python` | `python verificar.py` | **verde** — gate + env + ruff + mypy + 19 testes |
 
 Nos três, o projeto instanciado sai com `packages/portas`, `adapters/memoria` (obrigatório — é o que
@@ -106,18 +106,18 @@ permite testar sem rede) e `src/composicao` prontos, e o comando de verificaçã
 
 A anatomia, o manifesto, o contrato e o catálogo de regras são **idênticos** entre bindings. Só a
 materialização muda (`package.json` ↔ `pyproject.toml`, Express ↔ FastAPI, Vitest ↔ pytest, `index.ts` ↔
-`__init__.py`, anotação de tipo ↔ JSDoc). O binding Python nasce backend-only (`rotaWeb: null`) porque o front
+`__init__.py`, anotação de tipo ↔ JSDoc). O binding Python nasce backend-only (`webPath: null`) porque o front
 do ecossistema é sempre TypeScript — módulo Python que precise de tela usa o `web/` do binding TS, sem mudar
 nada na doutrina.
 
 ## O gate se testa
 
 ```
-node ferramentas/gate/testes/executar.mjs [--binding typescript|javascript|python]
+node tools/gate/tests/run.mjs [--binding typescript|javascript|python]
 ```
 
 Duas afirmações, e o gate só está saudável se as duas valerem: o molde **conforme** produz zero erro, e cada
-mutação de `casos.mjs` produz **exatamente** o id de regra esperado. A segunda é a que importa mais — sem ela,
+mutação de `cases.mjs` produz **exatamente** o id de regra esperado. A segunda é a que importa mais — sem ela,
 "verde" é indistinguível de "não verificou", e uma regra quebrada passa despercebida para sempre.
 
 Caso que não se aplica a um binding aparece como `SEM COBERTURA`, nunca como `ok`.
@@ -125,9 +125,9 @@ Caso que não se aplica a um binding aparece como `SEM COBERTURA`, nunca como `o
 ## O molde é validado como módulo real
 
 O `_template` de cada binding passa pelo gate exatamente como um módulo de verdade — os marcadores são
-substituídos em memória por um id sintético. Não é preciosismo: num sistema real o molde era a única pasta que
-o validador pulava, apodreceu sem ninguém notar, e **todo módulo criado a partir dele passava no validador e
-não compilava** ([ADR-006](doutrina/adr/decisoes.md)).
+substituídos em memória por um id sintético. Não é preciosismo: sem esta verificação, o molde seria a única
+pasta que o validador pula — apodrece sem ninguém notar, e **todo módulo criado a partir dele nasce quebrado**
+([ADR-006](doutrina/adr/decisoes.md)).
 
 ## Criar sistema ou módulo pela skill
 
@@ -135,7 +135,7 @@ A skill **`code-modulo`** do ecossistema Sarak conduz os dois fluxos com HITL:
 
 | Fluxo | Quando | O que faz |
 |---|---|---|
-| **A — sistema novo** | o projeto ainda não tem `ferramentas/` + `modulos/` | `criar-projeto` + N × `criar-modulo` + `verificar` |
+| **A — sistema novo** | o projeto ainda não tem `tools/` + `modules/` | `create-project` + N × `create-module` + `verify` |
 | **B — módulo novo** | o projeto já adotou o template | coleta a identidade, roda o scaffold, preenche o manifesto, escreve o contrato **antes** do código |
 
 Nos dois, só encerra com o **gate verde**. A detecção do caso é automática — a skill olha a raiz do projeto
