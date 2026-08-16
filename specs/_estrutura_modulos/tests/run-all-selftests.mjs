@@ -121,6 +121,7 @@ function arquivosComAutoteste() {
  */
 const REGISTRO = [
   { caminho: 'specs/_estrutura_modulos/tools/affected.mjs', runtime: 'node' },
+  { caminho: 'specs/_estrutura_modulos/tools/create-adapter.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/ci-dependencies.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/ci-security.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/contract-compatible.mjs', runtime: 'node' },

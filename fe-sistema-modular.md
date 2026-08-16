@@ -188,7 +188,7 @@ proibida; falso negativo é tolerável **apenas se declarado** no `04-regras.md`
 | **1. O gate** | `node tools/gate/validate.mjs --todos` | o projeto obedece à lei | 0 erros |
 | **2. O gate se testa** | `node tools/gate/tests/run.mjs --binding <b>` | cada regra sabe ficar vermelha | **128/128 · 128/128 · 124/124** |
 | **3. O template se testa** | `npm run autoteste:template` | o template gera projeto que passa na própria cadeia | **3/3 bindings VERDE, 13/13 passos** |
-| **4. Toda ferramenta se testa** | `npm run autoteste:tudo` | nenhum `--autoteste` órfão | **17/17** |
+| **4. Toda ferramenta se testa** | `npm run autoteste:tudo` | nenhum `--autoteste` órfão | **18/18** |
 
 **De onde cada uma roda, porque as duas árvores se parecem:** a camada 1 roda **dentro de um projeto
 gerado** (é lá que existe `tools/` na raiz); as camadas 3 e 4 são scripts **da base** e não viajam
@@ -613,7 +613,7 @@ for b in typescript javascript python; do
 done
 # esperado: 128/128 · 128/128 · 124/124, 76 regras com caso
 
-npm run autoteste:tudo        # [base] camada 4 — exit 0, "17/17", zero ÓRFÃO
+npm run autoteste:tudo        # [base] camada 4 — exit 0, "18/18", zero ÓRFÃO
 npm run autoteste:template    # [base] camada 3 — exit 0, "3/3 bindings verdes", 13/13 passos
 npm run typecheck:tools       # [base] exit 0, o tsc sem diagnóstico algum
                               #        (o npm imprime 2 linhas de preâmbulo — não são saída do tsc)

@@ -133,52 +133,52 @@ function copiarEAdaptarMolde(molde, destino, opcoes) {
  * fechamento do objeto). Devolve `null` se nenhuma das duas âncoras bateu — o chamador ABORTA em
  * vez de escrever um arquivo quebrado.
  */
-function registrarFabricaTs(conteudo, porta, provedor, nomeFuncao, caminhoImport) {
+function registrarFabricaTs(conteudo, { porta, provedor, nomeSimbolo, caminhoImport }) {
   const linhaDaImportacao = "} from '../adapters/memory/index.js';";
   const comImport = conteudo.includes(linhaDaImportacao)
-    ? conteudo.replace(linhaDaImportacao, `${linhaDaImportacao}\nimport { ${nomeFuncao} } from '${caminhoImport}';`)
+    ? conteudo.replace(linhaDaImportacao, `${linhaDaImportacao}\nimport { ${nomeSimbolo} } from '${caminhoImport}';`)
     : null;
   if (comImport === null) return null;
 
   const linhaDaPorta = new RegExp(`(  ${porta}: \\{ [^}]*)( \\},\\n)`);
   if (linhaDaPorta.test(comImport)) {
-    return comImport.replace(linhaDaPorta, `$1, ${provedor}: () => ${nomeFuncao}()$2`);
+    return comImport.replace(linhaDaPorta, `$1, ${provedor}: () => ${nomeSimbolo}()$2`);
   }
   const aberturaObjeto = /(const FABRICAS: Record<string, Record<string, \(\) => unknown>> = \{\n)/;
   if (!aberturaObjeto.test(comImport)) return null;
-  return comImport.replace(aberturaObjeto, `$1  ${porta}: { ${provedor}: () => ${nomeFuncao}() },\n`);
+  return comImport.replace(aberturaObjeto, `$1  ${porta}: { ${provedor}: () => ${nomeSimbolo}() },\n`);
 }
 
-function registrarFabricaJs(conteudo, porta, provedor, nomeFuncao, caminhoImport) {
+function registrarFabricaJs(conteudo, { porta, provedor, nomeSimbolo, caminhoImport }) {
   const linhaDaImportacao = "} from '../adapters/memory/index.js';";
   const comImport = conteudo.includes(linhaDaImportacao)
-    ? conteudo.replace(linhaDaImportacao, `${linhaDaImportacao}\nimport { ${nomeFuncao} } from '${caminhoImport}';`)
+    ? conteudo.replace(linhaDaImportacao, `${linhaDaImportacao}\nimport { ${nomeSimbolo} } from '${caminhoImport}';`)
     : null;
   if (comImport === null) return null;
 
   const linhaDaPorta = new RegExp(`(  ${porta}: \\{ [^}]*)( \\},\\n)`);
   if (linhaDaPorta.test(comImport)) {
-    return comImport.replace(linhaDaPorta, `$1, ${provedor}: () => ${nomeFuncao}()$2`);
+    return comImport.replace(linhaDaPorta, `$1, ${provedor}: () => ${nomeSimbolo}()$2`);
   }
   const aberturaObjeto = /(const FABRICAS = \{\n)/;
   if (!aberturaObjeto.test(comImport)) return null;
-  return comImport.replace(aberturaObjeto, `$1  ${porta}: { ${provedor}: () => ${nomeFuncao}() },\n`);
+  return comImport.replace(aberturaObjeto, `$1  ${porta}: { ${provedor}: () => ${nomeSimbolo}() },\n`);
 }
 
-function registrarFabricaPy(conteudo, porta, provedor, nomeClasse, moduloImport) {
+function registrarFabricaPy(conteudo, { porta, provedor, nomeSimbolo, caminhoImport }) {
   const linhaDaImportacao = ')\n\n# Fabrica de adapter';
   const comImport = conteudo.includes(linhaDaImportacao)
-    ? conteudo.replace(linhaDaImportacao, `)\nfrom ${moduloImport} import ${nomeClasse}\n\n# Fabrica de adapter`)
+    ? conteudo.replace(linhaDaImportacao, `)\nfrom ${caminhoImport} import ${nomeSimbolo}\n\n# Fabrica de adapter`)
     : null;
   if (comImport === null) return null;
 
   const linhaDaPorta = new RegExp(`(    "${porta}": \\{[^}]*)(\\},\\n)`);
   if (linhaDaPorta.test(comImport)) {
-    return comImport.replace(linhaDaPorta, `$1, "${provedor}": ${nomeClasse}$2`);
+    return comImport.replace(linhaDaPorta, `$1, "${provedor}": ${nomeSimbolo}$2`);
   }
   const aberturaObjeto = /(FABRICAS: dict\[str, dict\[str, Callable\[\[\], Any\]\]\] = \{\n)/;
   if (!aberturaObjeto.test(comImport)) return null;
-  return comImport.replace(aberturaObjeto, `$1    "${porta}": {"${provedor}": ${nomeClasse}},\n`);
+  return comImport.replace(aberturaObjeto, `$1    "${porta}": {"${provedor}": ${nomeSimbolo}},\n`);
 }
 
 function caminhoDeComposicao(raizProjeto, binding) {
@@ -191,11 +191,14 @@ function registrarFabrica(raizProjeto, opcoes, nomeGerado) {
   const conteudo = lerTexto(caminho);
 
   const atualizado = opcoes.binding === 'python'
-    ? registrarFabricaPy(conteudo, opcoes.porta, opcoes.provedor, nomeGerado, `adapters.${opcoes.provedor}`)
-    : (opcoes.binding === 'typescript' ? registrarFabricaTs : registrarFabricaJs)(
-      conteudo, opcoes.porta, opcoes.provedor, nomeGerado,
-      `../adapters/${opcoes.provedor}/${opcoes.binding === 'python' ? '__init__.py' : 'index.js'}`,
-    );
+    ? registrarFabricaPy(conteudo, {
+      porta: opcoes.porta, provedor: opcoes.provedor, nomeSimbolo: nomeGerado,
+      caminhoImport: `adapters.${opcoes.provedor}`,
+    })
+    : (opcoes.binding === 'typescript' ? registrarFabricaTs : registrarFabricaJs)(conteudo, {
+      porta: opcoes.porta, provedor: opcoes.provedor, nomeSimbolo: nomeGerado,
+      caminhoImport: `../adapters/${opcoes.provedor}/${opcoes.binding === 'python' ? '__init__.py' : 'index.js'}`,
+    });
 
   if (atualizado === null) {
     abortar(
@@ -218,6 +221,184 @@ function rodarGate(raizProjeto) {
     process.stderr.write('\nadapter criado, mas o gate apontou pendencias acima — resolva antes de commitar.\n');
     process.exit(1);
   }
+}
+
+// ================================================================================================
+// AUTOTESTE — núcleo puro (paraPascalCase/nomeDoProvedor/substituirMarcadores/registrarFabrica{Ts,Js,Py})
+// contra fixtures em memória, sem tocar disco. Precedente de `verify-map.mjs`/`verify-catalog.mjs`.
+//
+// As fixtures de `registrarFabrica*` são cópias FIÉIS do trecho real de cada `bindings/<b>/root/
+// src/composicao.*` — não simplificadas — porque o valor deste autoteste é justamente flagrar
+// quando o ANCORA do regex e o arquivo real se separam. Foi rodando este autoteste contra o texto
+// real, antes do refactor de §4.7 (`max-params`), que os dois bugs abaixo apareceram — nenhum deles
+// é do refactor, os dois já existiam:
+//
+// (1) TS: o tipo de `FABRICAS` no molde real é `Record<string, Record<string, (modulo:
+//     ManifestoDescoberto) => unknown>>`, mas a âncora de "porta nova" em `registrarFabricaTs`
+//     ainda espera `() => unknown` (sem parâmetro) — drift entre o gerador e o molde. Medido: `node
+//     tools/create-adapter.mjs auth <provedor>` (a ÚNICA porta de `PORTAS_CONHECIDAS` sem entrada
+//     em `FABRICAS` — as outras seis já têm) sai com "nao encontrei onde registrar a fabrica".
+// (2) Python: a âncora de importação em `registrarFabricaPy` é `)\n\n# Fabrica de adapter`, e
+//     pressupõe o `)` do import multilinha de `adapters.memory` seguido direto de linha em branco.
+//     O molde real tem uma SEGUNDA linha de import (`from adapters.postgres import ...`) entre os
+//     dois — a âncora nunca casa. Medido: `node tools/create-adapter.mjs repositorio <provedor>
+//     --binding python` falha SEMPRE, para QUALQUER porta, não só `auth`.
+//
+// Os dois ficam CARACTERIZADOS aqui (o autoteste prova o comportamento de HOJE, bug incluído) e
+// registrados em `ultimas-atualizacoes.md` — não são desta mudança, e "refactor é comportamento
+// idêntico" (não conserta bug de vizinho a troco de nada).
+// ================================================================================================
+
+const FIXTURE_TS_MOLDE_REAL = [
+  "import {",
+  '  createRepository,',
+  "} from '../adapters/memory/index.js';",
+  "import { createPostgresRepository } from '../adapters/postgres/index.js';",
+  '',
+  'const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {',
+  '  repositorio: { memoria: () => createRepository() },',
+  '};',
+  '',
+].join('\n');
+
+const FIXTURE_JS_MOLDE_REAL = [
+  "import {",
+  '  createRepository,',
+  "} from '../adapters/memory/index.js';",
+  '',
+  'const FABRICAS = {',
+  '  repositorio: { memoria: () => createRepository() },',
+  '};',
+  '',
+].join('\n');
+
+const FIXTURE_PY_MOLDE_REAL = [
+  'from adapters.memory import (',
+  '    RepositorioEmMemoria,',
+  ')',
+  'from adapters.postgres import AuditoriaPostgres, RepositorioPostgres',
+  '',
+  '# Fabrica de adapter por (porta, provedor).',
+  'FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {',
+  '    "repositorio": {"memory": lambda modulo: RepositorioEmMemoria()},',
+  '}',
+  '',
+].join('\n');
+
+// A mesma forma do molde Python, mas SEM a segunda linha de import — prova que a lógica de
+// `registrarFabricaPy` funciona quando a âncora bate; o que falta hoje é o molde ter se afastado
+// dela, não a função estar quebrada por dentro.
+const FIXTURE_PY_ANCORA_ISOLADA = [
+  'from adapters.memory import (',
+  '    RepositorioEmMemoria,',
+  ')',
+  '',
+  '# Fabrica de adapter por (porta, provedor).',
+  'FABRICAS: dict[str, dict[str, Callable[[], Any]]] = {',
+  '    "repositorio": {"memory": lambda: RepositorioEmMemoria()},',
+  '}',
+  '',
+].join('\n');
+
+/** Atalho só do autoteste — monta o objeto de parâmetros na ordem posicional antiga, para os
+ * casos ficarem tão tersos quanto eram antes do refactor de §4.7 (`max-params`). */
+function paramsFabrica(porta, provedor, nomeSimbolo, caminhoImport) {
+  return { porta, provedor, nomeSimbolo, caminhoImport };
+}
+
+function casosPuros() {
+  return [
+    { nome: 'paraPascalCase: kebab com hifen -> PascalCase', fn: () => paraPascalCase('aws-s3') === 'AwsS3' },
+    { nome: 'paraPascalCase: palavra unica -> so capitaliza', fn: () => paraPascalCase('okta') === 'Okta' },
+    { nome: 'nomeDoProvedor: typescript prefixa "criar"', fn: () => nomeDoProvedor('typescript', 'okta') === 'criarOkta' },
+    { nome: 'nomeDoProvedor: javascript prefixa "criar"', fn: () => nomeDoProvedor('javascript', 'okta') === 'criarOkta' },
+    { nome: 'nomeDoProvedor: python e so PascalCase, sem prefixo', fn: () => nomeDoProvedor('python', 'okta') === 'Okta' },
+    { nome: 'substituirMarcadores: troca <porta> e <provedor>', fn: () => substituirMarcadores('<porta> e <provedor>', 'auth', 'okta') === 'auth e okta' },
+  ];
+}
+
+function casosRegistroTsJs() {
+  return [
+    {
+      nome: 'registrarFabricaTs: porta EXISTENTE ganha provedor novo na mesma linha, mais o import',
+      fn: () => {
+        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
+        return r !== null
+          && r.includes('repositorio: { memoria: () => createRepository(), dynamo: () => criarDynamo() },')
+          && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
+      },
+    },
+    {
+      nome: 'registrarFabricaTs: porta NOVA ("auth") -> null hoje (bug 1, medido — ver cabecalho)',
+      fn: () => registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('auth', 'okta', 'criarOkta', '../adapters/okta/index.js')) === null,
+    },
+    {
+      nome: 'registrarFabricaTs: sem a linha de import -> null',
+      fn: () => registrarFabricaTs('nada de import aqui', paramsFabrica('repositorio', 'x', 'y', 'z')) === null,
+    },
+    {
+      nome: 'registrarFabricaJs: porta EXISTENTE ganha provedor novo, mais o import',
+      fn: () => {
+        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
+        return r !== null
+          && r.includes('repositorio: { memoria: () => createRepository(), dynamo: () => criarDynamo() },')
+          && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
+      },
+    },
+    {
+      nome: 'registrarFabricaJs: porta NOVA ("auth") funciona — sem assinatura de tipo para desalinhar',
+      fn: () => {
+        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('auth', 'okta', 'criarOkta', '../adapters/okta/index.js'));
+        return r !== null && r.includes('auth: { okta: () => criarOkta() },');
+      },
+    },
+  ];
+}
+
+function casosRegistroPy() {
+  return [
+    {
+      nome: 'registrarFabricaPy: molde REAL de hoje -> null mesmo com porta existente (bug 2, medido)',
+      fn: () => registrarFabricaPy(FIXTURE_PY_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'RepositorioDynamo', 'adapters.dynamo')) === null,
+    },
+    {
+      nome: 'registrarFabricaPy: com a ancora isolada (sem o import extra), a mesma porta REGISTRA',
+      fn: () => {
+        const r = registrarFabricaPy(FIXTURE_PY_ANCORA_ISOLADA, paramsFabrica('repositorio', 'dynamo', 'RepositorioDynamo', 'adapters.dynamo'));
+        return r !== null
+          && r.includes('"repositorio": {"memory": lambda: RepositorioEmMemoria(), "dynamo": RepositorioDynamo}')
+          && r.includes('from adapters.dynamo import RepositorioDynamo');
+      },
+    },
+    {
+      nome: 'registrarFabricaPy: porta nova, com a ancora isolada, tambem registra',
+      fn: () => {
+        const r = registrarFabricaPy(FIXTURE_PY_ANCORA_ISOLADA, paramsFabrica('auth', 'okta', 'AuthOkta', 'adapters.okta'));
+        return r !== null && r.includes('"auth": {"okta": AuthOkta}');
+      },
+    },
+  ];
+}
+
+function casosDeAutoteste() {
+  return [...casosPuros(), ...casosRegistroTsJs(), ...casosRegistroPy()];
+}
+
+function rodarAutoteste() {
+  let falhas = 0;
+  for (const caso of casosDeAutoteste()) {
+    let ok;
+    try {
+      ok = caso.fn() === true;
+    } catch {
+      ok = false;
+    }
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
+    if (!ok) falhas += 1;
+  }
+  const total = casosDeAutoteste().length;
+  process.stdout.write(`\nautoteste (create-adapter): ${total - falhas}/${total} ok\n`);
+  return falhas === 0 ? 0 : 1;
 }
 
 function principal() {
@@ -244,4 +425,8 @@ function principal() {
   );
 }
 
-principal();
+if (process.argv.includes('--autoteste')) {
+  process.exit(rodarAutoteste());
+} else {
+  principal();
+}

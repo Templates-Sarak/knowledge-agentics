@@ -254,15 +254,21 @@ function passosRejeicaoDeModulo(python) {
   return casos.map(({ alvo, args }) => ({
     nome: `rejeicao de forma invalida — ${args.join(' ')}`,
     fn: () => {
-      const destino = join(tmpdir(), `sarak-verify-routine-${alvo}`);
-      rmSync(destino, { recursive: true, force: true });
+      // O PAI é único por `mkdtemp` (como o passo F) — nunca o `destino`: a afirmação é que
+      // `init_repo.py` REJEITADO não cria o destino, e um `destino` pré-criado por `mkdtemp`
+      // tornaria essa afirmação vazia (sempre "existe", qualquer que fosse o comportamento real).
+      // Caminho fixo aqui (medido, Onda 3) colidia entre duas instâncias simultâneas — a segunda
+      // apagava o alvo da primeira no meio do teste e morria sem saída, parecendo defeito do
+      // template.
+      const pai = mkdtempSync(join(tmpdir(), 'sarak-verify-routine-rejeicao-'));
       try {
+        const destino = join(pai, alvo);
         const resultado = rodarPython(python, [initRepo, '--target', destino, ...args], RAIZ_BASE);
         if (resultado.status !== 1) return { ok: false, detalhe: `esperava exit 1, saiu ${resultado.status}` };
         if (existsSync(destino)) return { ok: false, detalhe: `${destino} foi criado — rejeicao devia deixar nada para tras` };
         return { ok: true };
       } finally {
-        rmSync(destino, { recursive: true, force: true });
+        rmSync(pai, { recursive: true, force: true });
       }
     },
   }));

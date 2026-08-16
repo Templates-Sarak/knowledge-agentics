@@ -187,29 +187,9 @@ function mesclarGitignore(destino, anterior) {
   writeFileSync(alvo, `${atual.trimEnd()}\n\n# --- preservado do projeto ---\n${faltantes.join('\n')}\n`, 'utf8');
 }
 
-function principal() {
-  const opcoes = lerOpcoes();
-  if (opcoes.destino === undefined) abortar('uso: create-project.mjs <destino> [--binding b] [--escopo e]');
-  if (!BINDINGS.includes(opcoes.binding)) abortar(`binding "${opcoes.binding}" invalido — use ${BINDINGS.join(', ')}`);
-
-  const destino = resolve(process.cwd(), opcoes.destino);
-  if (existsSync(join(destino, 'modules'))) abortar(`ja existe um projeto em ${destino}`);
-
-  const molde = join(RAIZ_TEMPLATE, 'bindings', opcoes.binding, '_template');
-  if (!existsSync(molde)) abortar(`binding "${opcoes.binding}" ainda nao tem molde`);
-
-  const colisoes = existsSync(destino) ? colisoesDeRaiz(destino, opcoes.binding) : [];
-  if (colisoes.length > 0 && !opcoes.forcar) {
-    abortar(`o destino ja tem ${colisoes.join(', ')} — mova-os, ou use --forcar para sobrescrever`);
-  }
-
-  const escopo = opcoes.escopo ?? basename(destino).toLowerCase();
-  mkdirSync(join(destino, 'modules'), { recursive: true });
-  const gitignoreAnterior = lerGitignore(destino);
-  copiarTemplate(destino, opcoes.binding);
-  mesclarGitignore(destino, gitignoreAnterior);
-  aplicarEscopo(arquivosComMarcadorEscopo(destino), escopo);
-
+/** As instruções finais impressas depois de gerar o projeto — extraído de `principal` para não
+ * misturar ORQUESTRAÇÃO (validar, copiar, aplicar escopo) com RELATÓRIO (o que imprimir depois). */
+function imprimirProximosPassos(destino, opcoes, escopo, colisoes) {
   process.stdout.write(`projeto criado em ${destino} (binding ${opcoes.binding}, escopo "${escopo}")\n`);
   process.stdout.write('  doutrina instalada em specs/arquitetura/ e specs/adr/000-decisoes-do-template.md\n');
   if (colisoes.length > 0) process.stdout.write(`  ATENCAO: sobrescrito por --forcar: ${colisoes.join(', ')}\n`);
@@ -236,6 +216,32 @@ function principal() {
     + ' "git add" grava o hook SEM o bit de execucao. Sem ele, git no Linux/macOS PULA o hook em'
     + ' silencio, sem erro nenhum: "verde" fica indistinguivel de "nao rodou". Rode uma vez e'
     + ' o commit ja sai com o bit certo)\n');
+}
+
+function principal() {
+  const opcoes = lerOpcoes();
+  if (opcoes.destino === undefined) abortar('uso: create-project.mjs <destino> [--binding b] [--escopo e]');
+  if (!BINDINGS.includes(opcoes.binding)) abortar(`binding "${opcoes.binding}" invalido — use ${BINDINGS.join(', ')}`);
+
+  const destino = resolve(process.cwd(), opcoes.destino);
+  if (existsSync(join(destino, 'modules'))) abortar(`ja existe um projeto em ${destino}`);
+
+  const molde = join(RAIZ_TEMPLATE, 'bindings', opcoes.binding, '_template');
+  if (!existsSync(molde)) abortar(`binding "${opcoes.binding}" ainda nao tem molde`);
+
+  const colisoes = existsSync(destino) ? colisoesDeRaiz(destino, opcoes.binding) : [];
+  if (colisoes.length > 0 && !opcoes.forcar) {
+    abortar(`o destino ja tem ${colisoes.join(', ')} — mova-os, ou use --forcar para sobrescrever`);
+  }
+
+  const escopo = opcoes.escopo ?? basename(destino).toLowerCase();
+  mkdirSync(join(destino, 'modules'), { recursive: true });
+  const gitignoreAnterior = lerGitignore(destino);
+  copiarTemplate(destino, opcoes.binding);
+  mesclarGitignore(destino, gitignoreAnterior);
+  aplicarEscopo(arquivosComMarcadorEscopo(destino), escopo);
+
+  imprimirProximosPassos(destino, opcoes, escopo, colisoes);
 }
 
 principal();

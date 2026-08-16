@@ -34,11 +34,14 @@
 | 11 | `commands/code1-auditar.md:22` — `modulos/*/modulo.json` → `modules/*/module.json` | O `Glob` nunca casava (nomes de duas renomeações atrás); todo projeto template caía na topologia `modular-legado` por acidente, e o arquivo estava meio-migrado — parecia atual sem estar |
 | 12 | `specs/_estrutura_modulos/tests/verify-routine.mjs` (novo) — roda o §11.2 inteiro (A–G) como um comando, registrado em `run-all-selftests.mjs` | §11.2 já cobria toda afirmação medível mas dependia de alguém lembrar de rodar. Fecha também a lacuna que a camada 2 sozinha não fechava: `gate/tests/run.mjs` conta *"N regras com caso de teste"* mas nunca comparava contra `REGRAS.length` — agora compara e reprova se divergir |
 | 13 | Três contagens de regra corrigidas em `tools/` (`affected.mjs:5` 73→76, `contract-compatible.mjs:12` 74→76, `gate/context.mjs:39` 57→58), mais `gate/README.md:13` (3→4 regras globais, achado durante a varredura). `verify-catalog.mjs` ganhou um terceiro argumento opcional — `--conferir <lei> <engine> <raiz-de-tools>` — que varre `tools/**` atrás de *"N regras com caso"*/*"N regras suas"* defasada | As três (quatro, com o achado extra) defasavam havia campanhas sem verificador nenhum notar — nem a rodada anterior, nem a catraca nova (que só compara ids, não número em prosa). A catraca cresceu só até onde erra para o lado seguro: varre `tools/**` (frase sempre no presente), nunca `.md` — lá a mesma palavra narra transição histórica correta (*"75 → 76 regras"*) que um regex ingênuo acusaria como defeito. Limite documentado em `04-regras.md` §7.2 |
+| 14 | `04-regras.md` §7.2 — nova entrada para `conformidade-declarada`, declarando os três limites da regra: não resolve `decisao` contra ADR de verdade (isso é da lista de exceções, §6), não valida que `regra` exista no catálogo, não valida que `modulo` exista — as duas últimas são *fail-closed* (a regra continua acusando, ninguém se machuca) mas **silenciosas**, e ficavam sem registro em lugar nenhum | `conformidade-declarada` era a única de 33 regras que citava `(§7.2)` na linha de catálogo sem ter entrada lá — os dois no-ops silenciosos tinham sido medidos numa revisão, mas perderam o registro quando as outras duas formas quebradas da exceção foram fechadas (linha 10) |
+| 15 | As 5 violações de Nível 0 em `tools/` (`npx eslint specs/_estrutura_modulos/tools/`), a zero. `create-adapter.mjs`: `registrarFabrica{Ts,Js,Py}` agrupam `(porta, provedor, nomeSimbolo, caminhoImport)` num objeto — **e ganharam `--autoteste` primeiro** (14 casos, com fixtures fiéis ao molde real), registrado em `run-all-selftests.mjs` (17/17 → **18/18**, atualizado em `fe-sistema-modular.md` §4.1/§11.2). `gate/tests/run.mjs`: `operacoes` (42 linhas) extraiu o núcleo comum de `manifesto`/`manifestoRaiz`/`config` para `transformarJson`. `create-project.mjs`: `principal` (41 linhas) extraiu o relatório final para `imprimirProximosPassos`. Saída dos três, byte a byte igual à de antes — camada 2 confere **128/128 · 128/128 · 124/124, 76 regras com caso**, iguais | A rede era desigual e `create-adapter.mjs` era o ponto cego real — 3 das 5 violações, exercitado por NADA (nem `--autoteste`, nem a camada 3, nem citado fora de comentário). Construir a rede ANTES do refactor é o que revelou os dois bugs pré-existentes do §2, que não têm relação nenhuma com este refactor |
+| 16 | `specs/_estrutura_modulos/tests/verify-routine.mjs` — o passo E (rejeição de forma inválida) trocou caminho fixo em `%TEMP%` por `mkdtemp`, alinhado ao passo F | Duas instâncias simultâneas de `verify-routine.mjs` colidiam no mesmo caminho fixo; a segunda apagava o alvo da primeira no meio do teste e morria sem saída — parecia defeito do template numa revisão e custou tempo real de diagnóstico. O `destino` em si continua **não** pré-criado (só o pai, por `mkdtemp`): a afirmação do passo é que a rejeição não cria o destino, e pré-criá-lo esvaziaria essa afirmação |
 
 **Mudança de comportamento, desta vez sim.** O gate ganhou uma regra nova (`conformidade-declarada`,
 a 76ª) e fechou o *fail-open* de `decisao` nas exceções — os dois achados que a rodada anterior
 classificava como bloqueantes de produção (§2 antigo, ①–②). `specs/_estrutura_modulos/doutrina/` e
-`tools/` foram tocados de propósito; a lista completa das linhas 6–12 é a mudança inteira.
+`tools/` foram tocados de propósito; a lista completa das linhas 6–16 é a mudança inteira.
 
 **Avaliado e mantido de propósito:** `plugin/sarak_routing_table.md` e o mecanismo de sincronização
 das IDEs. Foram levantados como defeito, examinados e **decidido manter** — o motivo técnico está no
@@ -48,44 +51,30 @@ das IDEs. Foram levantados como defeito, examinados e **decidido manter** — o 
 
 ## 2. Achados abertos
 
-Os dois primeiros vieram da **revisão da rodada de 2026-08-15** — a execução procede e foi confirmada
-por medição (§4), inclusive o *fail-open* sob ataque direto; estes são o que a revisão encontrou por
-cima dela. O terceiro é anterior e segue como estava.
+Os dois abaixo vieram à tona **construindo a rede de caracterização** de `create-adapter.mjs` antes do
+refactor de §4.7 (§1, linha 15) — nenhum é regressão desta rodada, os dois já existiam. Nenhum é
+ponteiro: os dois exigem entender a intenção original do gerador contra o molde real antes de
+escolher o conserto, e por isso não entraram nesta rodada.
 
-**① `conformidade-declarada` é a única regra que cita `(§7.2)` sem ter entrada lá.**
-Medido: **33 regras** citam `(§7.2)` na linha de catálogo do `04-regras.md`; **32 têm** a entrada
-correspondente. A linha de catálogo da regra nova é densa e já declara o limite principal (*"**Não**
-resolve `decisao` contra um ADR de verdade — isso é a própria lista de exceções"*), mas o ponteiro
-`(§7.2)` fica pendurado, quebrando a convenção que as outras 32 seguem.
+**① `create-adapter.mjs --binding python` falha SEMPRE, para qualquer porta — não só a nova.**
+`registrarFabricaPy` procura a âncora de importação `)\n\n# Fabrica de adapter`, esperando que o `)`
+do import multilinha de `adapters.memory` seja seguido direto de linha em branco. O molde real tem uma
+SEGUNDA linha de import entre os dois (`from adapters.postgres import ...`), e a âncora nunca casa.
+Medido: `node tools/create-adapter.mjs repositorio <provedor> --binding python` — porta **já
+existente**, o caminho mais comum — sai com `"nao encontrei onde registrar a fabrica"`, sempre.
+Caracterizado em `create-adapter.mjs --autoteste` (os dois casos `registrarFabricaPy`, com a fixture
+`FIXTURE_PY_MOLDE_REAL`); a mesma fixture sem a segunda linha de import (`FIXTURE_PY_ANCORA_ISOLADA`)
+prova que a lógica funciona — o que quebrou foi o molde se afastar da âncora, não a função por dentro.
 
-**② Dois no-ops silenciosos da exceção perderam o registro ao serem resolvidos os outros dois.**
-O achado antigo listava **quatro** formas quebradas de exceção. A rodada fechou duas; as outras duas
-seguem silenciosas — e, ao sair de "achado aberto" para "resolvido" (§1, linha 10), o registro delas
-saiu junto. Medido depois da correção:
-
-| Forma | Estado |
-|---|---|
-| JSON malformado | ✅ `[conformidade-declarada] nao e JSON valido` |
-| chaves inglesas (`module`/`rule`) | ✅ `campo obrigatorio ausente` |
-| `regra` com id inexistente | ⚠️ **no-op silencioso** — a exceção não perdoa nada e ninguém diz por quê |
-| `modulo` inexistente | ⚠️ **no-op silencioso** — idem |
-
-As duas são *fail-closed* (a regra continua acusando, ninguém se machuca) e por isso **não são
-urgentes** — mas a lei da casa é explícita: *"lacuna conhecida é aceitável; lacuna escondida não"*
-(§7 do `04-regras.md`). Hoje elas não estão em lugar nenhum.
-
-**① e ② fecham juntos**, numa entrada de `conformidade-declarada` no §7.2 que declare os três limites:
-não resolve `decisao` (isso é da lista de exceções), e não valida que `regra`/`modulo` existam.
-
-**③ `tools/` viaja com 5 violações do Nível 0 do próprio template.** *(anterior à rodada)*
-`max-params` (5 parâmetros) em `create-adapter.mjs` ×3, e funções de 41 e 42 linhas em
-`create-project.mjs` e `gate/tests/run.mjs`. **É refatoração, não ponteiro** — precisa de plano
-próprio, e por isso não entrou na rodada de 2026-08-15.
-
-### 2.1 Ordem sugerida
-
-**① e ② juntos** — a mesma regra (`conformidade-declarada`), uma entrada só de §7.2 para os três
-limites. **③** continua pedindo plano próprio.
+**② `create-adapter.mjs --binding typescript` falha para a porta "auth" — a única porta nova possível.**
+`registrarFabricaTs` tem uma segunda âncora, para porta que ainda não existe em `FABRICAS`, que espera
+o tipo `Record<string, Record<string, () => unknown>>`. O molde real declara
+`Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>>` — com parâmetro —, e a
+âncora não casa. Isso só é alcançável por **uma** porta: `auth` é a única de `PORTAS_CONHECIDAS` sem
+entrada em `FABRICAS` hoje (as outras seis já têm — ver o comentário "LIMITE CONHECIDO" no topo do
+arquivo). Medido: `node tools/create-adapter.mjs auth <provedor> --binding typescript` sai com o
+mesmo erro. `--binding javascript` **não** tem este bug — o `FABRICAS` de JS não tem assinatura de
+tipo para desalinhar. Caracterizado em `create-adapter.mjs --autoteste`.
 
 ---
 
@@ -149,7 +138,7 @@ mudanças das linhas 6–12 do §1, e **confere**:
 | 1 — gate em projeto novo | 0 erros (módulo + raiz) |
 | 2 — o gate se testa | **128/128 · 128/128 · 124/124**, 76 regras com caso |
 | 3 — o template se testa | **3/3 bindings VERDE, 13/13 passos** |
-| 4 — toda ferramenta se testa | **17/17**, zero órfão |
+| 4 — toda ferramenta se testa | **18/18**, zero órfão |
 | `typecheck:tools` | sem saída |
 | `verify-routine.mjs` (o §11.2 inteiro, automatizado) | **25/25 passos ok** |
 
@@ -161,9 +150,10 @@ ids, lei e código batem`; projeto gerado
 citando `_estrutura_modulos` em **um** arquivo — exatamente a linha declarada; e os dois erros de
 `--modulos` do `init_repo.py` com a mensagem prometida.
 
-**Higiene, medida e limpa:** `tests/` = 80,8 KB em **exatamente 5 arquivos** (`verify-map.mjs`,
+**Higiene, medida e limpa:** `tests/` = 88,7 KB em **exatamente 5 arquivos** (`verify-map.mjs`,
 `verify-catalog.mjs` e `verify-routine.mjs` — as duas últimas, novas desta rodada —,
-`template-self-test.mjs`, `run-all-selftests.mjs`); zero `node_modules`/`.venv` rastreados; zero
+`template-self-test.mjs`, `run-all-selftests.mjs`); `npx eslint specs/_estrutura_modulos/tools/` em
+**zero**; zero `node_modules`/`.venv` rastreados; zero
 resíduo de `TODO`/`FIXME` no template; zero arqueologia em tempo passado; zero ponteiro quebrado na
 doutrina; projeto gerado com **106 arquivos** (105 → 106: o schema novo de `conformidade.json` viaja
 em `tools/`), sem marcador não substituído e sem harness de teste vazado.

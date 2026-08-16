@@ -149,6 +149,13 @@ function gravarJson(caminho, valor) {
   writeFileSync(caminho, `${JSON.stringify(valor, null, 2)}\n`, 'utf8');
 }
 
+/** Lê um JSON, aplica `transformar` e regrava — o núcleo comum de `manifesto`/`manifestoRaiz`/
+ * `config` em `operacoes`, extraído para tirar `operacoes` do limiar de linhas sem mudar nada do
+ * que cada operação faz. */
+function transformarJson(caminho, transformar) {
+  gravarJson(caminho, transformar(lerJson(caminho)));
+}
+
 /** Operações que um caso pode aplicar sobre a cópia do molde. */
 function operacoes(raiz, binding) {
   const acrescentar = (rel, conteudo) => {
@@ -194,19 +201,10 @@ function operacoes(raiz, binding) {
       if (rel === undefined) throw semCobertura(`o binding "${binding}" nao declara o alvo "${alvo}"`);
       rmSync(join(raiz, rel), { recursive: true, force: true });
     },
-    manifesto: (transformar) => {
-      const caminho = join(raiz, 'module.json');
-      gravarJson(caminho, transformar(lerJson(caminho)));
-    },
+    manifesto: (transformar) => transformarJson(join(raiz, 'module.json'), transformar),
     /** O manifesto da RAIZ (`project.json`), que fica dois níveis acima da pasta do módulo. */
-    manifestoRaiz: (transformar) => {
-      const caminho = join(raiz, '..', '..', 'project.json');
-      gravarJson(caminho, transformar(lerJson(caminho)));
-    },
-    config: (assunto, transformar) => {
-      const caminho = join(raiz, 'config', `${assunto}.json`);
-      gravarJson(caminho, transformar(lerJson(caminho)));
-    },
+    manifestoRaiz: (transformar) => transformarJson(join(raiz, '..', '..', 'project.json'), transformar),
+    config: (assunto, transformar) => transformarJson(join(raiz, 'config', `${assunto}.json`), transformar),
   };
 }
 
