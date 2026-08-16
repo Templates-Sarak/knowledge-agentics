@@ -60,27 +60,13 @@ Passos numerados, verificáveis, sem ambiguidade. Um passo = uma ação com crit
 2. …
 3. Rodar `<comando de teste/validação>` e garantir verde.
 
-# 6. Prompt de execução
-
-Bloco literal que o usuário cola numa conversa nova com o executor:
-
-```
-Leia specs/00-prompt-executor.md e execute specs/plan/plan-NN-<slug>.md.
-
-Contexto obrigatório antes de começar: specs/00-contexto.md, specs/00-knowledge.md,
-<specs fixas relevantes>.
-Skills a aplicar: <lista por nome>.
-Não saia do escopo declarado na plan. Não commite. Ao terminar, escreva o resumo na
-própria plan e devolva o controle para revisão.
-```
-
-# 7. Critérios de aceite
+# 6. Critérios de aceite
 
 - [ ] Critério objetivo e verificável.
 - [ ] …
 - [ ] Suíte de testes verde; validadores de limiares sem violação nova.
 
-# 8. Como verificar (uso do revisor)
+# 7. Como verificar (uso do revisor)
 
 Escrito **antes** da execução. Os comandos e checagens exatos do veredito:
 
@@ -89,7 +75,7 @@ Escrito **antes** da execução. Os comandos e checagens exatos do veredito:
 - `<validador>` → sem violação nova.
 - Leitura de `<arquivo:linha>` → confirma \<o que\>.
 
-# 9. Destino da síntese
+# 8. Destino da síntese
 
 **Destino:** `<valor do frontmatter>`
 
@@ -100,12 +86,16 @@ O que deve ser levado para a spec fixa depois (texto pronto para transporte, se 
 
 ---
 
-# 10. Resumo da execução
+# 9. Resumo da execução
 
 <!-- Preenchido pelo EXECUTOR. Append-only: cada rodada acrescenta um bloco novo; nada é removido. -->
 
 ---
 
-# 11. Veredito
+# 10. Veredito
 
 <!-- Preenchido pelo REVISOR. Append-only: um bloco por rodada, com o que foi verificado e como. -->
+
+> **Nota:** os prompts de execução e de conclusão (o texto que o usuário cola numa conversa nova com o
+> executor ou com o revisor) **não vivem nesta plan**. São gerados e entregues sempre direto na conversa, em
+> bloco `.md` — ver [[00-prompt-revisor]] §5.3 e [[00-prompt-executor]] §6.1.

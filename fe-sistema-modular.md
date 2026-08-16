@@ -186,9 +186,15 @@ proibida; falso negativo é tolerável **apenas se declarado** no `04-regras.md`
 | Camada | Comando | O que prova | Números esperados |
 |---|---|---|---|
 | **1. O gate** | `node tools/gate/validate.mjs --todos` | o projeto obedece à lei | 0 erros |
-| **2. O gate se testa** | `node tools/gate/tests/run.mjs --binding <b>` | cada regra sabe ficar vermelha | **126/126 · 126/126 · 122/122** |
+| **2. O gate se testa** | `node tools/gate/tests/run.mjs --binding <b>` | cada regra sabe ficar vermelha | **128/128 · 128/128 · 124/124** |
 | **3. O template se testa** | `npm run autoteste:template` | o template gera projeto que passa na própria cadeia | **3/3 bindings VERDE, 13/13 passos** |
-| **4. Toda ferramenta se testa** | `npm run autoteste:tudo` | nenhum `--autoteste` órfão | **15/15** |
+| **4. Toda ferramenta se testa** | `npm run autoteste:tudo` | nenhum `--autoteste` órfão | **17/17** |
+
+**De onde cada uma roda, porque as duas árvores se parecem:** a camada 1 roda **dentro de um projeto
+gerado** (é lá que existe `tools/` na raiz); as camadas 3 e 4 são scripts **da base** e não viajam
+(§4.6); a camada 2 roda nas duas — na base, o caminho é `specs/_estrutura_modulos/tools/gate/tests/`.
+Confundir as duas é o erro mais fácil de cometer, e o sintoma é `Cannot find module`. O §11.2 marca
+cada comando com `[base]` ou `[projeto]`.
 
 **A camada 2 é a que importa mais.** Ela não confere que o molde passa — confere que **cada mutação de
 `cases.mjs` produz exatamente o id de regra esperado**. Id extra reprova. Sem isso, "verde" é
@@ -201,11 +207,11 @@ entrada escrita em `DECLARADOS_FORA`.
 
 ## 4.2 O catálogo de regras
 
-**75 regras**, em sete famílias, com três escopos:
+**76 regras**, em sete famílias, com três escopos:
 
 | Família | Regras | Família | Regras |
 |---|---|---|---|
-| `configuration` | 20 | `contract` | 11 |
+| `configuration` | 21 | `contract` | 11 |
 | `isolation` | 12 | `operation` | 11 |
 | `structure` | 11 | `data` | 6 |
 | `writing` | 4 | | |
@@ -213,7 +219,7 @@ entrada escrita em `DECLARADOS_FORA`.
 | Escopo | Regras | Roda sobre |
 |---|---|---|
 | `module` | 58 | cada módulo, uma vez por módulo |
-| `root` | 13 | o projeto, **uma vez só** |
+| `root` | 14 | o projeto, **uma vez só** |
 | `global` | 4 | o conjunto (ciclos, colisões) |
 
 **O gate tem zero dependência, nunca executa o código que julga, e viaja dentro do módulo extraído** —
@@ -274,15 +280,17 @@ selecionar de menos deixa código **não verificado** passar. Quando ele cai em 
 
 ## 4.6 Ferramentas de manutenção do template *(não viajam)*
 
-Vivem em `specs/_estrutura_modulos/tests/` — **exatamente três arquivos**:
+Vivem em `specs/_estrutura_modulos/tests/` — **exatamente cinco arquivos**:
 
 | Arquivo | O que faz |
 |---|---|
 | `template-self-test.mjs` | a camada 3: gera projeto, cria módulos, roda a cadeia inteira |
 | `run-all-selftests.mjs` | a camada 4: descobre e roda todo `--autoteste`, com catraca de órfão |
 | `verify-map.mjs` | prova que todo `§` citado no mapa instalado resolve a um título real |
+| `verify-catalog.mjs` | a catraca lei ↔ código: os ids do `engine.mjs` contra as linhas de tabela do `04-regras.md`, e (opcional) nenhuma contagem defasada em `tools/**` |
+| `verify-routine.mjs` | o roteiro do §11.2 inteiro, como um comando — cada `# esperado` do roteiro virou comparação de verdade |
 
-**Um quarto arquivo aqui é achado, não normalidade.**
+**Um sexto arquivo aqui é achado, não normalidade.**
 
 ---
 
@@ -333,8 +341,11 @@ quem digitou.*
 ## 5.2 O caminho manual, se preferir
 
 ```sh
-node tools/create-project.mjs <destino> --binding typescript --escopo acme
+# [base] o create-project mora no TEMPLATE, não na raiz da base — não existe `tools/` ali
+node specs/_estrutura_modulos/tools/create-project.mjs <destino> --binding typescript --escopo acme
+
 cd <destino>
+# [projeto] daqui em diante `tools/` é o do projeto, copiado inteiro do template
 node tools/create-module.mjs catalogo --role dominio
 
 # preencher os VALORES no .env  (as CHAVES já chegaram sozinhas)
@@ -563,136 +574,127 @@ passado.
 
 # 11. Como verificar este documento
 
+O roteiro do §11.2 é **completo e reexecutável**: confere toda afirmação medível deste documento, diz
+de onde cada comando roda, qual *exit code* esperar, e apaga o que cria. Rodá-lo inteiro é a prova de
+que este documento e o repositório ainda dizem a mesma coisa.
+
+## 11.1 Pré-requisitos, custo e os dois contextos
+
+| O que | Por quê |
+|---|---|
+| **Node 24+** e **Python 3.11+** | são as versões que a agenda de `.github/workflows/autoteste-template.yml` exercita |
+| `npm install` na raiz da base | sem isso todo `npm run …` falha **antes** de verificar coisa alguma |
+| ~5 minutos | a camada 3 domina: ela gera projeto e roda a cadeia inteira nos três bindings, e o Python sozinho mede ~2m40s |
+
+**Cada comando é marcado `[base]` ou `[projeto]`, e confundi-los é o erro mais fácil deste roteiro.**
+`[base]` roda na raiz do `knowledge-agentics`; `[projeto]` roda dentro de um projeto gerado. Os dois
+têm um `tools/`, e **não é o mesmo**: na base ele vive em `specs/_estrutura_modulos/tools/`, e só no
+projeto gerado existe `tools/` na raiz. O sintoma de trocar um pelo outro é `Cannot find module`.
+
+## 11.2 O roteiro
+
+**Automatizado.** `node specs/_estrutura_modulos/tests/verify-routine.mjs` roda A–G inteiro como um
+comando só — cada `# esperado` abaixo virou uma comparação de verdade, incluindo a catraca que
+faltava em `gate/tests/run.mjs`: "N regras com caso de teste" agora reprova se divergir de
+`REGRAS.length`, não só aparece menor em silêncio. Registrado em `run-all-selftests.mjs` (camada 4)
+com `--autoteste` provando o núcleo; a corrida real (~5 min) é este comando, não a camada 4. O que
+segue é a MESMA sequência, em prosa — use para depurar um passo específico ou para conferir que o
+script não se desviou do que este documento promete.
+
 ```bash
-# camada 2 — o gate se testa
-for b in typescript javascript python; do node specs/_estrutura_modulos/tools/gate/tests/run.mjs --binding $b; done
-# esperado: 126/126 · 126/126 · 122/122, 75 regras com caso
+# ── preparo ───────────────────────────────────────────────────────────────
+cd <raiz do knowledge-agentics>
+rm -rf /tmp/fe-p /tmp/fe-t1 /tmp/fe-t2      # reexecutável: os alvos não podem preexistir
 
-npm run autoteste:tudo        # esperado: 15/15
-npm run typecheck:tools       # esperado: sem saída
-npm run autoteste:template    # esperado: 3/3 bindings VERDE, 13/13 passos
+# ── A. as quatro camadas de auto-verificação (§4.1) ───────────────────────
+# [base] camada 2 — cada regra sabe ficar vermelha
+for b in typescript javascript python; do
+  node specs/_estrutura_modulos/tools/gate/tests/run.mjs --binding $b      # exit 0
+done
+# esperado: 128/128 · 128/128 · 124/124, 76 regras com caso
 
-# §2.1 — o manifesto
-node -e "console.log(require('./specs/_estrutura_modulos/tools/gate/schemas/module.schema.json').required.length)"   # 19
+npm run autoteste:tudo        # [base] camada 4 — exit 0, "17/17", zero ÓRFÃO
+npm run autoteste:template    # [base] camada 3 — exit 0, "3/3 bindings verdes", 13/13 passos
+npm run typecheck:tools       # [base] exit 0, o tsc sem diagnóstico algum
+                              #        (o npm imprime 2 linhas de preâmbulo — não são saída do tsc)
 
-# §2 — as rotas obrigatórias
-grep -n "OBRIGATORIAS" specs/_estrutura_modulos/tools/gate/rules/contract.mjs   # /health /meta /resumo
+# ── B. o catálogo de regras (§4.2) ────────────────────────────────────────
+# [base] as três contagens de uma vez, pela única fonte que fecha
+node -e "import('./specs/_estrutura_modulos/tools/gate/engine.mjs').then(m=>{ \
+  const R=m.REGRAS, por=k=>R.reduce((a,r)=>(a[r[k]]=(a[r[k]]||0)+1,a),{}); \
+  console.log('regras:',R.length,'| escopo:',JSON.stringify(por('escopo')), \
+              '| nivel:',JSON.stringify(por('nivel'))); })"
+# esperado: regras: 76 | escopo: {"module":58,"root":14,"global":4} | nivel: {"erro":72,"aviso":4}
 
-# §4.2 — o catálogo: contar as regras em tools/gate/rules/*.mjs  → 75
+# [base] as sete famílias — aqui o grep FECHA, porque conta id, não escopo
+for f in specs/_estrutura_modulos/tools/gate/rules/*.mjs; do
+  printf "%s=%s " "$(basename $f .mjs)" "$(grep -c "id: '" $f)"
+done; echo
+# esperado: configuration=21 contract=11 data=6 isolation=12 operation=11 structure=11 writing=4
 
-# §5.1 — a declaração de módulo
-python skills/meta-iniciar-repositorio/scripts/init_repo.py --target /tmp/t1 --modulos catalogo        # ERRO
-python skills/meta-iniciar-repositorio/scripts/init_repo.py --target /tmp/t2 --modulos hub:connector:artefato  # ERRO
-
-# §1.3 — o que viaja
-node specs/_estrutura_modulos/tools/create-project.mjs /tmp/p --binding typescript
-node specs/_estrutura_modulos/tests/verify-map.mjs --conferir /tmp/p/specs/arquitetura   # mapa: OK
+# [base] a catraca lei ↔ código — os 76 ids do engine.mjs contra as 76 linhas de tabela do 04-regras.md,
+# e (terceiro argumento) nenhuma citação de contagem defasada em tools/** ("N regras com caso"/"N
+# regras suas" — nunca em .md, limite declarado em 04-regras.md §7.2)
+node specs/_estrutura_modulos/tests/verify-catalog.mjs --conferir \
+  specs/_estrutura_modulos/doutrina/04-regras.md specs/_estrutura_modulos/tools/gate/engine.mjs \
+  specs/_estrutura_modulos/tools
+echo "exit=$?"     # esperado: 0, "catalogo: OK — 76 ids, lei e codigo batem"
 ```
+
+⚠️ **Não conte escopo por `grep`.** `grep -ho "escopo: '…'" rules/*.mjs | wc -l` devolve **78**, não
+76 — ele captura `escopo:` citado em **comentário**. A lista real de regras é o `engine.mjs`, e é por
+isso que o comando acima importa o motor em vez de varrer texto. Medido: quem contar por `grep`
+reporta uma divergência que não existe.
+
+```bash
+# ── C. os dois manifestos (§2.1) ──────────────────────────────────────────
+# [base]
+node -e "const s=require('./specs/_estrutura_modulos/tools/gate/schemas/module.schema.json'), \
+              p=require('./specs/_estrutura_modulos/tools/gate/schemas/project.schema.json'); \
+  console.log('module :',s.required.length,'obrigatorios | additionalProperties',s.additionalProperties); \
+  console.log('project:',JSON.stringify(p.required),'| additionalProperties',p.additionalProperties)"
+# esperado: module : 19 obrigatorios | additionalProperties false
+#           project: ["requiredEnv"] | additionalProperties false
+
+# ── D. rotas obrigatórias (§2) e o que não viaja (§4.6) ───────────────────
+# [base]
+grep -n "const OBRIGATORIAS" specs/_estrutura_modulos/tools/gate/rules/contract.mjs  # /health /meta /resumo
+ls -1 specs/_estrutura_modulos/tests/*.mjs | wc -l                                   # esperado: 5
+
+# ── E. a declaração de módulo (§5.1) ──────────────────────────────────────
+# [base] as duas formas que TÊM de ser recusadas — exit 1, e nada é criado
+python skills/meta-iniciar-repositorio/scripts/init_repo.py --target /tmp/fe-t1 --modulos catalogo
+echo "exit=$?"     # esperado: 1, com a forma exigida na mensagem
+python skills/meta-iniciar-repositorio/scripts/init_repo.py --target /tmp/fe-t2 --modulos hub:connector:artefato
+echo "exit=$?"     # esperado: 1
+ls -d /tmp/fe-t1 /tmp/fe-t2 2>/dev/null || echo "nenhum alvo criado — correto"
+
+# ── F. o que viaja para o projeto gerado (§1.3) ───────────────────────────
+# [base]
+node specs/_estrutura_modulos/tools/create-project.mjs /tmp/fe-p --binding typescript --escopo acme  # exit 0
+node specs/_estrutura_modulos/tests/verify-map.mjs --conferir /tmp/fe-p/specs/arquitetura            # exit 0, "mapa: OK"
+( cd /tmp/fe-p && grep -rl "_estrutura_modulos" . )
+# esperado: SÓ ./specs/adr/000-decisoes-do-template.md — a linha rotulada
+#           "caminho do repositório do template". Qualquer outro arquivo é vazamento da base.
+
+# ── G. a camada 1 e a coerência do que é gerado (§4.1, §4.3) ──────────────
+cd /tmp/fe-p
+node tools/create-module.mjs catalogo --role dominio  # [projeto] exit 0
+node tools/gate/validate.mjs --todos                  # [projeto] camada 1 — exit 0, "conformidade: OK"
+node tools/sync-env.mjs --conferir                    # [projeto] exit 0
+node tools/generate-port-schemas.mjs --conferir       # [projeto] exit 0
+node tools/generate-lint-config.mjs --conferir        # [projeto] exit 0
+
+# ── limpeza ───────────────────────────────────────────────────────────────
+cd -; rm -rf /tmp/fe-p /tmp/fe-t1 /tmp/fe-t2
+```
+
+**Por que o passo G cria um módulo antes de conferir.** Os três `--conferir` rodam **sem
+`npm install`** — `tools/` tem zero dependência, que é o que permite o gate viajar dentro do módulo
+extraído. Mas eles exigem **um módulo real**: projeto recém-criado não tem `.env.example`, porque quem
+o escreve é o `create-module`, e `sync-env --conferir` sai **1** ali com *".env.example divergente do
+manifesto"*. Não é defeito — é a ordem que o próprio `create-project` imprime nos próximos passos
+(criar módulo **antes** de `npm run verify`).
 
 **Divergência encontrada → reporte os dois lados.** O repositório é a verdade; este documento é a
 expectativa. Consertar em silêncio destrói a informação de que houve divergência.
-
----
----
-
-# ⚠️ SEÇÃO TEMPORÁRIA — o que foi executado até aqui *(remover depois da verificação)*
-
-> Existe para dar **contexto ao agente verificador**: o que mudou recentemente, e portanto onde a
-> chance de resíduo é maior. Nada aqui é norma.
-
-## T.1 A campanha de idioma — português → inglês, e a fronteira exata
-
-O template misturava os dois vocabulários **sem critério**, deixando a fronteira implícita. O **ADR-009**
-passou a ser a convenção, escrita no presente:
-
-> **A árvore de arquivos é inglês; o conteúdo dela é português.**
-
-| O que virou inglês | O que continuou português |
-|---|---|
-| as **12 pastas estruturais** (`tools`, `domain`, `ports`, `engine`, `contract`, `generated`, `mappers`, `modules`, `root`, `rules`, `tests`, `memory`) | a **doutrina** (`specs/arquitetura/`) — única exceção declarada |
-| funções do **esqueleto** (`bindings/**`) | símbolos **dentro de** `tools/` (ferramental vendorizado) |
-| **nomes de arquivo** em `tools/` (`create-module.mjs`, `gate/validate.mjs`, `sync-env.mjs`) | **ids das 75 regras** (`gateway-credencial`, `projecao-contrato`) |
-| **chaves do manifesto** (`requiredEnv`, `basePath`, `consumes`, `permissions`, `generatesArtifact`) | **mensagens** do gate e erros de runtime |
-| valores do enum `role` (`domain`/`gateway`/`connector`) | **rotas** e **banco** (domínio) |
-
-**Renomeações que um verificador vai encontrar citadas em histórico:** `ferramentas/` → `tools/`,
-`modulos/` → `modules/`, `modulo.json` → `module.json`, `core/dominio` → `core/domain`,
-`core/portas` → `core/ports`, `core/motor` → `core/engine`, `contrato/` → `contract/`,
-`criar-modulo.mjs` → `create-module.mjs`, `validar.mjs` → `validate.mjs`,
-`sincronizar-env.mjs` → `sync-env.mjs`, `envRequerido` → `requiredEnv`, `rotaWeb` → `webPath`,
-`consome` → `consumes`, `porQue` → `why`, `permissoes` → `permissions`.
-
-**Duas armadilhas medidas, que valem para quem verificar:**
-
-- **A mesma palavra é alvo e não-alvo no mesmo arquivo.** `consome` em crase é chave de manifesto e está
-  errado; *"quem consome o módulo"* é verbo português e está certo. **O discriminador é o contexto
-  sintático, nunca a palavra.**
-- **Símbolo interno em português é conteúdo, não ponteiro.** `camposSensiveis: manifesto.sensitiveFields`
-  está **correto**: o nome local é PT, o acesso lê a chave inglesa.
-
-## T.2 A limpeza para produção
-
-O template carregava a **arqueologia da própria construção**: comentários narrando como era antes,
-citações a planos que o leitor não tem, e o andaime das ferramentas de campanha.
-
-**O que foi removido:** sete planos de construção da raiz (377 KB) · o aparato de renomeação
-(`verify-citations.mjs` + dois artefatos, 114 KB) · o aparato de limpeza (`no-comments-diff.mjs` + dois,
-58 KB) · **57 linhas do `04-regras.md` §7.2** que descreviam ao usuário uma ferramenta da base que ele
-nunca teria. `tests/` foi de **245 KB para ~60 KB** (medido sobre arquivos rastreados), com os três
-arquivos do §4.6.
-
-**O que foi preservado, por decisão:** comentário em **tom de aviso** (o que impede alguém de desfazer
-uma guarda é carga estrutural, não ruído) e a **medição** quando ela é o aviso — o que saiu foi *onde e
-quando* a medição foi feita, não o número.
-
-**A regra que guiou tudo:** *o comentário tem de ser legível por quem nunca viu este repositório*. O
-teste é o tempo verbal — **"virava" é história e sai; "vira" é aviso e fica**.
-
-## T.3 Correções funcionais no caminho *(estas mudaram comportamento)*
-
-| Defeito | Consequência real | Estado |
-|---|---|---|
-| `init_repo.py` **adivinhava** o papel pelo nome do id e nunca passava `--sem-artefato` | `gateway-pagamentos` nascia `domain` em silêncio; todo módulo em lote nascia com artefato | corrigido (§5.1) |
-| `sync-env.mjs` lia `?.envRequerido` e o schema exige `requiredEnv` | as chaves da **raiz** nunca chegavam ao `.env.example` | corrigido |
-| `conformidade.json` `_exemplo` usava `"module"`, `validate.mjs` lê `.modulo` | exceção de gate copiada do exemplo era **silenciosamente ignorada** | corrigido |
-| `bindings/python/root/verificar.py` dizia `python verify.py` em 7 lugares | mandava rodar comando inexistente, inclusive em erro de runtime | corrigido |
-| `eslint.config.mjs` importava `ferramentas/gate/limiares.mjs` | `npx eslint` **crashava**; o lint da base estava morto | corrigido |
-| CI chamava `init_repo.py --modulos itens` (sintaxe antiga) | o job quebraria no próximo agendamento | corrigido |
-
-## T.4 Achados abertos, para o dono
-
-1. **`tools/` viaja com 5 violações do Nível 0 do próprio template** — `max-params` (5 parâmetros) em
-   `create-adapter.mjs` ×3, e funções de 41 e 42 linhas em `create-project.mjs` e `gate/tests/run.mjs`.
-   Só ficaram visíveis quando o `eslint` voltou a rodar. **É refatoração, não ponteiro** — precisa de
-   plano próprio.
-2. **`validate.mjs` não reprova exceção com chave desconhecida.** Ele valida que a exceção tem `decisao`,
-   mas uma entrada com chave que ele não interpreta é **ignorada em silêncio**. Foi o que deixou o
-   `_exemplo` errado passar despercebido. Fechar isso é **mudança de regra do gate**.
-3. **O cache do plugin** (§10.4) — operação, não edição de template.
-4. **`.claude/settings.json`** cita caminhos antigos em allowlist de permissão. Cache local, não engana
-   leitor.
-
-## T.5 Este é o único documento solto da raiz — e por quê
-
-A raiz tinha, além dele, o `funcionamento-esperado.md` (a visão de conjunto anterior) e sete planos de
-construção. **Todos foram removidos**; restam só `CLAUDE.md` (o gancho sempre-ativo), `README.md` (o
-manual da base) e este arquivo.
-
-**O `funcionamento-esperado.md` não era obsoleto** — foi absorvido. Vieram dele o ciclo de vida (§6), a
-criação e extração de módulo (§7), o que o template deliberadamente não faz (§8), os dois limites (§9),
-as três camadas de custo (§4.5) e a direção hexagonal (§3). E ele **corrigiu um erro deste documento**:
-o `config/` do módulo tem **cinco** arquivos — `api.json`, `domain.json`, `ports.json`, `seguranca.json`,
-`textos.json` — e a primeira versão do §2 listava só `ports.json`.
-
-**O que estava desatualizado nele e NÃO foi trazido:** *"74 regras"* (são 75, desde
-`mapeador-nomenclatura`), `geraArtefato` (hoje `generatesArtifact`) e `config/dominio` (hoje
-`config/domain.json`).
-
-**Por que só um documento.** Manter dois é o defeito que a §10.2 enuncia: **regra escrita em dois lugares
-é a garantia de que os dois vão divergir.** Foi exatamente o que aconteceu — o documento anterior dizia
-74 regras enquanto o catálogo tinha 75.
-
-**Onde está o registro da obra.** Os planos de construção (`plan.md`, `plan-2*`, `plan-3*`) e os
-relatórios de cada bloco **vivem no histórico do git**, não na árvore de trabalho. Quem precisar do
-"por quê" de uma decisão específica encontra ali; quem precisar do "o que vale hoje" está lendo o
-documento certo.

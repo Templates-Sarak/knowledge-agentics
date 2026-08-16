@@ -27,7 +27,7 @@ function aplicarExcecoes(achados, excecoes) {
 
 function imprimirHumano(achados, alvos, excecoesInvalidas) {
   for (const invalida of excecoesInvalidas) {
-    process.stdout.write(`  ! excecao invalida (${invalida.modulo}/${invalida.regra}): sem campo "decisao"\n`);
+    process.stdout.write(`  ! excecao invalida (${invalida.modulo}/${invalida.regra}): ${invalida.porqueInvalida}\n`);
   }
   for (const alvo of alvos) {
     const meus = achados.filter((a) => a.modulo === alvo);

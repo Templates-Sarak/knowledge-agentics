@@ -127,6 +127,8 @@ const REGISTRO = [
   { caminho: 'specs/_estrutura_modulos/tools/package.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/verify-commit.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/verify-map.mjs', runtime: 'node' },
+  { caminho: 'specs/_estrutura_modulos/tests/verify-catalog.mjs', runtime: 'node' },
+  { caminho: 'specs/_estrutura_modulos/tests/verify-routine.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/template-self-test.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs', runtime: 'node' },

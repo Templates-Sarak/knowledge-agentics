@@ -36,7 +36,7 @@ const ID_SINTETICO_DO_MOLDE = 'molde';
  *
  * Sao estas tres e mais nenhuma. `tools/` fica de fora de proposito: e o gate, que o template
  * instala e ninguem edita — varre-lo faria as regras de raiz julgarem o proprio verificador.
- * `modules/` fica de fora porque ja tem 57 regras suas.
+ * `modules/` fica de fora porque ja tem 58 regras suas.
  */
 const PASTAS_DA_RAIZ = ['adapters', 'src', 'packages'];
 
@@ -209,20 +209,28 @@ function lerCodigoDaRaiz(raizProjeto) {
     .filter((arquivo) => EXT_CODIGO.has(arquivo.ext));
 }
 
+/** `{ presente, valor }` de um `config/<nome>` na raiz — `valor` fica `null` em JSON ilegível ou
+ * ausente, e é a regra dona (não este leitor) quem decide a mensagem para cada caso. */
+function lerConfigDaRaiz(raizProjeto, nomeArquivo) {
+  const caminho = join(raizProjeto, 'config', nomeArquivo);
+  const config = { presente: existsSync(caminho), valor: null };
+  if (config.presente) {
+    try {
+      config.valor = JSON.parse(lerTexto(caminho));
+    } catch {
+      config.valor = null;
+    }
+  }
+  return config;
+}
+
 function lerProjeto(raizProjeto) {
   // "Raiz de projeto" é a pasta que tem `modules/` — a mesma definição de `acharRaizProjeto`. Sem
   // ela não há projeto: é módulo solto (extraído e ainda não religado) ou fixture, e cobrar
   // política de projeto de quem não é projeto seria falso positivo garantido.
   const ehProjeto = existsSync(join(raizProjeto, 'modules'));
-  const caminho = join(raizProjeto, 'config', 'verificacao.json');
-  const verificacao = { presente: existsSync(caminho), valor: null };
-  if (verificacao.presente) {
-    try {
-      verificacao.valor = JSON.parse(lerTexto(caminho));
-    } catch {
-      verificacao.valor = null;
-    }
-  }
+  const verificacao = lerConfigDaRaiz(raizProjeto, 'verificacao.json');
+  const conformidade = lerConfigDaRaiz(raizProjeto, 'conformidade.json');
 
   const configsDeLint = {};
   for (const nome of CONFIGS_DE_LINT) {
@@ -245,6 +253,7 @@ function lerProjeto(raizProjeto) {
     ehProjeto,
     manifesto: lerManifestoDaRaiz(raizProjeto),
     verificacao,
+    conformidade,
     configsDeLint,
     gitignore,
     githooksPreCommit,
@@ -319,16 +328,52 @@ export function acharRaizProjeto(partida) {
   return partida;
 }
 
-/** Exceções nominais ratificadas (specs/arquitetura/04-regras.md §6). Sem `decisao`, a exceção é inválida. */
+const PADRAO_ID_ADR = /^ADR-\d+$/;
+const PADRAO_TITULO_ADR = /^##\s+(ADR-\d+)\b/gm;
+
+/**
+ * Os ids de ADR que `specs/adr/*.md` do PROJETO realmente declara em título — nunca os da base. É
+ * contra este conjunto que `decisao` é resolvida (04-regras.md §6): qualquer string passava antes
+ * (fail-open no arquivo de maior privilégio do gate — é a exceção que desliga regra).
+ */
+function idsDeAdrDeclarados(raizProjeto) {
+  const pasta = join(raizProjeto, 'specs', 'adr');
+  if (!existsSync(pasta)) return new Set();
+  const ids = new Set();
+  for (const nome of readdirSync(pasta).filter((n) => n.endsWith('.md'))) {
+    for (const [, id] of lerTexto(join(pasta, nome)).matchAll(PADRAO_TITULO_ADR)) ids.add(id);
+  }
+  return ids;
+}
+
+/**
+ * Sem `decisao`, sem forma de ADR (`ADR-NNN`), ou ADR que não existe em `specs/adr/`: invalida.
+ * Nome `porqueInvalida` de propósito — `excecao.motivo` já é o campo do USUÁRIO (por que a exceção
+ * existe); reusar o nome sobrescreveria esse campo no spread abaixo.
+ */
+function porqueInvalida(decisao, idsValidos) {
+  if (!decisao) return 'sem campo "decisao"';
+  if (!PADRAO_ID_ADR.test(decisao)) return `"decisao" nao tem a forma "ADR-NNN": "${decisao}"`;
+  if (!idsValidos.has(decisao)) return `"${decisao}" nao existe em specs/adr/`;
+  return null;
+}
+
+/** Exceções nominais ratificadas (specs/arquitetura/04-regras.md §6). `decisao` precisa resolver a
+ * um ADR de verdade em `specs/adr/` — string qualquer não basta (era o fail-open). */
 export function carregarExcecoes(raizProjeto) {
   const caminho = join(raizProjeto, 'config', 'conformidade.json');
   if (!existsSync(caminho)) return { validas: [], invalidas: [] };
   try {
     const { excecoes = [] } = JSON.parse(lerTexto(caminho));
-    return {
-      validas: excecoes.filter((e) => e.decisao),
-      invalidas: excecoes.filter((e) => !e.decisao),
-    };
+    const idsValidos = idsDeAdrDeclarados(raizProjeto);
+    const validas = [];
+    const invalidas = [];
+    for (const excecao of excecoes) {
+      const porque = porqueInvalida(excecao.decisao, idsValidos);
+      if (porque === null) validas.push(excecao);
+      else invalidas.push({ ...excecao, porqueInvalida: porque });
+    }
+    return { validas, invalidas };
   } catch {
     return { validas: [], invalidas: [] };
   }

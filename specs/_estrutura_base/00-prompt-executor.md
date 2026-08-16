@@ -29,9 +29,11 @@ aquilo**, com a qualidade do padrão, e em relatar com honestidade o que realmen
 
 **Como você responde nesta conversa:** dois tipos de conteúdo, sempre separados. O **resumo completo** — o
 que fez arquivo por arquivo, decisões, achados fora do escopo — é conteúdo `.md`, **escrito na própria plan**
-(§5): é o que o revisor lê para validar, não o que você diz na conversa. A **mensagem final ao usuário** (§6)
-é texto livre e curta — aponta para o resumo na plan, não o repete inteiro. Você não tem canal direto com o
-revisor: ele lê o que você escreveu na plan, não a conversa.
+(§5): é o que o revisor lê para validar, não o que você diz na conversa. A **entrega final** (§6) tem duas
+partes: **texto livre** (o resumo executivo curto, para o usuário) e um **bloco `.md`** com o **prompt de
+conclusão** (§6.1) — literal, copiável, para o usuário colar numa conversa nova com o revisor. Esse prompt
+nunca é escrito na plan, só entregue aqui, na conversa. Você não tem canal direto com o revisor: ele lê o
+resumo que você escreveu na plan; a verificação começa quando o usuário leva o prompt de conclusão até ele.
 
 ---
 
@@ -152,7 +154,9 @@ Feito o resumo, mude o `status` da plan para `🟠 Em revisão`.
 
 # 6. Entrega
 
-Termine a conversa com uma mensagem curta ao usuário contendo:
+Termine a conversa com duas coisas, sempre separadas.
+
+**Texto livre**, mensagem curta ao usuário, contendo:
 
 1. **O que foi executado** (2–4 linhas).
 2. **Arquivos alterados** (lista).
@@ -160,7 +164,24 @@ Termine a conversa com uma mensagem curta ao usuário contendo:
 4. **Pendências, suposições e achados fora do escopo**, se houver.
 5. A frase de fechamento: **as alterações estão no worktree, sem commit, prontas para revisão.**
 
+**Bloco `.md`** com o prompt de conclusão — ver §6.1.
+
 Depois disso, **pare**. Não commite, não crie plan nova, não comece a próxima tarefa, não "adiante" nada.
+
+## 6.1 O prompt de conclusão (entregue na conversa, nunca escrito na plan)
+
+Bloco literal, autossuficiente, para o usuário abrir uma conversa nova com o **revisor** e disparar a
+verificação — o par simétrico do prompt de execução que o revisor te entregou no início:
+
+```
+Leia specs/00-prompt-revisor.md e revise a execução de specs/plan/plan-NN-<slug>.md.
+
+O resumo da execução está na própria plan (seção "Resumo da execução"). Verifique
+diretamente no worktree — o resumo é alegação, não evidência.
+```
+
+Assim como o prompt de execução, este bloco não é seção da plan — é gerado de novo a cada entrega e vive só
+na conversa.
 
 ---
 
@@ -169,7 +190,8 @@ Depois disso, **pare**. Não commite, não crie plan nova, não comece a próxim
 1. **NUNCA commite.** Nem `git commit`, nem `git push`, nem `git stash`/`reset`/`checkout` que descarte
    trabalho. As alterações ficam no worktree para o revisor verificar e o **usuário** commitar. Nenhuma
    co-autoria de agente, em nenhuma hipótese.
-2. **NUNCA remova conteúdo da plan.** Apenas adicione (§5).
+2. **NUNCA remova conteúdo da plan.** Apenas adicione (§5) — e só o resumo e o `status`; o prompt de
+   conclusão não é conteúdo de plan, vive só na conversa (§6.1).
 3. **NUNCA crie nem edite outra spec.** Você escreve **só** na plan que está executando — e só o resumo e o
    `status`. `00-contexto`, `00-indice`, `arquitetura/`, `adr/`, `specs/` e outras plans são do revisor.
 4. **NUNCA mova, renomeie nem apague um arquivo de plan.** Levar a plan para `plan/executadas/` é ato do
@@ -207,4 +229,5 @@ Você recebe um **prompt de correção** com os achados numerados. Muda pouco no
 - [ ] Sem debug, sem `TODO` novo, sem segredo, sem hardcoded, sem gate contornado.
 - [ ] Resumo **adicionado** à plan no formato da §5, fiel ao `git diff`, com datas absolutas.
 - [ ] `status: 🟠 Em revisão` marcado.
+- [ ] Prompt de conclusão (§6.1) entregue na conversa, em bloco `.md` — nunca escrito na plan.
 - [ ] **Nada commitado.** Alterações no worktree, controle devolvido ao revisor.

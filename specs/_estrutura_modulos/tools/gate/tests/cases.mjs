@@ -496,6 +496,23 @@ export const CASOS = [
     mutar: (m) => m.remover('../../config/verificacao.json'),
   },
   {
+    regra: 'conformidade-declarada',
+    descricao: 'projeto sem config/conformidade.json na raiz',
+    // `../../` sobe da pasta do modulo para a raiz do PROJETO, como `verificacao-declarada`.
+    mutar: (m) => m.remover('../../config/conformidade.json'),
+  },
+  {
+    regra: 'conformidade-declarada',
+    descricao: 'chave em ingles na lista de excecoes ("module" em vez de "modulo")',
+    // O defeito medido em 2026-08-15: exececao com chave errada nao pegava a violacao, e nada
+    // dizia por que. `additionalProperties:false` reprova o campo a mais, e o `modulo` obrigatorio
+    // ausente reprova junto — um erro, duas mensagens, as duas apontando a forma certa.
+    mutar: (m) => m.escrever(
+      '../../config/conformidade.json',
+      JSON.stringify({ excecoes: [{ module: 'legado', regra: 'estrutura-estrita', motivo: 'x', decisao: 'ADR-001' }], excecoesCve: [] }),
+    ),
+  },
+  {
     regra: 'lint-derivado',
     descricao: 'config do linter editada a mao, divergindo da fonte dos limiares',
     // A regra compara BYTE A BYTE com o que o gerador produziria, entao qualquer edicao manual e o

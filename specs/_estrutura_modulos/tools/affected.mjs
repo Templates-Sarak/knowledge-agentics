@@ -2,7 +2,7 @@
 /**
  * affected.mjs — dado um conjunto de arquivos alterados, diz o que precisa ser VERIFICADO.
  * Lei dona: nenhuma — ferramenta, como `sync-env.mjs` e `generate-lint-config.mjs`. Não é
- * regra de gate, não tem id, não conta para as 73 regras com caso do catálogo.
+ * regra de gate, não tem id, não conta para as 76 regras com caso do catálogo.
  *
  *   node tools/affected.mjs <caminho...>          caminhos por argumento
  *   git diff --name-only | node tools/affected.mjs   caminhos por stdin (sem argumento)

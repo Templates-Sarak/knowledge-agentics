@@ -19,7 +19,7 @@ consolida os achados num **plano de adequação** e **persiste** em `.sarak/audi
 
    | # | `Glob` | Topologia | Módulos são |
    |---|---|---|---|
-   | 1 | `modulos/*/modulo.json` | **template** | cada pasta em `modulos/` (menos `_template`) |
+   | 1 | `modules/*/module.json` | **template** | cada pasta em `modules/` (menos `_template`) |
    | 2 | `backend/*/`, `frontend/*/`, `src/modules/*/`, `apps/*/`, `packages/*/` | **modular-legado** | cada pasta encontrada |
    | 3 | `controllers/`, `services/`, `models/` no topo | **por-camadas** | **não há** — o alvo é o repo inteiro, como um módulo único |
    | 4 | nenhum acima | **monólito simples** | o repo inteiro; avise que o Nível 1 não se aplica |

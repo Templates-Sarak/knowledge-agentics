@@ -21,7 +21,7 @@ Cada regra do ecossistema tem **um** dono. Ninguém copia ninguém; quem não é
 | **1** | arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento | **catálogo de regras do template** | `specs/_estrutura_modulos/doutrina/04-regras.md` (vira `specs/arquitetura/04-regras.md` no projeto) |
 | **2** | idiomas e linter de cada linguagem | `padrao-typescript` · `padrao-python` | skills irmãs |
 
-**O Nível 1 tem verificador executável.** O gate do template (`tools/gate/validate.mjs`) cobra as ~75
+**O Nível 1 tem verificador executável.** O gate do template (`tools/gate/validate.mjs`) cobra as ~76
 regras de arquitetura mecanicamente, e **repete** os quatro limiares de escrita do Nível 0 porque viaja com o
 módulo extraído. Se os números divergirem, **esta skill está certa** — o catálogo é que está desatualizado.
 
@@ -81,7 +81,7 @@ Corolário: **sem estado global mutável** — dado compartilhado que muda é de
 
 | Onde | O quê |
 |---|---|
-| `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~75 regras, cada uma com id e verificador |
+| `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~76 regras, cada uma com id e verificador |
 | `specs/_estrutura_modulos/doutrina/` — `00-arquitetura.md` · `01-modulo.md` · `02-contrato-e-dados.md` · `03-operacao.md` | por que a regra existe e como trabalhar dentro dela |
 | `tools/gate/validate.mjs` | **o verificador** — a regra é cobrada por máquina, não por memória |
 

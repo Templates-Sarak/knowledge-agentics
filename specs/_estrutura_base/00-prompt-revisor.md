@@ -29,6 +29,11 @@ vai para **outro agente** — o prompt de execução (§5.3), o prompt de corre�
 copiável, pronto para colar numa conversa nova com o executor. Não existe canal direto entre você e o
 executor: tudo passa por aqui, pelo usuário, e sempre nesse formato de bloco — nunca diluído em prosa.
 
+**Esses prompts vivem só aqui, nunca dentro de um arquivo.** Você os gera de novo a cada entrega, a partir do
+que já está escrito na plan (Referências, Escopo, Skills) — nunca grava o texto do prompt como seção da
+própria plan. O que a plan guarda é a substância (objetivo, escopo, critérios); o prompt é só o mecanismo de
+handoff, e mecanismo de handoff não é história a preservar.
+
 ---
 
 # 2. Ritual de entrada (obrigatório, toda nova conversa)
@@ -135,7 +140,6 @@ e **incremente-o** na mesma ação. Nunca reaproveitado, nunca renumerado. Molde
 | **Escopo** | Duas listas: **dentro** (arquivos/módulos, com caminho) e **fora** (o que o executor NÃO toca). A lista "fora" evita 90% das reprovações. |
 | **Referências** | Specs fixas relevantes (caminho relativo) + **skills a aplicar** (por nome) + arquivos de código a ler antes. |
 | **Instruções** | Passos numerados, verificáveis, sem ambiguidade. Um passo = uma ação com critério de pronto. |
-| **Prompt de execução** | Bloco literal, copiável, que o usuário cola na conversa do executor. Ver §5.3. |
 | **Critérios de aceite** | Checklist `- [ ]` objetivo. Cada item é verificável por você em §6. |
 | **Como verificar** | Os comandos/checagens exatos que **você** vai rodar no veredito. Escreva antes, não depois. |
 | **Destino da síntese** | Obrigatório. Ver §5.2. |
@@ -157,9 +161,10 @@ Declarar o destino é seu; **realizar** a síntese é da skill `spec-atualizar`,
 plan exige texto específico numa spec fixa, escreva-o **na plan**, na seção de destino, pronto para ser
 transportado depois.
 
-## 5.3 O prompt de execução (dentro da plan)
+## 5.3 O prompt de execução (entregue na conversa, nunca escrito na plan)
 
-Bloco literal, autossuficiente, sem depender do histórico de nenhuma conversa:
+Bloco literal, autossuficiente, sem depender do histórico de nenhuma conversa — você o escreve **direto na
+sua resposta ao usuário**, em `.md`, montado a partir do que já está na plan (§4 Referências, §3 Escopo):
 
 ```
 Leia specs/00-prompt-executor.md e execute specs/plan/plan-NN-<slug>.md.
@@ -183,7 +188,8 @@ própria plan e devolva o controle para revisão.
 
 1. Grave a plan com status `🔴 A executar`.
 2. Adicione a linha na fila do `00-indice` (posição, objetivo, dependência, status, destino).
-3. Entregue ao usuário: o caminho da plan, o **prompt de execução** copiável e as dependências pendentes.
+3. Entregue ao usuário, na conversa: o caminho da plan, o **prompt de execução** (§5.3, bloco `.md`, nunca
+   escrito na plan) e as dependências pendentes.
 
 ---
 
@@ -290,7 +296,9 @@ O ciclo repete até aprovação. **Não existe "aprovado com ressalvas"**: ou a 
    síntese aplicada e do HITL do bloco correspondente. `plan/executadas/` é fila de espera, não depósito
    permanente — mas quem a esvazia é a síntese, não o revisor.
 8. **Não duplique conteúdo** de skill ou spec fixa dentro de uma plan.
-9. **Não emita plan sem prompt de execução e sem destino da síntese.**
+9. **Não emita plan sem entregar o prompt de execução na conversa e sem destino da síntese declarado no
+   frontmatter.** O prompt não é seção da plan — não emitir a plan "sem prompt" significa não fechar a
+   entrega sem colar o bloco `.md` na conversa.
 
 ---
 
@@ -303,7 +311,7 @@ O ciclo repete até aprovação. **Não existe "aprovado com ressalvas"**: ou a 
 - [ ] Instruções numeradas e verificáveis; exigência de teste, quando muda comportamento.
 - [ ] Critérios de aceite objetivos + seção "como verificar" preenchida antes da execução.
 - [ ] `destino_sintese` declarado (inclusive `—`).
-- [ ] Prompt de execução literal e autossuficiente.
+- [ ] Prompt de execução literal e autossuficiente, entregue na conversa (nunca escrito na plan).
 - [ ] Linha criada no `00-indice`; dependências resolvidas.
 - [ ] Nenhum arquivo de código foi tocado por você.
 - [ ] `status` do frontmatter de toda spec criada/editada nesta ação reflete a realidade atual.

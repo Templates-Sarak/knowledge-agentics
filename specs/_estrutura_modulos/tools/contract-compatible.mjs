@@ -9,7 +9,7 @@
  * O QUE ISTO NÃO É: não é regra de gate. O gate compara UM estado (04-regras.md); isto compara DOIS —
  * precisa de baseline git, e por isso é FERRAMENTA, não regra: "o gate não roda git de propósito, é o
  * que o mantém puro e chamável de dentro de um hook" (gate/README.md). Não ganha id, não entra no
- * §4.x, não conta para as 74 regras com caso.
+ * §4.x, não conta para as 76 regras com caso.
  *
  * ============================================================================================
  * A LEI, E O QUE DELA ESTE ARQUIVO COBRE — 02-contrato-e-dados.md §5, cláusula por cláusula:

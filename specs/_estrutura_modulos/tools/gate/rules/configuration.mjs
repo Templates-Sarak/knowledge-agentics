@@ -458,6 +458,27 @@ export default [
     },
   },
   {
+    id: 'conformidade-declarada',
+    nivel: 'erro',
+    escopo: 'root',
+    // Ate esta regra, `config/conformidade.json` era o unico config sem schema e sem dono: JSON
+    // malformado caia num catch silencioso de `carregarExcecoes` (exit 0, exececoes todas
+    // descartadas caladas) e chave em ingles (`module`/`rule`) so falhava calada tambem — a
+    // excecao nao pegava, e nada dizia por que. `decisao` resolver a um ADR de verdade continua
+    // sendo trabalho da regra §6 (`04-regras.md`, fora deste arquivo — e o fail-open medido em
+    // 2026-08-15); esta regra so cobra a FORMA, o mesmo par (existe + schema) de `verificacao-declarada`.
+    verificar(projeto) {
+      if (!projeto.ehProjeto) return [];
+      const { presente, valor } = projeto.conformidade;
+      if (!presente) {
+        return ['config/conformidade.json ausente na raiz do projeto — a lista de excecoes comeca'
+          + ' vazia, e esse e o estado correto, mas o arquivo precisa existir (schema em tools/gate/schemas/)'];
+      }
+      if (valor === null) return ['config/conformidade.json nao e JSON valido'];
+      return validar(valor, carregarEsquema('conformidade'), 'config/conformidade.json');
+    },
+  },
+  {
     id: 'lint-derivado',
     nivel: 'erro',
     escopo: 'root',

@@ -31,6 +31,8 @@ viva; o arquivo da plan não fica retido como arquivo morto.
 | `specs/plan/` (raiz) | `🔴 🟡 🟠 🔵 ⛔` | Fila **ativa**. **Nunca** sintetize daqui — a execução não terminou |
 | `specs/00-indice.md` | — | Índice a atualizar no fechamento |
 | `specs/adr/` · `arquitetura/` · `specs/` | — | Os destinos |
+| `specs/00-contexto.md` | — | **Sempre revisado ao final (§5.5)**, mesmo sem nenhuma plan declará-lo como destino — é a porta de entrada de qualquer agente |
+| Código-fonte tocado pela plan | — | **Evidência** — confronta o que a plan alega com o que foi de fato implementado (passo 1) |
 
 ## Workflow
 
@@ -41,6 +43,12 @@ viva; o arquivo da plan não fica retido como arquivo morto.
 - De cada plan selecionada, leia: o campo `destino_sintese` do frontmatter, a seção **Destino da síntese**, o
   **Resumo da execução** e o **Veredito** do revisor.
 - Leia `specs/00-indice.md` §4 (Aguardando síntese) para localizar a linha de cada plan.
+- **Confronte com o código real — nunca confie só no texto da plan.** Abra os arquivos listados em "Arquivos
+  alterados" (ou o diff/commit que os introduziu) e confirme que o comportamento **efetivamente implementado**
+  bate com o que a plan e o resumo do executor alegam. A plan descreve intenção e o resumo é autorrelato; só o
+  código é evidência. Achou divergência (a plan diz uma coisa, o código faz outra)? **Pare** e leve ao usuário
+  antes de escrever qualquer spec fixa com base nela — nunca sintetize a alegação, sintetize o que o código
+  realmente faz.
 
 ### 2. Roteamento pelo destino declarado
 
@@ -85,8 +93,26 @@ Exemplos de formulação em `references/workflow.md`.
   de como foi resolvido. Se por trás da correção houver uma decisão de design com trade-off que vale
   preservar (por que assim e não de outro jeito), esse conteúdo é **ADR**, não arquitetura/specs — trate como
   um destino adicional, não como algo a descartar.
+- **Escreva o que o código confirmado no passo 1 mostra, não o que a plan alega.** Se algum trecho da plan não
+  foi possível confirmar no código, não o transporte — trate como lacuna (regra "NÃO invente conteúdo" abaixo)
+  em vez de repetir a alegação como se fosse verificada.
 - Preserve o que continua válido na spec de destino. Sobrescrever seção inteira sem necessidade apaga história.
 - Atualize `status` e `relacionados` do destino quando fizer sentido (ex.: `🔴 A Implementar` → `🟢 Implementado`).
+
+### 5.5 Revisão obrigatória do `00-contexto.md`
+
+**Toda rodada desta skill termina revisando `specs/00-contexto.md` — mesmo que nenhuma plan do lote o tenha
+declarado como `destino_sintese`.** Ele é a porta de entrada de qualquer agente (o próprio ritual de entrada
+do revisor lê-o primeiro); uma spec fixa nova ou renomeada nesta rodada pode deixá-lo desatualizado sem que
+nenhuma plan individual tenha "culpa" disso.
+
+- Releia a §4 (Mapa de roteamento): alguma spec fixa criada/atualizada nesta rodada precisa de linha nova ou
+  de ajuste numa linha existente?
+- Releia a §2 (Regras inegociáveis) e §3 (Stack e arquitetura): a síntese mudou regra inegociável, stack ou
+  fronteira que o resumo operante ainda não reflete?
+- **Nada a mudar é resultado legítimo — mas pular a checagem não é.** Declare no relato final (§7) que o
+  `00-contexto.md` foi conferido, com ou sem alteração.
+- Se houver mudança: mesmo HITL de bloco de qualquer outra spec fixa (§4) antes de escrever.
 
 ### 6. Fechamento por plan (não deixe pendência)
 
@@ -110,6 +136,7 @@ Para cada plan sintetizada, na mesma passada:
 ### 7. Entrega
 
 - Relate: plans sintetizadas, specs fixas atualizadas/criadas, plans que ficaram de fora e por quê.
+- Relate o resultado da revisão obrigatória do `00-contexto.md` (§5.5) — alterado, ou conferido sem mudança.
 - Avise que as alterações estão no worktree, **sem commit** — quem commita é o usuário.
 - Se alguma plan `🟢` foi pulada (destino ambíguo, conflito), diga qual e o que falta decidir.
 
@@ -127,14 +154,20 @@ Para cada plan sintetizada, na mesma passada:
 - **NÃO** leve código-fonte para as specs — só especificação documental em Markdown. Trecho de código só como
   ilustração de contrato, quando indispensável.
 - **NÃO** invente conteúdo que não esteja na plan, no resumo do executor ou no veredito. Lacuna vira pergunta.
+- **NÃO confie apenas na plan.** Plan e resumo do executor são alegação; o código é a evidência. Divergência
+  entre eles é achado — pare e leve ao usuário antes de escrever, nunca sintetize por cima dela.
+- **NUNCA feche uma rodada sem revisar `00-contexto.md` (§5.5)** — mesmo que nenhuma plan do lote o declare
+  como destino. É a única checagem desta skill que independe do `destino_sintese` de cada plan.
 - **NÃO** acione esta skill proativamente.
 
 ## Checklist "pronta"
 
 - [ ] `specs/plan/executadas/` lido; só as `🟢 Aprovada` entraram no lote.
+- [ ] Código real confrontado com a plan/resumo de cada uma; divergência levada ao usuário antes de escrever.
 - [ ] `destino_sintese` respeitado em todas; ambiguidade levada ao usuário.
 - [ ] Um HITL por bloco, com resumo do que muda, aprovado antes de escrever.
 - [ ] Specs fixas no formato de `spec-write`, descrevendo o estado atual do sistema.
+- [ ] `00-contexto.md` revisado nesta rodada (§5.5) — alterado ou explicitamente confirmado sem mudança.
 - [ ] Toda plan do lote: bloco `## Síntese` acrescentado + `status: ⚪ Sintetizada` **antes** da remoção.
 - [ ] Arquivo de cada plan sintetizada removido (`git rm`) de `specs/plan/executadas/`.
 - [ ] `00-indice.md` com a linha correspondente **removida** da §4 — nenhuma sobra `⚪`.

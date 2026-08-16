@@ -10,7 +10,7 @@ Quem o executa é decisão sua; o que ele promete está aqui.
 
 ```
 node tools/gate/validate.mjs <caminho-do-modulo>   valida UM módulo
-node tools/gate/validate.mjs --todos               todos + as 3 regras globais
+node tools/gate/validate.mjs --todos               todos + as 4 regras globais
 node tools/gate/validate.mjs --extracao <caminho>  vira microsserviço hoje?
 node tools/gate/validate.mjs --json <caminho>      saída estruturada
 ```

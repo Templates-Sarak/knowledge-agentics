@@ -230,7 +230,7 @@ fique arbitrária por analogia:
 | 3 | Funções do **esqueleto** (`bindings/**`) | **inglês** | é o código que o dev escreve todo dia |
 | 4 | Símbolos (funções/variáveis) **dentro de** `tools/` | **português** | ferramental vendorizado — o dono é outro repositório. Por isso já é **isento do linter** no projeto gerado: a porta em inglês, a sala em português, e a sala é declarada como não-sua. Vale só para o SÍMBOLO — o arquivo que o contém segue a linha 5 |
 | 5 | Nomes de arquivo dentro de `tools/` | **inglês** | é a árvore (linha 1 do princípio), não o conteúdo — a mesma pasta não pode ficar meio inglês, meio português um nível abaixo do que a linha 1 já resolveu. É a superfície de CLI que o dev digita |
-| 6 | Ids das 75 regras do catálogo | **português** | id de regra é nome de artigo de lei, e a lei é portuguesa — citado muito mais em prosa (§4.x, §7.2) que em código |
+| 6 | Ids das 76 regras do catálogo | **português** | id de regra é nome de artigo de lei, e a lei é portuguesa — citado muito mais em prosa (§4.x, §7.2) que em código |
 | 7 | Mensagens do gate e erros de runtime | **português** | documentação entregue por código; é a UX do template |
 | 8 | Chaves do manifesto (`module.json`, `project.json`) e nome do arquivo | **inglês** — `name` `data` `ports` `requiredEnv` `basePath` … | é config lida por código — árvore, não conteúdo. Enum de valor estrutural (como `role: domain\|gateway\|connector`) segue a mesma tradução da pasta homônima (linha 1) — é o mesmo conceito, não uma exceção |
 | 9 | Chaves de ambiente | **inglês** — `ROOT_API_PORT`, `<MODULE>_DB_URL` | convenção universal de env |
