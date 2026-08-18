@@ -65,7 +65,7 @@ justamente porque são mutativas ou sensíveis.
 | Estruturar logging / métricas e alertas | `obs-logs` · `obs-monitoramento` |
 | Publicar na Vercel / containerizar | `/deploy-vercel` · `/deploy-docker` |
 | Escrever ou padronizar uma spec | `spec-write` |
-| Sintetizar as plans executadas nas specs fixas | `spec-atualizar` |
+| Expurgar as plans já sintetizadas (`⚪`) do diretório de specs | `spec-atualizar` |
 | Definir o alicerce arquitetural de um repo novo | `spec-fundacao` |
 | Criar/revisar uma skill | `meta-create-skill` · `/meta-criar-skill` |
 | Preparar o projeto para entrega (licença, autoria, docs) | `code-entrega` · `code-documentacao` |
@@ -123,7 +123,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | Skill | Quando |
 |---|---|
 | `spec-write` | Traduzir ideia/requisito em spec padronizada (usa os moldes de `_templates/`). |
-| `spec-atualizar` | **Ponte do ciclo SDD**: lê as plans `🟢 Aprovada` em `specs/plan/executadas/` e sintetiza nas specs fixas, por blocos e com HITL. Nunca apaga plan. |
+| `spec-atualizar` | **Expurgo do ciclo SDD**: reverifica as plans `⚪ Sintetizada` de `specs/plan/` e remove as que já convergiram (arquivo + linha do `00-indice`). Só manual. **Não sintetiza** — a síntese é do revisor, na aprovação ([[00-prompt-revisor]] §7.3). |
 | `spec-fundacao` | Wizard HITL do alicerce arquitetural/tecnológico de um repo novo → gera os ADRs. |
 | `spec-site-fundacao` | Idem, para projeto de site (institucional/marketing). |
 

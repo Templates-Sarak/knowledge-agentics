@@ -115,23 +115,29 @@ alterações ficam no worktree (nenhum agente commita)
       ↓
 revisor VERIFICA diretamente (não confia no resumo do executor)
       ├─ reprovado → prompt de correção → executor corrige → repete
-      └─ aprovado  → status 🟢 + plan movida para plan/executadas/ + [[00-indice]] atualizado
+      └─ aprovado  → status 🟢 + [[00-indice]] atualizado + revisor PROPÕE a síntese
       ↓
-usuário commita
+usuário AUTORIZA → revisor sintetiza nas specs fixas (adr/ · arquitetura/ · specs/),
+a plan ganha o bloco `## Síntese` e o status ⚪
       ↓
-periodicamente: spec-atualizar sintetiza as plans 🟢 de plan/executadas/ nas specs
-fixas (adr/ · arquitetura/ · specs/) e REMOVE a plan (arquivo + linha do índice) —
-a spec fixa passa a ser a única fonte viva dessa verdade
+usuário commita — código, spec fixa e plan ⚪ na mesma unidade
+      ↓
+periodicamente: spec-atualizar REVERIFICA cada ⚪ e a remove (arquivo + linha do
+índice). A spec fixa já era a única fonte viva dessa verdade desde a síntese
 ```
 
-**`specs/plan/`** é a fila **ativa**; **`specs/plan/executadas/`** é a fila de **espera de síntese** — só
-`🟢 Aprovada`, esvaziada a cada rodada de `spec-atualizar`.
+**Toda plan vive em `specs/plan/`**, do nascimento ao expurgo — não há subpasta e nenhum arquivo se move. O
+que diz em que pé está cada uma é o `status` do frontmatter, espelhado no [[00-indice]].
 
 | Papel | Spec de entrada | Pode escrever | Nunca faz |
 |---|---|---|---|
-| **Revisor** | [[00-prompt-revisor]] | specs, prompts, mensagens | tocar código · commitar |
-| **Executor** | [[00-prompt-executor]] | código + resumo na própria plan | criar/alterar outras specs · commitar |
-| **Usuário** | — | qualquer coisa | — (é quem commita e dispara `/spec-atualizar`) |
+| **Revisor** | [[00-prompt-revisor]] | plans, specs fixas (na síntese autorizada), prompts, mensagens | tocar código · commitar · remover plan |
+| **Executor** | [[00-prompt-executor]] | código + resumo na própria plan | criar/alterar outras specs · commitar · mover ou remover plan |
+| **Usuário** | — | qualquer coisa | — (é quem commita, autoriza a síntese e dispara `/spec-atualizar`) |
+
+> **Nenhum agente commita e nenhum agente adiciona co-autoria.** A única exceção é solicitação expressa do
+> usuário naquela conversa — e, mesmo então, sem `Co-Authored-By` e sem qualquer outra marca de autoria de
+> agente na mensagem.
 
 <!-- PREENCHER: desvios específicos deste repositório, se houver -->
 

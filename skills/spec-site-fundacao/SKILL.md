@@ -41,8 +41,7 @@ Deve ser engatilhada automaticamente ao iniciar o projeto de um site ou invocada
    | `specs/06`…`10` | **`specs/specs/`** | Layout global, Home, páginas internas, formulários, páginas legais |
    | `_templates/*.md` | `specs/_templates/` | Moldes, incluindo `template-plan.md` |
    | `adr/` (vazia) | `specs/adr/` | ADRs — decisões imutáveis |
-   | `plan/` (vazia) | `specs/plan/` | **Fila de execução** das plans ativas (`plan-NN-<slug>.md`) |
-   | `plan/executadas/` (vazia) | `specs/plan/executadas/` | Histórico das plans aprovadas e sintetizadas |
+   | `plan/` (vazia) | `specs/plan/` | **Fila de execução** — abriga toda plan (`plan-NN-<slug>.md`) do nascimento ao expurgo. Sem subpasta |
 
    > ⚠️ **As specs `06`–`10` vão para `specs/specs/`, NUNCA para `specs/plan/`.** A pasta `plan/` é a fila de
    > execução do ciclo SDD e só recebe arquivos `plan-NN-<slug>.md` escritos pelo agente revisor. Despejar

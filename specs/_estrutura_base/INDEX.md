@@ -20,16 +20,17 @@
 - 📁 **`arquitetura/`**: design vivo e regras globais (O COMO).
 - 📁 **`specs/`**: specs vivas de funcionalidades (O QUÊ).
 - 📁 **`adr/`**: decisões imutáveis (O POR QUÊ). Decisão nova = ADR novo.
-- 📁 **`plan/`**: as plans **ativas** (`plan-NN-<slug>.md`) — a fila de execução. É por elas que toda
-  alteração do repositório passa.
-  - 📁 **`plan/executadas/`**: as plans aprovadas (🟢), **aguardando síntese**. Fila de espera, não arquivo
-    permanente — a skill `spec-atualizar` remove cada plan assim que a transporta para a spec fixa de
-    destino. Depois de removida, o rastro fica no histórico do Git, não nesta pasta.
+- 📁 **`plan/`**: **todas** as plans (`plan-NN-<slug>.md`), do nascimento ao expurgo — é por elas que toda
+  alteração do repositório passa. Não há subpasta: o `status` do frontmatter é que diz se a plan está na fila
+  (🔴 🟡 🟠 🔵 ⛔), aprovada aguardando síntese (🟢) ou já sintetizada aguardando expurgo (⚪). A skill
+  `spec-atualizar`, disparada manualmente, reverifica as ⚪ e as remove; depois disso o rastro fica no
+  histórico do Git, não nesta pasta.
 - 📁 **`_templates/`**: moldes (`template-spec`, `template-arquitetura`, `template-adr`, `template-plan`).
 
 ## O ciclo em uma linha
 
-`revisor escreve plan` → `executor executa (worktree, sem commit)` → `revisor verifica, aprova e move para
-plan/executadas/` → `usuário commita` → `spec-atualizar sintetiza nas specs fixas e remove a plan`
+`revisor escreve plan` → `executor executa (worktree, sem commit)` → `revisor verifica e aprova` → `usuário
+autoriza` → `revisor sintetiza nas specs fixas (plan vira ⚪)` → `usuário commita` → `spec-atualizar
+reverifica e expurga a plan`
 
 Detalhe em [`README.md`](README.md).
