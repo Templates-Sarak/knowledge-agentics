@@ -30,7 +30,7 @@ import {
   createInMemoryStorage,
 } from '../adapters/memory/index.js';
 import { createPostgresAudit, createPostgresRepository } from '../adapters/postgres/index.js';
-import type { Auth } from '../packages/ports/index.js';
+import type { VerificadorDeToken } from '../packages/ports/index.js';
 
 export interface ManifestoDescoberto {
   id: string;
@@ -101,7 +101,7 @@ export function resolveDependencies(modulo: ManifestoDescoberto): Record<string,
  * Auth do sistema. Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem
  * token estao declaradas em `publicRoutes` de cada modulo, e so elas passam.
  */
-export function resolveAuth(): Auth {
+export function resolveAuth(): VerificadorDeToken {
   return createDenyingAuth();
 }
 
@@ -124,7 +124,7 @@ export function verifyRoutesUnique(modulos: ManifestoDescoberto[]): void {
 
 /** O que se espera de `api/src/index.*` de um modulo — o mesmo `createApp` que os testes de contrato usam. */
 interface ModuloApi {
-  createApp(opcoes: { deps: Record<string, unknown>; auth: Auth; raiz: string }): Express;
+  createApp(opcoes: { deps: Record<string, unknown>; auth: VerificadorDeToken; raiz: string }): Express;
 }
 
 /**

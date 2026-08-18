@@ -11,5 +11,5 @@
  * @returns {Record<string, unknown>}
  */
 export function createAdapter() {
-  throw new Error('TODO: implemente os metodos da porta "<porta>" em adapters/<provedor>/index.js');
+  throw new Error('TODO: implemente os metodos da porta "<porta>" em adapters/<provedor-pasta>/index.js');
 }

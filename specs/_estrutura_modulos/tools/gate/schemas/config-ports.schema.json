@@ -8,7 +8,7 @@
     "relogio": { "type": "string", "minLength": 1 },
     "geradorId": { "type": "string", "minLength": 1 },
     "storage": { "type": "string", "minLength": 1 },
-    "auth": { "type": "string", "minLength": 1 },
+    "verificadorDeToken": { "type": "string", "minLength": 1 },
     "notificador": { "type": "string", "minLength": 1 }
   }
 }

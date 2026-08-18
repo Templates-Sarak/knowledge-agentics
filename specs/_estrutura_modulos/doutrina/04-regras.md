@@ -683,3 +683,32 @@ arquivo até acertar as três formas arriscaria o oposto do que esta regra exist
 histórica correta como se fosse defeito. "Cobertura inventada é pior que lacuna declarada" (§7) — por isso
 o limite fica **declarado**, não a régua forçada. Falso negativo assumido: uma contagem defasada dentro de
 `.md` (fora de `tools/**`) não é pega por esta ferramenta, e continua dependendo de revisão humana.
+
+### Limite declarado — `tools/create-adapter.mjs`, identidade de provedor com hífen (ADR-011)
+
+**Identidade do provedor é SEMPRE kebab-case (`^[a-z][a-z0-9-]*$`, `validarOpcoes`) nos três
+bindings — CLI, `config/ports.json` e a chave string em `FABRICAS` nunca convertem.** O que muda
+por binding é só a REPRESENTAÇÃO FÍSICA (pasta em disco e caminho de import): TS/JS aceitam hífen
+tanto em nome de pasta quanto em chave de objeto CITADA (`'disco-frio': () => criarDiscoFrio()`),
+Python não aceita hífen em `import` nem em nome de pacote — regra da linguagem, não deste gerador —
+então `create-adapter.mjs` converte só a pasta/import Python pra snake_case
+(`adapters/disco_frio/`, `from adapters.disco_frio import DiscoFrio`), preservando a identidade
+kebab na chave (`"disco-frio": DiscoFrio`, `FABRICAS` é `dict[str, ...]`, chave é string, não
+identificador). Achado ① fechado (`ultimas-atualizacoes.md`); a alternativa rejeitada (proibir
+hífen nos três bindings) contradiria a própria mensagem de erro de `validarOpcoes`, que recomenda
+kebab-case.
+
+**A pasta física e a identidade declarada podem divergir (só em Python)** — o TODO gerado
+(`NotImplementedError`) usa um marcador SEPARADO (`<provedor-pasta>`) pra apontar pro caminho real
+em disco, nunca pra identidade; confundir os dois faria o TODO apontar pra uma pasta que não existe.
+
+**`registrarFabricaTs`/`Js`/`Py` escrevem TUDO numa linha só por porta**, sem quebra automática —
+o texto-substituição nunca soube de `printWidth`/coluna 110. Medido ao varrer o vocabulário inteiro
+com provedor kebab-com-hífen (`template-self-test.mjs`, achado ① fechado): mesmo o provedor mais
+curto possível empurra a linha de `FABRICAS`/`composicao.py` além dos 110 caracteres do `ruff` para
+portas que já têm dois provedores registrados (`repositorio`, `auditoria`) — sem folga nenhuma
+mesmo antes do hífen. TS/JS já cobria isso com um passo de `prettier --write` depois do sweep
+(`formatar-adapters`); Python ganhou o equivalente (`ruff format src/composicao.py`,
+`formatar-adapters-py`) na mesma rodada — `create-adapter.mjs` continua deliberadamente não
+formatando o que grava, nos três bindings, pelo mesmo motivo que não roda o gate por regra
+isolada.

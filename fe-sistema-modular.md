@@ -72,8 +72,8 @@ um caminho `specs/_estrutura_modulos/`** — exceto onde o texto declara explici
 
 # 2. Estrutura do módulo
 
-Todo módulo vive em `modules/<id>/` e tem **exatamente** esta árvore. É **fechada**: entrada não prevista
-reprova pela regra `estrutura-estrita`.
+Todo módulo vive em `modules/<id>/` e a árvore é **fechada**: entrada não prevista reprova pela regra
+`estrutura-estrita`. O desenho abaixo é a **estrutura do módulo** — não a allowlist completa.
 
 ```
 modules/<id>/
@@ -93,6 +93,11 @@ modules/<id>/
 ├── web/src/{pages,components,hooks,api-client}/   (só com webPath não-nulo)
 └── generated/               saída de máquina — fora da varredura, entrada declarada
 ```
+
+**A lista normativa é `ENTRADAS_PERMITIDAS`, em `tools/gate/rules/structure.mjs` — nunca este desenho.**
+Além do que está acima, ela admite os arquivos de ambiente e de build que todo módulo real tem
+(`.env`, `.env.example`, `package.json`, `tsconfig.json`, `tsconfig.build.json`, `vitest.config.ts` e os
+equivalentes de cada binding), mais `relatorios/` e `.coverage`, que só nascem depois de rodar cobertura.
 
 **Porta × Gateway é a distinção que mais se erra:** *porta* é **infraestrutura** (banco, fila, storage);
 *gateway* é **outro módulo**. São fronteiras de risco diferentes e por isso ficam em pastas diferentes.
@@ -187,7 +192,7 @@ proibida; falso negativo é tolerável **apenas se declarado** no `04-regras.md`
 |---|---|---|---|
 | **1. O gate** | `node tools/gate/validate.mjs --todos` | o projeto obedece à lei | 0 erros |
 | **2. O gate se testa** | `node tools/gate/tests/run.mjs --binding <b>` | cada regra sabe ficar vermelha | **128/128 · 128/128 · 124/124** |
-| **3. O template se testa** | `npm run autoteste:template` | o template gera projeto que passa na própria cadeia | **3/3 bindings VERDE, 13/13 passos** |
+| **3. O template se testa** | `npm run autoteste:template` | o template gera projeto que passa na própria cadeia | **3/3 bindings VERDE, 21/21 · 21/21 · 21/21 passos** |
 | **4. Toda ferramenta se testa** | `npm run autoteste:tudo` | nenhum `--autoteste` órfão | **18/18** |
 
 **De onde cada uma roda, porque as duas árvores se parecem:** a camada 1 roda **dentro de um projeto
@@ -284,10 +289,10 @@ Vivem em `specs/_estrutura_modulos/tests/` — **exatamente cinco arquivos**:
 
 | Arquivo | O que faz |
 |---|---|
-| `template-self-test.mjs` | a camada 3: gera projeto, cria módulos, roda a cadeia inteira |
+| `template-self-test.mjs` | a camada 3: gera projeto, cria módulos **e um adapter para cada porta do vocabulário**, formata o que gerou (`prettier` em TS/JS, `ruff format` em Python) e roda a cadeia inteira |
 | `run-all-selftests.mjs` | a camada 4: descobre e roda todo `--autoteste`, com catraca de órfão |
 | `verify-map.mjs` | prova que todo `§` citado no mapa instalado resolve a um título real |
-| `verify-catalog.mjs` | a catraca lei ↔ código: os ids do `engine.mjs` contra as linhas de tabela do `04-regras.md`, e (opcional) nenhuma contagem defasada em `tools/**` |
+| `verify-catalog.mjs` | a catraca lei ↔ código: os ids do `engine.mjs` contra as linhas de tabela do `04-regras.md`, (opcional) nenhuma contagem defasada em `tools/**`, e (`--conferir-vocabulario`) as cinco fontes do vocabulário de portas batendo |
 | `verify-routine.mjs` | o roteiro do §11.2 inteiro, como um comando — cada `# esperado` do roteiro virou comparação de verdade |
 
 **Um sexto arquivo aqui é achado, não normalidade.**
@@ -563,12 +568,16 @@ garantia de que os dois vão divergir — e é o defeito que este template exist
 
 No projeto gerado, tudo de `doutrina/` está em `specs/arquitetura/`, inclusive o mapa.
 
-## 10.4 O cache do plugin *(pendência operacional conhecida)*
+## 10.4 O cache do plugin
 
 As skills são carregadas de `~/.claude/plugins/cache/knowledge-agentics/sarak/<versão>/`, **não** do
-repositório. Conserto no repositório **não chega ao usuário** até o cache sincronizar. Verificação
-qualquer que instale "pela skill" precisa **confirmar a sincronização antes**, ou estará testando o
-passado.
+repositório — então conserto no repositório só alcança o usuário depois que o cache sincroniza.
+
+**Onde o hook local está instalado, isso é automático:** `.git/hooks/pre-commit` roda
+`python plugin/sync_ide.py --target all` a cada commit, e o cache acompanha sozinho. **Mas esse hook
+vive em `.git/hooks/`, que é local e NÃO versionado** — clone novo, outra máquina ou runner de CI não o
+têm, e ali o cache fica parado até alguém rodar o `sync_ide.py` à mão. Verificação que instale "pela
+skill" precisa **confirmar a sincronização antes**, ou estará testando o passado.
 
 ---
 
@@ -614,7 +623,7 @@ done
 # esperado: 128/128 · 128/128 · 124/124, 76 regras com caso
 
 npm run autoteste:tudo        # [base] camada 4 — exit 0, "18/18", zero ÓRFÃO
-npm run autoteste:template    # [base] camada 3 — exit 0, "3/3 bindings verdes", 13/13 passos
+npm run autoteste:template    # [base] camada 3 — exit 0, "3/3 bindings verdes", 21/21 · 21/21 · 21/21 passos
 npm run typecheck:tools       # [base] exit 0, o tsc sem diagnóstico algum
                               #        (o npm imprime 2 linhas de preâmbulo — não são saída do tsc)
 
@@ -639,6 +648,11 @@ node specs/_estrutura_modulos/tests/verify-catalog.mjs --conferir \
   specs/_estrutura_modulos/doutrina/04-regras.md specs/_estrutura_modulos/tools/gate/engine.mjs \
   specs/_estrutura_modulos/tools
 echo "exit=$?"     # esperado: 0, "catalogo: OK — 76 ids, lei e codigo batem"
+
+# [base] a mesma catraca, agora sobre o vocabulário de portas — cinco fontes que o repetem à mão
+# (ports-vocabulary.mjs, os dois schemas gerados dele, os três packages/ports/index.* dos bindings)
+node specs/_estrutura_modulos/tests/verify-catalog.mjs --conferir-vocabulario specs/_estrutura_modulos
+echo "exit=$?"     # esperado: 0, "vocabulario: OK — 7 portas, as cinco fontes batem"
 ```
 
 ⚠️ **Não conte escopo por `grep`.** `grep -ho "escopo: '…'" rules/*.mjs | wc -l` devolve **78**, não

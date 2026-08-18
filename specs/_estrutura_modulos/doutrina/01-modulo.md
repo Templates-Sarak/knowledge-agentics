@@ -205,7 +205,7 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 | `relogio` | `now()` |
 | `geradorId` | identificadores e hash |
 | `storage` | gravar/ler arquivo |
-| `auth` | verificar token e devolver claims |
+| `verificadorDeToken` | verificar token e devolver claims |
 | `notificador` | e-mail / mensagem |
 
 `relogio` e `geradorId` não são preciosismo: são o que torna o `core/` determinístico e testável. Sem elas,

@@ -42,7 +42,7 @@ export class ErroPorta extends Error {
  * lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
  * mantenha as duas iguais a mao. `fila` NAO ESTA no vocabulario: arrasta retry,
  * dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz
- * que o template nao escolhe.
+ * que o template nao escolhe. `verificadorDeToken` era `auth` ate o ADR-010.
  */
 export const PORTAS_CONHECIDAS = [
   'repositorio',
@@ -50,7 +50,7 @@ export const PORTAS_CONHECIDAS = [
   'relogio',
   'geradorId',
   'storage',
-  'auth',
+  'verificadorDeToken',
   'notificador',
 ] as const;
 
@@ -90,7 +90,7 @@ export interface GeradorId {
   hash(): string;
 }
 
-export interface Auth {
+export interface VerificadorDeToken {
   verify(token: string): Promise<{ permissoes: string[] } | null>;
 }
 

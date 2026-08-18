@@ -10,5 +10,5 @@
  * (packages/ports/index.ts) depois de implementar os metodos dela aqui.
  */
 export function createAdapter(): Record<string, unknown> {
-  throw new Error('TODO: implemente os metodos da porta "<porta>" em adapters/<provedor>/index.ts');
+  throw new Error('TODO: implemente os metodos da porta "<porta>" em adapters/<provedor-pasta>/index.ts');
 }

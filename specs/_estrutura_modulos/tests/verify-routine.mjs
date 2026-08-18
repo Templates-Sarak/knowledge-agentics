@@ -196,6 +196,12 @@ function passosCatalogo() {
         join(RAIZ_TEMPLATE, 'tools'),
       ], RAIZ_BASE)),
     },
+    {
+      // PORTAS_CONHECIDAS duplicada a mao em cinco lugares, nada comparava — a mesma disciplina
+      // da checagem de ids acima, aplicada ao vocabulario de portas em vez do catalogo de regras.
+      nome: 'catalogo — vocabulario de portas identico nas cinco fontes',
+      fn: () => deProcesso(rodarNode([join(AQUI, 'verify-catalog.mjs'), '--conferir-vocabulario', RAIZ_TEMPLATE], RAIZ_BASE)),
+    },
   ];
 }
 

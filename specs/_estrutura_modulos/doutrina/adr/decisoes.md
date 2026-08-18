@@ -253,3 +253,96 @@ esquecimento.
 vigente (§3: "português no domínio, nas rotas e nos dados") e o próprio ADR-001 — regra de negócio duplicada
 por módulo já é português por natureza; traduzir a camada de domínio traduziria o conteúdo do negócio, não
 ajustaria a árvore — muda o que o módulo significa, não como ele é organizado.
+
+---
+
+## ADR-010 — A porta `auth` virou `verificadorDeToken`
+
+**Status:** 🟢 Aceito
+
+**Contexto.** A porta `auth` existia desde o início do vocabulário (`tools/gate/ports-vocabulary.mjs`), mas
+a interface que ela nomeia tem **um único método**: `verify(token) → claims | null`. "Auth" é um
+guarda-chuva maior do que isso — acomoda também *"gerenciar usuários"* (cadastro, senha, sessão), que na
+arquitetura Sarak **não é porta**: é módulo à parte, alcançado por gateway, nunca injetado como
+infraestrutura (ADR-002, "porta e gateway são conceitos distintos"). O nome também colidia, por
+coincidência de rótulo, com a auth **única** do sistema — a interface homônima de
+`_template/api/src/middlewares/index.ts` (e o equivalente Python, `_template/core/ports/__init__.py`),
+injetada em todo `createApp` via `resolveAuth()`/`resolve_auth()`. As duas são estruturalmente idênticas
+hoje (mesmo método `verify`), mas são declarações **independentes** com papéis diferentes: uma é a porta
+**plugável** (escolhida por `config/ports.json`, como qualquer outra), a outra é o contrato **fixo** que
+todo módulo usa, sempre a mesma implementação, nunca escolhida por módulo. Dois `Auth` na mesma árvore,
+com origens diferentes, é o tipo de ambiguidade que o vocabulário existe para evitar.
+
+**Decisão.** Renomear a porta e a interface para `verificadorDeToken`/`VerificadorDeToken` — o nome
+descreve exatamente o que o método único faz. Não muda comportamento nenhum: nenhum provedor de `auth`
+existia em `FABRICAS` antes desta decisão (era a única porta do vocabulário sem entrada — o "LIMITE
+CONHECIDO" que `create-adapter.mjs` já documentava), e a auth da fiação (`resolveAuth()`,
+`createDenyingAuth()`, o middleware `authentication`) fica exatamente como estava — só a **anotação de
+tipo** que referenciava a porta (`import type { Auth } from '../packages/ports/index.js'`, em
+`composicao.ts` e `adapters/memory/index.ts`) segue o nome novo, porque a interface que ela aponta mudou
+de nome, não porque a fiação mudou de comportamento.
+
+**Alternativas descartadas.**
+- **Remover `auth`/`verificadorDeToken` do vocabulário.** Ao contrário de `fila` (que arrasta decisão de
+  topologia sem interface pronta), esta porta TEM interface completa e caso de uso claro — verificar
+  token contra um provedor (JWT local, OAuth, serviço externo). Remover perderia capacidade real sem
+  ganho nenhum.
+- **Manter `auth` e só documentar a ambiguidade.** Documentar uma colisão de nome não a desfaz: o próximo
+  autor ainda escreve `import { Auth } from 'packages/ports'` esperando a porta e tropeça na auth da
+  fiação, ou o inverso. O nome errado continua induzindo o erro errado — só que agora com uma nota ao
+  lado dizendo que é sabido.
+
+**Consequências.** O vocabulário de portas (`tools/gate/ports-vocabulary.mjs`, os dois schemas gerados, e
+os três `packages/ports/index.*`) usa `verificadorDeToken`; `PORTAS_CONHECIDAS` continua com **sete**
+entradas — renomeação, não remoção nem adição. `create-adapter.mjs <porta> <provedor>` aceita
+`verificadorDeToken` em vez de `auth`; registrar um provedor novo em `FABRICAS` sem nada consultá-lo hoje
+continua sendo característica, não bug — o mesmo "LIMITE CONHECIDO" de antes, só com o nome novo. **O
+precedente que importa:** como `fila` já registrava, vocabulário de porta só muda por decisão **escrita**
+— nunca por edição silenciosa de um dos cinco lugares que o repetem, e é o que `tests/verify-catalog.mjs
+--conferir-vocabulario` passa a cobrar por máquina.
+
+## ADR-011 — Provedor kebab-case com hífen: identidade fixa, pasta/import Python convertidos
+
+**Status:** 🟢 Aceito
+
+**Contexto.** `create-adapter.mjs <porta> <provedor>` aceita provedor kebab-case com hífen
+(`validarOpcoes`, `/^[a-z][a-z0-9-]*$/`, e a própria mensagem de erro recomenda esse formato) mas o
+código que ele GERA quebrava com hífen nos três bindings, sempre saindo 0: em TS/JS, a chave de
+objeto que ele escreve na âncora "porta existente" nunca era citada
+(`storage: { memoria: ..., disco-frio: () => criarDiscoFrio() }` — `-` fora de string é erro de
+sintaxe). Em Python, o import que ele registra usa o provedor cru no caminho pontilhado
+(`from adapters.disco-frio import DiscoFrio`) — `-` não é caractere válido de identificador, e
+Python não tem alternativa: nome de módulo/pacote com hífen é impossível de importar, regra da
+linguagem, não deste gerador. Achado ① (`ultimas-atualizacoes.md`).
+
+**Decisão.** Consertar os dois lados sem tocar a identidade do provedor:
+- **TS/JS** — citar a chave (`'${provedor}': () => ${simbolo}()`) nas duas âncoras
+  ("porta existente" e "porta nova") de `registrarFabricaTs`/`registrarFabricaJs`. Citar um
+  identificador que já era válido continua legal em JS/TS — provedor sem hífen não regride.
+- **Python** — a pasta do adapter e o caminho de `import` convertem hífen pra underscore
+  (`pastaAdapter`: `disco-frio` → pasta `adapters/disco_frio/`, `from adapters.disco_frio import
+  DiscoFrio`), mas a chave em `FABRICAS` continua kebab (`"disco-frio": DiscoFrio`) — é uma
+  **string**, não um identificador, então não carrega a mesma restrição do `import`. O TODO gerado
+  (`NotImplementedError`) usa um marcador separado (`<provedor-pasta>`) pra apontar pro caminho
+  físico real, nunca pra identidade — evita o TODO apontando pra uma pasta que não existe.
+
+**Alternativas descartadas.**
+- **Proibir hífen em provedor, nos três bindings.** Mais simples — rejeita na validação, acaba o
+  defeito. Descartada porque contradiz a própria mensagem de erro de `validarOpcoes`
+  ("use kebab-case minusculo"; kebab-case é, por definição, hifenizado) — corrigir só o Python
+  proibindo hífen também nos outros dois jogaria fora a correção de TS/JS pra evitar um problema
+  que só existe em Python.
+- **Não converter a pasta Python, exigir provedor sem hífen só pra esse binding.** Rejeitada pelo
+  mesmo motivo: aceitar hífen em TS/JS e rejeitar em Python pro MESMO parâmetro (`<provedor>` da
+  mesma CLI) é a inconsistência que este ADR existe pra evitar — identidade de provedor precisa
+  significar a mesma coisa nos três bindings.
+
+**Consequências.** `pastaAdapter(binding, provedor)` é a única função nova — kebab intacto em
+TS/JS, hífen→underscore só em Python. `template-self-test.mjs` (`provedorDoIndice`) passou a
+gerar provedor com hífen (`prov-<letra>`, todo o vocabulário) pra exercitar o caminho consertado —
+antes disso a rede evitava hífen de propósito, o que escondia o próprio achado ①. Sweeping o
+vocabulário inteiro com provedor mais longo (hífen incluso) expôs um segundo achado, menor e
+independente: `registrarFabricaPy`/`Ts`/`Js` escrevem tudo numa linha só, sem quebra automática, e
+isso já estourava os 110 caracteres do `ruff` em Python pra porta com dois provedores — sem folga
+nenhuma mesmo antes do hífen. Python ganhou o mesmo passo de formatação que TS/JS já tinha
+(`prettier --write` → `ruff format`), fechado na mesma rodada, documentado em 04-regras.md §7.2.

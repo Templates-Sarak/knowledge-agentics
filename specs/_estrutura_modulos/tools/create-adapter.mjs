@@ -16,11 +16,12 @@
  * evitaria. O molde importa nada, devolve um tipo genérico e lança "TODO: implemente" nomeando a
  * porta e o arquivo; o gate NÃO cobra método (não é AST), só isolamento e forma.
  *
- * LIMITE CONHECIDO: `auth` é resolvida por `resolverAuth()`/`resolver_auth()`, não por `FABRICAS` —
- * é a auth ÚNICA do sistema, nunca por-módulo. Registrar um adapter para a porta "auth" aqui
- * ACRESCENTA a entrada em `FABRICAS` (coerente com o vocabulário), mas nada a consulta hoje; trocar
- * o provedor de auth continua sendo editar `resolverAuth()` à mão. Não é bug deste script — é a
- * mesma arquitetura de antes dele.
+ * LIMITE CONHECIDO: `verificadorDeToken` é resolvida por `resolveAuth()`/`resolve_auth()`, não por
+ * `FABRICAS` — é a auth ÚNICA do sistema, nunca por-módulo. Registrar um adapter para a porta
+ * "verificadorDeToken" aqui ACRESCENTA a entrada em `FABRICAS` (coerente com o vocabulário), mas
+ * nada a consulta hoje; trocar o provedor de auth continua sendo editar `resolveAuth()` à mão. Não
+ * é bug deste script — é a mesma arquitetura de antes dele. Nome da porta por ADR-010
+ * (`specs/adr/000-decisoes-do-template.md`) — era `auth`, e colidia com a auth da fiação.
  */
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -97,14 +98,42 @@ function paraPascalCase(kebab) {
   return kebab.split('-').map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1)).join('');
 }
 
-function substituirMarcadores(texto, porta, provedor) {
-  return texto.replaceAll('<porta>', porta).replaceAll('<provedor>', provedor);
+/**
+ * Nome de pasta/import do adapter — kebab-case em TS/JS (onde funciona: nome de pasta e chave de
+ * objeto CITADA aceitam hífen), snake_case só em Python, onde o hífen não é uma preferência de
+ * estilo e sim ilegal em `import`/nome de módulo (regra da linguagem, não deste script). A
+ * IDENTIDADE do provedor (o que vai em `config/ports.json`, na chave string de `FABRICAS` e na
+ * mensagem pro usuário) continua kebab-case nos três bindings — só a pasta física em disco e o
+ * caminho de import Python sofrem a conversão. ADR-011.
+ */
+function pastaAdapter(binding, provedor) {
+  return binding === 'python' ? provedor.replaceAll('-', '_') : provedor;
 }
 
-/** O nome fixo que o molde usa — nunca marcador, para o arquivo em disco continuar sintaticamente
+/**
+ * `<provedor-pasta>` é um marcador À PARTE de `<provedor>`: identidade (nome do adapter, "Adapter
+ * disco-frio para a porta...") continua kebab-case sempre, mas a referência a CAMINHO EM DISCO
+ * (`adapters/<pasta>/__init__.py` no TODO do molde Python) precisa apontar pro nome de pasta real
+ * — que diverge da identidade quando `pastaAdapter` converte pra snake_case. Sem o marcador
+ * separado, o TODO gerado apontaria pra uma pasta que não existe.
+ */
+function substituirMarcadores(texto, porta, provedor, pasta) {
+  return texto.replaceAll('<porta>', porta).replaceAll('<provedor-pasta>', pasta).replaceAll('<provedor>', provedor);
+}
+
+/**
+ * O nome fixo que o molde usa — nunca marcador, para o arquivo em disco continuar sintaticamente
  * válido SEMPRE, mesmo sem substituição (a mesma garantia de `modules/_template`, cujos marcadores
- * vivem só em comentário/string). Este script troca o nome pelo do provedor NA CÓPIA, não no molde. */
-const NOME_GENERICO = { typescript: 'criarAdapter', javascript: 'criarAdapter', python: 'AdapterPendente' };
+ * vivem só em comentário/string). Este script troca o nome pelo do provedor NA CÓPIA, não no molde.
+ *
+ * `createAdapter`, não `criarAdapter`: é o que os moldes `_adapter/index.{ts,js}` REALMENTE
+ * exportam (medido) — o molde é a verdade (mesmo precedente das âncoras de `registrarFabrica*`).
+ * A forma antiga (`criarAdapter`) nunca casava com `\breplaceAll\b`, e a rescrita nunca disparava:
+ * TODO adapter TS/JS já criado manteve `export function createAdapter` no arquivo, enquanto
+ * `composicao.*` importava o nome CORRETO (`criarG`, calculado, nunca escrito) — `tsc` reprova ao
+ * primeiro adapter novo, mas nada rodava `tsc` depois de `create-adapter.mjs` até esta rede existir.
+ */
+const NOME_GENERICO = { typescript: 'createAdapter', javascript: 'createAdapter', python: 'AdapterPendente' };
 
 function nomeDoProvedor(binding, provedor) {
   const pascal = paraPascalCase(provedor);
@@ -117,9 +146,10 @@ function copiarEAdaptarMolde(molde, destino, opcoes) {
 
   const nomeNovo = nomeDoProvedor(opcoes.binding, opcoes.provedor);
   const generico = NOME_GENERICO[opcoes.binding];
+  const pasta = pastaAdapter(opcoes.binding, opcoes.provedor);
   for (const nome of readdirSync(destino)) {
     const caminho = join(destino, nome);
-    const substituido = substituirMarcadores(lerTexto(caminho), opcoes.porta, opcoes.provedor)
+    const substituido = substituirMarcadores(lerTexto(caminho), opcoes.porta, opcoes.provedor, pasta)
       .replaceAll(new RegExp(`\\b${generico}\\b`, 'g'), nomeNovo);
     writeFileSync(caminho, substituido, 'utf8');
   }
@@ -142,11 +172,21 @@ function registrarFabricaTs(conteudo, { porta, provedor, nomeSimbolo, caminhoImp
 
   const linhaDaPorta = new RegExp(`(  ${porta}: \\{ [^}]*)( \\},\\n)`);
   if (linhaDaPorta.test(comImport)) {
-    return comImport.replace(linhaDaPorta, `$1, ${provedor}: () => ${nomeSimbolo}()$2`);
+    // Chave CITADA: `provedor` é kebab-case (validarOpcoes aceita hífen, e a mensagem de erro da
+    // ferramenta recomenda o formato), e chave de objeto sem aspas com `-` é erro de sintaxe —
+    // `storage: { memoria: ..., disco-frio: ... }` nunca parseava. Citar um identificador que já
+    // era válido continua legal em JS/TS, então provedores sem hífen não regridem.
+    return comImport.replace(linhaDaPorta, `$1, '${provedor}': () => ${nomeSimbolo}()$2`);
   }
-  const aberturaObjeto = /(const FABRICAS: Record<string, Record<string, \(\) => unknown>> = \{\n)/;
+  // `[^>]*` no lugar da assinatura do parâmetro (em vez de `\(\)` fixo): o molde real declara
+  // `(modulo: ManifestoDescoberto) => unknown`, não `() => unknown` — a âncora antiga, presa à
+  // forma SEM parâmetro, nunca casava contra o molde de verdade. Medido: a única porta que hoje
+  // alcança este ramo (`FABRICAS` já tem as outras seis) sai com "nao encontrei onde registrar a
+  // fabrica", sempre. `[^>]*` tolera qualquer assinatura de parâmetro futura sem reabrir o mesmo
+  // drift — só não atravessa o `>>` de fechamento do genérico.
+  const aberturaObjeto = /(const FABRICAS: Record<string, Record<string, [^>]*=> unknown>> = \{\n)/;
   if (!aberturaObjeto.test(comImport)) return null;
-  return comImport.replace(aberturaObjeto, `$1  ${porta}: { ${provedor}: () => ${nomeSimbolo}() },\n`);
+  return comImport.replace(aberturaObjeto, `$1  ${porta}: { '${provedor}': () => ${nomeSimbolo}() },\n`);
 }
 
 function registrarFabricaJs(conteudo, { porta, provedor, nomeSimbolo, caminhoImport }) {
@@ -158,17 +198,24 @@ function registrarFabricaJs(conteudo, { porta, provedor, nomeSimbolo, caminhoImp
 
   const linhaDaPorta = new RegExp(`(  ${porta}: \\{ [^}]*)( \\},\\n)`);
   if (linhaDaPorta.test(comImport)) {
-    return comImport.replace(linhaDaPorta, `$1, ${provedor}: () => ${nomeSimbolo}()$2`);
+    // Mesma razão da versão TS acima: chave CITADA, porque `provedor` pode ter hífen.
+    return comImport.replace(linhaDaPorta, `$1, '${provedor}': () => ${nomeSimbolo}()$2`);
   }
   const aberturaObjeto = /(const FABRICAS = \{\n)/;
   if (!aberturaObjeto.test(comImport)) return null;
-  return comImport.replace(aberturaObjeto, `$1  ${porta}: { ${provedor}: () => ${nomeSimbolo}() },\n`);
+  return comImport.replace(aberturaObjeto, `$1  ${porta}: { '${provedor}': () => ${nomeSimbolo}() },\n`);
 }
 
 function registrarFabricaPy(conteudo, { porta, provedor, nomeSimbolo, caminhoImport }) {
-  const linhaDaImportacao = ')\n\n# Fabrica de adapter';
+  // A âncora e o ULTIMO import antes do comentario, seja ele qual for — nao mais o `)` do import
+  // multilinha de `adapters.memory` especificamente. O molde real ja tem uma SEGUNDA linha de
+  // import entre os dois (`from adapters.postgres import ...`), e a ancora antiga, presa ao `)`,
+  // nunca casava contra o molde de verdade: `create-adapter.mjs --binding python` falhava para
+  // TODA porta, sempre (medido, ultimas-atualizacoes.md). Ancorar na linha em branco + comentario,
+  // em vez do caractere que a precede, sobrevive a uma terceira linha de import que venha a existir.
+  const linhaDaImportacao = '\n\n# Fabrica de adapter';
   const comImport = conteudo.includes(linhaDaImportacao)
-    ? conteudo.replace(linhaDaImportacao, `)\nfrom ${caminhoImport} import ${nomeSimbolo}\n\n# Fabrica de adapter`)
+    ? conteudo.replace(linhaDaImportacao, `\nfrom ${caminhoImport} import ${nomeSimbolo}\n\n# Fabrica de adapter`)
     : null;
   if (comImport === null) return null;
 
@@ -176,7 +223,11 @@ function registrarFabricaPy(conteudo, { porta, provedor, nomeSimbolo, caminhoImp
   if (linhaDaPorta.test(comImport)) {
     return comImport.replace(linhaDaPorta, `$1, "${provedor}": ${nomeSimbolo}$2`);
   }
-  const aberturaObjeto = /(FABRICAS: dict\[str, dict\[str, Callable\[\[\], Any\]\]\] = \{\n)/;
+  // Mesmo drift do TS (linha 147, `[^>]*`): o molde real declara
+  // `Callable[[dict[str, Any]], Any]` (o adapter recebe o manifesto), nao `Callable[[], Any]`
+  // (sem parametro) — a ancora antiga so casava a forma vazia. `.*` no lugar da lista de
+  // parametros tolera qualquer assinatura, presente ou futura, sem reabrir o mesmo drift.
+  const aberturaObjeto = /(FABRICAS: dict\[str, dict\[str, Callable\[.*\]\]\] = \{\n)/;
   if (!aberturaObjeto.test(comImport)) return null;
   return comImport.replace(aberturaObjeto, `$1    "${porta}": {"${provedor}": ${nomeSimbolo}},\n`);
 }
@@ -190,14 +241,15 @@ function registrarFabrica(raizProjeto, opcoes, nomeGerado) {
   const caminho = caminhoDeComposicao(raizProjeto, opcoes.binding);
   const conteudo = lerTexto(caminho);
 
+  const pasta = pastaAdapter(opcoes.binding, opcoes.provedor);
   const atualizado = opcoes.binding === 'python'
     ? registrarFabricaPy(conteudo, {
       porta: opcoes.porta, provedor: opcoes.provedor, nomeSimbolo: nomeGerado,
-      caminhoImport: `adapters.${opcoes.provedor}`,
+      caminhoImport: `adapters.${pasta}`,
     })
     : (opcoes.binding === 'typescript' ? registrarFabricaTs : registrarFabricaJs)(conteudo, {
       porta: opcoes.porta, provedor: opcoes.provedor, nomeSimbolo: nomeGerado,
-      caminhoImport: `../adapters/${opcoes.provedor}/${opcoes.binding === 'python' ? '__init__.py' : 'index.js'}`,
+      caminhoImport: `../adapters/${pasta}/index.js`,
     });
 
   if (atualizado === null) {
@@ -228,25 +280,22 @@ function rodarGate(raizProjeto) {
 // contra fixtures em memória, sem tocar disco. Precedente de `verify-map.mjs`/`verify-catalog.mjs`.
 //
 // As fixtures de `registrarFabrica*` são cópias FIÉIS do trecho real de cada `bindings/<b>/root/
-// src/composicao.*` — não simplificadas — porque o valor deste autoteste é justamente flagrar
-// quando o ANCORA do regex e o arquivo real se separam. Foi rodando este autoteste contra o texto
-// real, antes do refactor de §4.7 (`max-params`), que os dois bugs abaixo apareceram — nenhum deles
-// é do refactor, os dois já existiam:
+// src/composicao.*` — não simplificadas — porque o valor deste autoteste é justamente flagrar quando
+// a ÂNCORA do regex e o arquivo real se separam. Foi rodando este autoteste contra o texto real,
+// antes do refactor de §4.7 (`max-params`), que dois bugs pré-existentes apareceram — nenhum era do
+// refactor, e os dois foram corrigidos nesta mesma rodada (Onda 1 e Onda 2 de
+// `ultimas-atualizacoes.md`):
 //
 // (1) TS: o tipo de `FABRICAS` no molde real é `Record<string, Record<string, (modulo:
 //     ManifestoDescoberto) => unknown>>`, mas a âncora de "porta nova" em `registrarFabricaTs`
-//     ainda espera `() => unknown` (sem parâmetro) — drift entre o gerador e o molde. Medido: `node
-//     tools/create-adapter.mjs auth <provedor>` (a ÚNICA porta de `PORTAS_CONHECIDAS` sem entrada
-//     em `FABRICAS` — as outras seis já têm) sai com "nao encontrei onde registrar a fabrica".
-// (2) Python: a âncora de importação em `registrarFabricaPy` é `)\n\n# Fabrica de adapter`, e
-//     pressupõe o `)` do import multilinha de `adapters.memory` seguido direto de linha em branco.
-//     O molde real tem uma SEGUNDA linha de import (`from adapters.postgres import ...`) entre os
-//     dois — a âncora nunca casa. Medido: `node tools/create-adapter.mjs repositorio <provedor>
-//     --binding python` falha SEMPRE, para QUALQUER porta, não só `auth`.
-//
-// Os dois ficam CARACTERIZADOS aqui (o autoteste prova o comportamento de HOJE, bug incluído) e
-// registrados em `ultimas-atualizacoes.md` — não são desta mudança, e "refactor é comportamento
-// idêntico" (não conserta bug de vizinho a troco de nada).
+//     esperava `() => unknown` (sem parâmetro) — drift entre o gerador e o molde. Consertado:
+//     `[^>]*` no lugar da assinatura do parâmetro, tolerante à forma sem reabrir o mesmo drift.
+// (2) Python: a âncora de importação em `registrarFabricaPy` era `)\n\n# Fabrica de adapter`, presa
+//     ao `)` do import multilinha de `adapters.memory` seguido direto de linha em branco. O molde
+//     real tem uma SEGUNDA linha de import (`from adapters.postgres import ...`) entre os dois, e a
+//     âncora nunca casava — `--binding python` falhava SEMPRE, para qualquer porta. Consertado:
+//     âncora movida para a linha em branco + comentário, que sobrevive a uma terceira linha de
+//     import que venha a existir.
 // ================================================================================================
 
 const FIXTURE_TS_MOLDE_REAL = [
@@ -313,43 +362,71 @@ function casosPuros() {
     { nome: 'nomeDoProvedor: typescript prefixa "criar"', fn: () => nomeDoProvedor('typescript', 'okta') === 'criarOkta' },
     { nome: 'nomeDoProvedor: javascript prefixa "criar"', fn: () => nomeDoProvedor('javascript', 'okta') === 'criarOkta' },
     { nome: 'nomeDoProvedor: python e so PascalCase, sem prefixo', fn: () => nomeDoProvedor('python', 'okta') === 'Okta' },
-    { nome: 'substituirMarcadores: troca <porta> e <provedor>', fn: () => substituirMarcadores('<porta> e <provedor>', 'auth', 'okta') === 'auth e okta' },
+    { nome: 'substituirMarcadores: troca <porta> e <provedor>', fn: () => substituirMarcadores('<porta> e <provedor>', 'auth', 'okta', 'okta') === 'auth e okta' },
+    {
+      nome: 'substituirMarcadores: <provedor-pasta> troca separado de <provedor> (identidade x caminho)',
+      fn: () => substituirMarcadores('<provedor> em <provedor-pasta>', 'x', 'disco-frio', 'disco_frio') === 'disco-frio em disco_frio',
+    },
+    { nome: 'pastaAdapter: python converte hifen -> underscore', fn: () => pastaAdapter('python', 'disco-frio') === 'disco_frio' },
+    { nome: 'pastaAdapter: typescript/javascript mantem kebab-case', fn: () => pastaAdapter('typescript', 'disco-frio') === 'disco-frio' && pastaAdapter('javascript', 'disco-frio') === 'disco-frio' },
   ];
 }
 
-function casosRegistroTsJs() {
+function casosRegistroTs() {
   return [
     {
       nome: 'registrarFabricaTs: porta EXISTENTE ganha provedor novo na mesma linha, mais o import',
       fn: () => {
         const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
         return r !== null
-          && r.includes('repositorio: { memoria: () => createRepository(), dynamo: () => criarDynamo() },')
+          && r.includes("repositorio: { memoria: () => createRepository(), 'dynamo': () => criarDynamo() },")
           && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
       },
     },
     {
-      nome: 'registrarFabricaTs: porta NOVA ("auth") -> null hoje (bug 1, medido — ver cabecalho)',
-      fn: () => registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('auth', 'okta', 'criarOkta', '../adapters/okta/index.js')) === null,
+      nome: 'registrarFabricaTs: porta NOVA ("verificadorDeToken") registra (bug 1 consertado — ver cabecalho)',
+      fn: () => {
+        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('verificadorDeToken', 'okta', 'criarOkta', '../adapters/okta/index.js'));
+        return r !== null && r.includes("verificadorDeToken: { 'okta': () => criarOkta() },");
+      },
     },
     {
       nome: 'registrarFabricaTs: sem a linha de import -> null',
       fn: () => registrarFabricaTs('nada de import aqui', paramsFabrica('repositorio', 'x', 'y', 'z')) === null,
     },
     {
+      nome: 'registrarFabricaTs: provedor com hifen -> chave CITADA (bug 3 consertado — ver cabecalho)',
+      fn: () => {
+        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repositorio', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
+        return r !== null && r.includes("repositorio: { memoria: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
+      },
+    },
+  ];
+}
+
+function casosRegistroJs() {
+  return [
+    {
       nome: 'registrarFabricaJs: porta EXISTENTE ganha provedor novo, mais o import',
       fn: () => {
         const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
         return r !== null
-          && r.includes('repositorio: { memoria: () => createRepository(), dynamo: () => criarDynamo() },')
+          && r.includes("repositorio: { memoria: () => createRepository(), 'dynamo': () => criarDynamo() },")
           && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
       },
     },
     {
-      nome: 'registrarFabricaJs: porta NOVA ("auth") funciona — sem assinatura de tipo para desalinhar',
+      nome: 'registrarFabricaJs: porta NOVA ("verificadorDeToken") funciona — sem assinatura de tipo para desalinhar',
       fn: () => {
-        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('auth', 'okta', 'criarOkta', '../adapters/okta/index.js'));
-        return r !== null && r.includes('auth: { okta: () => criarOkta() },');
+        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('verificadorDeToken', 'okta', 'criarOkta', '../adapters/okta/index.js'));
+        return r !== null && r.includes("verificadorDeToken: { 'okta': () => criarOkta() },");
+      },
+    },
+    {
+      nome: 'registrarFabricaJs: provedor com hifen -> chave CITADA (bug 3 consertado — ver cabecalho)',
+      fn: () => {
+        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repositorio', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
+        return r !== null && r.includes("repositorio: { memoria: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
       },
     },
   ];
@@ -358,11 +435,23 @@ function casosRegistroTsJs() {
 function casosRegistroPy() {
   return [
     {
-      nome: 'registrarFabricaPy: molde REAL de hoje -> null mesmo com porta existente (bug 2, medido)',
-      fn: () => registrarFabricaPy(FIXTURE_PY_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'RepositorioDynamo', 'adapters.dynamo')) === null,
+      nome: 'registrarFabricaPy: molde REAL de hoje, porta existente, REGISTRA (bug 2 consertado — ver cabecalho)',
+      fn: () => {
+        const r = registrarFabricaPy(FIXTURE_PY_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'RepositorioDynamo', 'adapters.dynamo'));
+        return r !== null
+          && r.includes('"repositorio": {"memory": lambda modulo: RepositorioEmMemoria(), "dynamo": RepositorioDynamo}')
+          && r.includes('from adapters.dynamo import RepositorioDynamo');
+      },
     },
     {
-      nome: 'registrarFabricaPy: com a ancora isolada (sem o import extra), a mesma porta REGISTRA',
+      nome: 'registrarFabricaPy: molde REAL de hoje, porta NOVA ("verificadorDeToken"), tambem registra',
+      fn: () => {
+        const r = registrarFabricaPy(FIXTURE_PY_MOLDE_REAL, paramsFabrica('verificadorDeToken', 'okta', 'VerificadorOkta', 'adapters.okta'));
+        return r !== null && r.includes('"verificadorDeToken": {"okta": VerificadorOkta}');
+      },
+    },
+    {
+      nome: 'registrarFabricaPy: molde sem segunda linha de import (variante mais simples) tambem registra',
       fn: () => {
         const r = registrarFabricaPy(FIXTURE_PY_ANCORA_ISOLADA, paramsFabrica('repositorio', 'dynamo', 'RepositorioDynamo', 'adapters.dynamo'));
         return r !== null
@@ -370,18 +459,11 @@ function casosRegistroPy() {
           && r.includes('from adapters.dynamo import RepositorioDynamo');
       },
     },
-    {
-      nome: 'registrarFabricaPy: porta nova, com a ancora isolada, tambem registra',
-      fn: () => {
-        const r = registrarFabricaPy(FIXTURE_PY_ANCORA_ISOLADA, paramsFabrica('auth', 'okta', 'AuthOkta', 'adapters.okta'));
-        return r !== null && r.includes('"auth": {"okta": AuthOkta}');
-      },
-    },
   ];
 }
 
 function casosDeAutoteste() {
-  return [...casosPuros(), ...casosRegistroTsJs(), ...casosRegistroPy()];
+  return [...casosPuros(), ...casosRegistroTs(), ...casosRegistroJs(), ...casosRegistroPy()];
 }
 
 function rodarAutoteste() {
@@ -409,17 +491,18 @@ function principal() {
   const molde = acharMolde(raizProjeto, opcoes.binding);
   if (molde === null) abortar('molde de adapter nao encontrado (adapters/_template ausente — rode dentro de um projeto gerado por create-project.mjs)');
 
-  const destino = join(raizProjeto, 'adapters', opcoes.provedor);
+  const pasta = pastaAdapter(opcoes.binding, opcoes.provedor);
+  const destino = join(raizProjeto, 'adapters', pasta);
   if (existsSync(destino)) abortar(`adapter "${opcoes.provedor}" ja existe em ${destino}`);
 
   const nomeGerado = copiarEAdaptarMolde(molde, destino, opcoes);
   registrarFabrica(raizProjeto, opcoes, nomeGerado);
 
-  process.stdout.write(`adapter "${opcoes.provedor}" criado em adapters/${opcoes.provedor} (porta "${opcoes.porta}")\n`);
+  process.stdout.write(`adapter "${opcoes.provedor}" criado em adapters/${pasta} (porta "${opcoes.porta}")\n`);
   process.stdout.write('validando...\n');
   rodarGate(raizProjeto);
   process.stdout.write(
-    `\nproximo passo: implemente os metodos de "${opcoes.porta}" em adapters/${opcoes.provedor}/`
+    `\nproximo passo: implemente os metodos de "${opcoes.porta}" em adapters/${pasta}/`
     + `${opcoes.binding === 'python' ? '__init__.py' : 'index.' + (opcoes.binding === 'typescript' ? 'ts' : 'js')}`
     + `, depois declare "${opcoes.porta}": "${opcoes.provedor}" no config/ports.json do modulo que vai usa-lo.\n`,
   );

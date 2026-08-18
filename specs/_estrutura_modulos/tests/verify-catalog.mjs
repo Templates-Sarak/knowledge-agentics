@@ -2,12 +2,15 @@
 /**
  * verify-catalog.mjs — a catraca que falta entre a lei e o código: prova que os ids de regra do
  * `engine.mjs` e as linhas de tabela de `# 4. O catálogo` em `04-regras.md` são o MESMO conjunto —
- * e, com o terceiro argumento, que nenhum comentário de `tools/**` cita uma contagem defasada.
+ * com o terceiro argumento, que nenhum comentário de `tools/**` cita uma contagem defasada — e,
+ * com `--conferir-vocabulario`, que o vocabulário de portas é o MESMO nos cinco lugares que o
+ * repetem à mão.
  * Lei dona: nenhuma — ferramenta de manutenção do TEMPLATE, como `verify-map.mjs` (mesmo motivo de
  * ficar fora de `tools/`: um projeto gerado não gera catálogo novo, e não precisa reverificar o
  * PRÓPRIO catálogo depois de instalado).
  *
  *   node tests/verify-catalog.mjs --conferir <04-regras.md> <engine.mjs> [<raiz-de-tools>]
+ *   node tests/verify-catalog.mjs --conferir-vocabulario <raiz-do-template>
  *   node tests/verify-catalog.mjs --autoteste   prova o núcleo com fixtures
  *
  * Sem a checagem de ids, a lei podia citar um id que o código não tem — ou o código ganhar um id que a
@@ -31,8 +34,17 @@
  * frases usadas lá (medido) são "N regras com caso" e "N regras suas", sempre no PRESENTE, nunca
  * narrando transição.
  *
+ * A checagem de VOCABULÁRIO (`--conferir-vocabulario`) fecha um terceiro primo: `PORTAS_CONHECIDAS`
+ * está duplicada à mão em cinco lugares (`ports-vocabulary.mjs` — a "FONTE ÚNICA" segundo o próprio
+ * cabeçalho dele —, `module.schema.json:ports.items.enum`, e os três `packages/ports/index.*` de
+ * TS/JS/Python), e nada comparava as cinco. Compara por CONJUNTO, não por ordem — a mesma disciplina
+ * de `compararCatalogos`. **Sem cláusula de "porta sem `FABRICAS`"**: a decisão foi não escrevê-la —
+ * exigiria lista de exceção editorial (toda porta sem provedor padrão, como `verificadorDeToken`,
+ * entraria nela), e uma cláusula que precisa de exceção editorial vale menos que a cláusula de
+ * conjunto sozinha e correta.
+ *
  * NÚCLEO × CASCA, precedente de `verify-map.mjs`: todas as funções do núcleo são puras — nenhuma
- * toca `fs` nem importa módulo. `--autoteste` prova as quatro com fixtures em memória.
+ * toca `fs` nem importa módulo. `--autoteste` prova todas com fixtures em memória.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
@@ -115,6 +127,50 @@ export function citacoesDefasadas(citacoes, esperado) {
   return citacoes.filter((c) => c.numero !== esperado[c.tipo]);
 }
 
+const RE_PORTA_ENTRE_ASPAS = /['"]([a-zA-Z][a-zA-Z0-9_]*)['"]/g;
+
+// Âncora na ATRIBUIÇÃO (`PORTAS_CONHECIDAS = [`/`(`), nunca só no nome: `ports-vocabulary.mjs` CITA
+// `PORTAS_CONHECIDAS` em prosa de comentário antes da declaração real (documentando os outros
+// lugares que a repetem) — um `indexOf('PORTAS_CONHECIDAS')` ingênuo pega essa citação primeiro e
+// nunca chega ao bloco de verdade. `=` é o que distingue "declarando a lista" de "mencionando o nome".
+const RE_ATRIBUICAO_PORTAS = /PORTAS_CONHECIDAS\s*=\s*([[(])/;
+
+/**
+ * As portas citadas dentro do bloco `PORTAS_CONHECIDAS = ( … )` ou `[ … ]` de `texto` — o mesmo
+ * extrator serve o array JS/TS (colchete, `ports-vocabulary.mjs` e os dois `index.{ts,js}`) e a
+ * tupla Python (parêntese, `__init__.py`), porque o que varia entre os dois é só o delimitador,
+ * nunca a forma de cada item (string entre aspas). `null` se a atribuição não aparecer no texto, ou
+ * se o delimitador de abertura não tiver par — o chamador decide o que isso significa.
+ */
+export function extrairPortasDeFonte(texto) {
+  const casado = texto.match(RE_ATRIBUICAO_PORTAS);
+  if (casado === null) return null;
+  const abre = casado.index + casado[0].length - 1;
+  const fecha = texto.indexOf(casado[1] === '[' ? ']' : ')', abre);
+  if (fecha === -1) return null;
+  const bloco = texto.slice(abre, fecha);
+  return [...bloco.matchAll(RE_PORTA_ENTRE_ASPAS)].map((m) => m[1]);
+}
+
+/**
+ * `{ fonte, faltando, sobrando }[]` — só as fontes cujo CONJUNTO diverge da primeira de
+ * `listasPorFonte` (o canônico — `ports-vocabulary.mjs`, a única que se declara "FONTE ÚNICA").
+ * Ordem dentro de cada lista não importa, de propósito: o que a lei exige é o mesmo CONJUNTO, não
+ * a mesma sequência de declaração.
+ */
+export function compararVocabularios(listasPorFonte) {
+  const [primeira, ...resto] = listasPorFonte;
+  const canonico = new Set(primeira.portas);
+  const divergencias = [];
+  for (const { fonte, portas } of resto) {
+    const atual = new Set(portas);
+    const faltando = [...canonico].filter((p) => !atual.has(p)).sort();
+    const sobrando = [...atual].filter((p) => !canonico.has(p)).sort();
+    if (faltando.length > 0 || sobrando.length > 0) divergencias.push({ fonte, faltando, sobrando });
+  }
+  return divergencias;
+}
+
 // ================================================================================================
 // CASCA — toca disco e importa módulo.
 // ================================================================================================
@@ -179,6 +235,47 @@ async function conferir(caminhoDoutrina, caminhoEngine, raizTools) {
   }
 
   if (linhas.length === 0) return { ok: true, motivo: null, total: idsCodigo.length };
+  return { ok: false, motivo: linhas.join('\n') };
+}
+
+/** Os cinco lugares que repetem `PORTAS_CONHECIDAS` à mão — caminho relativo à raiz do TEMPLATE
+ * (não da base), o mesmo `raizTemplate` que `verify-routine.mjs` já resolve. A ordem importa: a
+ * primeira é o CANÔNICO que `compararVocabularios` usa (ver o comentário dela). */
+function fontesDoVocabulario(raizTemplate) {
+  return [
+    { fonte: 'tools/gate/ports-vocabulary.mjs', caminho: join(raizTemplate, 'tools', 'gate', 'ports-vocabulary.mjs'), formato: 'texto' },
+    { fonte: 'tools/gate/schemas/module.schema.json', caminho: join(raizTemplate, 'tools', 'gate', 'schemas', 'module.schema.json'), formato: 'schema' },
+    { fonte: 'bindings/typescript/root/packages/ports/index.ts', caminho: join(raizTemplate, 'bindings', 'typescript', 'root', 'packages', 'ports', 'index.ts'), formato: 'texto' },
+    { fonte: 'bindings/javascript/root/packages/ports/index.js', caminho: join(raizTemplate, 'bindings', 'javascript', 'root', 'packages', 'ports', 'index.js'), formato: 'texto' },
+    { fonte: 'bindings/python/root/packages/ports/__init__.py', caminho: join(raizTemplate, 'bindings', 'python', 'root', 'packages', 'ports', '__init__.py'), formato: 'texto' },
+  ];
+}
+
+/** O veredito completo para as cinco fontes de vocabulário de um template real. */
+function conferirVocabulario(raizTemplate) {
+  const listasPorFonte = [];
+  for (const { fonte, caminho, formato } of fontesDoVocabulario(raizTemplate)) {
+    if (!existsSync(caminho)) return { ok: false, motivo: `fonte nao encontrada (${fonte}): ${caminho}` };
+    if (formato === 'schema') {
+      const schema = JSON.parse(lerTexto(caminho));
+      const portas = schema.properties?.ports?.items?.enum;
+      if (!Array.isArray(portas)) return { ok: false, motivo: `${fonte}: sem properties.ports.items.enum` };
+      listasPorFonte.push({ fonte, portas });
+      continue;
+    }
+    const portas = extrairPortasDeFonte(lerTexto(caminho));
+    if (portas === null) return { ok: false, motivo: `${fonte}: PORTAS_CONHECIDAS nao encontrado ou sem bloco [...]/(...)` };
+    listasPorFonte.push({ fonte, portas });
+  }
+
+  const divergencias = compararVocabularios(listasPorFonte);
+  if (divergencias.length === 0) return { ok: true, motivo: null, total: listasPorFonte[0].portas.length };
+  const linhas = divergencias.map(({ fonte, faltando, sobrando }) => {
+    const partes = [];
+    if (faltando.length > 0) partes.push(`falta ${faltando.join(', ')}`);
+    if (sobrando.length > 0) partes.push(`sobra ${sobrando.join(', ')}`);
+    return `  ${fonte}: ${partes.join(' | ')}`;
+  });
   return { ok: false, motivo: linhas.join('\n') };
 }
 
@@ -314,6 +411,46 @@ function casosDeAutoteste() {
         return r.length === 2;
       },
     },
+    {
+      nome: 'extrairPortasDeFonte: array JS/TS entre colchetes',
+      fn: () => {
+        const r = extrairPortasDeFonte("export const PORTAS_CONHECIDAS = [\n  'repositorio',\n  'storage',\n] as const;");
+        return r.length === 2 && r[0] === 'repositorio' && r[1] === 'storage';
+      },
+    },
+    {
+      nome: 'extrairPortasDeFonte: tupla Python entre parenteses, aspas duplas',
+      fn: () => {
+        const r = extrairPortasDeFonte('PORTAS_CONHECIDAS = (\n    "repositorio",\n    "storage",\n)');
+        return r.length === 2 && r[0] === 'repositorio' && r[1] === 'storage';
+      },
+    },
+    {
+      nome: 'extrairPortasDeFonte: sem PORTAS_CONHECIDAS no texto -> null',
+      fn: () => extrairPortasDeFonte('nada aqui') === null,
+    },
+    {
+      nome: 'compararVocabularios: mesmo conjunto em ordem diferente -> nenhuma divergencia (ordem nao importa)',
+      fn: () => compararVocabularios([
+        { fonte: 'a', portas: ['repositorio', 'storage'] },
+        { fonte: 'b', portas: ['storage', 'repositorio'] },
+      ]).length === 0,
+    },
+    {
+      nome: 'compararVocabularios: fonte com porta faltando e outra com porta a mais',
+      fn: () => {
+        const r = compararVocabularios([
+          { fonte: 'canonico', portas: ['repositorio', 'storage', 'auth'] },
+          { fonte: 'incompleta', portas: ['repositorio', 'storage'] },
+          { fonte: 'com-extra', portas: ['repositorio', 'storage', 'auth', 'fila'] },
+        ]);
+        const incompleta = r.find((d) => d.fonte === 'incompleta');
+        const comExtra = r.find((d) => d.fonte === 'com-extra');
+        return r.length === 2
+          && incompleta.faltando.includes('auth') && incompleta.sobrando.length === 0
+          && comExtra.sobrando.includes('fila') && comExtra.faltando.length === 0;
+      },
+    },
   ];
 }
 
@@ -338,16 +475,29 @@ function rodarAutoteste() {
 // CLI
 // ================================================================================================
 
+function uso() {
+  process.stderr.write('uso: node tests/verify-catalog.mjs --conferir <04-regras.md> <engine.mjs> [<raiz-de-tools>]\n'
+    + '     node tests/verify-catalog.mjs --conferir-vocabulario <raiz-do-template>\n'
+    + '     node tests/verify-catalog.mjs --autoteste\n');
+  return 1;
+}
+
 async function principal() {
   const argv = process.argv.slice(2);
   if (argv.includes('--autoteste')) return rodarAutoteste();
 
-  const indice = argv.indexOf('--conferir');
-  if (indice === -1 || argv[indice + 1] === undefined || argv[indice + 2] === undefined) {
-    process.stderr.write('uso: node tests/verify-catalog.mjs --conferir <04-regras.md> <engine.mjs> [<raiz-de-tools>]\n'
-      + '     node tests/verify-catalog.mjs --autoteste\n');
-    return 1;
+  const indiceVocabulario = argv.indexOf('--conferir-vocabulario');
+  if (indiceVocabulario !== -1) {
+    if (argv[indiceVocabulario + 1] === undefined) return uso();
+    const resultado = conferirVocabulario(resolve(argv[indiceVocabulario + 1]));
+    process.stdout.write(resultado.ok
+      ? `vocabulario: OK — ${resultado.total} portas, as cinco fontes batem\n`
+      : `vocabulario: REPROVADO —\n${resultado.motivo}\n`);
+    return resultado.ok ? 0 : 1;
   }
+
+  const indice = argv.indexOf('--conferir');
+  if (indice === -1 || argv[indice + 1] === undefined || argv[indice + 2] === undefined) return uso();
 
   const caminhoDoutrina = resolve(argv[indice + 1]);
   const caminhoEngine = resolve(argv[indice + 2]);

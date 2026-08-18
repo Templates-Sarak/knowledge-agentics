@@ -115,7 +115,7 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. Qua
 
 | Camada | Onde vive | Viaja na extração? |
 |---|---|---|
-| Interface (`Repositorio`, `Auth`, `Storage`) | `packages/ports/` | sim |
+| Interface (`Repositorio`, `VerificadorDeToken`, `Storage`) | `packages/ports/` | sim |
 | Uso pelo domínio (`DependenciasDoModulo`) | `modules/<m>/core/ports/` | sim, é do módulo |
 | Escolha do provedor | `modules/<m>/config/ports.json` | sim |
 | Implementação (fala Supabase, S3, …) | `adapters/<tecnologia>/` | sim, copia-se junto |

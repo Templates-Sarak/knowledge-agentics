@@ -37,11 +37,18 @@
 | 14 | `04-regras.md` §7.2 — nova entrada para `conformidade-declarada`, declarando os três limites da regra: não resolve `decisao` contra ADR de verdade (isso é da lista de exceções, §6), não valida que `regra` exista no catálogo, não valida que `modulo` exista — as duas últimas são *fail-closed* (a regra continua acusando, ninguém se machuca) mas **silenciosas**, e ficavam sem registro em lugar nenhum | `conformidade-declarada` era a única de 33 regras que citava `(§7.2)` na linha de catálogo sem ter entrada lá — os dois no-ops silenciosos tinham sido medidos numa revisão, mas perderam o registro quando as outras duas formas quebradas da exceção foram fechadas (linha 10) |
 | 15 | As 5 violações de Nível 0 em `tools/` (`npx eslint specs/_estrutura_modulos/tools/`), a zero. `create-adapter.mjs`: `registrarFabrica{Ts,Js,Py}` agrupam `(porta, provedor, nomeSimbolo, caminhoImport)` num objeto — **e ganharam `--autoteste` primeiro** (14 casos, com fixtures fiéis ao molde real), registrado em `run-all-selftests.mjs` (17/17 → **18/18**, atualizado em `fe-sistema-modular.md` §4.1/§11.2). `gate/tests/run.mjs`: `operacoes` (42 linhas) extraiu o núcleo comum de `manifesto`/`manifestoRaiz`/`config` para `transformarJson`. `create-project.mjs`: `principal` (41 linhas) extraiu o relatório final para `imprimirProximosPassos`. Saída dos três, byte a byte igual à de antes — camada 2 confere **128/128 · 128/128 · 124/124, 76 regras com caso**, iguais | A rede era desigual e `create-adapter.mjs` era o ponto cego real — 3 das 5 violações, exercitado por NADA (nem `--autoteste`, nem a camada 3, nem citado fora de comentário). Construir a rede ANTES do refactor é o que revelou os dois bugs pré-existentes do §2, que não têm relação nenhuma com este refactor |
 | 16 | `specs/_estrutura_modulos/tests/verify-routine.mjs` — o passo E (rejeição de forma inválida) trocou caminho fixo em `%TEMP%` por `mkdtemp`, alinhado ao passo F | Duas instâncias simultâneas de `verify-routine.mjs` colidiam no mesmo caminho fixo; a segunda apagava o alvo da primeira no meio do teste e morria sem saída — parecia defeito do template numa revisão e custou tempo real de diagnóstico. O `destino` em si continua **não** pré-criado (só o pai, por `mkdtemp`): a afirmação do passo é que a rejeição não cria o destino, e pré-criá-lo esvaziaria essa afirmação |
+| 17 | `create-adapter.mjs` — `registrarFabricaPy`: âncora de importação movida do `)` do import multilinha (só casava sem uma segunda linha de import no meio) para a linha em branco + comentário que sempre a segue, tolerante a qualquer import extra que venha a existir | O molde real já tinha ganho `from adapters.postgres import ...` entre os dois, e a âncora antiga nunca casava — `--binding python` falhava para **qualquer** porta, sempre, não só uma nova. `--autoteste` (casos reescritos para provar sucesso em vez de bug) e a matriz ponta a ponta confirmam |
+| 18 | `create-adapter.mjs` — as duas âncoras de "porta nova" (`registrarFabricaTs`, e — achado consertando a de TS — a gêmea em `registrarFabricaPy`) trocaram a assinatura de tipo fixa (`() => unknown`, `Callable[[], Any]`) por um recorte tolerante (`[^>]*`, `.*`) que casa a assinatura real do molde (`(modulo: ManifestoDescoberto) => unknown`, `Callable[[dict[str, Any]], Any]`) sem reabrir o mesmo drift se o parâmetro mudar de novo | `auth` era a única porta sem entrada em `FABRICAS`, e por isso a única que alcançava o ramo — mas o defeito valia para qualquer porta nova. A gêmea em Python **não estava no achado original**: apareceu testando a onda 4 (`verificadorDeToken`), que quebrou em Python pelo mesmo motivo que o TS |
+| 19 | `tests/verify-catalog.mjs` ganhou `--conferir-vocabulario <raiz-do-template>`: compara por **conjunto** as cinco fontes que repetem `PORTAS_CONHECIDAS` à mão (`ports-vocabulary.mjs`, os dois schemas gerados dele, os três `packages/ports/index.*`), com ponteiro exato de fonte + porta faltando/sobrando. Registrado em `verify-routine.mjs` (25/25 → **26/26**, atualizado em `fe-sistema-modular.md` §11.2/§4.6). **Sem** cláusula "porta sem `FABRICAS`": exigiria lista de exceção editorial (toda porta sem provedor padrão entraria nela), e a decisão foi não escrevê-la | As cinco fontes nunca foram comparadas — foi essa lacuna que deixou os dois bugs das linhas 17-18 e a colisão de nome da linha 20 chegarem sem verificador nenhum notar. Construída **antes** da renomeação de propósito: a renomeação nasce verificada, não confiada |
+| 20 | **ADR-010** (`doutrina/adr/decisoes.md`) — a porta `auth` virou `verificadorDeToken`: o nome, a interface (`interface Auth`/`class Auth(Protocol)`/`@typedef Auth` → `VerificadorDeToken`) e a entrada em `PORTAS_CONHECIDAS`, nos cinco lugares da linha 19, mais `doutrina/01-modulo.md:208` e `doutrina/00-arquitetura.md:118` (a tabela que cita a interface pelo nome). `composicao.ts` e `adapters/memory/index.ts` seguem a interface renomeada só na **anotação de tipo** (`import type { Auth }` → `VerificadorDeToken`) — `resolveAuth()`, `createDenyingAuth()`, o middleware `authentication` e o parâmetro `auth` de `createApp` continuam com o mesmo nome: são a auth **única** da fiação, uma interface **independente** (`_template/api/src/middlewares/index.ts`/`_template/core/ports/__init__.py`), não a porta renomeada | A interface tem um único método (`verify(token)`) — já era um verificador de token. `auth` acomodava também "gerenciar usuários", que na arquitetura Sarak é módulo à parte, alcançado por gateway, nunca por porta (ADR-002); e colidia de nome com a auth da fiação, duas declarações independentes chamadas igual. Matriz ponta a ponta (`repositorio`, `storage`, `notificador`, `verificadorDeToken`, três bindings): **exit 0 nos doze** |
+| 21 | `tests/template-self-test.mjs` (camada 3) ganhou `criar-adapter:<porta>` — um passo por porta do vocabulário INTEIRO (`ports-vocabulary.mjs`, 7 hoje), reusando o projeto que os passos anteriores já geram — e `formatar-adapters` (`prettier --write`, só TS/JS) logo depois. Exit 0 **e** conteúdo: cada passo confere que a fábrica apareceu em `src/composicao.*`, não só o exit code. **3/3 bindings VERDE, 13/13 → 21/21 · 21/21 · 20/20 passos** (`fe-sistema-modular.md` §4.1/§11.2, `ultimas-atualizacoes.md` §4). Rodar isto pela primeira vez **exigiu dois consertos reais em `create-adapter.mjs`**, nenhum dos dois no achado original: `adapters/_adapter/__init__.py` (molde Python) ganhou `__init__(self, modulo: dict[str, Any])` — a classe é registrada DIRETO em `FABRICAS` (nunca um lambda), e sem esse construtor todo adapter Python falhava `mypy` na hora de nascer, sempre, para toda porta; e `NOME_GENERICO` (TS/JS) trocou `criarAdapter` por `createAdapter` — o nome REAL que os moldes `_adapter/index.{ts,js}` exportam, contra o qual a rescrita nunca batia, então TODO adapter TS/JS já criado guardava `export function createAdapter` no arquivo enquanto `composicao.*` importava um símbolo (`criarG`) que nunca tinha sido escrito — `tsc` reprovava, mas nada rodava `tsc` depois de um `create-adapter.mjs` real até este passo existir | Nada na cadeia automatizada exercitava `create-adapter.mjs` — só fixtures, cópias do molde, o mesmo mecanismo que produziu os bugs das linhas 17-18. Instalar a matriz achou os dois de cara, no primeiro run real: prova, medida (revertendo `NOME_GENERICO` e confirmando que a camada 3 reprova, depois restaurando), de que a rede pega o que a rede promete pegar |
+| 22 | **Achado ① fechado (ADR-011).** `create-adapter.mjs`: chave de objeto CITADA nas duas âncoras de `registrarFabricaTs`/`registrarFabricaJs` (`'${provedor}': () => ...`) — provedor kebab-com-hífen deixou de quebrar sintaxe TS/JS. Python ganhou `pastaAdapter(binding, provedor)`: pasta/import convertem hífen→underscore (`adapters/disco_frio/`, `from adapters.disco_frio import DiscoFrio`), mas a IDENTIDADE continua kebab nos três bindings (CLI, `config/ports.json`, chave string em `FABRICAS`) — o TODO gerado usa um marcador à parte (`<provedor-pasta>`) pra apontar pro caminho físico real, não pra identidade. `template-self-test.mjs`: `provedorDoIndice` passou a gerar provedor COM hífen (`prov-<letra>`, vocabulário inteiro) — antes evitava hífen de propósito, o que escondia o próprio achado. Sweeping o vocabulário com provedor mais longo expôs um segundo achado, menor: `registrarFabricaPy` também escreve tudo numa linha só (mesma classe de `registrarFabricaTs`/`Js`), e isso já estourava os 110 caracteres do `ruff` em Python pra porta com dois provedores, sem folga nenhuma mesmo antes do hífen — Python ganhou o mesmo passo de formatação que TS/JS já tinha (`ruff format src/composicao.py`, `formatar-adapters-py`, logo após o último `criar-adapter`). Provado que a rede pega: revertendo os dois consertos, os três bindings viram VERMELHO (TS/JS no passo `formatar-adapters` — prettier recusa a chave sem aspas —, Python no mesmo passo, com `ruff` acusando `unformatted`/E501); restaurado, os três voltam a VERDE. **3/3 bindings VERDE, 21/21 · 21/21 · 20/20 → 21/21 · 21/21 · 21/21 passos** (`fe-sistema-modular.md` §4.1/§11.2, `ultimas-atualizacoes.md` §4). Limite novo documentado em `04-regras.md` §7.2 | Provedor kebab-com-hífen saía 0 nos três bindings com código gerado quebrado — TS/JS produzia chave de objeto inválida, Python produzia import impossível de resolver (hífen não é identificador). Um usuário seguindo a própria recomendação de `validarOpcoes` ("use kebab-case minusculo", ex.: `aws-s3`) quebrava os três. A alternativa de proibir hífen nos três bindings foi descartada por contradizer essa mesma mensagem de erro |
+| 23 | `fe-sistema-modular.md` — três descrições realinhadas ao template: o §4.6 passou a dizer que a camada 3 **também cria um adapter por porta do vocabulário e formata o gerado**; o §2 deixou de afirmar *"exatamente esta árvore"* e agora aponta `ENTRADAS_PERMITIDAS` (`structure.mjs`) como lista normativa, citando as entradas de ambiente/build que o desenho omite; e o §10.4 deixou de ser *"pendência"* — o cache **sincroniza sozinho** onde `.git/hooks/pre-commit` roda `sync_ide.py --target all`, mas esse hook é **local e não versionado**, então o aviso segue valendo para clone novo, outra máquina ou CI | Eram divergências de **prosa**, não de número: as catracas comparam ids, contagens e vocabulário, e **nenhuma delas lê descrição**. O §4.6 escondia justamente a capacidade que derrubou quatro bugs desta campanha; o §2 fazia o leitor achar seis divergências inexistentes ao comparar o desenho com um módulo real; e o §10.4 contradizia a linha 7 deste mesmo §1 — o defeito que a §10.2 do próprio documento enuncia |
 
 **Mudança de comportamento, desta vez sim.** O gate ganhou uma regra nova (`conformidade-declarada`,
 a 76ª) e fechou o *fail-open* de `decisao` nas exceções — os dois achados que a rodada anterior
 classificava como bloqueantes de produção (§2 antigo, ①–②). `specs/_estrutura_modulos/doutrina/` e
-`tools/` foram tocados de propósito; a lista completa das linhas 6–16 é a mudança inteira.
+`tools/` foram tocados de propósito; a lista completa das linhas 6–21 é a mudança inteira.
 
 **Avaliado e mantido de propósito:** `plugin/sarak_routing_table.md` e o mecanismo de sincronização
 das IDEs. Foram levantados como defeito, examinados e **decidido manter** — o motivo técnico está no
@@ -51,30 +58,8 @@ das IDEs. Foram levantados como defeito, examinados e **decidido manter** — o 
 
 ## 2. Achados abertos
 
-Os dois abaixo vieram à tona **construindo a rede de caracterização** de `create-adapter.mjs` antes do
-refactor de §4.7 (§1, linha 15) — nenhum é regressão desta rodada, os dois já existiam. Nenhum é
-ponteiro: os dois exigem entender a intenção original do gerador contra o molde real antes de
-escolher o conserto, e por isso não entraram nesta rodada.
-
-**① `create-adapter.mjs --binding python` falha SEMPRE, para qualquer porta — não só a nova.**
-`registrarFabricaPy` procura a âncora de importação `)\n\n# Fabrica de adapter`, esperando que o `)`
-do import multilinha de `adapters.memory` seja seguido direto de linha em branco. O molde real tem uma
-SEGUNDA linha de import entre os dois (`from adapters.postgres import ...`), e a âncora nunca casa.
-Medido: `node tools/create-adapter.mjs repositorio <provedor> --binding python` — porta **já
-existente**, o caminho mais comum — sai com `"nao encontrei onde registrar a fabrica"`, sempre.
-Caracterizado em `create-adapter.mjs --autoteste` (os dois casos `registrarFabricaPy`, com a fixture
-`FIXTURE_PY_MOLDE_REAL`); a mesma fixture sem a segunda linha de import (`FIXTURE_PY_ANCORA_ISOLADA`)
-prova que a lógica funciona — o que quebrou foi o molde se afastar da âncora, não a função por dentro.
-
-**② `create-adapter.mjs --binding typescript` falha para a porta "auth" — a única porta nova possível.**
-`registrarFabricaTs` tem uma segunda âncora, para porta que ainda não existe em `FABRICAS`, que espera
-o tipo `Record<string, Record<string, () => unknown>>`. O molde real declara
-`Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>>` — com parâmetro —, e a
-âncora não casa. Isso só é alcançável por **uma** porta: `auth` é a única de `PORTAS_CONHECIDAS` sem
-entrada em `FABRICAS` hoje (as outras seis já têm — ver o comentário "LIMITE CONHECIDO" no topo do
-arquivo). Medido: `node tools/create-adapter.mjs auth <provedor> --binding typescript` sai com o
-mesmo erro. `--binding javascript` **não** tem este bug — o `FABRICAS` de JS não tem assinatura de
-tipo para desalinhar. Caracterizado em `create-adapter.mjs --autoteste`.
+Nenhum no momento. O último fechado (①, provedor com hífen quebrando a geração de código nos três
+bindings) está no §1, linha 22.
 
 ---
 
@@ -131,27 +116,30 @@ mesmo caminho.
 ## 4. Verificado verde em 2026-08-15 *(não repita sem motivo)*
 
 Toda afirmação numérica do `fe-sistema-modular.md` foi conferida contra o repositório, depois das
-mudanças das linhas 6–12 do §1, e **confere**:
+mudanças das linhas 6–21 do §1, e **confere**:
 
 | Camada | Medido |
 |---|---|
 | 1 — gate em projeto novo | 0 erros (módulo + raiz) |
 | 2 — o gate se testa | **128/128 · 128/128 · 124/124**, 76 regras com caso |
-| 3 — o template se testa | **3/3 bindings VERDE, 13/13 passos** |
+| 3 — o template se testa | **3/3 bindings VERDE, 21/21 · 21/21 · 21/21 passos** (achado ① fechado, §1 linha 22) |
 | 4 — toda ferramenta se testa | **18/18**, zero órfão |
 | `typecheck:tools` | sem saída |
-| `verify-routine.mjs` (o §11.2 inteiro, automatizado) | **25/25 passos ok** |
+| `verify-routine.mjs` (o §11.2 inteiro, automatizado) | **26/26 passos ok** |
 
 Também conferem: 76 regras sem id duplicado, todas com `verificar()`; famílias 21/11/12/11/11/6/4;
 escopos 58/14/4; níveis 72 erro / 4 aviso; `module.schema.json` com 19 obrigatórios e
 `additionalProperties:false`; `project.json` mínimo; as três rotas obrigatórias; `verify-map: OK`; a
-catraca nova (`verify-catalog.mjs`, agora também varrendo contagem em `tools/**`): `catalogo: OK — 76
-ids, lei e código batem`; projeto gerado
-citando `_estrutura_modulos` em **um** arquivo — exatamente a linha declarada; e os dois erros de
-`--modulos` do `init_repo.py` com a mensagem prometida.
+catraca (`verify-catalog.mjs`): `catalogo: OK — 76 ids, lei e código batem` e `vocabulario: OK — 7
+portas, as cinco fontes batem`; projeto gerado citando `_estrutura_modulos` em **um** arquivo —
+exatamente a linha declarada; os dois erros de `--modulos` do `init_repo.py` com a mensagem
+prometida; e a matriz `create-adapter` (vocabulário inteiro, sete portas × três bindings, com
+conteúdo conferido em `src/composicao.*`) **agora instalada na camada 3** — deixou de ser conferência
+manual e passa em toda rodada de `npm run autoteste:template`, inclusive a semanal
+(`.github/workflows/autoteste-template.yml`).
 
-**Higiene, medida e limpa:** `tests/` = 88,7 KB em **exatamente 5 arquivos** (`verify-map.mjs`,
-`verify-catalog.mjs` e `verify-routine.mjs` — as duas últimas, novas desta rodada —,
+**Higiene, medida e limpa:** `tests/` = 107,9 KB em **exatamente 5 arquivos** (`verify-map.mjs`,
+`verify-catalog.mjs` e `verify-routine.mjs` — as duas últimas, novas de uma rodada anterior —,
 `template-self-test.mjs`, `run-all-selftests.mjs`); `npx eslint specs/_estrutura_modulos/tools/` em
 **zero**; zero `node_modules`/`.venv` rastreados; zero
 resíduo de `TODO`/`FIXME` no template; zero arqueologia em tempo passado; zero ponteiro quebrado na

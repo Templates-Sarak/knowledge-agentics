@@ -23,6 +23,11 @@
  * template não escolhe topologia por quem usa. Nome sem interface é declaração sem efeito (o
  * mesmo argumento que exclui `'dist'` de `ENTRADAS_PERMITIDAS`). Ela volta no dia em que
  * houver um projeto com a decisão tomada — e volta como ADR, não como reinclusão silenciosa aqui.
+ *
+ * `verificadorDeToken` era `auth` — renomeada por ADR-010 (`specs/adr/000-decisoes-do-template.md`),
+ * o precedente que `fila` já registrava: vocabulário só muda por decisão escrita. A interface tem
+ * UM método (`verify(token)`), e "auth" acomodava também "gerenciar usuários" — que na arquitetura
+ * Sarak é módulo à parte, alcançado por gateway, nunca por porta (ADR-002).
  */
 export const PORTAS_CONHECIDAS = [
   'repositorio',
@@ -30,6 +35,6 @@ export const PORTAS_CONHECIDAS = [
   'relogio',
   'geradorId',
   'storage',
-  'auth',
+  'verificadorDeToken',
   'notificador',
 ];

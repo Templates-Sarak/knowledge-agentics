@@ -44,12 +44,30 @@
  * da base seria fingir medir. Roda sobre o STAGED que `clone-simulado` acabou de produzir (`git
  * init` + `git add -A`) e exige ZERO achado — nenhuma allowlist, nenhum `--no-verify`: achado aqui
  * é o template instalando o próprio vazamento.
+ *
+ * `criar-adapter:<porta>` — um passo POR PORTA do vocabulário (`tools/gate/ports-vocabulary.mjs`),
+ * reusando o projeto que os passos acima já geraram: é a única forma automatizada, na agenda
+ * semanal, de exercitar `create-adapter.mjs` de verdade. Sem isto, o gerador só era provado por
+ * fixture — cópia do molde — e foi exatamente uma fixture que envelheceu sem ninguém comparar
+ * (âncora Python, ramo de porta nova em TS/Python) que produziu os dois bugs da rodada anterior.
+ * Varrer o vocabulário INTEIRO, em vez de citar `repositorio`/`verificadorDeToken` a dedo, cobre os
+ * dois ramos do gerador que interessam — porta JÁ em `FABRICAS` (a maioria) e porta AUSENTE dela
+ * (hoje só `verificadorDeToken`) — e cobre a porta nova sozinho no dia em que o vocabulário crescer
+ * de novo (`fila` tem retorno prometido no comentário de `ports-vocabulary.mjs`), sem editar este
+ * arquivo. Cada passo confere **exit 0 e conteúdo**: só o exit code não distingue "registrou" de
+ * "não fez nada" — a classe exata dos dois bugs, em que a âncora não batia e o script abortava, mas
+ * uma âncora que batesse errado por acidente escreveria algo sem ser o esperado e passaria calada.
+ * Roda depois do ÚLTIMO `criar-modulo`, antes de `clone-simulado`: os `adapters/`/`src/composicao.*`
+ * que ele escreve entram no commit simulado e são revalidados por `verify`/`verificar.py` a seguir,
+ * de graça — nenhum passo novo depois disso, só reaproveitamento do que já roda.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { platform, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { PORTAS_CONHECIDAS } from '../tools/gate/ports-vocabulary.mjs';
 
 // ================================================================================================
 // NÚCLEO — puro. Nenhuma linha daqui embaixo toca `fs`, `child_process` ou o relógio.
@@ -84,6 +102,53 @@ export const COMBINACOES_DE_MODULO = [
 ];
 
 /**
+ * Um provedor por porta, kebab-case FIXO por ÍNDICE — nunca derivado do nome da porta. Armadilha
+ * medida (rodada anterior): `verificadorDeToken` é camelCase, e um provedor
+ * `prov-verificadorDeToken` é inválido — `create-adapter.mjs` REJEITA antes de tocar disco
+ * (correto). Por índice sobrevive a qualquer nome de porta futuro, sem repensar.
+ *
+ * COM HÍFEN de propósito (prefixo `prov-`, não só a letra): `create-adapter.mjs` aceita provedor
+ * kebab-case com hífen (`validarOpcoes`), e o código que ele gera para hífen já foi o achado ①
+ * (ultimas-atualizacoes.md) — chave de objeto TS/JS não citada e import Python com `-` no meio do
+ * caminho. Ficou consertado (chave CITADA nos três bindings, pasta/import Python convertidos pra
+ * snake_case — ADR-011) exatamente PORQUE esta rede parou de esconder o defeito atrás de um
+ * provedor sem hífen: o índice sozinho (`a`, `b`, ...) nunca exercitava o caminho quebrado. Manter
+ * o hífen aqui é o que garante que uma regressão futura volte a pintar esta rede de vermelho.
+ */
+export function provedorDoIndice(indice) {
+  return `prov-${String.fromCharCode(97 + indice)}`;
+}
+
+/** PascalCase a partir de kebab-case — mesma forma de `create-adapter.mjs:paraPascalCase`, COPIADA
+ * (não importada: `create-adapter.mjs` chama `principal()` ao ser carregado fora de `--autoteste`,
+ * e importar o módulo dispararia isso). O que este autoteste confirma é a PRESENÇA do símbolo no
+ * arquivo gerado, não a lógica que o produz — essa já é `create-adapter.mjs --autoteste`. */
+function paraPascalCase(kebab) {
+  return kebab.split('-').map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1)).join('');
+}
+
+/** O nome que `create-adapter.mjs` registra em `src/composicao.*` para este binding+provedor —
+ * mesma regra de `create-adapter.mjs:nomeDoProvedor`. */
+export function nomeDoSimbolo(binding, provedor) {
+  const pascal = paraPascalCase(provedor);
+  return binding === 'python' ? pascal : `criar${pascal}`;
+}
+
+/**
+ * Um passo `criar-adapter` por porta do VOCABULÁRIO INTEIRO (`ports-vocabulary.mjs`), não por uma
+ * lista curada à mão — é o que faz uma porta nova (`fila`, se voltar) entrar na cobertura sozinha,
+ * sem editar este arquivo. Ver o parágrafo "criar-adapter:<porta>" no cabeçalho.
+ */
+export function passosDeAdapter() {
+  return PORTAS_CONHECIDAS.map((porta, indice) => ({
+    nome: `criar-adapter:${porta}`,
+    tipo: 'criar-adapter',
+    porta,
+    provedor: provedorDoIndice(indice),
+  }));
+}
+
+/**
  * Os passos de UM binding, em ordem — a decisão de "o que rodar" separada de "como rodar".
  *
  * `verificar` ANTES de `build`, `build` ANTES de `lint` NÃO É ARBITRÁRIO: `npm run build` quebra
@@ -114,6 +179,19 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
     moduloId: combinacao.id,
     flags: combinacao.flags,
   }));
+  // Depois do ÚLTIMO `criar-modulo`: reusa o projeto que os passos acima já geraram — custo
+  // marginal, sem gerar mais nada. Ver "criar-adapter:<porta>" no cabeçalho.
+  const passosAdapter = passosDeAdapter();
+  // Ver `rodarPrettierWrite`/`rodarRuffFormat`: MESMO motivo nos dois bindings, so ferramenta
+  // diferente. Ate a rodada que fechou o achado ① (hifen no provedor — ultimas-atualizacoes.md,
+  // ADR-011), "ruff format ja bate, mesmo varrendo o vocabulario inteiro" era medido e verdadeiro
+  // — porque `provedorDoIndice` so gerava provedor de UMA letra, sem hifen. Trocar para kebab COM
+  // hifen (pra exercitar o proprio achado ①) engordou a linha de `FABRICAS` alem dos 110 cols do
+  // ruff MESMO pro provedor mais curto possivel (medido: `repositorio` ja estava na borda, zero
+  // folga, com provedor de uma letra so) — Python precisa do mesmo passo de formatacao que TS/JS
+  // sempre teve, pelo mesmo motivo.
+  const formatarAdapters = { nome: 'formatar-adapters', tipo: 'formatar-adapters' };
+  const formatarAdaptersPy = { nome: 'formatar-adapters', tipo: 'formatar-adapters-py' };
   // Depois do ÚLTIMO `criar-modulo`, antes de `verificar`: o passo em si só poda o disco — quem lê
   // o resultado é o `verificar` que já vem a seguir no pipeline, nos dois bindings.
   const cloneSimulado = { nome: 'clone-simulado', tipo: 'clone-simulado' };
@@ -139,6 +217,8 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
       { nome: 'atualizar-pip', tipo: 'pip-upgrade' },
       { nome: 'instalar', tipo: 'pip-install' },
       ...passosDeModulo,
+      ...passosAdapter,
+      formatarAdaptersPy,
       cloneSimulado,
       primeiroCommit,
       { nome: 'verificar', tipo: 'verificar-py' },
@@ -150,6 +230,8 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
     gerarProjeto,
     { nome: 'instalar', tipo: 'npm-install' },
     ...passosDeModulo,
+    ...passosAdapter,
+    formatarAdapters,
     cloneSimulado,
     primeiroCommit,
     { nome: 'verify', tipo: 'npm-script', script: 'verify' },
@@ -197,6 +279,7 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ_TEMPLATE = join(AQUI, '..');
 const CRIAR_PROJETO = join(RAIZ_TEMPLATE, 'tools', 'create-project.mjs');
 const CRIAR_MODULO = join(RAIZ_TEMPLATE, 'tools', 'create-module.mjs');
+const CRIAR_ADAPTER = join(RAIZ_TEMPLATE, 'tools', 'create-adapter.mjs');
 const VERIFICAR_MAPA = join(AQUI, 'verify-map.mjs');
 // A ÚNICA referência deste arquivo a `skills/` (fora do template) — ver o parágrafo "primeiro-commit"
 // no cabeçalho, a exceção de fronteira declarada por escrito.
@@ -246,6 +329,22 @@ function rodarNpm(args, cwd) {
   return spawnSync(NODE, [entrada, ...args], { cwd, encoding: 'utf8', shell: false });
 }
 
+/**
+ * `prettier --write` sobre `src/composicao.*` — o passo que, em uso real, é o editor (ou o hook de
+ * agente `padrao-format` da base Sarak) quem faz, arquivo por arquivo, a cada edição salva. `npm run
+ * formato` só ACUSA (`--check`), nunca escreve (comentário no `package.json` do molde: "só o hook
+ * escreve") — e `create-adapter.mjs` deliberadamente não formata o que grava, pelo mesmo motivo que
+ * não roda o gate por regra isolada. Sem ESTE passo, `verify`/`formato` reprova depois de varrer o
+ * vocabulário inteiro: cada `criar-adapter` acrescenta um provedor à MESMA linha de uma porta que já
+ * tinha um ou dois, e a linha cresce além do `printWidth` (110, `.prettierrc.json`) sem que ninguém a
+ * quebre de novo — não é bug do gerador, é o passo do fluxo real que este autoteste não tinha.
+ */
+function rodarPrettierWrite(destino) {
+  const entrada = entrypointDoPacote(destino, 'prettier');
+  if (entrada === null) return { error: new Error('prettier nao encontrado em node_modules do projeto'), status: null };
+  return spawnSync(NODE, [entrada, '--write', 'src/composicao.*'], { cwd: destino, encoding: 'utf8', shell: false });
+}
+
 /** `SARAK_PYTHON` (caminho do binário) sobrepõe; senão, `python`/`python3` no PATH — mesma técnica
  * de `ci-dependencies.mjs:resolverPython`, copiada pelo mesmo motivo de fronteira: `tools/` é
  * vendorizado e este script mora fora dele. */
@@ -256,6 +355,18 @@ function resolverPythonBase() {
 
 function caminhoPythonDoVenv(venvDir) {
   return platform() === 'win32' ? join(venvDir, 'Scripts', 'python.exe') : join(venvDir, 'bin', 'python');
+}
+
+function caminhoRuffDoVenv(venvDir) {
+  return platform() === 'win32' ? join(venvDir, 'Scripts', 'ruff.exe') : join(venvDir, 'bin', 'ruff');
+}
+
+/** `ruff format` sobre `src/composicao.py` — equivalente Python de `rodarPrettierWrite`, mesmo
+ * motivo (ver comentário de `formatarAdaptersPy` em `passosDoBinding`). */
+function rodarRuffFormat(destino, venvDir) {
+  const executavel = caminhoRuffDoVenv(venvDir);
+  if (!existsSync(executavel)) return { error: new Error('ruff nao encontrado no venv do projeto'), status: null };
+  return spawnSync(executavel, ['format', 'src/composicao.py'], { cwd: destino, encoding: 'utf8', shell: false });
 }
 
 /** ÚNICO ponto que roda um interpretador Python de verdade — nunca `shell: true`. */
@@ -301,6 +412,37 @@ function podarNaoRastreado(pasta, raizProjeto, rastreados) {
   if (readdirSync(pasta).length === 0) rmSync(pasta, { recursive: true, force: true });
 }
 
+/** O `src/composicao.*` que `create-adapter.mjs` reescreve, por binding — mesma regra de
+ * `create-adapter.mjs:caminhoDeComposicao`. */
+function caminhoDeComposicao(destino, binding) {
+  const nome = binding === 'python' ? 'composicao.py' : `composicao.${binding === 'typescript' ? 'ts' : 'js'}`;
+  return join(destino, 'src', nome);
+}
+
+/**
+ * Roda `create-adapter.mjs` e, só se ele saiu 0, confere que a fábrica apareceu DE VERDADE em
+ * `src/composicao.*` — exit 0 sozinho não distingue "registrou" de "não fez nada", que é a classe
+ * exata dos dois bugs da rodada anterior (a âncora não batia, mas um regex que batesse ERRADO por
+ * acidente escreveria algo sem ser o esperado e passaria calada, sem este segundo confronto). Erro
+ * de conteúdo vira o MESMO formato `{ error, status }` que `classificarPasso` já entende — precedente
+ * de `rodarPython`/`rodarNpm` quando a resolução falha antes de qualquer processo rodar.
+ */
+function criarAdapterEVerificar(destino, binding, porta, provedor) {
+  const resultado = rodarNode([CRIAR_ADAPTER, porta, provedor, '--binding', binding], destino);
+  if (classificarPasso(resultado).ok !== true) return resultado;
+
+  const caminho = caminhoDeComposicao(destino, binding);
+  const conteudo = existsSync(caminho) ? readFileSync(caminho, 'utf8') : '';
+  const simbolo = nomeDoSimbolo(binding, provedor);
+  if (!conteudo.includes(simbolo)) {
+    return {
+      error: new Error(`create-adapter saiu 0 mas "${simbolo}" nao apareceu em ${caminho} (porta "${porta}", provedor "${provedor}")`),
+      status: null,
+    };
+  }
+  return { error: null, status: 0, stdout: '', stderr: '' };
+}
+
 /**
  * `git init` + `git add -A` + `git ls-files`, e então poda `modules/` do que não ficou rastreado —
  * a simulação mínima de "sobreviveu a um clone". Cada comando git que falhar
@@ -332,6 +474,12 @@ function executarPasso(passo, ctx) {
       return rodarNpm(['install', '--prefer-offline', '--no-audit', '--no-fund'], ctx.destino);
     case 'criar-modulo':
       return rodarNode([CRIAR_MODULO, passo.moduloId, '--binding', ctx.binding, ...passo.flags], ctx.destino);
+    case 'criar-adapter':
+      return criarAdapterEVerificar(ctx.destino, ctx.binding, passo.porta, passo.provedor);
+    case 'formatar-adapters':
+      return rodarPrettierWrite(ctx.destino);
+    case 'formatar-adapters-py':
+      return rodarRuffFormat(ctx.destino, ctx.venvDir);
     case 'clone-simulado':
       return simularClone(ctx.destino);
     case 'primeiro-commit': {
@@ -509,13 +657,16 @@ function casosDeAutoteste() {
       const nomes = passos.map((p) => p.nome);
       return nomes.indexOf('venv') < iPrimeiroModulo && nomes.indexOf('instalar') < iPrimeiroModulo;
     } },
-    { nome: 'passosDoBinding: clone-simulado depois do ULTIMO criar-modulo, nos tres bindings', fn: () => (
+    { nome: 'passosDoBinding: clone-simulado depois do ULTIMO passo de setup (criar-modulo/criar-adapter/formatar-adapters), nos tres bindings', fn: () => (
       BINDINGS.every((binding) => {
         const passos = passosDoBinding(binding);
         const nomes = passos.map((p) => p.nome);
-        const iUltimoModulo = passos.findLastIndex((p) => p.tipo === 'criar-modulo');
+        const iUltimoSetup = passos.findLastIndex((p) => (
+          p.tipo === 'criar-modulo' || p.tipo === 'criar-adapter'
+          || p.tipo === 'formatar-adapters' || p.tipo === 'formatar-adapters-py'
+        ));
         const iClone = nomes.indexOf('clone-simulado');
-        return iUltimoModulo !== -1 && iClone === iUltimoModulo + 1;
+        return iUltimoSetup !== -1 && iClone === iUltimoSetup + 1;
       })
     ) },
     { nome: 'passosDoBinding: primeiro-commit logo depois de clone-simulado e antes de verificar/verify, nos tres bindings', fn: () => (
@@ -553,6 +704,48 @@ function casosDeAutoteste() {
       BINDINGS.every((binding) => {
         const passosDeModulo = passosDoBinding(binding, { rapido: true }).filter((p) => p.tipo === 'criar-modulo');
         return passosDeModulo.length === 1 && passosDeModulo[0].moduloId === COMBINACOES_DE_MODULO[0].id;
+      })
+    ) },
+    { nome: 'provedorDoIndice: kebab-case valido, COM hifen (achado ① fechado — exercita o caminho consertado), NUNCA derivado do nome da porta', fn: () => (
+      /^[a-z][a-z0-9-]*$/.test(provedorDoIndice(0)) && provedorDoIndice(5).includes('-')
+      && provedorDoIndice(5) !== 'verificadordetoken'
+    ) },
+    { nome: 'provedorDoIndice: um indice, um provedor unico', fn: () => {
+      const gerados = PORTAS_CONHECIDAS.map((_, i) => provedorDoIndice(i));
+      return new Set(gerados).size === PORTAS_CONHECIDAS.length;
+    } },
+    { nome: 'nomeDoSimbolo: typescript/javascript prefixam "criar", python nao', fn: () => (
+      nomeDoSimbolo('typescript', 'prov-a') === 'criarProvA'
+      && nomeDoSimbolo('javascript', 'prov-a') === 'criarProvA'
+      && nomeDoSimbolo('python', 'prov-a') === 'ProvA'
+    ) },
+    { nome: 'passosDeAdapter: um passo por porta do VOCABULARIO INTEIRO, tipo criar-adapter', fn: () => {
+      const passos = passosDeAdapter();
+      return passos.length === PORTAS_CONHECIDAS.length
+        && passos.every((p, i) => p.tipo === 'criar-adapter' && p.porta === PORTAS_CONHECIDAS[i]);
+    } },
+    { nome: 'passosDoBinding: criar-adapter roda logo depois do ULTIMO criar-modulo, nos tres bindings', fn: () => (
+      BINDINGS.every((binding) => {
+        const passos = passosDoBinding(binding);
+        const iUltimoModulo = passos.findLastIndex((p) => p.tipo === 'criar-modulo');
+        const iPrimeiroAdapter = passos.findIndex((p) => p.tipo === 'criar-adapter');
+        return iPrimeiroAdapter === iUltimoModulo + 1;
+      })
+    ) },
+    { nome: 'passosDoBinding: formatar-adapters (prettier TS/JS, ruff format Python) logo apos o ULTIMO criar-adapter e logo antes de clone-simulado, nos tres bindings', fn: () => (
+      BINDINGS.every((binding) => {
+        const passos = passosDoBinding(binding);
+        const tipoEsperado = binding === 'python' ? 'formatar-adapters-py' : 'formatar-adapters';
+        const iUltimoAdapter = passos.findLastIndex((p) => p.tipo === 'criar-adapter');
+        const iFormatar = passos.findIndex((p) => p.tipo === tipoEsperado);
+        const iClone = passos.findIndex((p) => p.tipo === 'clone-simulado');
+        return iFormatar === iUltimoAdapter + 1 && iClone === iFormatar + 1;
+      })
+    ) },
+    { nome: 'passosDoBinding: cobre pelo menos uma porta ja em FABRICAS (repositorio) e a unica ausente (verificadorDeToken)', fn: () => (
+      BINDINGS.every((binding) => {
+        const portas = passosDoBinding(binding).filter((p) => p.tipo === 'criar-adapter').map((p) => p.porta);
+        return portas.includes('repositorio') && portas.includes('verificadorDeToken');
       })
     ) },
     { nome: 'classificarPasso: status 0 e sem error -> ok', fn: () => classificarPasso({ error: undefined, status: 0 }).ok === true },

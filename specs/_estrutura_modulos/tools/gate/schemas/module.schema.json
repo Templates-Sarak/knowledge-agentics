@@ -43,7 +43,7 @@
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "enum": ["repositorio", "auditoria", "relogio", "geradorId", "storage", "auth", "notificador"]
+        "enum": ["repositorio", "auditoria", "relogio", "geradorId", "storage", "verificadorDeToken", "notificador"]
       }
     },
 

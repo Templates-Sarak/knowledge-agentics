@@ -7,7 +7,6 @@
 // Adapter NAO conhece dominio: nao existe `if (module === 'catalogo')` aqui dentro.
 import type {
   Auditoria,
-  Auth,
   EventoDeAuditoria,
   GeradorId,
   Notificador,
@@ -15,6 +14,7 @@ import type {
   Relogio,
   Repositorio,
   Storage,
+  VerificadorDeToken,
 } from '../../packages/ports/index.js';
 
 interface ComHash {
@@ -75,7 +75,7 @@ export function createSequentialGenerator(inicio = 10000): GeradorId {
 }
 
 /** Auth que NEGA tudo. E o default seguro enquanto o projeto nao tem login (deny by default). */
-export function createDenyingAuth(): Auth {
+export function createDenyingAuth(): VerificadorDeToken {
   return {
     async verify(): Promise<{ permissoes: string[] } | null> {
       return null;

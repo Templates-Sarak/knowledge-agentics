@@ -32,14 +32,14 @@ CODIGOS_DE_ERRO: dict[str, int] = {
 # lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
 # mantenha as duas iguais a mao. `fila` NAO ESTA no vocabulario: arrasta retry,
 # dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz
-# que o template nao escolhe.
+# que o template nao escolhe. `verificadorDeToken` era `auth` ate o ADR-010.
 PORTAS_CONHECIDAS = (
     "repositorio",
     "auditoria",
     "relogio",
     "geradorId",
     "storage",
-    "auth",
+    "verificadorDeToken",
     "notificador",
 )
 
@@ -92,7 +92,7 @@ class GeradorId(Protocol):
     def hash(self) -> str: ...
 
 
-class Auth(Protocol):
+class VerificadorDeToken(Protocol):
     async def verify(self, token: str) -> dict[str, object] | None: ...
 
 
