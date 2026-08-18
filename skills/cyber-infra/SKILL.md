@@ -38,7 +38,3 @@ Trate **uma ferramenta/pipeline por vez** (ex: CI primeiro, depois IaC).
 - [ ] Pipelines de CI/CD limpas de injeção de scripts e excesso de permissões de *token*?
 - [ ] Regras IAM e exposição de Buckets/Portas de IaC fechadas?
 - [ ] HITL feito; CI/build executado sem quebrar?
-
-## Referências (Camada 3 — leia sob demanda)
-- `references/workflow.md` — workflow detalhado.
-- `references/examples.md` — exemplo de Dockerfile seguro e pipeline seguro.

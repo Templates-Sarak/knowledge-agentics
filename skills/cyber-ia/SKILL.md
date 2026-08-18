@@ -41,7 +41,3 @@ Trate **uma integração/serviço por vez**.
 - [ ] Proteções de Model DoS (Limites e max_tokens) configuradas?
 - [ ] PII ofuscada antes de ir pro modelo?
 - [ ] HITL feito; patches aplicados preservando o comportamento?
-
-## Referências (Camada 3 — leia sob demanda)
-- `references/workflow.md` — workflow detalhado.
-- `references/examples.md` — exemplo de mitigação de injection.

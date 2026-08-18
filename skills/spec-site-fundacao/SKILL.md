@@ -1,6 +1,6 @@
 ---
 name: "spec-site-fundacao"
-description: "Wizard oficial (Entrevista HITL) para definir o alicerce de um projeto de Site (institucional/marketing), copiando a estrutura base."
+description: Entrevista HITL que define o alicerce de um projeto de Site (institucional/marketing) e instala a estrutura base de specs. Use ao iniciar um site novo, ou quando pedirem a fundação de um projeto de site. NÃO acione proativamente.
 ---
 
 # Skill: Fundação de Site (Wizard)

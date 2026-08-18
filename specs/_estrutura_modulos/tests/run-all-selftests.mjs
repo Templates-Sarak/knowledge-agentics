@@ -135,6 +135,7 @@ const REGISTRO = [
   { caminho: 'specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py', runtime: 'python' },
   { caminho: 'skills/git-verificacao-commit/scripts/gerar_config.py', runtime: 'python' },
+  { caminho: 'skills/git-verificacao-commit/scripts/verificar_commit.py', runtime: 'python' },
   { caminho: 'skills/meta-iniciar-repositorio/scripts/comparar_arvore.py', runtime: 'python' },
   { caminho: 'skills/meta-iniciar-repositorio/scripts/init_repo.py', runtime: 'python' },
   { caminho: 'skills/meta-verificacao-base/scripts/audit_base.py', runtime: 'python' },

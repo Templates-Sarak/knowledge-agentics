@@ -30,3 +30,7 @@ Garante que a aplicação aguenta o tráfego do mundo real, forçando limites pa
 - [ ] A etapa HITL foi realizada para obter VUs e duração do teste de carga com o usuário?
 - [ ] A métrica de sucesso (Threshold de latência/erros) foi definida no script?
 - [ ] A ferramenta escolhida (k6/Artillery) bate direto nos endpoints sem depender da camada pesada de UI (navegadores reais)?
+
+## Referências (Camada 3 — leia sob demanda)
+- `references/scripts-carga.md` — esqueleto k6/Artillery com as três fases e os thresholds, como ler a
+  saída para separar gargalo de aplicação de gargalo de banco, e onde o script mora num projeto do template.

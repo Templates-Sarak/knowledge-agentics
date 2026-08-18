@@ -1,6 +1,6 @@
 ---
 name: "spec-write"
-description: "Padrão oficial para a IA traduzir ideias e requisitos do usuário em especificações de projeto perfeitamente padronizadas e formatadas."
+description: Traduz ideia ou requisito do usuário em especificação padronizada do fluxo SDD (spec, plan, ADR), na forma e no vocabulário corretos. Use ao escrever ou revisar qualquer spec, plan ou ADR — é a fonte de forma que as demais skills de spec referenciam.
 ---
 
 # spec-write

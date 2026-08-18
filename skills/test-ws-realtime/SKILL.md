@@ -29,3 +29,7 @@ Testes REST (HTTP) são "sem estado" e lineares. Testes de WebSocket são contí
 - [ ] O isolamento de salas (pub/sub) foi garantido?
 - [ ] As conexões são limpas corretamente (teardown/close) ao fim do teste?
 - [ ] O teste não depende de tempos estáticos (`sleep`), aguardando o evento emitido de forma assíncrona?
+
+## Referências (Camada 3 — leia sob demanda)
+- `references/harness-ws.md` — harness de dois-ou-mais clientes, asserção de heartbeat, teste de
+  isolamento de sala e teardown, e onde este harness cabe dentro de `tests/contract/` no template modular.

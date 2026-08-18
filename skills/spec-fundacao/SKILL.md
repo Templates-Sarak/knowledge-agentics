@@ -1,6 +1,6 @@
 ---
 name: "spec-fundacao"
-description: "Wizard oficial (Entrevista HITL) para definir o alicerce arquitetural e tecnológico de um repositório recém-iniciado, gerando os ADRs padronizados."
+description: Entrevista HITL que define o alicerce arquitetural e tecnológico de um repositório recém-iniciado e grava as decisões como ADRs padronizados. Use logo após iniciar o repositório, ou quando pedirem para definir stack, banco, idioma ou padrões do projeto. NÃO acione proativamente.
 ---
 
 # Skill: Fundação Arquitetural (Wizard)

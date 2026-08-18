@@ -32,3 +32,7 @@ Testes de integração garantem que o "Meio do Caminho" funciona. Diferente do `
 - [ ] O banco de dados é efêmero (Testcontainers ou similar) e tem um processo de teardown limpo?
 - [ ] Não há mocks na camada de dados/ORM?
 - [ ] As asserções validam tanto o retorno HTTP quanto o estado persistido no banco?
+
+## Referências (Camada 3 — leia sob demanda)
+- `references/ambiente-efemero.md` — setup/teardown de Testcontainers por stack (TS, Python, Java, Go), a
+  asserção dupla como código, e onde esta atividade mora (ou não) dentro de um projeto do template modular.

@@ -1,6 +1,6 @@
 ---
 name: "site-criacao"
-description: "Preenche as especificações vazias do site geradas pela spec-site-fundacao através de um formulário inteligente e síntese de informações estruturadas, com cobertura de 100% dos campos arquiteturais."
+description: Preenche, por formulário HITL, as specs vazias de site geradas pela spec-site-fundacao, cobrindo 100% dos campos arquiteturais. Use depois da spec-site-fundacao, quando as specs do site existem mas estão vazias. NÃO acione proativamente.
 ---
 
 # Skill: Criação de Site (Síntese e Preenchimento)
