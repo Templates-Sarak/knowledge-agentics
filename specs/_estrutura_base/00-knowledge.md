@@ -47,6 +47,7 @@ justamente porque são mutativas ou sensíveis.
 | Fechar uma tarefa de escrita/refactor antes de dizer "pronto" | `code-auditoria-padrao` (gate obrigatório) |
 | Saber se um código legado está conforme | `code-diagnostico` (read-only) · em escala: `/code1-auditar` |
 | Adequar legado ao padrão sem mudar comportamento | `code-adequacao` · fluxo completo: `/code2-caracterizar` → `/code3-adequar` |
+| Levar um legado (já em produção) ao **template de módulos** (Nível 1) | `meta-adequacao-modular` — duas conversas: planejar (Fase A) e conferir (Fase B) |
 | Cobrir código novo com testes | `test-unitario` |
 | Testar endpoint com banco real efêmero | `test-integracao-api` |
 | Testar contrato de API em runtime (provider/consumer, payload entre versões) | `test-api-contrato` |
@@ -178,6 +179,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `site-seo` | `site-` | SEO técnico + GEO local + AEO/GSO (robots/sitemap, JSON-LD, OG, NAP). |
 | `meta-create-skill` | `meta-` | Criar/revisar skill: 3 camadas, `description`-gatilho, scaffold, checklist. |
 | `meta-iniciar-repositorio` | `meta-` | Preparar um repo-alvo para receber inteligência local (`.agents/`, entrypoints, hook de índice). |
+| `meta-adequacao-modular` | `meta-` | Levar um legado ao template de módulos — diagnóstico, gate instalado antes do refactor, plans `xx-*`, conferência em conversa separada. |
 | `meta-atualizar-base` | `meta-` | Atualizar a Fonte da Verdade Sarak e espelhar para as IDEs (`sync_ide.py`). |
 | `meta-verificacao-base` | `meta-` | Verificar integridade da base: YAML, contratos JSON, ponteiros órfãos. |
 

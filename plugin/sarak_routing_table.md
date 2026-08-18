@@ -44,6 +44,7 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **git-especialista-repositorio**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/git-especialista-repositorio/SKILL.md`
 - **git-revisao-diff**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/git-revisao-diff/SKILL.md`
 - **git-verificacao-commit**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/git-verificacao-commit/SKILL.md`
+- **meta-adequacao-modular**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-adequacao-modular/SKILL.md`
 - **meta-atualizar-base**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-atualizar-base/SKILL.md`
 - **meta-create-skill**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-create-skill/SKILL.md`
 - **meta-iniciar-repositorio**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-iniciar-repositorio/SKILL.md`

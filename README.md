@@ -26,7 +26,7 @@ em vez de reconfigurar tudo do zero. O destino é empacotar como **plugin** e im
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ 48 skills por área (§6) |
+| `skills/` | ✅ 49 skills por área (§6) |
 | `hooks/` | ✅ 4 garantias (segredos, padrão de escrita, dependências, cobertura) |
 | `commands/` | ✅ 12 (code/cyber/git auditar→adequar; deploy/site/meta) |
 | `agents/` | ✅ 5 (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
@@ -230,7 +230,7 @@ interno/compartilhado (`hooks/_lib.js`); nomes diretos para config/ativação (`
 | `git-` | `git-especialista-repositorio`, `git-verificacao-commit`, `git-revisao-diff` | _(pre-commit)_ | ✅ `/git1-auditar`, `/git2-adequar` | ✅ `git-auditor` |
 | `deploy-` | `deploy-vercel`, `deploy-docker` | — | ✅ `/deploy-vercel`, `/deploy-docker` | — |
 | `site-` | `site-organizacao`, `site-seo` | — | ✅ `/site-organizar`, `/site-seo` | — |
-| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-atualizar-base`, `meta-verificacao-base` | — | ✅ `/meta-criar-skill` | — |
+| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base` | — | ✅ `/meta-criar-skill` | — |
 | `padrao-` | `padrao-escrita` | `padrao-limiares`, `padrao-format` | ⬜ (subsumido pelo `code-`) | ⬜ |
 
 > **`code-`/`cyber-`/`git-`** seguem o molde **auditar → adequar**: `/X1-auditar` (agent read-only → `.sarak/`)
@@ -245,7 +245,7 @@ README é a fonte da verdade**. Toda funcionalidade nova nasce já neste padrão
 
 ## 6. Inventário atual
 
-### Skills (48, por área)
+### Skills (49, por área)
 
 | Prefixo | Skills |
 |---|---|
@@ -260,7 +260,7 @@ README é a fonte da verdade**. Toda funcionalidade nova nasce já neste padrão
 | `site-` (3) | `site-criacao`, `site-organizacao`, `site-seo` |
 | `git-` (4) | `git-commit-inicial`, `git-especialista-repositorio`, `git-revisao-diff`, `git-verificacao-commit` |
 | `cyber-` (9) | `cyber-api`, `cyber-auth`, `cyber-codigo`, `cyber-config`, `cyber-dados`, `cyber-dependencias`, `cyber-ia`, `cyber-infra`, `cyber-segredos` |
-| `meta-` (4) | `meta-atualizar-base`, `meta-create-skill`, `meta-iniciar-repositorio`, `meta-verificacao-base` |
+| `meta-` (5) | `meta-adequacao-modular`, `meta-atualizar-base`, `meta-create-skill`, `meta-iniciar-repositorio`, `meta-verificacao-base` |
 
 > Só as `padrao-*` disparam **proativamente** (toda escrita/revisão). As demais são **sob demanda** (você pede ou
 > digita `/`), por serem mutativas/sensíveis. Garantia determinística (rodar sempre) é trabalho de **hook**.
