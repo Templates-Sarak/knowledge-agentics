@@ -27,7 +27,7 @@ ele recebe o *conteúdo* de cada linha, não a árvore do template.
 | Molde de módulo | `specs/_estrutura_modulos/bindings/python/_template/` | validado pelo gate **como módulo real** (ADR-006) |
 | Esqueleto de raiz | `specs/_estrutura_modulos/bindings/python/root/` | `packages/ports`, `adapters/memory`, `src/composicao`, `verificar.py` |
 
-Módulo novo **não se escreve à mão**: `node tools/create-module.mjs <id> --binding python`,
+Módulo novo **não se escreve à mão**: `node tools/create-module.mjs <id> --role domain --binding python`,
 conduzido pela skill `code-modulo`.
 
 **O binding Python nasce backend-only** (`webPath: null`): o front do ecossistema é sempre TypeScript. Módulo

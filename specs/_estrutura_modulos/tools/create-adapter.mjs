@@ -211,7 +211,7 @@ function registrarFabricaPy(conteudo, { porta, provedor, nomeSimbolo, caminhoImp
   // multilinha de `adapters.memory` especificamente. O molde real ja tem uma SEGUNDA linha de
   // import entre os dois (`from adapters.postgres import ...`), e a ancora antiga, presa ao `)`,
   // nunca casava contra o molde de verdade: `create-adapter.mjs --binding python` falhava para
-  // TODA porta, sempre (medido, ultimas-atualizacoes.md). Ancorar na linha em branco + comentario,
+  // TODA porta, sempre (medido). Ancorar na linha em branco + comentario,
   // em vez do caractere que a precede, sobrevive a uma terceira linha de import que venha a existir.
   const linhaDaImportacao = '\n\n# Fabrica de adapter';
   const comImport = conteudo.includes(linhaDaImportacao)
@@ -283,8 +283,7 @@ function rodarGate(raizProjeto) {
 // src/composicao.*` — não simplificadas — porque o valor deste autoteste é justamente flagrar quando
 // a ÂNCORA do regex e o arquivo real se separam. Foi rodando este autoteste contra o texto real,
 // antes do refactor de §4.7 (`max-params`), que dois bugs pré-existentes apareceram — nenhum era do
-// refactor, e os dois foram corrigidos nesta mesma rodada (Onda 1 e Onda 2 de
-// `ultimas-atualizacoes.md`):
+// refactor, e os dois foram corrigidos na mesma rodada:
 //
 // (1) TS: o tipo de `FABRICAS` no molde real é `Record<string, Record<string, (modulo:
 //     ManifestoDescoberto) => unknown>>`, mas a âncora de "porta nova" em `registrarFabricaTs`

@@ -303,7 +303,7 @@ function passosProjetoGerado(python) {
     },
     {
       nome: 'G — create-module.mjs no projeto gerado',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'create-module.mjs'), 'catalogo', '--role', 'dominio'], destino)),
+      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'create-module.mjs'), 'catalogo', '--role', 'domain'], destino)),
     },
     {
       nome: 'G — camada 1: gate --todos no projeto gerado',

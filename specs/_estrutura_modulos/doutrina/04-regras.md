@@ -90,6 +90,12 @@ gate de auditar.
 **Um nome, um lugar.** O identificador do módulo é o mesmo na pasta, no package, na rota, no prefixo de tabela,
 no prefixo de env e no `module.json`. Divergência é erro de gate, não estilo.
 
+**As duas transliterações do `id`, e por que não são exceção à regra acima.** O `id` é kebab-case; onde o
+destino não aceita hífen, ele viaja convertido, sempre pela mesma correspondência 1:1 e reversível:
+`<MODULO>_` em env (`nota-fiscal` → `NOTA_FISCAL_`) e `data.prefix` em banco (`nota-fiscal` → `nota_fiscal_`).
+Continua sendo **um** nome — hífen e sublinhado são a mesma fronteira de palavra, escrita no alfabeto que cada
+destino aceita. Quem gera as duas é o mesmo marcador do molde (`<MODULO>`, `<modulo_snake>`), nunca digitação.
+
 **`RAIZ_` é prefixo reservado, e a reserva é a razão de ele existir.** A chave de módulo é `<MODULO>_*`
 (cobrada por `env-modulo`); sem uma convenção própria, nenhuma regra conseguiria dizer se `JWT_SECRET` é da
 raiz ou de um módulo, e a chave mais sensível do sistema continuaria sem dono. O vocabulário já chamava a raiz
@@ -177,7 +183,7 @@ quem o carrega.
 | id | nível | verifica | escopo |
 |---|---|---|---|
 | `schema-nao-public` | erro | `data.schema` presente e diferente de `public` | módulo |
-| `tabela-prefixo` | erro | toda tabela em `data.tables` começa com `data.prefix` (= `<id>_`) | módulo |
+| `tabela-prefixo` | erro | toda tabela em `data.tables` começa com `data.prefix`, que é o `id` em **snake_case** + `_` (`nota-fiscal` → `nota_fiscal_`). A conversão existe porque identificador SQL não aceita hífen sem aspas: sem ela, todo `id` kebab-case com hífen ficava sem manifesto válido possível — esta regra pedia `nota-fiscal_` e `schema-manifesto` proibia o hífen na tabela derivada | módulo |
 | `tabela-alheia` | erro | nenhum identificador `<outro-modulo>_<algo>` aparece no código ou no SQL do módulo | global |
 | `migrations` | erro | nome no padrão `NNNN-verbo-objeto.sql`; toda migration tem bloco `-- rollback` | módulo |
 | `tabela-declarada` | erro | toda tabela de `data.tables` tem `CREATE TABLE` no SQL do módulo. É o verificador que `artefato-declarado` pressupunha existir ao deixar `database/` de fora (*"quem declara banco é `data.tables`"*) e que não existia. Módulo **sem SQL nenhum** silencia: ali o dono é `migrations` (§7.2) | módulo |
@@ -694,7 +700,7 @@ Python não aceita hífen em `import` nem em nome de pacote — regra da linguag
 então `create-adapter.mjs` converte só a pasta/import Python pra snake_case
 (`adapters/disco_frio/`, `from adapters.disco_frio import DiscoFrio`), preservando a identidade
 kebab na chave (`"disco-frio": DiscoFrio`, `FABRICAS` é `dict[str, ...]`, chave é string, não
-identificador). Achado ① fechado (`ultimas-atualizacoes.md`); a alternativa rejeitada (proibir
+identificador). A alternativa rejeitada (proibir
 hífen nos três bindings) contradiria a própria mensagem de erro de `validarOpcoes`, que recomenda
 kebab-case.
 

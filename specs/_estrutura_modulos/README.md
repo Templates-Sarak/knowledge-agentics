@@ -9,13 +9,20 @@ copiar uma pasta e recortar as chaves `<MODULO>_*` do `.env` — não reescrever
 
 ## Começar
 
+> **Os dois `tools/` NÃO são o mesmo, e confundi-los é o erro mais fácil daqui.** `[base]` roda com
+> o diretório atual em `specs/_estrutura_modulos/` (é lá que vive o `tools/` do template — a raiz do
+> `knowledge-agentics` **não** tem um). `[projeto]` roda dentro do projeto gerado, onde `tools/` foi
+> copiado inteiro. O sintoma de trocar um pelo outro é `Cannot find module`.
+
 ```bash
+# [base] a partir de specs/_estrutura_modulos/
 # 1. instanciar um projeto novo
 node tools/create-project.mjs ../meu-sistema --binding typescript --escopo acme
 
-# 2. criar o primeiro módulo
+# [projeto] daqui em diante, dentro do projeto gerado
 cd ../meu-sistema
-node tools/create-module.mjs catalogo
+# 2. criar o primeiro módulo  (--role é obrigatório: domain | gateway | connector)
+node tools/create-module.mjs catalogo --role domain
 
 # 3. verificar
 node tools/gate/validate.mjs --todos
@@ -68,7 +75,7 @@ ela. Regra que não está lá não é regra; regra que não pode ser verificada 
 
 ```
 create-project.mjs <destino> [--binding b] [--escopo e]   instancia um projeto
-create-module.mjs <id> [--role p] [--sem-artefato] [--sem-web]
+create-module.mjs <id> --role domain|gateway|connector [--sem-artefato] [--sem-web]
 gate/validate.mjs <caminho-do-modulo>                      valida UM módulo
 gate/validate.mjs --todos                                  todos + as regras globais
 gate/validate.mjs --extracao <caminho>                     vira microsserviço hoje?

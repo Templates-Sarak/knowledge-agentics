@@ -47,7 +47,7 @@ quem cobra sem esse furo é o CI (`03-operacao.md` §7).
 ## 3. A ordem ao criar módulo
 
 ```sh
-node tools/create-module.mjs <id> --binding <b> --role <p> [--sem-artefato]
+node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]
 ```
 
 Depois do scaffold, a ordem de preenchimento e o motivo dela estão em `01-modulo.md` §8 —

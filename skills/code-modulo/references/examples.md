@@ -12,9 +12,9 @@ preço vigente de cada item para outros módulos e tem tela própria. Não gera 
 ### Como foi feito
 
 1. **Terreno confirmado** — `tools/` e `modules/` presentes; `specs/arquitetura/01-modulo.md` lido.
-2. **Identidade coletada e aprovada no HITL** — `id: catalogo`, `role: dominio`, `binding: typescript`,
+2. **Identidade coletada e aprovada no HITL** — `id: catalogo`, `role: domain`, `binding: typescript`,
    `webPath: /catalogo`, `ui.modo: kit`, `generatesArtifact: false`.
-3. **Scaffold** — `node tools/create-module.mjs catalogo --binding typescript --role dominio --sem-artefato`.
+3. **Scaffold** — `node tools/create-module.mjs catalogo --binding typescript --role domain --sem-artefato`.
 4. **Contrato escrito antes do código**, com `/itens/{hash}/preco-vigente` — o endpoint que outros módulos
    vão consumir.
 5. **Código preenchido na ordem**, com a regra de preço resolvida no `core/domain` do dono do dado.

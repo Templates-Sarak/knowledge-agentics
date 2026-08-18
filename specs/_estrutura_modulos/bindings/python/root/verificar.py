@@ -7,6 +7,9 @@
     python verificar.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
     python verificar.py --seguranca          .env versionado + segredo no delta — CI, fail-closed
     python verificar.py --dependencias       pip-audit contra o piso de severidade — CI
+    python verificar.py --migrations up|down|ciclo <modulo>   delega a scripts/migrations.py
+
+Argumento fora dessa lista REPROVA (exit 1) — nunca cai no caminho padrao em silencio.
 
 Equivalente ao `npm run verify` do binding TypeScript. Roda, nesta ordem:
 
@@ -216,17 +219,64 @@ def _run_migrations(resto: list[str]) -> int:
     return resultado.returncode
 
 
-def main() -> int:
-    if "--cobertura" in sys.argv:
+# As UNICAS flags que este comando reconhece. Argumento fora desta lista REPROVA (`_recusar_
+# desconhecidas`) em vez de cair no caminho padrao: sem isso, `--coberturra` (typo) rodava a cadeia
+# INTEIRA, imprimia "verificar: OK" e saia 0 — quem lesse o exit code concluiria que a cobertura
+# rodou. Falso positivo silencioso e a direcao proibida (03-operacao.md §7); "nao verificado" nunca
+# pode se parecer com "ok".
+FLAGS = frozenset(
+    {
+        "--rapido",
+        "--cobertura",
+        "--lint-relatorio",
+        "--seguranca",
+        "--dependencias",
+        "--migrations",
+    }
+)
+
+
+def _recusar_desconhecidas(argv: list[str]) -> str | None:
+    """Motivo, se houver argumento nao reconhecido. `--migrations` consome o resto (up|down|ciclo
+    <modulo>), entao nada depois dela e julgado aqui — o dono daqueles argumentos e o runner."""
+    if "--migrations" in argv:
+        argv = argv[: argv.index("--migrations")]
+    for arg in argv:
+        if arg not in FLAGS:
+            return f'argumento nao reconhecido: "{arg}" — use uma de {" ".join(sorted(FLAGS))}'
+    return None
+
+
+def _despachar_modo(argv: list[str]) -> int | None:
+    """Exit code do modo dedicado que `argv` pede, ou `None` quando o pedido e a cadeia inteira.
+
+    Separado de `main` para que o guard de argumento desconhecido coubesse sem estourar os
+    limiares que este proprio script cobra (C901/PLR0911, do `.ruff.toml` GERADO de
+    tools/gate/thresholds.mjs): despachar modo e uma responsabilidade, rodar a cadeia e outra.
+    Suprimir o limiar aqui seria o verificador isentando a si mesmo da regra que ele cobra.
+    """
+    if "--cobertura" in argv:
         return _run_coverage()
-    if "--lint-relatorio" in sys.argv:
+    if "--lint-relatorio" in argv:
         return _run_lint_report()
-    if "--seguranca" in sys.argv:
+    if "--seguranca" in argv:
         return _run_delegated("seguranca", "ci-security.mjs")
-    if "--dependencias" in sys.argv:
+    if "--dependencias" in argv:
         return _run_delegated("dependencias", "ci-dependencies.mjs")
-    if "--migrations" in sys.argv:
-        return _run_migrations(sys.argv[sys.argv.index("--migrations") + 1 :])
+    if "--migrations" in argv:
+        return _run_migrations(argv[argv.index("--migrations") + 1 :])
+    return None
+
+
+def main() -> int:
+    motivo = _recusar_desconhecidas(sys.argv[1:])
+    if motivo is not None:
+        _write(f"{motivo}\n")
+        return 1
+
+    modo = _despachar_modo(sys.argv)
+    if modo is not None:
+        return modo
 
     parar_no_primeiro = "--rapido" in sys.argv
     # Anotado: sem isto o tipo e inferido dos quatro primeiros (pasta=None) e os passos de

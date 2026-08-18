@@ -22,7 +22,7 @@ const MANIFESTO_BASE = {
   webPath: null,
   navigation: null,
   exportsSummary: false,
-  data: { schema: '<escopo>', prefix: '<modulo>_', tables: [] },
+  data: { schema: '<escopo>', prefix: '<modulo_snake>_', tables: [] },
   requiredEnv: [CHAVE],
   ports: [],
   permissions: [],

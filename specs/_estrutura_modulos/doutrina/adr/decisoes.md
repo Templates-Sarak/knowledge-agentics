@@ -313,7 +313,7 @@ objeto que ele escreve na âncora "porta existente" nunca era citada
 sintaxe). Em Python, o import que ele registra usa o provedor cru no caminho pontilhado
 (`from adapters.disco-frio import DiscoFrio`) — `-` não é caractere válido de identificador, e
 Python não tem alternativa: nome de módulo/pacote com hífen é impossível de importar, regra da
-linguagem, não deste gerador. Achado ① (`ultimas-atualizacoes.md`).
+linguagem, não deste gerador.
 
 **Decisão.** Consertar os dois lados sem tocar a identidade do provedor:
 - **TS/JS** — citar a chave (`'${provedor}': () => ${simbolo}()`) nas duas âncoras

@@ -9,11 +9,11 @@
   "webPath": null,
   "data": {
     "schema": "<escopo>",
-    "prefix": "<modulo>_",
+    "prefix": "<modulo_snake>_",
     "tables": [
-      "<modulo>_migrations",
-      "<modulo>_metadados",
-      "<modulo>_auditoria"
+      "<modulo_snake>_migrations",
+      "<modulo_snake>_metadados",
+      "<modulo_snake>_auditoria"
     ]
   },
   "requiredEnv": [

@@ -18,11 +18,13 @@ PREFIXOS_DA_BASE = ("skills/", "agents/", "commands/", "hooks/", "plugin/", "spe
 # Pastas da Camada 3 de uma skill — resolvem contra a pasta da própria skill.
 PREFIXOS_CAMADA3 = ("references/", "scripts/", "assets/")
 
-# Gerados por `plugin/sync_ide.py`: não existem num clone limpo, e citá-los é correto.
+# Gerado por `plugin/sync_ide.py`, e citá-lo é correto. É UM arquivo, não três: `antigravity_rules.txt`
+# e `claude_instructions.txt` constavam aqui e o `sync_ide.py` não gera nenhum dos dois há tempos — os
+# arquivos não existem nem são rastreados. Declaração morta em lista de exceção é pior que inofensiva:
+# ela promete que alguém confere algo que ninguém confere mais. Se `sync_ide.py` voltar a gerar outro
+# artefato, a entrada nova entra aqui junto com ele, nunca antes.
 GERADOS = frozenset({
     "plugin/sarak_routing_table.md",
-    "plugin/antigravity_rules.txt",
-    "plugin/claude_instructions.txt",
 })
 
 # Um índice que se declara COMPLETO aceita ser cobrado na direção inversa: tudo que existe no disco

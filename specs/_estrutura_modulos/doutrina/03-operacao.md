@@ -271,7 +271,7 @@ npm test
 node tools/affected.mjs --desde origin/main
 
 # 3. so CI — custam rede, git de historico, ou dezenas de segundos
-npm run ci:contrato      # breaking change no contract/openapi.yaml
+npm run ci:contract      # breaking change no contract/openapi.yaml
 npm run ci:cobertura     # lcov + junit, por modulo
 npm run ci:seguranca     # estagio 0, fail-closed
 npm run ci:dependencias  # audit + excecao datada

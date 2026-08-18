@@ -37,7 +37,7 @@ MANIFESTO_BASE = {
     "exportsSummary": False,
     "data": {
         "schema": "<escopo>",
-        "prefix": "<modulo>_",
+        "prefix": "<modulo_snake>_",
         "tables": [],
     },
     "requiredEnv": [CHAVE],

@@ -77,14 +77,14 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 
    | Bloco | Extrai |
    |---|---|
-   | Identidade | `id` (kebab-case), `name`, `description` numa linha, `role` (valor digitado na CLI: `dominio`\|`gateway`\|`conector`, gravado no manifesto como `domain`\|`gateway`\|`connector`) |
+   | Identidade | `id` (kebab-case), `name`, `description` numa linha, `role` (`domain`\|`gateway`\|`connector` — a mesma palavra na CLI `--role` e no manifesto) |
    | Forma | `generatesArtifact`, `webPath` ou `null`, `ui.modo` |
    | Dados | tabelas do módulo (schema e prefixo **herdados** dos vizinhos) |
    | Dependências | portas de infraestrutura (`ports`); `consumes` de outros módulos — **com checagem de ciclo antes de confirmar** |
    | Segurança | `permissions`, `publicRoutes` (opt-in, **método incluso**), `sensitiveFields`, `requiredEnv` |
 
 3. **HITL — plano** → "⚠️ Confirma a criação do módulo `<id>`?" **Aguarde.**
-4. **Scaffold** — `node tools/create-module.mjs <id> --binding <b> --role <p> [--sem-artefato]`.
+4. **Scaffold** — `node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]`.
 5. **Declarar no manifesto** — `data`, `requiredEnv`, `ports`, `consumes`, `permissions`, `publicRoutes`,
    `sensitiveFields`, `navigation`. **Não declarado, não existe** — é daqui que o gate lê.
 6. **Contrato antes do código** — `contract/openapi.yaml` **primeiro**, com `/health`, `/meta` e `/resumo`.

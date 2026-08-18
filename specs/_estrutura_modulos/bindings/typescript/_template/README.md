@@ -38,7 +38,7 @@ core/            engine interna, sem I/O
   engine/         geração determinística do artefato
 api/src/         a única superfície pública
 web/src/         front — consome só /api/v1/<modulo>
-database/        schema.sql + migrations das tabelas <modulo>_*
+database/        schema.sql + migrations das tabelas <modulo_snake>_*
 tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 ```
 
@@ -55,7 +55,7 @@ tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 - **Deny by default:** toda rota exige token, exceto as de `publicRoutes`.
 - **Log estruturado** com `requestId` e redação automática de campo sensível. `console.*` é proibido.
 - **Determinismo:** `Math.random()` e `new Date()` proibidos em `core/` — use `geradorId` e `relogio`.
-- **Dados:** tabela `<modulo>_*` no schema declarado (**nunca** `public`), RLS ligada, trilha append-only.
+- **Dados:** tabela `<modulo_snake>_*` no schema declarado (**nunca** `public`), RLS ligada, trilha append-only.
 
 ## Comandos
 

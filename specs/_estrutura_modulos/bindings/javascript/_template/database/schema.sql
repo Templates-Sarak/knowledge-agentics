@@ -4,14 +4,14 @@
 
 create schema if not exists "<escopo>";
 
-create table "<escopo>"."<modulo>_migrations" (
+create table "<escopo>"."<modulo_snake>_migrations" (
   arquivo      text        primary key,
   aplicada_em  timestamptz not null default now()
 );
 
-alter table "<escopo>"."<modulo>_migrations" enable row level security;
+alter table "<escopo>"."<modulo_snake>_migrations" enable row level security;
 
-create table "<escopo>"."<modulo>_metadados" (
+create table "<escopo>"."<modulo_snake>_metadados" (
   id          uuid primary key default gen_random_uuid(),
   hash        text        not null unique,
   titulo      text        not null,
@@ -20,9 +20,9 @@ create table "<escopo>"."<modulo>_metadados" (
   updated_at  timestamptz not null default now()
 );
 
-alter table "<escopo>"."<modulo>_metadados" enable row level security;
+alter table "<escopo>"."<modulo_snake>_metadados" enable row level security;
 
-create table "<escopo>"."<modulo>_auditoria" (
+create table "<escopo>"."<modulo_snake>_auditoria" (
   id               uuid primary key default gen_random_uuid(),
   hash             text        not null,
   acao             text        not null,
@@ -33,4 +33,4 @@ create table "<escopo>"."<modulo>_auditoria" (
   updated_at       timestamptz not null default now()
 );
 
-alter table "<escopo>"."<modulo>_auditoria" enable row level security;
+alter table "<escopo>"."<modulo_snake>_auditoria" enable row level security;

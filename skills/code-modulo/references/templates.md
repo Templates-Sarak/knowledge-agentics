@@ -55,7 +55,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 |---|---|
 | id | `<id>` |
 | name | <Nome> |
-| role (CLI `--role`, digitado em PT) | dominio \| gateway \| conector |
+| role (CLI `--role`, obrigatoria) | domain \| gateway \| connector |
 | binding | typescript \| javascript \| python |
 | basePath | `/api/v1/<id>` |
 | webPath | `/<id>` \| null |
@@ -118,9 +118,10 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 }
 ```
 
-**`role` é traduzido pelo scaffold** — a CLI recebe `dominio`\|`gateway`\|`conector` (`--role`), e
-`create-module.mjs` grava o valor em inglês no manifesto (`domain`\|`gateway`\|`connector`). Os dois
-blocos acima usam `role: "domain"` porque é o que o arquivo final contém.
+**`role` tem UM vocabulário só, o inglês do manifesto** — `--role domain`\|`gateway`\|`connector`, a
+mesma forma que `init_repo.py` exige em `--modulos <id>:<role>` e a mesma que sai gravada em
+`module.json`. Não há tradução em lugar nenhum do caminho. A flag é **obrigatória**: papel adivinhado
+pelo nome do id é o defeito que a exigência fecha.
 
 **Lembretes:** `consumes` vazio é `[]`, não ausente. `sensitiveFields` recebe todo campo com PII — ele nunca sai
 em resposta, log ou OpenAPI. `publicRoutes` é **opt-in** e o método faz parte da declaração.

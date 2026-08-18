@@ -31,7 +31,7 @@ ele recebe o *conteúdo* de cada linha, não a árvore do template.
 | Molde de módulo | `specs/_estrutura_modulos/bindings/javascript/_template/` | validado pelo gate **como módulo real** (ADR-006) |
 | Esqueleto de raiz | `specs/_estrutura_modulos/bindings/javascript/root/` | `packages/ports`, `adapters/memory`, `src/composicao` |
 
-Módulo novo **não se escreve à mão**: `node tools/create-module.mjs <id> --binding javascript`,
+Módulo novo **não se escreve à mão**: `node tools/create-module.mjs <id> --role domain --binding javascript`,
 conduzido pela skill `code-modulo`.
 
 # 3. Skills obrigatórias

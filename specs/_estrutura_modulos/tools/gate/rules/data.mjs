@@ -11,10 +11,13 @@ const PADRAO_MIGRATION = /^\d{4}-[a-z][a-z0-9]*(-[a-z0-9]+)+\.sql$/;
 
 /** O laco de `achado` isolado do de `tabela-alheia.verificar` — so por isso o aninhamento cabe no
  * limiar que esta propria regra e as irmas do §4.7 cobram do codigo do usuario. Mensagem intacta:
- * o autoteste (`93/93` etc.) compara ids, e o texto e o conserto que o autor le. */
+ * o autoteste compara CONJUNTO DE IDS, e o texto e o conserto que o autor le. */
 function achadosDeReferenciaAlheia(ctx, arquivo, outro) {
+  // snake_case pelo mesmo motivo de `tabela-prefixo`: a tabela do vizinho `nota-fiscal`
+  // chama-se `nota_fiscal_*`. Procurar pelo id cru deixaria a regra CALADA exatamente sobre
+  // os modulos com hifen — falso negativo silencioso, nao ausencia de risco.
   const achados = [];
-  const padrao = new RegExp(`\\b${outro.idPasta}_[a-z][a-z0-9_]*`, 'g');
+  const padrao = new RegExp(`\\b${outro.idPasta.replace(/-/g, '_')}_[a-z][a-z0-9_]*`, 'g');
   for (const achado of new Set(textoDeCodigo(arquivo).match(padrao) ?? [])) {
     achados.push({
       modulo: ctx.idPasta,
@@ -43,7 +46,12 @@ export default [
     verificar(ctx) {
       const data = ctx.manifesto?.data;
       if (data === undefined) return [];
-      const esperado = `${ctx.manifesto.id}_`;
+      // snake_case, NAO o id cru: identificador SQL nao aceita hifen sem aspas, e
+      // `schema-manifesto` cobra `^[a-z][a-z0-9_]*$` em `data.tables[]`. Exigir aqui o id cru
+      // tornava `nota-fiscal` IMPOSSIVEL — esta regra pedia `nota-fiscal_` e o schema proibia
+      // o hifen na tabela que comeca por ele: duas regras do mesmo gate pedindo coisas
+      // incompativeis. E a mesma conversao que `<modulo_snake>` faz no molde.
+      const esperado = `${ctx.manifesto.id.replace(/-/g, '_')}_`;
       const achados = [];
       if (data.prefix !== esperado) {
         achados.push(`data.prefix "${data.prefix}" deveria ser "${esperado}"`);

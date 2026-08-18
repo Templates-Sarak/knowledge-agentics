@@ -20,7 +20,7 @@ Esta skill orquestra a distribuição de novas features, correções ou ajustes 
    - **Ferramenta:** `run_command`
    - **Ação:** No diretório raiz do `X-Skills`, valide que tudo foi criado dentro do padrão rodando a auditoria da skill irmã:
      ```bash
-     python skills/meta-verificacao-base/scripts/audit_base.py
+     python skills/meta-verificacao-base/scripts/audit_base.py --raiz .
      ```
    - **Critério:** Se o script apontar **qualquer** erro estrutural (YAML, vazamentos, contratos quebrados), **PARE/ABORTE** o processo imediatamente e notifique o usuário para correção. Nunca propague uma base quebrada.
 
@@ -30,15 +30,21 @@ Esta skill orquestra a distribuição de novas features, correções ou ajustes 
      ```bash
      python plugin/sync_ide.py --target all
      ```
-   - **Critério:** O log deve confirmar cópia para `plugins/sarak` (Antigravity) e a geração de `antigravity_rules.txt` e `claude_instructions.txt`.
+   - **Critério:** O log deve confirmar a cópia para `plugins/sarak` (Antigravity) e a geração de
+     `plugin/sarak_routing_table.md` — **o único artefato que o `sync_ide.py` gera**.
 
 3. **Gate de Roteamento**
    - **Ferramenta:** Texto (Resposta ao usuário)
-   - **Ação:** Mostre ao usuário o link/caminho absoluto dos arquivos gerados (`plugin/antigravity_rules.txt` e `plugin/claude_instructions.txt`), instruindo-o a atualizar as regras globais dos LLMs caso haja comandos (`/`) novos na versão recém atualizada.
+   - **Ação:** Mostre ao usuário o caminho **absoluto** de `plugin/sarak_routing_table.md`, instruindo-o a
+     atualizar as Regras Globais dos LLMs caso haja comandos (`/`) novos na versão recém atualizada.
+   - **A frase colada nas IDEs guarda o caminho ABSOLUTO da base.** Se a base tiver mudado de lugar, o
+     `sync_ide.py` regenera a tabela mas a frase continua apontando para o endereço antigo, e **nada
+     detecta isso** — o agente simplesmente segue sem roteamento. Nesse caso, mande recolar a frase.
+     Contexto e motivo: `plugin/README.md`.
 
 ## Regras
 - **NÃO** modifique regras ou lógica interna das IDEs nesta skill, a responsabilidade é apenas garantir que o pipeline de sincronização rode.
 
 ## Checklist
 - [ ] Sincronizador `sync_ide.py` executado sem erros?
-- [ ] Instruções de rotas (`.txt`) disponibilizadas ao usuário na resposta final?
+- [ ] Caminho absoluto de `plugin/sarak_routing_table.md` disponibilizado ao usuário na resposta final?

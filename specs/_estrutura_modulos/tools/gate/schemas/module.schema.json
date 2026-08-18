@@ -23,7 +23,7 @@
       "required": ["schema", "prefix", "tables"],
       "properties": {
         "schema": { "type": "string", "minLength": 1 },
-        "prefix": { "type": "string", "pattern": "^[a-z][a-z0-9-]*_$" },
+        "prefix": { "type": "string", "pattern": "^[a-z][a-z0-9_]*_$" },
         "tables": {
           "type": "array",
           "uniqueItems": true,

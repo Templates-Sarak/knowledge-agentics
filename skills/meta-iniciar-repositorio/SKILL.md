@@ -45,7 +45,7 @@ Se você vir uma pasta `doutrina/` na raiz do alvo, algo rodou errado.
 | Nome oficial do sistema | se houver git com remoto, proponha o nome do repo e peça só confirmação |
 | **Binding**: `typescript` \| `javascript` \| `python` | **não há binding para Go/Java** — ver Limites |
 | Escopo dos packages (`@acme`) | derive do nome do sistema e confirme |
-| Primeiros módulos e o papel de cada um | mínimo um `dominio`; um `conector` se houver mais de um módulo com tela — id sugerido: `hub` |
+| Primeiros módulos e o papel de cada um | mínimo um `domain`; um `connector` se houver mais de um módulo com tela — id sugerido: `hub` |
 
 **Sem binding** (repositório que não é um sistema modular — um site, uma lib, uma base de conhecimento):
 rode sem `--binding`. O script instala só `specs/` e `.agents/`, e o Nível 1 não se aplica.
@@ -79,7 +79,7 @@ Essa decisão é do usuário, nunca sua.
 
 ### 4. Verificar
 O próprio script roda `validate.mjs --todos` ao final. Rode também o comando composto do binding
-(`npm run verificar` ou `python verificar.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
+(`npm run verify` ou `python verificar.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
 
 Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito — o passo 6 do script
 (`instalar_hooks_git`) já compõe sozinho via `compor_pre_commit` (núcleo puro, provado por

@@ -397,7 +397,7 @@ export const CASOS = [
     // para uma tabela que nao existe.
     mutar: (m) => m.manifesto((x) => ({
       ...x,
-      data: { ...x.data, tables: [...x.data.tables, '<modulo>_inexistente'] },
+      data: { ...x.data, tables: [...x.data.tables, '<modulo_snake>_inexistente'] },
     })),
   },
   {
@@ -426,7 +426,7 @@ export const CASOS = [
     // Agnostico de binding: os dois arquivos sao identicos nos tres moldes. `migrations` segue
     // calada — ela cobra nome e bloco de rollback, e nenhum dos dois muda aqui.
     mutar: (m) => {
-      const alter = 'alter table "<escopo>"."<modulo>_auditoria" enable row level security;';
+      const alter = 'alter table "<escopo>"."<modulo_snake>_auditoria" enable row level security;';
       m.substituir('database/schema.sql', alter, '');
       m.substituir('database/migrations/0001-cria-metadados.sql', alter, '');
     },

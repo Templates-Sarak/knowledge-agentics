@@ -10,7 +10,8 @@
  * ali viajaria como fixture morta, nascendo vermelha em todo projeto novo. Um projeto gerado não
  * gera projetos; este script ali seria peso sem consumidor.
  *
- * ESCOPO: as quatro combinações de flag de `create-module.mjs` (padrão, `--sem-artefato`,
+ * ESCOPO: as CINCO entradas de `COMBINACOES_DE_MODULO` — as quatro combinações de flag de
+ * `create-module.mjs` (padrão, `--sem-artefato`,
  * `--sem-web`, as duas juntas) — ver `COMBINACOES_DE_MODULO` abaixo.
  *
  * NÚCLEO × CASCA, precedente de `tools/affected.mjs`/`ci-dependencies.mjs`/`ci-security.mjs`:
@@ -76,18 +77,20 @@ import { PORTAS_CONHECIDAS } from '../tools/gate/ports-vocabulary.mjs';
 export const BINDINGS = ['typescript', 'javascript', 'python'];
 
 /**
- * As QUATRO combinações de flag de `create-module.mjs` — o invariante é que *qualquer* combinação
+ * As CINCO entradas: as QUATRO combinações de flag de `create-module.mjs` MAIS o id com hífen
+ * (regressão do `<modulo_snake>`, ver abaixo) — o invariante é que *qualquer* combinação
  * produz módulo que passa em `verificar`, e "qualquer" só vira prova rodando as quatro, não uma. Um
  * id por combinação, para os quatro módulos conviverem no MESMO projeto (um só
  * `npm install`/`pip install`, um só `verificar` cobrindo os quatro via workspace/descoberta) —
  * repetir a cadeia inteira quatro vezes pagaria 4× o custo sem medir nada a mais.
  */
 export const COMBINACOES_DE_MODULO = [
-  // SEM hifen de propósito: o id vira `data.prefix` do módulo (`<id>_`), que nomeia TABELA — e
-  // `schema-manifesto` exige `^[a-z][a-z0-9_]*$` para tabela (sem hífen), mais estrito que o do
-  // próprio id (`^[a-z][a-z0-9-]*$`, que aceita hífen). Medido: `sonda-padrao` reprovava
-  // `data.tables[0]: "sonda-padrao_metadados" nao casa o padrao` — o id em si é válido, a
-  // tabela derivada dele não.
+  // UM id COM HIFEN é obrigatório aqui, e é regressão, não variedade: `id` é kebab-case por lei
+  // (01-modulo.md §3), e até a correção do marcador `<modulo_snake>` NENHUM id com hífen tinha
+  // manifesto válido possível — `tabela-prefixo` exigia `nota-fiscal_` e `schema-manifesto` proibia
+  // o hífen na tabela que começa por ele. O defeito sobreviveu justamente porque todo id daqui era
+  // de uma palavra só: o teste foi ajustado para desviar dele em vez de acusá-lo. Tirar
+  // `sonda-hifen` desta lista devolve o ponto cego inteiro.
   //
   // CURTO de propósito, e é a SEGUNDA medição, não só a primeira: `<modulo>` entra em comentário de
   // CABEÇALHO em vários arquivos do molde Python (`api/src/erros.py:1`, o mais apertado, tem só 13
@@ -99,6 +102,13 @@ export const COMBINACOES_DE_MODULO = [
   { id: 'sondaart', flags: ['--sem-artefato'] },
   { id: 'sondaweb', flags: ['--sem-web'] },
   { id: 'sondaamb', flags: ['--sem-artefato', '--sem-web'] },
+  // O id COM HÍFEN, e com 8 chars pelo mesmo motivo dos quatro acima: medido, a linha mais longa
+  // que carrega o id (`api/src/erros.py`) fica em 105/110 com 8 chars — a MESMA folga de 5 que
+  // `sondapad` tem. (`sonda-hifen`, 11, cabia em 108/110, mas com folga 2: passa hoje e quebra no
+  // primeiro caractere que alguém acrescentar àquela linha, e o vermelho apontaria para o hífen,
+  // que não é a causa.) Exercita a cadeia inteira — gate, migrations, `.env`, tipos, testes —
+  // sobre `data.prefix` = `sonda_hi_`.
+  { id: 'sonda-hi', flags: [] },
 ];
 
 /**
@@ -109,7 +119,7 @@ export const COMBINACOES_DE_MODULO = [
  *
  * COM HÍFEN de propósito (prefixo `prov-`, não só a letra): `create-adapter.mjs` aceita provedor
  * kebab-case com hífen (`validarOpcoes`), e o código que ele gera para hífen já foi o achado ①
- * (ultimas-atualizacoes.md) — chave de objeto TS/JS não citada e import Python com `-` no meio do
+ * — chave de objeto TS/JS não citada e import Python com `-` no meio do
  * caminho. Ficou consertado (chave CITADA nos três bindings, pasta/import Python convertidos pra
  * snake_case — ADR-011) exatamente PORQUE esta rede parou de esconder o defeito atrás de um
  * provedor sem hífen: o índice sozinho (`a`, `b`, ...) nunca exercitava o caminho quebrado. Manter
@@ -172,7 +182,7 @@ export function passosDeAdapter() {
 export function passosDoBinding(binding, { rapido = false } = {}) {
   const combinacoes = rapido ? COMBINACOES_DE_MODULO.slice(0, 1) : COMBINACOES_DE_MODULO;
   const gerarProjeto = { nome: 'gerar-projeto', tipo: 'gerar-projeto' };
-  // As QUATRO combinações — ver COMBINACOES_DE_MODULO acima.
+  // As CINCO entradas — ver COMBINACOES_DE_MODULO acima.
   const passosDeModulo = combinacoes.map((combinacao) => ({
     nome: `criar-modulo:${combinacao.id}`,
     tipo: 'criar-modulo',
@@ -183,7 +193,7 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
   // marginal, sem gerar mais nada. Ver "criar-adapter:<porta>" no cabeçalho.
   const passosAdapter = passosDeAdapter();
   // Ver `rodarPrettierWrite`/`rodarRuffFormat`: MESMO motivo nos dois bindings, so ferramenta
-  // diferente. Ate a rodada que fechou o achado ① (hifen no provedor — ultimas-atualizacoes.md,
+  // diferente. Ate a rodada que fechou o defeito do hifen no provedor (ADR-011,
   // ADR-011), "ruff format ja bate, mesmo varrendo o vocabulario inteiro" era medido e verdadeiro
   // — porque `provedorDoIndice` so gerava provedor de UMA letra, sem hifen. Trocar para kebab COM
   // hifen (pra exercitar o proprio achado ①) engordou a linha de `FABRICAS` alem dos 110 cols do
@@ -473,7 +483,8 @@ function executarPasso(passo, ctx) {
     case 'npm-install':
       return rodarNpm(['install', '--prefer-offline', '--no-audit', '--no-fund'], ctx.destino);
     case 'criar-modulo':
-      return rodarNode([CRIAR_MODULO, passo.moduloId, '--binding', ctx.binding, ...passo.flags], ctx.destino);
+      // `--role` e obrigatoria na CLI (sem default silencioso) e usa o vocabulario do manifesto.
+      return rodarNode([CRIAR_MODULO, passo.moduloId, '--role', 'domain', '--binding', ctx.binding, ...passo.flags], ctx.destino);
     case 'criar-adapter':
       return criarAdapterEVerificar(ctx.destino, ctx.binding, passo.porta, passo.provedor);
     case 'formatar-adapters':
@@ -597,9 +608,9 @@ function lerOpcoes(argv) {
 /**
  * `--rapido` faz DUAS coisas, as duas para caber no teto de ~2min de pre-commit: só os bindings
  * Node (typescript, javascript) — o binding python sozinho leva ~2m40s (venv + pip install do
- * zero) —, e só a combinação PADRÃO de `criar-modulo` (as quatro combinações custam ~70s/~52s a
+ * zero) —, e só a PRIMEIRA entrada de `criar-modulo` (as cinco custam ~70s/~52s a
  * mais). Uso pretendido: pre-commit da base roda `--rapido`; a agenda (workflow) roda sem essa
- * flag, cobrindo os três bindings × as quatro combinações — é o consumidor que paga o custo cheio.
+ * flag, cobrindo os três bindings × as cinco entradas — é o consumidor que paga o custo cheio.
  */
 function bindingsAlvo(opcoes) {
   if (opcoes.binding !== null) return [opcoes.binding];
@@ -684,7 +695,7 @@ function casosDeAutoteste() {
         return nomes.indexOf('mapa') === nomes.indexOf(nomeVerificar) + 1;
       })
     ) },
-    { nome: 'passosDoBinding: as QUATRO combinacoes de flag de criar-modulo, nos tres bindings', fn: () => (
+    { nome: 'passosDoBinding: TODAS as entradas de COMBINACOES_DE_MODULO, nos tres bindings', fn: () => (
       BINDINGS.every((binding) => {
         const passosDeModulo = passosDoBinding(binding).filter((p) => p.tipo === 'criar-modulo');
         if (passosDeModulo.length !== COMBINACOES_DE_MODULO.length) return false;
@@ -697,8 +708,14 @@ function casosDeAutoteste() {
     { nome: 'COMBINACOES_DE_MODULO: ids unicos (workspaces/descoberta nao podem colidir)', fn: () => (
       new Set(COMBINACOES_DE_MODULO.map((c) => c.id)).size === COMBINACOES_DE_MODULO.length
     ) },
-    { nome: 'COMBINACOES_DE_MODULO: nenhum id tem hifen (viraria dados.tabelas invalido)', fn: () => (
-      COMBINACOES_DE_MODULO.every((c) => !c.id.includes('-'))
+    // INVERTIDA de propósito. Esta catraca já exigiu o CONTRÁRIO ("nenhum id tem hifen"), e era ela
+    // que mantinha o defeito vivo: `id` é kebab-case por lei, mas `tabela-prefixo` pedia
+    // `nota-fiscal_` enquanto `schema-manifesto` proibia o hífen na tabela derivada — nenhum id com
+    // hífen tinha manifesto válido. A rede foi ajustada para desviar do defeito, e com ela verde o
+    // defeito virou invisível. Agora a rede EXIGE o caso que antes proibia: sem um id hifenizado, a
+    // cadeia inteira volta a nunca exercitar `<modulo_snake>`.
+    { nome: 'COMBINACOES_DE_MODULO: PELO MENOS um id com hifen (regressao do <modulo_snake>)', fn: () => (
+      COMBINACOES_DE_MODULO.some((c) => c.id.includes('-'))
     ) },
     { nome: 'passosDoBinding(..., {rapido:true}): so a combinacao PADRAO, nos tres bindings', fn: () => (
       BINDINGS.every((binding) => {

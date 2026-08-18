@@ -205,7 +205,7 @@ function imprimirProximosPassos(destino, opcoes, escopo, colisoes) {
     + ' tools/gate/thresholds.mjs (nao a edite a mao)\n');
   process.stdout.write('\nproximos passos:\n');
   process.stdout.write(`  1. ${instalar}\n`);
-  process.stdout.write('  2. node tools/create-module.mjs <id>\n');
+  process.stdout.write('  2. node tools/create-module.mjs <id> --role domain|gateway|connector\n');
   process.stdout.write('  3. preencher o .env da raiz com os valores reais\n');
   process.stdout.write(`  4. ${verificar}   (gate, env, formato, lint, tipos, testes)\n`);
   process.stdout.write('  5. git config core.hooksPath .githooks   (ativa pre-commit e pre-push;'

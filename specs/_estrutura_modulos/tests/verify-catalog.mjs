@@ -378,7 +378,7 @@ function casosDeAutoteste() {
     {
       nome: 'citacoesDeContagem: NAO casa transicao "X -> Y regras" (narrativa historica correta em .md)',
       fn: () => citacoesDeContagem([
-        { arquivo: 'ultimas-atualizacoes.md', texto: '75 -> 76 regras, com caso novo em cases.mjs' },
+        { arquivo: 'notas.md', texto: '75 -> 76 regras, com caso novo em cases.mjs' },
       ]).length === 0,
     },
     {

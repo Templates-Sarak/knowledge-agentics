@@ -43,7 +43,7 @@ core/            engine interna, sem I/O
   gateways/      o que preciso de OUTROS MÓDULOS — só HTTP
   engine/         geração determinística do artefato
 api/src/         a única superfície pública (FastAPI)
-database/        schema.sql + migrations das tabelas <modulo>_*
+database/        schema.sql + migrations das tabelas <modulo_snake>_*
 tests/           domain/ contract/ fixtures/ — sem rede, sem banco
 ```
 

@@ -341,10 +341,10 @@ def instalar_base_de_linguagem(target: Path, xskills_root: Path, binding: str, n
 
 
 ROLES_VALIDOS = ("domain", "gateway", "connector")
-# `--role` de create-module.mjs e digitado em PT (decisao 8, ADR-009); --modulos deste script usa o
-# vocabulario do PROPRIO manifesto (decisao 5), ingles — a mesma forma que sai gravada em module.json.
-# Esta tabela e a fronteira entre os dois, nunca reaberta em outro lugar.
-PAPEL_CLI_CREATE_MODULE = {"domain": "dominio", "gateway": "gateway", "connector": "conector"}
+# UM vocabulario so, do manifesto ao `--role` de create-module.mjs (ADR-009 decisao 8). Aqui havia
+# uma tabela PT<->EN traduzindo `domain`->`dominio` na chamada, so para create-module.mjs traduzir
+# de volta ao gravar module.json: duas conversoes que se anulavam, e duas portas do mesmo produto
+# pedindo palavras diferentes. O role viaja como esta.
 
 
 def _parse_modulo_spec(spec: str) -> tuple[str, str, bool] | None:
@@ -389,14 +389,14 @@ def validar_modulos(modulos: list) -> list | None:
 def criar_modulos(target: Path, template: Path, modulos: list, binding: str) -> None:
     """Passo 5: os primeiros modulos, um por vez, na ordem PELO PAPEL declarado — connector por
     ultimo, porque agrega o que os outros publicam. `modulos` ja chegou validado por
-    `validar_modulos`: cada item e (id, role, quer_artefato), role no vocabulario do manifesto."""
+    `validar_modulos`: cada item e (id, role, quer_artefato), role no vocabulario do manifesto — o
+    MESMO que `create-module.mjs --role` exige, entao passa direto, sem traducao."""
     criar_modulo = target / "tools" / "create-module.mjs"
     if not criar_modulo.exists():
         criar_modulo = template / "tools" / "create-module.mjs"
     ordenados = sorted(modulos, key=lambda m: m[1] == "connector")
     for id_modulo, role, quer_artefato in ordenados:
-        papel_cli = PAPEL_CLI_CREATE_MODULE[role]
-        comando = ["node", str(criar_modulo), id_modulo, "--binding", binding, "--role", papel_cli]
+        comando = ["node", str(criar_modulo), id_modulo, "--binding", binding, "--role", role]
         # `quer_artefato` so e True quando role == "domain" (validar_modulos ja recusa ":artefato"
         # em gateway/connector) — entao "nao quer artefato" cobre os dois casos sozinho: domain sem
         # o token, e gateway/connector, que NUNCA geram artefato por arquitetura.

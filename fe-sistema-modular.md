@@ -34,7 +34,9 @@ própria fatia de banco. Três bindings — `typescript`, `javascript`, `python`
 
 1. **Módulo não importa módulo.** Vizinho só por HTTP, declarado em `module.json:consumes`.
 2. **Módulo não importa adapter.** O adapter é **injetado** pela composição.
-3. **Módulo não toca a fatia de dados alheia.** Cada um tem `schema` e `prefix` próprios.
+3. **Módulo não toca a fatia de dados alheia.** Quem sustenta o isolamento é o `prefix`, próprio de
+   cada módulo; se o projeto usa um schema por módulo ou um schema único é decisão dele, declarada
+   em `data.schema` (`02-contrato-e-dados.md` §6.1). O template entrega schema único = escopo.
 
 ## 1.2 As três camadas
 
@@ -112,13 +114,13 @@ equivalentes de cada binding), mais `relatorios/` e `.coverage`, que só nascem 
 
 | Campo | O que é | Cuidado |
 |---|---|---|
-| `id` | kebab-case | **tem de bater com o nome da pasta** — o gate compara |
+| `id` | kebab-case | **tem de bater com o nome da pasta** — o gate compara. Em env e em banco viaja transliterado (`nota-fiscal` → `NOTA_FISCAL_`, `nota_fiscal_`), porque nenhum dos dois aceita hífen |
 | `name` · `version` · `description` | identificação | `version` é `^\d+\.\d+\.\d+$` |
-| `role` | `domain` · `gateway` · `connector` | **inglês no manifesto**; o `--role` da CLI aceita `dominio`/`gateway`/`conector` e grava a forma inglesa |
+| `role` | `domain` · `gateway` · `connector` | **um vocabulário só, do manifesto à CLI**: `create-module.mjs --role` e o `--modulos <id>:<role>` de `init_repo.py` pedem a mesma palavra inglesa. `--role` é **obrigatória** — sem default |
 | `binding` | a linguagem do módulo | um projeto, um binding |
 | `basePath` | `^/api/v1/[a-z][a-z0-9-]*$` | tem de bater com `servers[0].url` do contrato |
 | `webPath` | `/<id>` ou **`null`** | `null` = módulo backend-only |
-| `data` | `schema` · `prefix` · `tables` | **nunca** `public`; `prefix` é `^[a-z][a-z0-9-]*_$`; toda tabela declarada |
+| `data` | `schema` · `prefix` · `tables` | **nunca** `public`; `prefix` é o `id` em snake_case + `_` (`^[a-z][a-z0-9_]*_$`); toda tabela declarada |
 | `requiredEnv` | chaves de ambiente, `^[A-Z][A-Z0-9_]*$` | ausente **derruba o boot** — nunca default silencioso |
 | `ports` | as interfaces que o módulo exige | cada uma precisa de provedor em `config/ports.json` |
 | `consumes` | `{ module, contract, why }` | a rota e o método têm de existir no dono |
@@ -192,7 +194,7 @@ proibida; falso negativo é tolerável **apenas se declarado** no `04-regras.md`
 |---|---|---|---|
 | **1. O gate** | `node tools/gate/validate.mjs --todos` | o projeto obedece à lei | 0 erros |
 | **2. O gate se testa** | `node tools/gate/tests/run.mjs --binding <b>` | cada regra sabe ficar vermelha | **128/128 · 128/128 · 124/124** |
-| **3. O template se testa** | `npm run autoteste:template` | o template gera projeto que passa na própria cadeia | **3/3 bindings VERDE, 21/21 · 21/21 · 21/21 passos** |
+| **3. O template se testa** | `npm run autoteste:template` | o template gera projeto que passa na própria cadeia | **3/3 bindings VERDE, 22/22 · 22/22 · 22/22 passos** |
 | **4. Toda ferramenta se testa** | `npm run autoteste:tudo` | nenhum `--autoteste` órfão | **18/18** |
 
 **De onde cada uma roda, porque as duas árvores se parecem:** a camada 1 roda **dentro de um projeto
@@ -351,7 +353,7 @@ node specs/_estrutura_modulos/tools/create-project.mjs <destino> --binding types
 
 cd <destino>
 # [projeto] daqui em diante `tools/` é o do projeto, copiado inteiro do template
-node tools/create-module.mjs catalogo --role dominio
+node tools/create-module.mjs catalogo --role domain
 
 # preencher os VALORES no .env  (as CHAVES já chegaram sozinhas)
 npm install                      # ou:  pip install -e ".[dev]"
@@ -391,7 +393,9 @@ npm run start          # sobe o sistema: um processo, uma porta
 npm test               # testes, por módulo
 ```
 
-No Python o equivalente é `python verificar.py` (com `--rapido`, `--todos`).
+No Python o equivalente é `python verificar.py` (a cadeia inteira; `--rapido` para no primeiro
+erro). **Argumento não reconhecido REPROVA com exit 1** — um `--coberturra` nunca cai no caminho
+padrão fingindo que a cobertura rodou.
 
 Ao **commitar**, o `pre-commit` roda o gate só nos módulos afetados, mais env, formato e lint. Ao
 **empurrar**, o `pre-push` roda tipos e testes dos afetados.
@@ -428,8 +432,8 @@ npm run build  ·  npm run migrations
 node tools/affected.mjs    # seleção do que reverificar
 ```
 
-No Python, por flag: `python verificar.py --todos | --cobertura | --seguranca | --dependencias |
---migrations | --lint-relatorio`.
+No Python, por flag: `python verificar.py --cobertura | --seguranca | --dependencias |
+--migrations | --lint-relatorio` (sem flag = a cadeia inteira).
 
 **Actions, GitLab, Jenkins** consomem o *exit code*. **SonarQube** consome o *relatório* — ele não roda o
 comando, lê a saída. Com os dois, o template nunca precisa saber o nome de provedor nenhum.
@@ -439,7 +443,7 @@ comando, lê a saída. Com os dois, o template nunca precisa saber o nome de pro
 # 7. Criar e extrair um módulo
 
 ```sh
-node tools/create-module.mjs <id> [--role dominio|gateway|conector] [--sem-artefato] [--sem-web]
+node tools/create-module.mjs <id> --role domain|gateway|connector [--sem-artefato] [--sem-web]
 ```
 
 O comando copia o molde, substitui os marcadores (`<modulo>`, `<MODULO>`, `<escopo>`), escreve o
@@ -623,7 +627,7 @@ done
 # esperado: 128/128 · 128/128 · 124/124, 76 regras com caso
 
 npm run autoteste:tudo        # [base] camada 4 — exit 0, "18/18", zero ÓRFÃO
-npm run autoteste:template    # [base] camada 3 — exit 0, "3/3 bindings verdes", 21/21 · 21/21 · 21/21 passos
+npm run autoteste:template    # [base] camada 3 — exit 0, "3/3 bindings verdes", 22/22 · 22/22 · 22/22 passos
 npm run typecheck:tools       # [base] exit 0, o tsc sem diagnóstico algum
                               #        (o npm imprime 2 linhas de preâmbulo — não são saída do tsc)
 
@@ -693,7 +697,7 @@ node specs/_estrutura_modulos/tests/verify-map.mjs --conferir /tmp/fe-p/specs/ar
 
 # ── G. a camada 1 e a coerência do que é gerado (§4.1, §4.3) ──────────────
 cd /tmp/fe-p
-node tools/create-module.mjs catalogo --role dominio  # [projeto] exit 0
+node tools/create-module.mjs catalogo --role domain  # [projeto] exit 0
 node tools/gate/validate.mjs --todos                  # [projeto] camada 1 — exit 0, "conformidade: OK"
 node tools/sync-env.mjs --conferir                    # [projeto] exit 0
 node tools/generate-port-schemas.mjs --conferir       # [projeto] exit 0

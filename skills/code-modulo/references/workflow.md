@@ -71,7 +71,7 @@ pago, e o `conector` **por último** — ele agrega os outros e precisa que exis
 
 ```
 node tools/gate/validate.mjs --todos          # inclui import-lateral e consome-ciclo
-npm run verificar                             # ou: python verificar.py
+npm run verify                                # ou: python verificar.py
 ```
 
 O `--todos` é o único que enxerga as duas regras **globais**. Rodar só o gate por módulo deixa passar
@@ -105,7 +105,7 @@ fora do padrão e vira dívida no dia da adequação. Adequar o projeto é campa
 | Campo | Regra | Consequência de errar |
 |---|---|---|
 | `id` | kebab-case minúsculo, singular ou plural conforme o domínio | é pasta + package + `basePath` + prefixo de tabela + prefixo de env. Mudar depois = renomear tudo |
-| `role` (CLI: `--role`, digitado em PT) | `dominio` \| `gateway` \| `conector` — gravado no manifesto como `domain`\|`gateway`\|`connector` | só `gateway` pode declarar credencial de serviço externo pago |
+| `role` (CLI: `--role`, **obrigatória**) | `domain` \| `gateway` \| `connector` — a MESMA palavra na CLI e no manifesto, sem tradução | só `gateway` pode declarar credencial de serviço externo pago |
 | `binding` | `typescript` \| `javascript` \| `python` | define o molde e o conjunto de regras de linguagem |
 | `generatesArtifact` | `true` só se o módulo produz saída publicável | `false` descarta `core/engine`, `core/templates` e `generated/` |
 | `webPath` | `/<id>` ou `null` | `null` descarta `web/`; se declarado, o gate exige página real |
@@ -137,7 +137,7 @@ resposta ambígua.
 **Objetivo:** materializar a árvore canônica sem digitar caminho à mão.
 
 ```
-node tools/create-module.mjs <id> --binding <b> --role <p> [--sem-artefato]
+node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]
 ```
 
 O script copia o molde do binding, substitui os marcadores (`<modulo>`, `<MODULO>`, `<Modulo>`), ajusta o

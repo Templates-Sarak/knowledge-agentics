@@ -2,8 +2,11 @@
 /**
  * create-module.mjs — scaffold determinístico de módulo. Lei dona: specs/arquitetura/01-modulo.md §8
  *
- *   node tools/create-module.mjs <id> [--binding typescript] [--role dominio]
- *                                          [--escopo acme] [--sem-artefato] [--sem-web]
+ *   node tools/create-module.mjs <id> --role domain|gateway|connector
+ *                                     [--binding typescript] [--escopo acme]
+ *                                     [--sem-artefato] [--sem-web]
+ *
+ * `--role` e OBRIGATORIO e usa o vocabulario do manifesto (ingles), o mesmo de `init_repo.py`.
  *
  * Ninguém cria módulo à mão: módulo manual nasce sem manifesto e com nome divergente — as duas
  * coisas que quebram o gate e que o gate não consegue consertar sozinho.
@@ -17,14 +20,16 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ_FERRAMENTA = join(AQUI, '..');
 const PASTAS_DE_ARTEFATO = ['core/engine', 'core/templates', 'database', 'generated'];
 const BINDINGS = ['typescript', 'javascript', 'python'];
-// A flag e o valor moram em fronteiras DIFERENTES da doutrina (decisoes.md §233, decisao 5 vs
-// decisao 8): `--role` e SUPERFICIE DE CLI ("a porta") — decisao 5, ingles, o mesmo motivo de
-// `tools/`/`create-module.mjs` serem ingles. O VALOR digitado e "a sala": fica portugues, a
-// convencao historica da CLI, nao coberta pela decisao 8 (que fala do valor DENTRO DO MANIFESTO,
-// nao do que o usuario digita). `PAPEL_PARA_ROLE` e a fronteira entre as duas — traduz so na
-// escrita do manifesto, onde a decisao 8 manda ingles de verdade.
-const PAPEIS = ['dominio', 'gateway', 'conector'];
-const PAPEL_PARA_ROLE = { dominio: 'domain', gateway: 'gateway', conector: 'connector' };
+// UM vocabulario so, ingles — o mesmo que sai gravado no manifesto e o mesmo que `init_repo.py`
+// exige em `--modulos <id>:<role>`. A ADR-009 decisao 8 e explicita: enum de valor estrutural
+// "segue a mesma traducao da pasta homonima — e o mesmo conceito, nao uma excecao".
+//
+// Ate aqui esta CLI pedia `dominio|gateway|conector` (PT) e a `init_repo.py` pedia
+// `domain|gateway|connector` (EN): duas portas do MESMO produto, cada uma recusando o vocabulario
+// da outra, com o valor traduzido EN->PT so para ser traduzido PT->EN de volta na escrita do
+// manifesto. Quem aprendia uma errava na outra. A forma PT e recusada com a correta na mensagem.
+const PAPEIS = ['domain', 'gateway', 'connector'];
+const PAPEL_LEGADO_PT = { dominio: 'domain', conector: 'connector' };
 
 function abortar(mensagem) {
   process.stderr.write(`erro: ${mensagem}\n`);
@@ -51,7 +56,7 @@ function lerOpcoes() {
   return {
     id: brutos.find((a) => !a.startsWith('--') && brutos[brutos.indexOf(a) - 1]?.startsWith('--') !== true) ?? brutos[0],
     binding: valorDe('binding', 'typescript'),
-    role: valorDe('role', 'dominio'),
+    role: valorDe('role', undefined),
     escopo: valorDe('escopo', null),
     semArtefato: brutos.includes('--sem-artefato'),
     semWeb: brutos.includes('--sem-web'),
@@ -98,6 +103,13 @@ function resolverEscopo(raizProjeto, informado) {
 
 function substituir(texto, id, escopo) {
   return texto
+    // `<modulo_snake>` e o id em snake_case, e existe para o BANCO: identificador SQL nao aceita
+    // hifen sem aspas, e `schema-manifesto` cobra `^[a-z][a-z0-9_]*$` em `data.tables[]`. Sem ele,
+    // todo id kebab-case com hifen (`nota-fiscal`) nascia REPROVADO — `tabela-prefixo` exigia
+    // `nota-fiscal_` e o schema proibia o hifen na tabela derivada dele: duas regras do mesmo gate
+    // pedindo coisas incompativeis, sem manifesto valido possivel. Mesma conversao que `<MODULO>`
+    // ja fazia para chave de ambiente — a diferenca era so o banco nao ter recebido a dela.
+    .replaceAll('<modulo_snake>', id.replace(/-/g, '_'))
     .replaceAll('<MODULO>', id.toUpperCase().replace(/-/g, '_'))
     .replaceAll('<Modulo>', id.charAt(0).toUpperCase() + id.slice(1))
     .replaceAll('<modulo>', id)
@@ -124,7 +136,7 @@ function aplicarMarcadores(destino, id, escopo) {
 function ajustarManifesto(destino, opcoes) {
   const caminho = join(destino, 'module.json');
   const manifesto = JSON.parse(lerTexto(caminho));
-  manifesto.role = PAPEL_PARA_ROLE[opcoes.role];
+  manifesto.role = opcoes.role;
   manifesto.binding = opcoes.binding;
   if (opcoes.semArtefato) {
     manifesto.generatesArtifact = false;
@@ -273,9 +285,20 @@ function instalarDependencias(raizProjeto, binding) {
 }
 
 function validarOpcoes(opcoes) {
-  if (opcoes.id === undefined) abortar('uso: create-module.mjs <id> [--binding b] [--role p] [--sem-artefato]');
+  if (opcoes.id === undefined) abortar('uso: create-module.mjs <id> --role domain|gateway|connector [--binding b] [--sem-artefato] [--sem-web]');
   if (!/^[a-z][a-z0-9-]*$/.test(opcoes.id)) abortar(`id "${opcoes.id}" invalido — use kebab-case minusculo`);
   if (!BINDINGS.includes(opcoes.binding)) abortar(`binding "${opcoes.binding}" invalido — use ${BINDINGS.join(', ')}`);
+  // Sem default: papel adivinhado e escolha feita por quem nao estava la. `init_repo.py` ja recusa
+  // o id sem sufixo de papel pelo mesmo motivo — as duas portas cobram a mesma declaracao.
+  if (opcoes.role === undefined) {
+    abortar(`--role e obrigatorio — use ${PAPEIS.join(' | ')}. O papel decide a arquitetura do modulo`
+      + ' (gateway e connector nunca geram artefato), e adivinha-lo pelo nome do id e o defeito que'
+      + ' esta exigencia fecha');
+  }
+  if (PAPEL_LEGADO_PT[opcoes.role] !== undefined) {
+    abortar(`role "${opcoes.role}" e a forma antiga em portugues — use "${PAPEL_LEGADO_PT[opcoes.role]}",`
+      + ' o mesmo vocabulario do manifesto e do --modulos de init_repo.py');
+  }
   if (!PAPEIS.includes(opcoes.role)) abortar(`role "${opcoes.role}" invalido — use ${PAPEIS.join(', ')}`);
 }
 

@@ -84,7 +84,7 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 
 | Campo | Tipo | Papel |
 |---|---|---|
-| `id` | kebab-case | identificador único; **igual** à pasta, ao package, à rota e ao prefixo de tabela |
+| `id` | kebab-case | identificador único; **igual** à pasta, ao package e à rota. Em env e em banco viaja transliterado — `NOTA_FISCAL_` e `nota_fiscal_` para `nota-fiscal` —, porque nenhum dos dois aceita hífen ([[04-regras]] §3.1) |
 | `name` | string | rótulo humano |
 | `version` | semver | versão do módulo |
 | `description` | string | uma linha sobre o domínio |
@@ -290,7 +290,7 @@ que importa todos os módulos quanto um SPA por módulo funcionam sem estrutura 
 # 8. Criar um módulo novo
 
 ```
-node tools/create-module.mjs <id> --binding <b> --role <p> [--sem-artefato]
+node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]
 ```
 
 O script copia o molde do binding, substitui os marcadores (`<modulo>` → id, `<MODULO>` → id em maiúscula,
