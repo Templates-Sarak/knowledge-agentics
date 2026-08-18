@@ -12,6 +12,11 @@ rodado sobre um legado sintético construído só para validar esta skill — ne
 {
   "fase": "A",
   "caminho": "sem-specs",
+  "template_instalado": {
+    "estado": "nao-instalado",
+    "presentes": [],
+    "faltando": ["adapters_memoria", "config_raiz", "gate", "githooks", "manifesto_raiz", "modules_raiz", "portas"]
+  },
   "colisao_raiz": ["package.json"],
   "geracao_antiga": [],
   "workspaces_legado": ["Modulos/*"],
@@ -27,6 +32,8 @@ rodado sobre um legado sintético construído só para validar esta skill — ne
 - `fase: "A"` + `caminho: "sem-specs"` → confirma em uma linha e segue para o Passo 1 como **no-op
   declarado** (não havia `plan/`/`specs/` para sintetizar) e o Passo 2 como **instalação** de
   `specs/` (só `00-contexto.md`/`00-indice.md` recebem conteúdo real; os três universais são copiados).
+- `template_instalado.estado: "nao-instalado"` → o Passo 3 instala o aparato inteiro (nenhuma peça existe
+  ainda) — é o caso comum de legado puro.
 - `colisao_raiz: ["package.json"]` → HITL: mesclar `scripts`/`workspaces` na mão, nunca `--forcar`.
 - `hooks_legado: true` → armadilha #3 (§4 do `workflow.md`): decidir com o usuário como o `husky`/
   `lint-staged` existentes convivem com o `pre-commit` do template.
@@ -72,3 +79,35 @@ Depois da execução (fora desta skill), uma segunda conversa — revisor difere
 `SKILL.md` e produz o relatório de `templates.md` §6. Um veredito **reprovado** típico: `validate.mjs
 --todos` verde, mas `specs/plan/` ainda tem uma `xx-04-modulo-contratos` em `🟡 Em execução` — a Fase B para
 aqui e devolve para `/code3-adequar` terminar, sem fingir que a campanha encerrou.
+
+## 5. O alvo NÃO é legado — projeto 100% gerado pelo template
+
+**Cenário.** A skill é invocada contra um repositório produzido só por
+`create-project.mjs --binding typescript --escopo acme` + `create-module.mjs catalogo --role domain` —
+zero código escrito à mão, gate já verde. Diagnóstico real, rodado sobre essa saída:
+
+```json
+{
+  "fase": "A",
+  "caminho": "sem-specs",
+  "template_instalado": {
+    "estado": "completo",
+    "presentes": ["adapters_memoria", "config_raiz", "gate", "githooks", "manifesto_raiz", "modules_raiz", "portas"],
+    "faltando": []
+  },
+  "colisao_raiz": [],
+  "geracao_antiga": [],
+  "workspaces_legado": [],
+  "hooks_legado": false,
+  "modulos_candidatos": []
+}
+```
+
+**O que a skill faz com isto — e o que fazia antes da correção deste defeito:**
+- `template_instalado.estado: "completo"` + `modulos_candidatos: []` → a skill **para** e diz "nada a
+  planejar", com HITL: confirma com o usuário se aponta para o alvo errado, ou se a campanha já terminou.
+- `colisao_raiz: []` e `workspaces_legado: []` — **antes desta correção**, o mesmo repositório produzia
+  `colisao_raiz: [".gitignore", "package.json"]` e `workspaces_legado: ["modules/[a-z]*", "packages/*",
+  "adapters/*"]`: os próprios arquivos do template, acusados como se fossem legado colidindo — o defeito
+  que apontava o usuário para o portão de HITL mais caro (`--forcar`) sobre um repositório que já estava
+  pronto.

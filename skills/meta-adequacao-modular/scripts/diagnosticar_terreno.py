@@ -5,17 +5,29 @@
 
 Responde, sem julgamento nenhum, as perguntas que "meta-adequacao-modular" precisa antes de abrir a boca:
 em que FASE a campanha esta (A planejar / B conferir / EM_ANDAMENTO), qual dos dois CAMINHOS de entrada
-(com ou sem specs SDD), se o repositorio colide com o que o scaffold do template escreveria, se ele carrega
-marcas de uma GERACAO ANTIGA do proprio template (nao e legado puro — e outro problema), se ja tem
-workspaces/hooks proprios que vao precisar de composicao manual, e — para cada pasta candidata a modulo que
-o chamador ja apontou — se o nome bate `^[a-z][a-z0-9-]*$` e qual seria o kebab-case sugerido.
+(com ou sem specs SDD), se o APARATO DO TEMPLATE ja esta instalado ali (nada / parcial / completo — e
+quais pecas faltam, no caso parcial), se o repositorio colide com o que o scaffold do template escreveria
+(SO quando o aparato ainda nao existe — ver abaixo), se ele carrega marcas de uma GERACAO ANTIGA do
+proprio template (nao e legado puro — e outro problema), se ja tem workspaces/hooks proprios que vao
+precisar de composicao manual, e — para cada pasta candidata a modulo que o chamador ja apontou — se o
+nome bate `^[a-z][a-z0-9-]*$` e qual seria o kebab-case sugerido.
+
+**Por que `template_instalado` existe.** Sem ele, um projeto 100% conforme (gerado pelo proprio
+`create-project.mjs`/`create-module.mjs`) era diagnosticado como legado: `colisao_raiz` acusava
+`package.json`/`.gitignore` — que sao o PROPRIO scaffold do template, copiados por
+`bindings/<binding>/root/` — e `workspaces_legado` acusava `["modules/[a-z]*", "packages/*",
+"adapters/*"]`, que e exatamente o `workspaces` que o template escreve. Os dois apontavam o usuario para
+o portao de HITL mais caro (`--forcar`) sobre um repositorio que nao precisava de nada. Medido, nao
+suposto: rodar este script contra a saida de `create-project.mjs --binding typescript` +
+`create-module.mjs catalogo --role domain` reproduzia os dois falsos positivos byte a byte.
 
 NAO decide topologia (isso e code-diagnostico/code1-auditar): so avalia pastas que JA foram apontadas como
 candidatas via `--modulos`.
 
-Nucleo puro (nunca toca disco): `detectar_fase`, `detectar_caminho`, `kebabizar`, `avaliar_id_modulo`,
-`detectar_geracao_antiga`, `detectar_colisao_raiz`, `detectar_workspaces_legado`, `detectar_hooks_legado` —
-e o que o `--autoteste` prova com fixtures em memoria. A CASCA (`ler_plans`, `ler_entradas_raiz`,
+Nucleo puro (nunca toca disco): `detectar_fase`, `detectar_caminho`, `avaliar_template_instalado`,
+`kebabizar`, `avaliar_id_modulo`, `detectar_geracao_antiga`, `detectar_colisao_raiz`,
+`detectar_workspaces_legado`, `detectar_hooks_legado` — e o que o `--autoteste` prova com fixtures em
+memoria. A CASCA (`ler_marcadores_template`, `ler_status_plans_xx`, `ler_entradas_raiz`,
 `ler_package_json`, `main`) e a unica parte que le disco.
 """
 
@@ -33,7 +45,40 @@ MARCADORES_GERACAO_ANTIGA = {
 
 ENTRADAS_DE_COLISAO = ("package.json", "pyproject.toml", ".gitignore")
 
+# As sete pecas do aparato do template (SKILL.md, Passo 3.2) — caminho relativo a raiz do projeto.
+# Deliberadamente SEM "package.json"/"pyproject.toml"/".gitignore": esses tres sao os mesmos nomes que
+# ENTRADAS_DE_COLISAO verifica, e um marcador nao pode ser o proprio arquivo que ele explica (senao
+# "esta presente" vira circular). "modules_raiz" aqui e a pasta `modules/` do PROJETO em si — nome
+# deliberadamente DIFERENTE da chave "modulos" de MARCADORES_GERACAO_ANTIGA (que fala do nome ANTIGO
+# `modulos/`, nao do atual) para nao colidir visualmente com semantica diferente. Os dois convivem sem
+# colidir tambem em efeito: `modulos_candidatos` avalia pastas especificas apontadas por `--modulos`,
+# nunca a propria `modules/`.
+#
+# Limite conhecido, nao escondido: "modules_raiz" e o marcador MENOS especifico dos sete — um legado
+# que por acaso ja tenha uma pasta de topo chamada `modules/` por motivo proprio (nada raro em
+# projetos JS genericos) faz `avaliar_template_instalado` sair de "nao-instalado" so por causa dele,
+# e isso ja basta para `detectar_colisao_raiz` parar de acusar `package.json`/`.gitignore` mesmo que
+# nada mais do template esteja ali. Nao ha uma correcao barata sem mudar o CRITERIO de "parcial" (por
+# exemplo exigir 2+ marcadores) — o que nao foi pedido e trocaria o efeito para outro conjunto de
+# casos. Registrado aqui, e reportado a parte, em vez de resolvido em silencio.
+MARCADORES_TEMPLATE = {
+    "gate": "tools/gate/validate.mjs",
+    "manifesto_raiz": "project.json",
+    "portas": "packages/ports",
+    "adapters_memoria": "adapters/memory",
+    "config_raiz": "config",
+    "githooks": ".githooks",
+    "modules_raiz": "modules",
+}
+
 PADRAO_ID_CONFORME = re.compile(r"^[a-z][a-z0-9-]*$")
+
+# `workspaces` que o proprio create-project.mjs escreve no package.json gerado (medido nos tres
+# bindings) — uma entrada que bate aqui NAO e workspace legado, e um monorepo legado real jamais
+# produz este trio exato por acidente (o segmento "[a-z]*" e sintaxe de glob do proprio template).
+WORKSPACES_CANONICOS_TEMPLATE = frozenset(
+    {"modules/[a-z]*", "packages/*", "adapters/*"}
+)
 
 STATUS_ENCERRADOS = {"🟢 Aprovada", "⚪ Sintetizada", "🟢", "⚪"}
 
@@ -86,17 +131,45 @@ def detectar_geracao_antiga(entradas_raiz: set) -> list:
     return achados
 
 
-def detectar_colisao_raiz(entradas_raiz: set) -> list:
-    """Manifestos que o create-project/create-module abortariam ao encontrar sem `--forcar`."""
+def avaliar_template_instalado(marcadores_presentes: set) -> dict:
+    """`marcadores_presentes` e o subconjunto das CHAVES de MARCADORES_TEMPLATE que a casca ja
+    resolveu em disco (uma por caminho relativo checado). Classifica os tres estados que importam
+    para a skill: nenhum marcador -> "nao-instalado" (legado puro, o fluxo de hoje esta certo);
+    todos -> "completo" (nada a instalar); uns sim outros nao -> "parcial", com `faltando` listando
+    exatamente as pecas que sobram — o estado que mais engana se tratado como "nada instalado"."""
+    todas_chaves = set(MARCADORES_TEMPLATE)
+    presentes = sorted(marcadores_presentes & todas_chaves)
+    faltando = sorted(todas_chaves - marcadores_presentes)
+    if not presentes:
+        estado = "nao-instalado"
+    elif not faltando:
+        estado = "completo"
+    else:
+        estado = "parcial"
+    return {"estado": estado, "presentes": presentes, "faltando": faltando}
+
+
+def detectar_colisao_raiz(entradas_raiz: set, estado_template: str) -> list:
+    """Manifestos que o create-project/create-module abortariam ao encontrar sem `--forcar` — SO
+    quando o aparato do template ainda nao existe ali (`estado_template == "nao-instalado"`). Uma vez
+    que qualquer peca do template ja esta presente (parcial ou completo), `package.json`/`.gitignore`/
+    `pyproject.toml` sao o PROPRIO scaffold do template (copiados por `bindings/<binding>/root/`), nao
+    legado colidindo — sinalizar colisao ali aponta o usuario para o `--forcar` sobre nada."""
+    if estado_template != "nao-instalado":
+        return []
     return sorted(entradas_raiz & set(ENTRADAS_DE_COLISAO))
 
 
 def detectar_workspaces_legado(package_json: dict) -> list:
-    """`workspaces` ja declarado pelo legado — precisa de merge humano com o que o template exige."""
+    """`workspaces` ja declarado, MENOS as entradas que sao o proprio padrao canonico do template
+    (WORKSPACES_CANONICOS_TEMPLATE) — essas nunca precisam de merge humano, sao o que o template
+    escreveria de qualquer jeito. O que sobra e legado de verdade precisando de decisao."""
     workspaces = package_json.get("workspaces", [])
     if isinstance(workspaces, dict):
         workspaces = workspaces.get("packages", [])
-    return list(workspaces) if isinstance(workspaces, list) else []
+    if not isinstance(workspaces, list):
+        return []
+    return [w for w in workspaces if w not in WORKSPACES_CANONICOS_TEMPLATE]
 
 
 def detectar_hooks_legado(entradas_raiz: set, package_json: dict) -> bool:
@@ -118,12 +191,19 @@ def diagnosticar(
     tem_indice: bool,
     tem_plan_dir: bool,
     pastas_candidatas: list,
+    marcadores_template: set,
 ) -> dict:
-    """Une os oito diagnosticos num relatorio so. Pura: nao le nada, so combina o que ja foi lido."""
+    """Une os nove diagnosticos num relatorio so. Pura: nao le nada, so combina o que ja foi lido.
+    `template_instalado` e calculado ANTES de `colisao_raiz` porque esta depende daquele — a colisao
+    so faz sentido contra o que e legado, nunca contra o proprio scaffold do template."""
+    template_instalado = avaliar_template_instalado(marcadores_template)
     return {
         "fase": detectar_fase(plans_xx),
         "caminho": detectar_caminho(tem_indice, tem_plan_dir),
-        "colisao_raiz": detectar_colisao_raiz(entradas_raiz),
+        "template_instalado": template_instalado,
+        "colisao_raiz": detectar_colisao_raiz(
+            entradas_raiz, template_instalado["estado"]
+        ),
         "geracao_antiga": detectar_geracao_antiga(entradas_raiz),
         "workspaces_legado": detectar_workspaces_legado(package_json),
         "hooks_legado": detectar_hooks_legado(entradas_raiz, package_json),
@@ -163,6 +243,16 @@ def ler_status_plans_xx(raiz: Path) -> list:
         casado = re.search(r'^status:\s*"?([^"\n]+)"?', texto, re.MULTILINE)
         status_encontrados.append(casado.group(1).strip() if casado else "")
     return status_encontrados
+
+
+def ler_marcadores_template(raiz: Path) -> set:
+    """Quais chaves de MARCADORES_TEMPLATE existem de fato sob `raiz` — a UNICA funcao que resolve
+    esse sinal em disco; `avaliar_template_instalado` (nucleo) so classifica o conjunto ja lido."""
+    return {
+        chave
+        for chave, relativo in MARCADORES_TEMPLATE.items()
+        if (raiz / relativo).exists()
+    }
 
 
 def get_args():
@@ -263,20 +353,65 @@ def _casos_de_autoteste() -> list:
             ),
         },
         {
-            "nome": "detectar_colisao_raiz: package.json existente",
+            "nome": "avaliar_template_instalado: nada presente -> nao-instalado",
             "fn": lambda: (
-                detectar_colisao_raiz({"package.json", "src"}) == ["package.json"]
+                avaliar_template_instalado(set())["estado"] == "nao-instalado"
             ),
         },
         {
-            "nome": "detectar_colisao_raiz: nada colide",
-            "fn": lambda: detectar_colisao_raiz({"src", "README.md"}) == [],
+            "nome": "avaliar_template_instalado: todas as chaves presentes -> completo",
+            "fn": lambda: (
+                avaliar_template_instalado(set(MARCADORES_TEMPLATE))
+                == {
+                    "estado": "completo",
+                    "presentes": sorted(MARCADORES_TEMPLATE),
+                    "faltando": [],
+                }
+            ),
         },
         {
-            "nome": "detectar_workspaces_legado: lista direta",
+            "nome": "avaliar_template_instalado: subconjunto -> parcial, com o que falta",
             "fn": lambda: (
-                detectar_workspaces_legado({"workspaces": ["packages/*"]})
-                == ["packages/*"]
+                avaliar_template_instalado({"gate", "manifesto_raiz"})
+                == {
+                    "estado": "parcial",
+                    "presentes": ["gate", "manifesto_raiz"],
+                    "faltando": sorted(
+                        set(MARCADORES_TEMPLATE) - {"gate", "manifesto_raiz"}
+                    ),
+                }
+            ),
+        },
+        {
+            "nome": "detectar_colisao_raiz: nao-instalado acusa package.json existente",
+            "fn": lambda: (
+                detectar_colisao_raiz({"package.json", "src"}, "nao-instalado")
+                == ["package.json"]
+            ),
+        },
+        {
+            "nome": "detectar_colisao_raiz: nao-instalado e nada colide",
+            "fn": lambda: (
+                detectar_colisao_raiz({"src", "README.md"}, "nao-instalado") == []
+            ),
+        },
+        {
+            "nome": "detectar_colisao_raiz: parcial NAO acusa (e o proprio scaffold)",
+            "fn": lambda: (
+                detectar_colisao_raiz({"package.json", ".gitignore"}, "parcial") == []
+            ),
+        },
+        {
+            "nome": "detectar_colisao_raiz: completo NAO acusa (e o proprio scaffold)",
+            "fn": lambda: (
+                detectar_colisao_raiz({"package.json", ".gitignore"}, "completo") == []
+            ),
+        },
+        {
+            "nome": "detectar_workspaces_legado: lista direta, nao-canonica",
+            "fn": lambda: (
+                detectar_workspaces_legado({"workspaces": ["backend/*"]})
+                == ["backend/*"]
             ),
         },
         {
@@ -289,6 +424,31 @@ def _casos_de_autoteste() -> list:
         {
             "nome": "detectar_workspaces_legado: ausente -> vazio",
             "fn": lambda: detectar_workspaces_legado({}) == [],
+        },
+        {
+            "nome": "detectar_workspaces_legado: trio canonico do template -> nenhum legado",
+            "fn": lambda: (
+                detectar_workspaces_legado(
+                    {"workspaces": ["modules/[a-z]*", "packages/*", "adapters/*"]}
+                )
+                == []
+            ),
+        },
+        {
+            "nome": "detectar_workspaces_legado: canonico + legado -> so o legado sobra",
+            "fn": lambda: (
+                detectar_workspaces_legado(
+                    {
+                        "workspaces": [
+                            "Modulos/*",
+                            "modules/[a-z]*",
+                            "packages/*",
+                            "adapters/*",
+                        ]
+                    }
+                )
+                == ["Modulos/*"]
+            ),
         },
         {
             "nome": "detectar_hooks_legado: pasta .husky",
@@ -311,7 +471,7 @@ def _casos_de_autoteste() -> list:
             ),
         },
         {
-            "nome": "diagnosticar: combina os oito diagnosticos num relatorio so",
+            "nome": "diagnosticar: legado puro (nada do template presente) acusa colisao normalmente",
             "fn": lambda: (
                 diagnosticar(
                     {"package.json", "Propostas"},
@@ -320,10 +480,16 @@ def _casos_de_autoteste() -> list:
                     False,
                     False,
                     ["Propostas"],
+                    set(),
                 )
                 == {
                     "fase": "A",
                     "caminho": "sem-specs",
+                    "template_instalado": {
+                        "estado": "nao-instalado",
+                        "presentes": [],
+                        "faltando": sorted(MARCADORES_TEMPLATE),
+                    },
                     "colisao_raiz": ["package.json"],
                     "geracao_antiga": [],
                     "workspaces_legado": ["apps/*"],
@@ -336,6 +502,34 @@ def _casos_de_autoteste() -> list:
                             "id_sugerido": "propostas",
                         }
                     ],
+                }
+            ),
+        },
+        {
+            "nome": "diagnosticar: projeto 100% conforme NAO acusa colisao nem workspace legado",
+            "fn": lambda: (
+                diagnosticar(
+                    {"package.json", ".gitignore"},
+                    {"workspaces": ["modules/[a-z]*", "packages/*", "adapters/*"]},
+                    [],
+                    False,
+                    False,
+                    [],
+                    set(MARCADORES_TEMPLATE),
+                )
+                == {
+                    "fase": "A",
+                    "caminho": "sem-specs",
+                    "template_instalado": {
+                        "estado": "completo",
+                        "presentes": sorted(MARCADORES_TEMPLATE),
+                        "faltando": [],
+                    },
+                    "colisao_raiz": [],
+                    "geracao_antiga": [],
+                    "workspaces_legado": [],
+                    "hooks_legado": False,
+                    "modulos_candidatos": [],
                 }
             ),
         },
@@ -358,6 +552,12 @@ def rodar_autoteste() -> int:
 def imprimir_legivel(relatorio: dict) -> None:
     print(f"fase: {relatorio['fase']}")
     print(f"caminho: {relatorio['caminho']}")
+    template = relatorio["template_instalado"]
+    print(f"template_instalado: {template['estado']}", end="")
+    if template["estado"] == "parcial":
+        print(f" (falta: {', '.join(template['faltando'])})")
+    else:
+        print()
     print(f"colisao_raiz: {relatorio['colisao_raiz'] or '(nenhuma)'}")
     print(f"geracao_antiga: {relatorio['geracao_antiga'] or '(nenhuma)'}")
     print(f"workspaces_legado: {relatorio['workspaces_legado'] or '(nenhum)'}")
@@ -379,6 +579,7 @@ def main() -> int:
     plans_xx = ler_status_plans_xx(raiz)
     tem_indice = (raiz / "specs" / "00-indice.md").is_file()
     tem_plan_dir = (raiz / "specs" / "plan").is_dir()
+    marcadores_template = ler_marcadores_template(raiz)
 
     relatorio = diagnosticar(
         entradas_raiz,
@@ -387,6 +588,7 @@ def main() -> int:
         tem_indice,
         tem_plan_dir,
         list(args.modulos),
+        marcadores_template,
     )
 
     if args.json:

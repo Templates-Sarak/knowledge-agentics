@@ -43,7 +43,7 @@ existe specs/00-indice.md **e** specs/plan/ ?
 ```
 
 Rode o diagnóstico mecânico da skill antes de perguntar qualquer coisa ao usuário — ele já responde fase,
-caminho, colisões e candidatos a módulo:
+caminho, **se o aparato do template já está instalado**, colisões e candidatos a módulo:
 
 ```
 python skills/meta-adequacao-modular/scripts/diagnosticar_terreno.py --raiz <alvo> --json
@@ -51,6 +51,26 @@ python skills/meta-adequacao-modular/scripts/diagnosticar_terreno.py --raiz <alv
 
 Confirme o resultado com o usuário em uma linha (fato, não escolha) e siga. Detalhe de cada campo do
 relatório em `references/workflow.md` §0.
+
+## O aparato do template já está aqui? — terceiro sinal, obrigatório antes do Passo 3
+
+`template_instalado.estado` responde uma pergunta que fase/caminho **não** respondem — e confundi-la com
+"é legado" foi um defeito medido desta skill (um projeto 100% gerado por `create-project.mjs` +
+`create-module.mjs` era diagnosticado como legado colidindo, pelos próprios arquivos do template):
+
+```
+"nao-instalado"  → nenhuma peça do template presente. O fluxo normal (Passo 3, instalar tudo) está certo.
+"parcial"        → algumas peças já existem. NÃO reinstale por cima — o Passo 3 instala só o que
+                   `template_instalado.faltando` lista.
+"completo"       → nada a instalar. Se, além disso, `fase == "A"` e `modulos_candidatos` veio vazio,
+                   PARE: não há nada a planejar — o alvo já é (ou já foi) um projeto do template.
+                   Confirme com o usuário se a campanha já terminou ou se a skill foi apontada para o
+                   projeto errado, antes de seguir.
+```
+
+Enquanto `template_instalado.estado != "nao-instalado"`, **`colisao_raiz` e `workspaces_legado` já vêm
+filtrados** pelo próprio script (o que é do template não conta como legado) — não repita esse julgamento
+por conta própria.
 
 ## Fase A — planejar (uma conversa, revisor)
 
@@ -76,10 +96,16 @@ Usuário abre conversa nova como **revisor** e invoca esta skill. Rode o diagnó
 Ordem, e nenhuma delas espera pelo passo 5:
 1. Compare a árvore atual × a que o template produziria: `comparar_arvore.py` (de
    `meta-iniciar-repositorio/scripts/`) contra um `create-project.mjs` de referência.
-2. **Instale o aparato de verificação como ato próprio** — `tools/`, `config/`, `project.json`,
-   `packages/ports/`, `adapters/memory/`, `.githooks/` — na **raiz de verdade** do repositório, mesclando e
-   nunca sobrescrevendo. **Nunca aninhe numa subpasta** (regras de escopo `root` leem a raiz;
-   `core.hooksPath` aceita um valor só; `ENV_RAIZ=../../.env` quebra com um nível a mais).
+2. **Instale o aparato de verificação como ato próprio — só o que `template_instalado` diz que falta**:
+   - `estado == "nao-instalado"` → instale tudo (`tools/`, `config/`, `project.json`,
+     `packages/ports/`, `adapters/memory/`, `.githooks/`), na **raiz de verdade** do repositório, mesclando
+     e nunca sobrescrevendo.
+   - `estado == "parcial"` → instale **apenas** as peças de `template_instalado.faltando` — reinstalar o
+     que já existe arrisca sobrescrever configuração já ajustada.
+   - `estado == "completo"` → **nada a instalar**; siga direto para o item 3 (o gate ainda roda, mesmo
+     sem instalar nada — é a verificação, não a instalação, que nunca se pula).
+   **Nunca aninhe numa subpasta** (regras de escopo `root` leem a raiz; `core.hooksPath` aceita um valor
+   só; `ENV_RAIZ=../../.env` quebra com um nível a mais).
 3. Rode `node tools/gate/validate.mjs --todos` e **deixe vermelho honesto**. Converta cada violação em
    exceção nominal em `config/conformidade.json` (`modulo`+`regra`+`motivo`+`decisao` apontando um ADR
    **real**). O número de exceções é a métrica da campanha.
@@ -143,13 +169,14 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 | Portão | Por quê |
 |---|---|
 | fase (A/B) e caminho (i)/(ii) detectados | confirmar o fato antes de agir |
+| `template_instalado.estado == "completo"` e sem módulos candidatos | confirmar que não há nada a planejar, em vez de reinstalar por cima |
 | lista de módulos e o nome de cada um | qual capacidade vira qual `id` — o portão central |
 | prefixo de tabela: renomear ou excetuar | por módulo; risco de migração é decisão de negócio |
 | chaves de ambiente: renomear ou excetuar | `env-modulo` é estrito, sem meio-termo |
 | a fronteira da área legada (fora de lint/tipos) | define o que fica sem cobertura, e por quanto tempo |
 | ordem de execução (o `nn` das plans) | trade-off risco × valor |
 | antes de qualquer migração SQL | backup — já é regra da `db-migrations` |
-| colisão de `package.json`/`pyproject.toml` | mesclar scripts; **NUNCA `--forcar`** sem autorização |
+| colisão de `package.json`/`pyproject.toml` (só quando `template_instalado.estado == "nao-instalado"`) | mesclar scripts; **NUNCA `--forcar`** sem autorização |
 | branch e primeiro commit da campanha | irreversível e externo |
 | o plano completo, antes de escrever qualquer plan | o gate de "confirma?" que encerra a Fase A |
 
@@ -174,10 +201,15 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 
 ## Checklist "pronta"
 - [ ] Fase (A/B) e caminho (i)/(ii) detectados **mecanicamente** e confirmados, não perguntados de saída?
+- [ ] `template_instalado` lido **antes** do Passo 3 — e, se `completo` sem módulos candidatos, a skill
+      parou e disse "nada a planejar" em vez de reinstalar?
+- [ ] `colisao_raiz`/`workspaces_legado` não foram tratados como legado quando eram o próprio scaffold do
+      template (`template_instalado.estado != "nao-instalado"`)?
 - [ ] Caminho (i): `00-contexto`/`00-indice` preenchidos, os três universais copiados sem reescrever,
       `specs/specs/` vazia e a fronteira declarada?
 - [ ] Caminho (ii): `plan/` sem `🟢` pendente; cada divergência spec×código virou plan, não edição silenciosa?
-- [ ] O aparato de gate foi instalado **antes** de qualquer plan de execução (nunca depois, como plan)?
+- [ ] O aparato de gate foi instalado **antes** de qualquer plan de execução (nunca depois, como plan), e
+      só nas peças que `template_instalado.faltando` listava?
 - [ ] `conformidade.json` tem uma exceção nominal (com ADR real) por violação aceita, e nenhuma sem motivo?
 - [ ] Cada módulo tem `id` kebab-case decidido, com os sete itens do template de renomeação resolvidos?
 - [ ] Prefixo de tabela e chaves de ambiente: decisão de HITL registrada (renomear ou exceção), por módulo?
@@ -194,5 +226,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
   o snippet de exceção em `conformidade.json` e o relatório da Fase B.
 - `references/examples.md` — os dois caminhos ((i) e (ii)) percorridos ponta a ponta, e o resultado do
   legado sintético usado para validar esta skill.
-- `scripts/diagnosticar_terreno.py` — o diagnóstico mecânico (fase, caminho, geração do template, colisão de
-  manifesto, candidatos a módulo e conformidade de nome). `--autoteste` prova o núcleo com fixtures.
+- `scripts/diagnosticar_terreno.py` — o diagnóstico mecânico (fase, caminho, **se o aparato do template já
+  está instalado** — nada/parcial/completo, com as peças que faltam —, colisão de manifesto **só quando é
+  legado de verdade**, geração do template, candidatos a módulo e conformidade de nome). `--autoteste`
+  prova o núcleo com fixtures.

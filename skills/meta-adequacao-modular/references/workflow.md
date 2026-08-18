@@ -9,6 +9,11 @@ caminho comum sozinho.
 {
   "fase": "A" | "B" | "EM_ANDAMENTO",
   "caminho": "sem-specs" | "com-specs",
+  "template_instalado": {
+    "estado": "nao-instalado" | "parcial" | "completo",
+    "presentes": ["gate", "manifesto_raiz", "..."],
+    "faltando": ["portas", "adapters_memoria", "..."]
+  },
   "colisao_raiz": ["package.json", "..."],
   "geracao_antiga": [{"encontrado": "ferramentas", "atual": "tools"}, "..."],
   "workspaces_legado": ["modules/*", "..."],
@@ -23,11 +28,27 @@ caminho comum sozinho.
 |---|---|---|
 | `fase` | ver `SKILL.md` — mecânico, a partir de `specs/plan/*xx-*.md` e seus `status` | `EM_ANDAMENTO` → pare, aponte `/code3-adequar`/a plan pendente, não continue |
 | `caminho` | `com-specs` exige **os dois**: `specs/00-indice.md` e a pasta `specs/plan/` | decide se os passos 1–2 são no-op ou trabalho real |
-| `colisao_raiz` | `package.json`/`pyproject.toml`/`.gitignore` já existem na raiz | HITL — nunca `--forcar` sem autorização; mesclar `scripts`/`workspaces` na mão |
+| `template_instalado` | **lido antes do Passo 3.** As sete peças do aparato (`tools/gate/validate.mjs`, `project.json`, `packages/ports`, `adapters/memory`, `config`, `.githooks`, `modules`) — quantas existem já | `nao-instalado` → Passo 3 instala tudo; `parcial` → instala só `faltando`; `completo` + sem candidatos → **pare**, nada a planejar |
+| `colisao_raiz` | `package.json`/`pyproject.toml`/`.gitignore` que colidiriam com o scaffold — **só reportado quando `template_instalado.estado == "nao-instalado"`** (senão são o próprio scaffold do template, não legado) | HITL — nunca `--forcar` sem autorização; mesclar `scripts`/`workspaces` na mão |
 | `geracao_antiga` | achou `ferramentas/`/`modulos/`/`projeto.json` — nomes de **duas renomeações atrás do próprio template** | isto é migração de versão do template, **não** adequação de legado puro — não confunda os dois diagnósticos |
-| `workspaces_legado` | o repositório já é um monorepo com `workspaces` declarado | mesclar é do usuário (armadilha #2 abaixo) |
+| `workspaces_legado` | `workspaces` declarado no `package.json`, **menos** as entradas que já são o trio canônico do template (`modules/[a-z]*`, `packages/*`, `adapters/*`) — só sobra o que é legado de verdade | mesclar é do usuário (armadilha #2 abaixo) |
 | `hooks_legado` | achou `.husky/` ou `husky`/`lint-staged` no `package.json` | terceiro caso de composição de `pre-commit` (armadilha #3) |
 | `modulos_candidatos` | um por pasta informada em `--modulos` (ou achada nas topologias-padrão de `code-diagnostico`) | vira a tabela do portão central de HITL — `id_sugerido` é ponto de partida, não decisão fechada |
+
+**Por que `colisao_raiz`/`workspaces_legado` filtram e não apenas anotam.** Um projeto gerado por
+`create-project.mjs` + `create-module.mjs` — 100% conforme — tinha `colisao_raiz: [".gitignore",
+"package.json"]` e `workspaces_legado: ["modules/[a-z]*", "packages/*", "adapters/*"]` na versão anterior
+deste script: os dois eram os próprios arquivos do template, apontando o usuário para o portão de HITL mais
+caro (`--forcar`) sobre um repositório que não precisava de nada. Medido reproduzindo exatamente
+`create-project.mjs --binding typescript` + `create-module.mjs catalogo --role domain` e rodando o
+diagnóstico em cima.
+
+**Limite conhecido, declarado — o marcador `modules_raiz`.** Dos sete marcadores de `template_instalado`,
+`modules_raiz` (a pasta `modules/` em si) é o menos específico: um legado que por acaso já tenha uma pasta
+de topo chamada `modules/` por motivo próprio sai de `"nao-instalado"` só por causa dele, o que já basta
+para `colisao_raiz` parar de acusar `package.json`/`.gitignore` mesmo que nada mais do template esteja ali.
+Não há correção barata sem mudar o critério de "parcial" (por exemplo, exigir 2+ marcadores) — troca de
+critério que não foi pedida e desloca o problema para outro conjunto de casos. Registrado, não escondido.
 
 O script **não decide topologia** (isso é `code-diagnostico`/`code1-auditar` — `modules/*/module.json` ·
 `backend/*|frontend/*|src/modules/*|apps/*|packages/*` · por-camadas · monólito simples). Ele só avalia, para
@@ -71,10 +92,26 @@ ela descreve. Toda divergência:
 
 ## § 3 — a régua antes da execução (Passo 3, detalhe)
 
+### Instalar só o que falta — o efeito de `template_instalado`
+
+O item 2 do Passo 3 (`SKILL.md`) não é mais "instale sempre": é condicionado ao que
+`diagnosticar_terreno.py` já leu.
+
+| `template_instalado.estado` | O que o Passo 3 faz |
+|---|---|
+| `"nao-instalado"` | instala as sete peças inteiras — o caso comum de legado puro |
+| `"parcial"` | instala **só** as peças de `faltando` — reinstalar o que já existe arrisca sobrescrever ajuste feito à mão numa rodada anterior da campanha (ex.: `config/verificacao.json` com cobertura já calibrada) |
+| `"completo"` | **não instala nada**. Segue direto para rodar o gate (item 3) — a verificação nunca se pula, só a instalação |
+
+Se `estado == "completo"` **e** `modulos_candidatos` veio vazio, isto não é mais "avaliar a adequação
+necessária" — é "não há adequação necessária". Pare aqui, com HITL: confirme com o usuário se a campanha já
+terminou (plans `xx-*` já expurgadas) ou se a skill foi apontada para o alvo errado por engano — as duas
+situações medidas que produzem exatamente este sinal.
+
 ### A dívida declarada
 
-Depois de instalar `tools/`, `config/`, `project.json`, `packages/ports/`, `adapters/memory/` e
-`.githooks/` na raiz de verdade (mesclando, nunca sobrescrevendo), rode:
+Depois de instalar (as peças que `template_instalado.faltando` listava — nunca a árvore inteira por cima do
+que já existe), rode:
 
 ```
 node tools/gate/validate.mjs --todos
