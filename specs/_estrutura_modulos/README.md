@@ -98,7 +98,7 @@ pode morar num lugar que se perde ao trocar de provedor. Plugar o gate em qualqu
 | `javascript` | `npm run verify` | **verde** — gate + env + `tsc --checkJs` (JSDoc) + 24 testes |
 | `python` | `python verificar.py` | **verde** — gate + env + ruff + mypy + 19 testes |
 
-Nos três, o projeto instanciado sai com `packages/portas`, `adapters/memoria` (obrigatório — é o que
+Nos três, o projeto instanciado sai com `packages/ports`, `adapters/memory` (obrigatório — é o que
 permite testar sem rede) e `src/composicao` prontos, e o comando de verificação passa de saída.
 
 > **O gate é uma ferramenta Node em todos os bindings — de propósito.** Um verificador por linguagem

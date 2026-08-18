@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * verify-routine.mjs — o roteiro do §11.2 de `fe-sistema-modular.md`, como UM comando em vez de
+ * verify-routine.mjs — a verificação ponta a ponta do template, como UM comando em vez de
  * prosa que alguém precisa lembrar de rodar. Lei dona: nenhuma — ferramenta de manutenção do
  * TEMPLATE, como `template-self-test.mjs` e as demais de `tests/` (§4.6).
  *

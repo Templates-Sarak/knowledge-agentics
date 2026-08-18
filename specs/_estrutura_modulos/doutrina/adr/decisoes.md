@@ -346,3 +346,35 @@ independente: `registrarFabricaPy`/`Ts`/`Js` escrevem tudo numa linha só, sem q
 isso já estourava os 110 caracteres do `ruff` em Python pra porta com dois provedores — sem folga
 nenhuma mesmo antes do hífen. Python ganhou o mesmo passo de formatação que TS/JS já tinha
 (`prettier --write` → `ruff format`), fechado na mesma rodada, documentado em 04-regras.md §7.2.
+
+---
+
+## ADR-012 — Ambiente e unidade de release ficam fora do template
+
+**Status:** 🟢 Aceito
+
+**Contexto.** Duas ausências do template são levantadas com frequência como lacuna, e as duas são decisão. Um
+revisor que as encontre sem este registro vai "consertar" o que foi deliberadamente deixado de fora — e o
+conserto custa mais que a ausência. Ausência declarada é decisão; ausência silenciosa é defeito.
+
+**Decisão — o template NÃO modela ambientes.** Nada de `staging`/`produção`, nenhum arquivo por ambiente,
+nenhum segredo de produção guardado. Existe **um** `.env` real por projeto (ADR-004), fora do versionamento,
+e o `.env.example` versionado que só carrega as CHAVES. Modelagem de ambiente é decisão de operação, muda por
+provedor e por empresa, e não sobrevive à troca de nenhum dos dois — pelo mesmo argumento do ADR-005 sobre
+pipeline de CI.
+
+**Decisão — a unidade de release é pergunta ABERTA, e é do projeto.** O template não publica e não traz CD,
+porque antes do CD existe uma pergunta que ele não pode responder no lugar de ninguém: **o que se versiona e
+se entrega — o repositório inteiro, ou cada módulo?** As duas respostas são legítimas e levam a pipelines
+incompatíveis. Um monólito modular entrega o repositório; um módulo extraído para infraestrutura própria
+(ADR-001) entrega a si mesmo. Como o template existe justamente para permitir os dois, fixar um seria
+escolher pelo projeto. Quem publica são as skills `deploy-vercel` e `deploy-docker`.
+
+**Consequências.** O template entrega o **contrato de acoplamento** (exit code e relatório legível por
+máquina, ADR-005) e para aí. Quando o projeto decidir a unidade de release, a decisão entra como ADR **dele**,
+em `specs/adr/`, ao lado desta. E `web/dist/` continua sendo bundle a publicar — pôr front e API na mesma
+origem é deploy, não arquitetura.
+
+**Alternativa rejeitada.** *Entregar um `.env.staging`/`.env.production` de exemplo e um pipeline mínimo.*
+Rejeitada porque um pipeline mínimo é um pipeline errado para quase todo projeto, e um arquivo de ambiente de
+exemplo convida a versionar o real — o defeito exato que o ADR-004 fecha.
