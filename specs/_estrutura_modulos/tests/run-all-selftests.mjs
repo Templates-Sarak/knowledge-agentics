@@ -166,13 +166,18 @@ const REGISTRO = [
  * `git-revisao-diff/scripts/revisar_diff.py`, `meta-create-skill/scripts/scaffold_skill.py`,
  * `otimizacao-nivel-1/scripts/auditar_assets.py`, `site-seo/scripts/auditar_seo.py` — erram para
  * MENOS gravidade (relatório incompleto), nunca para aprovação falsa, e por isso ficam de fora de
- * propósito nesta rodada. (`meta-verificacao-base/scripts/{limiares,ponteiros}.py` NÃO entram
- * nesta lista: são módulos importados por `audit_base.py`, provados pelo `--autoteste` DELE, não
- * scripts standalone.)
+ * propósito nesta rodada. (`meta-verificacao-base/scripts/{limiares,ponteiros,nomenclatura,
+ * proatividade,secoes}.py` NÃO entram nesta lista: são módulos importados por `audit_base.py`,
+ * provados pelo `--autoteste` DELE, não scripts standalone.)
  *
- * 3 hooks sem `--autoteste`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —
+ * 4 hooks sem `--autoteste`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —
  * a parte pura de cada um ainda não foi separada da chamada de ferramenta externa (gitleaks/
- * npm audit/pip-audit/pytest/vitest) do jeito que `padrao-limiares.js` foi.
+ * npm audit/pip-audit/pytest/vitest) do jeito que `padrao-limiares.js` foi; e `padrao-format.js`,
+ * que é OUTRO caso — não falta separar núcleo de casca, é que não HÁ núcleo: 29 linhas, só
+ * lookup->formatter->`run()`, `allow()` incondicional no fim (nunca bloqueia). A única "decisão"
+ * é uma tabela de mapeamento literal (formatter -> args de CLI) sem ramo que um teste pegasse além
+ * do que o próprio `tsc`/parser já garante ao carregar o arquivo. Decisão: fica de fora
+ * PERMANENTEMENTE, não é pendência a fechar — reavalie só se ganhar lógica nova.
  */
 
 const DECLARADOS_FORA = new Set([
