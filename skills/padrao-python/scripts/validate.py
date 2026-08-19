@@ -292,6 +292,15 @@ def validar_arquivo(caminho: Path, config: dict) -> list:
     return validar_texto(str(caminho), texto, config)
 
 
+def tem_falha_de_parse(violacoes: list) -> bool:
+    """Núcleo: violação de dimensão "parse" é SEMPRE fatal — quem consome esta saída
+    (code-adequador, code-auditoria-padrao) lê exit 0 como "conforme"; um parse que falha e
+    ainda assim retorna 0 aprovaria qualquer coisa (fail-open, espelha o mesmo conserto em
+    validate.mjs — mesmos consumidores, mesmo contrato de exit code). Violação comum (limiar,
+    hardcoded etc.) continua exit 0 — só o parse é fatal."""
+    return any(v["dimensao"] == "parse" for v in violacoes)
+
+
 def coletar_arquivos(alvo: Path, skip_dirs: list) -> list:
     if alvo.is_file():
         return [alvo] if alvo.suffix == ".py" else []
@@ -376,12 +385,29 @@ def autoteste() -> int:
             "validar_texto nao deveria achar nada em codigo dentro dos limiares"
         )
 
+    # Item central do fail-open: texto que nao parseia tem que REPROVAR (exit fatal), nao so
+    # aparecer no JSON. tem_falha_de_parse decide o exit code em main() — testa a decisao, nao
+    # so que validar_texto roda.
+    if not tem_falha_de_parse(viol_parse):
+        falhas.append(
+            "tem_falha_de_parse deveria reprovar (True) quando ha violacao de dimensao 'parse'"
+        )
+    if tem_falha_de_parse(validar_texto("f.py", limpo, cfg)):
+        falhas.append(
+            "tem_falha_de_parse nao deveria reprovar codigo limpo sem violacao de parse"
+        )
+    funcao_grande_viol = validar_texto("f.py", funcao_grande, cfg)
+    if tem_falha_de_parse(funcao_grande_viol):
+        falhas.append(
+            "tem_falha_de_parse nao deveria reprovar violacao comum (limiares) — so 'parse' e fatal"
+        )
+
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
         print(f"autoteste (validate.py): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (validate.py): 7/7 ok")
+    print("autoteste (validate.py): 10/10 ok")
     return 0
 
 
@@ -420,6 +446,9 @@ def main() -> None:
             {"alvo": str(alvo), "violacoes": violacoes}, ensure_ascii=False, indent=2
         )
     )
+    # Fail-open medido: sem isto, um arquivo que falhava ao parsear virava violacao "alta" no
+    # JSON mas o processo saia com 0 mesmo assim (mesmo defeito corrigido em validate.mjs).
+    sys.exit(1 if tem_falha_de_parse(violacoes) else 0)
 
 
 if __name__ == "__main__":
