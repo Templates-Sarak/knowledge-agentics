@@ -107,9 +107,10 @@ O corpo do `SKILL.md` deve ser **auto-suficiente para ~90% das execuções**. Se
 6. **Checklist "pronta"** — itens objetivos sim/não; cabe inteiro aqui.
 7. **Referências (Camada 3)** — ponteiros para `references/*` e `scripts/*`.
 
-**Critério de densidade:** ~150–200 linhas. Se passar disso, mova o verboso (exemplos longos,
-templates) para `references/`. Se ficar curto demais e exigir abrir outro arquivo para o caminho
-comum, está roteador demais — traga o essencial de volta.
+**Critério de densidade:** ~40–80 linhas (a média medida do catálogo hoje é 68, com 80% das
+skills abaixo de 70). Se passar muito disso, mova o verboso (exemplos longos, templates) para
+`references/`. Se ficar curto demais e exigir abrir outro arquivo para o caminho comum, está
+roteador demais — traga o essencial de volta.
 
 ### Acionabilidade dos passos
 

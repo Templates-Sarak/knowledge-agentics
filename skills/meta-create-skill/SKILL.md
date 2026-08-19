@@ -25,7 +25,7 @@ Toda skill é organizada para o agente ler o mínimo necessário:
 | Camada | Conteúdo | Carrega | Regra |
 |---|---|---|---|
 | 1 — Gatilho | `name` + `description` | sempre | enxuto |
-| 2 — Operação | corpo do `SKILL.md` | quando dispara | **denso e auto-suficiente** (~150–200 linhas) |
+| 2 — Operação | corpo do `SKILL.md` | quando dispara | **denso e auto-suficiente** (~40–80 linhas) |
 | 3 — Profundidade | `references/`, `scripts/`, `assets/` | sob demanda, via ponteiro | só o verboso/raro |
 
 **Regra de ouro:** o `SKILL.md` resolve ~90% das execuções sozinho. A Camada 3 é mergulho opcional.
@@ -84,7 +84,7 @@ Trate **uma skill por vez**. Cada passo é acionável; o detalhe verboso está e
 1. **Definir escopo** — responda por escrito: que problema resolve (1 frase, sem "e"); já existe similar (≥70% → expanda a existente); qual o gatilho; como é acionada (proativa / sob demanda / command).
 2. **Escrever a `description`** — aplique a fórmula acima. _(detalhe em `references/workflow.md`)_
 3. **Criar a estrutura** — pasta = `name` em kebab-case com **prefixo de área** (`padrao-`/`code-`/`deploy-`/`meta-`; ver "Convenção de nomes"). Use `scripts/scaffold_skill.py <nome>` para gerar o esqueleto (ele valida o prefixo). Crie `references/`/`scripts/`/`assets/` só se houver conteúdo.
-4. **Escrever o `SKILL.md` denso** — seções: o que é, quando usar, workflow acionável, regras, checklist, ponteiros. Cada passo declara **ferramenta + ação + output/critério** ("analise o código" é proibido). ~150–200 linhas.
+4. **Escrever o `SKILL.md` denso** — seções: o que é, quando usar, workflow acionável, regras, checklist, ponteiros. Cada passo declara **ferramenta + ação + output/critério** ("analise o código" é proibido). ~40–80 linhas.
 5. **Passo HITL** — se a skill modifica algo, inclua no workflow dela um passo de confirmação (Plano de Execução: o quê / por quê / como / expectativa → "⚠️ Confirma?") antes da 1ª ação mutativa.
 6. **Preencher Camada 3** *(condicional)* — `references/workflow.md` (antes/depois), `templates.md` (se produz output), `examples.md`. Cada um com ponteiro no `SKILL.md`.
 7. **Criar script** *(condicional)* — **criados obrigatoriamente na linguagem principal do repositório atual**. Só para tarefa determinística (mesma entrada→mesma saída). Tarefa que exige julgamento fica nas instruções. _(critérios e template em `references/workflow.md` e `templates.md`)_

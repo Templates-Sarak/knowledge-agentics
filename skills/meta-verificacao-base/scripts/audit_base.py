@@ -25,6 +25,7 @@ from proatividade import (  # noqa: E402
     descricao_do_frontmatter,
     skills_sem_trava,
 )
+from secoes import SECOES_OBRIGATORIAS, auditar_secoes, secoes_faltando  # noqa: E402
 
 
 def get_args():
@@ -152,12 +153,36 @@ def autoteste():
             "PROATIVAS deveria listar padrao-escrita e code-auditoria-padrao com justificativa"
         )
 
+    # Tarefa 6: SKILL.md precisa das secoes obrigatorias do molde (nao cobra "## Workflow" —
+    # ver a nota de secoes.py sobre as 6 skills legitimas sem essa secao).
+    skill_completa = (
+        '## Quando usar\nx\n## Regras e limites\nx\n## Checklist "pronta"\nx\n'
+    )
+    if secoes_faltando(skill_completa, SECOES_OBRIGATORIAS) != []:
+        falhas.append(
+            "secoes_faltando nao deveria achar nada num SKILL.md com as tres secoes"
+        )
+    # "## Regras de Ouro" (o molde antigo) casa o prefixo "## Regras" de proposito — o defeito
+    # real do molde antigo era a falta de "## Quando usar" (tinha "## O Gatilho") e a falta TOTAL
+    # de checklist, nao o nome da secao de regras.
+    skill_velha = "## O Gatilho\nx\n## Workflow\nx\n## Regras de Ouro\nx\n"
+    faltando_velha = secoes_faltando(skill_velha, SECOES_OBRIGATORIAS)
+    if faltando_velha != ["## Quando usar", "## Checklist"]:
+        falhas.append(
+            "secoes_faltando deveria reprovar 'Quando usar' e 'Checklist' no molde antigo "
+            f"(O Gatilho/Regras de Ouro, sem Checklist) — achou {faltando_velha!r}"
+        )
+    if secoes_faltando(skill_completa, ("## Workflow",)) != ["## Workflow"]:
+        falhas.append(
+            "secoes_faltando deveria achar 'Workflow' faltando quando so ele e cobrado"
+        )
+
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 24/24 ok")
+    print("autoteste (audit_base): 27/27 ok")
     return 0
 
 
@@ -172,6 +197,7 @@ def audit_base(base_dir):
         "limiares": [],
         "nomenclatura": [],
         "proatividade": [],
+        "secoes": [],
     }
 
     # 1. Agents
@@ -257,6 +283,9 @@ def audit_base(base_dir):
     # 5d. Proatividade: toda skill tem a trava "NAO acione proativamente", exceto a lista fechada
     # e justificada de excecoes (PROATIVAS) em proatividade.py
     report["proatividade"] = auditar_proatividade(base_dir)
+
+    # 5e. Secoes obrigatorias do molde: "## Quando usar", "## Regras...", "## Checklist..."
+    report["secoes"] = auditar_secoes(base_dir)
 
     # 6. Vazamentos
     patterns = {
