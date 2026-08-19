@@ -73,7 +73,13 @@ Corolário: **sem estado global mutável** — dado compartilhado que muda é de
 
 **Tipagem nas fronteiras** — type hints / TS `strict` ao menos nas assinaturas públicas (`api/` e contratos).
 
-**Documentação do contrato** — o `api/` de cada módulo é documentado (o que entra/sai); comentários explicam o **porquê**, não o **o quê**.
+**Documentação do contrato** — o `api/` de cada módulo é documentado (o que entra/sai).
+
+**Comentários** — explicam o **porquê**, não o **o quê**: a decisão não óbvia por trás do código,
+nunca uma paráfrase dele. Nenhuma metade desta norma tem verificador hoje — é convenção de leitura
+humana, pendência declarada, não lacuna escondida (`04-regras.md` §1, lei 2: regra sem verificação
+não se cobra em revisão). Cabeçalho de arquivo, docstring por linguagem, marcadores `TODO`/`FIXME`
+e idioma: `references/comentarios.md`.
 
 ## Nível 1 — Organização (microservice-ready)
 
@@ -141,6 +147,8 @@ tem nenhum dos dois fica no Nível 0 conferido por pessoa — a lista acima é a
 ## Referências (Camada 3 — leia sob demanda)
 - `references/PADRAO-ORGANIZACAO.md` — **mapa** do Nível 1: qual lei do template responde a cada assunto.
 - `references/examples.md` — módulo bem desacoplado (bom) × módulo acoplado (ruim).
+- `references/comentarios.md` — norma de comentário completa: cabeçalho de arquivo, docstring por
+  linguagem, marcadores, idioma, e o que hoje é convenção humana vs. cobrado por máquina (nenhuma parte, ainda).
 
 > **Aposentados nesta versão:** `scripts/scaffold_modulo.py` (+ `scripts/config.json`) e
 > `assets/config_modulo.json`. Substitutos: `tools/create-module.mjs` do template, conduzido pela skill

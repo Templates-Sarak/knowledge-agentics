@@ -4,6 +4,7 @@
 
 ## 1. Comandos (Slash Commands)
 Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo correspondente antes de agir.
+- **/code-entregar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code-entregar.md`
 - **/code1-auditar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code1-auditar.md`
 - **/code2-caracterizar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code2-caracterizar.md`
 - **/code3-adequar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code3-adequar.md`
@@ -20,10 +21,12 @@ Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo corresp
 ## 2. Skills Orgânicas
 Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessário pelo contexto), leia o arquivo SKILL.md correspondente para carregar o seu workflow.
 - **code-adequacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-adequacao/SKILL.md`
+- **code-assinatura**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-assinatura/SKILL.md`
 - **code-auditoria-padrao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-auditoria-padrao/SKILL.md`
 - **code-diagnostico**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-diagnostico/SKILL.md`
 - **code-documentacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-documentacao/SKILL.md`
 - **code-entrega**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-entrega/SKILL.md`
+- **code-licenca**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-licenca/SKILL.md`
 - **code-limpeza-projeto**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-limpeza-projeto/SKILL.md`
 - **code-modulo**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-modulo/SKILL.md`
 - **cyber-api**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-api/SKILL.md`

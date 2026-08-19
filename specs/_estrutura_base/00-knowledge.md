@@ -69,7 +69,7 @@ justamente porque são mutativas ou sensíveis.
 | Expurgar as plans já sintetizadas (`⚪`) do diretório de specs | `spec-atualizar` |
 | Definir o alicerce arquitetural de um repo novo | `spec-fundacao` |
 | Criar/revisar uma skill | `meta-create-skill` · `/meta-criar-skill` |
-| Preparar o projeto para entrega (licença, autoria, docs) | `code-entrega` · `code-documentacao` |
+| Preparar o projeto para entrega (assinatura, licença, docs) | `/code-entregar` (orquestra `code-assinatura` → `code-licenca` → `code-documentacao`) |
 | Faxina de projeto (órfãos, código morto, deps não usadas) | `code-limpeza-projeto` |
 
 ---
@@ -116,8 +116,10 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `code-diagnostico` | Diagnosticar conformidade de legado (read-only) e gerar backlog priorizado. |
 | `code-adequacao` | Adequar legado item por item, com rede de caracterização, **preservando comportamento**. |
 | `code-limpeza-projeto` | Remover órfãos, código morto, backups, deps não usadas (HITL + Grep antes de deletar). |
-| `code-documentacao` | Padronizar README, `docs/`, autoria, licença, CODEOWNERS, changelog. |
-| `code-entrega` | Gate de pré-entrega: autoria + licença + documentação no padrão. |
+| `code-assinatura` | Detectar, triar e remover assinaturas/créditos não autorizados; acertar metadados de autoria. |
+| `code-licenca` | Apresentar o catálogo de licenças no HITL, aplicar `LICENSE` + SPDX id. |
+| `code-documentacao` | Padronizar a superfície do repo: README (raiz), CONTRIBUTING, CHANGELOG, CODEOWNERS — **não** doc técnica (é do SDD, em `specs/`). |
+| `code-entrega` | Orquestrador fino de pré-entrega: chama as três acima na ordem, consolida o log. Command: `/code-entregar`. |
 
 ## 4.3 `spec-` — governança de especificações
 
@@ -185,7 +187,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 
 ---
 
-# 5. Commands (12) — disparo manual pelo humano
+# 5. Commands (13) — disparo manual pelo humano
 
 | Command | Fase | O que faz |
 |---|---|---|
@@ -201,6 +203,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `/site-organizar` | — | Estrutura arquitetura e navegação do site. |
 | `/site-seo` | — | Torna o site encontrável e indexável. |
 | `/meta-criar-skill` | — | Cria/revisa uma skill no padrão. |
+| `/code-entregar` | — | Orquestra `code-assinatura` → `code-licenca` → `code-documentacao`. **Mutativo.** |
 
 > **Um agente não digita `/comando`.** Se uma plan depende de um command, ela **instrui o humano** a rodá-lo
 > (ou o executor aplica diretamente a **skill** equivalente, que é onde a lógica vive).

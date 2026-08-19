@@ -26,4 +26,4 @@ Dispara o fluxo da skill **`deploy-vercel`** para levar o projeto a um deploy **
 - **NUNCA** `--prod` sem validar preview antes, nem sem o HITL do passo 5.
 - **NUNCA** segredo no `vercel.json`/arquivo versionado — só no painel/CLI.
 - **NÃO** avance com build local quebrado (passo 4 é bloqueante).
-- **NÃO** saia do escopo: autoria/licença/docs → `code-entrega`; faxina → `code-limpeza-projeto`.
+- **NÃO** saia do escopo: autoria/licença/docs → `/code-entregar`; faxina → `code-limpeza-projeto`.

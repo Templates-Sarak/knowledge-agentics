@@ -62,7 +62,8 @@ Trate **um módulo/imagem por vez**. Templates em `assets/docker-templates/`; ta
 - **NÃO** hardcode porta/host/tunables no Dockerfile — venha de `ENV`/`ARG`/`config.json` do módulo.
 - **NÃO** junte vários módulos num mesmo container — **1 módulo = 1 imagem** (extraível como microsserviço).
 - **NÃO** builde/publique sem o HITL do passo 7, nem considere "buildou" como "funciona" — valide o healthcheck.
-- **NÃO** saia do escopo: autoria/licença/documentação é da `code-entrega`; deploy serverless é da
+- **NÃO** saia do escopo: autoria é da `code-assinatura`, licença é da `code-licenca`, documentação é
+  da `code-documentacao` (as três, na ordem, via `code-entrega`); deploy serverless é da
   `deploy-vercel`. Aqui só se conteineriza e publica imagem.
 
 ## Checklist "pronta"

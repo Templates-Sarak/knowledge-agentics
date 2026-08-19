@@ -1,59 +1,65 @@
 ---
 name: code-documentacao
-description: Gera e padroniza a documentação de um repositório (README, diretório docs/, autoria, licença, CODEOWNERS, changelog). Use APENAS quando o usuário solicitar explicitamente a documentação do projeto. NÃO acione proativamente.
+description: Gera e padroniza a superfície do repositório com quem chega de fora — README.md da raiz, CONTRIBUTING.md, CHANGELOG.md e .github/CODEOWNERS. Use ao preparar a documentação de entrada de um projeto ou padronizar seus arquivos de superfície. NÃO acione proativamente.
 ---
 
-# Skill: code-documentacao
+# Skill: Documentação (Superfície do Repositório)
 
-> **Dependência:** Esta skill baseia-se na criação de projetos padronizados pelo ecossistema Sarak. Consulte `padrao-escrita` se precisar de diretrizes de linguagem específicas durante a documentação.
-
-Atua como a central de padronização documental de um projeto, complementando as especificações técnicas (`spec/`). Ela garante que o repositório tenha os arquivos essenciais para entendimento, uso, colaboração, licenciamento correto e segurança de autoria.
+Dona única da **superfície do repositório** — o que quem chega de fora vê primeiro. **Não é dona de
+documentação técnica**: o que o sistema é, por que é assim e o que muda vive no fluxo **SDD**, em
+`specs/` (contexto, arquitetura, ADRs). Esta skill **aponta** para lá; nunca descreve arquitetura.
+Autoria é da `code-assinatura`; licença é da `code-licenca` — referencie, não repita.
 
 ## Quando usar
-- Quando o projeto acabou de ser inicializado e carece de README e licença.
-- Ao final de um ciclo de desenvolvimento, para gerar os manuais, changelogs e guia de contribuição.
-- Quando o usuário pede para revisar a autoria e a licença ("limpar assinaturas de IA").
-- Acionada sob demanda. Não dispara sozinha.
+
+- Sob demanda, ao preparar a documentação de entrada de um projeto (README, CONTRIBUTING, CHANGELOG,
+  CODEOWNERS) ou padronizar os arquivos de superfície existentes.
+- Mutativa (gera/atualiza arquivo) → HITL antes de inventar qualquer conteúdo que exija conhecimento
+  de negócio.
 
 ## Workflow
 
-1. **Auditoria e Varredura (Grep)**
-   - Utilize a ferramenta `grep_search` para varrer o projeto procurando termos como `author`, `copyright`, `license`, ou nomes de agentes de IA nos arquivos de configuração (`package.json`, `pyproject.toml`, `Cargo.toml`, etc.) e em cabeçalhos de arquivos.
-   - Analise se o arquivo `LICENSE`, o `.github/CODEOWNERS` e a pasta `docs/` já existem no projeto.
-
-2. **Entrevista de Documentação (HITL - Obrigatório)**
-   - Paralise a execução.
-   - Envie ao usuário o conteúdo explicativo sobre licenças encontrado em `references/templates.md` (sob "Cartilha de Licenças").
-   - Pergunte explicitamente:
-     1. "Quem é o autor oficial do projeto ou a empresa proprietária?" (para fins de copyright e assinaturas).
-     2. "Qual licença listada acima você deseja adotar para este projeto?"
-
-3. **Aplicação de Autoria e Licenciamento**
-   - **Licença:** Gere o arquivo `LICENSE` na raiz com o texto oficial da licença escolhida pelo usuário. Insira o trecho de copyright padrão da licença com o nome fornecido no passo 2 e o ano atual.
-   - **Metadados:** Utilize a ferramenta de edição (`replace_file_content` / comandos nativos) para remover coautorias indesejadas dos metadados e adicionar apenas o(s) autor(es) autorizado(s).
-   - **CODEOWNERS:** Crie o arquivo `.github/CODEOWNERS` na raiz do projeto contendo `* @<Autor>` (ou aspas se não for username de github, mas use o nome informado para selar a propriedade).
-
-4. **Geração Estrutural e Guias**
-   - **README.md:** Crie ou atualize o `README.md` raiz. Insira um guia de Setup rápido e as seções obrigatórias de Autoria e Licença. O README deve apontar de forma clara para o diretório `docs/` para as informações estruturais.
-   - **docs/ e Complementos:** Garanta a criação da pasta `docs/` na raiz e crie dentro dela:
-     - `maps.md`: Onde você deve listar a estrutura de diretórios atualizada em formato de árvore (root, src, docs, spec).
-     - `CONTRIBUTING.md`: O guia de contribuição usando o template correspondente.
-   - **CHANGELOG.md:** Deve ser gerado na raiz do projeto para versionamento semântico (iniciado em v0.1.0 ou a versão atual).
+1. **Auditar** — `python scripts/auditar_docs.py --raiz <projeto>` (README ausente, seções faltando,
+   `specs/` ausente, `LICENSE` ausente, módulos sem README). Leia o README atual, se existir.
+2. **HITL — lacunas de negócio** — se faltar visão geral, stack ou setup (o que exige conhecimento do
+   projeto, não é factual), pergunte ao usuário. **Nunca invente.**
+3. **Gerar/atualizar o README** — a partir de `assets/README.template.md`, preenchendo o que é
+   factual (nome, stack detectada, módulos via `Glob`, comandos de setup/testes). As seções
+   "Arquitetura modular" e "API" são **ponteiro** para `specs/arquitetura/` e
+   `contract/openapi.yaml` de cada módulo — nunca descreva arquitetura aqui.
+4. **`.github/CODEOWNERS`** — crie/atualize com o(s) autor(es) já confirmado(s) (pela
+   `code-assinatura`, se já rodada nesta entrega; senão pergunte).
+5. **`CONTRIBUTING.md`** — gere a partir de `references/templates.md`.
+6. **`CHANGELOG.md`** *(se o projeto for versionado/publicado)* — garanta a existência, formato Keep
+   a Changelog + SemVer.
+7. **Reportar** — arquivos gerados/atualizados e as lacunas apontadas ao usuário.
 
 ## Regras e limites
 
-- **NUNCA** assuma ou adivinhe a licença de um projeto sem perguntar ao usuário. Projetos não licenciados não são *open-source*, logo, possuem copyright fechado por padrão.
-- **NÃO** mantenha assinaturas de IA (ex: "Criado por ChatGPT/Claude/Antigravity") no código final se o usuário exigiu apenas a própria autoria. Você deve ser rigoroso na etapa de varredura.
-- **NÃO** destrua a documentação estrutural existente (`spec/`); esta skill *complementa* a documentação técnica agregando usabilidade, regras de negócio e on-boarding, não substituindo decisões técnicas.
-- **NUNCA** acione a geração documental de forma proativa durante uma sessão de código. Documentação estrutural pesada pausa o desenvolvimento; faça apenas sob demanda explícita.
+- **NUNCA** invente conteúdo que exige conhecimento de negócio (visão, decisões, contexto) — aponte
+  a lacuna ao usuário; doc inventada é pior que doc ausente.
+- **NÃO** descreva arquitetura, decisão técnica ou contexto — isso é do fluxo SDD, em `specs/`; aqui
+  só se aponta, nunca se repete.
+- **NÃO** decida ou aplique licença — isso é da `code-licenca`.
+- **NÃO** remova assinatura nem edite metadados de autoria — isso é da `code-assinatura`.
+- **NÃO** destrua `specs/` existente — esta skill complementa a documentação técnica, não a substitui.
+- **NÃO** saia do escopo: faxina de lixo é da `code-limpeza-projeto`; publicar é dos `deploy-*`.
 
 ## Checklist "pronta"
-- [ ] Rodou o `grep` antes de modificar os arquivos para caçar autores ocultos?
-- [ ] O Passo 2 (HITL) bloqueou a IA até o usuário responder sobre a Licença e a Autoria?
-- [ ] O `LICENSE` foi criado corretamente na raiz?
-- [ ] O `CODEOWNERS` reflete as permissões de revisão do autor listado?
-- [ ] O `README.md` possui a árvore do repositório, o guia de start e a licença apontada?
-- [ ] Limpou assinaturas velhas de IAs?
 
-## Referências
-- `references/templates.md` — Templates e excertos copiáveis (Cartilha de Licenças, README, CODEOWNERS, CONTRIBUTING).
+- [ ] `auditar_docs.py` rodado e as lacunas conferidas contra o README atual?
+- [ ] README no padrão de anatomia — seções obrigatórias presentes, "Arquitetura modular"/"API" como
+      ponteiro (não conteúdo repetido de `specs/`/`contract/`)?
+- [ ] `.github/CODEOWNERS` presente e correto?
+- [ ] `CONTRIBUTING.md` presente?
+- [ ] `CHANGELOG.md` presente, quando aplicável?
+- [ ] Lacunas que exigem conhecimento de negócio apontadas ao usuário, sem invenção?
+
+## Referências (Camada 3 — leia sob demanda)
+
+- `references/documentacao.md` — padrão de documentação em camadas (README, módulo, contrato,
+  `specs/`, changelog).
+- `references/templates.md` — templates copiáveis de `CODEOWNERS` e `CONTRIBUTING.md`.
+- `scripts/auditar_docs.py` + `scripts/auditar_docs.config.json` — auditoria determinística de
+  documentação.
+- `assets/README.template.md` — anatomia do README.

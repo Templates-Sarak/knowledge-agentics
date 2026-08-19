@@ -38,7 +38,9 @@ Trate **um projeto por vez**. Detalhe da Vercel em `references/vercel-stacks.md`
 - **NÃO** ignore warnings de deps incompatíveis com serverless (binário nativo, escrita em filesystem) — o ambiente é imutável.
 - **NÃO** rode `vercel deploy --prod` sem o HITL do passo 5.
 - **NÃO** considere "publicado com sucesso" na CLI como app funcionando — o passo 7 (pós-deploy) é obrigatório.
-- **NÃO** saia do escopo: autoria/licença/documentação é da `code-entrega`; faxina é da `code-limpeza-projeto`. Aqui só se valida e publica na Vercel.
+- **NÃO** saia do escopo: autoria é da `code-assinatura`, licença é da `code-licenca`, documentação é
+  da `code-documentacao` (as três, na ordem, via `code-entrega`); faxina é da `code-limpeza-projeto`.
+  Aqui só se valida e publica na Vercel.
 
 ## Checklist "pronta"
 - [ ] Pré-deploy comum ok (build local verde, env declaradas, sem segredo versionado, deps compatíveis)?

@@ -27,21 +27,15 @@ cp .env.example .env   # preencha os valores
 ```
 
 ## Arquitetura modular
-Cada módulo é uma fatia vertical em `modules/<modulo>/`: `api/` é a única superfície pública, `core/` é
-interno (`domain`, `engine`, `ports`, `gateways`), e `contract/openapi.yaml` é a fonte do contrato.
-Dado de outro módulo vem por **HTTP**, num gateway em `core/gateways/`, declarado em `module.json:consumes` —
-nunca por import nem por tabela alheia. Anatomia: `specs/arquitetura/01-modulo.md`. Regras:
-`specs/arquitetura/04-regras.md`.
+Anatomia do módulo e regras de isolamento: `specs/arquitetura/01-modulo.md` e
+`specs/arquitetura/04-regras.md` — a verdade mora lá, aqui só o inventário deste projeto.
 
 | Módulo | Responsabilidade |
 |---|---|
 | `modules/[modulo]` | [o que faz] |
-| `frontend/[modulo]` | [o que faz] |
 
 ## API
-Contratos REST em `/api/v1/<modulo>`, segmentos kebab-case **sem verbo**, payload camelCase — cobrado por
-`rota-nomenclatura`. Recurso no plural é convenção, sem verificador (§3.1). Ex.: `GET /api/v1/[modulo]/[recursos]`.
-O contrato de cada módulo é `modules/[modulo]/contract/openapi.yaml` (ou `docs/`, para a visão de conjunto).
+O contrato de cada módulo é `modules/[modulo]/contract/openapi.yaml` — aponte para lá, não repita aqui.
 
 ## Testes
 ```bash

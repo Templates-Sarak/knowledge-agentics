@@ -2,7 +2,7 @@
 
 **Status:** [CONCLUÍDO/ERRO]
 **Data:** [AAAA-MM-DD]
-**Autor principal:** [NOME — de scripts/config.json]
+**Autor principal:** [NOME — de code-assinatura/scripts/config.json]
 
 ---
 
@@ -10,7 +10,7 @@
 - **Arquivos auditados:** [lista]
 - **Assinaturas detectadas e removidas:**
   - [arquivo:linha — trecho]
-- **Lacunas de documentação:** [README ausente/seções faltando / docs/ / módulos sem README]
+- **Lacunas de documentação:** [README ausente/seções faltando / specs/ / módulos sem README]
 
 ## ✋ HITL
 - **Colaboradores adicionais autorizados?** [Sim/Não — nomes]
@@ -24,6 +24,6 @@
 - [ ] `LICENSE` criado/atualizado ([SPDX id]); `package.json` `license` (SPDX) correto.
 ### Documentação
 - [ ] `README.md` no padrão de anatomia (seção Licença e Autoria incluída).
-- [ ] Lacunas de doc de contrato `api/`/`docs/` apontadas ao usuário.
+- [ ] Lacunas de doc de contrato `api/`/`specs/` apontadas ao usuário.
 
 ---

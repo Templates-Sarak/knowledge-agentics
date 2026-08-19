@@ -55,4 +55,5 @@ Para dirigir as ondas autônomas sem confirmar a cada passo, o usuário pode usa
 - **NUNCA** commite com a rede vermelha ou com o gate de diff bloqueando — nem use `--no-verify` em bloqueio real.
 - **NÃO** trate mais de uma tarefa por vez (verificação isolada); **um commit por tarefa**.
 - **NÃO** delegue alto risco a agente (agente não faz HITL) — alto risco é thread principal.
-- **NÃO** saia do escopo: faxina é da `code-limpeza-projeto`; autoria/licença/docs é da `code-entrega`.
+- **NÃO** saia do escopo: faxina é da `code-limpeza-projeto`; autoria/licença/docs é da `code-entrega`
+  (`/code-entregar`).

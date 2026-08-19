@@ -158,7 +158,9 @@ const REGISTRO = [
  * PENDÊNCIA DECLARADA (não escondida): scripts e hooks que AINDA não têm `--autoteste`, listados
  * aqui de propósito para não regredir a decisão sem alguém decidir de novo.
  *
- * 13 scripts de skill sem `--autoteste`: `code-entrega/scripts/{auditar_docs,scan_assinaturas}.py`,
+ * 13 scripts de skill sem `--autoteste`: `code-documentacao/scripts/auditar_docs.py`,
+ * `code-assinatura/scripts/scan_assinaturas.py` (os dois mudaram de pasta numa campanha de
+ * decomposição de `code-entrega` — endereço atualizado, nenhum ganhou `--autoteste`),
  * `code-limpeza-projeto/scripts/detectar_lixo.py`, `cyber-codigo/scripts/sast_scan.py`,
  * `cyber-config/scripts/check_headers.py`, `cyber-dependencias/scripts/parse_audit.py`,
  * `deploy-docker/scripts/validar_docker.py`, `deploy-vercel/scripts/validar_predeploy.py`,

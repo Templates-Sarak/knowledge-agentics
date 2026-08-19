@@ -26,4 +26,4 @@ por módulo, microservice-ready). É **mutativo** (constrói/publica imagem) →
 - **NUNCA** segredo na imagem (sem `COPY .env`, sem segredo em `ARG`/`ENV`); **NUNCA** tag `:latest`.
 - **NÃO** rode como **root**; **NÃO** junte vários módulos num container (1 módulo = 1 imagem).
 - **NÃO** builde/publique sem o HITL do passo 6 nem sem validar o healthcheck.
-- **NÃO** saia do escopo: deploy serverless → `deploy-vercel`; autoria/licença/docs → `code-entrega`.
+- **NÃO** saia do escopo: deploy serverless → `deploy-vercel`; autoria/licença/docs → `/code-entregar`.

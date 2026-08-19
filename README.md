@@ -102,8 +102,8 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ **49** skills por área (§7) |
-| `commands/` | ✅ **12** (code/cyber/git auditar→adequar; deploy/site/meta) |
+| `skills/` | ✅ **51** skills por área (§7) |
+| `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
 | `hooks/` | ✅ **5** garantias (segredo no git, dependências, cobertura, formato, limiares) |
 | `specs/` | ✅ template de módulos + fluxo SDD (app e site) + bases por linguagem |
@@ -287,7 +287,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 | Área | skill | hook | command | agent |
 |---|---|---|---|---|
-| `code-` | `code-diagnostico`, `code-adequacao`, `code-modulo` … (7) | — | ✅ `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar` | ✅ `code-auditor`, `code-adequador`, `code-revisor` |
+| `code-` | `code-diagnostico`, `code-adequacao`, `code-modulo` … (9) | — | ✅ `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar`, `/code-entregar` | ✅ `code-auditor`, `code-adequador`, `code-revisor` |
 | `cyber-` | `cyber-segredos` … `cyber-infra` (9) | `cyber-git-seguro`, `cyber-dependencias` | ✅ `/cyber1-auditar`, `/cyber2-adequar` | ✅ `cyber-auditor` |
 | `git-` | `git-especialista-repositorio`, `git-verificacao-commit`, `git-revisao-diff` | _(pre-commit)_ | ✅ `/git1-auditar`, `/git2-adequar` | ✅ `git-auditor` |
 | `test-` | `test-unitario` … `test-carga` (6) | `test-cobertura` | ⬜ | ⬜ |
@@ -303,12 +303,12 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 ## 7. Inventário atual
 
-### Skills (49, por área)
+### Skills (51, por área)
 
 | Prefixo | Skills |
 |---|---|
 | `padrao-` (3) | `padrao-escrita`, `padrao-python`, `padrao-typescript` |
-| `code-` (7) | `code-adequacao`, `code-auditoria-padrao`, `code-diagnostico`, `code-documentacao`, `code-entrega`, `code-limpeza-projeto`, `code-modulo` |
+| `code-` (9) | `code-adequacao`, `code-assinatura`, `code-auditoria-padrao`, `code-diagnostico`, `code-documentacao`, `code-entrega`, `code-licenca`, `code-limpeza-projeto`, `code-modulo` |
 | `spec-` (4) | `spec-atualizar`, `spec-fundacao`, `spec-site-fundacao`, `spec-write` |
 | `test-` (6) | `test-api-contrato`, `test-carga`, `test-e2e`, `test-integracao-api`, `test-unitario`, `test-ws-realtime` |
 | `db-` (1) | `db-migrations` |
@@ -329,9 +329,9 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 > scripts/audit_base.py` cobra, por máquina, que toda skill fora dessa lista de exceções tenha a
 > trava. Garantia determinística é trabalho de **hook**.
 
-### Commands (12), Agents (5) e Hooks (5)
+### Commands (13), Agents (5) e Hooks (5)
 
-- **Commands:** `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar`, `/cyber1-auditar`, `/cyber2-adequar`,
+- **Commands:** `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar`, `/code-entregar`, `/cyber1-auditar`, `/cyber2-adequar`,
   `/git1-auditar`, `/git2-adequar`, `/deploy-vercel`, `/deploy-docker`, `/site-organizar`, `/site-seo`, `/meta-criar-skill`.
 - **Agents:** `code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`.
 - **Hooks:** `cyber-git-seguro`, `cyber-dependencias`, `test-cobertura` (PreToolUse) · `padrao-format`,
