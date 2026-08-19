@@ -31,9 +31,11 @@ aquela cobre *o que respeitar*.
 | **hook** | **Automático e determinístico** no evento do harness | Roda sempre — é a única garantia mecânica |
 | **CLAUDE.md** | Sempre no contexto | Os inegociáveis; nunca precisa ser citado |
 
-**Trava de disparo:** só as `padrao-*` são **proativas** (toda escrita/revisão de código). Todas as demais são
-**sob demanda** — o agente só as aciona se a tarefa (ou a plan) pedir. Elas dizem *NÃO acione proativamente*
-justamente porque são mutativas ou sensíveis.
+**Trava de disparo:** critério, não lista de nomes — skill **mutativa** (edita/gera/apaga arquivo) ou de
+**varredura** (audita/relata sem julgamento novo) termina a `description` com *NÃO acione proativamente*; o
+agente só a aciona se a tarefa (ou a plan) pedir. Disparo **proativo é exceção declarada**, reservada a quem
+precisa agir sem pedido para cumprir o papel — hoje três: as normas sempre-referenciadas (`padrao-*`,
+`spec-write`) e o gatekeeper de fim de tarefa (`code-auditoria-padrao`).
 
 ---
 
@@ -79,7 +81,7 @@ justamente porque são mutativas ou sensíveis.
 > subconjunto curado. Ausência aqui é **defeito**, não decisão editorial, e a checagem inversa do
 > `ponteiros.py` (skill `meta-verificacao-base`) a cobra por máquina.
 
-## 4.1 `padrao-` — normas de escrita (as únicas proativas)
+## 4.1 `padrao-` — normas de escrita (proativas; não as únicas — critério e as demais exceções em §2)
 
 | Skill | Quando |
 |---|---|

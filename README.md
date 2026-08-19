@@ -105,7 +105,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 | `skills/` | ✅ **51** skills por área (§7) |
 | `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
-| `hooks/` | ✅ **5** garantias (segredo no git, dependências, cobertura, formato, limiares) |
+| `hooks/` | ✅ **5** hooks · **4** garantias (segredo no git, padrão de escrita, dependências, cobertura — `hooks/README.md`) |
 | `specs/` | ✅ template de módulos + fluxo SDD (app e site) + bases por linguagem |
 | `plugin/` | ✅ sincronizador de IDEs — ver `plugin/README.md` |
 
@@ -361,8 +361,8 @@ O repo é, ao mesmo tempo, um **marketplace** e o **plugin `sarak`** (manifestos
 /plugin install sarak@knowledge-agentics
 ```
 
-Isso carrega **skills, commands, agents e hooks** nativamente em qualquer projeto — as 5 garantias
-(`hooks/hooks.json`) ficam **ativas por padrão**. Atualizar depois:
+Isso carrega **skills, commands, agents e hooks** nativamente em qualquer projeto — os 5 hooks
+(`hooks/hooks.json`), servindo 4 garantias, ficam **ativos por padrão**. Atualizar depois:
 
 ```
 /plugin marketplace update knowledge-agentics
