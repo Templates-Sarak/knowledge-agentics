@@ -16,6 +16,7 @@ Retorno:
 Regras (CLAUDE.md): zero hardcoded (nome e destino vêm de argumentos), zero segredos,
 responsabilidade única (só gera estrutura — não valida conteúdo nem escreve lógica de skill).
 """
+
 import argparse
 import json
 import re
@@ -23,10 +24,26 @@ import sys
 from pathlib import Path
 
 # Padrão de nome exigido pela skill meta-create-skill: kebab-case com prefixo de área.
-# Vocabulário FECHADO de prefixos (ver SKILL.md "Convenção de nomes"). Amplie quando a área ganhar tração.
+# Vocabulário FECHADO de prefixos — fonte única em references/nomenclatura.md (Camada 3 desta
+# skill). Mantenha esta tupla em sincronia com aquele arquivo; amplie os dois quando a área ganhar
+# tração. (Achado ao escrever nomenclatura.md: esta tupla tinha 'api-', que nenhuma skill usa mais
+# — a skill que a exemplificava é hoje 'test-api-contrato' — e não tinha 'spec-', que 4 skills usam.)
 PADRAO_NOME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 PREFIXO_PROIBIDO = "skill-"
-PREFIXOS_VALIDOS = ("padrao-", "code-", "test-", "db-", "deploy-", "otimizacao-", "obs-", "site-", "api-", "git-", "cyber-", "meta-")
+PREFIXOS_VALIDOS = (
+    "padrao-",
+    "code-",
+    "spec-",
+    "test-",
+    "db-",
+    "deploy-",
+    "otimizacao-",
+    "obs-",
+    "site-",
+    "git-",
+    "cyber-",
+    "meta-",
+)
 
 
 def validar_nome(nome: str) -> None:
@@ -208,10 +225,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Gera o esqueleto de uma skill nova no padrão de 3 camadas."
     )
-    parser.add_argument("skill_name", help="Nome em kebab-case com prefixo de área (ex.: code-review)")
-    parser.add_argument("--dir", default=".", help="Diretório de destino (padrão: atual)")
     parser.add_argument(
-        "--with-script", action="store_true", help="Também cria scripts/<nome>.py (stub)"
+        "skill_name", help="Nome em kebab-case com prefixo de área (ex.: code-review)"
+    )
+    parser.add_argument(
+        "--dir", default=".", help="Diretório de destino (padrão: atual)"
+    )
+    parser.add_argument(
+        "--with-script",
+        action="store_true",
+        help="Também cria scripts/<nome>.py (stub)",
     )
     args = parser.parse_args()
 

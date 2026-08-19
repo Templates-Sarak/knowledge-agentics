@@ -52,25 +52,10 @@ vazias. Todo arquivo de Camada 3 precisa de um ponteiro correspondente no `SKILL
 ## Convenção de nomes (prefixo por área)
 
 O `name` (= nome da pasta) é `<prefixo>-<resto>`, kebab-case, com um **prefixo de área** de um
-vocabulário **fechado** — ele agrupa as skills no `ls` e revela o papel de cada uma:
-
-| Prefixo | Área | Exemplos |
-|---|---|---|
-| `padrao-` | **Normas** que definem o padrão | `padrao-escrita`, `padrao-python`, `padrao-typescript` |
-| `code-` | **Operações** sobre código que aplicam o padrão | `code-diagnostico`, `code-adequacao`, `code-entrega` |
-| `test-` | **Testes** | `test-unitario`, `test-e2e` |
-| `db-` | **Banco de dados** | `db-migrations` |
-| `deploy-` | **Publicação/entrega** por alvo | `deploy-vercel`, `deploy-docker` |
-| `otimizacao-` | **Performance/otimização** | `otimizacao-nivel-1`, `otimizacao-nivel-2`, `otimizacao-nivel-3` |
-| `obs-` | **Observabilidade** | `obs-logs`, `obs-monitoramento` |
-| `site-` | **Construção de site** (web) | `site-organizacao`, `site-seo` |
-| `api-` | **Contrato de API** (OpenAPI + contract testing) | `api-contrato` _(roadmap: `api-versionamento`, `api-mock`)_ |
-| `git-` | **Versionamento/repositório** | `git-commit-inicial`, `git-verificacao-commit`, `git-revisao-diff`, `git-especialista-repositorio` |
-| `cyber-` | **Segurança** (por domínio) | `cyber-segredos`, `cyber-dependencias`, `cyber-codigo`, `cyber-auth`, `cyber-api`, `cyber-config`, `cyber-dados` |
-| `meta-` | **Ecossistema** de skills | `meta-create-skill` |
-
-- Crie um **prefixo novo** quando uma área nova ganhar tração (≥3 skills **ou** roadmap explícito) — evita prefixo prematuro.
-- **Proibido** o prefixo redundante `skill-` (não agrupa nada). O `scaffold_skill.py` valida prefixo + kebab-case.
+vocabulário **fechado** — ele agrupa as skills no `ls` e revela o papel de cada uma. O vocabulário
+completo, com exemplos, é `references/nomenclatura.md` (Camada 3) — fonte única; não duplique a
+tabela aqui. **Proibido** o prefixo redundante `skill-` (não agrupa nada). O `scaffold_skill.py`
+valida prefixo + kebab-case no momento da criação.
 
 ## Como escrever a `description` *(decide se a skill dispara)*
 
@@ -135,6 +120,8 @@ Trate **uma skill por vez**. Cada passo é acionável; o detalhe verboso está e
 
 ## Referências (Camada 3 — leia sob demanda)
 
+- `references/nomenclatura.md` — o vocabulário fechado de prefixos de área, com exemplos. Fonte
+  única (o `README.md` da raiz da base aponta para cá também).
 - `references/workflow.md` — workflow detalhado: cada passo com sintomas, ação e exemplos antes/depois.
 - `references/templates.md` — templates copiáveis de `SKILL.md`, `workflow.md`, `examples.md` e script.
 - `references/examples.md` — exemplo de skill boa vs. skill vaga, com análise de impacto.

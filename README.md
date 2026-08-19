@@ -260,20 +260,8 @@ Auditorias e planos persistem em `.sarak/<área>/` no **projeto auditado** (`aud
 **Formato:** `<prefixo-de-área>-<nome-descritivo>`, sempre em **kebab-case**.
 **O prefixo é a ÁREA/domínio — não o tipo do bloco.** O tipo já vem da pasta.
 
-| Prefixo | Área |
-|---|---|
-| `padrao-` | Normas de escrita/organização (sempre referenciadas) |
-| `code-` | Operações sobre código (inclui criação de módulo/sistema modular) |
-| `spec-` | Especificações e fluxo SDD |
-| `test-` | Testes (inclui contract testing de API) |
-| `db-` | Banco de dados |
-| `deploy-` | Publicação/entrega |
-| `otimizacao-` | Performance (back+front) |
-| `obs-` | Observabilidade |
-| `site-` | Construção de site |
-| `git-` | Versionamento/repositório |
-| `cyber-` | Segurança (por domínio) |
-| `meta-` | Ecossistema/governança das próprias funcionalidades |
+O vocabulário fechado de prefixos, com exemplo por área, é **`skills/meta-create-skill/references/nomenclatura.md`**
+— fonte única (a skill é o que o agente carrega em qualquer provedor; este README aponta, não duplica).
 
 **O nome varia pela classe gramatical do bloco** — é o que evita colisão dentro da mesma área:
 

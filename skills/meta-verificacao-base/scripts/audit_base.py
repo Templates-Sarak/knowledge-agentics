@@ -13,6 +13,12 @@ from limiares import (  # noqa: E402
     limiares_de_dict_config,
     limiares_de_texto_mjs,
 )
+from nomenclatura import (  # noqa: E402
+    auditar_nomenclatura,
+    fora_do_vocabulario,
+    prefixos_do_texto,
+    raiz_do_prefixo,
+)
 
 
 def get_args():
@@ -82,12 +88,39 @@ def autoteste():
     if len(divergencias(esperado, None, "fixture")) != 1:
         falhas.append("divergencias deveria reprovar quando o config.json nao resolve")
 
+    # Tarefa 4: vocabulario de prefixos (nomenclatura.md) tem que pegar nome fora do vocabulario
+    # E reprovar (fail-closed) quando o parser extrai ZERO prefixos do arquivo.
+    tabela_ok = "# Nomenclatura\n\n| Prefixo | Area | Exemplos |\n|---|---|---|\n| `code-` | X | Y |\n| `cyber-` | Z | W |\n"
+    prefixos_ok = prefixos_do_texto(tabela_ok)
+    if prefixos_ok != ["code-", "cyber-"]:
+        falhas.append(
+            "prefixos_do_texto deveria extrair os dois prefixos da tabela valida"
+        )
+    if prefixos_do_texto("# Nomenclatura\n\nsem tabela nenhuma aqui\n") != []:
+        falhas.append(
+            "prefixos_do_texto deveria devolver lista vazia quando nao ha tabela"
+        )
+    if raiz_do_prefixo("code1-auditar") != "code":
+        falhas.append(
+            "raiz_do_prefixo deveria descartar o digito do fluxo numerado (code1- -> code)"
+        )
+    if raiz_do_prefixo("cyber-segredos") != "cyber":
+        falhas.append("raiz_do_prefixo deveria extrair a raiz de um prefixo simples")
+    fora = fora_do_vocabulario(
+        ["code-diagnostico", "api-fantasma", "code1-auditar"], prefixos_ok
+    )
+    if fora != ["api-fantasma"]:
+        falhas.append(
+            "fora_do_vocabulario deveria achar so o nome com prefixo fora da lista "
+            f"(achou {fora!r})"
+        )
+
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 13/13 ok")
+    print("autoteste (audit_base): 18/18 ok")
     return 0
 
 
@@ -100,6 +133,7 @@ def audit_base(base_dir):
         "ponteiros": [],
         "vazamentos": [],
         "limiares": [],
+        "nomenclatura": [],
     }
 
     # 1. Agents
@@ -177,6 +211,10 @@ def audit_base(base_dir):
 
     # 5b. Limiares 40/3/4: thresholds.mjs (fonte unica) vs config.json de cada padrao-<linguagem>
     report["limiares"] = auditar_limiares(base_dir)
+
+    # 5c. Nomenclatura: todo skills/*, commands/*, agents/* comeca por um prefixo do vocabulario
+    # declarado em skills/meta-create-skill/references/nomenclatura.md (fonte unica)
+    report["nomenclatura"] = auditar_nomenclatura(base_dir)
 
     # 6. Vazamentos
     patterns = {
