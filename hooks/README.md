@@ -11,6 +11,16 @@ O conjunto serve a **quatro garantias** — nada além (hook só cobre o mecanic
 > O push é varrido **por delta** (`@{u}..HEAD`), não no histórico inteiro. Auditoria de dependências e
 > cobertura rodam **só no push**. Nada percorre todo o código a cada ação.
 
+> **Lacuna declarada — hooks são Claude Code apenas.** O contrato de `hooks.json`
+> (`PreToolUse`/`PostToolUse`, payload JSON no stdin) é wiring **nativo do Claude Code**; nenhum
+> outro provedor tem o equivalente. O `plugin/sync_ide.py` espelha `hooks/` para
+> `~/.gemini/config/plugins/sarak/hooks/` (Antigravity) junto com skills/agents/commands, mas
+> **nada naquele diretório liga os scripts** — os arquivos ficam ali, mortos. Fora do Claude Code,
+> nenhuma das quatro garantias abaixo roda: quem edita via Antigravity, GPT ou sem harness nenhum
+> não tem "hooks garantem" — só a skill/norma correspondente, por julgamento do modelo. Não há
+> implementação equivalente para outros provedores nesta base; isto é lacuna conhecida, não
+> escondida (mesmo critério do `plugin/README.md` §2).
+
 ## O que um hook é, e o que ele não é
 
 **Hook é guarda do AGENTE.** Ele intercepta chamada de ferramenta do Claude Code — `Write`, `Edit`,
