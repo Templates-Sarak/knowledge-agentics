@@ -5,16 +5,51 @@ name: Autoteste do template
 # tres bindings. CVE novo ou breakage de major deixa este workflow vermelho, NUNCA o projeto de quem
 # ja usou o template (o template e copia, nao dependencia — ADR-005).
 #
-# So agenda + manual: o `--rapido` (so typescript/javascript) e quem cabe em pre-commit; o binding
-# python sozinho mede ~2m40s e por isso so roda aqui, nao no pre-commit da base.
+# Agenda + manual PARA OS DOIS JOBS DE BAIXO (autoteste-template, verificar-migrations, via o `if`
+# de cada um): o `--rapido` (so typescript/javascript) e quem cabe em pre-commit; o binding python
+# sozinho mede ~2m40s e por isso so roda aqui, nao no pre-commit da base. O `on: push`/`pull_request`
+# abaixo existe só para o job `guarda-base` — ver o comentário dele para o porquê da separação.
 
 on:
+  push:
+    branches: [main]
+  pull_request: {}
   schedule:
     - cron: '0 6 * * 1' # toda segunda, 06:00 UTC
   workflow_dispatch: {}
 
 jobs:
+  # GUARDA DE REGRESSAO — "o commit que acabei de empurrar quebrou algo?", nao "o template
+  # envelheceu?" (isso e o job de baixo). Roda em SEGUNDOS, sem scaffold e sem Postgres: so a
+  # integridade da base (audit_base.py — YAML, contratos JSON, ponteiro orfao, limiares
+  # divergentes), tipo estatico de tools/** e todo --autoteste registrado (skills/ + hooks/
+  # inclusos). main e o artefato de distribuicao (`/plugin marketplace add .../knowledge-agentics`
+  # le o repo direto) e, antes deste job, NENHUM commit rodava isto — so o pre-commit LOCAL da
+  # maquina do Igor, que nao e versionado. O caro (autoteste:template, verificar-migrations) fica
+  # no CALENDARIO porque o que ele mede so muda com o tempo (CVE novo, breakage de major); o barato
+  # fica no EVENTO porque o que ele mede muda a cada commit.
+  guarda-base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm ci
+      - run: python skills/meta-verificacao-base/scripts/audit_base.py --raiz .
+      - run: npm run typecheck:tools
+      - run: npm run autoteste:tudo
+
   autoteste-template:
+    # `on:` no GitHub Actions e do WORKFLOW inteiro, nao por job — nao existe gatilho por job nesta
+    # plataforma. O `push`/`pull_request` que o `guarda-base` precisa, acrescentado acima, faria
+    # ESTE job (que so deve rodar por agenda/manual, como sempre foi) tambem disparar a cada
+    # push/PR sem este `if`. O gatilho EFETIVO deste job continua schedule+workflow_dispatch,
+    # identico a antes do guarda-base existir.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +73,8 @@ jobs:
   # controle) batem nos dois bindings. Job separado de proposito — nao arrisca o 13/13 ja provado
   # só para acrescentar uma dependencia de servico.
   verificar-migrations:
+    # Mesmo motivo do `if` de autoteste-template: gatilho efetivo continua schedule+workflow_dispatch.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     services:
       postgres:
