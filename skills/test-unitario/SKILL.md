@@ -1,6 +1,6 @@
 ---
 name: test-unitario
-description: Escreve testes unitários e de integração para código novo — caminhos críticos pela borda pública, mocks só de I/O externo, com cobertura (~80%). Operacionaliza a norma de testes do padrao-escrita §9 (back e front). Use ao implementar/cobrir uma funcionalidade com testes; ≠ caracterização de legado (code-adequacao).
+description: Escreve testes unitários e de integração para código novo — caminhos críticos pela borda pública, mocks só de I/O externo, com cobertura (~80%). Operacionaliza a norma de testes do padrao-escrita §9 (back e front). Use ao implementar/cobrir uma funcionalidade com testes; ≠ caracterização de legado (code-adequacao). NÃO acione proativamente.
 ---
 
 # Skill: Testes Unitários & Integração

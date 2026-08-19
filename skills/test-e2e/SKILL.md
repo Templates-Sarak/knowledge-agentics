@@ -1,6 +1,6 @@
 ---
 name: test-e2e
-description: Escreve testes ponta-a-ponta dos fluxos críticos — UI (Playwright/Cypress) e API — contra ambiente próprio. Use ao cobrir jornadas críticas (login, checkout) ou validar integração ponta-a-ponta; ≠ lógica isolada (test-unitario).
+description: Escreve testes ponta-a-ponta dos fluxos críticos — UI (Playwright/Cypress) e API — contra ambiente próprio. Use ao cobrir jornadas críticas (login, checkout) ou validar integração ponta-a-ponta; ≠ lógica isolada (test-unitario). NÃO acione proativamente.
 ---
 
 # Skill: Testes End-to-End (E2E)

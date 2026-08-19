@@ -19,6 +19,12 @@ from nomenclatura import (  # noqa: E402
     prefixos_do_texto,
     raiz_do_prefixo,
 )
+from proatividade import (  # noqa: E402
+    PROATIVAS,
+    auditar_proatividade,
+    descricao_do_frontmatter,
+    skills_sem_trava,
+)
 
 
 def get_args():
@@ -115,12 +121,43 @@ def autoteste():
             f"(achou {fora!r})"
         )
 
+    # Tarefa 5: toda skill precisa da trava "NAO acione proativamente", exceto a lista fechada
+    # PROATIVAS (com justificativa por entrada).
+    com_trava = "description: Faz X. Use ao Y. NÃO acione proativamente."
+    if (
+        descricao_do_frontmatter(f"---\nname: x\n{com_trava}\n---\n")
+        != com_trava[len("description: ") :]
+    ):
+        falhas.append(
+            "descricao_do_frontmatter deveria extrair a linha description inteira"
+        )
+    if descricao_do_frontmatter("---\nname: x\n---\n") is not None:
+        falhas.append(
+            "descricao_do_frontmatter deveria devolver None sem linha description"
+        )
+    pares = [
+        ("code-comtrava", "Faz X. Use ao Y. NÃO acione proativamente."),
+        ("code-semtrava", "Faz X. Use ao Y."),
+        ("padrao-escrita", "Norma sempre-referenciada, sem a trava por desenho."),
+        ("code-semdescricao", None),
+    ]
+    faltantes = skills_sem_trava(pares, PROATIVAS)
+    if faltantes != ["code-semtrava", "code-semdescricao"]:
+        falhas.append(
+            "skills_sem_trava deveria achar so quem falta a trava E nao esta em PROATIVAS "
+            f"(achou {faltantes!r})"
+        )
+    if "padrao-escrita" not in PROATIVAS or "code-auditoria-padrao" not in PROATIVAS:
+        falhas.append(
+            "PROATIVAS deveria listar padrao-escrita e code-auditoria-padrao com justificativa"
+        )
+
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 18/18 ok")
+    print("autoteste (audit_base): 24/24 ok")
     return 0
 
 
@@ -134,6 +171,7 @@ def audit_base(base_dir):
         "vazamentos": [],
         "limiares": [],
         "nomenclatura": [],
+        "proatividade": [],
     }
 
     # 1. Agents
@@ -215,6 +253,10 @@ def audit_base(base_dir):
     # 5c. Nomenclatura: todo skills/*, commands/*, agents/* comeca por um prefixo do vocabulario
     # declarado em skills/meta-create-skill/references/nomenclatura.md (fonte unica)
     report["nomenclatura"] = auditar_nomenclatura(base_dir)
+
+    # 5d. Proatividade: toda skill tem a trava "NAO acione proativamente", exceto a lista fechada
+    # e justificada de excecoes (PROATIVAS) em proatividade.py
+    report["proatividade"] = auditar_proatividade(base_dir)
 
     # 6. Vazamentos
     patterns = {

@@ -311,8 +311,14 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `cyber-` (9) | `cyber-api`, `cyber-auth`, `cyber-codigo`, `cyber-config`, `cyber-dados`, `cyber-dependencias`, `cyber-ia`, `cyber-infra`, `cyber-segredos` |
 | `meta-` (5) | `meta-adequacao-modular`, `meta-atualizar-base`, `meta-create-skill`, `meta-iniciar-repositorio`, `meta-verificacao-base` |
 
-> Só as `padrao-*` e a `spec-write` disparam **proativamente**. As demais são **sob demanda** (você pede ou
-> digita `/`), por serem mutativas/sensíveis. Garantia determinística é trabalho de **hook**.
+> **Critério, não lista de nomes:** skill **mutativa** (edita/gera/apaga arquivo) ou de **varredura**
+> (audita/relata sem julgamento novo) termina a `description` com a trava `NÃO acione
+> proativamente` — o padrão é sob demanda, porque mutação e varredura sem pedido surpreendem quem
+> não pediu. **Disparo proativo é exceção declarada**, reservada a quem PRECISA agir sem pedido
+> para cumprir o papel: as normas sempre-referenciadas (`padrao-*`, `spec-write`) e o gatekeeper de
+> fim de tarefa (`code-auditoria-padrao`, explicado no corpo dela). `skills/meta-verificacao-base/
+> scripts/audit_base.py` cobra, por máquina, que toda skill fora dessa lista de exceções tenha a
+> trava. Garantia determinística é trabalho de **hook**.
 
 ### Commands (12), Agents (5) e Hooks (5)
 

@@ -1,6 +1,6 @@
 ---
 name: test-integracao-api
-description: Escreve testes de integração focados em endpoints (/api/) com infraestrutura real de banco de dados efêmero (Testcontainers/Docker). Use ao cobrir o contrato real da API validando a persistência de dados e as respostas de rede, sem testar a interface de usuário (UI).
+description: Escreve testes de integração focados em endpoints (/api/) com infraestrutura real de banco de dados efêmero (Testcontainers/Docker). Use ao cobrir o contrato real da API validando a persistência de dados e as respostas de rede, sem testar a interface de usuário (UI). NÃO acione proativamente.
 ---
 
 # Skill: Testes de Integração de API

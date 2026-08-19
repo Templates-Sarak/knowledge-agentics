@@ -9,6 +9,12 @@ description: Gatekeeper operacional que invoca motores de validação de AST da 
 
 Orquestrador comportamental que atua como **Gatekeeper**. Ela garante que as diretrizes do ecossistema Sarak foram estritamente seguidas ao submeter código novo ou modificado a scripts de validação estática.
 
+> **Disparo proativo por desenho — exceção declarada.** Ao lado de `padrao-*` e `spec-write`, esta
+> é uma das poucas skills que dispara **sem pedido do usuário**, e a ausência da trava `NÃO acione
+> proativamente` aqui não é omissão: é o desenho. Ela é o **gatekeeper de fim de tarefa** — um
+> gatekeeper que só age quando alguém pede deixa de ser gate, porque a tarefa termina antes de
+> alguém lembrar de pedir.
+
 ## Quando usar
 - Obrigatoriamente e proativamente ao finalizar a implementação ou refatoração de um arquivo/módulo.
 - Antes de entregar uma tarefa ao usuário (para atestar zero dívida técnica na entrega).

@@ -1,6 +1,6 @@
 ---
 name: test-carga
-description: Escreve e executa testes de estresse, concorrência e performance (k6, Artillery). Use ao precisar avaliar gargalos da aplicação, limites do banco de dados (N+1) e capacidade máxima de requisições. Contém gate HITL obrigatório.
+description: Escreve e executa testes de estresse, concorrência e performance (k6, Artillery). Use ao precisar avaliar gargalos da aplicação, limites do banco de dados (N+1) e capacidade máxima de requisições. Contém gate HITL obrigatório. NÃO acione proativamente.
 ---
 
 # Skill: Testes de Carga e Performance

@@ -1,6 +1,6 @@
 ---
 name: code-diagnostico
-description: Diagnostica código legado contra o padrao-escrita (read-only) — varre um repo/módulo, classifica violações e gera um backlog priorizado em JSON. Use ao avaliar conformidade de código existente ou planejar uma adequação. NÃO modifica nada.
+description: Diagnostica código legado contra o padrao-escrita (read-only) — varre um repo/módulo, classifica violações e gera um backlog priorizado em JSON. Use ao avaliar conformidade de código existente ou planejar uma adequação. NÃO modifica nada. NÃO acione proativamente.
 ---
 
 # Skill: Diagnóstico de Conformidade

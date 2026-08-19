@@ -1,6 +1,6 @@
 ---
 name: test-ws-realtime
-description: Escreve testes para conexões com estado e bidirecionais (WebSockets, SSE). Use ao validar lógica de tempo real, heartbeats, broadcast, pub/sub, e reconexão.
+description: Escreve testes para conexões com estado e bidirecionais (WebSockets, SSE). Use ao validar lógica de tempo real, heartbeats, broadcast, pub/sub, e reconexão. NÃO acione proativamente.
 ---
 
 # Skill: Testes de WebSocket e Realtime
