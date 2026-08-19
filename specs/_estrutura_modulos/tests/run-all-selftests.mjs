@@ -140,6 +140,9 @@ const REGISTRO = [
   { caminho: 'skills/meta-iniciar-repositorio/scripts/init_repo.py', runtime: 'python' },
   { caminho: 'skills/meta-verificacao-base/scripts/audit_base.py', runtime: 'python' },
   { caminho: 'skills/meta-adequacao-modular/scripts/diagnosticar_terreno.py', runtime: 'python' },
+  { caminho: 'skills/cyber-segredos/scripts/scan_segredos.py', runtime: 'python' },
+  { caminho: 'skills/padrao-python/scripts/validate.py', runtime: 'python' },
+  { caminho: 'skills/padrao-typescript/scripts/validate.mjs', runtime: 'node' },
 ];
 
 const DECLARADOS_FORA = new Set([

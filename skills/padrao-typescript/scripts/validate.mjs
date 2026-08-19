@@ -13,7 +13,18 @@
  * pública sem tipo — só .ts/.tsx), segredos (literal em nome sensível) e hardcoded
  * heurístico (número mágico / URL) — este marcado com confianca "baixa".
  *
- * Dependência: pacote `typescript`, resolvido a partir do PROJETO-ALVO (ou do cwd).
+ * Dependência: pacote `typescript`, resolvido a partir do PROJETO-ALVO (ou do cwd) — usa a API
+ * CLÁSSICA do compilador (`createSourceFile`/`forEachChild`/`ScriptTarget`). LIMITE DECLARADO:
+ * o pacote `typescript` >= 7 (o rewrite nativo/Go) NÃO expõe mais essa API — só `./lib/version.cjs`
+ * no export raiz. Rodar este script contra `typescript@7+` não é degradação silenciosa, é falha
+ * dura de import. A base pina `typescript` em 5.9.3 exato na raiz por causa disso (ver
+ * package.json) — o pin ADIA a migração, não a resolve: portar para 7+ exige outro parser aqui.
+ *
+ * Código de saída: violação de dimensão "parse" (arquivo que não deu pra ler ou parsear) é
+ * SEMPRE fatal — `process.exitCode = 1`, nunca 0. Quem consome esta saída (code-adequador,
+ * code-auditoria-padrao) lê exit 0 como "conforme"; um parse que falha e ainda assim retorna
+ * 0 aprovaria qualquer coisa (fail-open, medido nesta base antes deste conserto).
+ *
  * Regras (CLAUDE.md): zero hardcoded (limiares/allowlists vêm do config.json), responsabilidade única.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -76,10 +87,13 @@ function violacao(caminho, linha, dimensao, severidade, risco, descricao, regra,
   return { caminho, linha, dimensao, severidade, risco, descricao, regra, confianca };
 }
 
-function validarArquivo(ts, caminho, cfg) {
+/** Núcleo: valida um TEXTO TS/JS já lido contra `cfg`. Puro — não toca `fs`. É o que o
+ * `--autoteste` prova com fixtures em memória (a única entrada externa é o compilador `ts`,
+ * carregado uma vez, do mesmo jeito que o autoteste de `validate.py` usa o `ast` da stdlib). */
+function validarTexto(ts, caminho, texto, cfg) {
   const ext = extname(caminho);
   const ehTs = ext === ".ts" || ext === ".tsx";
-  const sf = ts.createSourceFile(caminho, readFileSync(caminho, "utf-8"), ts.ScriptTarget.Latest, true, scriptKind(ts, ext));
+  const sf = ts.createSourceFile(caminho, texto, ts.ScriptTarget.Latest, true, scriptKind(ts, ext));
   const viol = [];
   const linhaDe = (no) => sf.getLineAndCharacterOfPosition(no.getStart(sf)).line + 1;
 
@@ -188,7 +202,111 @@ function validarArquivo(ts, caminho, cfg) {
   return viol;
 }
 
+/** Núcleo: valida um TEXTO já lido, e nunca deixa uma exceção do AST-walk escapar sem virar
+ * violação — qualquer erro de parsing vira uma violação de dimensão "parse", a MESMA regra que
+ * `main()` aplicava só para I/O. Extraído para o núcleo para o `--autoteste` provar o item sem
+ * tocar disco: injeta um `ts` que sempre falha e confere que o resultado é fatal. */
+function validarComFallbackDeParse(ts, caminho, texto, cfg) {
+  try {
+    return validarTexto(ts, caminho, texto, cfg);
+  } catch (e) {
+    return [violacao(caminho, 0, "parse", "alta", "baixo", `falha ao parsear: ${e.message}`, "arquivo válido")];
+  }
+}
+
+/** Núcleo: violação de dimensão "parse" é SEMPRE fatal — ver o LIMITE DECLARADO no cabeçalho. */
+function temFalhaDeParse(violacoes) {
+  return violacoes.some((v) => v.dimensao === "parse");
+}
+
+/** Casca: lê o arquivo do disco e delega ao núcleo. */
+function validarArquivo(ts, caminho, cfg) {
+  return validarComFallbackDeParse(ts, caminho, readFileSync(caminho, "utf-8"), cfg);
+}
+
+function _cfgFixture() {
+  return {
+    maxFunctionLines: 3,
+    maxNesting: 2,
+    maxParams: 2,
+    ignoreParamNames: ["this"],
+    extensions: [".ts", ".tsx", ".js"],
+    skipDirs: [],
+    allowedMagicNumbers: [0, 1, -1, 2],
+    secretNamePatterns: ["password", "token"],
+    urlLikePrefixes: ["http://", "https://"],
+    hardcodedHeuristic: true,
+  };
+}
+
+function autoteste() {
+  const falhas = [];
+  const ts = carregarTypescript(process.cwd());
+  const cfg = _cfgFixture();
+  const tem = (viol, dimensao) => viol.some((v) => v.dimensao === dimensao);
+
+  const funcaoGrande = "function f(a, b, c) {\n  const x = 1;\n  const y = 2;\n  return x + y + a + b + c;\n}\n";
+  if (!tem(validarTexto(ts, "f.ts", funcaoGrande, cfg), "limiares"))
+    falhas.push("validarTexto deveria achar violacao de limiares (funcao/parametros grandes)");
+
+  const cfgAninhamento = { ..._cfgFixture(), maxFunctionLines: 10, maxParams: 10 };
+  const aninhado = "function f() {\n if (1) {\n  if (1) {\n   if (1) { }\n  }\n }\n}\n";
+  const violAninhado = validarTexto(ts, "f.ts", aninhado, cfgAninhamento);
+  if (!violAninhado.some((v) => v.descricao.includes("aninhamento")))
+    falhas.push("validarTexto deveria achar violacao de aninhamento (3 niveis > limite 2)");
+
+  const semTipo = "export function publica(a) {\n  return a;\n}\n";
+  if (!tem(validarTexto(ts, "f.ts", semTipo, cfg), "tipagem"))
+    falhas.push("validarTexto deveria achar violacao de tipagem em funcao publica sem anotacao (.ts)");
+
+  const comConsole = "export function publica(a: number): number {\n  console.log(a);\n  return a;\n}\n";
+  if (!tem(validarTexto(ts, "f.ts", comConsole, cfg), "logging"))
+    falhas.push("validarTexto deveria achar violacao de logging (console.*)");
+
+  const catchVazio = "try { f(); } catch (e) { }\n";
+  if (!tem(validarTexto(ts, "f.ts", catchVazio, cfg), "logging"))
+    falhas.push("validarTexto deveria achar violacao de logging (catch vazio)");
+
+  // Concatenado, nao literal: o texto de ORIGEM deste arquivo nao pode conter um segredo-
+  // formato contiguo, senao o proprio scan de vazamentos do audit_base.py acha "vazamento"
+  // que e so dado de teste (mesmo cuidado do fixture em scan_segredos.py --autoteste).
+  const valorSecreto = "valor-bem" + "-secreto";
+  const segredo = `const token = '${valorSecreto}';\n`;
+  if (!tem(validarTexto(ts, "f.ts", segredo, cfg), "segredos"))
+    falhas.push("validarTexto deveria achar violacao de segredos em nome sensivel");
+
+  const magico = "const limite = 777;\n";
+  if (!tem(validarTexto(ts, "f.ts", magico, cfg), "hardcoded"))
+    falhas.push("validarTexto deveria achar violacao de hardcoded (numero magico)");
+
+  const limpo = "export function publica(a: number): number {\n  return a;\n}\n";
+  if (validarTexto(ts, "f.ts", limpo, cfg).length !== 0)
+    falhas.push("validarTexto nao deveria achar nada em codigo dentro dos limiares");
+
+  // Item central do fail-open: injeta um `ts` que sempre falha ao parsear (nao depende de achar
+  // um snippet real que faca o compilador explodir — o compilador TS e tolerante por design) e
+  // confere que (a) o nucleo NUNCA deixa a excecao escapar, sempre devolve uma violacao "parse",
+  // e (b) essa violacao decide reprovacao (exit fatal), nunca passa em silencio.
+  const tsQuebrado = { ...ts, createSourceFile: () => { throw new Error("boom simulado"); } };
+  const violQuebrado = validarComFallbackDeParse(tsQuebrado, "f.ts", "qualquer coisa", cfg);
+  if (violQuebrado.length !== 1 || violQuebrado[0].dimensao !== "parse")
+    falhas.push("validarComFallbackDeParse deveria converter excecao de parse em violacao 'parse'");
+  if (!temFalhaDeParse(violQuebrado))
+    falhas.push("temFalhaDeParse deveria reprovar (true) quando ha violacao de dimensao 'parse'");
+  if (temFalhaDeParse(validarTexto(ts, "f.ts", limpo, cfg)))
+    falhas.push("temFalhaDeParse nao deveria reprovar codigo limpo sem violacao de parse");
+
+  for (const falha of falhas) process.stdout.write(`  falha  ${falha}\n`);
+  if (falhas.length > 0) {
+    process.stdout.write(`autoteste (validate.mjs): ${falhas.length} falha(s)\n`);
+    return 1;
+  }
+  process.stdout.write("autoteste (validate.mjs): 11/11 ok\n");
+  return 0;
+}
+
 function main() {
+  if (process.argv.includes("--autoteste")) process.exit(autoteste());
   const { alvo, config } = parseArgs(process.argv.slice(2));
   if (!alvo) {
     console.error("uso: node validate.mjs <arquivo-ou-pasta> [--config config.json]");
@@ -201,13 +319,13 @@ function main() {
 
   const violacoes = [];
   for (const arquivo of coletarArquivos(alvoAbs, cfg)) {
-    try {
-      violacoes.push(...validarArquivo(ts, arquivo, cfg));
-    } catch (e) {
-      violacoes.push(violacao(arquivo, 0, "parse", "alta", "baixo", `falha ao parsear: ${e.message}`, "arquivo válido"));
-    }
+    violacoes.push(...validarArquivo(ts, arquivo, cfg));
   }
   process.stdout.write(JSON.stringify({ alvo: alvoAbs, violacoes }, null, 2) + "\n");
+  // Fail-open medido: sem isto, um arquivo que falhava ao parsear virava violacao "alta" no
+  // JSON mas o processo saia com 0 mesmo assim, e quem consome (code-adequador,
+  // code-auditoria-padrao) le exit 0 como "conforme" sem olhar o corpo da violacao.
+  process.exitCode = temFalhaDeParse(violacoes) ? 1 : 0;
 }
 
 main();
