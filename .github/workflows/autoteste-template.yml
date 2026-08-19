@@ -42,6 +42,7 @@ jobs:
       - run: python skills/meta-verificacao-base/scripts/audit_base.py --raiz .
       - run: npm run typecheck:tools
       - run: npm run autoteste:tudo
+      - run: npm run lint
 
   autoteste-template:
     # `on:` no GitHub Actions e do WORKFLOW inteiro, nao por job — nao existe gatilho por job nesta

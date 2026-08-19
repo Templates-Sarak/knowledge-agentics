@@ -23,7 +23,7 @@ reescreve histórico nem adéqua.
 1. **Delimitar** — confirme repo Git; liste **todas** as branches e tags (`git branch -a`, `git tag`). O escopo é o
    **histórico inteiro** (working tree/staged é da `git-verificacao-commit`).
 2. **Varrer (Sarak primário + externo):**
-   - **Sarak:** `python <…>/git-especialista-repositorio/scripts/scan_historico.py --raiz <repo>` → consuma o JSON
+   - **Sarak:** `python git-especialista-repositorio/scripts/scan_historico.py --raiz <repo>` → consuma o JSON
      (`achados_conteudo` com branches, `arquivos_sensiveis_historico`, `achados_entropia`). Traz classificação + branch.
    - **Cross-check externo:** `gitleaks detect` (varre o histórico completo nativamente) e/ou `trufflehog` →
      **merge/dedupe** com o Sarak (cobertura maior). Ferramenta ausente → **degrade graciosamente**: registre a

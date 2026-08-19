@@ -22,7 +22,7 @@ determinísticos pegam. Devolve achados classificados; **não modifica nada**.
 
 ## Workflow
 1. **Pegar o diff** — `git diff --cached` (ou o range) e `--name-only` para os arquivos alterados. Trabalhe **só no que mudou**.
-2. **Gate determinístico** — `python <…>/git-revisao-diff/scripts/revisar_diff.py` → **bloqueio**: conflito de
+2. **Gate determinístico** — `python git-revisao-diff/scripts/revisar_diff.py` → **bloqueio**: conflito de
    merge, breakpoint (`debugger`/`pdb.set_trace`/`breakpoint()`); **aviso**: log de debug, `TODO`/`FIXME`, `.only`/`.skip`.
 3. **Limiares por linguagem** — rode o validator nos **arquivos alterados**: Python `validate.py`, TS/JS
    `validate.mjs`, Go `golangci-lint`, Java Checkstyle. Função ≤40 · aninhamento ≤3 · ≤4 params · guard clauses.

@@ -156,6 +156,12 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 5. **Ponteiro só existe com conteúdo do outro lado.** Arquivo de Camada 3 que ficou só com o esqueleto do
    scaffold **não** é ponteiro válido — ou preencha, ou apague o arquivo **e** a linha que aponta para ele.
    Um `references/workflow.md` de placeholders manda o agente ler um formulário em branco.
+6. **Caminho de script de skill não afirma raiz.** Dentro do próprio `SKILL.md`: `scripts/<arquivo>`,
+   relativo à skill. Em command/agent citando script de **outra** skill: `<skill>/scripts/<arquivo>` —
+   nomeia a skill, não afirma diretório de trabalho. **Proibido:** prefixo `skills/…` (instalada como
+   plugin, o `cwd` é o projeto-alvo, não a base) e placeholder literal (`<…>/…`, não executável). O
+   caminho escrito é pista para o agente resolver a partir de onde carregou a skill — não um comando
+   a copiar e colar.
 
 ### 4.1 Criar uma SKILL — *a capacidade/conhecimento*
 

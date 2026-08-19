@@ -11,19 +11,13 @@
     "//typecheck:tools": "tools/** nao tem tipo estatico, lint (ADR-009 dec. 4 isenta) nem garantia de execucao. checkJs sem strict pega simbolo inexistente em qualquer ramo, inclusive o nao percorrido por nenhum --autoteste.",
     "typecheck:tools": "tsc --project tsconfig.tools-check.json",
     "//autoteste:tudo": "Um --autoteste que nada invoca e indistinguivel de nao ter. Descobre por varredura (nao lista a mao) todo arquivo com --autoteste em tools/, tests/ e bindings/*/root/, reprova ORFAO (achado sem entrada no registro) antes de rodar, e exige 0 falhas nos registrados.",
-    "autoteste:tudo": "node specs/_estrutura_modulos/tests/run-all-selftests.mjs"
-  },
-  "dependencies": {
-    "@playwright/test": "^1.40.0",
-    "artillery": "^2.0.0",
-    "eslint": "^8.54.0",
-    "jest": "^29.7.0",
-    "prettier": "^3.1.0",
-    "supertest": "^6.3.3",
-    "ws": "^8.14.2"
+    "autoteste:tudo": "node specs/_estrutura_modulos/tests/run-all-selftests.mjs",
+    "//lint": "eslint.config.mjs so cobre specs/_estrutura_modulos/tools/** — aqui a base e a dona do ferramental, ao contrario do projeto gerado (que o exclui do proprio lint). Nunca rodou antes deste script existir.",
+    "lint": "eslint specs/_estrutura_modulos/tools"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "eslint": "9.39.5",
     "typescript": "5.9.3"
   }
 }
