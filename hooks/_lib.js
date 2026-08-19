@@ -206,6 +206,42 @@ function langOf(file) {
   return null;
 }
 
+function autoteste() {
+  const falhas = [];
+  if (langOf("a.py") !== "python") falhas.push("langOf deveria reconhecer .py como python");
+  if (langOf("a.ts") !== "js") falhas.push("langOf deveria colapsar .ts na area js");
+  if (langOf("A.TSX") !== "js") falhas.push("langOf deveria ser case-insensitive (.TSX)");
+  if (langOf("a.go") !== "go") falhas.push("langOf deveria reconhecer .go como go");
+  if (langOf("a.rb") !== null) falhas.push("langOf deveria devolver null para extensao sem area");
+
+  const defaults = {
+    qualidade: { modo: "warn" },
+    cobertura: { modo: "ask", ferramentas: { python: "pytest" } },
+    dependencias: { modo: "warn", ferramentas: { node: "npm" } },
+    linguagens: { python: { linter: "ruff" } },
+  };
+  const sobrepondoModo = mesclar(defaults, { qualidade: { modo: "block" } });
+  if (sobrepondoModo.qualidade.modo !== "block")
+    falhas.push("mesclar deveria sobrescrever qualidade.modo com o valor do projeto");
+  if (sobrepondoModo.cobertura.modo !== "ask")
+    falhas.push("mesclar deveria preservar default nao sobrescrito (cobertura.modo)");
+
+  const sobrepondoFerramenta = mesclar(defaults, { dependencias: { ferramentas: { python: "pip-audit" } } });
+  if (sobrepondoFerramenta.dependencias.ferramentas.node !== "npm"
+    || sobrepondoFerramenta.dependencias.ferramentas.python !== "pip-audit")
+    falhas.push("mesclar deveria mesclar ferramentas por chave, nao substituir o objeto inteiro");
+
+  for (const falha of falhas) process.stdout.write(`  falha  ${falha}\n`);
+  if (falhas.length > 0) {
+    process.stdout.write(`autoteste (_lib.js): ${falhas.length} falha(s)\n`);
+    return 1;
+  }
+  process.stdout.write("autoteste (_lib.js): 6/6 ok\n");
+  return 0;
+}
+
+if (require.main === module && process.argv.includes("--autoteste")) process.exit(autoteste());
+
 module.exports = {
   readInput,
   commandExists,
@@ -219,4 +255,5 @@ module.exports = {
   allow,
   loadConfig,
   langOf,
+  mesclar,
 };

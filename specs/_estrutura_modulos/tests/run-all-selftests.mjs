@@ -79,11 +79,18 @@ function arquivosSob(pasta, extensoes) {
 
 /** Onde `--autoteste` pode legitimamente morar: `tools/**`, `tests/**` (a própria pasta deste
  * arquivo), `bindings/<binding>/root/**` (os runners que viajam com o projeto —
- * `migrations.{mjs,py}`, o achado do AG) e `skills/**` (todo `.mjs`/`.py` da base mora em
+ * `migrations.{mjs,py}`, o achado do AG), `skills/**` (todo `.mjs`/`.py` da base mora em
  * `skills/<skill>/scripts/`, e a varredura recursiva chega lá sem precisar saber o nome de cada
- * skill). NÃO desce em `_template/**`: é conteúdo de MÓDULO gerado, o gate já cobre. */
+ * skill) e `hooks/` (a única "garantia determinística" do README — sem varredura aqui, um
+ * `--autoteste` novo em hook ficava órfão do mesmo jeito que os de `skills/` ficavam antes desta
+ * pasta entrar no REGISTRO). NÃO desce em `_template/**`: é conteúdo de MÓDULO gerado, o gate já cobre. */
 function raizesDeVarredura() {
-  const raizes = [join(RAIZ_TEMPLATE, 'tools'), join(RAIZ_TEMPLATE, 'tests'), join(RAIZ_BASE, 'skills')];
+  const raizes = [
+    join(RAIZ_TEMPLATE, 'tools'),
+    join(RAIZ_TEMPLATE, 'tests'),
+    join(RAIZ_BASE, 'skills'),
+    join(RAIZ_BASE, 'hooks'),
+  ];
   for (const binding of BINDINGS) raizes.push(join(RAIZ_TEMPLATE, 'bindings', binding, 'root'));
   return raizes;
 }
@@ -143,7 +150,30 @@ const REGISTRO = [
   { caminho: 'skills/cyber-segredos/scripts/scan_segredos.py', runtime: 'python' },
   { caminho: 'skills/padrao-python/scripts/validate.py', runtime: 'python' },
   { caminho: 'skills/padrao-typescript/scripts/validate.mjs', runtime: 'node' },
+  { caminho: 'hooks/_lib.js', runtime: 'node' },
+  { caminho: 'hooks/padrao-limiares.js', runtime: 'node' },
 ];
+
+/**
+ * PENDÊNCIA DECLARADA (não escondida): scripts e hooks que AINDA não têm `--autoteste`, listados
+ * aqui de propósito para não regredir a decisão sem alguém decidir de novo.
+ *
+ * 13 scripts de skill sem `--autoteste`: `code-entrega/scripts/{auditar_docs,scan_assinaturas}.py`,
+ * `code-limpeza-projeto/scripts/detectar_lixo.py`, `cyber-codigo/scripts/sast_scan.py`,
+ * `cyber-config/scripts/check_headers.py`, `cyber-dependencias/scripts/parse_audit.py`,
+ * `deploy-docker/scripts/validar_docker.py`, `deploy-vercel/scripts/validar_predeploy.py`,
+ * `git-especialista-repositorio/scripts/scan_historico.py`,
+ * `git-revisao-diff/scripts/revisar_diff.py`, `meta-create-skill/scripts/scaffold_skill.py`,
+ * `otimizacao-nivel-1/scripts/auditar_assets.py`, `site-seo/scripts/auditar_seo.py` — erram para
+ * MENOS gravidade (relatório incompleto), nunca para aprovação falsa, e por isso ficam de fora de
+ * propósito nesta rodada. (`meta-verificacao-base/scripts/{limiares,ponteiros}.py` NÃO entram
+ * nesta lista: são módulos importados por `audit_base.py`, provados pelo `--autoteste` DELE, não
+ * scripts standalone.)
+ *
+ * 3 hooks sem `--autoteste`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —
+ * a parte pura de cada um ainda não foi separada da chamada de ferramenta externa (gitleaks/
+ * npm audit/pip-audit/pytest/vitest) do jeito que `padrao-limiares.js` foi.
+ */
 
 const DECLARADOS_FORA = new Set([
   'specs/_estrutura_modulos/bindings/python/root/src/composicao.py',

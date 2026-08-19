@@ -131,6 +131,51 @@ function invocar(lang, exe, raiz, fp) {
   return null;
 }
 
+/**
+ * Núcleo: a AÇÃO da política, dado só o `modo` — "allow" (modo off, não sinaliza nada), "block"
+ * ou "warn". Pura: não decide QUANDO sinalizar (isso depende de I/O — linter instalado, config
+ * presente, saída do linter), só COM QUE SEVERIDADE, dado que há algo a sinalizar.
+ */
+function acaoDoModo(modo) {
+  if (modo === "off") return "allow";
+  return modo === "block" ? "block" : "warn";
+}
+
+/**
+ * Núcleo: a saída (já capturada) do linter contém algum marcador do subconjunto verificável do
+ * padrao-escrita? Pura — recebe texto e lista já resolvidos, nunca chama o linter.
+ */
+function violaPadrao(saida, marcas) {
+  return Boolean(marcas) && marcas.length > 0 && new RegExp(marcas.join("|")).test(saida);
+}
+
+function autoteste() {
+  const falhas = [];
+  if (acaoDoModo("off") !== "allow") falhas.push("acaoDoModo('off') deveria devolver 'allow'");
+  if (acaoDoModo("block") !== "block") falhas.push("acaoDoModo('block') deveria devolver 'block'");
+  if (acaoDoModo("warn") !== "warn") falhas.push("acaoDoModo('warn') deveria devolver 'warn'");
+  if (acaoDoModo("qualquer-outra-coisa") !== "warn")
+    falhas.push("acaoDoModo deveria cair em 'warn' para qualquer modo que nao seja off/block");
+
+  const marcasJs = marcadores("js");
+  if (!violaPadrao("erro: max-lines-per-function excedido", marcasJs))
+    falhas.push("violaPadrao deveria casar 'max-lines-per-function' na saida do eslint");
+  if (violaPadrao("tudo certo, nenhum problema encontrado", marcasJs))
+    falhas.push("violaPadrao NAO deveria casar saida limpa do linter");
+  if (violaPadrao("qualquer coisa", marcadores("linguagem-inexistente")))
+    falhas.push("violaPadrao deveria devolver false quando marcadores(lang) e null");
+
+  for (const falha of falhas) process.stdout.write(`  falha  ${falha}\n`);
+  if (falhas.length > 0) {
+    process.stdout.write(`autoteste (padrao-limiares.js): ${falhas.length} falha(s)\n`);
+    return 1;
+  }
+  process.stdout.write("autoteste (padrao-limiares.js): 7/7 ok\n");
+  return 0;
+}
+
+if (process.argv.includes("--autoteste")) process.exit(autoteste());
+
 const input = readInput();
 const fp = input.tool_input?.file_path || "";
 const lang = langOf(fp);
@@ -138,9 +183,10 @@ if (!lang) allow();
 
 const cfg = loadConfig();
 const q = cfg.qualidade;
-if (q.modo === "off") allow();
+const acao = acaoDoModo(q.modo);
+if (acao === "allow") allow();
 
-const sinaliza = q.modo === "block" ? blockPostTool : warnPostTool;
+const sinaliza = acao === "block" ? blockPostTool : warnPostTool;
 const linter = cfg.linguagens[lang]?.linter;
 if (!linter) allow(); // area sem linter declarado na politica para estas regras
 
@@ -180,7 +226,7 @@ const res = invocar(lang, exe, raiz, fp);
 if (!res) allow();
 
 const out = `${res.stdout || ""}${res.stderr || ""}`.trim();
-if (new RegExp(marcas.join("|")).test(out)) {
+if (violaPadrao(out, marcas)) {
   sinaliza(
     `Padrão de escrita violado em ${fp} — limiares, print/console e exceção engolida, tudo pela ` +
       `config de ${linter} deste repositório:\n${out.slice(0, 1500)}\n` +
