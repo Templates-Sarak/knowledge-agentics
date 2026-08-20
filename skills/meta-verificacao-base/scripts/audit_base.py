@@ -4,9 +4,16 @@ import json
 import subprocess
 import argparse
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ponteiros import alvo_de_caminho, auditar_ponteiros  # noqa: E402
+from contagens import (  # noqa: E402
+    auditar_contagens,
+    contagens_do_texto,
+    divergencias as divergencias_de_contagem,
+    hooks_wireados,
+)
 from limiares import (  # noqa: E402
     auditar_limiares,
     divergencias,
@@ -177,12 +184,64 @@ def autoteste():
             "secoes_faltando deveria achar 'Workflow' faltando quando so ele e cobrado"
         )
 
+    # Tarefa 7: contagem do cabecalho do roteador de capacidades (00-knowledge.md) tem que bater
+    # com a contagem real de commands/agents/hooks — e "Hooks" conta pelo wireado em hooks.json,
+    # nao por arquivo .js solto (a pasta tem _lib.js, que nao e um hook).
+    texto_cabecalhos = (
+        "# 5. Commands (13) — disparo manual\n"
+        "# 6. Agents (5) — subagentes\n"
+        "# 7. Hooks (5) — garantias\n"
+    )
+    citadas = contagens_do_texto(texto_cabecalhos)
+    if citadas != {"Commands": 13, "Agents": 5, "Hooks": 5}:
+        falhas.append(
+            f"contagens_do_texto deveria extrair os tres cabecalhos com numero (achou {citadas!r})"
+        )
+    if contagens_do_texto("# 4. Catalogo de skills\n") != {}:
+        falhas.append(
+            "contagens_do_texto nao deveria achar nada num cabecalho sem numero entre parenteses"
+        )
+    sem_divergencia = divergencias_de_contagem(
+        {"Commands": 13}, {"Commands": 13, "Agents": 5}
+    )
+    if sem_divergencia != []:
+        falhas.append(
+            "divergencias (contagens) nao deveria achar nada quando o numero citado bate"
+        )
+    com_divergencia = divergencias_de_contagem({"Commands": 12}, {"Commands": 13})
+    if len(com_divergencia) != 1 or "Commands" not in com_divergencia[0]:
+        falhas.append(
+            f"divergencias (contagens) deveria achar a divergencia de Commands (achou {com_divergencia!r})"
+        )
+    hooks_json_fixture = {
+        "hooks": {
+            "PreToolUse": [
+                {"hooks": [{"command": 'node "${X}/hooks/cyber-git-seguro.js"'}]}
+            ],
+            "PostToolUse": [
+                {"hooks": [{"command": 'node "${X}/hooks/cyber-git-seguro.js"'}]},
+                {"hooks": [{"command": 'node "${X}/hooks/padrao-format.js"'}]},
+            ],
+        }
+    }
+    with tempfile.TemporaryDirectory() as tmp_hooks:
+        os.mkdir(os.path.join(tmp_hooks, "hooks"))
+        with open(
+            os.path.join(tmp_hooks, "hooks", "hooks.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(hooks_json_fixture, f)
+        nomes = hooks_wireados(tmp_hooks)
+    if nomes != {"cyber-git-seguro", "padrao-format"}:
+        falhas.append(
+            f"hooks_wireados deveria dedupar o hook repetido em dois eventos (achou {nomes!r})"
+        )
+
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 27/27 ok")
+    print("autoteste (audit_base): 32/32 ok")
     return 0
 
 
@@ -193,6 +252,7 @@ def audit_base(base_dir):
         "hooks": [],
         "skills": [],
         "ponteiros": [],
+        "contagens": [],
         "vazamentos": [],
         "limiares": [],
         "nomenclatura": [],
@@ -272,6 +332,10 @@ def audit_base(base_dir):
 
     # 5. Ponteiros orfaos (caminho citado e nome de artefato citado) — ver ponteiros.py
     report["ponteiros"] = auditar_ponteiros(base_dir)
+
+    # 5a. Contagem defasada nos cabecalhos do roteador de capacidades (00-knowledge.md) — ver
+    # contagens.py. Complementa o ponteiros.py: aquele cobra NOME citado, este cobra o NUMERO.
+    report["contagens"] = auditar_contagens(base_dir)
 
     # 5b. Limiares 40/3/4: thresholds.mjs (fonte unica) vs config.json de cada padrao-<linguagem>
     report["limiares"] = auditar_limiares(base_dir)
