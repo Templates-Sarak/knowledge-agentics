@@ -9,6 +9,7 @@ caminho comum sozinho.
 {
   "fase": "A" | "B" | "EM_ANDAMENTO",
   "caminho": "sem-specs" | "com-specs",
+  "branch": {"atual": "main", "e_padrao": true, "arvore_suja": true | false | null},
   "template_instalado": {
     "estado": "nao-instalado" | "parcial" | "completo",
     "presentes": ["gate", "manifesto_raiz", "..."],
@@ -20,7 +21,8 @@ caminho comum sozinho.
   "hooks_legado": true | false,
   "modulos_candidatos": [
     {"pasta": "Propostas", "id_atual": "Propostas", "conforme": false, "id_sugerido": "propostas"}
-  ]
+  ],
+  "modulos_origem": "varredura" | "flag"
 }
 ```
 
@@ -28,12 +30,14 @@ caminho comum sozinho.
 |---|---|---|
 | `fase` | ver `SKILL.md` — mecânico, a partir de `specs/plan/*xx-*.md` e seus `status` | `EM_ANDAMENTO` → pare, aponte `/code3-adequar`/a plan pendente, não continue |
 | `caminho` | `com-specs` exige **os dois**: `specs/00-indice.md` e a pasta `specs/plan/` | decide se os passos 1–2 são no-op ou trabalho real |
+| `branch` | lido de `.git/HEAD` (sem chamar `git`); `arvore_suja` vem de `git status --porcelain` | `e_padrao: true` → **pare**, vá ao portão de branch. `atual` vazio/`"(destacado)"` e `arvore_suja: null` significam **não sei** — pergunte, não presuma |
 | `template_instalado` | **lido antes do Passo 3.** As sete peças do aparato (`tools/gate/validate.mjs`, `project.json`, `packages/ports`, `adapters/memory`, `config`, `.githooks`, `modules`) — quantas existem já | `nao-instalado` → Passo 3 instala tudo; `parcial` → instala só `faltando`; `completo` + sem candidatos → **pare**, nada a planejar |
 | `colisao_raiz` | `package.json`/`pyproject.toml`/`.gitignore` que colidiriam com o scaffold — **só reportado quando `template_instalado.estado == "nao-instalado"`** (senão são o próprio scaffold do template, não legado) | HITL — nunca `--forcar` sem autorização; mesclar `scripts`/`workspaces` na mão |
 | `geracao_antiga` | achou `ferramentas/`/`modulos/`/`projeto.json` — nomes de **duas renomeações atrás do próprio template** | isto é migração de versão do template, **não** adequação de legado puro — não confunda os dois diagnósticos |
 | `workspaces_legado` | `workspaces` declarado no `package.json`, **menos** as entradas que já são o trio canônico do template (`modules/[a-z]*`, `packages/*`, `adapters/*`) — só sobra o que é legado de verdade | mesclar é do usuário (armadilha #2 abaixo) |
 | `hooks_legado` | achou `.husky/` ou `husky`/`lint-staged` no `package.json` | terceiro caso de composição de `pre-commit` (armadilha #3) |
-| `modulos_candidatos` | um por pasta informada em `--modulos` (ou achada nas topologias-padrão de `code-diagnostico`) | vira a tabela do portão central de HITL — `id_sugerido` é ponto de partida, não decisão fechada |
+| `modulos_candidatos` | um por pasta **descoberta** na raiz de módulos (`modules/`, ou `modulos/` da geração antiga) — ou, se `--modulos` veio, uma por pasta informada | vira a tabela do portão central de HITL — `id_sugerido` é ponto de partida, não decisão fechada |
+| `modulos_origem` | `varredura` (descoberto) ou `flag` (informado em `--modulos`) | separa *"não há candidato"* de *"ninguém apontou"* — antes os dois eram o mesmo `[]`, e a skill perdia o insumo do portão central sem nada acusar |
 
 **Por que `colisao_raiz`/`workspaces_legado` filtram e não apenas anotam.** Um projeto gerado por
 `create-project.mjs` + `create-module.mjs` — 100% conforme — tinha `colisao_raiz: [".gitignore",
@@ -51,9 +55,17 @@ Não há correção barata sem mudar o critério de "parcial" (por exemplo, exig
 critério que não foi pedida e desloca o problema para outro conjunto de casos. Registrado, não escondido.
 
 O script **não decide topologia** (isso é `code-diagnostico`/`code1-auditar` — `modules/*/module.json` ·
-`backend/*|frontend/*|src/modules/*|apps/*|packages/*` · por-camadas · monólito simples). Ele só avalia, para
-cada pasta que **já foi apontada** como candidata a módulo, se o nome bate `^[a-z][a-z0-9-]*$` e sugere o
+`backend/*|frontend/*|src/modules/*|apps/*|packages/*` · por-camadas · monólito simples). A descoberta olha
+**uma** raiz conhecida de módulos e lista as subpastas dela; para monólito, por-camadas ou `apps/`, aponte
+as pastas com `--modulos`. De cada candidato ele só avalia se o nome bate `^[a-z][a-z0-9-]*$` e sugere o
 kebab-case correspondente.
+
+**Por que a descoberta passou a existir.** `modulos_candidatos` avaliava só o que viesse em `--modulos`,
+enquanto este documento e o `SKILL.md` prometiam que "o script sugere" o nome — e a linha de invocação
+documentada não tinha a flag. Quem seguia a skill ao pé da letra recebia `[]` e ficava sem insumo no
+**portão de HITL central**. Medido num legado real: quatro módulos em `modulos/`, `modulos_candidatos: []`.
+O vocabulário da descoberta é o mesmo `MARCADORES_GERACAO_ANTIGA` que o script já fecha — nenhuma segunda
+lista a manter em sincronia.
 
 ## § 1 — sintetizar e limpar `plan/` (Passo 1, detalhe)
 
@@ -107,6 +119,36 @@ Se `estado == "completo"` **e** `modulos_candidatos` veio vazio, isto não é ma
 necessária" — é "não há adequação necessária". Pare aqui, com HITL: confirme com o usuário se a campanha já
 terminou (plans `xx-*` já expurgadas) ou se a skill foi apontada para o alvo errado por engano — as duas
 situações medidas que produzem exatamente este sinal.
+
+**O que `faltando` não sabe: o equivalente sob outro nome.** A classificação é por **presença de caminho** —
+`tools/gate/validate.mjs` existe ou não existe. Um legado maduro costuma ter o aparato **com outro nome**:
+gate em `validar-modulos.mjs`, scaffolder em `criar-modulo.mjs` — os dois sob a pasta `scripts/` **do
+alvo** —, `conformidade.json` já próprio. O relatório dirá `faltando: ["gate", ...]`, e instalar o canônico ali produz **dois donos da mesma
+lei** — exatamente o que a campanha existe para desfazer.
+
+Medido num legado real (ERP, 2026-08): gate próprio de 544 linhas implementando ~20 regras **mais estritas**
+que o catálogo canônico (`saida-sensivel`, `rls`, `auditoria`, `determinismo`, `config-morta`,
+`fallback-silencioso`). As duas saídas erradas são simétricas: instalar o canônico ao lado duplica a lei;
+substituir o próprio pelo canônico **perde regra em nome de conformidade**.
+
+A saída certa, e o que o Passo 3 manda fazer:
+
+1. **Não instale o segundo.** A convergência é por **renomeação, em plan** — move-se o arquivo, nunca o
+   motor (o `validar-modulos.mjs` do alvo passa a viver em `tools/gate/validate.mjs`, cobrando exatamente
+   as mesmas regras, nem uma a mais nem uma a menos).
+2. **Declare a decisão no índice da campanha** — por que não instalou, o que faz o papel do aparato hoje, e
+   **o que substitui a régua vermelha inicial** (o item 3 do Passo 3) como métrica. Sem o gate canônico
+   rodando, não há violação a converter em exceção nominal **hoje**: o número de exceções passa a nascer na
+   onda que move os `id`, e o índice precisa dizer isso, com o valor esperado cobrado por máquina no §7
+   daquela plan (`len(conformidade.excecoes) == N`).
+3. **Registre em `specs/adr/`** — é decisão técnica com trade-off explícito (perder a régua vermelha
+   inicial em troca de não duplicar o gate), e decisão que só vive dentro do raciocínio de uma plan é
+   decisão que ninguém acha depois.
+
+**Por que isto é portão de HITL e não heurística.** Decidir se um validador próprio é "equivalente" ao gate
+canônico exige julgamento — no caso medido ele era **mais estrito**, não igual. Um heurístico de caminho
+erraria nos dois sentidos, e cobertura inventada é pior que lacuna declarada. A máquina reporta `faltando`;
+quem julga equivalência é o revisor, com o usuário.
 
 ### A dívida declarada
 

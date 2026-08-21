@@ -1,6 +1,7 @@
 """diagnosticar_terreno.py — diagnostico mecanico do terreno antes da campanha de adequacao modular.
 
     python diagnosticar_terreno.py --raiz <alvo> [--modulos <pasta> ...] [--json]
+        (sem `--modulos`, os candidatos sao DESCOBERTOS varrendo a raiz de modulos)
     python diagnosticar_terreno.py --autoteste
 
 Responde, sem julgamento nenhum, as perguntas que "meta-adequacao-modular" precisa antes de abrir a boca:
@@ -21,19 +22,39 @@ o portao de HITL mais caro (`--forcar`) sobre um repositorio que nao precisava d
 suposto: rodar este script contra a saida de `create-project.mjs --binding typescript` +
 `create-module.mjs catalogo --role domain` reproduzia os dois falsos positivos byte a byte.
 
-NAO decide topologia (isso e code-diagnostico/code1-auditar): so avalia pastas que JA foram apontadas como
-candidatas via `--modulos`.
+**Por que a descoberta de candidatos existe.** `modulos_candidatos` avaliava SO o que viesse em
+`--modulos`, enquanto o `SKILL.md` documentava a invocacao sem a flag e prometia que "o script sugere" o
+nome. Quem seguia a skill ao pe da letra recebia `[]` e ficava sem insumo no portao de HITL CENTRAL (a
+lista de modulos e o nome de cada um). Medido num legado real (ERP): quatro modulos em `modulos/`,
+`modulos_candidatos: []`. Agora, sem a flag, a casca varre a raiz de modulos — `modules/` e os nomes de
+GERACAO ANTIGA que apontam para ela (`modulos/`), vocabulario que este mesmo arquivo ja fecha em
+MARCADORES_GERACAO_ANTIGA. `--modulos` continua vencendo, como override explicito, e `modulos_origem` diz
+qual dos dois produziu a lista: `[]` com origem `varredura` significa "nao ha candidato", `[]` com origem
+`flag` significa "ninguem apontou" — dois fatos diferentes que antes eram indistinguiveis.
+
+**Por que `branch` existe.** "NUNCA trabalhe em `main`" e regra da skill desde sempre, e nada a verificava
+— o proprio legado que motivou esta versao estava com a campanha inteira em `main`, com delecoes ja
+staged. Pela lei do ecossistema, regra sem verificador nao e regra. `branch.atual` vazio significa
+**nao foi possivel determinar** (nao e repo git), e `"(destacado)"` significa HEAD destacado: nos dois
+casos pergunte, nunca presuma que esta seguro. `arvore_suja` e tri-estado de proposito — `null` e
+"nao consegui rodar `git status`", NUNCA "esta limpa" (fail-open e o defeito que se evita aqui).
+
+NAO decide topologia (isso e code-diagnostico/code1-auditar): a descoberta olha UMA raiz conhecida de
+modulos, nunca infere fronteira de modulo em monolito, por-camadas ou `apps/`. Para esses, aponte as
+pastas com `--modulos`.
 
 Nucleo puro (nunca toca disco): `detectar_fase`, `detectar_caminho`, `avaliar_template_instalado`,
 `kebabizar`, `avaliar_id_modulo`, `detectar_geracao_antiga`, `detectar_colisao_raiz`,
-`detectar_workspaces_legado`, `detectar_hooks_legado` — e o que o `--autoteste` prova com fixtures em
-memoria. A CASCA (`ler_marcadores_template`, `ler_status_plans_xx`, `ler_entradas_raiz`,
-`ler_package_json`, `main`) e a unica parte que le disco.
+`detectar_workspaces_legado`, `detectar_hooks_legado`, `raizes_de_modulos`, `avaliar_branch` — e o que o
+`--autoteste` prova com fixtures em memoria. A CASCA (`ler_marcadores_template`, `ler_status_plans_xx`,
+`ler_entradas_raiz`, `ler_package_json`, `ler_pastas_de_modulos`, `ler_branch_atual`, `ler_arvore_suja`,
+`main`) e a unica parte que le disco — ou, nas duas ultimas, que chama `git`.
 """
 
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -44,6 +65,13 @@ MARCADORES_GERACAO_ANTIGA = {
 }
 
 ENTRADAS_DE_COLISAO = ("package.json", "pyproject.toml", ".gitignore")
+
+# Vocabulario FECHADO de branch padrao. Deliberadamente curto: nao existe forma barata e confiavel de
+# descobrir a branch padrao de um repositorio sem falar com o remoto (`origin/HEAD` pode nem estar
+# resolvido no clone). Consequencia assumida, e declarada: um repositorio cuja branch principal se chame
+# outra coisa (`trunk`, `develop`) NAO e acusado — falso negativo. A direcao do erro e a segura: acusar
+# `develop` como "padrao" pararia uma campanha legitima.
+BRANCHES_PADRAO = ("main", "master")
 
 # As sete pecas do aparato do template (SKILL.md, Passo 3.2) — caminho relativo a raiz do projeto.
 # Deliberadamente SEM "package.json"/"pyproject.toml"/".gitignore": esses tres sao os mesmos nomes que
@@ -184,6 +212,30 @@ def detectar_hooks_legado(entradas_raiz: set, package_json: dict) -> bool:
     return "husky" in deps or "lint-staged" in deps
 
 
+def raizes_de_modulos(entradas_raiz: set) -> list:
+    """Nomes de pasta, na raiz, que valem como RAIZ DE MODULOS para a descoberta de candidatos: a
+    canonica `modules/` mais os nomes de geracao antiga que apontam para ela (`modulos/`) — o mesmo
+    vocabulario fechado de MARCADORES_GERACAO_ANTIGA, nunca uma segunda lista a manter em sincronia.
+    Ordem estavel para saida deterministica."""
+    nomes = {"modules"} | {
+        antigo for antigo, atual in MARCADORES_GERACAO_ANTIGA.items() if atual == "modules"
+    }
+    return sorted(nome for nome in nomes if nome in entradas_raiz)
+
+
+def avaliar_branch(branch_atual: str, arvore_suja) -> dict:
+    """Classifica o estado de branch para o portao de HITL da skill. `branch_atual` vazio = nao foi
+    possivel determinar (nao e repo git); `"(destacado)"` = HEAD destacado. Nos dois casos `e_padrao`
+    sai False, e o `SKILL.md` manda PERGUNTAR em vez de presumir — o valor nunca afirma "seguro", so
+    diz o que se sabe. `arvore_suja` e repassado como veio (True/False/None): `None` e "nao consegui
+    verificar", jamais "limpa"."""
+    return {
+        "atual": branch_atual,
+        "e_padrao": branch_atual in BRANCHES_PADRAO,
+        "arvore_suja": arvore_suja,
+    }
+
+
 def diagnosticar(
     entradas_raiz: set,
     package_json: dict,
@@ -192,14 +244,20 @@ def diagnosticar(
     tem_plan_dir: bool,
     pastas_candidatas: list,
     marcadores_template: set,
+    branch_atual: str = "",
+    arvore_suja=None,
+    modulos_origem: str = "flag",
 ) -> dict:
-    """Une os nove diagnosticos num relatorio so. Pura: nao le nada, so combina o que ja foi lido.
+    """Une os onze diagnosticos num relatorio so. Pura: nao le nada, so combina o que ja foi lido.
     `template_instalado` e calculado ANTES de `colisao_raiz` porque esta depende daquele — a colisao
-    so faz sentido contra o que e legado, nunca contra o proprio scaffold do template."""
+    so faz sentido contra o que e legado, nunca contra o proprio scaffold do template. Os tres
+    ultimos parametros tem default para que um chamador antigo (fixture, script de terceiro) continue
+    valendo — o relatorio, esse, sempre traz as onze chaves."""
     template_instalado = avaliar_template_instalado(marcadores_template)
     return {
         "fase": detectar_fase(plans_xx),
         "caminho": detectar_caminho(tem_indice, tem_plan_dir),
+        "branch": avaliar_branch(branch_atual, arvore_suja),
         "template_instalado": template_instalado,
         "colisao_raiz": detectar_colisao_raiz(
             entradas_raiz, template_instalado["estado"]
@@ -208,6 +266,7 @@ def diagnosticar(
         "workspaces_legado": detectar_workspaces_legado(package_json),
         "hooks_legado": detectar_hooks_legado(entradas_raiz, package_json),
         "modulos_candidatos": [avaliar_id_modulo(p) for p in pastas_candidatas],
+        "modulos_origem": modulos_origem,
     }
 
 
@@ -253,6 +312,62 @@ def ler_marcadores_template(raiz: Path) -> set:
         for chave, relativo in MARCADORES_TEMPLATE.items()
         if (raiz / relativo).exists()
     }
+
+
+def ler_pastas_de_modulos(raiz: Path, nomes_de_raiz: list) -> list:
+    """Subpastas de cada raiz de modulos — os candidatos que o chamador nao precisou apontar. Ignora
+    entrada oculta e `_template`/`_adapter` (moldes do proprio template, nunca modulo). Devolve nome
+    de pasta, nao caminho: e o mesmo contrato que `--modulos` ja tinha, e `avaliar_id_modulo` julga o
+    NOME. Sem deduplicar entre raizes: se `modules/` e `modulos/` coexistem, ver o nome duas vezes e
+    o achado, nao ruido."""
+    achados = []
+    for nome_raiz in nomes_de_raiz:
+        pasta = raiz / nome_raiz
+        if not pasta.is_dir():
+            continue
+        for entrada in sorted(pasta.iterdir()):
+            if entrada.is_dir() and not entrada.name.startswith((".", "_")):
+                achados.append(entrada.name)
+    return achados
+
+
+def ler_branch_atual(raiz: Path) -> str:
+    """Branch por LEITURA de `.git/HEAD` — nao chama `git`, e por isso funciona com git ausente do
+    PATH. Vazio = nao e repo git (ou HEAD ilegivel); `"(destacado)"` = HEAD aponta para um commit, nao
+    para um ref. Nao resolve worktree/submodulo (`.git` como ARQUIVO): tambem devolve vazio, e o
+    `SKILL.md` manda perguntar — limite declarado, nao silencio."""
+    head = raiz / ".git" / "HEAD"
+    if not head.is_file():
+        return ""
+    try:
+        conteudo = head.read_text(encoding="utf-8", errors="replace").strip()
+    except OSError:
+        return ""
+    if conteudo.startswith("ref: refs/heads/"):
+        return conteudo[len("ref: refs/heads/") :].strip()
+    return "(destacado)" if conteudo else ""
+
+
+def ler_arvore_suja(raiz: Path):
+    """True/False pelo `git status --porcelain`; **None quando nao deu para saber** (git ausente,
+    diretorio nao versionado, chamada falhou). None NUNCA vira False: "nao verifiquei" e "esta limpa"
+    sao fatos diferentes, e confundi-los e exatamente o fail-open que esta skill cobra dos outros."""
+    if not (raiz / ".git").exists():
+        return None
+    try:
+        saida = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=str(raiz),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,  # o returncode e tratado abaixo: != 0 vira None ("nao sei"), nunca False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if saida.returncode != 0:
+        return None
+    return bool(saida.stdout.strip())
 
 
 def get_args():
@@ -485,6 +600,11 @@ def _casos_de_autoteste() -> list:
                 == {
                     "fase": "A",
                     "caminho": "sem-specs",
+                    "branch": {
+                        "atual": "",
+                        "e_padrao": False,
+                        "arvore_suja": None,
+                    },
                     "template_instalado": {
                         "estado": "nao-instalado",
                         "presentes": [],
@@ -502,6 +622,7 @@ def _casos_de_autoteste() -> list:
                             "id_sugerido": "propostas",
                         }
                     ],
+                    "modulos_origem": "flag",
                 }
             ),
         },
@@ -520,6 +641,11 @@ def _casos_de_autoteste() -> list:
                 == {
                     "fase": "A",
                     "caminho": "sem-specs",
+                    "branch": {
+                        "atual": "",
+                        "e_padrao": False,
+                        "arvore_suja": None,
+                    },
                     "template_instalado": {
                         "estado": "completo",
                         "presentes": sorted(MARCADORES_TEMPLATE),
@@ -530,8 +656,44 @@ def _casos_de_autoteste() -> list:
                     "workspaces_legado": [],
                     "hooks_legado": False,
                     "modulos_candidatos": [],
+                    "modulos_origem": "flag",
                 }
             ),
+        },
+        {
+            "nome": "raizes_de_modulos: nome canonico",
+            "fn": lambda: raizes_de_modulos({"modules", "src"}) == ["modules"],
+        },
+        {
+            "nome": "raizes_de_modulos: nome de geracao antiga (o achado do ERP)",
+            "fn": lambda: raizes_de_modulos({"modulos", "src"}) == ["modulos"],
+        },
+        {
+            "nome": "raizes_de_modulos: os dois coexistindo -> os dois, ordenados",
+            "fn": lambda: raizes_de_modulos({"modules", "modulos"}) == ["modules", "modulos"],
+        },
+        {
+            "nome": "raizes_de_modulos: nenhuma raiz -> vazio",
+            "fn": lambda: raizes_de_modulos({"src", "app"}) == [],
+        },
+        {
+            "nome": "avaliar_branch: main e branch padrao",
+            "fn": lambda: avaliar_branch("main", False)["e_padrao"] is True,
+        },
+        {
+            "nome": "avaliar_branch: branch de campanha nao e padrao",
+            "fn": lambda: avaliar_branch("adequacao-modular", False)["e_padrao"] is False,
+        },
+        {
+            "nome": "avaliar_branch: indeterminada nao se afirma padrao (nem segura)",
+            "fn": lambda: (
+                avaliar_branch("", None)["e_padrao"] is False
+                and avaliar_branch("(destacado)", None)["e_padrao"] is False
+            ),
+        },
+        {
+            "nome": "avaliar_branch: arvore_suja None NAO vira False (fail-open)",
+            "fn": lambda: avaliar_branch("main", None)["arvore_suja"] is None,
         },
     ]
 
@@ -552,6 +714,12 @@ def rodar_autoteste() -> int:
 def imprimir_legivel(relatorio: dict) -> None:
     print(f"fase: {relatorio['fase']}")
     print(f"caminho: {relatorio['caminho']}")
+    branch = relatorio["branch"]
+    atual = branch["atual"] or "(indeterminada)"
+    alerta = "  <- PARE: campanha nao roda na branch padrao" if branch["e_padrao"] else ""
+    print(f"branch: {atual}{alerta}")
+    suja = {True: "sim", False: "nao", None: "(nao verificado)"}[branch["arvore_suja"]]
+    print(f"arvore_suja: {suja}")
     template = relatorio["template_instalado"]
     print(f"template_instalado: {template['estado']}", end="")
     if template["estado"] == "parcial":
@@ -562,7 +730,7 @@ def imprimir_legivel(relatorio: dict) -> None:
     print(f"geracao_antiga: {relatorio['geracao_antiga'] or '(nenhuma)'}")
     print(f"workspaces_legado: {relatorio['workspaces_legado'] or '(nenhum)'}")
     print(f"hooks_legado: {relatorio['hooks_legado']}")
-    print("modulos_candidatos:")
+    print(f"modulos_candidatos ({relatorio['modulos_origem']}):")
     for candidato in relatorio["modulos_candidatos"]:
         marca = "ok" if candidato["conforme"] else f"-> {candidato['id_sugerido']}"
         print(f"  {candidato['pasta']}: {marca}")
@@ -581,14 +749,26 @@ def main() -> int:
     tem_plan_dir = (raiz / "specs" / "plan").is_dir()
     marcadores_template = ler_marcadores_template(raiz)
 
+    # `--modulos` vence, sempre: e o override explicito de quem ja sabe onde os modulos estao. Sem ela,
+    # varre a raiz de modulos — e `modulos_origem` preserva a diferenca entre "nao ha candidato" e
+    # "ninguem apontou", que antes eram o mesmo `[]`.
+    if args.modulos:
+        pastas_candidatas, modulos_origem = list(args.modulos), "flag"
+    else:
+        pastas_candidatas = ler_pastas_de_modulos(raiz, raizes_de_modulos(entradas_raiz))
+        modulos_origem = "varredura"
+
     relatorio = diagnosticar(
         entradas_raiz,
         package_json,
         plans_xx,
         tem_indice,
         tem_plan_dir,
-        list(args.modulos),
+        pastas_candidatas,
         marcadores_template,
+        ler_branch_atual(raiz),
+        ler_arvore_suja(raiz),
+        modulos_origem,
     )
 
     if args.json:

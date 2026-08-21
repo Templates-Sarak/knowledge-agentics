@@ -43,11 +43,18 @@ existe specs/00-indice.md **e** specs/plan/ ?
 ```
 
 Rode o diagnóstico mecânico da skill antes de perguntar qualquer coisa ao usuário — ele já responde fase,
-caminho, **se o aparato do template já está instalado**, colisões e candidatos a módulo:
+caminho, **em que branch o alvo está**, **se o aparato do template já está instalado**, colisões e
+candidatos a módulo:
 
 ```
-python skills/meta-adequacao-modular/scripts/diagnosticar_terreno.py --raiz <alvo> --json
+python scripts/diagnosticar_terreno.py --raiz <alvo> --json
 ```
+
+**Os candidatos a módulo são descobertos**, varrendo a raiz de módulos do alvo — `modules/` e o nome de
+geração antiga que aponta para ela (`modulos/`). `--modulos <pasta> ...` continua existindo como
+**override explícito**, para topologia que o script não decide (monólito, por-camadas, `apps/`). O campo
+`modulos_origem` diz qual dos dois produziu a lista: `[]` com origem `varredura` é *"não há candidato"*;
+`[]` com origem `flag` é *"ninguém apontou"* — não confunda os dois.
 
 Confirme o resultado com o usuário em uma linha (fato, não escolha) e siga. Detalhe de cada campo do
 relatório em `references/workflow.md` §0.
@@ -77,6 +84,11 @@ por conta própria.
 ### Passo 0 — abrir
 Usuário abre conversa nova como **revisor** e invoca esta skill. Rode o diagnóstico acima.
 
+**Se `branch.e_padrao` for `true`, PARE** — a campanha não roda em `main`/`master` (é o `NUNCA` das regras
+abaixo, agora com verificador). Vá ao portão de HITL de branch: peça o nome, crie-a e só então siga.
+`branch.atual` vazio (`""`) ou `"(destacado)"` significa **não foi possível determinar** — pergunte, nunca
+presuma que está seguro. `arvore_suja: null` é *"não consegui verificar"*, jamais *"está limpa"*.
+
 ### Passo 1 — sintetizar e limpar `plan/`
 - **(i) sem specs:** no-op declarado — diga em voz alta *"não havia plan/spec: nada a sintetizar"*. Nunca
   invente trabalho aqui.
@@ -96,7 +108,26 @@ Usuário abre conversa nova como **revisor** e invoca esta skill. Rode o diagnó
 Ordem, e nenhuma delas espera pelo passo 5:
 1. Compare a árvore atual × a que o template produziria: `comparar_arvore.py` (de
    `meta-iniciar-repositorio/scripts/`) contra um `create-project.mjs` de referência.
-2. **Instale o aparato de verificação como ato próprio — só o que `template_instalado` diz que falta**:
+2. **Instale o aparato de verificação como ato próprio — só o que `template_instalado` diz que falta**.
+
+   **Antes de instalar, pergunte se o que "falta" já existe sob outro nome.** `template_instalado`
+   classifica por **presença de caminho**: um legado maduro que tenha gate, scaffolder ou
+   `conformidade.json` próprios — em `scripts/`, em português, com outro nome — aparece como
+   `faltando: ["gate", ...]`. Instalar o canônico ali cria **dois donos da mesma lei**, que é o defeito
+   que a campanha existe para remover. Medido num legado real: um gate próprio de 544 linhas, com regras
+   **mais estritas** que o canônico, seria duplicado (ou, pior, substituído — perdendo regra em nome de
+   conformidade). Se houver equivalente funcional:
+   - **não instale o segundo** — a convergência é por **renomeação, em plan** (`scripts/` → `tools/`),
+     movendo o arquivo e nunca o motor;
+   - **declare a decisão no índice da campanha**: por que não instalou, o que faz o papel do aparato hoje,
+     e **o que substitui a régua vermelha inicial** como métrica (item 3 abaixo) — decisão que só existe
+     dentro do raciocínio de uma plan é decisão que ninguém acha;
+   - registre-a também onde o projeto guarda decisão técnica com trade-off (`specs/adr/`).
+
+   É portão de HITL (mapa abaixo): equivalência exige julgamento — "mais estrito" não é "igual" —, e é
+   por isso que a máquina pergunta em vez de decidir.
+
+   Não havendo equivalente, siga por `template_instalado.estado`:
    - `estado == "nao-instalado"` → instale tudo (`tools/`, `config/`, `project.json`,
      `packages/ports/`, `adapters/memory/`, `.githooks/`), na **raiz de verdade** do repositório, mesclando
      e nunca sobrescrevendo.
@@ -170,6 +201,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 |---|---|
 | fase (A/B) e caminho (i)/(ii) detectados | confirmar o fato antes de agir |
 | `template_instalado.estado == "completo"` e sem módulos candidatos | confirmar que não há nada a planejar, em vez de reinstalar por cima |
+| aparato equivalente encontrado sob outro nome | instalar o canônico ao lado ou convergir por renomeação — "mais estrito" não é "igual", e a máquina não julga isso |
 | lista de módulos e o nome de cada um | qual capacidade vira qual `id` — o portão central |
 | prefixo de tabela: renomear ou excetuar | por módulo; risco de migração é decisão de negócio |
 | chaves de ambiente: renomear ou excetuar | `env-modulo` é estrito, sem meio-termo |
@@ -201,8 +233,12 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 
 ## Checklist "pronta"
 - [ ] Fase (A/B) e caminho (i)/(ii) detectados **mecanicamente** e confirmados, não perguntados de saída?
+- [ ] `branch.e_padrao` conferido no Passo 0 — a campanha está em branch própria, e não em `main`/`master`?
 - [ ] `template_instalado` lido **antes** do Passo 3 — e, se `completo` sem módulos candidatos, a skill
       parou e disse "nada a planejar" em vez de reinstalar?
+- [ ] O que `faltando` lista foi conferido contra **equivalente sob outro nome** antes de instalar — e, se
+      havia, a decisão de não duplicar ficou declarada no índice da campanha e num ADR (não só dentro de
+      uma plan)?
 - [ ] `colisao_raiz`/`workspaces_legado` não foram tratados como legado quando eram o próprio scaffold do
       template (`template_instalado.estado != "nao-instalado"`)?
 - [ ] Caminho (i): `00-contexto`/`00-indice` preenchidos, os três universais copiados sem reescrever,
@@ -226,7 +262,8 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
   o snippet de exceção em `conformidade.json` e o relatório da Fase B.
 - `references/examples.md` — os dois caminhos ((i) e (ii)) percorridos ponta a ponta, e o resultado do
   legado sintético usado para validar esta skill.
-- `scripts/diagnosticar_terreno.py` — o diagnóstico mecânico (fase, caminho, **se o aparato do template já
-  está instalado** — nada/parcial/completo, com as peças que faltam —, colisão de manifesto **só quando é
-  legado de verdade**, geração do template, candidatos a módulo e conformidade de nome). `--autoteste`
-  prova o núcleo com fixtures.
+- `scripts/diagnosticar_terreno.py` — o diagnóstico mecânico (fase, caminho, **branch e árvore suja**,
+  **se o aparato do template já está instalado** — nada/parcial/completo, com as peças que faltam —, colisão de manifesto **só quando é
+  legado de verdade**, geração do template, candidatos a módulo **descobertos** por varredura da raiz de
+  módulos — com `--modulos` como override — e conformidade de nome). `--autoteste` prova o núcleo com
+  fixtures.
