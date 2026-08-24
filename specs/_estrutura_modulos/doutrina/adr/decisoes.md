@@ -596,3 +596,218 @@ de chave, é o mesmo tipo de ajuste que a Onda 1 já fez em comentários e mensa
    tests + self-tests verdes), sem alterar a Onda 1 (já executada) nem a Onda 3.
 3. **Os três ids do item 2 não mudam de nome** — qualquer exceção nominal já registrada em
    `config/conformidade.json` contra eles continua válida depois das Ondas 2a/2b.
+
+---
+
+## ADR-015 — As chaves de config vão para o inglês: a tabela que a Onda 2b aplica
+
+**Status:** 🟢 Aceito
+
+**Contexto.** O `ADR-013` decidiu que as chaves **dentro** dos `config/*.json` entram no escopo do `ADR-009`
+e escreveu, textualmente, que *"a lista completa é levantada na Onda 2 e conferida contra os schemas de
+`tools/gate/schemas/`, não inventada aqui"*. O `ADR-014` fixou a regra que torna essa lista obrigatória
+antes de qualquer rename: **nada se renomeia que não esteja num ADR do contrato**. Este ADR é essa lista —
+o contrato passa a ser `ADR-013` + `ADR-014` + `ADR-015`, lidos juntos. Nenhuma linha aqui é aplicada nesta
+conversa; a Onda 2b é quem aplica.
+
+O `ADR-013` não é marcado `🔴 Substituída`, pelo mesmo motivo que o `ADR-014` não marcou o `ADR-013`:
+não é mudar de ideia, é completar uma tabela que o próprio texto já previa como incompleta.
+
+**Régua de tradução**, decidida antes da tabela e aplicada a cada linha dela:
+- **camelCase se mantém** — `04-regras.md` §3.1 já fixa a forma (`Chave de config | camelCase |
+  maxPageSize`); o que muda é o idioma, não a caixa.
+- **Tradução direta, sem inventar abreviação.** `paginaTamanhoMaximo` → `maxPageSize` é o exemplo que a
+  própria §3.1 já traz (Onda 0); toda linha abaixo segue a mesma disciplina — nunca `maxPgSz`.
+- **Chave que já é inglês não muda.** `rateLimit`, `cors`, `headers`, `hsts`, `noSniff`, `frameDeny`,
+  `referrerPolicy`, `id`, `linter`, `typescript`/`javascript`/`python` e `_doc` já estão na forma-alvo —
+  entram na tabela para que a varredura fique completa, marcadas como tal, não por omissão.
+- **Chaves com prefixo `_`** (`_comentario`, `_exemplo`, `_exemploCve`) são estrutura, e entram:
+  `_comentario` → `_comment`, `_exemplo` → `_example`. **Nota de varredura:** o `ADR-013` citava
+  `_modo_doc` como exemplo de chave `_`; nenhum dos seis `config/*.json` nem seus schemas têm essa chave —
+  era ilustrativo, não uma chave real, e não entra na tabela por não existir.
+- **A fronteira chave×valor do `ADR-013` vale integralmente, escrita de novo aqui** porque é a linha que a
+  Onda 2b mais arrisca atravessar: em `texts.json` a **chave** vai para o inglês e o **valor** continua em
+  português — `titulo` → `title` com `"<Modulo>"` dentro (o marcador do molde, não texto real), `carregando`
+  → `loading` com `"Carregando..."` dentro. Em `domain.json`, `statusValidos` → `validStatuses` com
+  `"rascunho"`/`"ativo"`/`"encerrado"` dentro, intocados. A régua se estende, por analogia direta, aos
+  campos de `compliance.json`: `regra` → `rule` é a CHAVE que muda; o **valor** dela (um id do catálogo de
+  76 regras, ex. `"estrutura-estrita"`) fica português para sempre — não pela fronteira chave×valor, mas
+  porque id de regra é conteúdo por `ADR-009` linha 6, e a exceção só existe apontando para um id que o
+  gate reconhece.
+
+**Confound × leitor — a distinção que a coluna 4 não pode confundir consigo mesma.** Um **leitor** é código
+que acessa a chave PELO MESMO NOME, do MESMO conceito — quando a Onda 2b renomear a chave, o leitor tem de
+acompanhar, e isso é trabalho previsto, não risco escondido (`cors.origensPermitidas` lido por
+`cors-aberto` é leitor). Um **confound** é a mesma grafia usada por um símbolo **de outro conceito**, que
+**não muda** — e é aí que um `sed` cego causa dano: renomear por palavra em vez de por ocorrência atinge o
+confound junto. A coluna abaixo registra os dois tipos com o rótulo explícito, e `—` quando a busca não
+achou nenhum dos dois.
+
+### 1. A tabela — o entregável
+
+| Arquivo | Chave (hoje) | Chave (alvo) | Confound conhecido |
+|---|---|---|---|
+| `_template/config/api.json` (3 bindings, idênticos) | `_comentario` | `_comment` | — |
+| `_template/config/api.json` | `paginaTamanhoPadrao` | `defaultPageSize` | — |
+| `_template/config/api.json` | `paginaTamanhoMaximo` | `maxPageSize` | já é o exemplo canônico de `04-regras.md` §3.1 (Onda 0) |
+| `_template/config/api.json` | `corpoMaximoKb` | `maxBodyKb` | — |
+| `_template/config/api.json` | `nivelLog` | `logLevel` | leitor (não confound): fixture `tools/gate/tests/cases.mjs:728-729` muta esta chave por nome literal |
+| `_template/config/domain.json` (3 bindings, idênticos; schema `{"type":"object"}`, sem `properties` — ver item "divergências" abaixo) | `_comentario` | `_comment` | — |
+| `_template/config/domain.json` | `statusValidos` | `validStatuses` | fronteira chave×valor: valor `["rascunho","ativo","encerrado"]` continua português |
+| `_template/config/security.json` (3 bindings, idênticos) | `_comentario` | `_comment` | — |
+| `_template/config/security.json` | `rateLimit` | `rateLimit` (já inglês) | — |
+| `_template/config/security.json` | `rateLimit.janelaSegundos` | `rateLimit.windowSeconds` | — |
+| `_template/config/security.json` | `rateLimit.limiteLeitura` | `rateLimit.readLimit` | — |
+| `_template/config/security.json` | `rateLimit.limiteEscrita` | `rateLimit.writeLimit` | — |
+| `_template/config/security.json` | `rateLimit.limiteGeracao` (só no schema, ver divergência abaixo) | `rateLimit.generateLimit` | — |
+| `_template/config/security.json` | `cors` | `cors` (já inglês) | — |
+| `_template/config/security.json` | `cors.origensPermitidas` | `cors.allowedOrigins` | leitor (não confound): `tools/gate/rules/configuration.mjs:248,251` (`cors-aberto`) lê esta chave pelo nome |
+| `_template/config/security.json` | `cors.metodos` | `cors.methods` | — |
+| `_template/config/security.json` | `headers` | `headers` (já inglês) | — |
+| `_template/config/security.json` | `headers.hsts` | `headers.hsts` (já inglês) | — |
+| `_template/config/security.json` | `headers.noSniff` | `headers.noSniff` (já inglês) | — |
+| `_template/config/security.json` | `headers.frameDeny` | `headers.frameDeny` (já inglês) | — |
+| `_template/config/security.json` | `headers.referrerPolicy` | `headers.referrerPolicy` (já inglês) | — |
+| `_template/config/texts.json` (TypeScript/JavaScript, idênticos) | `_comentario` | `_comment` | — |
+| `_template/config/texts.json` (TS/JS) | `titulo` | `title` | confound: `tools/ci-dependencies.mjs:78,97` (`titulo: via.title`, título de achado de CVE) e `tools/contract-compatible.mjs:468,471,473` (`titulo` de schema OpenAPI) — mesma grafia, dois arquivos sem relação com texto de tela |
+| `_template/config/texts.json` (TS/JS) | `carregando` | `loading` | leitor forçado (não confound): `tools/create-module.mjs:156` — `TEXTOS_SO_DA_TELA = ['carregando','listaVazia','erroGenerico']`, array literal que poda estas chaves ao gerar módulo sem `web/` |
+| `_template/config/texts.json` (TS/JS) | `listaVazia` | `emptyList` | mesmo array de `create-module.mjs:156` acima |
+| `_template/config/texts.json` (TS/JS) | `erroGenerico` | `genericError` | mesmo array de `create-module.mjs:156` acima |
+| `_template/config/texts.json` (Python — diverge: só duas chaves, sem `carregando`/`listaVazia`; `_comentario` próprio explica "módulo Python é backend") | `_comentario` | `_comment` | — |
+| `_template/config/texts.json` (Python) | `titulo` | `title` | mesmo confound de `ci-dependencies.mjs`/`contract-compatible.mjs` acima |
+| `_template/config/texts.json` (Python) | `erroGenerico` | `genericError` | mesmo array de `create-module.mjs:156` — mas Python nunca tem `carregando`/`listaVazia` para podar |
+| `root/config/compliance.json` (3 bindings, idênticos) | `_comentario` | `_comment` | — |
+| `root/config/compliance.json` | `_exemplo` | `_example` | — |
+| `root/config/compliance.json` | `_exemplo.modulo` | `_example.module` | espelha o confound de `excecoes[].modulo` abaixo |
+| `root/config/compliance.json` | `_exemplo.regra` | `_example.rule` | espelha o confound de `excecoes[].regra` abaixo |
+| `root/config/compliance.json` | `_exemplo.motivo` | `_example.reason` | espelha o confound de `excecoes[].motivo` abaixo |
+| `root/config/compliance.json` | `_exemplo.decisao` | `_example.decision` | — |
+| `root/config/compliance.json` | `excecoes` | `exceptions` | — |
+| `root/config/compliance.json` | `excecoes[].modulo` | `exceptions[].module` | **o confound mais grave deste ADR**: `tools/gate/validate.mjs:24` (`aplicarExcecoes`) compara `e.modulo === a.modulo` — `e` vem desta chave (muda), `a` é o achado do PRÓPRIO gate (`tools/gate/engine.mjs:34,43,54,76,88,94`, propriedade interna, símbolo de `tools/`, `ADR-009` linha 4, NUNCA muda). Renomear só o lado esquerdo quebra a comparação para sempre — toda exceção nominal para de perdoar achado, e nenhum teste do template acusa isso como erro de sintaxe |
+| `root/config/compliance.json` | `excecoes[].regra` | `exceptions[].rule` | mesmo confound acima — `e.regra === a.regra` em `validate.mjs:24`, e `a.regra`/`item.regra` também em `validate.mjs:33,39` e `engine.mjs:43,54,76` |
+| `root/config/compliance.json` | `excecoes[].motivo` | `exceptions[].reason` | confound: `tools/affected.mjs:154,162,191,196,227` usa `motivo` como campo de retorno PRÓPRIO do script (por que rodar "tudo"), sem relação com exceção nominal — símbolo de `tools/`, fica |
+| `root/config/compliance.json` | `excecoes[].decisao` | `exceptions[].decision` | leitor (não confound): `tools/gate/context.mjs:355-360,373` (`porqueInvalida`) resolve esta chave contra `specs/adr/*.md` |
+| `root/config/compliance.json` | `_exemploCve` | `_exampleCve` | — |
+| `root/config/compliance.json` | `_exemploCve.id` | `_exampleCve.id` (já inglês) | — |
+| `root/config/compliance.json` | `_exemploCve.motivo` | `_exampleCve.reason` | mesmo confound de `excecoes[].motivo` (`tools/affected.mjs`) |
+| `root/config/compliance.json` | `_exemploCve.decisao` | `_exampleCve.decision` | — |
+| `root/config/compliance.json` | `_exemploCve.expira` | `_exampleCve.expires` | — |
+| `root/config/compliance.json` | `excecoesCve` | `exceptionsCve` | — |
+| `root/config/compliance.json` | `excecoesCve[].id` | `exceptionsCve[].id` (já inglês) | — |
+| `root/config/compliance.json` | `excecoesCve[].motivo` | `exceptionsCve[].reason` | mesmo confound de `excecoes[].motivo` (`tools/affected.mjs`) |
+| `root/config/compliance.json` | `excecoesCve[].decisao` | `exceptionsCve[].decision` | leitor (não confound): `tools/ci-dependencies.mjs:130-132,392-394` (`excecao.decisao`) |
+| `root/config/compliance.json` | `excecoesCve[].expira` | `exceptionsCve[].expires` | leitor (não confound): `tools/ci-dependencies.mjs:131-132` (`excecao.expira`) |
+| `root/config/verification.json` (3 bindings; só `linguagens.<binding>` diverge por binding) | `_doc` (todos os níveis) | `_doc` (já inglês) | — |
+| `root/config/verification.json` | `qualidade` | `quality` | — |
+| `root/config/verification.json` | `qualidade.modo` | `quality.mode` | **confound duplo**: `bindings/python/root/verify.py:250-277` (`_despachar_modo`/`modo`, o MODO DE DESPACHO da CLI — `--cobertura`/`--dependencias`/cadeia inteira, sem relação com política) e `tools/gate/rules/isolation.mjs:289,436,446,552` (`ctx.manifesto?.ui?.modo`, chave `ui.modo` de `module.json`, valores `"proprio"`/`"kit"`) |
+| `root/config/verification.json` | `formatacao` | `formatting` | — |
+| `root/config/verification.json` | `formatacao.ativo` | `formatting.active` | — |
+| `root/config/verification.json` | `cobertura` | `coverage` | — |
+| `root/config/verification.json` | `cobertura.minima` | `coverage.minimum` | quase-confound, registrado pelo risco: `tools/ci-dependencies.mjs:106,109,140,144` usa parâmetro `minima`, mas ele é sempre alimentado por `severidadeMinima()` (linha abaixo) — NÃO é esta chave, e a semelhança do nome curto é o próprio perigo |
+| `root/config/verification.json` | `dependencias` | `dependencies` | — |
+| `root/config/verification.json` | `dependencias.severidadeMinima` | `dependencies.minimumSeverity` | o confound medido no prompt desta conversa: `tools/ci-dependencies.mjs:267` (função `severidadeMinima()`, símbolo, fica) × `:271` (a chave lida, muda) |
+| `root/config/verification.json` | `dependencias.modo` (só no schema, ausente nos três JSONs — ver divergência abaixo) | `dependencies.mode` | mesma família de confound de `qualidade.modo` acima |
+| `root/config/verification.json` | `linguagens` | `languages` | — |
+| `root/config/verification.json` | `linguagens.typescript`/`.javascript`/`.python` (uma chave por binding) | `languages.typescript`/`.javascript`/`.python` (já inglês) | — |
+| `root/config/verification.json` | `linguagens.<binding>.linter` | `languages.<binding>.linter` (já inglês) | — |
+| `root/config/verification.json` | `linguagens.<binding>.formatador` | `languages.<binding>.formatter` | **é o ponto cego do item 4 abaixo**: `hooks/_lib.js:120,122` já faz a tradução no momento da leitura (`formatter: doJs.formatador`) — depois da 2b vira leitura direta (`formatter: doJs.formatter`), e nenhum teste do template acusa se isso não acompanhar |
+
+**Divergências achadas entre schema e JSON, conferidas linha a linha** (exigência do `ADR-013`):
+1. `config-security.schema.json` declara `rateLimit.limiteGeracao` (opcional) — **nenhum** dos três
+   `security.json` o instancia. Schema mais permissivo que a realidade; não é erro, mas a Onda 2b decide se
+   traduz uma chave que hoje não existe em nenhum arquivo real.
+2. `verification.schema.json` declara `dependencias.modo` e `cobertura.modo` como opcionais — nenhum dos
+   três `verification.json` os declara (só `qualidade.modo`, que é obrigatório, está presente nos três).
+   Mesma observação: a Onda 2b decide se traduz chave sem instância hoje.
+3. `config-domain.schema.json` e `config-texts.schema.json` são `{"type": "object"}`, sem `properties` —
+   **não há o que divergir**: nenhuma chave de `domain.json`/`texts.json` é validada por schema, só pela
+   regra genérica `config-morta` (chave declarada e nunca lida no código). A tabela acima usa o conteúdo
+   real dos três `domain.json`/`texts.json` como única fonte, não o schema.
+4. Nenhuma outra divergência: `config-api.schema.json` e `compliance.schema.json` batem exatamente com o
+   conteúdo dos JSONs (chaves `_`-prefixadas ficam fora da checagem de `additionalProperties: false` por
+   `tools/gate/schema.mjs:82`, `if (chave.startsWith('_')) continue` — por isso `_comentario`/`_exemplo`/
+   `_exemploCve` não aparecem nas `properties` de `compliance.schema.json` e mesmo assim não reprovam).
+
+### 2. `config/ports.json` fica de fora — e por quê
+
+As chaves de `ports.json` (`repositorio`, `auditoria`, `relogio`, `geradorId`, `notificador`, `storage`) são
+os **nomes de porta**, e já estão na tabela de 14 linhas do `ADR-013` como **Onda 3** — eixo próprio, com
+três lugares que têm de concordar (`ports-vocabulary.mjs`, `config-ports.schema.json` e o `ports.items.enum`
+de `module.schema.json`, os dois últimos **gerados** por `generate-port-schemas.mjs`). Traduzi-las na 2b
+quebraria o isolamento de eixo que o `ADR-013` consequência nº1 promete, e atropelaria a geração de schema.
+
+`tools/gate/schemas/config-ports.schema.json` — o **arquivo** — já está em inglês e não foi tocado pela
+Onda 2a; o que muda nele são as `properties` (`repositorio` → `repository` etc.), e isso é trabalho da
+Onda 3, não desta.
+
+**Confirmado nesta varredura:** `bindings/**/root/src/composition.*` **lê** `config/ports.json` (a escolha
+de provedor por porta, em `resolveDependencies()`), não `security.json`/`texts.json`/`compliance.json`/
+`verification.json`. `composition.*` não é leitor de nenhuma chave desta tabela — só do vocabulário de
+porta (Onda 3). O prompt desta conversa listava `composition.*` entre os leitores a acompanhar; a varredura
+corrige essa premissa. O confound achado em `composition.*` é outro: a variável local `dependencias`
+(`typescript/root/src/composition.ts:85,95,97`, `javascript/.../composition.js:74,84,86`,
+`python/.../composition.py:84,95,96`) guarda o MAPA DE PROVEDORES RESOLVIDOS por injeção de dependência —
+sem relação nenhuma com `verification.json:dependencias` (a política de auditoria). Símbolo de `tools/`/
+esqueleto, grafia idêntica, conceito oposto — registrado aqui porque nenhuma chave desta tabela o alcança
+diretamente, mas um `sed` por palavra o atingiria.
+
+### 3. A coluna *Confound conhecido* — por que este ADR existe
+
+Medido nesta conversa, o padrão da Onda 2a se repetiu e se agravou: a Onda 2a tinha confound entre palavra
+comum e nome de ARQUIVO, com grafias que já divergiam antes de qualquer rename (`conformidade.json` ×
+`rotulo = '...: 'conformidade''`). Aqui a chave de config e o símbolo interno de `tools/` têm, com
+frequência, **a mesma grafia, no mesmo arquivo, nas mesmas linhas** — o confound de `modulo`/`regra` em
+`validate.mjs:24` é o caso limite: os dois lados da comparação (`e.modulo`/`a.modulo`) têm hoje a MESMA
+palavra por acidente, um vindo do JSON (muda) e o outro do próprio gate (fica), e só divergem em
+comportamento no dia em que um dos dois mudar sem o outro. A tabela acima documenta cada confound achado
+com `arquivo:linha`; onde a busca não achou nenhum, a coluna diz `—` — ausência de resposta não é célula
+vazia.
+
+### 4. Os leitores que a Onda 2b terá de acompanhar
+
+- `tools/gate/context.mjs:154-234` — `lerConfigs()` (monta `ctx.configs.<assunto>`, consumido por toda
+  regra de módulo) e `lerProjeto()` (`ctx.projeto.verificacao`/`.conformidade`, os símbolos ficam por
+  `ADR-009` linha 4, mas os **valores** que eles guardam são os JSONs desta tabela).
+- `tools/gate/rules/configuration.mjs` — `cors-aberto` (linha 248/251, único lugar do catálogo que lê
+  campo nomeado de config); `config-morta` (linha 262-269) é genérico (`Object.keys(valor)`) e **não**
+  precisa acompanhar — nenhuma chave hardcoded ali.
+- `tools/gate/validate.mjs:23-39` e `tools/gate/engine.mjs:34-94` — `aplicarExcecoes`, o confound mais
+  grave do item 1; leitor de `excecoes[].modulo`/`.regra`/`.decisao`.
+- `tools/gate/context.mjs:340-381` — `carregarExcecoes`/`porqueInvalida`, leitor de `excecoes[].decisao`.
+- `tools/ci-dependencies.mjs` — `severidadeMinima()` (:267,271), `excecoesCve()` (:280,284),
+  `statusDaExcecao` (:130-132, `.decisao`/`.expira`).
+- `tools/create-module.mjs:156` — `TEXTOS_SO_DA_TELA`, array literal de chaves de `texts.json`.
+- `bindings/python/root/verify.py:119` — `json.loads(...).get("cobertura", {}).get("minima")`, leitor
+  direto de `cobertura.minima`.
+- Os **schemas** (`tools/gate/schemas/config-*.schema.json`, `compliance.schema.json`,
+  `verification.schema.json`) — as `properties` deles são a própria lista; a Onda 2b os atualiza junto.
+  **Achado à parte:** o `$comentario` de `compliance.schema.json` hoje diz, textualmente, que *"chave em
+  inglês ('module'/'rule') ... reprova aqui por `additionalProperties: false`"* — depois da 2b essa frase
+  vira o oposto do comportamento real (inglês passa a ser exigido), e o texto do `$comentario` precisa
+  mudar junto com as `properties`, não é só find-and-replace de chave.
+- **`hooks/_lib.js:117-129`** (`politicaDoProjeto`) — lê `bruto.qualidade`, `.formatacao`, `.cobertura`,
+  `.dependencias`, `.linguagens.{typescript,javascript,python}.{linter,formatador}` de
+  `config/verification.json`. **É o único consumidor da config do template que mora fora do template, na
+  base.** Se a Onda 2b renomear qualquer uma dessas chaves sem tocar este arquivo, o hook de qualidade para
+  de achar a política em todo projeto gerado — e **nenhum teste do template acusa**, porque `hooks/_lib.js`
+  não é do template; só `run-all-selftests.mjs` (que roda o `--autoteste` do próprio `hooks/_lib.js`, sem
+  tocar num `verification.json` real) e uma checagem manual pegam isso. É o ponto cego da onda.
+- **Verificado e descartado nesta varredura:** `tools/ci-security.mjs` **não** lê nenhum `config/*.json`
+  desta tabela (só `skills/cyber-segredos/scripts/config.json`, fora do template) — o prompt desta conversa
+  o listava como candidato a leitor; não é. `bindings/**/root/src/composition.*` também não (item 2 acima).
+
+### 5. Consequências
+
+1. **O contrato de renomeação passa a ser `ADR-013` + `ADR-014` + `ADR-015` lidos juntos.** Nenhuma onda
+   renomeia chave que não esteja nesta tabela; chave nova achada na Onda 2b vira ADR-016, pela mesma
+   disciplina que o `ADR-014` completou o `ADR-013`.
+2. **Todo projeto já instanciado do template tem os seis `config/*.json` reescritos, chave por chave** — é
+   a onda de maior impacto no arquivo que o operador do projeto edita à mão, porque ao contrário de nome de
+   arquivo (Onda 2a, um `git mv` resolve), aqui o **conteúdo** de um arquivo que o time já pode ter
+   calibrado (`cobertura.minima: 92` em vez do default 80, por exemplo) precisa ser fundido, não
+   sobrescrito. O que se oferece como roteiro: a tabela acima é o de-para completo; um script de migração
+   (fora do escopo desta conversa) pode aplicá-la preservando valor, só trocando chave.
+3. **A definição de pronto continua a do `ADR-013`**: `node tools/gate/tests/run.mjs` (128/128 por binding)
+   e `node tests/run-all-selftests.mjs` (25/25) verdes. **Mais, aqui, um item que os testes não cobrem**:
+   `hooks/_lib.js` conferido À MÃO contra o `verification.json` novo — nenhum teste do template ou da base
+   cruza os dois hoje (item 4 acima), e é o único ponto da campanha inteira com essa lacuna.
