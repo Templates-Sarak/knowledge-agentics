@@ -11,13 +11,13 @@ const TAMANHO_INICIAL = 20;
 export function List() {
   const state = useRecordList(PAGINA_INICIAL, TAMANHO_INICIAL);
 
-  if (state.situacao === 'carregando') return <Notice>{textos.carregando}</Notice>;
-  if (state.situacao === 'erro') return <Notice tom="erro">{textos.erroGenerico}</Notice>;
-  if (state.situacao === 'vazio') return <Notice>{textos.listaVazia}</Notice>;
+  if (state.situacao === 'carregando') return <Notice>{textos.loading}</Notice>;
+  if (state.situacao === 'erro') return <Notice tom="erro">{textos.genericError}</Notice>;
+  if (state.situacao === 'vazio') return <Notice>{textos.emptyList}</Notice>;
 
   return (
     <section>
-      <h1>{textos.titulo}</h1>
+      <h1>{textos.title}</h1>
       <ul>
         {state.registros.map((registro) => (
           <li key={registro.hash}>

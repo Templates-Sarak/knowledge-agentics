@@ -27,12 +27,12 @@ def create_app(
 
     logger = create_logger(
         modulo=manifesto["id"],
-        nivel_minimo=configuracao.api["nivelLog"],
+        nivel_minimo=configuracao.api["logLevel"],
         campos_sensiveis=manifesto["sensitiveFields"],
     )
 
     app = FastAPI(
-        title=configuracao.textos["titulo"],
+        title=configuracao.textos["title"],
         version=manifesto["version"],
         docs_url=None,
         redoc_url=None,
@@ -46,10 +46,10 @@ def listen_port() -> int:
     """Execucao standalone — dev isolado e modulo ja extraido.
 
     A porta vem do ambiente, e a falta dela DERRUBA o boot (specs/arquitetura/01-modulo.md §4.3).
-    O limite de corpo (config/api.json:corpoMaximoKb) e aplicado pelo servidor ASGI na frente.
+    O limite de corpo (config/api.json:maxBodyKb) e aplicado pelo servidor ASGI na frente.
     """
     return int(env_required("<MODULO>_API_PORT"))
 
 
 def body_limit_bytes(config: ConfiguracaoModulo) -> int:
-    return int(config.api["corpoMaximoKb"]) * 1024
+    return int(config.api["maxBodyKb"]) * 1024

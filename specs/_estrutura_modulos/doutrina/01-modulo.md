@@ -131,11 +131,11 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | Tipo de valor | Lugar | Exemplo |
 |---|---|---|
 | Segredo, credencial, URL de infraestrutura, valor por ambiente | `.env`, prefixado `<MODULO>_` | `CATALOGO_DB_URL` |
-| Tunable não-secreto: paginação, timeout, limite de corpo, nível de log | `config/api.json` | `"paginaTamanhoMaximo": 100` |
+| Tunable não-secreto: paginação, timeout, limite de corpo, nível de log | `config/api.json` | `"maxPageSize": 100` |
 | Parâmetro de negócio: status válidos, moedas, percentuais | `config/domain.json` | `"moedasAceitas": ["BRL"]` |
-| Rate limit, CORS, headers | `config/security.json` | `"limiteEscrita": 20` |
+| Rate limit, CORS, headers | `config/security.json` | `"writeLimit": 20` |
 | Qual adapter atende cada porta | `config/ports.json` | `"repositorio": "postgres"` |
-| Rótulo e mensagem exibidos ao usuário | `config/texts.json` | `"listaVazia": "Nada por aqui."` |
+| Rótulo e mensagem exibidos ao usuário | `config/texts.json` | `"emptyList": "Nada por aqui."` |
 | Identidade e contrato do módulo | `module.json` | §3 |
 
 ## 4.2 O `.env` em cascata

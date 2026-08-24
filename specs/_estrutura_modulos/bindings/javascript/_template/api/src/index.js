@@ -31,7 +31,7 @@ export function createApp({ deps, auth, raiz }) {
   const { seguranca, manifesto } = config;
   const logger = createLogger({
     modulo: manifesto.id,
-    nivelMinimo: config.api.nivelLog,
+    nivelMinimo: config.api.logLevel,
     camposSensiveis: manifesto.sensitiveFields,
   });
 
@@ -49,7 +49,7 @@ export function createApp({ deps, auth, raiz }) {
   const prefixo = composto ? '/' : manifesto.basePath;
 
   const app = express();
-  app.use(express.json({ limit: `${config.api.corpoMaximoKb}kb` }));
+  app.use(express.json({ limit: `${config.api.maxBodyKb}kb` }));
   app.use(requestId(() => deps.geradorId.hash()));
   app.use(securityHeaders(seguranca.headers));
   app.use(cors(seguranca.cors));
@@ -70,7 +70,7 @@ export function start(opcoes) {
   const config = loadConfiguration();
   const logger = createLogger({
     modulo: config.manifesto.id,
-    nivelMinimo: config.api.nivelLog,
+    nivelMinimo: config.api.logLevel,
     camposSensiveis: config.manifesto.sensitiveFields,
   });
   const porta = Number(envRequired('<MODULO>_API_PORT'));

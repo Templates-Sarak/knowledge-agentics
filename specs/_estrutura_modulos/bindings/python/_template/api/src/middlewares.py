@@ -58,7 +58,7 @@ def record_middlewares(app: Any, config: Any, borda: ContextoDaBorda) -> None:
         except ErroApi as erro:
             return _respond_error(erro, request, logger)
         except Exception as causa:  # noqa: BLE001 — traduzido, nunca engolido
-            interno = ErroApi("INTERNO", config.textos["erroGenerico"], str(causa))
+            interno = ErroApi("INTERNO", config.textos["genericError"], str(causa))
             return _respond_error(interno, request, logger)
 
         _apply_headers(resposta, seguranca["headers"])
@@ -99,23 +99,21 @@ def _apply_headers(resposta: Any, headers: dict[str, Any]) -> None:
 def _apply_cors(request: Request, resposta: Any, cors: dict[str, Any]) -> None:
     """Origens sao DECLARADAS em config/security.json. `*` e proibido."""
     origem = request.headers.get("origin")
-    if origem is not None and origem in cors["origensPermitidas"]:
+    if origem is not None and origem in cors["allowedOrigins"]:
         resposta.headers["access-control-allow-origin"] = origem
-        resposta.headers["access-control-allow-methods"] = ", ".join(cors["metodos"])
+        resposta.headers["access-control-allow-methods"] = ", ".join(cors["methods"])
 
 
 def _limit(
     request: Request, config: dict[str, Any], janelas: dict[str, tuple[float, int]]
 ) -> None:
     """Contador em memoria: suficiente para um processo. Multi-instancia exige porta dedicada."""
-    limite = (
-        config["limiteLeitura"] if request.method == "GET" else config["limiteEscrita"]
-    )
+    limite = config["readLimit"] if request.method == "GET" else config["writeLimit"]
     chave = f"{request.client.host if request.client else '?'}:{request.method}"
     now = time.monotonic()
     inicio, contagem = janelas.get(chave, (now, 0))
 
-    if now - inicio > config["janelaSegundos"]:
+    if now - inicio > config["windowSeconds"]:
         janelas[chave] = (now, 1)
         return
     if contagem + 1 > limite:

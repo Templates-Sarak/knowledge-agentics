@@ -153,7 +153,7 @@ function ajustarManifesto(destino, opcoes) {
 }
 
 /** Config de texto que so a tela usa. Sem `web/`, ela viraria config morta — e o gate avisa. */
-const TEXTOS_SO_DA_TELA = ['carregando', 'listaVazia', 'erroGenerico'];
+const TEXTOS_SO_DA_TELA = ['loading', 'emptyList', 'genericError'];
 
 function podarTextosDeTela(destino) {
   const caminho = join(destino, 'config', 'texts.json');

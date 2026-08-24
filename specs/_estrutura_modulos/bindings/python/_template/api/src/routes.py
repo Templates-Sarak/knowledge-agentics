@@ -37,11 +37,11 @@ def _read_pagination(request: Request, config: Any) -> tuple[int, int]:
     """Paginacao validada na borda, com padrao e teto vindos de config/api.json."""
     bruto_pagina = request.query_params.get("pagina", "1")
     bruto_tamanho = request.query_params.get(
-        "tamanho", str(config.api["paginaTamanhoPadrao"])
+        "tamanho", str(config.api["defaultPageSize"])
     )
     if not bruto_pagina.isdigit() or int(bruto_pagina) < 1:
         raise ErroApi("VALIDACAO", 'parametro "pagina" deve ser inteiro >= 1')
-    teto = config.api["paginaTamanhoMaximo"]
+    teto = config.api["maxPageSize"]
     if not bruto_tamanho.isdigit() or not 1 <= int(bruto_tamanho) <= teto:
         raise ErroApi("VALIDACAO", f'parametro "tamanho" deve estar entre 1 e {teto}')
     return int(bruto_pagina), int(bruto_tamanho)
@@ -110,7 +110,7 @@ async def _persist(
     try:
         registro = build_record(
             corpo,
-            config.dominio["statusValidos"],
+            config.dominio["validStatuses"],
             deps.geradorId.hash(),
             deps.relogio.now(),
         )

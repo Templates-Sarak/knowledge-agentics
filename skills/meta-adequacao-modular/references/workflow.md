@@ -230,8 +230,8 @@ node tools/gate/validate.mjs --todos
 ```
 
 Isto **vai** dar vermelho — é o resultado correto no dia 1. Cada violação relatada se torna uma linha em
-`config/compliance.json:excecoes`, com as quatro chaves exatas do schema (`modulo`, `regra`, `motivo`,
-`decisao`) — nenhuma a mais, nenhuma a menos (o schema tem `additionalProperties: false`). `decisao` aponta
+`config/compliance.json:exceptions`, com as quatro chaves exatas do schema (`module`, `rule`, `reason`,
+`decision`) — nenhuma a mais, nenhuma a menos (o schema tem `additionalProperties: false`). `decision` aponta
 um `## ADR-NNN` **real** dentro de `specs/adr/*.md` — sem ele o gate rejeita a própria exceção. Se o ADR
 ainda não existe, escreva-o antes de declarar a exceção; não inverta a ordem.
 

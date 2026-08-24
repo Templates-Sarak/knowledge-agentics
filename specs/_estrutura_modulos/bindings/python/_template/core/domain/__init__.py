@@ -42,11 +42,13 @@ def _require_title(titulo: Any) -> str:
 
 def _require_status(status: Any, status_validos: Sequence[str]) -> str:
     if not status_validos:
-        raise ErroDeValidacao("status", "config/domain.json:statusValidos esta vazio")
+        raise ErroDeValidacao("status", "config/domain.json:validStatuses esta vazio")
     if status is None:
         return status_validos[0]
     if not isinstance(status, str) or status not in status_validos:
-        raise ErroDeValidacao("status", f"status deve ser um de: {', '.join(status_validos)}")
+        raise ErroDeValidacao(
+            "status", f"status deve ser um de: {', '.join(status_validos)}"
+        )
     return status
 
 

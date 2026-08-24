@@ -439,7 +439,7 @@ export const CASOS = [
     // PRESENTE e ilegivel — as duas coisas ao mesmo tempo, que e o que separa esta regra da
     // `estrutura` (que so cobra presenca). `schema-config` e `config-morta` pulam valor nulo de
     // proposito, entao o defeito acusa UM id.
-    mutar: (m) => m.escrever('config/domain.json', '{ "statusValidos": [\n'),
+    mutar: (m) => m.escrever('config/domain.json', '{ "validStatuses": [\n'),
   },
   {
     regra: 'config-morta',
@@ -503,13 +503,13 @@ export const CASOS = [
   },
   {
     regra: 'conformidade-declarada',
-    descricao: 'chave em ingles na lista de excecoes ("module" em vez de "modulo")',
+    descricao: 'chave em portugues na lista de excecoes ("regra" em vez de "rule")',
     // O defeito medido em 2026-08-15: exececao com chave errada nao pegava a violacao, e nada
-    // dizia por que. `additionalProperties:false` reprova o campo a mais, e o `modulo` obrigatorio
+    // dizia por que. `additionalProperties:false` reprova o campo a mais, e o `rule` obrigatorio
     // ausente reprova junto — um erro, duas mensagens, as duas apontando a forma certa.
     mutar: (m) => m.escrever(
       '../../config/compliance.json',
-      JSON.stringify({ excecoes: [{ module: 'legado', regra: 'estrutura-estrita', motivo: 'x', decisao: 'ADR-001' }], excecoesCve: [] }),
+      JSON.stringify({ exceptions: [{ module: 'legado', regra: 'estrutura-estrita', reason: 'x', decision: 'ADR-001' }], exceptionsCve: [] }),
     ),
   },
   {
@@ -725,13 +725,13 @@ export const CASOS = [
   },
   {
     regra: 'schema-config',
-    descricao: 'nivelLog fora do vocabulario',
-    mutar: (m) => m.config('api', (x) => ({ ...x, nivelLog: 'gritante' })),
+    descricao: 'logLevel fora do vocabulario',
+    mutar: (m) => m.config('api', (x) => ({ ...x, logLevel: 'gritante' })),
   },
   {
     regra: 'cors-aberto',
     descricao: 'CORS liberado com asterisco',
-    mutar: (m) => m.config('security', (x) => ({ ...x, cors: { ...x.cors, origensPermitidas: ['*'] } })),
+    mutar: (m) => m.config('security', (x) => ({ ...x, cors: { ...x.cors, allowedOrigins: ['*'] } })),
   },
   {
     regra: 'hardcode-url',

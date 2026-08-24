@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * ci-dependencies.mjs — audita dependências (npm audit / pip-audit) contra o piso de severidade de
- * `config/verification.json:dependencias.severidadeMinima` (já no schema — nenhuma chave nova).
+ * `config/verification.json:dependencies.minimumSeverity` (já no schema — nenhuma chave nova).
  *
  *   node tools/ci-dependencies.mjs [--json]
  *   node tools/ci-dependencies.mjs --autoteste
@@ -13,8 +13,8 @@
  * A DECISÃO JÁ TOMADA (não reaberta aqui): ferramenta ausente é PARTE DO PACOTE — `pip-audit` entra
  * como `optional-dependencies` do projeto (mesmo grupo do `pytest-cov`); `npm audit` é embutido no
  * npm. Isso elimina o "fail-open por ausência": as duas SEMPRE estão instaladas onde este comando
- * roda. O que sobra de "fail-open" morre — vira EXCEÇÃO NOMINAL, RATIFICADA (`decisao`, como o gate
- * já exige) E DATADA (`expira`, novo aqui) em `config/compliance.json:excecoesCve`.
+ * roda. O que sobra de "fail-open" morre — vira EXCEÇÃO NOMINAL, RATIFICADA (`decision`, como o gate
+ * já exige) E DATADA (`expires`, novo aqui) em `config/compliance.json:exceptionsCve`.
  *
  * NÚCLEO × CASCA, mesmo precedente de `affected.mjs`/`contract-compatible.mjs`/`ci-security.mjs`:
  * `normalizarNpm`/`normalizarPip`/`statusDaExcecao`/`avaliar` recebem DADO (o JSON já parseado, e
@@ -31,7 +31,7 @@
  *   - `pip-audit --format=json`: `{ dependencies: [ { name, version, vulns: [ { id, fix_versions,
  *     aliases, description } ] } ] }`. **Achado, medido**: NENHUM campo de severidade/CVSS — ao
  *     contrário do que este bloco assumia. `pip-audit --help` não tem `--severity` nem `--cvss`. Por
- *     isso `dependencias.severidadeMinima` filtra o lado NPM; do lado PIP, TODO achado conta —
+ *     isso `dependencies.minimumSeverity` filtra o lado NPM; do lado PIP, TODO achado conta —
  *     declarado abaixo e em `04-regras.md` §7.2, não escondido.
  *   - **Achado, medido**: as mensagens de aviso do `pip-audit` (`WARNING: pip-audit will run pip
  *     against...`) saem em STDERR, não stdout — mas se a casca capturar os dois fluxos JUNTOS
@@ -127,9 +127,9 @@ function dataRealISO(texto) {
  * de datas ISO é comparação cronológica — não precisa de objeto `Date` para isso.
  */
 export function statusDaExcecao(excecao, hojeISO) {
-  if (!excecao || typeof excecao !== 'object' || !excecao.decisao) return 'sem-decisao';
-  if (!dataRealISO(excecao.expira)) return 'expira-malformada';
-  return excecao.expira < hojeISO ? 'expirada' : 'valida';
+  if (!excecao || typeof excecao !== 'object' || !excecao.decision) return 'sem-decisao';
+  if (!dataRealISO(excecao.expires)) return 'expira-malformada';
+  return excecao.expires < hojeISO ? 'expirada' : 'valida';
 }
 
 /**
@@ -268,20 +268,20 @@ function severidadeMinima() {
   const caminho = join(RAIZ, 'config', 'verification.json');
   if (!existsSync(caminho)) return 'high'; // mesmo default de `hooks/test-cobertura.js`/config.json da base
   try {
-    return JSON.parse(readFileSync(caminho, 'utf8')).dependencias?.severidadeMinima ?? 'high';
+    return JSON.parse(readFileSync(caminho, 'utf8')).dependencies?.minimumSeverity ?? 'high';
   } catch {
     return 'high';
   }
 }
 
-/** `config/compliance.json:excecoesCve` — MESMO arquivo das exceções de regra do gate, chave nova.
+/** `config/compliance.json:exceptionsCve` — MESMO arquivo das exceções de regra do gate, chave nova.
  * Decisão (não um arquivo próprio): a disciplina "sem decisao não vale" já mora e é testada ali;
  * duplicar em outro arquivo repetiria o mecanismo sem nenhum ganho, só mais uma entrada na árvore. */
 function excecoesCve() {
   const caminho = join(RAIZ, 'config', 'compliance.json');
   if (!existsSync(caminho)) return [];
   try {
-    return JSON.parse(readFileSync(caminho, 'utf8')).excecoesCve ?? [];
+    return JSON.parse(readFileSync(caminho, 'utf8')).exceptionsCve ?? [];
   } catch {
     return [];
   }
@@ -389,23 +389,23 @@ function casosDeAutoteste() {
     { nome: 'acimaDoPiso: severidade null (pip) sempre conta', fn: () => acimaDoPiso(null, 'critical') === true },
     { nome: 'acimaDoPiso: moderate < high nao conta com piso high', fn: () => acimaDoPiso('moderate', 'high') === false },
     { nome: 'acimaDoPiso: high >= high conta', fn: () => acimaDoPiso('high', 'high') === true },
-    { nome: 'excecao sem decisao: sem-decisao (nunca valida)', fn: () => statusDaExcecao({ expira: '2099-01-01' }, '2026-01-01') === 'sem-decisao' },
-    { nome: 'excecao com decisao, expira no FUTURO: valida', fn: () => statusDaExcecao({ decisao: 'ADR-01', expira: '2099-01-01' }, '2026-01-01') === 'valida' },
-    { nome: 'excecao com decisao, expira no PASSADO: expirada', fn: () => statusDaExcecao({ decisao: 'ADR-01', expira: '2020-01-01' }, '2026-01-01') === 'expirada' },
-    { nome: 'excecao com data MALFORMADA (2026-02-30): expira-malformada, nunca "valida para sempre"', fn: () => statusDaExcecao({ decisao: 'ADR-01', expira: '2026-02-30' }, '2026-01-01') === 'expira-malformada' },
-    { nome: 'excecao com expira ausente: expira-malformada', fn: () => statusDaExcecao({ decisao: 'ADR-01' }, '2026-01-01') === 'expira-malformada' },
-    { nome: 'excecao com expira em formato errado ("30/02/2026"): expira-malformada', fn: () => statusDaExcecao({ decisao: 'ADR-01', expira: '30/02/2026' }, '2026-01-01') === 'expira-malformada' },
+    { nome: 'excecao sem decisao: sem-decisao (nunca valida)', fn: () => statusDaExcecao({ expires: '2099-01-01' }, '2026-01-01') === 'sem-decisao' },
+    { nome: 'excecao com decisao, expira no FUTURO: valida', fn: () => statusDaExcecao({ decision: 'ADR-01', expires: '2099-01-01' }, '2026-01-01') === 'valida' },
+    { nome: 'excecao com decisao, expira no PASSADO: expirada', fn: () => statusDaExcecao({ decision: 'ADR-01', expires: '2020-01-01' }, '2026-01-01') === 'expirada' },
+    { nome: 'excecao com data MALFORMADA (2026-02-30): expira-malformada, nunca "valida para sempre"', fn: () => statusDaExcecao({ decision: 'ADR-01', expires: '2026-02-30' }, '2026-01-01') === 'expira-malformada' },
+    { nome: 'excecao com expira ausente: expira-malformada', fn: () => statusDaExcecao({ decision: 'ADR-01' }, '2026-01-01') === 'expira-malformada' },
+    { nome: 'excecao com expira em formato errado ("30/02/2026"): expira-malformada', fn: () => statusDaExcecao({ decision: 'ADR-01', expires: '30/02/2026' }, '2026-01-01') === 'expira-malformada' },
     {
       nome: 'avaliar: excecao valida PERDOA o achado (compativel=true)',
       fn: () => {
-        const r = avaliar({ npm: normalizarNpm(NPM_UMA_VULN), pip: [], minima: 'low', excecoes: [{ id: 'GHSA-4w7w-66w2-5vf9', decisao: 'ADR-9', expira: '2099-01-01' }], hojeISO: '2026-01-01' });
+        const r = avaliar({ npm: normalizarNpm(NPM_UMA_VULN), pip: [], minima: 'low', excecoes: [{ id: 'GHSA-4w7w-66w2-5vf9', decision: 'ADR-9', expires: '2099-01-01' }], hojeISO: '2026-01-01' });
         return r.compativel === true && r.achados.some((a) => a.perdoado);
       },
     },
     {
       nome: 'avaliar: excecao EXPIRADA nao perdoa — continua reprovando E aparece como excecaoProblematica',
       fn: () => {
-        const r = avaliar({ npm: normalizarNpm(NPM_UMA_VULN), pip: [], minima: 'low', excecoes: [{ id: 'GHSA-4w7w-66w2-5vf9', decisao: 'ADR-9', expira: '2020-01-01' }], hojeISO: '2026-01-01' });
+        const r = avaliar({ npm: normalizarNpm(NPM_UMA_VULN), pip: [], minima: 'low', excecoes: [{ id: 'GHSA-4w7w-66w2-5vf9', decision: 'ADR-9', expires: '2020-01-01' }], hojeISO: '2026-01-01' });
         return r.compativel === false && r.excecoesProblematicas.some((p) => p.status === 'expirada');
       },
     },
@@ -415,7 +415,7 @@ function casosDeAutoteste() {
     },
     {
       nome: 'ADVERSARIAL: id de excecao com "; echo INJETADO" so casa por IGUALDADE de string — nunca executa',
-      fn: () => statusDaExcecao({ id: '; echo INJETADO', decisao: 'ADR-1', expira: '2099-01-01' }, '2026-01-01') === 'valida',
+      fn: () => statusDaExcecao({ id: '; echo INJETADO', decision: 'ADR-1', expires: '2099-01-01' }, '2026-01-01') === 'valida',
     },
   ];
 }

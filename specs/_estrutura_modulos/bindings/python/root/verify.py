@@ -109,14 +109,14 @@ def _modules() -> list[Path]:
 
 
 def _minimum_coverage() -> int | None:
-    """`cobertura.minima` de `config/verification.json` — a MESMA politica que `hooks/test-cobertura.js`
+    """`coverage.minimum` de `config/verification.json` — a MESMA politica que `hooks/test-cobertura.js`
     le para o push, uma fonte so. Ausente ou ilegivel: sem piso (o gate, nao este comando, cobra a
     ausencia da politica via `verificacao-declarada`)."""
     caminho = RAIZ / "config" / "verification.json"
     if not caminho.exists():
         return None
     try:
-        minima = json.loads(caminho.read_text(encoding="utf-8")).get("cobertura", {}).get("minima")
+        minima = json.loads(caminho.read_text(encoding="utf-8")).get("coverage", {}).get("minimum")
     except (OSError, json.JSONDecodeError):
         return None
     return minima if isinstance(minima, int) else None

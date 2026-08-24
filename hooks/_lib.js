@@ -103,12 +103,14 @@ function projectRoot() {
 }
 
 /**
- * Traduz `config/verification.json` (vocabulário do TEMPLATE) para o vocabulário interno dos hooks.
+ * Traduz `config/verification.json` (vocabulário do TEMPLATE, em inglês desde a Onda 2b) para o
+ * vocabulário interno dos hooks (permanece em português).
  *
  * Os dois arquivos falam línguas diferentes de propósito — o template nomeia BINDING
- * (`typescript`/`javascript`/`python`) e usa `formatador`; os hooks nomeiam ÁREA (`js`/`python`) e
- * usam `formatter`, porque `langOf` mapeia extensão para área. A ponte fica AQUI, num lugar só, e é
- * o que permite os quatro hooks consumirem `cfg` sem saber de onde a política veio.
+ * (`typescript`/`javascript`/`python`) e usa `quality`/`coverage`/`dependencies`/`languages`; os
+ * hooks nomeiam ÁREA (`js`/`python`) e usam `qualidade`/`cobertura`/`dependencias`/`linguagens`,
+ * porque `langOf` mapeia extensão para área. A ponte fica AQUI, num lugar só, e é o que permite os
+ * quatro hooks consumirem `cfg` sem saber de onde a política veio.
  *
  * `typescript` e `javascript` colapsam na mesma área `js`: quem linta `.ts` e `.js` no projeto é o
  * mesmo eslint. `typescript` tem precedência quando os dois estão declarados.
@@ -116,16 +118,16 @@ function projectRoot() {
 function politicaDoProjeto(raiz) {
   const bruto = JSON.parse(fs.readFileSync(path.join(raiz, "config", "verification.json"), "utf8"));
   const linguagens = {};
-  const doJs = bruto.linguagens?.typescript ?? bruto.linguagens?.javascript;
-  if (doJs) linguagens.js = { linter: doJs.linter, formatter: doJs.formatador };
-  if (bruto.linguagens?.python) {
-    linguagens.python = { linter: bruto.linguagens.python.linter, formatter: bruto.linguagens.python.formatador };
+  const doJs = bruto.languages?.typescript ?? bruto.languages?.javascript;
+  if (doJs) linguagens.js = { linter: doJs.linter, formatter: doJs.formatter };
+  if (bruto.languages?.python) {
+    linguagens.python = { linter: bruto.languages.python.linter, formatter: bruto.languages.python.formatter };
   }
   return {
-    qualidade: bruto.qualidade,
-    formatacao: bruto.formatacao,
-    cobertura: bruto.cobertura,
-    dependencias: bruto.dependencias,
+    qualidade: bruto.quality,
+    formatacao: bruto.formatting,
+    cobertura: bruto.coverage,
+    dependencias: bruto.dependencies,
     linguagens: Object.keys(linguagens).length > 0 ? linguagens : undefined,
   };
 }

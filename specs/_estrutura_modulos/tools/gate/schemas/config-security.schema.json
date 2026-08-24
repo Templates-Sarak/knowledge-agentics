@@ -1,5 +1,5 @@
 {
-  "$comentario": "Cadeia de seguranca da api. Lei dona: specs/arquitetura/03-operacao.md §2.1. `origensPermitidas` nunca contem '*' — cobrado pela regra `cors-aberto`.",
+  "$comentario": "Cadeia de seguranca da api. Lei dona: specs/arquitetura/03-operacao.md §2.1. `allowedOrigins` nunca contem '*' — cobrado pela regra `cors-aberto`.",
   "type": "object",
   "additionalProperties": false,
   "required": ["rateLimit", "cors", "headers"],
@@ -7,21 +7,21 @@
     "rateLimit": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["janelaSegundos", "limiteLeitura", "limiteEscrita"],
+      "required": ["windowSeconds", "readLimit", "writeLimit"],
       "properties": {
-        "janelaSegundos": { "type": "integer", "minimum": 1 },
-        "limiteLeitura": { "type": "integer", "minimum": 1 },
-        "limiteEscrita": { "type": "integer", "minimum": 1 },
-        "limiteGeracao": { "type": "integer", "minimum": 1 }
+        "windowSeconds": { "type": "integer", "minimum": 1 },
+        "readLimit": { "type": "integer", "minimum": 1 },
+        "writeLimit": { "type": "integer", "minimum": 1 },
+        "generateLimit": { "type": "integer", "minimum": 1 }
       }
     },
     "cors": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["origensPermitidas", "metodos"],
+      "required": ["allowedOrigins", "methods"],
       "properties": {
-        "origensPermitidas": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
-        "metodos": {
+        "allowedOrigins": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "methods": {
           "type": "array",
           "uniqueItems": true,
           "items": { "type": "string", "enum": ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"] }

@@ -13,14 +13,14 @@ import { toCollection, toContract, toMeta } from '../mappers/index.js';
 /** Paginacao validada na borda, com padrao e teto vindos de config/api.json. */
 function readPagination(query, config) {
   const pagina = Number(query.pagina ?? 1);
-  const tamanho = Number(query.tamanho ?? config.api.paginaTamanhoPadrao);
+  const tamanho = Number(query.tamanho ?? config.api.defaultPageSize);
   if (!Number.isInteger(pagina) || pagina < 1) {
     throw new ErroApi('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
   }
-  if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.paginaTamanhoMaximo) {
+  if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.maxPageSize) {
     throw new ErroApi(
       'VALIDACAO',
-      `parametro "tamanho" deve estar entre 1 e ${config.api.paginaTamanhoMaximo}`,
+      `parametro "tamanho" deve estar entre 1 e ${config.api.maxPageSize}`,
     );
   }
   return [pagina, tamanho];
@@ -103,7 +103,7 @@ async function create(corpo, deps, config, requestId) {
   const entrada = readBody(corpo);
   const registro = buildRecord(
     entrada,
-    config.dominio.statusValidos,
+    config.dominio.validStatuses,
     deps.geradorId.hash(),
     deps.relogio.now(),
   );

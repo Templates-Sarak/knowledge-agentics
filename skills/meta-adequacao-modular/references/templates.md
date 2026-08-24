@@ -63,19 +63,19 @@ preenchido, de um alvo real:
 
 ```jsonc
 {
-  "excecoes": [
+  "exceptions": [
     {
-      "modulo": "<id-ou-(root)>",
-      "regra": "<id-da-regra-do-catalogo>",
-      "motivo": "<frase objetiva — o que falta e por que ainda não foi feito>",
-      "decisao": "ADR-<NNN>"
+      "module": "<id-ou-(root)>",
+      "rule": "<id-da-regra-do-catalogo>",
+      "reason": "<frase objetiva — o que falta e por que ainda não foi feito>",
+      "decision": "ADR-<NNN>"
     }
   ],
-  "excecoesCve": []
+  "exceptionsCve": []
 }
 ```
 
-`decisao` **tem** de apontar um `## ADR-<NNN>` que existe de verdade em `specs/adr/*.md` — escreva o ADR
+`decision` **tem** de apontar um `## ADR-<NNN>` que existe de verdade em `specs/adr/*.md` — escreva o ADR
 antes de declarar a exceção. Achado de escopo `root` (fiação, manifesto de projeto) usa o literal
 `"modulo": "(root)"`.
 

@@ -1,13 +1,13 @@
 {
-  "_comentario": "Cadeia de seguranca da api (specs/arquitetura/03-operacao.md §2.1). CORS nunca usa '*'.",
+  "_comment": "Cadeia de seguranca da api (specs/arquitetura/03-operacao.md §2.1). CORS nunca usa '*'.",
   "rateLimit": {
-    "janelaSegundos": 60,
-    "limiteLeitura": 120,
-    "limiteEscrita": 20
+    "windowSeconds": 60,
+    "readLimit": 120,
+    "writeLimit": 20
   },
   "cors": {
-    "origensPermitidas": [],
-    "metodos": [
+    "allowedOrigins": [],
+    "methods": [
       "GET",
       "POST",
       "PATCH",

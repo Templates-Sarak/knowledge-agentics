@@ -29,9 +29,9 @@ export function securityHeaders(config) {
 export function cors(config) {
   return (req, res, next) => {
     const origem = req.headers.origin;
-    if (typeof origem === 'string' && config.origensPermitidas.includes(origem)) {
+    if (typeof origem === 'string' && config.allowedOrigins.includes(origem)) {
       res.setHeader('access-control-allow-origin', origem);
-      res.setHeader('access-control-allow-methods', config.metodos.join(', '));
+      res.setHeader('access-control-allow-methods', config.methods.join(', '));
     }
     next();
   };
@@ -42,19 +42,19 @@ export function rateLimit(config) {
   const janelas = new Map();
 
   return (req, res, next) => {
-    const limite = req.method === 'GET' ? config.limiteLeitura : config.limiteEscrita;
+    const limite = req.method === 'GET' ? config.readLimit : config.writeLimit;
     const chave = `${req.ip ?? 'desconhecido'}:${req.method}`;
     const now = Date.now();
     const atual = janelas.get(chave);
 
-    if (atual === undefined || now - atual.inicio > config.janelaSegundos * 1000) {
+    if (atual === undefined || now - atual.inicio > config.windowSeconds * 1000) {
       janelas.set(chave, { inicio: now, contagem: 1 });
       next();
       return;
     }
     atual.contagem += 1;
     if (atual.contagem > limite) {
-      res.setHeader('retry-after', String(config.janelaSegundos));
+      res.setHeader('retry-after', String(config.windowSeconds));
       next(new ErroApi('LIMITE_EXCEDIDO', 'limite de requisicoes excedido'));
       return;
     }

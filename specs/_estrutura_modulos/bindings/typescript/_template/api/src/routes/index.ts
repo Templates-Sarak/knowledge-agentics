@@ -20,14 +20,14 @@ interface Opcoes {
 /** Paginacao validada na borda, com padrao e teto vindos de config/api.json. */
 function readPagination(query: Record<string, unknown>, config: ConfiguracaoModulo): [number, number] {
   const pagina = Number(query['pagina'] ?? 1);
-  const tamanho = Number(query['tamanho'] ?? config.api.paginaTamanhoPadrao);
+  const tamanho = Number(query['tamanho'] ?? config.api.defaultPageSize);
   if (!Number.isInteger(pagina) || pagina < 1) {
     throw new ErroApi('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
   }
-  if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.paginaTamanhoMaximo) {
+  if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.maxPageSize) {
     throw new ErroApi(
       'VALIDACAO',
-      `parametro "tamanho" deve estar entre 1 e ${config.api.paginaTamanhoMaximo}`,
+      `parametro "tamanho" deve estar entre 1 e ${config.api.maxPageSize}`,
     );
   }
   return [pagina, tamanho];
@@ -125,7 +125,7 @@ async function create(
   const entrada = readBody(corpo);
   const registro = buildRecord(
     entrada as { titulo: string; status?: string },
-    config.dominio.statusValidos,
+    config.dominio.validStatuses,
     deps.geradorId.hash(),
     deps.relogio.now(),
   );

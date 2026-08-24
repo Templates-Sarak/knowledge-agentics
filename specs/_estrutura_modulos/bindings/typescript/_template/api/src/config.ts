@@ -8,15 +8,15 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 export interface ConfigApi {
-  paginaTamanhoPadrao: number;
-  paginaTamanhoMaximo: number;
-  corpoMaximoKb: number;
-  nivelLog: 'debug' | 'info' | 'warn' | 'error';
+  defaultPageSize: number;
+  maxPageSize: number;
+  maxBodyKb: number;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
 }
 
 export interface ConfigSeguranca {
-  rateLimit: { janelaSegundos: number; limiteLeitura: number; limiteEscrita: number };
-  cors: { origensPermitidas: string[]; metodos: string[] };
+  rateLimit: { windowSeconds: number; readLimit: number; writeLimit: number };
+  cors: { allowedOrigins: string[]; methods: string[] };
   headers: { hsts: boolean; noSniff: boolean; frameDeny: boolean; referrerPolicy: string };
 }
 
@@ -41,7 +41,7 @@ export interface ConfiguracaoModulo {
   raiz: string;
   manifesto: Manifesto;
   api: ConfigApi;
-  dominio: { statusValidos: string[] };
+  dominio: { validStatuses: string[] };
   seguranca: ConfigSeguranca;
   portas: Record<string, string>;
   textos: Record<string, string>;
@@ -147,7 +147,7 @@ export function loadConfiguration(raiz: string = findRootModule()): Configuracao
     raiz,
     manifesto,
     api: readJson<ConfigApi>(raiz, 'config/api.json'),
-    dominio: readJson<{ statusValidos: string[] }>(raiz, 'config/domain.json'),
+    dominio: readJson<{ validStatuses: string[] }>(raiz, 'config/domain.json'),
     seguranca: readJson<ConfigSeguranca>(raiz, 'config/security.json'),
     portas: readJson<Record<string, string>>(raiz, 'config/ports.json'),
     textos: readJson<Record<string, string>>(raiz, 'config/texts.json'),

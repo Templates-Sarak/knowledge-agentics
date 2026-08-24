@@ -348,29 +348,29 @@ function idsDeAdrDeclarados(raizProjeto) {
 }
 
 /**
- * Sem `decisao`, sem forma de ADR (`ADR-NNN`), ou ADR que não existe em `specs/adr/`: invalida.
- * Nome `porqueInvalida` de propósito — `excecao.motivo` já é o campo do USUÁRIO (por que a exceção
+ * Sem `decision`, sem forma de ADR (`ADR-NNN`), ou ADR que não existe em `specs/adr/`: invalida.
+ * Nome `porqueInvalida` de propósito — `excecao.reason` já é o campo do USUÁRIO (por que a exceção
  * existe); reusar o nome sobrescreveria esse campo no spread abaixo.
  */
 function porqueInvalida(decisao, idsValidos) {
-  if (!decisao) return 'sem campo "decisao"';
-  if (!PADRAO_ID_ADR.test(decisao)) return `"decisao" nao tem a forma "ADR-NNN": "${decisao}"`;
+  if (!decisao) return 'sem campo "decision"';
+  if (!PADRAO_ID_ADR.test(decisao)) return `"decision" nao tem a forma "ADR-NNN": "${decisao}"`;
   if (!idsValidos.has(decisao)) return `"${decisao}" nao existe em specs/adr/`;
   return null;
 }
 
-/** Exceções nominais ratificadas (specs/arquitetura/04-regras.md §6). `decisao` precisa resolver a
+/** Exceções nominais ratificadas (specs/arquitetura/04-regras.md §6). `decision` precisa resolver a
  * um ADR de verdade em `specs/adr/` — string qualquer não basta (era o fail-open). */
 export function carregarExcecoes(raizProjeto) {
   const caminho = join(raizProjeto, 'config', 'compliance.json');
   if (!existsSync(caminho)) return { validas: [], invalidas: [] };
   try {
-    const { excecoes = [] } = JSON.parse(lerTexto(caminho));
+    const { exceptions: excecoes = [] } = JSON.parse(lerTexto(caminho));
     const idsValidos = idsDeAdrDeclarados(raizProjeto);
     const validas = [];
     const invalidas = [];
     for (const excecao of excecoes) {
-      const porque = porqueInvalida(excecao.decisao, idsValidos);
+      const porque = porqueInvalida(excecao.decision, idsValidos);
       if (porque === null) validas.push(excecao);
       else invalidas.push({ ...excecao, porqueInvalida: porque });
     }

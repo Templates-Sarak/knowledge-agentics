@@ -248,8 +248,8 @@ export default [
       const cors = ctx.configs.security.valor?.cors;
       if (cors === undefined) return [];
       // `*` devolve o recurso para QUALQUER origem. Origem se declara, uma a uma.
-      if ((cors.origensPermitidas ?? []).includes('*')) {
-        return ['config/security.json: cors.origensPermitidas contem "*" — origem e DECLARADA, nunca aberta'];
+      if ((cors.allowedOrigins ?? []).includes('*')) {
+        return ['config/security.json: cors.allowedOrigins contem "*" — origem e DECLARADA, nunca aberta'];
       }
       return [];
     },

@@ -17,8 +17,8 @@ modules/catalogo/
 ├── module.json              id, role, data, ports, consumes, sensitiveFields…
 ├── contract/openapi.yaml    a FONTE do contrato — o código segue
 ├── config/
-│   ├── api.json             { "paginaTamanhoMaximo": 100 }
-│   ├── domain.json          { "statusValidos": ["rascunho","vigente"] }
+│   ├── api.json             { "maxPageSize": 100 }
+│   ├── domain.json          { "validStatuses": ["rascunho","vigente"] }
 │   ├── security.json        rate limit, CORS declarado, headers
 │   ├── ports.json           { "repositorio": "postgres" }  ← único lugar com nome de fornecedor
 │   └── texts.json           rótulos exibidos ao usuário

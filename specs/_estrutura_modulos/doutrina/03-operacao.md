@@ -194,7 +194,7 @@ consegue afirmar (04-regras.md §7.2).
 
 ## 7.2 Cobertura — por que fica de fora do local, e onde ela mora
 
-`config/verification.json:cobertura.minima` é política real, com verificador real — mas o verificador
+`config/verification.json:coverage.minimum` é política real, com verificador real — mas o verificador
 não é o gate, não é o `verificar`/`verify.py`, e não é o hook local. É **CI**, e a decisão foi
 **medida**, não suposta: `npm run cobertura` de um módulo recém-gerado, do zero, levou **~23s** — e a
 fatia que domina não é rodar o teste (**~0,5s**), é subir o ambiente de cobertura (**~17s** de
@@ -230,10 +230,10 @@ externo, de propósito — é o que o mantém puro e chamável de dentro de um h
 | Comando | O que faz | Fail-closed? |
 |---|---|---|
 | `npm run ci:seguranca` / `python verify.py --seguranca` | `.env` real versionado (`git ls-files`) + segredo reconhecido no delta desde `--desde` (default `HEAD~1`) | **Sim** — git mudo ou ref inválida REPROVA, nunca "sem problema" |
-| `npm run ci:dependencias` / `python verify.py --dependencias` | `npm audit --json` / `pip-audit --format=json` contra `config/verification.json:dependencias.severidadeMinima` | Não no sentido de "furo" — ferramenta ausente é **parte do pacote** (npm embute audit; `pip-audit` é `optional-dependencies`), então "ausente" deixou de ser um caso a tolerar: reprova como qualquer outra ferramenta que falta (lei 7) |
+| `npm run ci:dependencias` / `python verify.py --dependencias` | `npm audit --json` / `pip-audit --format=json` contra `config/verification.json:dependencies.minimumSeverity` | Não no sentido de "furo" — ferramenta ausente é **parte do pacote** (npm embute audit; `pip-audit` é `optional-dependencies`), então "ausente" deixou de ser um caso a tolerar: reprova como qualquer outra ferramenta que falta (lei 7) |
 
 **"Ferramenta ausente REPROVA" matou o fail-open do audit.** A única válvula que sobra é uma exceção
-**nominal, ratificada E DATADA** — `config/compliance.json:excecoesCve` (§8) — para o caso real que
+**nominal, ratificada E DATADA** — `config/compliance.json:exceptionsCve` (§8) — para o caso real que
 resta: um CVE novo sem correção disponível, que deixaria vermelho um build que ontem estava verde sem
 ninguém ter tocado em código.
 
@@ -295,9 +295,9 @@ comando do template os cobre.
 `config/compliance.json` na raiz do projeto aceita exceção **nominal**, em duas listas com a mesma
 disciplina e donos diferentes:
 
-- **`excecoes`** — ao catálogo do gate: módulo + regra + motivo + `decisao` (ADR).
-- **`excecoesCve`** — a `tools/ci-dependencies.mjs` (não é regra, não roda no gate): id do
-  CVE/GHSA + motivo + `decisao` (ADR) **e `expira`** (`YYYY-MM-DD`). A exceção de CVE tem um jeito a
+- **`exceptions`** — ao catálogo do gate: módulo + regra + motivo + `decision` (ADR).
+- **`exceptionsCve`** — a `tools/ci-dependencies.mjs` (não é regra, não roda no gate): id do
+  CVE/GHSA + motivo + `decision` (ADR) **e `expires`** (`YYYY-MM-DD`). A exceção de CVE tem um jeito a
   mais de não valer que a de regra: **expirada também não vale**, e volta a reprovar sozinha, sem
   ninguém precisar editar nada — é o que impede um "risco aceito" de virar permanente por esquecimento.
 

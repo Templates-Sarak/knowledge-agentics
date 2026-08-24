@@ -21,13 +21,13 @@ import { acharRaizProjeto, carregarContexto, carregarExcecoes, carregarProjeto, 
 import { ALVO_RAIZ, analisar } from './engine.mjs';
 
 function aplicarExcecoes(achados, excecoes) {
-  const perdoada = (a) => excecoes.validas.some((e) => e.modulo === a.modulo && e.regra === a.regra);
+  const perdoada = (a) => excecoes.validas.some((e) => e.module === a.modulo && e.rule === a.regra);
   return achados.filter((a) => !perdoada(a));
 }
 
 function imprimirHumano(achados, alvos, excecoesInvalidas) {
   for (const invalida of excecoesInvalidas) {
-    process.stdout.write(`  ! excecao invalida (${invalida.modulo}/${invalida.regra}): ${invalida.porqueInvalida}\n`);
+    process.stdout.write(`  ! excecao invalida (${invalida.module}/${invalida.rule}): ${invalida.porqueInvalida}\n`);
   }
   for (const alvo of alvos) {
     const meus = achados.filter((a) => a.modulo === alvo);

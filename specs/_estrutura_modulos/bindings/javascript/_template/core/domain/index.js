@@ -55,7 +55,7 @@ function requireTitle(titulo) {
 function requireStatus(status, statusValidos) {
   const padrao = statusValidos[0];
   if (padrao === undefined) {
-    throw new ErroDeValidacao('status', 'config/domain.json:statusValidos esta vazio');
+    throw new ErroDeValidacao('status', 'config/domain.json:validStatuses esta vazio');
   }
   if (status === undefined) return padrao;
   if (typeof status !== 'string' || !statusValidos.includes(status)) {

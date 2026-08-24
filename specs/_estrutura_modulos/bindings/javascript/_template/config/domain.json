@@ -1,6 +1,6 @@
 {
-  "_comentario": "Parametros de NEGOCIO. Vocabulario fechado nunca vira literal no codigo.",
-  "statusValidos": [
+  "_comment": "Parametros de NEGOCIO. Vocabulario fechado nunca vira literal no codigo.",
+  "validStatuses": [
     "rascunho",
     "ativo",
     "encerrado"

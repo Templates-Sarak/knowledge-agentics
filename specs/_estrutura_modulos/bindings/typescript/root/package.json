@@ -27,7 +27,7 @@
     "ci:lint": "eslint . -f json -o relatorios/lint.json",
     "//ci:seguranca": "So CI, FAIL-CLOSED (03-operacao.md §8): .env versionado (git ls-files) + segredo no delta desde --desde (default HEAD~1). Nao entra no pre-commit/verify — precisa de git, e o estagio 0 e sobre o REPOSITORIO, nao sobre o codigo local.",
     "ci:seguranca": "node tools/ci-security.mjs",
-    "//ci:dependencias": "So CI: npm audit --json contra config/verification.json:dependencias.severidadeMinima. Excecao de CVE nominal+datada em config/compliance.json:excecoesCve.",
+    "//ci:dependencias": "So CI: npm audit --json contra config/verification.json:dependencies.minimumSeverity. Excecao de CVE nominal+datada em config/compliance.json:exceptionsCve.",
     "ci:dependencias": "node tools/ci-dependencies.mjs",
     "//formato": "Forma. `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.",
     "formato": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs}\"",

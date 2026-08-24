@@ -147,7 +147,7 @@ Ordem, e nenhuma delas espera pelo passo 5:
 3. **Confira antes se o alvo proíbe exceção** própria em `compliance.json` (medido: campanha
    auto-reprovada por norma do prompt de revisor — se proibir, é portão de HITL). Rode
    `node tools/gate/validate.mjs --todos` e **deixe vermelho honesto**; converta cada violação em exceção
-   nominal (`modulo`+`regra`+`motivo`+`decisao` com ADR **real**) — a métrica é o número de exceções.
+   nominal (`module`+`rule`+`reason`+`decision` com ADR **real**) — a métrica é o número de exceções.
 4. Ponha a área ainda-não-migrada **fora de escopo de lint/tipos, declarada e encolhendo** (o
    `eslint`/`tsc`/`prettier` não têm dívida — §7 abaixo); "caminhos ignorados" é a segunda métrica.
 5. Decida nome de cada módulo candidato (kebab-case; o script sugere), prefixo de tabela e chaves de
@@ -236,7 +236,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
   ausente, porque é autoritativa. `specs/specs/` nasce vazia, e isso é correto.
 - **NÃO** escreva prompt de execução/correção/conclusão em arquivo — só na conversa; o resto vai na §4.
 - **NUNCA** trabalhe em `main` — a campanha roda em branch; o commit é sempre do usuário.
-- **NUNCA** registre exceção em `compliance.json` sem `decisao` apontando um ADR **real** em `specs/adr/`
+- **NUNCA** registre exceção em `compliance.json` sem `decision` apontando um ADR **real** em `specs/adr/`
   — o gate rejeita a própria exceção sem esse link, e um ADR inexistente aqui é achado, não conserto.
 - **NUNCA** aninhe o template instalado numa subpasta — regras de escopo `root`, `core.hooksPath` e a
   cascata `ENV_ROOT` exigem a raiz de verdade.
