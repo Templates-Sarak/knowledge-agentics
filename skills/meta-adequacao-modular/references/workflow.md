@@ -8,7 +8,8 @@ caminho comum sozinho.
 ```json
 {
   "fase": "A" | "B" | "EM_ANDAMENTO",
-  "caminho": "sem-specs" | "com-specs",
+  "caminho": "sem-specs" | "specs-divergentes" | "com-specs",
+  "sinais_sdd": ["INDEX.md", "..."],
   "branch": {"atual": "main", "e_padrao": true, "arvore_suja": true | false | null},
   "template_instalado": {
     "estado": "nao-instalado" | "parcial" | "completo",
@@ -22,22 +23,25 @@ caminho comum sozinho.
   "modulos_candidatos": [
     {"pasta": "Propostas", "id_atual": "Propostas", "conforme": false, "id_sugerido": "propostas"}
   ],
-  "modulos_origem": "varredura" | "flag"
+  "modulos_origem": "varredura" | "flag",
+  "equivalentes_suspeitos": {"gate": ["scripts/validar-modulos.mjs"], "portas": ["packages/portas"]}
 }
 ```
 
 | Campo | O que significa | O que fazer com ele |
 |---|---|---|
 | `fase` | ver `SKILL.md` — mecânico, a partir de `specs/plan/*xx-*.md` e seus `status` | `EM_ANDAMENTO` → pare, aponte `/code3-adequar`/a plan pendente, não continue |
-| `caminho` | `com-specs` exige **os dois**: `specs/00-indice.md` e a pasta `specs/plan/` | decide se os passos 1–2 são no-op ou trabalho real |
+| `caminho` | `com-specs` exige **os dois**: `specs/00-indice.md` e a pasta `specs/plan/`. Sem os dois, mas com algum nome de `sinais_sdd` achado sob `specs/` → `specs-divergentes` (tem estrutura SDD, não a canônica). Nenhum dos dois → `sem-specs` | `specs-divergentes` → **não** instale a árvore `_estrutura_base/` por cima — investigue o que já existe antes de seguir o Passo 2; só `sem-specs` é de fato "instale do zero" |
+| `sinais_sdd` | nomes de `SINAIS_SDD` (`INDEX.md`, `00-indice.md`, `plan`, `adr`, `arquitetura`, …) achados como entrada de `specs/` do alvo — só relevante quando `caminho != "com-specs"` | é o que fundamenta `specs-divergentes`; confira cada nome contra o que a spec canônica esperaria no lugar |
 | `branch` | lido de `.git/HEAD` (sem chamar `git`); `arvore_suja` vem de `git status --porcelain` | `e_padrao: true` → **pare**, vá ao portão de branch. `atual` vazio/`"(destacado)"` e `arvore_suja: null` significam **não sei** — pergunte, não presuma |
-| `template_instalado` | **lido antes do Passo 3.** As sete peças do aparato (`tools/gate/validate.mjs`, `project.json`, `packages/ports`, `adapters/memory`, `config`, `.githooks`, `modules`) — quantas existem já | `nao-instalado` → Passo 3 instala tudo; `parcial` → instala só `faltando`; `completo` + sem candidatos → **pare**, nada a planejar |
+| `template_instalado` | **lido antes do Passo 3.** As oito peças do aparato (`tools/gate/validate.mjs`, `tools/create-module.mjs`, `project.json`, `packages/ports`, `adapters/memory`, `config`, `.githooks`, `modules/_template`) — quantas existem já | `nao-instalado` → Passo 3 instala tudo; `parcial` → instala só `faltando`; `completo` + sem candidatos → **pare**, nada a planejar |
 | `colisao_raiz` | `package.json`/`pyproject.toml`/`.gitignore` que colidiriam com o scaffold — **só reportado quando `template_instalado.estado == "nao-instalado"`** (senão são o próprio scaffold do template, não legado) | HITL — nunca `--forcar` sem autorização; mesclar `scripts`/`workspaces` na mão |
 | `geracao_antiga` | achou `ferramentas/`/`modulos/`/`projeto.json` — nomes de **duas renomeações atrás do próprio template** | isto é migração de versão do template, **não** adequação de legado puro — não confunda os dois diagnósticos |
 | `workspaces_legado` | `workspaces` declarado no `package.json`, **menos** as entradas que já são o trio canônico do template (`modules/[a-z]*`, `packages/*`, `adapters/*`) — só sobra o que é legado de verdade | mesclar é do usuário (armadilha #2 abaixo) |
 | `hooks_legado` | achou `.husky/` ou `husky`/`lint-staged` no `package.json` | terceiro caso de composição de `pre-commit` (armadilha #3) |
 | `modulos_candidatos` | um por pasta **descoberta** na raiz de módulos (`modules/`, ou `modulos/` da geração antiga) — ou, se `--modulos` veio, uma por pasta informada | vira a tabela do portão central de HITL — `id_sugerido` é ponto de partida, não decisão fechada |
 | `modulos_origem` | `varredura` (descoberto) ou `flag` (informado em `--modulos`) | separa *"não há candidato"* de *"ninguém apontou"* — antes os dois eram o mesmo `[]`, e a skill perdia o insumo do portão central sem nada acusar |
+| `equivalentes_suspeitos` | para cada marcador em `template_instalado.faltando`, os caminhos alternativos (vocabulário fechado — nomes traduzidos, sinônimos comuns) que existem de fato no alvo | insumo de HITL: **não** afirma equivalência e **não** muda `template_instalado` nem `faltando` — é "vá olhar aqui", pergunte ao usuário se aquilo já faz o papel da peça canônica (ver § 3, "O que `faltando` não sabe") |
 
 **Por que `colisao_raiz`/`workspaces_legado` filtram e não apenas anotam.** Um projeto gerado por
 `create-project.mjs` + `create-module.mjs` — 100% conforme — tinha `colisao_raiz: [".gitignore",
@@ -46,13 +50,6 @@ deste script: os dois eram os próprios arquivos do template, apontando o usuár
 caro (`--forcar`) sobre um repositório que não precisava de nada. Medido reproduzindo exatamente
 `create-project.mjs --binding typescript` + `create-module.mjs catalogo --role domain` e rodando o
 diagnóstico em cima.
-
-**Limite conhecido, declarado — o marcador `modules_raiz`.** Dos sete marcadores de `template_instalado`,
-`modules_raiz` (a pasta `modules/` em si) é o menos específico: um legado que por acaso já tenha uma pasta
-de topo chamada `modules/` por motivo próprio sai de `"nao-instalado"` só por causa dele, o que já basta
-para `colisao_raiz` parar de acusar `package.json`/`.gitignore` mesmo que nada mais do template esteja ali.
-Não há correção barata sem mudar o critério de "parcial" (por exemplo, exigir 2+ marcadores) — troca de
-critério que não foi pedida e desloca o problema para outro conjunto de casos. Registrado, não escondido.
 
 O script **não decide topologia** (isso é `code-diagnostico`/`code1-auditar` — `modules/*/module.json` ·
 `backend/*|frontend/*|src/modules/*|apps/*|packages/*` · por-camadas · monólito simples). A descoberta olha
