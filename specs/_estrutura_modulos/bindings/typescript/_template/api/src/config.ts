@@ -2,7 +2,7 @@
 //
 // Regras que este arquivo materializa:
 //   - SO ele toca o ambiente. Qualquer outro arquivo lendo env e aviso do gate.
-//   - Cascata (ADR-004): processo > .env do modulo > .env apontado por ENV_RAIZ > default de tunable.
+//   - Cascata (ADR-004): processo > .env do modulo > .env apontado por ENV_ROOT > default de tunable.
 //   - Falha rapida: env ou config ausente DERRUBA o boot. Nunca `?? 'http://localhost'`.
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
@@ -93,7 +93,7 @@ function applyWithoutOverwrite(pares: Array<[string, string]>): void {
 
 /**
  * Resolve o `.env` em cascata (ADR-004, specs/adr/000-decisoes-do-template.md).
- * O `.env` do modulo aponta para o da raiz por `ENV_RAIZ`. Na extracao, apaga-se essa linha e
+ * O `.env` do modulo aponta para o da raiz por `ENV_ROOT`. Na extracao, apaga-se essa linha e
  * os valores passam a viver localmente — sem uma linha de codigo mudar.
  */
 function resolveEnvironment(raizModulo: string): void {
@@ -101,14 +101,14 @@ function resolveEnvironment(raizModulo: string): void {
   if (!existsSync(local)) return;
 
   const pares = readPairsEnv(local);
-  applyWithoutOverwrite(pares.filter(([chave]) => chave !== 'ENV_RAIZ'));
+  applyWithoutOverwrite(pares.filter(([chave]) => chave !== 'ENV_ROOT'));
 
-  const ponteiro = pares.find(([chave]) => chave === 'ENV_RAIZ');
+  const ponteiro = pares.find(([chave]) => chave === 'ENV_ROOT');
   if (ponteiro === undefined) return;
 
   const alvo = isAbsolute(ponteiro[1]) ? ponteiro[1] : resolve(raizModulo, ponteiro[1]);
   if (!existsSync(alvo)) {
-    throw new Error(`[config] ENV_RAIZ aponta para "${alvo}", que nao existe`);
+    throw new Error(`[config] ENV_ROOT aponta para "${alvo}", que nao existe`);
   }
   applyWithoutOverwrite(readPairsEnv(alvo));
 }

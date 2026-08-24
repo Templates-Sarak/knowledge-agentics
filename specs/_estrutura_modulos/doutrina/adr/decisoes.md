@@ -491,3 +491,108 @@ proíbe.
 - **Onda 3** — vocabulário de portas. **Depende** da seção "Superseding o `ADR-010`" acima e dos três
   lugares que `ports-vocabulary.mjs` obriga a concordar (dois gerados por `generate-port-schemas.mjs
   --conferir`, o terceiro — `packages/ports/index.{ts,js,py}` — mantido à mão nos três bindings).
+
+---
+
+## ADR-014 — O contrato de renomeação do ADR-013 fica completo: árvore em português que a tabela não listava
+
+**Status:** 🟢 Aceito
+
+**Contexto.** O `ADR-013` entregou uma tabela de 14 linhas e a chamou de **contrato** das três ondas.
+Medindo a Onda 2 antes de escrevê-la, apareceram artefatos de **árvore em português que a tabela não
+lista** — mesma natureza das linhas que ela já tem, mesma régua do `ADR-009`, ausentes por omissão, não por
+decisão. O `ADR-013` está `🟢 Aceito`, e a regra deste arquivo é literal: *"imutável depois de aceita.
+Mudar de ideia não é editar a decisão antiga — é escrever uma nova que a substitui."* Isto não é mudar de
+ideia: é **completar**. O `ADR-013` **não** é marcado `🔴 Substituída` — ele estava incompleto, não errado,
+e este ADR diz onde.
+
+**Decisão.**
+
+**1. As linhas que entram no contrato.** Varredura desta conversa (`find bindings -type f -printf "%f\n" |
+sort -u`; `ls tools tools/gate`; `find tools -type f -printf "%f\n" | sort -u`) contra as 14 linhas do
+`ADR-013`. Cinco entram — três previstas, duas achadas na varredura de `tools/gate/schemas/`:
+
+| Português (hoje) | Inglês (alvo) | Onda | Por quê |
+|---|---|---|---|
+| `api/src/erros.{ts,js,py}` | `errors.*` | 2a | nome de arquivo do esqueleto — mesma régua de `composicao.*` → `composition.*` |
+| `api/src/rotas.py` | `routes.py` | 2a | **o template já se contradiz consigo mesmo**: TypeScript e JavaScript já entregam `api/src/routes/` em inglês; só o binding Python ficou com o nome em português para o mesmo conceito |
+| `root/verificar.py` | `verify.py` | 2a | idem: o `package.json` de TS/JS já chama o comando `"verify"` (script npm, `bindings/typescript/root/package.json`); Python, sem esse mecanismo, materializou o arquivo com o nome em português |
+| `tools/gate/schemas/config-seguranca.schema.json` | `config-security.schema.json` | 2a | schema de `config/seguranca.json` — a tabela do `ADR-013` renomeia o JSON de config mas não cita o par `config-<assunto>.schema.json` que o valida |
+| `tools/gate/schemas/config-textos.schema.json` | `config-texts.schema.json` | 2a | idem, par de `config/textos.json` |
+
+As duas últimas **não** estavam previstas no prompt desta conversa — vieram da varredura de
+`tools/gate/schemas/`, que o `ADR-013` só cobre para `conformidade`/`verificacao` (entre parênteses na
+tabela) e nunca para as cinco de `config-<assunto>.schema.json` (`CONFIGS = ['api', 'domain', 'seguranca',
+'ports', 'textos']`, replicada em três arquivos — ver item 3).
+
+O resto da árvore foi conferido e **não** entra:
+- `database/migrations/0001-cria-metadados.sql` — migration nomeia mudança de **dados**; `04-regras.md`
+  §3.1 fixa `NNNN-verbo-objeto.sql` com exemplo em português. É conteúdo (`ADR-009` linha 10), não árvore.
+- os ~29 `.mjs` de `tools/` já estão em inglês; os **símbolos** dentro deles ficam em português (linha 4) —
+  inclusive `RAIZ_TEMPLATE`/`RAIZ_FERRAMENTA`/`RAIZ_BASE`, que a Onda 1 deliberadamente não tocou.
+- `config-api.schema.json`, `config-domain.schema.json`, `config-ports.schema.json` — já inglês.
+- `mappers.py`, `middlewares.py`, `logger.{ts,js,py}`, `migrations.{mjs,py}` e o resto do esqueleto
+  (`config.*`, `README.md`, `module.json`, `project.json`, `openapi.yaml`, `.env.example`, testes, front) —
+  já inglês.
+
+**2. Os três ids de regra que a Onda 2 não pode tocar.** `verificacao-declarada`, `composicao-descoberta`,
+`conformidade-declarada` — ids do catálogo, português por `ADR-009` linha 6, apontados por exceções de
+`config/conformidade.json`. Renomear o id quebra a exceção: o gate rejeita exceção cujo `regra` não existe.
+Só a **descrição** deles (o texto que cita `config/seguranca.json` etc.) muda.
+
+O confound gêmeo, medido: `tools/gate/validate.mjs:90` — `const rotulo = opcoes.extracao ? 'extracao' :
+'conformidade'` — é **rótulo de saída do gate**, português por `ADR-009` linha 7, na mesma palavra que, dez
+linhas acima na tabela deste contrato, nomeia um arquivo (`conformidade.json` → `compliance.json`). A Onda 2
+classifica **ocorrência a ocorrência**, nunca por palavra — a mesma disciplina que a Onda 1 já seguiu para
+separar `RAIZ_TEMPLATE` (símbolo) de `RAIZ_API_PORT` (chave) dentro do mesmo arquivo.
+
+**3. Referências por basename que o rename de arquivo não alcança.**
+- `['api', 'domain', 'seguranca', 'ports', 'textos']` — literal em `tools/gate/context.mjs:155`,
+  `tools/gate/rules/configuration.mjs:31` e `tools/gate/rules/structure.mjs:44`;
+- `carregarEsquema('verificacao')` e `carregarEsquema('conformidade')` —
+  `tools/gate/rules/configuration.mjs:457,478`;
+- `m.config('seguranca', …)` — fixtures de `tools/gate/tests/cases.mjs`.
+
+Arquivo renomeado sem essas três listas atualizadas é gate que não acha a própria config — `config-valida`/
+`schema-config` reprovariam um projeto conforme. Os gate tests acusam isso, que é a rede fazendo o trabalho
+dela; a Onda 2a evita nascer vermelha sabendo disso de antemão.
+
+**4. A Onda 2 se parte em duas.** Mudança de plano em relação ao `ADR-013`, com o motivo medido: os tokens
+da Onda 2 são **substantivos comuns do português** (`seguranca`, `textos`, `conformidade`, `verificacao`,
+`composicao`, `erros`, `rotas`, `verificar`) — ao contrário de `RAIZ_`/`ENV_RAIZ`, que não colidiam com
+nenhuma outra palavra do vocabulário —, e os confounds (item 2) moram **dentro dos mesmos arquivos** que os
+renomeios tocam. Duas conversas, dois eixos independentes:
+- **Onda 2a** — nomes de arquivo (`security.json`, `texts.json`, `compliance.json`, `verification.json`, os
+  dois `*.schema.json` deste ADR, `composition.*`, mais as três linhas novas do item 1) e toda referência a
+  eles, **inclusive por basename** (item 3).
+- **Onda 2b** — chaves **dentro** dos JSONs, com a fronteira chave×valor que o `ADR-013` já fixou
+  (`texts.json`/`domain.json`: chave inglês, valor português).
+
+O repositório fica **coerente entre as duas**: um arquivo chamado `security.json` cujas chaves ainda estão
+em português não quebra nada — só ainda não terminou. Definição de pronto de cada uma continua a do
+`ADR-013`: gate tests e self-tests verdes.
+
+**5. O que fica de fora, e por quê.**
+
+**O marcador `<modulo>`/`<MODULO>`/`<Modulo>`/`<modulo_snake>` — adiado, deliberadamente.** Não é um
+artefato, é um **eixo transversal**: aparece em nome de pasta, nome de package, código, config e
+`.env.example`, e `tools/gate/context.mjs` o substitui **em memória** por um id sintético para validar o
+molde como módulo real (`ADR-006`). Mexer nele dentro de qualquer onda contamina o isolamento de eixo que
+faz cada onda ser migrável isoladamente por um alvo — a consequência nº 1 do `ADR-013`. Ele volta como onda
+própria ou ADR próprio, com decisão escrita; enquanto isso, a divergência entre o exemplo do `ADR-009`
+linha 9 (`<MODULE>_DB_URL`) e o marcador do template (`<MODULO>_`) fica **declarada aqui**, não escondida.
+
+**`tools/sync-env.mjs:56`** — `SECAO_DA_RAIZ = '# --- RAIZ: a fiacao …'`. O **símbolo** fica (linha 4, é
+ferramental de `tools/`), mas o **valor** é o cabeçalho escrito no `.env`/`.env.example` gerado — texto de
+saída, português por `ADR-009` linha 7. Depois da Onda 1, ele já exibe "RAIZ:" acima de chaves `ROOT_*`: o
+rótulo perdeu o referente. Fica para a **Onda 2a** corrigir o valor da string — não é rename de arquivo nem
+de chave, é o mesmo tipo de ajuste que a Onda 1 já fez em comentários e mensagens.
+
+**Consequências.**
+1. **O contrato de renomeação passa a ser `ADR-013` + `ADR-014` lidos juntos** — quem executar uma onda lê
+   os dois, e nenhuma onda renomeia o que não estiver num deles. É o que impede a próxima onda de
+   "descobrir" mais um arquivo e decidir sozinha.
+2. **A Onda 2 do `ADR-013` vira Onda 2a + Onda 2b**, cada uma com sua própria definição de pronto (gate
+   tests + self-tests verdes), sem alterar a Onda 1 (já executada) nem a Onda 3.
+3. **Os três ids do item 2 não mudam de nome** — qualquer exceção nominal já registrada em
+   `config/conformidade.json` contra eles continua válida depois das Ondas 2a/2b.

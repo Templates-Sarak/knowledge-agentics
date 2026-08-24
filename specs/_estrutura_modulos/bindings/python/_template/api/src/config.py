@@ -2,7 +2,7 @@
 
 Regras que este arquivo materializa:
   - SO ele toca o ambiente. Qualquer outro arquivo lendo env e aviso do gate.
-  - Cascata (ADR-004): processo > .env do modulo > .env apontado por ENV_RAIZ > default de tunable.
+  - Cascata (ADR-004): processo > .env do modulo > .env apontado por ENV_ROOT > default de tunable.
   - Falha rapida: env ou config ausente DERRUBA o boot. Nunca `os.getenv("X", "http://localhost")`.
 """
 
@@ -35,7 +35,9 @@ def find_root_module(partida: Path | None = None) -> Path:
         if atual.parent == atual:
             break
         atual = atual.parent
-    raise RuntimeError(f"[config] module.json nao encontrado a partir de {partida or Path.cwd()}")
+    raise RuntimeError(
+        f"[config] module.json nao encontrado a partir de {partida or Path.cwd()}"
+    )
 
 
 def _read_json(raiz: Path, relativo: str) -> Any:
@@ -43,9 +45,13 @@ def _read_json(raiz: Path, relativo: str) -> Any:
     try:
         return json.loads(caminho.read_text(encoding="utf-8-sig"))
     except OSError as causa:
-        raise RuntimeError(f'[config] nao foi possivel ler "{relativo}": {causa}') from causa
+        raise RuntimeError(
+            f'[config] nao foi possivel ler "{relativo}": {causa}'
+        ) from causa
     except json.JSONDecodeError as causa:
-        raise RuntimeError(f'[config] "{relativo}" nao e JSON valido: {causa}') from causa
+        raise RuntimeError(
+            f'[config] "{relativo}" nao e JSON valido: {causa}'
+        ) from causa
 
 
 def _read_pairs_env(caminho: Path) -> list[tuple[str, str]]:
@@ -68,7 +74,7 @@ def _apply_without_overwrite(pares: list[tuple[str, str]]) -> None:
 def _resolve_environment(raiz: Path) -> None:
     """Resolve o `.env` em cascata (ADR-004, specs/adr/000-decisoes-do-template.md).
 
-    O `.env` do modulo APONTA para o da raiz por `ENV_RAIZ`. Na extracao, apaga-se essa linha e
+    O `.env` do modulo APONTA para o da raiz por `ENV_ROOT`. Na extracao, apaga-se essa linha e
     os valores passam a viver localmente — sem uma linha de codigo mudar.
     """
     local = raiz / ".env"
@@ -76,15 +82,17 @@ def _resolve_environment(raiz: Path) -> None:
         return
 
     pares = _read_pairs_env(local)
-    _apply_without_overwrite([(c, v) for c, v in pares if c != "ENV_RAIZ"])
+    _apply_without_overwrite([(c, v) for c, v in pares if c != "ENV_ROOT"])
 
-    ponteiro = next((v for c, v in pares if c == "ENV_RAIZ"), None)
+    ponteiro = next((v for c, v in pares if c == "ENV_ROOT"), None)
     if ponteiro is None:
         return
 
-    alvo = Path(ponteiro) if Path(ponteiro).is_absolute() else (raiz / ponteiro).resolve()
+    alvo = (
+        Path(ponteiro) if Path(ponteiro).is_absolute() else (raiz / ponteiro).resolve()
+    )
     if not alvo.exists():
-        raise RuntimeError(f'[config] ENV_RAIZ aponta para "{alvo}", que nao existe')
+        raise RuntimeError(f'[config] ENV_ROOT aponta para "{alvo}", que nao existe')
     _apply_without_overwrite(_read_pairs_env(alvo))
 
 

@@ -31,11 +31,11 @@ import { BINDINGS, saidaDe } from '../../generate-lint-config.mjs';
 const CONFIGS = ['api', 'domain', 'seguranca', 'ports', 'textos'];
 
 /**
- * Chave de ambiente da RAIZ. `RAIZ_` é prefixo RESERVADO, e é o que a distingue da chave de módulo
+ * Chave de ambiente da RAIZ. `ROOT_` é prefixo RESERVADO, e é o que a distingue da chave de módulo
  * (`<MODULO>_*`, cobrada por `env-modulo`): sem convenção não há como uma regra dizer de quem é a
- * chave. O vocabulário já chamava a raiz assim — o `.env` do módulo aponta para ela por `ENV_RAIZ`.
+ * chave. O vocabulário já chamava a raiz assim — o `.env` do módulo aponta para ela por `ENV_ROOT`.
  */
-const CHAVE_DE_RAIZ = /\bRAIZ_[A-Z0-9_]+\b/g;
+const CHAVE_DE_RAIZ = /\bROOT_[A-Z0-9_]+\b/g;
 
 /**
  * URL literal. UMA implementação, e as duas regras que a usam são o mesmo defeito em dois
@@ -384,8 +384,8 @@ export default [
       const prefixo = (ctx.manifesto?.id ?? '').toUpperCase().replace(/-/g, '_');
       return lerParesEnv(arquivo.conteudo)
         .map(([chave]) => chave)
-        .filter((chave) => chave !== 'ENV_RAIZ' && !chave.startsWith(prefixo) && !chave.startsWith(`VITE_${prefixo}`))
-        .map((chave) => `.env do modulo contem "${chave}" — so ENV_RAIZ e chaves ${prefixo}_* sao aceitas`);
+        .filter((chave) => chave !== 'ENV_ROOT' && !chave.startsWith(prefixo) && !chave.startsWith(`VITE_${prefixo}`))
+        .map((chave) => `.env do modulo contem "${chave}" — so ENV_ROOT e chaves ${prefixo}_* sao aceitas`);
     },
   },
   {

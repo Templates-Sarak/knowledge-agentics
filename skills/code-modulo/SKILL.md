@@ -105,7 +105,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
   módulo — infraestrutura só por porta; o nome do provedor só aparece em `config/ports.json`.
 - **NUNCA** escreva rota antes do `contract/openapi.yaml` — código divergente da spec é erro de gate.
 - **NUNCA** declare `data.schema` como `public`, nem tabela sem o prefixo `<id>_`.
-- **NUNCA** ponha segredo no `.env` do módulo — ele só aceita `ENV_RAIZ` e chaves `<MODULO>_*`.
+- **NUNCA** ponha segredo no `.env` do módulo — ele só aceita `ENV_ROOT` e chaves `<MODULO>_*`.
 - **NUNCA** confirme um `consumes` sem checar ciclo: `A→B` e `B→A` reprova, e o conserto é redesenho.
 - **NÃO** use fallback de infraestrutura (`env['X'] ?? 'http://localhost'`) — falta de config **derruba o boot**.
 - **NÃO** devolva registro cru na resposta — a saída é montada campo a campo pelo mapeador.

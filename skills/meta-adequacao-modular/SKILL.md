@@ -143,7 +143,7 @@ Ordem, e nenhuma delas espera pelo passo 5:
    - `estado == "completo"` → **nada a instalar**; siga direto para o item 3 (o gate ainda roda, mesmo
      sem instalar nada — é a verificação, não a instalação, que nunca se pula).
    **Nunca aninhe numa subpasta** (regras de escopo `root` leem a raiz; `core.hooksPath` aceita um valor
-   só; `ENV_RAIZ=../../.env` quebra com um nível a mais).
+   só; `ENV_ROOT=../../.env` quebra com um nível a mais).
 3. **Confira antes se o alvo proíbe exceção** própria em `conformidade.json` (medido: campanha
    auto-reprovada por norma do prompt de revisor — se proibir, é portão de HITL). Rode
    `node tools/gate/validate.mjs --todos` e **deixe vermelho honesto**; converta cada violação em exceção
@@ -239,7 +239,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 - **NUNCA** registre exceção em `conformidade.json` sem `decisao` apontando um ADR **real** em `specs/adr/`
   — o gate rejeita a própria exceção sem esse link, e um ADR inexistente aqui é achado, não conserto.
 - **NUNCA** aninhe o template instalado numa subpasta — regras de escopo `root`, `core.hooksPath` e a
-  cascata `ENV_RAIZ` exigem a raiz de verdade.
+  cascata `ENV_ROOT` exigem a raiz de verdade.
 - **NÃO** escreva SQL de renomeação de tabela dentro de uma plan — roteie para `db-migrations`.
 - **NÃO** trate a área legada como "resolvida depois" sem declará-la em `config/conformidade.json` e no
   escopo do linter — dívida não declarada é dívida escondida.

@@ -225,9 +225,9 @@ function criarEnvLocal(destino, id) {
   const conteudo = [
     `# .env do modulo ${id} — NAO versionado (ADR-004).`,
     '# Este arquivo APONTA para o .env da raiz; o segredo real mora la, num lugar so.',
-    '# Na extracao: apague a linha ENV_RAIZ e preencha os valores aqui. Nenhum codigo muda.',
+    '# Na extracao: apague a linha ENV_ROOT e preencha os valores aqui. Nenhum codigo muda.',
     '',
-    'ENV_RAIZ=../../.env',
+    'ENV_ROOT=../../.env',
     '',
     `# Override local (dev). So chaves ${id.toUpperCase().replace(/-/g, '_')}_*.`,
     '',

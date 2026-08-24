@@ -486,9 +486,9 @@ export default [
      * O módulo cruza `sensitiveFields` com a projeção e o log (`sensivel-em-saida`), e a raiz não
      * tem esse campo: `project.json` declara `requiredEnv` e nada mais, com
      * `additionalProperties: false` fechando a porta de propósito. O sinal aqui é melhor, porque já
-     * está declarado: as chaves `RAIZ_*` do manifesto filtradas pelo MESMO vocabulário fechado de
-     * sufixo de credencial que `gateway-credencial` e `segredo-em-publico` usam. `RAIZ_JWT_SECRET` é
-     * segredo; `RAIZ_API_BASE_URL` não é, e não é acusada.
+     * está declarado: as chaves `ROOT_*` do manifesto filtradas pelo MESMO vocabulário fechado de
+     * sufixo de credencial que `gateway-credencial` e `segredo-em-publico` usam. `ROOT_JWT_SECRET` é
+     * segredo; `ROOT_API_BASE_URL` não é, e não é acusada.
      */
     id: 'segredo-em-log',
     nivel: 'erro',

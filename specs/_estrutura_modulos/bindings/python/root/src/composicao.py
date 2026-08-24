@@ -11,7 +11,7 @@ cada `web/` e build estatico do PROPRIO modulo, publicado por fora deste process
 importa daqui, e nada aqui conhece o dominio de modulo nenhum. Acrescentar um modulo nao pode
 exigir editar este arquivo.
 
-Uso, sempre da RAIZ do projeto (RAIZ_API_PORT no ambiente ou no `.env` da raiz):
+Uso, sempre da RAIZ do projeto (ROOT_API_PORT no ambiente ou no `.env` da raiz):
 
     python -m src.composicao              sobe o processo
     python -m src.composicao --autoteste  roda a prova interna das decisoes puras
@@ -243,7 +243,7 @@ def _read_pairs_env(caminho: Path) -> list[tuple[str, str]]:
 def _load_env_root(raiz: Path) -> None:
     """Carrega o `.env` UNICO da raiz (specs/arquitetura/00-arquitetura.md §5) no processo, sem
     sobrescrever o que ja veio de fora (mesma precedencia de ADR-004). E o unico lugar que toca
-    este arquivo: cada modulo, chamado daqui, ainda resolve o proprio `.env`/`ENV_RAIZ`, mas a
+    este arquivo: cada modulo, chamado daqui, ainda resolve o proprio `.env`/`ENV_ROOT`, mas a
     essa altura o processo ja tem tudo — a leitura dele so confirma o que ja esta la."""
     caminho = raiz / ".env"
     if not caminho.exists():
@@ -270,7 +270,7 @@ def start_system(raiz: Path) -> None:
     import uvicorn  # noqa: PLC0415
 
     _load_env_root(raiz)
-    porta = int(_env_required_root("RAIZ_API_PORT"))
+    porta = int(_env_required_root("ROOT_API_PORT"))
     app = build_system(raiz)
     uvicorn.run(app, port=porta)
 

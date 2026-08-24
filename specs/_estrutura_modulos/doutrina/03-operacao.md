@@ -123,7 +123,7 @@ fez um comando de extração "passar" sem nunca ter rodado um teste sequer.
 
 1. Copiar `modules/<modulo>/` para o repositório novo.
 2. Copiar os `adapters/<tec>` que ele declara e os `packages/` que ele usa.
-3. Recortar as chaves `<MODULO>_*` do `.env` da raiz para o `.env` do módulo, e **apagar a linha `ENV_RAIZ`**.
+3. Recortar as chaves `<MODULO>_*` do `.env` da raiz para o `.env` do módulo, e **apagar a linha `ENV_ROOT`**.
 4. Substituir os gateways por chamadas à URL pública dos módulos que ficaram.
 5. Copiar `specs/arquitetura/`, `specs/adr/000-decisoes-do-template.md` e `tools/` — a lei e a
    verificabilidade viajam junto.

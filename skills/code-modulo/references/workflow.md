@@ -141,7 +141,7 @@ node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> 
 ```
 
 O script copia o molde do binding, substitui os marcadores (`<modulo>`, `<MODULO>`, `<Modulo>`), ajusta o
-manifesto, cria o `.env` com o ponteiro `ENV_RAIZ` e roda o gate ao final.
+manifesto, cria o `.env` com o ponteiro `ENV_ROOT` e roda o gate ao final.
 
 **O que detectar:** exit ≠ 0. O scaffold já valida o que criou — pendência aqui é do molde, não sua.
 
@@ -252,7 +252,7 @@ Depois, preencha os **valores reais** no `.env` da **raiz**.
 
 **O que detectar:**
 - `.env.example` editado à mão → será sobrescrito; a fonte é o manifesto.
-- Segredo real no `.env` do módulo → ele só aceita `ENV_RAIZ` e overrides não-secretos.
+- Segredo real no `.env` do módulo → ele só aceita `ENV_ROOT` e overrides não-secretos.
 - Chave de **outro** módulo lida aqui → cada módulo lê apenas as suas.
 
 ---

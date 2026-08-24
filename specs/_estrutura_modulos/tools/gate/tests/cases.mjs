@@ -589,8 +589,8 @@ export const CASOS = [
     //
     // Alvo logico + trecho por sintaxe: a fiacao le env de forma diferente em cada binding.
     mutar: (m) => m.acrescentarEm('composicaoRaiz', {
-      js: '\nexport const segredoJwt = process.env.RAIZ_JWT_SECRET;\n',
-      py: '\n\nSEGREDO_JWT = os.environ["RAIZ_JWT_SECRET"]\n',
+      js: '\nexport const segredoJwt = process.env.ROOT_JWT_SECRET;\n',
+      py: '\n\nSEGREDO_JWT = os.environ["ROOT_JWT_SECRET"]\n',
     }),
   },
   {
@@ -598,7 +598,7 @@ export const CASOS = [
     descricao: 'env declarada em project.json e sem leitor na fiacao',
     // O sentido inverso, e ele nao e simetria decorativa: a chave declarada entra no `.env.example`
     // e passa a EXIGIR do operador um valor que nada le. Mutacao agnostica de binding — so JSON.
-    mutar: (m) => m.manifestoRaiz((x) => ({ ...x, requiredEnv: [...x.requiredEnv, 'RAIZ_SEM_LEITOR'] })),
+    mutar: (m) => m.manifestoRaiz((x) => ({ ...x, requiredEnv: [...x.requiredEnv, 'ROOT_NO_READER'] })),
   },
   {
     regra: 'sql-concatenado',
@@ -647,15 +647,15 @@ export const CASOS = [
     // mostra que as duas nao brigam — `env-raiz-declarado` cobra a chave nao declarada e NAO proibe
     // a leitura; ler o ambiente e o oficio da composicao. O que esta regra proibe e o DEFAULT.
     mutar: (m) => {
-      m.manifestoRaiz((x) => ({ ...x, requiredEnv: [...x.requiredEnv, 'RAIZ_PORTA'] }));
+      m.manifestoRaiz((x) => ({ ...x, requiredEnv: [...x.requiredEnv, 'ROOT_PORT'] }));
       // A chave em COMENTARIO trava a nao-acusacao de `env-raiz-declarado`: se ela voltar a ler
-      // `conteudo` cru, acusa `RAIZ_SO_EM_COMENTARIO` como usada-e-nao-declarada, emite id nao
+      // `conteudo` cru, acusa `ROOT_ONLY_IN_COMMENT` como usada-e-nao-declarada, emite id nao
       // declarado, e este caso reprova.
       m.acrescentarEm('composicaoRaiz', {
-        js: '\n// Exemplo, nao uso: process.env.RAIZ_SO_EM_COMENTARIO\n'
-          + "export const porta = process.env.RAIZ_PORTA ?? 'padrao';\n",
-        py: '\n# Exemplo, nao uso: os.environ["RAIZ_SO_EM_COMENTARIO"]\n'
-          + 'import os\n\nPORTA = os.environ.get("RAIZ_PORTA", "padrao")\n',
+        js: '\n// Exemplo, nao uso: process.env.ROOT_ONLY_IN_COMMENT\n'
+          + "export const porta = process.env.ROOT_PORT ?? 'padrao';\n",
+        py: '\n# Exemplo, nao uso: os.environ["ROOT_ONLY_IN_COMMENT"]\n'
+          + 'import os\n\nPORTA = os.environ.get("ROOT_PORT", "padrao")\n',
       });
     },
   },
@@ -667,19 +667,19 @@ export const CASOS = [
     // `sensitiveFields` — `project.schema.json` declara um campo so, com
     // `additionalProperties: false` fechando a porta de proposito.
     //
-    // As DUAS chaves entram na mesma linha de log: `RAIZ_JWT_SECRET` casa o sufixo de credencial e
-    // e acusada; `RAIZ_API_BASE_URL` nao casa e passa. Declarar as duas tambem cala
+    // As DUAS chaves entram na mesma linha de log: `ROOT_JWT_SECRET` casa o sufixo de credencial e
+    // e acusada; `ROOT_API_BASE_URL` nao casa e passa. Declarar as duas tambem cala
     // `env-raiz-declarado`, nos dois sentidos — declaradas e usadas.
     mutar: (m) => {
       m.manifestoRaiz((x) => ({
         ...x,
-        requiredEnv: [...x.requiredEnv, 'RAIZ_JWT_SECRET', 'RAIZ_API_BASE_URL'],
+        requiredEnv: [...x.requiredEnv, 'ROOT_JWT_SECRET', 'ROOT_API_BASE_URL'],
       }));
       m.acrescentarEm('composicaoRaiz', {
         js: '\nexport const conferir = (logger) =>\n'
-          + "  logger.error('conferindo', process.env.RAIZ_JWT_SECRET, process.env.RAIZ_API_BASE_URL);\n",
+          + "  logger.error('conferindo', process.env.ROOT_JWT_SECRET, process.env.ROOT_API_BASE_URL);\n",
         py: '\nimport os\n\n\ndef conferir(logger):\n'
-          + '    logger.error("conferindo", os.environ["RAIZ_JWT_SECRET"], os.environ["RAIZ_API_BASE_URL"])\n',
+          + '    logger.error("conferindo", os.environ["ROOT_JWT_SECRET"], os.environ["ROOT_API_BASE_URL"])\n',
       });
     },
   },
@@ -774,7 +774,7 @@ export const CASOS = [
   {
     regra: 'env-modulo',
     descricao: '.env do modulo com chave de outro modulo',
-    mutar: (m) => m.escrever('.env', 'ENV_RAIZ=../../.env\nVIZINHO_DB_URL=x\n'),
+    mutar: (m) => m.escrever('.env', 'ENV_ROOT=../../.env\nVIZINHO_DB_URL=x\n'),
   },
 
   // --- Contrato ------------------------------------------------------------------------------

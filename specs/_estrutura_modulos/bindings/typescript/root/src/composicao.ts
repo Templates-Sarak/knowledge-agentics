@@ -164,7 +164,7 @@ function readPairsEnv(caminho: string): Array<[string, string]> {
 /**
  * Carrega o `.env` UNICO da raiz (specs/arquitetura/00-arquitetura.md §5) no processo, sem
  * sobrescrever o que ja veio de fora (mesma precedencia de ADR-004). E o unico lugar que toca este
- * arquivo: cada modulo, chamado daqui, ainda resolve o proprio `.env`/`ENV_RAIZ`, mas a essa altura
+ * arquivo: cada modulo, chamado daqui, ainda resolve o proprio `.env`/`ENV_ROOT`, mas a essa altura
  * o processo ja tem tudo — a leitura dele so confirma o que ja esta la.
  */
 function loadEnvRoot(raiz: string): void {
@@ -217,7 +217,7 @@ function envRequiredRoot(chave: string): string {
  */
 export async function startSystem(raiz: string): Promise<Server> {
   loadEnvRoot(raiz);
-  const porta = Number(envRequiredRoot('RAIZ_API_PORT'));
+  const porta = Number(envRequiredRoot('ROOT_API_PORT'));
   const app = await buildSystem(raiz);
 
   return new Promise((resolve) => {

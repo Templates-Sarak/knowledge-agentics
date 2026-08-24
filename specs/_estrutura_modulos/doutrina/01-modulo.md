@@ -22,7 +22,7 @@ Todo módulo tem exatamente esta forma. Divergir dela exige decisão registrada 
 modules/<modulo>/
 ├── module.json          identidade + contrato — o sistema DESCOBRE o módulo por aqui
 ├── package.json         @<escopo>/<modulo>        (pyproject.toml no binding Python)
-├── .env                 ENV_RAIZ + overrides — NÃO versionado, criado pelo scaffold
+├── .env                 ENV_ROOT + overrides — NÃO versionado, criado pelo scaffold
 ├── .env.example         GERADO de module.json:requiredEnv — nunca editado à mão
 ├── README.md
 │
@@ -145,7 +145,7 @@ O `.env` **real e único** de segredo fica na **raiz do projeto**. Cada módulo 
 
 ```bash
 # modules/catalogo/.env   (não versionado; criado pelo scaffold)
-ENV_RAIZ=../../.env
+ENV_ROOT=../../.env
 
 # Override local (dev). Vazio no monorepo; preenchido quando o módulo for extraído.
 ```
@@ -153,15 +153,15 @@ ENV_RAIZ=../../.env
 Precedência, do mais forte ao mais fraco:
 
 ```
-variável do processo  >  .env do módulo  >  .env apontado por ENV_RAIZ  >  default de tunable em config/
+variável do processo  >  .env do módulo  >  .env apontado por ENV_ROOT  >  default de tunable em config/
 ```
 
 **Por que assim.** Hoje, um lugar só tem segredo — zero duplicação e zero chance de divergir. No dia da
-extração, você apaga a linha `ENV_RAIZ` e preenche os valores localmente: **nenhuma linha de código muda**,
+extração, você apaga a linha `ENV_ROOT` e preenche os valores localmente: **nenhuma linha de código muda**,
 porque o carregador simplesmente não acha o ponteiro e usa o que está local. A fronteira fica declarada por
 escrito dentro do módulo.
 
-**Regras:** o `.env` do módulo só aceita `ENV_RAIZ` e chaves `<MODULO>_*` — chave de outro módulo ali é erro.
+**Regras:** o `.env` do módulo só aceita `ENV_ROOT` e chaves `<MODULO>_*` — chave de outro módulo ali é erro.
 O `.env.example` é **gerado** de `requiredEnv`; ninguém o edita à mão, então ele nunca mente sobre o que o
 módulo exige.
 
