@@ -45,7 +45,7 @@ pastas com `--modulos`.
 
 **Por que `equivalentes_suspeitos` existe.** `template_instalado` classifica por PRESENCA DE CAMINHO
 canonico — e um legado localizado tem o aparato sob outro nome. Medido: um alvo com
-`scripts/validar-modulos.mjs`, `packages/portas/` e `adapters/memoria/` saia com `faltando:
+`<alvo>/scripts/validar-modulos.mjs`, `packages/portas/` e `adapters/memoria/` saia com `faltando:
 ["adapters_memoria","gate","manifesto_raiz","portas"]`, acusando como ausente o que ja existia sob nome
 traduzido. `gerar_candidatos_equivalentes` gera, por vocabulario fechado, os nomes alternativos possiveis
 de cada marcador; `ler_equivalentes_suspeitos` testa em disco so os marcadores que estao em `faltando`. O
@@ -122,9 +122,9 @@ MARCADORES_TEMPLATE = {
 
 # Vocabulario FECHADO de segmento canonico -> nomes alternativos em legado localizado. "" como
 # alternativa significa "o legado nao tem essa camada de pasta" e some do caminho gerado — e o que
-# produz `scripts/validar-modulos.mjs` a partir de `tools/gate/validate.mjs` (duas substituicoes e uma
-# supressao ao mesmo tempo). Prefere falso negativo a falso positivo: um segmento fora deste mapa so
-# produz ele mesmo, nunca e "adivinhado".
+# produz `<alvo>/scripts/validar-modulos.mjs` a partir de `tools/gate/validate.mjs` (duas substituicoes
+# e uma supressao ao mesmo tempo). Prefere falso negativo a falso positivo: um segmento fora deste mapa
+# so produz ele mesmo, nunca e "adivinhado".
 #
 # `.githooks` -> `.husky` aqui SOBREPOE o que `detectar_hooks_legado` ja acusa. E proposital, nao
 # deduplique: sao duas perguntas diferentes — "ha gerenciador de hook legado a compor?" (hooks_legado)

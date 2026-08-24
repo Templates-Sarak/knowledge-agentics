@@ -66,10 +66,17 @@ lista a manter em sincronia.
 
 ## § 1 — sintetizar e limpar `plan/` (Passo 1, detalhe)
 
-**Caminho (i), sem specs SDD:** não há `specs/plan/` para limpar. Diga a frase no-op e siga — inventar uma
-plan fantasma para "ter o que sintetizar" é o erro que este passo existe para evitar.
+**`sem-specs`:** não há `specs/plan/` para limpar. Diga a frase no-op e siga — inventar uma plan fantasma
+para "ter o que sintetizar" é o erro que este passo existe para evitar.
 
-**Caminho (ii), com specs SDD:**
+**`specs-divergentes` — a regra de absorção:** o alvo tem *alguma* estrutura de plan/spec, só não a
+canônica. **Nada se remove antes de o conteúdo não-obsoleto ter destino escrito** — nunca apague um
+arquivo do alvo só porque o nome não bate com o canônico. Medido: num alvo real, o dono teve de pedir
+essa regra explicitamente no meio da campanha, porque a skill não a tinha — cada arquivo divergente
+precisa de um destino decidido (absorvido numa spec fixa, virar uma `xx-nn-specs-<assunto>`, ou
+declarado como resíduo a apagar **depois** de confirmado, nunca antes) antes de qualquer exclusão.
+
+**`com-specs`:**
 1. Liste `specs/plan/` e separe as `🟢 Aprovada` (síntese pendente) das `⚪ Sintetizada` (resíduo).
 2. Toda `🟢` precisa ser sintetizada **antes** de seguir — é o revisor desta própria conversa que sintetiza,
    sob autorização do usuário (o mecanismo é o do ciclo SDD padrão, `00-prompt-revisor.md` §7.3).
@@ -80,8 +87,8 @@ plan fantasma para "ter o que sintetizar" é o erro que este passo existe para e
 
 ## § 2 — specs vs código (Passo 2, detalhe)
 
-**Caminho (i):** instale a árvore de `specs/` do fluxo SDD (molde `_estrutura_base/`). Só duas specs recebem
-conteúdo do alvo:
+**`sem-specs`:** instale a árvore de `specs/` do fluxo SDD (molde `_estrutura_base/`). Só duas specs
+recebem conteúdo do alvo:
 
 | Spec | Conteúdo |
 |---|---|
@@ -93,7 +100,30 @@ o estado atual deles na base antes de copiar, essa área evolui. `specs/specs/` 
 sintetize regra de negócio a partir do código legado — uma spec inferida errada é autoritativa e ninguém a
 questiona depois; uma spec ausente é honesta sobre o que não se sabe ainda.
 
-**Caminho (ii):** para cada spec fixa em `specs/`, `arquitetura/` e `adr/`, confira contra o código real que
+**`specs-divergentes` — spec × template (o Passo 2 do `SKILL.md`, antes do Passo 3):** o alvo já tem specs,
+mas com nomes/estrutura que não batem com `_estrutura_base/`. Leia a árvore canônica **inteira** e confira
+arquivo a arquivo — checklist copiável em `references/templates.md` item 7 — antes de decidir o que
+absorver, renomear ou manter. Medido: um revisor que pulou esta leitura escreveu **onze plans** no molde
+local do projeto (quatro seções) e **refez todas** ao descobrir que `_estrutura_base/_templates/
+template-plan.md` tem **onze** seções, com frontmatter próprio (`depende_de`, `destino_sintese`) e blocos
+append-only §9/§10/§11 que o molde local não tinha. Não escreva um script comparador — o valor está na
+instrução de ler antes, e o revisor lê os arquivos de qualquer forma.
+
+**`INDEX.md` não é `00-indice.md`.** Os dois existem em `specs/_estrutura_base/` e fazem coisas
+diferentes: `INDEX.md` é o **mapa de leitura** (ordem em que se lê o vault); `00-indice.md` é a **fila de
+execução** das plans, com `proximo_numero_plan` no frontmatter. Confundir os dois — e uma plan quase
+chegou a instruir renomear `specs/INDEX.md` para `specs/00-indice.md`, apagando um arquivo canônico — é o
+erro que esta nota existe para evitar.
+
+**Legenda de status — compare símbolo a símbolo (`specs-divergentes` e `com-specs`).** A legenda canônica
+(`00-indice.md` §2) é `🔴 A executar · 🟡 Em execução · 🟠 Em revisão · 🔵 Em correção · ⛔ Bloqueada`
+(mais `🟢 Aprovada` · `⚪ Sintetizada`). Um alvo real usava `🔴 Reprovado · 🔵 Em execução · ⬜ A executar`
+— **mesmo símbolo, significado oposto** entre `🔵` nos dois vocabulários. O revisor marcou as primeiras
+plans como `🟡 Planejado` (que no canônico é "em execução"), sem perceber a colisão. Reporte toda colisão
+de símbolo **antes** de escrever a primeira plan — nunca assuma que o alvo usa o vocabulário canônico só
+porque parece.
+
+**`com-specs`:** para cada spec fixa em `specs/`, `arquitetura/` e `adr/`, confira contra o código real que
 ela descreve. Toda divergência:
 - **não** é corrigida por edição silenciosa — vira uma plan `xx-nn-specs-<assunto>` que atualiza a spec;
 - entra em `specs/00-indice.md` como qualquer outra plan da campanha;
@@ -108,7 +138,7 @@ O item 2 do Passo 3 (`SKILL.md`) não é mais "instale sempre": é condicionado 
 
 | `template_instalado.estado` | O que o Passo 3 faz |
 |---|---|
-| `"nao-instalado"` | instala as sete peças inteiras — o caso comum de legado puro |
+| `"nao-instalado"` | instala as oito peças inteiras — o caso comum de legado puro |
 | `"parcial"` | instala **só** as peças de `faltando` — reinstalar o que já existe arrisca sobrescrever ajuste feito à mão numa rodada anterior da campanha (ex.: `config/verificacao.json` com cobertura já calibrada) |
 | `"completo"` | **não instala nada**. Segue direto para rodar o gate (item 3) — a verificação nunca se pula, só a instalação |
 
@@ -141,11 +171,54 @@ A saída certa, e o que o Passo 3 manda fazer:
 3. **Registre em `specs/adr/`** — é decisão técnica com trade-off explícito (perder a régua vermelha
    inicial em troca de não duplicar o gate), e decisão que só vive dentro do raciocínio de uma plan é
    decisão que ninguém acha depois.
+4. **Enumere as garantias canônicas que o equivalente NÃO dá.** Um gate mais estrito não é
+   necessariamente um gate completo: no caso medido, o gate próprio de 544 linhas **não** validava o
+   `_template` como módulo real (a ADR-006 exige) — ele foi aceito como equivalente, e essa garantia foi
+   embora junto, sem ninguém notar. Cada garantia perdida vira uma linha de dívida declarada no índice da
+   campanha; silêncio aqui é o mesmo erro que motivou `equivalentes_suspeitos` a existir.
 
 **Por que isto é portão de HITL e não heurística.** Decidir se um validador próprio é "equivalente" ao gate
-canônico exige julgamento — no caso medido ele era **mais estrito**, não igual. Um heurístico de caminho
-erraria nos dois sentidos, e cobertura inventada é pior que lacuna declarada. A máquina reporta `faltando`;
-quem julga equivalência é o revisor, com o usuário.
+canônico exige julgamento — no caso medido ele era **mais estrito**, não igual (e ainda incompleto, item 4
+acima). Um heurístico de caminho erraria nos dois sentidos, e cobertura inventada é pior que lacuna
+declarada. A máquina reporta `faltando`/`equivalentes_suspeitos`; quem julga equivalência é o revisor, com
+o usuário.
+
+### O molde é módulo: prova de vida (ADR-006) e comparação com o binding
+
+**ADR-006** (`specs/_estrutura_modulos/doutrina/adr/decisoes.md`) decide que o `_template` de cada binding
+**entra no gate como qualquer módulo**, e que o ciclo completo — criar um módulo a partir dele, validar,
+buildar, testar, descartar — **é a prova de vida do template**. A skill, até esta versão, nunca cobrava
+isso no alvo. Consequência medida, num repositório real, depois de uma campanha inteira já aprovada:
+`pnpm criar-modulo <id>` produzia um módulo que **não compilava, não buildava e não passava em teste** —
+faltavam `tsconfig`/`vitest.config`, o front tinha `.gitkeep` onde devia ter página, e o `package.json` do
+molde carregava o marcador `<modulo>` sem substituir no nome. Nada disso apareceu em momento algum porque
+o marcador que o script confere é `exists()`, e um molde podre também existe.
+
+O item 6 do Passo 3 fecha essa lacuna: se o alvo tem `modules/_template` próprio, rode o ciclo de ADR-006
+contra ele **antes** de qualquer plan de execução — achado da Fase A, não descoberta três dias depois.
+Enquadre como **ADR que a skill deixava de cobrar**, nunca como regra nova: a lei já existia, só não era
+verificada.
+
+**Comparar com o binding — e por que a comparação vale.** O binding
+(`specs/_estrutura_modulos/bindings/<binding>/_template/`) resolve coisas que o alvo não sabe que já estão
+resolvidas. Dois exemplos medidos:
+- o binding centraliza `tsconfig`/`tsconfig.build`/`vitest.config` na **raiz do módulo** — três arquivos,
+  onde um alvo real tinha seis, um por camada;
+- o `package.json` da raiz do binding traz, em `"//workspaces"`, o motivo do padrão ser `modules/[a-z]*` e
+  não `modules/*`: o molde carrega `<modulo>` no nome, que não é nome npm válido, e `modules/*` quebra
+  `npm install` na raiz com `EINVALIDPACKAGENAME`. Um alvo real tinha exatamente esse bug, e a plan dele
+  deixava a solução **em aberto como decisão do usuário** — com a resposta já escrita na base, sem
+  chegar ao alvo.
+
+Solução que existe na base e não chega ao alvo é o mesmo defeito de fundo da prova de vida: marcador
+`exists()` não é o mesmo que "conforme", e comparação nenhuma acontecia. O item 6 do Passo 3 faz essa
+comparação chegar, reportando o desenho sem instalar por cima.
+
+**A regra inversa, obrigatória junto com a comparação.** Adotar o binding cru seria regressão: **o
+binding é fonte para o que falta, não para o que diverge por decisão registrada.** Divergência com um ADR
+real no alvo permanece — é decisão tomada, não lacuna. Divergência sem ADR é achado, a reportar no HITL do
+item 6. Sem esta frase junto da comparação, ela vira licença para reescrever o alvo por cima de decisões
+válidas.
 
 ### A dívida declarada
 
@@ -181,6 +254,20 @@ A saída não é inventar uma — é usar o que o template **já** oferece:
   da raiz, na mesma lista de "caminhos ignorados" que vira a **segunda métrica** da campanha (ao lado do
   número de exceções em `conformidade.json`). Cada módulo que nasce do template traz o próprio escopo de
   volta — a lista só encolhe.
+
+### Passo 4 — dois fatos medidos por trás das regras curtas
+
+**`xx-` não consome `proximo_numero_plan`.** A skill exige o prefixo `xx-`; o `00-indice.md` canônico tem
+numeração monotônica "só sobe, nunca reaproveitada" (§5 daquele arquivo). Nada dizia como os dois
+convivem, e um revisor teve de declarar a regra por conta própria no meio de uma campanha. `xx-` é
+namespace separado — nunca toca o contador — e, ao expurgar a campanha inteira via `spec-atualizar`, o
+`proximo_numero_plan` segue exatamente de onde estava, porque nunca avançou por causa dela.
+
+**Prompt não vive em arquivo.** O `template-plan.md` já avisa: *"contexto que existe só no prompt se perde
+na primeira rodada de correção"*. Mas a skill é o que se lê primeiro, e o molde é o que se lê por último —
+um revisor real escreveu **onze prompts de ~50 linhas em arquivo**, todos descartados depois, porque a
+regra só estava no lugar errado do fluxo de leitura. Prompt de execução, de correção e de conclusão vivem
+**só na conversa** (bloco ` ```md `); o que o executor precisa de fato vai na §4 da plan.
 
 ## § 4 — as seis armadilhas medidas
 

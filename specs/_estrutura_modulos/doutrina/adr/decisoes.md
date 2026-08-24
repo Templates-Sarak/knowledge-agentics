@@ -258,7 +258,8 @@ ajustaria a árvore — muda o que o módulo significa, não como ele é organiz
 
 ## ADR-010 — A porta `auth` virou `verificadorDeToken`
 
-**Status:** 🟢 Aceito
+**Status:** 🔴 Substituída — o nome escolhido (`verificadorDeToken`) é traduzido para `tokenVerifier` pelo
+`ADR-013`; o raciocínio abaixo continua valendo e é carregado adiante lá.
 
 **Contexto.** A porta `auth` existia desde o início do vocabulário (`tools/gate/ports-vocabulary.mjs`), mas
 a interface que ela nomeia tem **um único método**: `verify(token) → claims | null`. "Auth" é um
@@ -378,3 +379,115 @@ origem é deploy, não arquitetura.
 **Alternativa rejeitada.** *Entregar um `.env.staging`/`.env.production` de exemplo e um pipeline mínimo.*
 Rejeitada porque um pipeline mínimo é um pipeline errado para quase todo projeto, e um arquivo de ambiente de
 exemplo convida a versionar o real — o defeito exato que o ADR-004 fecha.
+
+---
+
+## ADR-013 — O idioma do template passa a ser cobrado: a implementação se alinha ao ADR-009
+
+**Status:** 🟢 Aceito
+
+**Contexto.** O `ADR-009` decide o princípio — *"a árvore de arquivos é inglês; o conteúdo dela é
+português"* — e a régua final do `04-regras.md` §3 o repete. **A implementação inteira contradiz os dois, e
+o próprio texto normativo se contradiz.** `ADR-009` linha 9 já escreve o exemplo `ROOT_API_PORT` para chave
+de ambiente da raiz, mas os três bindings, `sync-env.mjs`, `create-project.mjs`, `project.schema.json`,
+duas regras do gate e a **tabela §3.1 do próprio `04-regras.md`** usam `RAIZ_` — medido: 105 ocorrências em
+19 arquivos —, e há `ENV_RAIZ` no mesmo caso (13 arquivos). `ADR-009` linha 8 e a régua final põem nome de
+arquivo e chave de config em inglês, mas o template entrega `config/seguranca.json`, `textos.json`,
+`conformidade.json`, `verificacao.json` e `src/composicao.ts` — 392 ocorrências —, e a **tabela canônica do
+§3.1 usava `config/seguranca.json` como exemplo normativo** da linha "Arquivo de config", contradizendo o
+parágrafo duas seções acima. O vocabulário de portas (`repositorio`, `auditoria`, `relogio`, `geradorId`,
+`verificadorDeToken`, `notificador` — 352 ocorrências) é chave de `config/ports.json` **e** símbolo de
+`packages/ports/`: árvore pelos dois critérios da régua. As chaves **dentro** dos `config/*.json`
+(`excecoes`, `excecoesCve`, `dependencias.severidadeMinima`, `rateLimit.janelaSegundos`,
+`paginaTamanhoMaximo`, …) estão no mesmo caso — a régua as chama de árvore, e nada as trata assim hoje.
+
+O que faz isto valer um ADR, e não um conserto silencioso de nomenclatura: **cada repositório que adota o
+template descobre a contradição sozinho e "corrige" para o lado errado**, achando que está **desviando** do
+padrão quando está **implementando-o**. Medido num alvo real, que foi para `security.json`/`texts.json` e
+para `repository`/`audit`/`clock`/`idGenerator` por conta própria, sem ADR nenhum — exatamente o cenário que
+o `04-regras.md` §3 trata como divergência de doutrina, não como acerto silencioso.
+
+**Decisão.** A implementação se alinha ao `ADR-009`. A tabela abaixo é o contrato das três ondas que a
+executam — cada linha, uma renomeação, nenhuma delas aplicada nesta conversa:
+
+| Português (hoje) | Inglês (alvo) | Natureza |
+|---|---|---|
+| `RAIZ_<ASSUNTO>` | `ROOT_<ASSUNTO>` | chave de ambiente (`ADR-009` linha 9 já escreve `ROOT_API_PORT`) |
+| `ENV_RAIZ` | `ENV_ROOT` | idem — o ponteiro de cascata do `ADR-004` |
+| `config/seguranca.json` | `config/security.json` | nome de arquivo de config |
+| `config/textos.json` | `config/texts.json` | idem |
+| `config/conformidade.json` (+ `conformidade.schema.json`) | `config/compliance.json` | idem |
+| `config/verificacao.json` (+ `verificacao.schema.json`) | `config/verification.json` | idem |
+| `src/composicao.{ts,js,py}` | `src/composition.*` | nome de arquivo do esqueleto |
+| porta `repositorio` | `repository` | chave de config + símbolo do esqueleto |
+| porta `auditoria` | `audit` | idem |
+| porta `relogio` | `clock` | idem |
+| porta `geradorId` | `idGenerator` | idem |
+| porta `verificadorDeToken` | `tokenVerifier` | idem — **supersede o `ADR-010`**, ver abaixo |
+| porta `notificador` | `notifier` | idem |
+| porta `storage` | `storage` | já em inglês, nada muda |
+
+**Superseding o `ADR-010`.** A porta que lá virou `verificadorDeToken` aqui vira `tokenVerifier` — tradução
+pura do mesmo nome, pela régua deste ADR, não uma nova decisão de nomenclatura. O raciocínio do `ADR-010`
+continua sendo lei e não pode ficar órfão dentro de um ADR marcado `🔴 Substituída`, então ele é carregado
+adiante, com as mesmas palavras: `auth` era largo demais porque a interface tem **um método**,
+`verify(token) → claims | null`, e "auth" também acomodava *"gerenciar usuários"* (cadastro, senha, sessão)
+— que na arquitetura Sarak não é porta, é módulo à parte, alcançado por gateway, nunca injetado como
+infraestrutura (`ADR-002`). E o precedente que o `ADR-010` registrava, o mesmo que `ports-vocabulary.mjs`
+repete a respeito de `fila`: **vocabulário de porta só muda por decisão escrita**, nunca por edição
+silenciosa de um dos lugares que o repetem. Este `ADR-013` **é** essa decisão escrita para a Onda 3 — ele não
+só cita o precedente, ele o exerce.
+
+**As chaves dentro dos `config/*.json` — decidido: entram.** O `ADR-009` põe chave de config na coluna
+inglês (linha 8 da tabela artefato-por-artefato), e a decisão é aplicá-lo até o fim: `excecoes`,
+`excecoesCve`, `qualidade`/`qualidade.modo`, `formatacao`/`formatacao.ativo`, `cobertura`/`cobertura.minima`,
+`dependencias.severidadeMinima`, `linguagens`, `rateLimit`/`janelaSegundos`/`limiteLeitura`/`limiteEscrita`,
+`cors`/`origensPermitidas`/`metodos`, `headers`/`hsts`/`noSniff`/`frameDeny`/`referrerPolicy`,
+`paginaTamanhoPadrao`/`paginaTamanhoMaximo`/`corpoMaximoKb`/`nivelLog`, e as chaves
+`_comentario`/`_doc`/`_exemplo`/`_exemploCve` entram no escopo — a lista acima veio da leitura dos
+`config/*.json` do binding typescript nesta conversa, **não é exaustiva por origem**: **a lista completa é
+levantada na Onda 2 e conferida contra os schemas de `tools/gate/schemas/`**, não inventada aqui.
+
+**A fronteira que este ADR é obrigado a escrever, porque a mecânica sozinha erra aqui.** Dois arquivos têm
+chave de config cujo **valor** é conteúdo de domínio, não estrutura:
+- `config/textos.json` — `titulo`, `carregando`, `listaVazia`, `erroGenerico`;
+- `config/domain.json` — `statusValidos`.
+
+A régua do `ADR-009` se aplica sem exceção: **a chave é o slot — árvore, inglês; o valor é o conteúdo —
+domínio, português.** `texts.json` passa a ter as chaves `title`/`loading`/`emptyList`/`genericError`, com
+os mesmos textos em português como valor (`"Carregando..."`, `"Nenhum registro ainda."`, …). `domain.json`
+passa a ter a chave `validStatuses`, com os mesmos valores de domínio dentro (`"rascunho"`, `"ativo"`,
+`"encerrado"`). É a aplicação consistente do princípio — não uma exceção a ele. Sem esta frase escrita, a
+Onda 2 traduziria o valor junto com a chave, que é exatamente o que a linha 10 da tabela do `ADR-009`
+proíbe.
+
+**O que NÃO muda, e este ADR precisa dizer para não parecer esquecimento** — é a coluna português do
+`ADR-009`, inteira:
+- ids das 76 regras do catálogo e mensagens do gate (`ADR-009` linhas 6 e 7);
+- símbolos dentro de `tools/` (linha 4);
+- domínio, rotas de negócio, nome de tabela/coluna/schema (linha 10) — inclusive `module.json:data` →
+  `<modulo_snake>_metadados`, que **já está correto**;
+- os **valores** de `texts.json` e `domain.json`, pela fronteira acima;
+- `doutrina/` e `specs/arquitetura/` (linha 2, a única exceção ao princípio inteiro).
+
+**Consequências.**
+1. **Quebra todo projeto já instanciado do template.** O que se oferece a eles: a ordem das três ondas
+   abaixo serve de roteiro de migração, e cada onda é um **eixo independente** — um projeto pode aplicar só
+   a Onda 1 (variável de ambiente) sem tocar nome de arquivo de config ou vocabulário de porta, e
+   vice-versa. Nenhuma onda depende de as outras já terem rodado no alvo.
+2. **~849 ocorrências no template + ~50 arquivos na base fora dele** (skills e hooks que citam esses nomes),
+   mais as chaves internas que a Onda 2 vai levantar. Skill que aponta para `config/seguranca.json` depois
+   da Onda 2 vira ponteiro órfão, e `meta-verificacao-base` vai acusar — é a rede funcionando, não um
+   problema a temer.
+3. **A verificação existe e é barata:** `node tools/gate/tests/run.mjs` (128/128 por binding, 76 regras) e
+   `node tests/run-all-selftests.mjs` (25/25). **Toda onda entrega os dois verdes** — é a definição de
+   pronto de cada onda, e é o que impede a campanha de virar *sed* cego.
+
+**As três ondas** (este ADR fixa a ordem; ele não as executa):
+- **Onda 1** — chaves de ambiente (`RAIZ_*` → `ROOT_*`, `ENV_RAIZ` → `ENV_ROOT`). Eixo mais isolado, e o
+  que o `ADR-009` já nomeia literalmente.
+- **Onda 2** — nomes de arquivo de config, `composicao.*` **e as chaves internas** (com a fronteira
+  chave×valor acima). É a maior das três.
+- **Onda 3** — vocabulário de portas. **Depende** da seção "Superseding o `ADR-010`" acima e dos três
+  lugares que `ports-vocabulary.mjs` obriga a concordar (dois gerados por `generate-port-schemas.mjs
+  --conferir`, o terceiro — `packages/ports/index.{ts,js,py}` — mantido à mão nos três bindings).

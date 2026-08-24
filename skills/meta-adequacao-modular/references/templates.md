@@ -42,6 +42,23 @@ reaparece como erro de gate em outro lugar, e o rastro se perde:
    `regra: "tabela-prefixo"` e um ADR justificando, **ou** renomear as tabelas de fato.
 ```
 
+### Raio de alcance (medido antes do HITL) — cada item carrega o próprio número
+
+`grep -c`, sem script novo — é o que torna o HITL final decidível em vez de um plano às cegas. Exemplo
+preenchido, de um alvo real:
+
+```markdown
+## Raio de alcance: <antigo> → <id>
+
+1. Pasta — <N> arquivos sob `modules/<antigo>/`.
+2. Contrato — <N> referências a `/api/v1/<antigo>` fora do módulo.
+3. Package — 196 ocorrências de `modulos` (import/require).
+4. Web — <N> rotas/links para `/<antigo>`.
+5. Permissões — <N> chamadas `requirePermission("<antigo>:...")`.
+6. Chaves de ambiente — 13 chaves `<ANTIGO>_*` no `.env`/`.env.example`.
+7. Prefixo de tabela — 9 tabelas, 43 colunas, 60 ocorrências de `@erp/portas`, 9 artefatos publicados.
+```
+
 ## 3. Exceção nominal em `config/conformidade.json`
 
 ```jsonc
@@ -78,13 +95,13 @@ da campanha, ao lado do número de exceções em `conformidade.json`.
 ```markdown
 ## Plano de adequação modular — <nome do sistema>
 
-**Fase/caminho detectados:** Fase A · caminho (<i|ii>) — <justificativa em uma linha>
+**Fase/caminho detectados:** Fase A · caminho (<sem-specs|specs-divergentes|com-specs>) — <justificativa em uma linha>
 
 **Módulos e nomes decididos:**
 
-| Pasta atual | `id` decidido | Prefixo de tabela | Chaves de env | Ordem (nn) |
-|---|---|---|---|---|
-| <pasta> | <id> | renomear/exceção (ADR-<NNN>) | renomear/exceção | <nn> |
+| Pasta atual | `id` decidido | Prefixo de tabela | Chaves de env | Raio de alcance | Ordem (nn) |
+|---|---|---|---|---|---|
+| <pasta> | <id> | renomear/exceção (ADR-<NNN>) | renomear/exceção | <ver item 2, "Raio de alcance"> | <nn> |
 
 **Fronteira da área legada (fora de lint/tipos):** <lista de caminhos>
 
@@ -111,3 +128,21 @@ da campanha, ao lado do número de exceções em `conformidade.json`.
 
 **Veredito final:** <aprovado / reprovado, com o motivo>
 ```
+
+## 7. Checklist de leitura de `_estrutura_base` (Passo 2, `specs-divergentes`, antes do Passo 3)
+
+Confira arquivo a arquivo, **antes de escrever qualquer plan** — pular este passo produziu, medido, onze
+plans reescritas do zero por não baterem com o molde canônico:
+
+- [ ] `INDEX.md` — mapa de leitura do vault. **Não é** `00-indice.md` (não confunda os dois, nem renomeie
+      um sobre o outro).
+- [ ] `00-contexto.md` — o que o repositório é, regras inegociáveis, mapa de roteamento.
+- [ ] `00-knowledge.md` — roteador de capacidades (situação → skill/command/agent/hook).
+- [ ] `00-indice.md` — fila de execução, `proximo_numero_plan`, legenda de status (§2) — **compare símbolo
+      a símbolo** com a legenda do alvo, se houver uma.
+- [ ] `00-prompt-revisor.md` / `00-prompt-executor.md` — o prompt de cada papel.
+- [ ] `_templates/template-plan.md` — **onze** seções (Objetivo → Síntese), frontmatter com `depende_de` e
+      `destino_sintese`, blocos append-only §9/§10/§11. Confira contra o molde local do alvo, se houver um
+      — é a divergência que mais custa descobrir tarde.
+- [ ] `_templates/template-spec.md`, `template-arquitetura.md`, `template-adr.md` — forma de cada spec
+      fixa que o Passo 2 (`com-specs`) vai conferir contra o código.

@@ -80,10 +80,10 @@ gate de auditar.
 | Coluna | snake_case | `cliente_apelido` |
 | Migration | `NNNN-verbo-objeto.sql`, sequencial | `0003-adiciona-comissao.sql` |
 | Variável de ambiente | `<MODULO>_<ASSUNTO>`, SCREAMING_SNAKE | `CATALOGO_DB_URL` |
-| Variável de ambiente **da raiz** | `RAIZ_<ASSUNTO>` — prefixo **reservado** | `RAIZ_JWT_SECRET` |
+| Variável de ambiente **da raiz** | `ROOT_<ASSUNTO>` — prefixo **reservado** | `ROOT_JWT_SECRET` |
 | Variável exposta ao browser | prefixo do build + `<MODULO>_` | `VITE_CATALOGO_API_BASE_URL` |
-| Arquivo de config | kebab-case, um assunto por arquivo | `config/seguranca.json` |
-| Chave de config | camelCase | `paginaTamanhoMaximo` |
+| Arquivo de config | kebab-case, um assunto por arquivo | `config/security.json` |
+| Chave de config | camelCase | `maxPageSize` |
 | Permissão | `<modulo>:<acao>` | `catalogo:escrever` |
 | Código de erro | SCREAMING_SNAKE da taxonomia fechada | `NAO_ENCONTRADO` |
 
@@ -116,9 +116,14 @@ usuário.
   `mappers`, `modules`, `root`, `rules`, `tests`, `memory`, mais o que a linguagem ou o framework impõem:
   `src`, `hooks`, `pages`, `components`, `routes`, `middlewares`, `index`), funções do **esqueleto**
   (`bindings/**`), os ~29 arquivos `.mjs` de `tools/` (o nome do arquivo, não o símbolo dentro dele — ver
-  próximo item), chaves de manifesto (`module.json`, `project.json`) e chaves de ambiente.
+  próximo item), chaves de manifesto (`module.json`, `project.json`), chaves de ambiente, **nome de arquivo
+  de config** (`config/security.json`), **chave de config** (`maxPageSize`) e **nome de porta**, chave de
+  `config/ports.json` e símbolo de `packages/ports/` ao mesmo tempo (`repository`, `clock`, …) — a tabela de
+  renomeação completa está no `ADR-013`.
 - **Português** — domínio, rotas de negócio (`/registros`), dados (nome de tabela, coluna, schema), ids das
-  76 regras do catálogo, mensagens do gate e erros de runtime voltados ao usuário.
+  76 regras do catálogo, mensagens do gate, erros de runtime voltados ao usuário e, por fronteira chave×valor
+  (`ADR-013`), o **valor** das chaves de `config/texts.json` e `config/domain.json` — a chave é árvore
+  (inglês), o conteúdo dela é domínio (português).
 - **Duas exceções deliberadas**, registradas para não parecerem esquecimento: os **símbolos** (função,
   variável) dentro dos arquivos de `tools/` ficam em português — é ferramental vendorizado, isento do linter
   no projeto gerado, mesmo com o nome do arquivo que os contém em inglês; e os **ids de regra + mensagens do
@@ -131,9 +136,12 @@ usuário.
 Nome fora desta lista segue a régua do `ADR-009`: descreve **como o padrão é construído** → inglês; descreve
 **o que o negócio do módulo é** → português. A escolha entre português puro e o misto acima, **dentro do
 domínio de cada projeto** (não da estrutura do template, já decidida aqui), continua sendo decisão de cada
-projeto, registrada em `specs/adr/`. **O gate não cobra essa consistência** — não existe regra de idioma nem
-de consistência geral de nomenclatura no catálogo; a mais próxima é `rota-nomenclatura`, que julga
-kebab-case e verbo em rota, nunca idioma (limite declarado no §7.2).
+projeto, registrada em `specs/adr/`. **Divergência de idioma na estrutura do template — pasta, nome de
+arquivo, chave de config, símbolo do esqueleto — não é essa liberdade: é divergência da doutrina, e exige
+ADR próprio no alvo** (`ADR-013`), nunca silêncio ou "ajuste de estilo". **O gate não cobra essa
+consistência** — não existe regra de idioma nem de consistência geral de nomenclatura no catálogo; a mais
+próxima é `rota-nomenclatura`, que julga kebab-case e verbo em rota, nunca idioma (limite declarado no
+§7.2).
 
 **A única coisa que o gate cobra sobre nome de função é a convenção do mapeador** (`mapeador-nomenclatura`,
 §4.5): toda função **exportada** num arquivo de mapeador segue `to<Algo>`/`to_<algo>` (saída) ou

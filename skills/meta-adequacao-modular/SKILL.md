@@ -34,12 +34,13 @@ existem plans "xx-*" em specs/plan/ ?
    existem e alguma ainda ativa         → campanha em andamento — aponte /code3-adequar e pare
 ```
 
-## Os dois caminhos de entrada — ramificação obrigatória
+## Os três caminhos de entrada — ramificação obrigatória
 
 ```
-existe specs/00-indice.md **e** specs/plan/ ?
-   não → CAMINHO (i)  — sistema sem specs SDD    → passos 1–2 são no-op DECLARADO
-   sim → CAMINHO (ii) — specs SDD divergentes     → passos 1–2 são trabalho real
+caminho (do diagnóstico) ?
+   "sem-specs"          → sem specs SDD                 → passos 1–2 são no-op DECLARADO
+   "specs-divergentes"  → specs SDD, não a canônica      → regra de absorção (workflow.md §1–§2)
+   "com-specs"          → specs SDD canônicas            → passos 1–2 são trabalho real
 ```
 
 Rode o diagnóstico mecânico da skill antes de perguntar qualquer coisa ao usuário — ele já responde fase,
@@ -75,6 +76,8 @@ relatório em `references/workflow.md` §0.
                    projeto errado, antes de seguir.
 ```
 
+Se o dono seguir **mesmo assim**, registre a decisão e o parecer contrário no ADR — portão de HITL.
+
 Enquanto `template_instalado.estado != "nao-instalado"`, **`colisao_raiz` e `workspaces_legado` já vêm
 filtrados** pelo próprio script (o que é do template não conta como legado) — não repita esse julgamento
 por conta própria.
@@ -90,19 +93,24 @@ abaixo, agora com verificador). Vá ao portão de HITL de branch: peça o nome, 
 presuma que está seguro. `arvore_suja: null` é *"não consegui verificar"*, jamais *"está limpa"*.
 
 ### Passo 1 — sintetizar e limpar `plan/`
-- **(i) sem specs:** no-op declarado — diga em voz alta *"não havia plan/spec: nada a sintetizar"*. Nunca
+- **`sem-specs`:** no-op declarado — diga em voz alta *"não havia plan/spec: nada a sintetizar"*. Nunca
   invente trabalho aqui.
-- **(ii) com specs:** `plan/` **tem** de ficar sem nenhuma plan `🟢 Aprovada` pendente de síntese — sintetize
+- **`specs-divergentes`:** regra de absorção — nada se remove antes de o conteúdo não-obsoleto ter
+  destino escrito. Mecânica em `references/workflow.md` §1.
+- **`com-specs`:** `plan/` **tem** de ficar sem nenhuma plan `🟢 Aprovada` pendente de síntese — sintetize
   (o revisor, na própria conversa) e rode `spec-atualizar` para expurgar as `⚪`.
 
 ### Passo 2 — specs vs código
-- **(i):** a adequação **inclui instalar** a pasta de specs. Só `00-contexto.md` e `00-indice.md` recebem
-  conteúdo do alvo; `00-knowledge.md` + os dois `00-prompt-*.md` são **copiados sem reescrever** (leia-os no
-  estado em que estiverem — essa área evolui). `specs/specs/` **nasce vazia** — não infira regra de negócio
-  do código; o `00-contexto.md` declara a fronteira: *"specs documentam deste ponto em diante; o
-  comportamento anterior está em `tests/`, não em prosa"*.
-- **(ii):** confira **cada** spec fixa contra o código real. Divergência não é só relatada — **gera uma
-  plan** `xx-nn-specs-<assunto>` que atualiza a spec (nunca uma edição silenciosa).
+- **`sem-specs`:** a adequação **inclui instalar** a pasta de specs. Só `00-contexto.md` e `00-indice.md`
+  recebem conteúdo do alvo; `00-knowledge.md` + os dois `00-prompt-*.md` são **copiados sem reescrever**
+  (leia-os no estado em que estiverem — essa área evolui). `specs/specs/` **nasce vazia** — não infira
+  regra de negócio do código; o `00-contexto.md` declara a fronteira: *"specs documentam deste ponto em
+  diante; o comportamento anterior está em `tests/`, não em prosa"*.
+- **`specs-divergentes`:** leia `_estrutura_base/` inteira e confira arquivo a arquivo antes de decidir
+  o que absorver (checklist: `templates.md` item 7). **`INDEX.md` ≠ `00-indice.md`** (mapa de leitura ×
+  fila de execução) — compare também a **legenda de status** com a canônica, reportando colisão.
+- **`com-specs`:** confira **cada** spec fixa contra o código real. Divergência não é só relatada — **gera
+  uma plan** `xx-nn-specs-<assunto>` que atualiza a spec (nunca uma edição silenciosa).
 
 ### Passo 3 — avaliar a adequação necessária (a régua ANTES da execução)
 Ordem, e nenhuma delas espera pelo passo 5:
@@ -110,41 +118,46 @@ Ordem, e nenhuma delas espera pelo passo 5:
    `meta-iniciar-repositorio/scripts/`) contra um `create-project.mjs` de referência.
 2. **Instale o aparato de verificação como ato próprio — só o que `template_instalado` diz que falta**.
 
-   **Antes de instalar, pergunte se o que "falta" já existe sob outro nome.** `template_instalado`
-   classifica por **presença de caminho**: um legado maduro que tenha gate, scaffolder ou
-   `conformidade.json` próprios — em `scripts/`, em português, com outro nome — aparece como
-   `faltando: ["gate", ...]`. Instalar o canônico ali cria **dois donos da mesma lei**, que é o defeito
-   que a campanha existe para remover. Medido num legado real: um gate próprio de 544 linhas, com regras
-   **mais estritas** que o canônico, seria duplicado (ou, pior, substituído — perdendo regra em nome de
-   conformidade). Se houver equivalente funcional:
+   **Antes de instalar, pergunte se o que "falta" já existe sob outro nome.** `equivalentes_suspeitos`
+   aponta os candidatos, **sem afirmar equivalência nem mudar `template_instalado`**. Medido num legado
+   real: um gate próprio de 544 linhas, mais estrito que o canônico, seria duplicado (ou, pior,
+   substituído — perdendo regra em nome de conformidade). Se houver equivalente funcional:
    - **não instale o segundo** — a convergência é por **renomeação, em plan** (`scripts/` → `tools/`),
      movendo o arquivo e nunca o motor;
    - **declare a decisão no índice da campanha**: por que não instalou, o que faz o papel do aparato hoje,
-     e **o que substitui a régua vermelha inicial** como métrica (item 3 abaixo) — decisão que só existe
-     dentro do raciocínio de uma plan é decisão que ninguém acha;
+     e **o que substitui a régua vermelha inicial** como métrica (item 3 abaixo);
+   - **enumere as garantias canônicas perdidas** (ex.: ADR-006, o `_template` sem validação) — dívida
+     declarada no índice, nunca silêncio;
    - registre-a também onde o projeto guarda decisão técnica com trade-off (`specs/adr/`).
 
    É portão de HITL (mapa abaixo): equivalência exige julgamento — "mais estrito" não é "igual" —, e é
    por isso que a máquina pergunta em vez de decidir.
 
    Não havendo equivalente, siga por `template_instalado.estado`:
-   - `estado == "nao-instalado"` → instale tudo (`tools/`, `config/`, `project.json`,
-     `packages/ports/`, `adapters/memory/`, `.githooks/`), na **raiz de verdade** do repositório, mesclando
-     e nunca sobrescrevendo.
+   - `estado == "nao-instalado"` → instale tudo (`tools/`, `modules/_template`, `specs/`, `config/`,
+     `project.json`, `packages/ports/`, `adapters/memory/`, `.githooks/`), na **raiz de verdade** do
+     repositório, mesclando e nunca sobrescrevendo. **Estrutura de `specs/` é ato do revisor; conteúdo de
+     código é plan.**
    - `estado == "parcial"` → instale **apenas** as peças de `template_instalado.faltando` — reinstalar o
      que já existe arrisca sobrescrever configuração já ajustada.
    - `estado == "completo"` → **nada a instalar**; siga direto para o item 3 (o gate ainda roda, mesmo
      sem instalar nada — é a verificação, não a instalação, que nunca se pula).
    **Nunca aninhe numa subpasta** (regras de escopo `root` leem a raiz; `core.hooksPath` aceita um valor
    só; `ENV_RAIZ=../../.env` quebra com um nível a mais).
-3. Rode `node tools/gate/validate.mjs --todos` e **deixe vermelho honesto**. Converta cada violação em
-   exceção nominal em `config/conformidade.json` (`modulo`+`regra`+`motivo`+`decisao` apontando um ADR
-   **real**). O número de exceções é a métrica da campanha.
+3. **Confira antes se o alvo proíbe exceção** própria em `conformidade.json` (medido: campanha
+   auto-reprovada por norma do prompt de revisor — se proibir, é portão de HITL). Rode
+   `node tools/gate/validate.mjs --todos` e **deixe vermelho honesto**; converta cada violação em exceção
+   nominal (`modulo`+`regra`+`motivo`+`decisao` com ADR **real**) — a métrica é o número de exceções.
 4. Ponha a área ainda-não-migrada **fora de escopo de lint/tipos, declarada e encolhendo** (o
    `eslint`/`tsc`/`prettier` não têm dívida — §7 abaixo); "caminhos ignorados" é a segunda métrica.
-5. Decida nome de cada módulo candidato (kebab-case; o script sugere), prefixo de tabela (renomear ×
-   exceção, **ofereça a exceção primeiro**) e chaves de ambiente (renomear × exceção) — cada um é um portão
-   de HITL (mapa abaixo). Template dos sete itens de renomeação em `references/templates.md`.
+5. Decida nome de cada módulo candidato (kebab-case; o script sugere), prefixo de tabela e chaves de
+   ambiente (renomear × exceção, **ofereça a exceção primeiro**) — portão de HITL (mapa abaixo). Sete
+   itens + **raio de alcance de cada renomeação** (`grep -c`) em `references/templates.md` item 2.
+6. **Molde do alvo: prova de vida (ADR-006) e comparação com o binding.** Se `modules/_template` existe,
+   rode o ciclo completo — criar, validar, buildar, testar, descartar — antes de qualquer plan
+   (`exists()` não é "conforme") — e compare com `bindings/<binding>/_template/`, sem instalar por cima.
+   **Binding é fonte para o que falta, não para o que diverge por decisão registrada**: com ADR
+   permanece, sem ADR é achado. Portão de HITL (armadilha #5; `workflow.md` §3).
 
 Detalhe completo (mecânica da dívida declarada, o buraco `eslint`/`tsc`/`prettier`, e por que a régua vem
 antes) em `references/workflow.md` §1–§3.
@@ -154,6 +167,7 @@ Toda plan nasce com o prefixo **`xx-`** (`xx-nn-descricao`), registrada em `spec
 qualquer plan do fluxo SDD (molde `_estrutura_base/_templates/template-plan.md`), com **definição de pronto
 cobrada por máquina** (ex.: *"ao fim desta plan, `conformidade.json` tem uma exceção a menos"*). O `nn` é a
 ordem de execução — decisão de HITL (risco × valor), não a ordem em que os módulos foram encontrados.
+`xx-` é namespace próprio — **não** consome `proximo_numero_plan`; o contador segue intocado após o expurgo.
 
 ### HITL final da Fase A — o plano completo
 Antes de escrever qualquer plan, apresente: fase e caminho detectados, a lista de módulos com o nome
@@ -199,9 +213,10 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 
 | Portão | Por quê |
 |---|---|
-| fase (A/B) e caminho (i)/(ii) detectados | confirmar o fato antes de agir |
-| `template_instalado.estado == "completo"` e sem módulos candidatos | confirmar que não há nada a planejar, em vez de reinstalar por cima |
-| aparato equivalente encontrado sob outro nome | instalar o canônico ao lado ou convergir por renomeação — "mais estrito" não é "igual", e a máquina não julga isso |
+| fase (A/B) e caminho (`sem-specs`/`specs-divergentes`/`com-specs`) detectados | confirmar o fato antes de agir; `specs-divergentes` decide o que absorver — nada se remove sem destino escrito |
+| `template_instalado.estado == "completo"` e sem módulos candidatos | confirmar que não há nada a planejar; se o dono seguir mesmo assim, registrar decisão e parecer contrário em ADR |
+| aparato equivalente encontrado sob outro nome | instalar o canônico ao lado ou convergir por renomeação — "mais estrito" não é "igual"; enumerar as garantias canônicas que o equivalente NÃO dá |
+| molde (prova de vida ADR-006 + comparação com o binding) e norma do alvo proibindo exceção | molde que não sobrevive é achado da Fase A; divergência sem ADR é achado; proibição é portão antes de plan que dependa disso |
 | lista de módulos e o nome de cada um | qual capacidade vira qual `id` — o portão central |
 | prefixo de tabela: renomear ou excetuar | por módulo; risco de migração é decisão de negócio |
 | chaves de ambiente: renomear ou excetuar | `env-modulo` é estrito, sem meio-termo |
@@ -217,8 +232,9 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 
 ## Regras e limites
 - **NUNCA** rode a Fase A e a Fase B na mesma conversa — destrói a independência do revisor da Fase B.
-- **NUNCA** infira spec de negócio a partir do código no caminho (i) — spec errada é pior que spec ausente,
-  porque é autoritativa. `specs/specs/` nasce vazia, e isso é correto.
+- **NUNCA** infira spec de negócio a partir do código em `sem-specs` — spec errada é pior que spec
+  ausente, porque é autoritativa. `specs/specs/` nasce vazia, e isso é correto.
+- **NÃO** escreva prompt de execução/correção/conclusão em arquivo — só na conversa; o resto vai na §4.
 - **NUNCA** trabalhe em `main` — a campanha roda em branch; o commit é sempre do usuário.
 - **NUNCA** registre exceção em `conformidade.json` sem `decisao` apontando um ADR **real** em `specs/adr/`
   — o gate rejeita a própria exceção sem esse link, e um ADR inexistente aqui é achado, não conserto.
@@ -232,24 +248,26 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 - **NÃO** saia do escopo: segurança de segredos/dependências é `cyber-*`; performance é `otimizacao-*`.
 
 ## Checklist "pronta"
-- [ ] Fase (A/B) e caminho (i)/(ii) detectados **mecanicamente** e confirmados, não perguntados de saída?
+- [ ] Fase (A/B) e caminho (`sem-specs`/`specs-divergentes`/`com-specs`) detectados **mecanicamente**?
 - [ ] `branch.e_padrao` conferido no Passo 0 — a campanha está em branch própria, e não em `main`/`master`?
 - [ ] `template_instalado` lido **antes** do Passo 3 — e, se `completo` sem módulos candidatos, a skill
-      parou e disse "nada a planejar" em vez de reinstalar?
-- [ ] O que `faltando` lista foi conferido contra **equivalente sob outro nome** antes de instalar — e, se
-      havia, a decisão de não duplicar ficou declarada no índice da campanha e num ADR (não só dentro de
-      uma plan)?
+      parou e disse "nada a planejar" (ou, se o dono seguiu mesmo assim, isso está no ADR)?
+- [ ] `faltando` conferido contra **equivalente sob outro nome** (`equivalentes_suspeitos`) antes de
+      instalar — decisão e garantias canônicas perdidas declaradas no índice e num ADR?
 - [ ] `colisao_raiz`/`workspaces_legado` não foram tratados como legado quando eram o próprio scaffold do
       template (`template_instalado.estado != "nao-instalado"`)?
-- [ ] Caminho (i): `00-contexto`/`00-indice` preenchidos, os três universais copiados sem reescrever,
-      `specs/specs/` vazia e a fronteira declarada?
-- [ ] Caminho (ii): `plan/` sem `🟢` pendente; cada divergência spec×código virou plan, não edição silenciosa?
+- [ ] `sem-specs`: specs instaladas, `00-contexto`/`00-indice` preenchidos, `specs/specs/` vazia?
+      `com-specs`: `plan/` sem `🟢` pendente, divergências viraram plan? `specs-divergentes`:
+      `_estrutura_base` conferida arquivo a arquivo, legenda comparada, antes da primeira plan?
 - [ ] O aparato de gate foi instalado **antes** de qualquer plan de execução (nunca depois, como plan), e
-      só nas peças que `template_instalado.faltando` listava?
-- [ ] `conformidade.json` tem uma exceção nominal (com ADR real) por violação aceita, e nenhuma sem motivo?
-- [ ] Cada módulo tem `id` kebab-case decidido, com os sete itens do template de renomeação resolvidos?
+      só nas peças que `template_instalado.faltando` listava — incluindo `modules/_template` e `specs/`?
+- [ ] `conformidade.json` tem uma exceção nominal (com ADR real) por violação aceita, nenhuma sem motivo,
+      e nenhuma contra norma própria do alvo que as proíba?
+- [ ] Molde do alvo (se houver) passou pela prova de vida ADR-006 e foi comparado com o do binding
+      (adoção seletiva aplicada)? Cada módulo tem `id` kebab-case, sete itens de renomeação resolvidos, e
+      raio de alcance medido antes do HITL final?
 - [ ] Prefixo de tabela e chaves de ambiente: decisão de HITL registrada (renomear ou exceção), por módulo?
-- [ ] Toda plan escrita usa o prefixo `xx-`, está no `00-indice.md`, e tem definição de pronto por máquina?
+- [ ] Toda plan usa `xx-` (não consome `proximo_numero_plan`), está no `00-indice.md`, com pronto por máquina?
 - [ ] O HITL do plano completo aconteceu **antes** de qualquer plan ser escrita?
 - [ ] Fase B rodou em conversa separada, por revisor diferente do da execução?
 - [ ] O critério mecânico do §7 foi conferido inteiro antes do veredito, e o julgamento humano ficou restrito
@@ -258,12 +276,10 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/workflow.md` — detalhe de cada passo, a mecânica da dívida declarada, o buraco
   `eslint`/`tsc`/`prettier`, e as seis armadilhas medidas.
-- `references/templates.md` — o template dos sete itens de renomeação de módulo, o esqueleto de plan `xx-*`,
-  o snippet de exceção em `conformidade.json` e o relatório da Fase B.
-- `references/examples.md` — os dois caminhos ((i) e (ii)) percorridos ponta a ponta, e o resultado do
-  legado sintético usado para validar esta skill.
-- `scripts/diagnosticar_terreno.py` — o diagnóstico mecânico (fase, caminho, **branch e árvore suja**,
-  **se o aparato do template já está instalado** — nada/parcial/completo, com as peças que faltam —, colisão de manifesto **só quando é
-  legado de verdade**, geração do template, candidatos a módulo **descobertos** por varredura da raiz de
-  módulos — com `--modulos` como override — e conformidade de nome). `--autoteste` prova o núcleo com
-  fixtures.
+- `references/templates.md` — os sete itens de renomeação (+ raio de alcance), checklist de
+  `_estrutura_base`, esqueleto de plan `xx-*`, exceção em `conformidade.json` e relatório da Fase B.
+- `references/examples.md` — dois cenários percorridos ponta a ponta, e o resultado do legado sintético
+  usado para validar esta skill.
+- `scripts/diagnosticar_terreno.py` — diagnóstico mecânico: fase, caminho tri-estado (`sinais_sdd`),
+  branch/árvore suja, aparato do template (oito peças, `equivalentes_suspeitos` sob outro nome), colisão
+  só quando é legado de verdade, geração do template e candidatos a módulo. `--autoteste` prova o núcleo.
