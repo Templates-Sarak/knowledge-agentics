@@ -56,7 +56,7 @@ export function createApp({ deps, auth, raiz }: OpcoesModulo): Express {
 
   const app = express();
   app.use(express.json({ limit: `${config.api.maxBodyKb}kb` }));
-  app.use(requestId(() => deps.geradorId.hash()));
+  app.use(requestId(() => deps.idGenerator.hash()));
   app.use(securityHeaders(seguranca.headers));
   app.use(cors(seguranca.cors));
   app.use(rateLimit(seguranca.rateLimit));

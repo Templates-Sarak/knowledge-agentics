@@ -22,7 +22,7 @@ class Pagina:
     total: int
 
 
-class Repositorio(Protocol):
+class Repository(Protocol):
     """Persistencia dos registros do PROPRIO modulo. Nunca toca tabela de outro modulo."""
 
     async def list(self, pagina: int, tamanho: int) -> Pagina: ...
@@ -34,19 +34,19 @@ class Repositorio(Protocol):
     async def count(self) -> int: ...
 
 
-class Auditoria(Protocol):
+class Audit(Protocol):
     """Trilha append-only. Guarda o NOME dos campos alterados, nunca o valor."""
 
     async def record(self, evento: dict[str, object]) -> None: ...
 
 
-class Relogio(Protocol):
+class Clock(Protocol):
     """O instante. Existe para que o dominio nunca chame `datetime.now()`."""
 
     def now(self) -> str: ...
 
 
-class GeradorId(Protocol):
+class IdGenerator(Protocol):
     """Identificadores. Existe para que o dominio nunca chame `random`."""
 
     def hash(self) -> str: ...
@@ -56,7 +56,7 @@ class Auth(Protocol):
     async def verify(self, token: str) -> dict[str, object] | None: ...
 
 
-class Notificador(Protocol):
+class Notifier(Protocol):
     """Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
     modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1)."""
 
@@ -70,13 +70,13 @@ class DependenciasModulo:
     Cada nome aqui corresponde a uma chave de config/ports.json e a uma entrada de
     module.json:ports — o gate cobra que os tres concordem.
 
-    `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
-    fabrica (`FABRICAS["notificador"]`, src/composition.py) e alcancada de verdade no boot, nao so
+    `notifier` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
+    fabrica (`FABRICAS["notifier"]`, src/composition.py) e alcancada de verdade no boot, nao so
     declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
     """
 
-    repositorio: Repositorio
-    auditoria: Auditoria
-    relogio: Relogio
-    geradorId: GeradorId
-    notificador: Notificador | None = None
+    repository: Repository
+    audit: Audit
+    clock: Clock
+    idGenerator: IdGenerator
+    notifier: Notifier | None = None

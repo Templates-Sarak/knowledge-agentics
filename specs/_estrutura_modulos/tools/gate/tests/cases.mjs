@@ -126,8 +126,8 @@ export const CASOS = [
     regra: 'estrutura',
     descricao: 'core/ports/ vazio ou ausente',
     // Cascata legitima: `core/ports/index.*` e o UNICO lugar do modulo onde
-    // a palavra "notificador" aparece em codigo (a interface da porta) — sem a pasta, config-morta
-    // deixa de achar quem "le" a chave `notificador` de config/ports.json, e acusa TAMBEM.
+    // a palavra "notifier" aparece em codigo (a interface da porta) — sem a pasta, config-morta
+    // deixa de achar quem "le" a chave `notifier` de config/ports.json, e acusa TAMBEM.
     tambem: ['config-morta'],
     contem: 'core/ports/ vazia ou ausente',
     mutar: (m) => m.removerPasta('core/ports'),

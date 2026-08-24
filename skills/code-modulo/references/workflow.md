@@ -200,7 +200,7 @@ Escreva `contract/openapi.yaml` com os três endpoints obrigatórios e os recurs
 **Objetivo:** cada camada nasce sobre a anterior já pronta, sem retrabalho.
 
 1. **`core/domain`** — tipos + validação. Sem I/O, sem `new Date()`, sem `Math.random()` (use as portas
-   `relogio` e `geradorId`).
+   `clock` e `idGenerator`).
 2. **`api/src/routes`** — valide a entrada na **borda**, exija permissão, monte a resposta pelo mapeador,
    lance o erro da taxonomia fechada (nunca `res.status(...)` ad hoc).
 3. **`api/src/mappers`** — `linhaParaDominio`, `dominioParaLinha` e a **projeção de saída por allowlist**.

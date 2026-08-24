@@ -52,7 +52,7 @@ function requiredRoutes(router, { deps, config }) {
   const { manifesto } = config;
 
   router.get('/health', (_req, res, next) => {
-    deps.repositorio
+    deps.repository
       .count()
       .then(() => res.json({ ok: true, modulo: manifesto.id }))
       .catch(next);
@@ -63,7 +63,7 @@ function requiredRoutes(router, { deps, config }) {
   });
 
   router.get('/resumo', (_req, res, next) => {
-    deps.repositorio
+    deps.repository
       .count()
       .then((total) => res.json({ total }))
       .catch(next);
@@ -76,13 +76,13 @@ function recordRoutes(router, { deps, config }) {
   router.get('/registros', requirePermission(ler), (req, res, next) => {
     Promise.resolve()
       .then(() => readPagination(req.query, config))
-      .then(([pagina, tamanho]) => deps.repositorio.list(pagina, tamanho))
+      .then(([pagina, tamanho]) => deps.repository.list(pagina, tamanho))
       .then((r) => res.json(toCollection(r.itens, r.pagina, r.tamanho, r.total)))
       .catch(next);
   });
 
   router.get('/registros/:hash', requirePermission(ler), (req, res, next) => {
-    deps.repositorio
+    deps.repository
       .findByHash(req.params.hash)
       .then((registro) => {
         if (registro === null) throw new ErroApi('NAO_ENCONTRADO', 'registro nao encontrado');
@@ -104,11 +104,11 @@ async function create(corpo, deps, config, requestId) {
   const registro = buildRecord(
     entrada,
     config.dominio.validStatuses,
-    deps.geradorId.hash(),
-    deps.relogio.now(),
+    deps.idGenerator.hash(),
+    deps.clock.now(),
   );
-  await deps.repositorio.insert(registro);
-  await deps.auditoria.record({
+  await deps.repository.insert(registro);
+  await deps.audit.record({
     hash: registro.hash,
     acao: 'create',
     sujeito: 'sistema',

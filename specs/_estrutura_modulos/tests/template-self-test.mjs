@@ -51,9 +51,9 @@
  * semanal, de exercitar `create-adapter.mjs` de verdade. Sem isto, o gerador só era provado por
  * fixture — cópia do molde — e foi exatamente uma fixture que envelheceu sem ninguém comparar
  * (âncora Python, ramo de porta nova em TS/Python) que produziu os dois bugs da rodada anterior.
- * Varrer o vocabulário INTEIRO, em vez de citar `repositorio`/`verificadorDeToken` a dedo, cobre os
+ * Varrer o vocabulário INTEIRO, em vez de citar `repository`/`tokenVerifier` a dedo, cobre os
  * dois ramos do gerador que interessam — porta JÁ em `FABRICAS` (a maioria) e porta AUSENTE dela
- * (hoje só `verificadorDeToken`) — e cobre a porta nova sozinho no dia em que o vocabulário crescer
+ * (hoje só `tokenVerifier`) — e cobre a porta nova sozinho no dia em que o vocabulário crescer
  * de novo (`fila` tem retorno prometido no comentário de `ports-vocabulary.mjs`), sem editar este
  * arquivo. Cada passo confere **exit 0 e conteúdo**: só o exit code não distingue "registrou" de
  * "não fez nada" — a classe exata dos dois bugs, em que a âncora não batia e o script abortava, mas
@@ -113,8 +113,8 @@ export const COMBINACOES_DE_MODULO = [
 
 /**
  * Um provedor por porta, kebab-case FIXO por ÍNDICE — nunca derivado do nome da porta. Armadilha
- * medida (rodada anterior): `verificadorDeToken` é camelCase, e um provedor
- * `prov-verificadorDeToken` é inválido — `create-adapter.mjs` REJEITA antes de tocar disco
+ * medida (rodada anterior): `tokenVerifier` é camelCase, e um provedor
+ * `prov-tokenVerifier` é inválido — `create-adapter.mjs` REJEITA antes de tocar disco
  * (correto). Por índice sobrevive a qualquer nome de porta futuro, sem repensar.
  *
  * COM HÍFEN de propósito (prefixo `prov-`, não só a letra): `create-adapter.mjs` aceita provedor
@@ -197,9 +197,9 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
   // ADR-011), "ruff format ja bate, mesmo varrendo o vocabulario inteiro" era medido e verdadeiro
   // — porque `provedorDoIndice` so gerava provedor de UMA letra, sem hifen. Trocar para kebab COM
   // hifen (pra exercitar o proprio achado ①) engordou a linha de `FABRICAS` alem dos 110 cols do
-  // ruff MESMO pro provedor mais curto possivel (medido: `repositorio` ja estava na borda, zero
-  // folga, com provedor de uma letra so) — Python precisa do mesmo passo de formatacao que TS/JS
-  // sempre teve, pelo mesmo motivo.
+  // ruff MESMO pro provedor mais curto possivel (medido a epoca: `repositorio` — hoje `repository`,
+  // Onda 3 do ADR-013/016 — ja estava na borda, zero folga, com provedor de uma letra so) — Python
+  // precisa do mesmo passo de formatacao que TS/JS sempre teve, pelo mesmo motivo.
   const formatarAdapters = { nome: 'formatar-adapters', tipo: 'formatar-adapters' };
   const formatarAdaptersPy = { nome: 'formatar-adapters', tipo: 'formatar-adapters-py' };
   // Depois do ÚLTIMO `criar-modulo`, antes de `verificar`: o passo em si só poda o disco — quem lê
@@ -759,10 +759,10 @@ function casosDeAutoteste() {
         return iFormatar === iUltimoAdapter + 1 && iClone === iFormatar + 1;
       })
     ) },
-    { nome: 'passosDoBinding: cobre pelo menos uma porta ja em FABRICAS (repositorio) e a unica ausente (verificadorDeToken)', fn: () => (
+    { nome: 'passosDoBinding: cobre pelo menos uma porta ja em FABRICAS (repository) e a unica ausente (tokenVerifier)', fn: () => (
       BINDINGS.every((binding) => {
         const portas = passosDoBinding(binding).filter((p) => p.tipo === 'criar-adapter').map((p) => p.porta);
-        return portas.includes('repositorio') && portas.includes('verificadorDeToken');
+        return portas.includes('repository') && portas.includes('tokenVerifier');
       })
     ) },
     { nome: 'classificarPasso: status 0 e sem error -> ok', fn: () => classificarPasso({ error: undefined, status: 0 }).ok === true },

@@ -134,7 +134,7 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | Tunable não-secreto: paginação, timeout, limite de corpo, nível de log | `config/api.json` | `"maxPageSize": 100` |
 | Parâmetro de negócio: status válidos, moedas, percentuais | `config/domain.json` | `"moedasAceitas": ["BRL"]` |
 | Rate limit, CORS, headers | `config/security.json` | `"writeLimit": 20` |
-| Qual adapter atende cada porta | `config/ports.json` | `"repositorio": "postgres"` |
+| Qual adapter atende cada porta | `config/ports.json` | `"repository": "postgres"` |
 | Rótulo e mensagem exibidos ao usuário | `config/texts.json` | `"emptyList": "Nada por aqui."` |
 | Identidade e contrato do módulo | `module.json` | §3 |
 
@@ -200,15 +200,15 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 
 | Porta | Responsabilidade |
 |---|---|
-| `repositorio` | buscar, listar, inserir, atualizar, contar |
-| `auditoria` | gravar a trilha append-only do módulo |
-| `relogio` | `now()` |
-| `geradorId` | identificadores e hash |
+| `repository` | buscar, listar, inserir, atualizar, contar |
+| `audit` | gravar a trilha append-only do módulo |
+| `clock` | `now()` |
+| `idGenerator` | identificadores e hash |
 | `storage` | gravar/ler arquivo |
-| `verificadorDeToken` | verificar token e devolver claims |
-| `notificador` | e-mail / mensagem |
+| `tokenVerifier` | verificar token e devolver claims |
+| `notifier` | e-mail / mensagem |
 
-`relogio` e `geradorId` não são preciosismo: são o que torna o `core/` determinístico e testável. Sem elas,
+`clock` e `idGenerator` não são preciosismo: são o que torna o `core/` determinístico e testável. Sem elas,
 `new Date()` e `Math.random()` voltam para dentro do domínio e o motor deixa de ser reproduzível.
 
 Fonte NORMATIVA do vocabulário: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do
@@ -234,7 +234,7 @@ ADR.
 - **Adapter novo nasce por `create-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
   `create-module.mjs`: copia o molde (`adapters/_template`), substitui marcadores, registra a fábrica em
   `src/composition.*` e roda o gate antes de devolver o controle.
-- **`postgres` (`repositorio`/`auditoria`) já vem PRONTO, ao lado de `memory`** — não nasce
+- **`postgres` (`repository`/`audit`) já vem PRONTO, ao lado de `memory`** — não nasce
   por `create-adapter.mjs`, porque já existe: materializa a forma que
   `create-module.mjs` já cria (`<prefix>metadados`/`<prefix>auditoria`). `memory` continua o
   DEFAULT de todo módulo; trocar é a mesma linha de `config/ports.json`, agora verdadeira nos dois
@@ -375,7 +375,7 @@ nunca o cite em schema de resposta.
 
 1. `module.json:data.tables`, com o prefixo `<modulo>_`.
 2. Migration + `schema.sql`.
-3. Acesso pela porta `repositorio`; nada de SQL de fornecedor dentro do módulo.
+3. Acesso pela porta `repository`; nada de SQL de fornecedor dentro do módulo.
 4. **Nunca** referencie tabela de outro módulo — o dado alheio vem pela `api/` dele.
 
 **Nada a fazer por conta do controle de estado.** `<modulo>_migrations` (§2, criada pela migration

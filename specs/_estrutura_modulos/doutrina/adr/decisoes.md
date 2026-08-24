@@ -811,3 +811,237 @@ vazia.
    e `node tests/run-all-selftests.mjs` (25/25) verdes. **Mais, aqui, um item que os testes não cobrem**:
    `hooks/_lib.js` conferido À MÃO contra o `verification.json` novo — nenhum teste do template ou da base
    cruza os dois hoje (item 4 acima), e é o único ponto da campanha inteira com essa lacuna.
+
+---
+
+## ADR-016 — O vocabulário de portas: a tabela derivada que a Onda 3 aplica
+
+**Status:** 🟢 Aceito
+
+**Contexto.** O `ADR-013` já decidiu a Onda 3 em uma linha por porta — *"chave de config + símbolo do
+esqueleto"* — e listou as sete: `repositorio`→`repository`, `auditoria`→`audit`, `relogio`→`clock`,
+`geradorId`→`idGenerator`, `verificadorDeToken`→`tokenVerifier` (supersedendo o `ADR-010`),
+`notificador`→`notifier`, `storage` (já inglês). O que essa linha não itemiza é o que o `ADR-014` já
+provou ser necessário itemizar para `RAIZ_*`/nome de arquivo: as **interfaces** do esqueleto que carregam
+esses nomes (`Repositorio`, `NomeDePorta`, …) e as **implementações derivadas** que os adapters declaram
+(`RepositorioEmMemoria`, `AuditoriaPostgres`, `RelogioFixo`, …), mais o identificador `PORTAS_CONHECIDAS`,
+que existe em nove arquivos e não muda do mesmo jeito nos nove. Sem esta tabela, a Onda 3 repete o erro que
+o `ADR-014` já corrigiu uma vez: renomear por analogia em vez de por decisão escrita — e aqui o risco é
+maior, porque a varredura desta conversa (leitura direta dos três `packages/ports/index.*` e dos seis
+arquivos de `adapters/{memory,postgres}/`) achou os bindings **divergentes entre si** em pontos que uma
+tabela genérica esconderia.
+
+Contagem de rastro, por arquivo (não por ocorrência — o `ADR-013` mediu ocorrência; aqui a unidade que
+importa é "arquivo que a Onda 3 toca", porque é isso que orienta a varredura de conferência): 55 arquivos
+citam algum nome minúsculo de porta fora de `doutrina/`, 16 citam alguma interface do bloco (b), 7 citam
+algum nome de implementação derivada do bloco (c), e 9 citam `PORTAS_CONHECIDAS`. A ordem de grandeza bate
+com o "maior das quatro ondas" já apontado na abertura desta campanha; o que esta conversa muda é a
+**composição** do bloco (c) — ver item 1.3.
+
+### 1. A tabela — três blocos, um por natureza
+
+**1.1 Nomes de porta** (chave de `config/ports.json`, item de `module.json:ports`, propriedade de
+`config-ports.schema.json`, item do enum de `module.schema.json:ports.items.enum`) — já no `ADR-013`,
+transcrito aqui para o ADR ficar autossuficiente:
+
+| Português (hoje) | Inglês (alvo) |
+|---|---|
+| `repositorio` | `repository` |
+| `auditoria` | `audit` |
+| `relogio` | `clock` |
+| `geradorId` | `idGenerator` |
+| `verificadorDeToken` | `tokenVerifier` |
+| `notificador` | `notifier` |
+| `storage` | `storage` (já inglês) |
+
+**Leitores concretos, achados na varredura — o `ADR-013` fala em "chave de config + símbolo do esqueleto"
+em abstrato; estes são os arquivos físicos onde isso mora**, e a Onda 3 precisa dos sete pares
+(21 arquivos, 3 bindings × 7): `bindings/*/root/config/ports.json` (as chaves), `bindings/*/_template/module.json`
+(o array `ports: [...]`, valores literais) e `bindings/*/root/src/composition.*` (o objeto `FABRICAS`, cujas
+chaves de primeiro nível **são** os nomes de porta — confirmado lendo os três: `{ repositorio: {...},
+auditoria: {...}, relogio: {...}, geradorId: {...}, storage: {...}, notificador: {...} }`; nenhum dos três
+tem entrada para `verificadorDeToken`, o "LIMITE CONHECIDO" que o `ADR-010` já registrava — nenhum provedor
+foi cadastrado para essa porta, então não há chave para renomear, só a ausência dela permanece).
+
+**1.2 Interfaces do esqueleto** (`packages/ports/`) — **conferidas contra os três arquivos reais, e eles
+divergem**, exatamente como o prompt que abriu esta conversa já avisava que poderiam divergir:
+
+| Português (hoje) | Inglês (alvo) | TS | JS | Python |
+|---|---|---|---|---|
+| `Repositorio<T>` | `Repository<T>` | interface genérica | `@typedef` JSDoc genérico | `Protocol` |
+| `Auditoria` | `Audit` | interface | `@typedef` JSDoc | `Protocol` |
+| `EventoDeAuditoria` | `AuditEvent` | interface | `@typedef` JSDoc | **ausente** — `record()` toma `dict[str, object]` cru, sem tipo nomeado |
+| `Relogio` | `Clock` | interface | `@typedef` JSDoc | `Protocol` |
+| `GeradorId` | `IdGenerator` | interface | `@typedef` JSDoc | `Protocol` |
+| `VerificadorDeToken` | `TokenVerifier` | interface | `@typedef` JSDoc | `Protocol` |
+| `Storage` | `Storage` (já inglês) | interface | `@typedef` JSDoc | `Protocol` |
+| `Notificador` | `Notifier` | interface | `@typedef` JSDoc | `Protocol` |
+| `PORTAS_CONHECIDAS` | `KNOWN_PORTS` | `const ... as const` | `const` (array simples) | tupla `PORTAS_CONHECIDAS: tuple` |
+| `NomeDePorta` | `PortName` | `type` derivado de `PORTAS_CONHECIDAS` | **ausente** — nenhum typedef equivalente | **ausente** — nenhum type alias; a tupla não tem tipo próprio |
+
+Duas divergências que a tabela genérica do `ADR-013` não previa e que a Onda 3 não pode fechar por
+analogia: `EventoDeAuditoria` **não existe em Python** (o binding usa `dict[str, object]` diretamente na
+assinatura de `Auditoria.record`), e `NomeDePorta`/`PortName` **só existe em TypeScript** (JS não declarou
+o typedef equivalente; Python não declarou `Literal`/`Enum` para a tupla). Onda 3 traduz
+`NomeDePorta`→`PortName` só no `index.ts`; nos outros dois bindings não há símbolo para tocar — silêncio
+correto, não lacuna.
+
+**1.3 Implementações derivadas** (`adapters/memory/`, `adapters/postgres/`) — **este é o bloco onde a
+varredura mais diverge do que se presumia ao abrir esta conversa.** A suposição inicial era de nomes como
+`RepositorioEmMemoria` e `RepositorioPostgres` simetricamente nos três bindings. A leitura dos seis
+arquivos reais mostra que **só o binding Python deriva nome de classe do vocabulário de porta** —
+TypeScript e JavaScript já escrevem `adapters/{memory,postgres}/index.*` com **funções fábrica em inglês
+desde sempre** (`createRepository`, `createAuditLog`, `createClock`, `createFixedClock`,
+`createIdGenerator`, `createSequentialGenerator`, `createInMemoryStorage`, `createInMemoryNotifier`,
+`createPostgresRepository`, `createPostgresAudit`) — nenhuma delas deriva de
+`Repositorio`/`Auditoria`/`Relogio`/`GeradorId`/`Storage`/`Notificador` por concatenação; são nomes
+próprios, já na forma-alvo, e a Onda 3 **não toca nelas** — só nos `import type { Repositorio, ... }` que
+apontam para o bloco 1.2.
+
+As dez que **de fato** derivam mecanicamente de um nome de porta, todas em
+`bindings/python/root/adapters/{memory,postgres}/__init__.py`:
+
+| Classe (hoje) | Deriva de | Classe (alvo) |
+|---|---|---|
+| `RepositorioEmMemoria` | `Repositorio` + `EmMemoria` | `InMemoryRepository` |
+| `AuditoriaEmMemoria` | `Auditoria` + `EmMemoria` | `InMemoryAudit` |
+| `RelogioDoSistema` | `Relogio` + `DoSistema` | `SystemClock` |
+| `RelogioFixo` | `Relogio` + `Fixo` | `FixedClock` |
+| `GeradorPadrao` | `Gerador` (raiz truncada de `GeradorId`) + `Padrao` | `DefaultIdGenerator` |
+| `GeradorSequencial` | `Gerador` (idem) + `Sequencial` | `SequentialIdGenerator` |
+| `StorageEmMemoria` | `Storage` + `EmMemoria` | `InMemoryStorage` |
+| `NotificadorEmMemoria` | `Notificador` + `EmMemoria` | `InMemoryNotifier` |
+| `RepositorioPostgres` | `Repositorio` + `Postgres` | `PostgresRepository` |
+| `AuditoriaPostgres` | `Auditoria` + `Postgres` | `PostgresAudit` |
+
+Nota de tradução: `GeradorPadrao`/`GeradorSequencial` derivam da raiz `Gerador`, não de `GeradorId` por
+inteiro — o qualificador `Id` só aparece no nome da PORTA, não nos nomes das classes que a implementam
+hoje. O alvo em inglês segue a mesma economia (`DefaultIdGenerator`, não `DefaultGeneratorId`) porque
+`IdGenerator` já é o substantivo — a ordem das palavras no composto muda com o idioma, não é regra nova,
+é gramática.
+
+**Achado fora da tabela, registrado para não ser confundido com omissão:** `AuthQueNega`
+(`adapters/memory/__init__.py`) — e seu equivalente `createDenyingAuth()` nos três bindings — **não deriva**
+de `VerificadorDeToken`, deriva do nome antigo `auth`, anterior ao `ADR-010`. É o mesmo tipo de "ponto
+cego" que `hooks/_lib.js` foi para a Onda 2b (`ADR-015` item 4): nenhum teste do template acusa o nome
+desatualizado, porque `AuthQueNega`/`createDenyingAuth` continuam implementando `VerificadorDeToken`
+corretamente — só o NOME não acompanhou a troca de vocabulário que o `ADR-010` já fez, faz duas ondas. Pela
+régua deste ADR (item 3, "nome que não deriva de porta não entra"), **não entra na tabela de renomeação
+mecânica** — mas fica **registrado aqui**, nominalmente, para a Onda 3 decidir se aproveita a passagem pelo
+arquivo para consertar um desalinhamento antigo (`DenyAllTokenVerifier`/`createDenyingTokenVerifier`) ou se
+deixa para um ADR próprio; esta conversa não decide, só evita que o achado desapareça.
+
+Duas dataclasses privadas do adapter Postgres, `_RegistroDoMolde`/`_PaginaDoMolde` (Python) e o par
+`RegistroDoMolde`/`toRecord` (TS/JS), **também não entram**: não derivam de nome de porta, derivam de
+"registro" + "molde" (a forma física que a migration cria) — mesma família do `Pagina` do item 3 abaixo,
+4º eixo.
+
+### 2. `PORTAS_CONHECIDAS` — o mesmo identificador, dois destinos
+
+Este é o item que justifica o ADR sozinho. O identificador vive em **nove** arquivos — confirmado por
+varredura (`grep -rl PORTAS_CONHECIDAS`) —, e a pasta decide:
+
+| Onde | Regra | Ação |
+|---|---|---|
+| `tools/gate/ports-vocabulary.mjs` (a **fonte**) | ADR-009 linha 4 — ferramental vendorizado | símbolo fica `PORTAS_CONHECIDAS`; o **conteúdo** do array vira `['repository', 'audit', 'clock', 'idGenerator', 'storage', 'tokenVerifier', 'notifier']` |
+| `tools/generate-port-schemas.mjs` | idem | símbolo fica (é o `import { PORTAS_CONHECIDAS }`); consome o conteúdo já traduzido da fonte, nada a editar aqui além do import continuar batendo |
+| `tools/create-adapter.mjs` | idem | símbolo fica; toda leitura de `PORTAS_CONHECIDAS` passa a devolver os nomes ingleses — o parâmetro `<porta>` da CLI passa a aceitar `repository`, não `repositorio` |
+| `tests/template-self-test.mjs` | idem | símbolo fica; o vocabulário que ele varre (para gerar provedor de teste por porta) já vem em inglês da fonte |
+| `tests/verify-catalog.mjs` | idem | símbolo fica; é quem cobra `--conferir-vocabulario` — a comparação passa a ser contra os nomes ingleses |
+| `tests/verify-routine.mjs` | idem | símbolo fica |
+| `bindings/typescript/root/packages/ports/index.ts` | ADR-009 linha 3 — esqueleto | nome vira `KNOWN_PORTS`; conteúdo em inglês |
+| `bindings/javascript/root/packages/ports/index.js` | idem | nome vira `KNOWN_PORTS`; conteúdo em inglês |
+| `bindings/python/root/packages/ports/__init__.py` | idem | nome vira `KNOWN_PORTS`; conteúdo em inglês |
+
+A frase que resume: **o nome fica, o conteúdo vai — exceto onde o próprio nome é esqueleto.** É a terceira
+vez que esta forma aparece na campanha (`RAIZ_TEMPLATE` ficou símbolo na Onda 1 enquanto `RAIZ_API_PORT`
+virava `ROOT_API_PORT`; `severidadeMinima()` ficou função em `tools/ci-dependencies.mjs` na Onda 2b enquanto
+a chave `dependencias.severidadeMinima` virava `dependencies.minimumSeverity`); registre-a como precedente
+para que a Onda 3 a reconheça de saída, sem precisar redescobrir o raciocínio.
+
+### 3. O que NÃO entra, e por quê
+
+- **Ids de regra** — `porta-declarada` e `portas-pura` são os únicos dois ids do catálogo com "porta" no
+  nome (varredura confirmou: nenhum `porta-nao-usada` existe — os "demais" da suposição inicial são
+  `adapter-isolado` e `composicao-descoberta`, que não têm "porta" no id e não citam nome de porta
+  específico no corpo). Os dois ficam em português por `ADR-009` linha 6. As duas verificações
+  (`configuration.mjs:217`, `isolation.mjs:461`) já compõem a mensagem a partir de `ctx.manifesto.ports`/
+  `config/ports.json` em runtime — **nenhuma tem nome de porta hardcoded**, então nem a descrição precisa
+  de edição manual: o texto já muda sozinho quando os valores mudam.
+- **Símbolos de `packages/ports/` que não derivam de porta** — `ErroPorta`, `CodigoErro`,
+  `CODIGOS_DE_ERRO`, `Pagina` (e, no Postgres, `RegistroDoMolde`/`_RegistroDoMolde`,
+  `_PaginaDoMolde`, `ModuloParaAdapter`, `DadosDoManifesto`, `ContextoDeTabela`). São esqueleto em
+  português, sim, mas pertencem ao **4º eixo** (símbolos estruturais), que **nenhum ADR do contrato
+  autoriza**. Listados nominalmente para a Onda 3 não os arrastar por analogia — `ErroPorta` em particular
+  é tentador por conter a palavra "porta", mas o "Porta" ali é o SUBSTANTIVO GERAL (falha de qualquer
+  porta), não uma referência a um nome específico do catálogo.
+- **Símbolos internos de `tools/`** homônimos de porta — a varredura não achou nenhum além dos já listados
+  no item 2 (fonte e consumidores de `PORTAS_CONHECIDAS`) e nas duas regras acima.
+- **`AuthQueNega`/`createDenyingAuth`** — ver item 1.3: não deriva do nome de porta atual, é achado
+  registrado, não item da tabela.
+
+### 4. O mecanismo de geração — e o que ele impõe à ordem da onda
+
+`config-ports.schema.json` é **inteiro derivado** e `module.schema.json:ports.items.enum` é **parcialmente**
+derivado, os dois por `generate-port-schemas.mjs`, com `--conferir` para detectar edição manual. A
+consequência operacional: a Onda 3 edita **só** `tools/gate/ports-vocabulary.mjs` (o array
+`PORTAS_CONHECIDAS`, conteúdo — item 2) e depois roda `node tools/generate-port-schemas.mjs` para
+regenerar os dois schemas — nunca edita `config-ports.schema.json` nem o trecho `enum` de
+`module.schema.json` à mão. `--conferir` (`node tools/generate-port-schemas.mjs --conferir`) é o
+verificador que prova que foi feito assim, e entra na definição de pronto (item 6). Ordem dentro da onda:
+(1) `ports-vocabulary.mjs`; (2) `generate-port-schemas.mjs` sem flag, para escrever os dois schemas; (3) os
+`config/ports.json` e `_template/module.json` dos três bindings (item 1.1); (4) os três
+`packages/ports/index.*` (itens 1.2 e 2, à mão); (5) os seis `adapters/{memory,postgres}/index.*`
+(imports do bloco 1.2, e as dez classes Python do item 1.3); (6) `src/composition.*` — os imports de tipo
+e as chaves do `FABRICAS` (item 1.1); (7) `--conferir` + os dois gates de teste.
+
+Registre também que `packages/ports/index.{ts,js,py}` **não é gerado** (a docstring do
+`ports-vocabulary.mjs` explica: são interfaces de linguagem de verdade, três sintaxes) e continua mantido à
+mão — é o lugar onde a onda pode divergir em silêncio, e é também o lugar com a divergência estrutural já
+documentada no item 1.2 (`EventoDeAuditoria` ausente em Python, `NomeDePorta` só em TS): a Onda 3 mantém
+essas ausências como estão — não é ocasião para simetrizar os três bindings, só para traduzir o que existe
+em cada um.
+
+**Achado adicional de escopo:** `doutrina/01-modulo.md §5.1` cita as sete portas pelo nome português atual
+na sua tabela normativa (`repositorio`, `auditoria`, `relogio`, `geradorId`, `storage`,
+`verificadorDeToken`, `notificador`) — o mesmo padrão que o `ADR-013` já flagrou para a tabela §3.1 de
+`04-regras.md` citando `config/seguranca.json` como exemplo desatualizado. `doutrina/` é a exceção de
+**idioma da árvore** (`ADR-009` linha 2), não uma licença para citar um identificador que já não existe no
+código — a Onda 3 atualiza a coluna de nomes dessa tabela para o alvo em inglês, no MESMO espírito que
+`04-regras.md §3.1` já foi corrigido, e isso não é "traduzir doutrina", é manter uma citação de identificador
+correta. Fora do escopo desta conversa (que só toca `decisoes.md`) — registrado para a Onda 3 não descobrir
+sozinha.
+
+### 5. As três questões abertas da campanha
+
+Estado, não decisão:
+- **`$comentario` como chave** nos 9 `tools/gate/schemas/*.json` (`compliance.schema.json`,
+  `config-api.schema.json`, `config-domain.schema.json`, `config-ports.schema.json`,
+  `config-security.schema.json`, `config-texts.schema.json`, `module.schema.json`, `project.schema.json`,
+  `verification.schema.json` — os nove confirmados por varredura): é chave de JSON (→ inglês,
+  `$comment`) ou arquivo de `tools/` isento (linha 4)? Os valores dela já foram atualizados nas Ondas 2a/2b
+  onde aplicável; **a chave, não** — inclusive em `config-ports.schema.json`, que este ADR toca via
+  `generate-port-schemas.mjs` (a constante `COMENTARIO_CONFIG_PORTAS`): o texto do comentário já está
+  correto em português e não cita nome de porta específico, então nada nele muda com a Onda 3 além do
+  conteúdo do array `properties` que o cerca — a chave `$comentario` em si segue indefinida, mesma questão
+  aberta do `ADR-015`.
+- **O 4º eixo** — símbolos estruturais do esqueleto em português (`ConfigSeguranca`, `ConfiguracaoModulo`,
+  `DependenciasModulo`, `ContextoDaBorda`, `ErroApi`, `CODIGOS_DE_ERRO`, `ManifestoDescoberto`, `ErroPorta`,
+  `Pagina`, `CodigoErro`, e os locais de adapter listados no item 3). `ADR-009` linha 3 os manda para o
+  inglês; nenhum ADR os lista. A lista definitiva só se fecha **depois** da Onda 3, porque os derivados de
+  porta (que compartilhariam análise com alguns destes) já saíram dela por este ADR.
+- **O marcador `<MODULO>`** — já registrado no `ADR-014` §5; aponte para lá, não repita.
+
+### 6. Consequências
+
+1. **O contrato final é `ADR-013` + `014` + `015` + `016` lidos juntos.** A Onda 3 é a última onda do
+   contrato de idioma; o que sobrar depois dela são as três questões do item 5, não dívida escondida.
+2. **A composição do bloco (c) muda em relação ao que se presumia antes da varredura**: não há simetria de
+   três bindings — só Python deriva nome de implementação do vocabulário de porta (dez classes); TS/JS já
+   nasceram com fábricas em inglês e não precisam de rename nesse eixo, só de atualizar os `import type`
+   que apontam para o bloco (b). Uma onda que tratasse os três bindings como espelhos exatos erraria por
+   excesso (tentando renomear função já correta) ou por falta (perdendo `AuthQueNega`, que não é da tabela
+   mas é achado real).
+3. **A definição de pronto ganha um item além dos testes de gate/selftest**:
+   `node tools/generate-port-schemas.mjs --conferir` sai 0 — é a prova de que os dois schemas derivados
+   foram gerados, não editados à mão, depois da tradução do array-fonte.

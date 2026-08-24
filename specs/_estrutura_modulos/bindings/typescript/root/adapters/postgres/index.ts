@@ -1,4 +1,4 @@
-// Adapter Postgres para as portas "repositorio" e "auditoria" — ENTREGUE pelo template, pronto
+// Adapter Postgres para as portas "repository" e "audit" — ENTREGUE pelo template, pronto
 // para uso. `memory` continua o DEFAULT de todo modulo (config/ports.json);
 // trocar para este adapter e editar UMA linha ali, nunca este arquivo.
 //
@@ -17,7 +17,7 @@
 // sofre (ele mora fora de adapters/src/packages, o escopo que `sql-concatenado` varre).
 import type { Pool } from 'pg';
 
-import type { Auditoria, EventoDeAuditoria, Pagina, Repositorio } from '../../packages/ports/index.js';
+import type { Audit, AuditEvent, Pagina, Repository } from '../../packages/ports/index.js';
 
 /** O suficiente do manifesto para o adapter se configurar — nunca o tipo inteiro de `src/composition.ts`:
  * `adapters/` não pode importar de `src/` (regra `adapter-isolado`), então este tipo é local e mínimo. */
@@ -173,7 +173,7 @@ async function countRecords(modulo: ModuloParaAdapter): Promise<number> {
   return resultado.rows[0].total;
 }
 
-export function createPostgresRepository(modulo: ModuloParaAdapter): Repositorio<RegistroDoMolde> {
+export function createPostgresRepository(modulo: ModuloParaAdapter): Repository<RegistroDoMolde> {
   return {
     list: (pagina, tamanho) => listRecords(modulo, pagina, tamanho),
     findByHash: (hash) => findRecordByHash(modulo, hash),
@@ -186,7 +186,7 @@ export function createPostgresRepository(modulo: ModuloParaAdapter): Repositorio
 // AUDITORIA
 // ================================================================================================
 
-async function recordAuditEvent(modulo: ModuloParaAdapter, evento: EventoDeAuditoria): Promise<void> {
+async function recordAuditEvent(modulo: ModuloParaAdapter, evento: AuditEvent): Promise<void> {
   const { pool, nome } = await tableContext(modulo, 'auditoria');
   const nomeEColunas = `${nome} (hash, acao, sujeito, campos_alterados, request_id)`;
   const clausulaInsert = 'insert into';
@@ -201,7 +201,7 @@ async function recordAuditEvent(modulo: ModuloParaAdapter, evento: EventoDeAudit
   ]);
 }
 
-export function createPostgresAudit(modulo: ModuloParaAdapter): Auditoria {
+export function createPostgresAudit(modulo: ModuloParaAdapter): Audit {
   return { record: (evento) => recordAuditEvent(modulo, evento) };
 }
 

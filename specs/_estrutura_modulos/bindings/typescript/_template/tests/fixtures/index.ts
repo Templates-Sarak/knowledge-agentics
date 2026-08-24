@@ -4,21 +4,21 @@
 // e a PROVA EXECUTAVEL de que o desacoplamento existe. Se um teste precisar de infraestrutura,
 // a porta esta mal desenhada ou falta o adapter de memoria.
 //
-// Relogio e geradorId sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar
+// Clock e idGenerator sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar
 // o relogio do sistema, e o que prova que o dominio nao chama `new Date()` escondido.
 import type {
-  Auditoria,
+  Audit,
   DependenciasModulo,
-  GeradorId,
-  Relogio,
-  Repositorio,
+  IdGenerator,
+  Clock,
+  Repository,
 } from '../../core/ports/index.js';
 import type { Registro } from '../../core/domain/index.js';
 import type { Auth } from '../../api/src/middlewares/index.js';
 
 const INSTANTE_FIXO = '2024-01-01T00:00:00.000Z';
 
-export function createInMemoryRepository(iniciais: Registro[] = []): Repositorio {
+export function createInMemoryRepository(iniciais: Registro[] = []): Repository {
   const registros = [...iniciais];
   return {
     async list(pagina, tamanho) {
@@ -37,7 +37,7 @@ export function createInMemoryRepository(iniciais: Registro[] = []): Repositorio
   };
 }
 
-export function createInMemoryAudit(): Auditoria & { eventos: unknown[] } {
+export function createInMemoryAudit(): Audit & { eventos: unknown[] } {
   const eventos: unknown[] = [];
   return {
     eventos,
@@ -47,12 +47,12 @@ export function createInMemoryAudit(): Auditoria & { eventos: unknown[] } {
   };
 }
 
-export function createFixedClock(instante = INSTANTE_FIXO): Relogio {
+export function createFixedClock(instante = INSTANTE_FIXO): Clock {
   return { now: () => instante };
 }
 
 /** Sequencial e previsivel: teste que depende de sorteio nao e teste. */
-export function createSequentialGenerator(): GeradorId {
+export function createSequentialGenerator(): IdGenerator {
   let proximo = 0;
   return {
     hash() {
@@ -64,10 +64,10 @@ export function createSequentialGenerator(): GeradorId {
 
 export function createDependencies(iniciais: Registro[] = []): DependenciasModulo {
   return {
-    repositorio: createInMemoryRepository(iniciais),
-    auditoria: createInMemoryAudit(),
-    relogio: createFixedClock(),
-    geradorId: createSequentialGenerator(),
+    repository: createInMemoryRepository(iniciais),
+    audit: createInMemoryAudit(),
+    clock: createFixedClock(),
+    idGenerator: createSequentialGenerator(),
   };
 }
 

@@ -65,7 +65,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 **Dados** — schema `<schema>` (nunca `public`), prefixo `<id>_`
 - `<id>_metadados`, `<id>_auditoria`
 
-**Portas de infraestrutura** — repositorio, auditoria, relogio, geradorId
+**Portas de infraestrutura** — repository, audit, clock, idGenerator
 **Consome (outros módulos)** — `<outro>` via `GET /<recurso>` — motivo: <por quê>
 **Env** — `<ID>_API_PORT`, `<ID>_DB_URL`
 
@@ -100,7 +100,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 
   "requiredEnv": ["<ID>_API_PORT", "<ID>_DB_URL"],
 
-  "ports": ["repositorio", "auditoria", "relogio", "geradorId"],
+  "ports": ["repository", "audit", "clock", "idGenerator"],
 
   "consumes": [
     { "module": "<outro>", "contract": "GET /<recurso>", "why": "<motivo de negócio>" }
@@ -226,7 +226,7 @@ Toda tabela tem `id`, `hash`, `created_at`, `updated_at`, RLS ligado e bloco `--
 | Rotas expostas | `/api/v1/<id>` — health, meta, resumo, <recursos> |
 | Tela | `/<id>` \| sem tela |
 | Tabelas | `<id>_metadados`, `<id>_auditoria` (schema `<schema>`) |
-| Portas | repositorio, auditoria, relogio, geradorId |
+| Portas | repository, audit, clock, idGenerator |
 | Consome | `<outro>` via `GET /<recurso>` \| nenhum |
 | Env acrescentada | `<ID>_API_PORT`, `<ID>_DB_URL` — **valores pendentes no `.env` da raiz** |
 

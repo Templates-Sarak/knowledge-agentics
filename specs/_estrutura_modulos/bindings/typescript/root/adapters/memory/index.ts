@@ -6,22 +6,22 @@
 //
 // Adapter NAO conhece dominio: nao existe `if (module === 'catalogo')` aqui dentro.
 import type {
-  Auditoria,
-  EventoDeAuditoria,
-  GeradorId,
-  Notificador,
+  Audit,
+  AuditEvent,
+  IdGenerator,
+  Notifier,
   Pagina,
-  Relogio,
-  Repositorio,
+  Clock,
+  Repository,
   Storage,
-  VerificadorDeToken,
+  TokenVerifier,
 } from '../../packages/ports/index.js';
 
 interface ComHash {
   hash: string;
 }
 
-export function createRepository<T extends ComHash>(iniciais: T[] = []): Repositorio<T> {
+export function createRepository<T extends ComHash>(iniciais: T[] = []): Repository<T> {
   const registros = [...iniciais];
   return {
     async list(pagina: number, tamanho: number): Promise<Pagina<T>> {
@@ -40,31 +40,31 @@ export function createRepository<T extends ComHash>(iniciais: T[] = []): Reposit
   };
 }
 
-export function createAuditLog(): Auditoria & { eventos: EventoDeAuditoria[] } {
-  const eventos: EventoDeAuditoria[] = [];
+export function createAuditLog(): Audit & { eventos: AuditEvent[] } {
+  const eventos: AuditEvent[] = [];
   return {
     eventos,
-    async record(evento: EventoDeAuditoria): Promise<void> {
+    async record(evento: AuditEvent): Promise<void> {
       eventos.push(evento);
     },
   };
 }
 
 /** Relogio do sistema. Existe aqui, fora do dominio, exatamente para que o dominio nao o tenha. */
-export function createClock(): Relogio {
+export function createClock(): Clock {
   return { now: () => new Date().toISOString() };
 }
 
 /** Relogio congelado, para teste de motor deterministico. */
-export function createFixedClock(instante: string): Relogio {
+export function createFixedClock(instante: string): Clock {
   return { now: () => instante };
 }
 
-export function createIdGenerator(): GeradorId {
+export function createIdGenerator(): IdGenerator {
   return { hash: () => String(Math.floor(Math.random() * 90000) + 10000) };
 }
 
-export function createSequentialGenerator(inicio = 10000): GeradorId {
+export function createSequentialGenerator(inicio = 10000): IdGenerator {
   let atual = inicio;
   return {
     hash() {
@@ -75,7 +75,7 @@ export function createSequentialGenerator(inicio = 10000): GeradorId {
 }
 
 /** Auth que NEGA tudo. E o default seguro enquanto o projeto nao tem login (deny by default). */
-export function createDenyingAuth(): VerificadorDeToken {
+export function createDenyingAuth(): TokenVerifier {
   return {
     async verify(): Promise<{ permissoes: string[] } | null> {
       return null;
@@ -107,7 +107,7 @@ interface MensagemEnviada {
 }
 
 /** `enviados` exposto pelo mesmo motivo de `createInMemoryStorage`: o teste afirma o que saiu. */
-export function createInMemoryNotifier(): Notificador & { enviados: MensagemEnviada[] } {
+export function createInMemoryNotifier(): Notifier & { enviados: MensagemEnviada[] } {
   const enviados: MensagemEnviada[] = [];
   return {
     enviados,

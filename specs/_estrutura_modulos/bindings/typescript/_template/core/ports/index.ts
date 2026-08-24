@@ -15,7 +15,7 @@ export interface Pagina<T> {
 }
 
 /** Persistencia dos registros do proprio modulo. Nunca toca tabela de outro modulo. */
-export interface Repositorio {
+export interface Repository {
   list(pagina: number, tamanho: number): Promise<Pagina<Registro>>;
   findByHash(hash: string): Promise<Registro | null>;
   insert(registro: Registro): Promise<void>;
@@ -23,7 +23,7 @@ export interface Repositorio {
 }
 
 /** Trilha append-only do modulo. Guarda o NOME dos campos alterados, nunca o valor. */
-export interface Auditoria {
+export interface Audit {
   record(evento: {
     hash: string;
     acao: string;
@@ -34,18 +34,18 @@ export interface Auditoria {
 }
 
 /** O instante. Existe para que o dominio nunca chame `new Date()`. */
-export interface Relogio {
+export interface Clock {
   now(): string;
 }
 
 /** Identificadores. Existe para que o dominio nunca chame `Math.random()`. */
-export interface GeradorId {
+export interface IdGenerator {
   hash(): string;
 }
 
 /** Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
  * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1). */
-export interface Notificador {
+export interface Notifier {
   send(destinatario: string, assunto: string, corpo: string): Promise<void>;
 }
 
@@ -53,14 +53,14 @@ export interface Notificador {
  * O conjunto que o bootstrap RECEBE. Cada nome aqui corresponde a uma chave de config/ports.json
  * e a uma entrada de module.json:ports — o gate cobra que os tres concordem.
  *
- * `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
- * fabrica (`FABRICAS.notificador`, src/composition.ts) e alcancada de verdade no boot, nao so
+ * `notifier` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
+ * fabrica (`FABRICAS.notifier`, src/composition.ts) e alcancada de verdade no boot, nao so
  * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  */
 export interface DependenciasModulo {
-  repositorio: Repositorio;
-  auditoria: Auditoria;
-  relogio: Relogio;
-  geradorId: GeradorId;
-  notificador?: Notificador;
+  repository: Repository;
+  audit: Audit;
+  clock: Clock;
+  idGenerator: IdGenerator;
+  notifier?: Notifier;
 }

@@ -21,11 +21,11 @@
     "<MODULO>_DB_URL"
   ],
   "ports": [
-    "repositorio",
-    "auditoria",
-    "relogio",
-    "geradorId",
-    "notificador"
+    "repository",
+    "audit",
+    "clock",
+    "idGenerator",
+    "notifier"
   ],
   "consumes": [],
   "ui": {

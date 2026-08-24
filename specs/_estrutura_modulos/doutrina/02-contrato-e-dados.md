@@ -116,7 +116,7 @@ identificador curto, guardado como **valor** em cada módulo.
 - É a **única cola permitida entre módulos**: sem foreign key, sem JOIN, sem tabela compartilhada. O vínculo
   é um valor, não uma dependência — e é isso que mantém cada módulo extraível.
 - Toda tabela de metadados tem a coluna `hash`, com índice único quando o hash identificar um registro só.
-- Nenhum módulo gera hash fora da porta `geradorId`.
+- Nenhum módulo gera hash fora da porta `idGenerator`.
 - Nenhuma rota expõe o `id` interno do banco.
 
 **Colisão é decisão de projeto, não acidente.** Se o espaço de valores for pequeno, gerar sem consultar o banco
@@ -147,7 +147,7 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
   genérico sem prefixo (`clientes`, `logs`) é proibido — o prefixo é o que sustenta o isolamento no schema
   único, e o que evita renomeação no dia de separar.
 - **Só o dono lê e escreve** nas suas tabelas. **Proibido JOIN, view ou foreign key cruzando módulos.**
-- O acesso é sempre pela porta `repositorio`; nenhum SQL de fornecedor dentro do módulo, e a query é **sempre
+- O acesso é sempre pela porta `repository`; nenhum SQL de fornecedor dentro do módulo, e a query é **sempre
   parametrizada** no adapter.
 
 ## 6.2 Forma
@@ -180,7 +180,7 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
 ## 6.4 Trilha de auditoria
 
 Toda escrita registra `hash`, `acao`, `sujeito`, `campos_alterados`, `request_id` e `ocorrido_em` em
-`<modulo>_auditoria`, tabela **append-only** do próprio módulo, implementada pela porta `auditoria`.
+`<modulo>_auditoria`, tabela **append-only** do próprio módulo, implementada pela porta `audit`.
 
 **Não confunda com log.** O log é operacional e efêmero (stdout, para diagnosticar); a trilha é registro
 **durável e consultável** de negócio, que responde "quem mudou o status deste registro em março". O `requestId`

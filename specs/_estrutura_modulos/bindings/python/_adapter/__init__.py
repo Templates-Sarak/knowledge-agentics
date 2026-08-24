@@ -16,7 +16,7 @@ class AdapterPendente:
 
     def __init__(self, modulo: dict[str, Any]) -> None:
         # `create-adapter.mjs` registra a CLASSE direto em FABRICAS (nunca um lambda), como
-        # `RepositorioPostgres` (adapters/postgres/__init__.py) — o construtor precisa aceitar o
+        # `PostgresRepository` (adapters/postgres/__init__.py) — o construtor precisa aceitar o
         # manifesto para casar com `Callable[[dict[str, Any]], Any]`. Nao usa `modulo` ainda: quem
         # implementar a porta decide se precisa dele (ex.: `module.pasta` para ler `data.schema`).
         self._modulo = modulo

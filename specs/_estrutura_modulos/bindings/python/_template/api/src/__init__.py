@@ -37,7 +37,9 @@ def create_app(
         docs_url=None,
         redoc_url=None,
     )
-    record_middlewares(app, configuracao, ContextoDaBorda(deps.geradorId, auth, logger))
+    record_middlewares(
+        app, configuracao, ContextoDaBorda(deps.idGenerator, auth, logger)
+    )
     app.include_router(create_routes(deps, configuracao), prefix=manifesto["basePath"])
     return app
 

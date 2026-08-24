@@ -319,7 +319,7 @@ export default [
         ctx,
         (arquivo) => arquivo.rel.startsWith('core/'),
         /Math\.random\(|new Date\(\s*\)|Date\.now\(|datetime\.now\(|\brandom\.\w+\(/,
-        'nao-determinismo em core/ — use as portas relogio e geradorId',
+        'nao-determinismo em core/ — use as portas clock e idGenerator',
       );
     },
   },
@@ -331,7 +331,7 @@ export default [
       const achados = [];
       for (const arquivo of ctx.codigo) {
         // FRONTEIRA com `determinismo`, e ela e explicita: dentro de `core/` quem cobra RNG fraco e
-        // o `determinismo`, por reprodutibilidade, e o conserto dele (receber a porta `geradorId`)
+        // o `determinismo`, por reprodutibilidade, e o conserto dele (receber a porta `idGenerator`)
         // ja resolve o lado da seguranca. Acusar aqui tambem daria duas mensagens para um conserto
         // so. Fora de `core/` o `determinismo` cala, e e exatamente ali que esta regra vive.
         if (arquivo.eTeste || arquivo.rel.startsWith('core/')) continue;

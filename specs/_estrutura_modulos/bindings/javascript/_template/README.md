@@ -58,7 +58,7 @@ tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 - **Saída por allowlist:** a resposta é montada campo a campo no mapeador. Devolver registro cru é proibido.
 - **Deny by default:** toda rota exige token, exceto as de `publicRoutes`.
 - **Log estruturado** com `requestId` e redação automática de campo sensível. `console.*` é proibido.
-- **Determinismo:** `Math.random()` e `new Date()` proibidos em `core/` — use `geradorId` e `relogio`.
+- **Determinismo:** `Math.random()` e `new Date()` proibidos em `core/` — use `idGenerator` e `clock`.
 - **Dados:** tabela `<modulo_snake>_*` no schema declarado (**nunca** `public`), RLS ligada, trilha append-only.
 
 ## Comandos

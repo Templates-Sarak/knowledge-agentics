@@ -78,7 +78,7 @@ executável de que o desacoplamento existe. Se um teste do módulo precisa de in
 desenhada ou o adapter de memória está faltando.
 
 Módulo com `core/engine` testa **determinismo**: mesma entrada, saída idêntica. É o que garante que
-`relogio` e `geradorId` estão sendo usados no lugar de `new Date()` e `Math.random()`.
+`clock` e `idGenerator` estão sendo usados no lugar de `new Date()` e `Math.random()`.
 
 **Cobertura-alvo ~80% nos caminhos críticos — e isto NÃO é regra.** Medir cobertura exige executar os testes,
 e o gate é estático por contrato ([[04-regras]] §7.1). É um alvo de equipe, cobrado em revisão e pelo comando

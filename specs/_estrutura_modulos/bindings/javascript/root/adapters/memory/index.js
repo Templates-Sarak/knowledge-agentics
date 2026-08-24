@@ -9,7 +9,7 @@
 /**
  * @template {{ hash: string }} T
  * @param {T[]} [iniciais]
- * @returns {import('../../packages/ports/index.js').Repositorio<T>}
+ * @returns {import('../../packages/ports/index.js').Repository<T>}
  */
 export function createRepository(iniciais = []) {
   const registros = [...iniciais];
@@ -31,7 +31,7 @@ export function createRepository(iniciais = []) {
 }
 
 export function createAuditLog() {
-  /** @type {import('../../packages/ports/index.js').EventoDeAuditoria[]} */
+  /** @type {import('../../packages/ports/index.js').AuditEvent[]} */
   const eventos = [];
   return {
     eventos,
@@ -96,7 +96,7 @@ export function createInMemoryStorage() {
 
 /**
  * `enviados` exposto pelo mesmo motivo de `createInMemoryStorage`: o teste afirma o que saiu.
- * @returns {import('../../packages/ports/index.js').Notificador & { enviados: Array<{destinatario: string, assunto: string, corpo: string}> }}
+ * @returns {import('../../packages/ports/index.js').Notifier & { enviados: Array<{destinatario: string, assunto: string, corpo: string}> }}
  */
 export function createInMemoryNotifier() {
   const enviados = [];

@@ -58,7 +58,7 @@ Idênticas ao binding TypeScript, com a sintaxe da linguagem:
 - **Saída por allowlist** — `to_contract()` é a projeção; devolver a linha crua é proibido.
 - **Deny by default** — toda rota exige token, exceto as de `publicRoutes`.
 - **Log estruturado** — `print()` é proibido; o logger emite JSON com `requestId` e redige campo sensível.
-- **Determinismo** — `datetime.now()` e `random` proibidos em `core/`; use `relogio` e `geradorId`.
+- **Determinismo** — `datetime.now()` e `random` proibidos em `core/`; use `clock` e `idGenerator`.
 
 ## Comandos
 

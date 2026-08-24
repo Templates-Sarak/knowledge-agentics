@@ -43,18 +43,21 @@ export class ErroPorta extends Error {
  * Fonte NORMATIVA: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do gate
  * (`config-ports.schema.json`, `module.schema.json:ports.items.enum`) sao GERADOS dela. Esta
  * lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
- * mantenha as duas iguais a mao. `fila` NAO ESTA no vocabulario: arrasta retry,
- * dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz
- * que o template nao escolhe. `verificadorDeToken` era `auth` ate o ADR-010.
+ * mantenha as duas iguais a mao (o SIMBOLO diverge de proposito: `PORTAS_CONHECIDAS` na fonte,
+ * `KNOWN_PORTS` aqui — Onda 3 do ADR-013/ADR-016, esqueleto e ferramental traduzem por regras
+ * diferentes; o CONTEUDO das duas listas e que precisa ser identico). `fila` NAO ESTA no
+ * vocabulario: arrasta retry, dead-letter, idempotencia e ordem de entrega — desenho de topologia
+ * que 00-arquitetura.md §5 diz que o template nao escolhe. `tokenVerifier` era `verificadorDeToken`
+ * (traducao de idioma, ADR-013/ADR-016) e, antes disso, `auth` ate o ADR-010.
  */
-export const PORTAS_CONHECIDAS = [
-  'repositorio',
-  'auditoria',
-  'relogio',
-  'geradorId',
+export const KNOWN_PORTS = [
+  'repository',
+  'audit',
+  'clock',
+  'idGenerator',
   'storage',
-  'verificadorDeToken',
-  'notificador',
+  'tokenVerifier',
+  'notifier',
 ];
 
 /**
@@ -68,7 +71,7 @@ export const PORTAS_CONHECIDAS = [
 
 /**
  * @template T
- * @typedef {object} Repositorio
+ * @typedef {object} Repository
  * @property {(pagina: number, tamanho: number) => Promise<Pagina<T>>} list
  * @property {(hash: string) => Promise<T | null>} findByHash
  * @property {(registro: T) => Promise<void>} insert
@@ -76,7 +79,7 @@ export const PORTAS_CONHECIDAS = [
  */
 
 /**
- * @typedef {object} EventoDeAuditoria
+ * @typedef {object} AuditEvent
  * @property {string} hash
  * @property {string} acao
  * @property {string} sujeito
@@ -85,22 +88,22 @@ export const PORTAS_CONHECIDAS = [
  */
 
 /**
- * @typedef {object} Auditoria
- * @property {(evento: EventoDeAuditoria) => Promise<void>} record
+ * @typedef {object} Audit
+ * @property {(evento: AuditEvent) => Promise<void>} record
  *
- * @typedef {object} Relogio
+ * @typedef {object} Clock
  * @property {() => string} now
  *
- * @typedef {object} GeradorId
+ * @typedef {object} IdGenerator
  * @property {() => string} hash
  *
- * @typedef {object} VerificadorDeToken
+ * @typedef {object} TokenVerifier
  * @property {(token: string) => Promise<{ permissoes: string[] } | null>} verify
  */
 
 /**
  * Guarda e recupera CONTEUDO por caminho — upload, o caso mais comum de quase todo projeto real
- * — superficie MINIMA e tipada por operacao, no precedente de `Repositorio`:
+ * — superficie MINIMA e tipada por operacao, no precedente de `Repository`:
  * nada de `executar(comando: string)` — o desenho que sustenta `sql-no-modulo` do lado do banco.
  *
  * @typedef {object} Storage
@@ -112,7 +115,7 @@ export const PORTAS_CONHECIDAS = [
 /**
  * Envia mensagem a um destinatario — e-mail, o outro caso mais comum.
  *
- * @typedef {object} Notificador
+ * @typedef {object} Notifier
  * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} send
  */
 

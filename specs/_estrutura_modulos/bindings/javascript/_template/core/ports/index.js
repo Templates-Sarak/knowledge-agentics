@@ -19,7 +19,7 @@
 
 /**
  * Persistencia dos registros do proprio modulo. Nunca toca tabela de outro modulo.
- * @typedef {object} Repositorio
+ * @typedef {object} Repository
  * @property {(pagina: number, tamanho: number) => Promise<Pagina<import('../domain/index.js').Registro>>} list
  * @property {(hash: string) => Promise<import('../domain/index.js').Registro | null>} findByHash
  * @property {(registro: import('../domain/index.js').Registro) => Promise<void>} insert
@@ -28,12 +28,12 @@
 
 /**
  * Trilha append-only do modulo. Guarda o NOME dos campos alterados, nunca o valor.
- * @typedef {object} Auditoria
- * @property {(evento: EventoDeAuditoria) => Promise<void>} record
+ * @typedef {object} Audit
+ * @property {(evento: AuditEvent) => Promise<void>} record
  */
 
 /**
- * @typedef {object} EventoDeAuditoria
+ * @typedef {object} AuditEvent
  * @property {string} hash
  * @property {string} acao
  * @property {string} sujeito
@@ -43,13 +43,13 @@
 
 /**
  * O instante. Existe para que o dominio nunca chame `new Date()`.
- * @typedef {object} Relogio
+ * @typedef {object} Clock
  * @property {() => string} now
  */
 
 /**
  * Identificadores. Existe para que o dominio nunca chame `Math.random()`.
- * @typedef {object} GeradorId
+ * @typedef {object} IdGenerator
  * @property {() => string} hash
  */
 
@@ -61,7 +61,7 @@
 /**
  * Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
  * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1).
- * @typedef {object} Notificador
+ * @typedef {object} Notifier
  * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} send
  */
 
@@ -69,16 +69,16 @@
  * O conjunto que o bootstrap RECEBE. Cada nome aqui corresponde a uma chave de
  * config/ports.json e a uma entrada de module.json:ports — o gate cobra que os tres concordem.
  *
- * `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
- * fabrica (`FABRICAS.notificador`, src/composition.js) e alcancada de verdade no boot, nao so
+ * `notifier` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
+ * fabrica (`FABRICAS.notifier`, src/composition.js) e alcancada de verdade no boot, nao so
  * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  *
  * @typedef {object} DependenciasModulo
- * @property {Repositorio} repositorio
- * @property {Auditoria} auditoria
- * @property {Relogio} relogio
- * @property {GeradorId} geradorId
- * @property {Notificador} [notificador]
+ * @property {Repository} repository
+ * @property {Audit} audit
+ * @property {Clock} clock
+ * @property {IdGenerator} idGenerator
+ * @property {Notifier} [notifier]
  */
 
 export {};

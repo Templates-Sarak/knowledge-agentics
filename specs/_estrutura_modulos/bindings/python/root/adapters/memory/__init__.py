@@ -18,7 +18,7 @@ from packages.ports import Pagina
 _FAIXA_HASH = (10000, 99999)
 
 
-class RepositorioEmMemoria:
+class InMemoryRepository:
     def __init__(self, iniciais: Sequence[Any] = ()) -> None:
         self._registros = list(iniciais)
 
@@ -41,7 +41,7 @@ class RepositorioEmMemoria:
         return len(self._registros)
 
 
-class AuditoriaEmMemoria:
+class InMemoryAudit:
     def __init__(self) -> None:
         self.eventos: list[dict[str, object]] = []
 
@@ -49,14 +49,14 @@ class AuditoriaEmMemoria:
         self.eventos.append(evento)
 
 
-class RelogioDoSistema:
+class SystemClock:
     """Existe AQUI, fora do dominio, exatamente para que o dominio nao chame `datetime.now()`."""
 
     def now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
 
 
-class RelogioFixo:
+class FixedClock:
     """Relogio congelado, para teste de motor deterministico."""
 
     def __init__(self, instante: str) -> None:
@@ -66,12 +66,12 @@ class RelogioFixo:
         return self._instante
 
 
-class GeradorPadrao:
+class DefaultIdGenerator:
     def hash(self) -> str:
         return str(random.randint(*_FAIXA_HASH))
 
 
-class GeradorSequencial:
+class SequentialIdGenerator:
     def __init__(self, inicio: int = 10000) -> None:
         self._atual = inicio
 
@@ -81,15 +81,20 @@ class GeradorSequencial:
 
 
 class AuthQueNega:
-    """NEGA tudo. E o default seguro enquanto o projeto nao tem login (deny by default)."""
+    """NEGA tudo. E o default seguro enquanto o projeto nao tem login (deny by default).
+
+    NOME NAO deriva do vocabulario atual da porta (`tokenVerifier`) — carrega o nome
+    pre-ADR-010 (`auth`) e nunca foi varrido por nenhuma onda de idioma (ADR-013/014/015/016).
+    Continua implementando `TokenVerifier` corretamente; so o NOME ficou para tras. Registrado
+    como achado, nao corrigido nesta onda — ver ADR-016 §1.3."""
 
     async def verify(self, token: str) -> dict[str, object] | None:
         return None
 
 
-class StorageEmMemoria:
+class InMemoryStorage:
     """`arquivos` exposto para o teste inspecionar o que foi salvo — mesmo padrao de
-    `AuditoriaEmMemoria`."""
+    `InMemoryAudit`."""
 
     def __init__(self) -> None:
         self.arquivos: dict[str, bytes] = {}
@@ -104,8 +109,8 @@ class StorageEmMemoria:
         self.arquivos.pop(caminho, None)
 
 
-class NotificadorEmMemoria:
-    """`enviados` exposto pelo mesmo motivo de `StorageEmMemoria`: o teste afirma o que saiu."""
+class InMemoryNotifier:
+    """`enviados` exposto pelo mesmo motivo de `InMemoryStorage`: o teste afirma o que saiu."""
 
     def __init__(self) -> None:
         self.enviados: list[dict[str, str]] = []

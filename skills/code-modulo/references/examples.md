@@ -28,7 +28,7 @@ modules/catalogo/
 ├── config/              api, domain, seguranca, ports, textos
 ├── core/
 │   ├── domain/          regra do preco vigente (vigencia por data, sem valor default)
-│   └── ports/           repositorio, auditoria, relogio, geradorId
+│   └── ports/           repository, audit, clock, idGenerator
 ├── api/src/             routes, mappers, middlewares, config.ts, logger.ts
 ├── web/src/pages/       tela com loading, empty e error
 ├── database/            schema.sql + 0001-cria-itens.sql (com -- rollback, RLS)
@@ -86,7 +86,7 @@ const { rows } = await pool.query('SELECT preco FROM catalogo_precos ORDER BY vi
 ### Como corrigir
 
 1. Rodar o `create-module.mjs` para gerar a árvore correta e o manifesto.
-2. Mover `adaptadorPostgres.ts` para `adapters/postgres/` na raiz, atrás da porta `repositorio`.
+2. Mover `adaptadorPostgres.ts` para `adapters/postgres/` na raiz, atrás da porta `repository`.
 3. Reescrever `adaptadorCatalogo.ts` como `core/gateways/catalogo.ts`, consumindo o contrato público,
    e declarar em `consumes`.
 4. Escrever `contract/openapi.yaml` e alinhar as rotas existentes a ele.

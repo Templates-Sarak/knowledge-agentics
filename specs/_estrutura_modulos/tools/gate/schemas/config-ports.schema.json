@@ -3,12 +3,12 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "repositorio": { "type": "string", "minLength": 1 },
-    "auditoria": { "type": "string", "minLength": 1 },
-    "relogio": { "type": "string", "minLength": 1 },
-    "geradorId": { "type": "string", "minLength": 1 },
+    "repository": { "type": "string", "minLength": 1 },
+    "audit": { "type": "string", "minLength": 1 },
+    "clock": { "type": "string", "minLength": 1 },
+    "idGenerator": { "type": "string", "minLength": 1 },
     "storage": { "type": "string", "minLength": 1 },
-    "verificadorDeToken": { "type": "string", "minLength": 1 },
-    "notificador": { "type": "string", "minLength": 1 }
+    "tokenVerifier": { "type": "string", "minLength": 1 },
+    "notifier": { "type": "string", "minLength": 1 }
   }
 }

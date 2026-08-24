@@ -30,17 +30,20 @@ CODIGOS_DE_ERRO: dict[str, int] = {
 # Fonte NORMATIVA: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do gate
 # (`config-ports.schema.json`, `module.schema.json:ports.items.enum`) sao GERADOS dela. Esta
 # lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
-# mantenha as duas iguais a mao. `fila` NAO ESTA no vocabulario: arrasta retry,
-# dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz
-# que o template nao escolhe. `verificadorDeToken` era `auth` ate o ADR-010.
-PORTAS_CONHECIDAS = (
-    "repositorio",
-    "auditoria",
-    "relogio",
-    "geradorId",
+# mantenha as duas iguais a mao (o SIMBOLO diverge de proposito: `PORTAS_CONHECIDAS` na fonte,
+# `KNOWN_PORTS` aqui — Onda 3 do ADR-013/ADR-016, esqueleto e ferramental traduzem por regras
+# diferentes; o CONTEUDO das duas listas e que precisa ser identico). `fila` NAO ESTA no
+# vocabulario: arrasta retry, dead-letter, idempotencia e ordem de entrega — desenho de topologia
+# que 00-arquitetura.md §5 diz que o template nao escolhe. `tokenVerifier` era `verificadorDeToken`
+# (traducao de idioma, ADR-013/ADR-016) e, antes disso, `auth` ate o ADR-010.
+KNOWN_PORTS = (
+    "repository",
+    "audit",
+    "clock",
+    "idGenerator",
     "storage",
-    "verificadorDeToken",
-    "notificador",
+    "tokenVerifier",
+    "notifier",
 )
 
 
@@ -62,7 +65,7 @@ class Pagina:
 
 
 @dataclass(frozen=True)
-class EventoDeAuditoria:
+class AuditEvent:
     hash: str
     acao: str
     sujeito: str
@@ -70,7 +73,7 @@ class EventoDeAuditoria:
     request_id: str
 
 
-class Repositorio(Protocol):
+class Repository(Protocol):
     async def list(self, pagina: int, tamanho: int) -> Pagina: ...
 
     async def find_by_hash(self, hash_universal: str) -> object | None: ...
@@ -80,26 +83,26 @@ class Repositorio(Protocol):
     async def count(self) -> int: ...
 
 
-class Auditoria(Protocol):
+class Audit(Protocol):
     async def record(self, evento: dict[str, object]) -> None: ...
 
 
-class Relogio(Protocol):
+class Clock(Protocol):
     def now(self) -> str: ...
 
 
-class GeradorId(Protocol):
+class IdGenerator(Protocol):
     def hash(self) -> str: ...
 
 
-class VerificadorDeToken(Protocol):
+class TokenVerifier(Protocol):
     async def verify(self, token: str) -> dict[str, object] | None: ...
 
 
 class Storage(Protocol):
     """Guarda e recupera CONTEUDO por caminho — upload, o caso mais comum de quase todo projeto
     real. Superficie MINIMA e tipada por operacao, no precedente de
-    `Repositorio`: nada de `executar(comando: str)` — o desenho que sustenta `sql-no-modulo` do
+    `Repository`: nada de `executar(comando: str)` — o desenho que sustenta `sql-no-modulo` do
     lado do banco."""
 
     async def save(self, caminho: str, conteudo: bytes) -> None: ...
@@ -109,7 +112,7 @@ class Storage(Protocol):
     async def remove(self, caminho: str) -> None: ...
 
 
-class Notificador(Protocol):
+class Notifier(Protocol):
     """Envia mensagem a um destinatario — e-mail, o outro caso mais comum."""
 
     async def send(self, destinatario: str, assunto: str, corpo: str) -> None: ...

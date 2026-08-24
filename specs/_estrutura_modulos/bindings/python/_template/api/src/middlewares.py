@@ -15,7 +15,7 @@ from typing import Any, Awaitable, Callable
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from core.ports import Auth, GeradorId
+from core.ports import Auth, IdGenerator
 from .errors import ErroApi, error_envelope
 from .logger import Logger
 
@@ -36,7 +36,7 @@ class ContextoDaBorda:
     """O que a cadeia precisa alem da config. Agrupado para respeitar o limiar de 4 parametros
     (specs/arquitetura/04-regras.md §4.7) — e porque os tres andam sempre juntos."""
 
-    gerador: GeradorId
+    gerador: IdGenerator
     auth: Auth
     logger: Logger
 

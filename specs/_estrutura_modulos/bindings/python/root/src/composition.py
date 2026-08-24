@@ -27,15 +27,15 @@ from pathlib import Path
 from typing import Any, Callable
 
 from adapters.memory import (
-    AuditoriaEmMemoria,
     AuthQueNega,
-    GeradorPadrao,
-    NotificadorEmMemoria,
-    RelogioDoSistema,
-    RepositorioEmMemoria,
-    StorageEmMemoria,
+    DefaultIdGenerator,
+    InMemoryAudit,
+    InMemoryNotifier,
+    InMemoryRepository,
+    InMemoryStorage,
+    SystemClock,
 )
-from adapters.postgres import AuditoriaPostgres, RepositorioPostgres
+from adapters.postgres import PostgresAudit, PostgresRepository
 
 # Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so.
 #
@@ -45,12 +45,12 @@ from adapters.postgres import AuditoriaPostgres, RepositorioPostgres
 # `module["pasta"]` para ler `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um
 # adapter que precisa de contexto por-modulo nao teria como sabe-lo.
 FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {
-    "repositorio": {"memory": lambda modulo: RepositorioEmMemoria(), "postgres": RepositorioPostgres},
-    "auditoria": {"memory": lambda modulo: AuditoriaEmMemoria(), "postgres": AuditoriaPostgres},
-    "relogio": {"sistema": lambda modulo: RelogioDoSistema()},
-    "geradorId": {"padrao": lambda modulo: GeradorPadrao()},
-    "storage": {"memory": lambda modulo: StorageEmMemoria()},
-    "notificador": {"memory": lambda modulo: NotificadorEmMemoria()},
+    "repository": {"memory": lambda modulo: InMemoryRepository(), "postgres": PostgresRepository},
+    "audit": {"memory": lambda modulo: InMemoryAudit(), "postgres": PostgresAudit},
+    "clock": {"sistema": lambda modulo: SystemClock()},
+    "idGenerator": {"padrao": lambda modulo: DefaultIdGenerator()},
+    "storage": {"memory": lambda modulo: InMemoryStorage()},
+    "notifier": {"memory": lambda modulo: InMemoryNotifier()},
 }
 
 
@@ -219,7 +219,7 @@ def build_system(raiz: Path) -> RaizAsgi:
         deps_por_nome = resolve_dependencies(modulo)
         api = _import_api_module(modulo)
         # `DependenciasModulo` e um dataclass POR MODULO (core/ports/__init__.py de cada um, nao
-        # um tipo global) — o bootstrap acessa `deps.geradorId` por ATRIBUTO, nunca por chave. Como
+        # um tipo global) — o bootstrap acessa `deps.idGenerator` por ATRIBUTO, nunca por chave. Como
         # `_import_api_module` ja deixou o `core.ports` FRESCO deste modulo em `sys.modules`
         # (import transitivo de `api.src`), a classe certa e essa — nunca uma importada aqui em
         # cima, que colidiria com o `core` de outro modulo pelo mesmo motivo do import da api.

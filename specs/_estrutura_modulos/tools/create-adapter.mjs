@@ -10,15 +10,15 @@
  * gate. `<porta>` tem de estar no vocabulário conhecido (`tools/gate/ports-vocabulary.mjs`)
  * — nome fora dele é rejeitado antes de tocar disco.
  *
- * O molde é um STUB, de propósito: os MÉTODOS de cada interface variam por porta (`Repositorio`
- * tem quatro, `Notificador` tem um), e um gerador que tentasse produzir o corpo certo por porta
+ * O molde é um STUB, de propósito: os MÉTODOS de cada interface variam por porta (`Repository`
+ * tem quatro, `Notifier` tem um), e um gerador que tentasse produzir o corpo certo por porta
  * precisaria entender a forma de cada interface nas três linguagens — mais caro que o defeito que
  * evitaria. O molde importa nada, devolve um tipo genérico e lança "TODO: implemente" nomeando a
  * porta e o arquivo; o gate NÃO cobra método (não é AST), só isolamento e forma.
  *
- * LIMITE CONHECIDO: `verificadorDeToken` é resolvida por `resolveAuth()`/`resolve_auth()`, não por
+ * LIMITE CONHECIDO: `tokenVerifier` é resolvida por `resolveAuth()`/`resolve_auth()`, não por
  * `FABRICAS` — é a auth ÚNICA do sistema, nunca por-módulo. Registrar um adapter para a porta
- * "verificadorDeToken" aqui ACRESCENTA a entrada em `FABRICAS` (coerente com o vocabulário), mas
+ * "tokenVerifier" aqui ACRESCENTA a entrada em `FABRICAS` (coerente com o vocabulário), mas
  * nada a consulta hoje; trocar o provedor de auth continua sendo editar `resolveAuth()` à mão. Não
  * é bug deste script — é a mesma arquitetura de antes dele. Nome da porta por ADR-010
  * (`specs/adr/000-decisoes-do-template.md`) — era `auth`, e colidia com a auth da fiação.
@@ -304,7 +304,7 @@ const FIXTURE_TS_MOLDE_REAL = [
   "import { createPostgresRepository } from '../adapters/postgres/index.js';",
   '',
   'const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {',
-  '  repositorio: { memoria: () => createRepository() },',
+  '  repository: { memoria: () => createRepository() },',
   '};',
   '',
 ].join('\n');
@@ -315,20 +315,20 @@ const FIXTURE_JS_MOLDE_REAL = [
   "} from '../adapters/memory/index.js';",
   '',
   'const FABRICAS = {',
-  '  repositorio: { memoria: () => createRepository() },',
+  '  repository: { memoria: () => createRepository() },',
   '};',
   '',
 ].join('\n');
 
 const FIXTURE_PY_MOLDE_REAL = [
   'from adapters.memory import (',
-  '    RepositorioEmMemoria,',
+  '    InMemoryRepository,',
   ')',
-  'from adapters.postgres import AuditoriaPostgres, RepositorioPostgres',
+  'from adapters.postgres import PostgresAudit, PostgresRepository',
   '',
   '# Fabrica de adapter por (porta, provedor).',
   'FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {',
-  '    "repositorio": {"memory": lambda modulo: RepositorioEmMemoria()},',
+  '    "repository": {"memory": lambda modulo: InMemoryRepository()},',
   '}',
   '',
 ].join('\n');
@@ -338,12 +338,12 @@ const FIXTURE_PY_MOLDE_REAL = [
 // dela, não a função estar quebrada por dentro.
 const FIXTURE_PY_ANCORA_ISOLADA = [
   'from adapters.memory import (',
-  '    RepositorioEmMemoria,',
+  '    InMemoryRepository,',
   ')',
   '',
   '# Fabrica de adapter por (porta, provedor).',
   'FABRICAS: dict[str, dict[str, Callable[[], Any]]] = {',
-  '    "repositorio": {"memory": lambda: RepositorioEmMemoria()},',
+  '    "repository": {"memory": lambda: InMemoryRepository()},',
   '}',
   '',
 ].join('\n');
@@ -376,28 +376,28 @@ function casosRegistroTs() {
     {
       nome: 'registrarFabricaTs: porta EXISTENTE ganha provedor novo na mesma linha, mais o import',
       fn: () => {
-        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
+        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repository', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
         return r !== null
-          && r.includes("repositorio: { memoria: () => createRepository(), 'dynamo': () => criarDynamo() },")
+          && r.includes("repository: { memoria: () => createRepository(), 'dynamo': () => criarDynamo() },")
           && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
       },
     },
     {
-      nome: 'registrarFabricaTs: porta NOVA ("verificadorDeToken") registra (bug 1 consertado — ver cabecalho)',
+      nome: 'registrarFabricaTs: porta NOVA ("tokenVerifier") registra (bug 1 consertado — ver cabecalho)',
       fn: () => {
-        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('verificadorDeToken', 'okta', 'criarOkta', '../adapters/okta/index.js'));
-        return r !== null && r.includes("verificadorDeToken: { 'okta': () => criarOkta() },");
+        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('tokenVerifier', 'okta', 'criarOkta', '../adapters/okta/index.js'));
+        return r !== null && r.includes("tokenVerifier: { 'okta': () => criarOkta() },");
       },
     },
     {
       nome: 'registrarFabricaTs: sem a linha de import -> null',
-      fn: () => registrarFabricaTs('nada de import aqui', paramsFabrica('repositorio', 'x', 'y', 'z')) === null,
+      fn: () => registrarFabricaTs('nada de import aqui', paramsFabrica('repository', 'x', 'y', 'z')) === null,
     },
     {
       nome: 'registrarFabricaTs: provedor com hifen -> chave CITADA (bug 3 consertado — ver cabecalho)',
       fn: () => {
-        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repositorio', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
-        return r !== null && r.includes("repositorio: { memoria: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
+        const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repository', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
+        return r !== null && r.includes("repository: { memoria: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
       },
     },
   ];
@@ -408,24 +408,24 @@ function casosRegistroJs() {
     {
       nome: 'registrarFabricaJs: porta EXISTENTE ganha provedor novo, mais o import',
       fn: () => {
-        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
+        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repository', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
         return r !== null
-          && r.includes("repositorio: { memoria: () => createRepository(), 'dynamo': () => criarDynamo() },")
+          && r.includes("repository: { memoria: () => createRepository(), 'dynamo': () => criarDynamo() },")
           && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
       },
     },
     {
-      nome: 'registrarFabricaJs: porta NOVA ("verificadorDeToken") funciona — sem assinatura de tipo para desalinhar',
+      nome: 'registrarFabricaJs: porta NOVA ("tokenVerifier") funciona — sem assinatura de tipo para desalinhar',
       fn: () => {
-        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('verificadorDeToken', 'okta', 'criarOkta', '../adapters/okta/index.js'));
-        return r !== null && r.includes("verificadorDeToken: { 'okta': () => criarOkta() },");
+        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('tokenVerifier', 'okta', 'criarOkta', '../adapters/okta/index.js'));
+        return r !== null && r.includes("tokenVerifier: { 'okta': () => criarOkta() },");
       },
     },
     {
       nome: 'registrarFabricaJs: provedor com hifen -> chave CITADA (bug 3 consertado — ver cabecalho)',
       fn: () => {
-        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repositorio', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
-        return r !== null && r.includes("repositorio: { memoria: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
+        const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repository', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
+        return r !== null && r.includes("repository: { memoria: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
       },
     },
   ];
@@ -436,26 +436,26 @@ function casosRegistroPy() {
     {
       nome: 'registrarFabricaPy: molde REAL de hoje, porta existente, REGISTRA (bug 2 consertado — ver cabecalho)',
       fn: () => {
-        const r = registrarFabricaPy(FIXTURE_PY_MOLDE_REAL, paramsFabrica('repositorio', 'dynamo', 'RepositorioDynamo', 'adapters.dynamo'));
+        const r = registrarFabricaPy(FIXTURE_PY_MOLDE_REAL, paramsFabrica('repository', 'dynamo', 'DynamoRepository', 'adapters.dynamo'));
         return r !== null
-          && r.includes('"repositorio": {"memory": lambda modulo: RepositorioEmMemoria(), "dynamo": RepositorioDynamo}')
-          && r.includes('from adapters.dynamo import RepositorioDynamo');
+          && r.includes('"repository": {"memory": lambda modulo: InMemoryRepository(), "dynamo": DynamoRepository}')
+          && r.includes('from adapters.dynamo import DynamoRepository');
       },
     },
     {
-      nome: 'registrarFabricaPy: molde REAL de hoje, porta NOVA ("verificadorDeToken"), tambem registra',
+      nome: 'registrarFabricaPy: molde REAL de hoje, porta NOVA ("tokenVerifier"), tambem registra',
       fn: () => {
-        const r = registrarFabricaPy(FIXTURE_PY_MOLDE_REAL, paramsFabrica('verificadorDeToken', 'okta', 'VerificadorOkta', 'adapters.okta'));
-        return r !== null && r.includes('"verificadorDeToken": {"okta": VerificadorOkta}');
+        const r = registrarFabricaPy(FIXTURE_PY_MOLDE_REAL, paramsFabrica('tokenVerifier', 'okta', 'VerificadorOkta', 'adapters.okta'));
+        return r !== null && r.includes('"tokenVerifier": {"okta": VerificadorOkta}');
       },
     },
     {
       nome: 'registrarFabricaPy: molde sem segunda linha de import (variante mais simples) tambem registra',
       fn: () => {
-        const r = registrarFabricaPy(FIXTURE_PY_ANCORA_ISOLADA, paramsFabrica('repositorio', 'dynamo', 'RepositorioDynamo', 'adapters.dynamo'));
+        const r = registrarFabricaPy(FIXTURE_PY_ANCORA_ISOLADA, paramsFabrica('repository', 'dynamo', 'DynamoRepository', 'adapters.dynamo'));
         return r !== null
-          && r.includes('"repositorio": {"memory": lambda: RepositorioEmMemoria(), "dynamo": RepositorioDynamo}')
-          && r.includes('from adapters.dynamo import RepositorioDynamo');
+          && r.includes('"repository": {"memory": lambda: InMemoryRepository(), "dynamo": DynamoRepository}')
+          && r.includes('from adapters.dynamo import DynamoRepository');
       },
     },
   ];

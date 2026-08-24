@@ -30,7 +30,7 @@ import {
   createInMemoryStorage,
 } from '../adapters/memory/index.js';
 import { createPostgresAudit, createPostgresRepository } from '../adapters/postgres/index.js';
-import type { VerificadorDeToken } from '../packages/ports/index.js';
+import type { TokenVerifier } from '../packages/ports/index.js';
 
 export interface ManifestoDescoberto {
   id: string;
@@ -50,12 +50,12 @@ export interface ManifestoDescoberto {
  * por-modulo nao teria como sabe-lo.
  */
 const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {
-  repositorio: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
-  auditoria: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
-  relogio: { sistema: () => createClock() },
-  geradorId: { padrao: () => createIdGenerator() },
+  repository: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
+  audit: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
+  clock: { sistema: () => createClock() },
+  idGenerator: { padrao: () => createIdGenerator() },
   storage: { memoria: () => createInMemoryStorage() },
-  notificador: { memoria: () => createInMemoryNotifier() },
+  notifier: { memoria: () => createInMemoryNotifier() },
 };
 
 /** Le todos os manifestos. E a DESCOBERTA: o sistema conhece os modulos por declaracao, nao por import. */
@@ -101,7 +101,7 @@ export function resolveDependencies(modulo: ManifestoDescoberto): Record<string,
  * Auth do sistema. Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem
  * token estao declaradas em `publicRoutes` de cada modulo, e so elas passam.
  */
-export function resolveAuth(): VerificadorDeToken {
+export function resolveAuth(): TokenVerifier {
   return createDenyingAuth();
 }
 
@@ -124,7 +124,7 @@ export function verifyRoutesUnique(modulos: ManifestoDescoberto[]): void {
 
 /** O que se espera de `api/src/index.*` de um modulo — o mesmo `createApp` que os testes de contrato usam. */
 interface ModuloApi {
-  createApp(opcoes: { deps: Record<string, unknown>; auth: VerificadorDeToken; raiz: string }): Express;
+  createApp(opcoes: { deps: Record<string, unknown>; auth: TokenVerifier; raiz: string }): Express;
 }
 
 /**

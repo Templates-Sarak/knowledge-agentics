@@ -34,14 +34,19 @@
  * frases usadas lá (medido) são "N regras com caso" e "N regras suas", sempre no PRESENTE, nunca
  * narrando transição.
  *
- * A checagem de VOCABULÁRIO (`--conferir-vocabulario`) fecha um terceiro primo: `PORTAS_CONHECIDAS`
- * está duplicada à mão em cinco lugares (`ports-vocabulary.mjs` — a "FONTE ÚNICA" segundo o próprio
- * cabeçalho dele —, `module.schema.json:ports.items.enum`, e os três `packages/ports/index.*` de
- * TS/JS/Python), e nada comparava as cinco. Compara por CONJUNTO, não por ordem — a mesma disciplina
- * de `compararCatalogos`. **Sem cláusula de "porta sem `FABRICAS`"**: a decisão foi não escrevê-la —
- * exigiria lista de exceção editorial (toda porta sem provedor padrão, como `verificadorDeToken`,
- * entraria nela), e uma cláusula que precisa de exceção editorial vale menos que a cláusula de
- * conjunto sozinha e correta.
+ * A checagem de VOCABULÁRIO (`--conferir-vocabulario`) fecha um terceiro primo: o vocabulário de
+ * portas está duplicado à mão em cinco lugares (`ports-vocabulary.mjs` — a "FONTE ÚNICA" segundo o
+ * próprio cabeçalho dele —, `module.schema.json:ports.items.enum`, e os três `packages/ports/index.*`
+ * de TS/JS/Python), e nada comparava as cinco. **Desde a Onda 3 do `ADR-013`/`ADR-016`, o SÍMBOLO que
+ * carrega a lista não é mais o mesmo texto nos cinco**: `PORTAS_CONHECIDAS` em `ports-vocabulary.mjs`
+ * (ferramental de `tools/`, nome fica português — `ADR-009` linha 4), `KNOWN_PORTS` nos três
+ * `packages/ports/index.*` (esqueleto, nome vai inglês — linha 3). `extrairPortasDeFonte` reconhece
+ * os dois nomes de símbolo; o que a checagem exige igual nos cinco é o CONTEÚDO (o conjunto de
+ * portas), nunca o nome do símbolo que o carrega. Compara por CONJUNTO, não por ordem — a mesma
+ * disciplina de `compararCatalogos`. **Sem cláusula de "porta sem `FABRICAS`"**: a decisão foi não
+ * escrevê-la — exigiria lista de exceção editorial (toda porta sem provedor padrão, como
+ * `tokenVerifier`, entraria nela), e uma cláusula que precisa de exceção editorial vale menos que a
+ * cláusula de conjunto sozinha e correta.
  *
  * NÚCLEO × CASCA, precedente de `verify-map.mjs`: todas as funções do núcleo são puras — nenhuma
  * toca `fs` nem importa módulo. `--autoteste` prova todas com fixtures em memória.
@@ -129,15 +134,18 @@ export function citacoesDefasadas(citacoes, esperado) {
 
 const RE_PORTA_ENTRE_ASPAS = /['"]([a-zA-Z][a-zA-Z0-9_]*)['"]/g;
 
-// Âncora na ATRIBUIÇÃO (`PORTAS_CONHECIDAS = [`/`(`), nunca só no nome: `ports-vocabulary.mjs` CITA
-// `PORTAS_CONHECIDAS` em prosa de comentário antes da declaração real (documentando os outros
-// lugares que a repetem) — um `indexOf('PORTAS_CONHECIDAS')` ingênuo pega essa citação primeiro e
-// nunca chega ao bloco de verdade. `=` é o que distingue "declarando a lista" de "mencionando o nome".
-const RE_ATRIBUICAO_PORTAS = /PORTAS_CONHECIDAS\s*=\s*([[(])/;
+// Âncora na ATRIBUIÇÃO (`PORTAS_CONHECIDAS = [`/`(` OU `KNOWN_PORTS = [`/`(`), nunca só no nome:
+// `ports-vocabulary.mjs` CITA `PORTAS_CONHECIDAS` em prosa de comentário antes da declaração real
+// (documentando os outros lugares que a repetem) — um `indexOf('PORTAS_CONHECIDAS')` ingênuo pega
+// essa citação primeiro e nunca chega ao bloco de verdade. `=` é o que distingue "declarando a
+// lista" de "mencionando o nome". Os DOIS nomes de símbolo (ver o cabeçalho do arquivo — Onda 3 do
+// ADR-013/ADR-016 deu nomes diferentes a `tools/` e a `packages/ports/`) casam com a MESMA âncora,
+// porque o que esta checagem compara é o conteúdo, nunca o nome do símbolo que o carrega.
+const RE_ATRIBUICAO_PORTAS = /(?:PORTAS_CONHECIDAS|KNOWN_PORTS)\s*=\s*([[(])/;
 
 /**
- * As portas citadas dentro do bloco `PORTAS_CONHECIDAS = ( … )` ou `[ … ]` de `texto` — o mesmo
- * extrator serve o array JS/TS (colchete, `ports-vocabulary.mjs` e os dois `index.{ts,js}`) e a
+ * As portas citadas dentro do bloco `PORTAS_CONHECIDAS = ( … )`/`KNOWN_PORTS = [ … ]` de `texto` — o
+ * mesmo extrator serve o array JS/TS (colchete, `ports-vocabulary.mjs` e os dois `index.{ts,js}`) e a
  * tupla Python (parêntese, `__init__.py`), porque o que varia entre os dois é só o delimitador,
  * nunca a forma de cada item (string entre aspas). `null` se a atribuição não aparecer no texto, ou
  * se o delimitador de abertura não tiver par — o chamador decide o que isso significa.
@@ -238,7 +246,7 @@ async function conferir(caminhoDoutrina, caminhoEngine, raizTools) {
   return { ok: false, motivo: linhas.join('\n') };
 }
 
-/** Os cinco lugares que repetem `PORTAS_CONHECIDAS` à mão — caminho relativo à raiz do TEMPLATE
+/** Os cinco lugares que repetem o vocabulário de portas à mão — caminho relativo à raiz do TEMPLATE
  * (não da base), o mesmo `raizTemplate` que `verify-routine.mjs` já resolve. A ordem importa: a
  * primeira é o CANÔNICO que `compararVocabularios` usa (ver o comentário dela). */
 function fontesDoVocabulario(raizTemplate) {
@@ -264,7 +272,7 @@ function conferirVocabulario(raizTemplate) {
       continue;
     }
     const portas = extrairPortasDeFonte(lerTexto(caminho));
-    if (portas === null) return { ok: false, motivo: `${fonte}: PORTAS_CONHECIDAS nao encontrado ou sem bloco [...]/(...)` };
+    if (portas === null) return { ok: false, motivo: `${fonte}: PORTAS_CONHECIDAS/KNOWN_PORTS nao encontrado ou sem bloco [...]/(...)` };
     listasPorFonte.push({ fonte, portas });
   }
 

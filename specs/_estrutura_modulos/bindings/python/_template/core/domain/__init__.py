@@ -3,7 +3,7 @@
 Regras desta camada:
   - ZERO I/O. Nada de rede, banco, arquivo ou ambiente.
   - ZERO nao-determinismo: `datetime.now()` e `random` sao PROIBIDOS aqui — o instante e o
-    identificador chegam pelas portas `relogio` e `geradorId` (specs/arquitetura/01-modulo.md §5.1).
+    identificador chegam pelas portas `clock` e `idGenerator` (specs/arquitetura/01-modulo.md §5.1).
   - ZERO literal de vocabulario: os status validos vem de config/domain.json.
 """
 

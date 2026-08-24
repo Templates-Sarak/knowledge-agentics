@@ -64,7 +64,7 @@ def create_routes(deps: DependenciasModulo, config: Any) -> APIRouter:
 
     @router.get("/health")
     async def health() -> dict[str, Any]:
-        await deps.repositorio.count()
+        await deps.repository.count()
         return {"ok": True, "module": config.manifesto["id"]}
 
     @router.get("/meta")
@@ -73,13 +73,13 @@ def create_routes(deps: DependenciasModulo, config: Any) -> APIRouter:
 
     @router.get("/resumo")
     async def resumo() -> dict[str, Any]:
-        return {"total": await deps.repositorio.count()}
+        return {"total": await deps.repository.count()}
 
     @router.get("/registros")
     async def list(request: Request) -> dict[str, Any]:
         require_permission(request, ler)
         pagina, tamanho = _read_pagination(request, config)
-        resultado = await deps.repositorio.list(pagina, tamanho)
+        resultado = await deps.repository.list(pagina, tamanho)
         return to_collection(
             resultado.itens, resultado.pagina, resultado.tamanho, resultado.total
         )
@@ -87,7 +87,7 @@ def create_routes(deps: DependenciasModulo, config: Any) -> APIRouter:
     @router.get("/registros/{hash_universal}")
     async def get(request: Request, hash_universal: str) -> dict[str, Any]:
         require_permission(request, ler)
-        registro = await deps.repositorio.find_by_hash(hash_universal)
+        registro = await deps.repository.find_by_hash(hash_universal)
         if registro is None:
             raise ErroApi("NAO_ENCONTRADO", "registro nao encontrado")
         return to_contract(registro)
@@ -111,14 +111,14 @@ async def _persist(
         registro = build_record(
             corpo,
             config.dominio["validStatuses"],
-            deps.geradorId.hash(),
-            deps.relogio.now(),
+            deps.idGenerator.hash(),
+            deps.clock.now(),
         )
     except ErroDeValidacao as causa:
         raise ErroApi("VALIDACAO", str(causa)) from causa
 
-    await deps.repositorio.insert(registro)
-    await deps.auditoria.record(
+    await deps.repository.insert(registro)
+    await deps.audit.record(
         {
             "hash": registro.hash,
             "acao": "create",

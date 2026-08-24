@@ -2,7 +2,7 @@
  * ports-vocabulary.mjs — a FONTE ÚNICA do vocabulário de portas. Lei dona:
  * specs/arquitetura/01-modulo.md §5.1.
  *
- * Três lugares têm de concordar, e nada verifica sozinho: `packages/ports/index.ts:PORTAS_CONHECIDAS`,
+ * Três lugares têm de concordar, e nada verifica sozinho: `packages/ports/index.ts:KNOWN_PORTS`,
  * `schemas/config-ports.schema.json:properties` e `schemas/module.schema.json:ports.items.enum`.
  * Acrescentar uma porta editando só dois dos três falha em silêncio numa direção.
  *
@@ -14,7 +14,7 @@
  *
  * O TERCEIRO lugar, `packages/ports/index.{ts,js,py}` de cada binding, **não é gerado**: é
  * interface de LINGUAGEM de verdade (TS/JS/Python, cada um com a própria sintaxe e as próprias
- * interfaces de porta — `Repositorio`, `Storage`, …), não config mecânica. Continua hand-maintained,
+ * interfaces de porta — `Repository`, `Storage`, …), não config mecânica. Continua hand-maintained,
  * e precisa ser mantido IGUAL a esta lista à mão sempre que ela mudar — é o preço de três linguagens
  * não poderem compartilhar um módulo JS.
  *
@@ -24,17 +24,19 @@
  * mesmo argumento que exclui `'dist'` de `ENTRADAS_PERMITIDAS`). Ela volta no dia em que
  * houver um projeto com a decisão tomada — e volta como ADR, não como reinclusão silenciosa aqui.
  *
- * `verificadorDeToken` era `auth` — renomeada por ADR-010 (`specs/adr/000-decisoes-do-template.md`),
- * o precedente que `fila` já registrava: vocabulário só muda por decisão escrita. A interface tem
- * UM método (`verify(token)`), e "auth" acomodava também "gerenciar usuários" — que na arquitetura
- * Sarak é módulo à parte, alcançado por gateway, nunca por porta (ADR-002).
+ * `tokenVerifier` era `verificadorDeToken` até a Onda 3 do `ADR-013`/`ADR-016` (tradução de
+ * idioma, não nova decisão de nomenclatura), e antes disso era `auth` — renomeada por ADR-010
+ * (`specs/adr/000-decisoes-do-template.md`), o precedente que `fila` já registrava: vocabulário só
+ * muda por decisão escrita. A interface tem UM método (`verify(token)`), e "auth" acomodava também
+ * "gerenciar usuários" — que na arquitetura Sarak é módulo à parte, alcançado por gateway, nunca por
+ * porta (ADR-002).
  */
 export const PORTAS_CONHECIDAS = [
-  'repositorio',
-  'auditoria',
-  'relogio',
-  'geradorId',
+  'repository',
+  'audit',
+  'clock',
+  'idGenerator',
   'storage',
-  'verificadorDeToken',
-  'notificador',
+  'tokenVerifier',
+  'notifier',
 ];

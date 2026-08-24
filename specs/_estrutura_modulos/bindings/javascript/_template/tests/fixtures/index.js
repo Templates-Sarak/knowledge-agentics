@@ -4,7 +4,7 @@
 // e a PROVA EXECUTAVEL de que o desacoplamento existe. Se um teste precisar de infraestrutura,
 // a porta esta mal desenhada ou falta o adapter de memoria.
 //
-// Relogio e geradorId sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar
+// Clock e idGenerator sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar
 // o relogio do sistema, e o que prova que o dominio nao chama `new Date()` escondido.
 
 const INSTANTE_FIXO = '2024-01-01T00:00:00.000Z';
@@ -55,10 +55,10 @@ export function createSequentialGenerator() {
 
 export function createDependencies(iniciais = []) {
   return {
-    repositorio: createInMemoryRepository(iniciais),
-    auditoria: createInMemoryAudit(),
-    relogio: createFixedClock(),
-    geradorId: createSequentialGenerator(),
+    repository: createInMemoryRepository(iniciais),
+    audit: createInMemoryAudit(),
+    clock: createFixedClock(),
+    idGenerator: createSequentialGenerator(),
   };
 }
 

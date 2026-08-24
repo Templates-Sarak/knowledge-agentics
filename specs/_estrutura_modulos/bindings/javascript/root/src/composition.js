@@ -39,12 +39,12 @@ import { createPostgresAudit, createPostgresRepository } from '../adapters/postg
  * contexto por-modulo nao teria como sabe-lo.
  */
 const FABRICAS = {
-  repositorio: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
-  auditoria: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
-  relogio: { sistema: () => createClock() },
-  geradorId: { padrao: () => createIdGenerator() },
+  repository: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
+  audit: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
+  clock: { sistema: () => createClock() },
+  idGenerator: { padrao: () => createIdGenerator() },
   storage: { memoria: () => createInMemoryStorage() },
-  notificador: { memoria: () => createInMemoryNotifier() },
+  notifier: { memoria: () => createInMemoryNotifier() },
 };
 
 function readJson(caminho) {

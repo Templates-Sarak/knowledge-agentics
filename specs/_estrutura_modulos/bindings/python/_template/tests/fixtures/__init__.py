@@ -4,7 +4,7 @@ TODO teste do modulo roda com estes — sem rede e sem banco. Isso nao e prefere
 PROVA EXECUTAVEL de que o desacoplamento existe. Se um teste precisar de infraestrutura, a porta
 esta mal desenhada ou falta o adapter de memoria.
 
-Relogio e geradorId sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar o
+Clock e idGenerator sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar o
 relogio do sistema, e o que prova que o dominio nao chama `datetime.now()` escondido.
 """
 
@@ -18,7 +18,7 @@ from core.ports import DependenciasModulo, Pagina
 INSTANTE_FIXO = "2024-01-01T00:00:00.000Z"
 
 
-class RepositorioEmMemoria:
+class InMemoryRepository:
     def __init__(self, iniciais: Sequence[Registro] = ()) -> None:
         self._registros = list(iniciais)
 
@@ -41,7 +41,7 @@ class RepositorioEmMemoria:
         return len(self._registros)
 
 
-class AuditoriaEmMemoria:
+class InMemoryAudit:
     def __init__(self) -> None:
         self.eventos: list[dict[str, object]] = []
 
@@ -49,7 +49,7 @@ class AuditoriaEmMemoria:
         self.eventos.append(evento)
 
 
-class RelogioFixo:
+class FixedClock:
     def __init__(self, instante: str = INSTANTE_FIXO) -> None:
         self._instante = instante
 
@@ -57,7 +57,7 @@ class RelogioFixo:
         return self._instante
 
 
-class GeradorSequencial:
+class SequentialIdGenerator:
     """Sequencial e previsivel: teste que depende de sorteio nao e teste."""
 
     def __init__(self, inicio: int = 10000) -> None:
@@ -71,7 +71,9 @@ class GeradorSequencial:
 class AuthDeTeste:
     """Aceita um token conhecido. Qualquer outro e negado — deny by default."""
 
-    def __init__(self, permissoes: Sequence[str], token_valido: str = "token-de-teste") -> None:
+    def __init__(
+        self, permissoes: Sequence[str], token_valido: str = "token-de-teste"
+    ) -> None:
         self._permissoes = list(permissoes)
         self._token = token_valido
 
@@ -81,10 +83,10 @@ class AuthDeTeste:
 
 def create_dependencies(iniciais: Sequence[Registro] = ()) -> DependenciasModulo:
     return DependenciasModulo(
-        repositorio=RepositorioEmMemoria(iniciais),
-        auditoria=AuditoriaEmMemoria(),
-        relogio=RelogioFixo(),
-        geradorId=GeradorSequencial(),
+        repository=InMemoryRepository(iniciais),
+        audit=InMemoryAudit(),
+        clock=FixedClock(),
+        idGenerator=SequentialIdGenerator(),
     )
 
 

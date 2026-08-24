@@ -40,21 +40,24 @@ export class ErroPorta extends Error {
  * Fonte NORMATIVA: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do gate
  * (`config-ports.schema.json`, `module.schema.json:ports.items.enum`) sao GERADOS dela. Esta
  * lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
- * mantenha as duas iguais a mao. `fila` NAO ESTA no vocabulario: arrasta retry,
- * dead-letter, idempotencia e ordem de entrega — desenho de topologia que 00-arquitetura.md §5 diz
- * que o template nao escolhe. `verificadorDeToken` era `auth` ate o ADR-010.
+ * mantenha as duas iguais a mao (o SIMBOLO diverge de proposito: `PORTAS_CONHECIDAS` na fonte,
+ * `KNOWN_PORTS` aqui — Onda 3 do ADR-013/ADR-016, esqueleto e ferramental traduzem por regras
+ * diferentes; o CONTEUDO das duas listas e que precisa ser identico). `fila` NAO ESTA no
+ * vocabulario: arrasta retry, dead-letter, idempotencia e ordem de entrega — desenho de topologia
+ * que 00-arquitetura.md §5 diz que o template nao escolhe. `tokenVerifier` era `verificadorDeToken`
+ * (traducao de idioma, ADR-013/ADR-016) e, antes disso, `auth` ate o ADR-010.
  */
-export const PORTAS_CONHECIDAS = [
-  'repositorio',
-  'auditoria',
-  'relogio',
-  'geradorId',
+export const KNOWN_PORTS = [
+  'repository',
+  'audit',
+  'clock',
+  'idGenerator',
   'storage',
-  'verificadorDeToken',
-  'notificador',
+  'tokenVerifier',
+  'notifier',
 ] as const;
 
-export type NomeDePorta = (typeof PORTAS_CONHECIDAS)[number];
+export type PortName = (typeof KNOWN_PORTS)[number];
 
 export interface Pagina<T> {
   itens: T[];
@@ -63,14 +66,14 @@ export interface Pagina<T> {
   total: number;
 }
 
-export interface Repositorio<T> {
+export interface Repository<T> {
   list(pagina: number, tamanho: number): Promise<Pagina<T>>;
   findByHash(hash: string): Promise<T | null>;
   insert(registro: T): Promise<void>;
   count(): Promise<number>;
 }
 
-export interface EventoDeAuditoria {
+export interface AuditEvent {
   hash: string;
   acao: string;
   sujeito: string;
@@ -78,25 +81,25 @@ export interface EventoDeAuditoria {
   requestId: string;
 }
 
-export interface Auditoria {
-  record(evento: EventoDeAuditoria): Promise<void>;
+export interface Audit {
+  record(evento: AuditEvent): Promise<void>;
 }
 
-export interface Relogio {
+export interface Clock {
   now(): string;
 }
 
-export interface GeradorId {
+export interface IdGenerator {
   hash(): string;
 }
 
-export interface VerificadorDeToken {
+export interface TokenVerifier {
   verify(token: string): Promise<{ permissoes: string[] } | null>;
 }
 
 /**
  * Guarda e recupera CONTEUDO por caminho — upload, o caso mais comum de quase todo projeto real
- * — superficie MINIMA e tipada por operacao, no precedente de `Repositorio`:
+ * — superficie MINIMA e tipada por operacao, no precedente de `Repository`:
  * nada de `executar(comando: string)` — o desenho que sustenta `sql-no-modulo` do lado do banco.
  */
 export interface Storage {
@@ -106,6 +109,6 @@ export interface Storage {
 }
 
 /** Envia mensagem a um destinatario — e-mail, o outro caso mais comum. */
-export interface Notificador {
+export interface Notifier {
   send(destinatario: string, assunto: string, corpo: string): Promise<void>;
 }

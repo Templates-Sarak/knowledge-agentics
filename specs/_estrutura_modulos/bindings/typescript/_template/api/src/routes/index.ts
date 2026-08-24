@@ -50,7 +50,7 @@ function requiredRoutes(router: Router, { deps, config }: Opcoes): void {
   const { manifesto } = config;
 
   router.get('/health', (_req, res, next) => {
-    deps.repositorio
+    deps.repository
       .count()
       .then(() => res.json({ ok: true, modulo: manifesto.id }))
       .catch(next);
@@ -61,7 +61,7 @@ function requiredRoutes(router: Router, { deps, config }: Opcoes): void {
   });
 
   router.get('/resumo', (_req, res, next) => {
-    deps.repositorio
+    deps.repository
       .count()
       .then((total) => res.json({ total }))
       .catch(next);
@@ -86,7 +86,7 @@ function recordRoutes(router: Router, { deps, config }: Opcoes): void {
   router.get('/registros', requirePermission(ler), (req, res, next) => {
     Promise.resolve()
       .then(() => readPagination(req.query as Record<string, unknown>, config))
-      .then(([pagina, tamanho]) => deps.repositorio.list(pagina, tamanho))
+      .then(([pagina, tamanho]) => deps.repository.list(pagina, tamanho))
       .then((resultado) =>
         res.json(toCollection(resultado.itens, resultado.pagina, resultado.tamanho, resultado.total)),
       )
@@ -99,7 +99,7 @@ function recordRoutes(router: Router, { deps, config }: Opcoes): void {
       next(new ErroApi('VALIDACAO', 'hash ausente no caminho'));
       return;
     }
-    deps.repositorio
+    deps.repository
       .findByHash(hash)
       .then((registro) => {
         if (registro === null) throw new ErroApi('NAO_ENCONTRADO', 'registro nao encontrado');
@@ -126,11 +126,11 @@ async function create(
   const registro = buildRecord(
     entrada as { titulo: string; status?: string },
     config.dominio.validStatuses,
-    deps.geradorId.hash(),
-    deps.relogio.now(),
+    deps.idGenerator.hash(),
+    deps.clock.now(),
   );
-  await deps.repositorio.insert(registro);
-  await deps.auditoria.record({
+  await deps.repository.insert(registro);
+  await deps.audit.record({
     hash: registro.hash,
     acao: 'create',
     sujeito: 'sistema',

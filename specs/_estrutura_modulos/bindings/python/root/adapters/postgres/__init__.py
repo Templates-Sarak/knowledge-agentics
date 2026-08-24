@@ -1,4 +1,4 @@
-"""Adapter Postgres para as portas "repositorio" e "auditoria" — ENTREGUE pelo template, pronto
+"""Adapter Postgres para as portas "repository" e "audit" — ENTREGUE pelo template, pronto
 para uso. `memory` continua o DEFAULT de todo modulo (config/ports.json);
 trocar para este adapter e editar UMA linha ali, nunca este arquivo.
 
@@ -8,7 +8,7 @@ sujeito, campos_alterados, request_id). Nao e codigo especifico de dominio — e
 materializada sobre a tabela que o molde ja cria. Modulo que criar tabela com outra forma escreve
 o proprio adapter (declarado, nao escondido — ver o rodape deste arquivo).
 
-`RepositorioPostgres`/`AuditoriaPostgres` devolvem OBJETOS PROPRIOS (`_RegistroDoMolde`,
+`PostgresRepository`/`PostgresAudit` devolvem OBJETOS PROPRIOS (`_RegistroDoMolde`,
 `_PaginaDoMolde`), nunca `core.domain.Registro`/`core.ports.Pagina` do modulo chamador:
 `adapters/` nao pode importar de `modules/` (regra `adapter-isolado`), e um projeto pode ter varios
 modulos, cada um com o PROPRIO `core.domain`. As classes locais so precisam ter os MESMOS campos —
@@ -188,8 +188,8 @@ async def _count_records(modulo: dict[str, Any]) -> int:
     return int(linha[0])
 
 
-class RepositorioPostgres:
-    """`Repositorio` real, sobre a tabela `<prefix>metadados` que o molde cria. Recebe o manifesto
+class PostgresRepository:
+    """`Repository` real, sobre a tabela `<prefix>metadados` que o molde cria. Recebe o manifesto
     do modulo (`dict`, o mesmo formato de `discover_modules`) — nunca o tipo de `src/composition.py`."""
 
     def __init__(self, modulo: dict[str, Any]) -> None:
@@ -230,8 +230,8 @@ async def _record_audit_event(modulo: dict[str, Any], evento: dict[str, Any]) ->
         await cursor.execute(consulta, valores)
 
 
-class AuditoriaPostgres:
-    """`Auditoria` real, sobre a tabela `<prefix>auditoria` que o molde cria."""
+class PostgresAudit:
+    """`Audit` real, sobre a tabela `<prefix>auditoria` que o molde cria."""
 
     def __init__(self, modulo: dict[str, Any]) -> None:
         self._modulo = modulo

@@ -1,4 +1,4 @@
-// Adapter Postgres para as portas "repositorio" e "auditoria" — ENTREGUE pelo template, pronto
+// Adapter Postgres para as portas "repository" e "audit" — ENTREGUE pelo template, pronto
 // para uso. `memory` continua o DEFAULT de todo modulo (config/ports.json);
 // trocar para este adapter e editar UMA linha ali, nunca este arquivo.
 //
