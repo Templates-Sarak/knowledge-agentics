@@ -76,7 +76,7 @@ function emit(obj) {
 /**
  * A raiz do PROJETO em que o agente está trabalhando, ou `null`.
  *
- * Procura o arquivo de política em si (`config/verificacao.json`), e não um marcador indireto como
+ * Procura o arquivo de política em si (`config/verification.json`), e não um marcador indireto como
  * `modulos/`: se o alvo existe, a resposta é certa; se não existe em lugar nenhum, cai no
  * `config.json` da base sem inventar raiz. É o que faz o hook rodar na PRÓPRIA base sem quebrar —
  * ela não tem esse arquivo, então a busca falha e o fallback assume.
@@ -93,7 +93,7 @@ function projectRoot() {
   for (const partida of partidas) {
     let atual = path.resolve(partida);
     for (let nivel = 0; nivel < 8; nivel += 1) {
-      if (fs.existsSync(path.join(atual, "config", "verificacao.json"))) return atual;
+      if (fs.existsSync(path.join(atual, "config", "verification.json"))) return atual;
       const pai = path.dirname(atual);
       if (pai === atual) break;
       atual = pai;
@@ -103,7 +103,7 @@ function projectRoot() {
 }
 
 /**
- * Traduz `config/verificacao.json` (vocabulário do TEMPLATE) para o vocabulário interno dos hooks.
+ * Traduz `config/verification.json` (vocabulário do TEMPLATE) para o vocabulário interno dos hooks.
  *
  * Os dois arquivos falam línguas diferentes de propósito — o template nomeia BINDING
  * (`typescript`/`javascript`/`python`) e usa `formatador`; os hooks nomeiam ÁREA (`js`/`python`) e
@@ -114,7 +114,7 @@ function projectRoot() {
  * mesmo eslint. `typescript` tem precedência quando os dois estão declarados.
  */
 function politicaDoProjeto(raiz) {
-  const bruto = JSON.parse(fs.readFileSync(path.join(raiz, "config", "verificacao.json"), "utf8"));
+  const bruto = JSON.parse(fs.readFileSync(path.join(raiz, "config", "verification.json"), "utf8"));
   const linguagens = {};
   const doJs = bruto.linguagens?.typescript ?? bruto.linguagens?.javascript;
   if (doJs) linguagens.js = { linter: doJs.linter, formatter: doJs.formatador };
@@ -133,7 +133,7 @@ function politicaDoProjeto(raiz) {
 /**
  * Carrega a política dos hooks. Nunca lança; mescla com defaults.
  *
- * DUAS fontes, e a ordem é a decisão: quando existe `config/verificacao.json` no projeto, a política
+ * DUAS fontes, e a ordem é a decisão: quando existe `config/verification.json` no projeto, a política
  * é a DELE — o repositório que os hooks protegem é quem diz como quer ser protegido. Só na ausência
  * dele vale o `config.json` da base, que é o caso da própria base e de projeto que não veio do
  * template.

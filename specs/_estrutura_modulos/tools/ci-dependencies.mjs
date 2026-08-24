@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * ci-dependencies.mjs — audita dependências (npm audit / pip-audit) contra o piso de severidade de
- * `config/verificacao.json:dependencias.severidadeMinima` (já no schema — nenhuma chave nova).
+ * `config/verification.json:dependencias.severidadeMinima` (já no schema — nenhuma chave nova).
  *
  *   node tools/ci-dependencies.mjs [--json]
  *   node tools/ci-dependencies.mjs --autoteste
@@ -14,7 +14,7 @@
  * como `optional-dependencies` do projeto (mesmo grupo do `pytest-cov`); `npm audit` é embutido no
  * npm. Isso elimina o "fail-open por ausência": as duas SEMPRE estão instaladas onde este comando
  * roda. O que sobra de "fail-open" morre — vira EXCEÇÃO NOMINAL, RATIFICADA (`decisao`, como o gate
- * já exige) E DATADA (`expira`, novo aqui) em `config/conformidade.json:excecoesCve`.
+ * já exige) E DATADA (`expira`, novo aqui) em `config/compliance.json:excecoesCve`.
  *
  * NÚCLEO × CASCA, mesmo precedente de `affected.mjs`/`contract-compatible.mjs`/`ci-security.mjs`:
  * `normalizarNpm`/`normalizarPip`/`statusDaExcecao`/`avaliar` recebem DADO (o JSON já parseado, e
@@ -265,7 +265,7 @@ function auditarPip() {
 }
 
 function severidadeMinima() {
-  const caminho = join(RAIZ, 'config', 'verificacao.json');
+  const caminho = join(RAIZ, 'config', 'verification.json');
   if (!existsSync(caminho)) return 'high'; // mesmo default de `hooks/test-cobertura.js`/config.json da base
   try {
     return JSON.parse(readFileSync(caminho, 'utf8')).dependencias?.severidadeMinima ?? 'high';
@@ -274,11 +274,11 @@ function severidadeMinima() {
   }
 }
 
-/** `config/conformidade.json:excecoesCve` — MESMO arquivo das exceções de regra do gate, chave nova.
+/** `config/compliance.json:excecoesCve` — MESMO arquivo das exceções de regra do gate, chave nova.
  * Decisão (não um arquivo próprio): a disciplina "sem decisao não vale" já mora e é testada ali;
  * duplicar em outro arquivo repetiria o mecanismo sem nenhum ganho, só mais uma entrada na árvore. */
 function excecoesCve() {
-  const caminho = join(RAIZ, 'config', 'conformidade.json');
+  const caminho = join(RAIZ, 'config', 'compliance.json');
   if (!existsSync(caminho)) return [];
   try {
     return JSON.parse(readFileSync(caminho, 'utf8')).excecoesCve ?? [];

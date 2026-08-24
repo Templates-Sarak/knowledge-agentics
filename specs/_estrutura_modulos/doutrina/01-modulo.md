@@ -32,9 +32,9 @@ modules/<modulo>/
 ├── config/              toda configuração, um arquivo por assunto
 │   ├── api.json         paginação, timeout, limite de corpo, nível de log
 │   ├── domain.json     parâmetros de negócio (status válidos, moedas, limites)
-│   ├── seguranca.json   rate limit, CORS, headers
+│   ├── security.json    rate limit, CORS, headers
 │   ├── ports.json      qual adapter atende cada porta
-│   └── textos.json      rótulos e mensagens exibidos ao usuário
+│   └── texts.json       rótulos e mensagens exibidos ao usuário
 │
 ├── core/                engine interna, sem deploy, sem I/O direto
 │   ├── domain/         tipos + validação
@@ -133,9 +133,9 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | Segredo, credencial, URL de infraestrutura, valor por ambiente | `.env`, prefixado `<MODULO>_` | `CATALOGO_DB_URL` |
 | Tunable não-secreto: paginação, timeout, limite de corpo, nível de log | `config/api.json` | `"paginaTamanhoMaximo": 100` |
 | Parâmetro de negócio: status válidos, moedas, percentuais | `config/domain.json` | `"moedasAceitas": ["BRL"]` |
-| Rate limit, CORS, headers | `config/seguranca.json` | `"limiteEscrita": 20` |
+| Rate limit, CORS, headers | `config/security.json` | `"limiteEscrita": 20` |
 | Qual adapter atende cada porta | `config/ports.json` | `"repositorio": "postgres"` |
-| Rótulo e mensagem exibidos ao usuário | `config/textos.json` | `"listaVazia": "Nada por aqui."` |
+| Rótulo e mensagem exibidos ao usuário | `config/texts.json` | `"listaVazia": "Nada por aqui."` |
 | Identidade e contrato do módulo | `module.json` | §3 |
 
 ## 4.2 O `.env` em cascata
@@ -233,7 +233,7 @@ ADR.
 - **Trocar de fornecedor é editar `config/ports.json`.** Se for preciso mais que isso, a porta está mal desenhada.
 - **Adapter novo nasce por `create-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
   `create-module.mjs`: copia o molde (`adapters/_template`), substitui marcadores, registra a fábrica em
-  `src/composicao.*` e roda o gate antes de devolver o controle.
+  `src/composition.*` e roda o gate antes de devolver o controle.
 - **`postgres` (`repositorio`/`auditoria`) já vem PRONTO, ao lado de `memory`** — não nasce
   por `create-adapter.mjs`, porque já existe: materializa a forma que
   `create-module.mjs` já cria (`<prefix>metadados`/`<prefix>auditoria`). `memory` continua o

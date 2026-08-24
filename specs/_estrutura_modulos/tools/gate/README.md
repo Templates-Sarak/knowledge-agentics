@@ -124,7 +124,7 @@ depois da tabela de precisão dos verificadores.
    achado. Regra de escopo `root` devolve string: o alvo dela é sempre `(root)`.
 4. **Nenhuma regra lê disco.** Tudo vem do contexto (`tools/gate/context.mjs`) — é o que as mantém
    rápidas e testáveis. O que é do **projeto**, e não do módulo, chega em `ctx.projeto`
-   (`carregarProjeto`): a política de `config/verificacao.json` e a config do linter em disco. É lido uma vez
+   (`carregarProjeto`): a política de `config/verification.json` e a config do linter em disco. É lido uma vez
    por raiz e memoizado — dez módulos não custam dez leituras —, e `ctx.projeto.ehProjeto` diz se a raiz é
    mesmo um projeto (tem `modules/`) ou um módulo solto, caso em que regra de projeto silencia. O **código**
    da raiz (`adapters/`, `src/`, `packages/`) chega em `ctx.projeto.codigo`, e NUNCA em `ctx.arquivos` ou
@@ -148,5 +148,5 @@ sem ninguém notar, e todo módulo criado a partir dele nasce quebrado (ADR-006 
 
 ## Exceções
 
-Exceção nominal vive em `config/conformidade.json` na raiz do projeto e **exige** o campo `decisao`
+Exceção nominal vive em `config/compliance.json` na raiz do projeto e **exige** o campo `decisao`
 apontando para um ADR. Sem ele, o gate reporta a própria exceção como inválida e não a aplica.

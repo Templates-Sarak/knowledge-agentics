@@ -62,7 +62,7 @@ function qualifiedName(schema, tabela) {
 const pools = new Map();
 
 /** Lazy DE PROPÓSITO — mesma forma de `scripts/migrations.mjs`: `pg` não pode ser dependência de
- * import estático aqui, senão carregar este arquivo (ex.: para autoteste de `composicao.js`)
+ * import estático aqui, senão carregar este arquivo (ex.: para autoteste de `composition.js`)
  * exigiria o pacote instalado mesmo em um caminho que nunca toca banco. */
 async function poolFor(url) {
   const existente = pools.get(url);

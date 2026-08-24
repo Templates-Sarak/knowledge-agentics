@@ -34,9 +34,9 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 | `<id>` | dominio | <uma linha> | não | `/<id>` |
 | `hub` | conector | casca, navegação e agregação | não | `/` |
 
-**Será criado:** `tools/`, `packages/ports`, `adapters/memory`, `src/composicao`,
+**Será criado:** `tools/`, `packages/ports`, `adapters/memory`, `src/composition`,
 `modules/{_template,<ids>}`, `specs/arquitetura/` (5 leis), `specs/adr/000-decisoes-do-template.md`,
-`config/conformidade.json`, `.env`, `.gitignore`.
+`config/compliance.json`, `.env`, `.gitignore`.
 
 **NÃO será tocado:** <listar o que já existe no destino>
 

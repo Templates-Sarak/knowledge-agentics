@@ -5,7 +5,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import textos from '../../config/textos.json';
+import textos from '../../config/texts.json';
 import { List } from '../../web/src/pages/List.js';
 import { listRecords } from '../../web/src/api-client/index.js';
 import { recordExample } from '../fixtures/index.js';

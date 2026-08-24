@@ -152,7 +152,7 @@ function lerManifesto(raiz, eMolde) {
 
 /** Lê os cinco config/*.json. Arquivo ausente ou inválido entra como `null` para a regra reportar. */
 function lerConfigs(raiz, eMolde) {
-  const assuntos = ['api', 'domain', 'seguranca', 'ports', 'textos'];
+  const assuntos = ['api', 'domain', 'security', 'ports', 'texts'];
   const configs = {};
   for (const assunto of assuntos) {
     const caminho = join(raiz, 'config', `${assunto}.json`);
@@ -230,8 +230,8 @@ function lerProjeto(raizProjeto) {
   // ela não há projeto: é módulo solto (extraído e ainda não religado) ou fixture, e cobrar
   // política de projeto de quem não é projeto seria falso positivo garantido.
   const ehProjeto = existsSync(join(raizProjeto, 'modules'));
-  const verificacao = lerConfigDaRaiz(raizProjeto, 'verificacao.json');
-  const conformidade = lerConfigDaRaiz(raizProjeto, 'conformidade.json');
+  const verificacao = lerConfigDaRaiz(raizProjeto, 'verification.json');
+  const conformidade = lerConfigDaRaiz(raizProjeto, 'compliance.json');
 
   const configsDeLint = {};
   for (const nome of CONFIGS_DE_LINT) {
@@ -362,7 +362,7 @@ function porqueInvalida(decisao, idsValidos) {
 /** Exceções nominais ratificadas (specs/arquitetura/04-regras.md §6). `decisao` precisa resolver a
  * um ADR de verdade em `specs/adr/` — string qualquer não basta (era o fail-open). */
 export function carregarExcecoes(raizProjeto) {
-  const caminho = join(raizProjeto, 'config', 'conformidade.json');
+  const caminho = join(raizProjeto, 'config', 'compliance.json');
   if (!existsSync(caminho)) return { validas: [], invalidas: [] };
   try {
     const { excecoes = [] } = JSON.parse(lerTexto(caminho));

@@ -110,7 +110,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 - **NÃO** use fallback de infraestrutura (`env['X'] ?? 'http://localhost'`) — falta de config **derruba o boot**.
 - **NÃO** devolva registro cru na resposta — a saída é montada campo a campo pelo mapeador.
 - **NÃO** renomeie pasta da árvore canônica. **Descartar** o que o módulo não usa é permitido; renomear, não.
-- **NÃO** registre exceção no `conformidade.json` para fazer o gate passar — exceção exige motivo escrito e
+- **NÃO** registre exceção no `compliance.json` para fazer o gate passar — exceção exige motivo escrito e
   ADR ratificado, e o gate rejeita exceção sem esse link.
 - **NÃO encerre com o gate vermelho.**
 

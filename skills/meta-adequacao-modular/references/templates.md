@@ -38,7 +38,7 @@ reaparece como erro de gate em outro lugar, e o rastro se perde:
    declarar exceção temporária? Este item não tem meio-termo — `env-modulo` é estrito.
 7. **Prefixo de tabela** — `data.prefix` = `<id>` em snake_case + `_`. **Migração com dado real: rotear para
    `db-migrations`** (expand-contract, backup, HITL) — nunca SQL de renomeação improvisado aqui.
-   **Decisão de HITL, oferecida primeiro**: declarar exceção permanente em `conformidade.json` com
+   **Decisão de HITL, oferecida primeiro**: declarar exceção permanente em `compliance.json` com
    `regra: "tabela-prefixo"` e um ADR justificando, **ou** renomear as tabelas de fato.
 ```
 
@@ -59,7 +59,7 @@ preenchido, de um alvo real:
 7. Prefixo de tabela — 9 tabelas, 43 colunas, 60 ocorrências de `@erp/portas`, 9 artefatos publicados.
 ```
 
-## 3. Exceção nominal em `config/conformidade.json`
+## 3. Exceção nominal em `config/compliance.json`
 
 ```jsonc
 {
@@ -88,7 +88,7 @@ antes de declarar a exceção. Achado de escopo `root` (fiação, manifesto de p
 ```
 
 Registre a mesma lista (por extenso, não só o padrão glob) no relatório da Fase A — é a "segunda métrica"
-da campanha, ao lado do número de exceções em `conformidade.json`.
+da campanha, ao lado do número de exceções em `compliance.json`.
 
 ## 5. HITL — o plano completo (fim da Fase A)
 
@@ -118,8 +118,8 @@ da campanha, ao lado do número de exceções em `conformidade.json`.
 | Verificação | Resultado |
 |---|---|
 | `validate.mjs --todos` | <0 erros / N erros> |
-| `verify` / `verificar.py` | <exit 0 / falhou em ...> |
-| Exceções em `conformidade.json` | <N previstas / N encontradas — divergência: ...> |
+| `verify` / `verify.py` | <exit 0 / falhou em ...> |
+| Exceções em `compliance.json` | <N previstas / N encontradas — divergência: ...> |
 | Caminhos ignorados (lint/prettier) | <== declarado / divergência: ...> |
 | `validate.mjs --extracao <modulo>` por módulo tocado | <0 erros / lista> |
 | `specs/plan/` sem `xx-*` pendente | <sim / pendentes: ...> |

@@ -156,7 +156,7 @@ function ajustarManifesto(destino, opcoes) {
 const TEXTOS_SO_DA_TELA = ['carregando', 'listaVazia', 'erroGenerico'];
 
 function podarTextosDeTela(destino) {
-  const caminho = join(destino, 'config', 'textos.json');
+  const caminho = join(destino, 'config', 'texts.json');
   const textos = JSON.parse(lerTexto(caminho));
   for (const chave of TEXTOS_SO_DA_TELA) delete textos[chave];
   writeFileSync(caminho, `${JSON.stringify(textos, null, 2)}\n`, 'utf8');

@@ -111,7 +111,7 @@ def _check_env_required(manifesto: dict[str, Any]) -> None:
     `.env` real, TODA a suite rodaria sob `PYTEST_CURRENT_TEST` sem uma unica variavel de
     `requiredEnv` preenchida — sem o bypass abaixo, `load_configuration()` derrubaria a suite
     inteira antes do primeiro teste. O preco declarado: "suite verde" nunca prova, por si so, que a
-    fiacao de ambiente esta correta — quem prova isso e o boot real (`python verificar.py`, boot de
+    fiacao de ambiente esta correta — quem prova isso e o boot real (`python verify.py`, boot de
     verdade) ou o teste direto, chamando esta funcao com `PYTEST_CURRENT_TEST` removido de proposito.
     """
     faltando = [c for c in manifesto["requiredEnv"] if os.environ.get(c) is None]
@@ -133,7 +133,7 @@ def load_configuration(raiz: Path | None = None) -> ConfiguracaoModulo:
         manifesto=manifesto,
         api=_read_json(raiz_modulo, "config/api.json"),
         dominio=_read_json(raiz_modulo, "config/domain.json"),
-        seguranca=_read_json(raiz_modulo, "config/seguranca.json"),
+        seguranca=_read_json(raiz_modulo, "config/security.json"),
         portas=_read_json(raiz_modulo, "config/ports.json"),
-        textos=_read_json(raiz_modulo, "config/textos.json"),
+        textos=_read_json(raiz_modulo, "config/texts.json"),
     )

@@ -13,12 +13,14 @@ from core.ports import Auth, DependenciasModulo
 from .config import ConfiguracaoModulo, load_configuration, env_required
 from .logger import create_logger
 from .middlewares import ContextoDaBorda, record_middlewares
-from .rotas import create_routes
+from .routes import create_routes
 
 __all__ = ["create_app", "listen_port", "load_configuration", "env_required"]
 
 
-def create_app(deps: DependenciasModulo, auth: Auth, config: ConfiguracaoModulo | None = None) -> FastAPI:
+def create_app(
+    deps: DependenciasModulo, auth: Auth, config: ConfiguracaoModulo | None = None
+) -> FastAPI:
     """Monta o modulo num FastAPI. Usado pela raiz de composicao E pelos testes de contrato."""
     configuracao = config or load_configuration()
     manifesto = configuracao.manifesto

@@ -12,7 +12,7 @@
 // Postgres, e tools/ so usa node:*. `pg` e devDependency do PROJETO (mesmo precedente de
 // `tsx`, `@vitest/coverage-v8`): o runner VIAJA COM O PROJETO, nao com a base, e por isso mora
 // aqui (scripts/) — nao em `adapters/` (adapter e para o processo composto trocar de provedor em
-// RUNTIME; isto e ferramenta de operacao, nunca importada por `composicao.ts`).
+// RUNTIME; isto e ferramenta de operacao, nunca importada por `composition.ts`).
 //
 // DECISAO (a) [psql via execFileSync] x (b) [driver `pg`] — medido antes de escolher: nesta base de
 // desenvolvimento `psql` nao esta disponivel (fora do PATH, e o winget so oferece SERVIDOR completo,
@@ -134,7 +134,7 @@ function readText(caminho) {
   return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
 }
 
-/** Pares chave=valor de um `.env` — mesma leitura de `src/composicao.ts:readPairsEnv`. */
+/** Pares chave=valor de um `.env` — mesma leitura de `src/composition.ts:readPairsEnv`. */
 function readPairsEnv(caminho) {
   return readText(caminho)
     .split(/\r?\n/)
@@ -147,7 +147,7 @@ function readPairsEnv(caminho) {
 }
 
 /** Carrega o `.env` UNICO da raiz no processo, sem sobrescrever o que ja veio de fora — mesma
- * precedencia de `src/composicao.ts:loadEnvRoot` (ADR-004). */
+ * precedencia de `src/composition.ts:loadEnvRoot` (ADR-004). */
 function loadEnvRoot() {
   const caminho = join(RAIZ, '.env');
   if (!existsSync(caminho)) return;

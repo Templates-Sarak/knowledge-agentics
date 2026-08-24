@@ -38,7 +38,7 @@
  * importada de lá porque `hooks/` é do agente Claude Code e nunca viaja para o projeto gerado; o
  * raciocínio é o mesmo, a cópia é porque a fonte não pode ser dependência de `tools/`).
  * `ruff`/`mypy`/`pytest` não são scripts Node — rodam via `<python> -m <ferramenta>`, a MESMA forma
- * que `verificar.py` já usa pelo motivo que ele já documenta (`_resolver`: "ferramenta Python roda
+ * que `verify.py` já usa pelo motivo que ele já documenta (`_resolver`: "ferramenta Python roda
  * pelo interpretador ATUAL, nunca pelo PATH — `shutil.which` não enxerga um venv não ativado"). Medi
  * a alternativa (achar `ruff.exe`/`mypy.exe`/`pytest.exe` em `Scripts/`) e descartei: exigiria saber
  * ONDE fica o venv, que este script não tem como inferir sem inventar convenção nova; `-m` funciona
@@ -111,7 +111,7 @@ function calcularAfetadosDe(caminhosBrutos) {
   return calcularAfetados(grafo, normalizados);
 }
 
-/** Binding do projeto pelo manifesto de pacote presente na raiz — a mesma pergunta de `verificar.py`. */
+/** Binding do projeto pelo manifesto de pacote presente na raiz — a mesma pergunta de `verify.py`. */
 function binding() {
   if (existsSync(join(RAIZ, 'package.json'))) return 'node';
   if (existsSync(join(RAIZ, 'pyproject.toml'))) return 'python';
@@ -211,7 +211,7 @@ function rodarTsc(rotulo, args, cwd = RAIZ) {
 
 /**
  * O interpretador Python, memoizado por processo. `SARAK_PYTHON` sobrepõe (mesmo vocabulário de
- * `SARAK_NODE` em `verificar.py`); senão tenta `python` e `python3`, na ordem — sem shell, então um
+ * `SARAK_NODE` em `verify.py`); senão tenta `python` e `python3`, na ordem — sem shell, então um
  * nome que não exista devolve `ENOENT`/status≠0 aqui, nunca dispara um resolvedor de PATH de shell.
  */
 let pythonResolvido;
@@ -317,7 +317,7 @@ function tiposETestesDoModuloNode(id) {
   ];
 }
 
-/** Tipos e testes de UM módulo Python — de dentro da pasta dele, a mesma condição de `verificar.py`. */
+/** Tipos e testes de UM módulo Python — de dentro da pasta dele, a mesma condição de `verify.py`. */
 function tiposETestesDoModuloPython(id) {
   const pasta = join(RAIZ, 'modules', id);
   return [

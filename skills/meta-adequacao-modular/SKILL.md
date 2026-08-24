@@ -144,7 +144,7 @@ Ordem, e nenhuma delas espera pelo passo 5:
      sem instalar nada — é a verificação, não a instalação, que nunca se pula).
    **Nunca aninhe numa subpasta** (regras de escopo `root` leem a raiz; `core.hooksPath` aceita um valor
    só; `ENV_ROOT=../../.env` quebra com um nível a mais).
-3. **Confira antes se o alvo proíbe exceção** própria em `conformidade.json` (medido: campanha
+3. **Confira antes se o alvo proíbe exceção** própria em `compliance.json` (medido: campanha
    auto-reprovada por norma do prompt de revisor — se proibir, é portão de HITL). Rode
    `node tools/gate/validate.mjs --todos` e **deixe vermelho honesto**; converta cada violação em exceção
    nominal (`modulo`+`regra`+`motivo`+`decisao` com ADR **real**) — a métrica é o número de exceções.
@@ -165,7 +165,7 @@ antes) em `references/workflow.md` §1–§3.
 ### Passo 4 — escrever a(s) plan(s) de adequação
 Toda plan nasce com o prefixo **`xx-`** (`xx-nn-descricao`), registrada em `specs/00-indice.md` como
 qualquer plan do fluxo SDD (molde `_estrutura_base/_templates/template-plan.md`), com **definição de pronto
-cobrada por máquina** (ex.: *"ao fim desta plan, `conformidade.json` tem uma exceção a menos"*). O `nn` é a
+cobrada por máquina** (ex.: *"ao fim desta plan, `compliance.json` tem uma exceção a menos"*). O `nn` é a
 ordem de execução — decisão de HITL (risco × valor), não a ordem em que os módulos foram encontrados.
 `xx-` é namespace próprio — **não** consome `proximo_numero_plan`; o contador segue intocado após o expurgo.
 
@@ -184,7 +184,7 @@ caracterizar (/code2-caracterizar)
   → mover para a árvore fechada (a xx-* plan, pelo ciclo SDD padrão: revisor→executor)
   → adequar Nível 0 (/code3-adequar, backlog de /code1-auditar — campanha separada e complementar)
   → gate verde (validate.mjs <modulo>)
-  → apagar as exceções daquele módulo em conformidade.json
+  → apagar as exceções daquele módulo em compliance.json
 ```
 
 Migration com dado real (prefixo de tabela) passa por `db-migrations` (expand-contract, backup, HITL) —
@@ -200,8 +200,8 @@ mecânica acima já aponta Fase B (todas as `xx-*` são `🟢`/`⚪`).
 ### Passo 7 — critério mecânico, quase todo máquina
 ```
 node tools/gate/validate.mjs --todos            → 0 erros
-npm run verify  (ou python verificar.py)        → exit 0
-exceções reais em conformidade.json             == as previstas no plano da Fase A
+npm run verify  (ou python verify.py)        → exit 0
+exceções reais em compliance.json             == as previstas no plano da Fase A
 caminhos ignorados (lint/prettier)              == os declarados no passo 3
 node tools/gate/validate.mjs --extracao <modulo> → 0 erros, por módulo tocado
 specs/plan/ sem nenhuma "xx-*" pendente          (todas sintetizadas e expurgadas)
@@ -236,12 +236,12 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
   ausente, porque é autoritativa. `specs/specs/` nasce vazia, e isso é correto.
 - **NÃO** escreva prompt de execução/correção/conclusão em arquivo — só na conversa; o resto vai na §4.
 - **NUNCA** trabalhe em `main` — a campanha roda em branch; o commit é sempre do usuário.
-- **NUNCA** registre exceção em `conformidade.json` sem `decisao` apontando um ADR **real** em `specs/adr/`
+- **NUNCA** registre exceção em `compliance.json` sem `decisao` apontando um ADR **real** em `specs/adr/`
   — o gate rejeita a própria exceção sem esse link, e um ADR inexistente aqui é achado, não conserto.
 - **NUNCA** aninhe o template instalado numa subpasta — regras de escopo `root`, `core.hooksPath` e a
   cascata `ENV_ROOT` exigem a raiz de verdade.
 - **NÃO** escreva SQL de renomeação de tabela dentro de uma plan — roteie para `db-migrations`.
-- **NÃO** trate a área legada como "resolvida depois" sem declará-la em `config/conformidade.json` e no
+- **NÃO** trate a área legada como "resolvida depois" sem declará-la em `config/compliance.json` e no
   escopo do linter — dívida não declarada é dívida escondida.
 - **NÃO** toque em `Earendel/`, `ERP/` ou qualquer projeto fora do repositório desta conversa ao **construir**
   esta skill — mas, uma vez instalada, ela roda sobre o repositório-alvo que o usuário confirmar.
@@ -261,7 +261,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
       `_estrutura_base` conferida arquivo a arquivo, legenda comparada, antes da primeira plan?
 - [ ] O aparato de gate foi instalado **antes** de qualquer plan de execução (nunca depois, como plan), e
       só nas peças que `template_instalado.faltando` listava — incluindo `modules/_template` e `specs/`?
-- [ ] `conformidade.json` tem uma exceção nominal (com ADR real) por violação aceita, nenhuma sem motivo,
+- [ ] `compliance.json` tem uma exceção nominal (com ADR real) por violação aceita, nenhuma sem motivo,
       e nenhuma contra norma própria do alvo que as proíba?
 - [ ] Molde do alvo (se houver) passou pela prova de vida ADR-006 e foi comparado com o do binding
       (adoção seletiva aplicada)? Cada módulo tem `id` kebab-case, sete itens de renomeação resolvidos, e
@@ -277,7 +277,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 - `references/workflow.md` — detalhe de cada passo, a mecânica da dívida declarada, o buraco
   `eslint`/`tsc`/`prettier`, e as seis armadilhas medidas.
 - `references/templates.md` — os sete itens de renomeação (+ raio de alcance), checklist de
-  `_estrutura_base`, esqueleto de plan `xx-*`, exceção em `conformidade.json` e relatório da Fase B.
+  `_estrutura_base`, esqueleto de plan `xx-*`, exceção em `compliance.json` e relatório da Fase B.
 - `references/examples.md` — dois cenários percorridos ponta a ponta, e o resultado do legado sintético
   usado para validar esta skill.
 - `scripts/diagnosticar_terreno.py` — diagnóstico mecânico: fase, caminho tri-estado (`sinais_sdd`),

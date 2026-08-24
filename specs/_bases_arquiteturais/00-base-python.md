@@ -25,7 +25,7 @@ ele recebe o *conteúdo* de cada linha, não a árvore do template.
 | Lei (agnóstica) | `specs/_estrutura_modulos/doutrina/00-arquitetura.md` … `04-regras.md` (instalada no projeto como `specs/arquitetura/`) | o que vale em qualquer linguagem |
 | **Binding** | `specs/_estrutura_modulos/bindings/python/` | como a lei se materializa aqui |
 | Molde de módulo | `specs/_estrutura_modulos/bindings/python/_template/` | validado pelo gate **como módulo real** (ADR-006) |
-| Esqueleto de raiz | `specs/_estrutura_modulos/bindings/python/root/` | `packages/ports`, `adapters/memory`, `src/composicao`, `verificar.py` |
+| Esqueleto de raiz | `specs/_estrutura_modulos/bindings/python/root/` | `packages/ports`, `adapters/memory`, `src/composition`, `verify.py` |
 
 Módulo novo **não se escreve à mão**: `node tools/create-module.mjs <id> --role domain --binding python`,
 conduzido pela skill `code-modulo`.
@@ -67,7 +67,7 @@ Preparar o ambiente: `python -m venv .venv && .venv/bin/pip install -e ".[dev]"`
 
 | Verificação | Comando |
 |---|---|
-| Tudo, na ordem certa | `python verificar.py` — gate + `.env.example` + `ruff` + `mypy` + pytest por módulo |
+| Tudo, na ordem certa | `python verify.py` — gate + `.env.example` + `ruff` + `mypy` + pytest por módulo |
 | Só conformidade de arquitetura | `node tools/gate/validate.mjs --todos` |
 | Limiares e idiomas | `ruff` (do projeto) · validador da `padrao-python` (do Sarak) |
 | Testes de um módulo | `pytest`, **a partir da pasta do módulo** |

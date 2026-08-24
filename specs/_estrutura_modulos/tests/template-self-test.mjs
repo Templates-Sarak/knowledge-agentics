@@ -58,8 +58,8 @@
  * arquivo. Cada passo confere **exit 0 e conteúdo**: só o exit code não distingue "registrou" de
  * "não fez nada" — a classe exata dos dois bugs, em que a âncora não batia e o script abortava, mas
  * uma âncora que batesse errado por acidente escreveria algo sem ser o esperado e passaria calada.
- * Roda depois do ÚLTIMO `criar-modulo`, antes de `clone-simulado`: os `adapters/`/`src/composicao.*`
- * que ele escreve entram no commit simulado e são revalidados por `verify`/`verificar.py` a seguir,
+ * Roda depois do ÚLTIMO `criar-modulo`, antes de `clone-simulado`: os `adapters/`/`src/composition.*`
+ * que ele escreve entram no commit simulado e são revalidados por `verify`/`verify.py` a seguir,
  * de graça — nenhum passo novo depois disso, só reaproveitamento do que já roda.
  */
 import { spawnSync } from 'node:child_process';
@@ -93,7 +93,7 @@ export const COMBINACOES_DE_MODULO = [
   // `sonda-hifen` desta lista devolve o ponto cego inteiro.
   //
   // CURTO de propósito, e é a SEGUNDA medição, não só a primeira: `<modulo>` entra em comentário de
-  // CABEÇALHO em vários arquivos do molde Python (`api/src/erros.py:1`, o mais apertado, tem só 13
+  // CABEÇALHO em vários arquivos do molde Python (`api/src/errors.py:1`, o mais apertado, tem só 13
   // caracteres de folga antes de estourar os 110 do ruff). Ids mais longos ("sondasemartefato",
   // 16 chars) reprovam `ruff check` (E501) e `ruff format --check` no binding Python, sem relação
   // nenhuma com a flag testada — o comprimento do id é que importa. `sonda` (5) tinha
@@ -103,7 +103,7 @@ export const COMBINACOES_DE_MODULO = [
   { id: 'sondaweb', flags: ['--sem-web'] },
   { id: 'sondaamb', flags: ['--sem-artefato', '--sem-web'] },
   // O id COM HÍFEN, e com 8 chars pelo mesmo motivo dos quatro acima: medido, a linha mais longa
-  // que carrega o id (`api/src/erros.py`) fica em 105/110 com 8 chars — a MESMA folga de 5 que
+  // que carrega o id (`api/src/errors.py`) fica em 105/110 com 8 chars — a MESMA folga de 5 que
   // `sondapad` tem. (`sonda-hifen`, 11, cabia em 108/110, mas com folga 2: passa hoje e quebra no
   // primeiro caractere que alguém acrescentar àquela linha, e o vermelho apontaria para o hífen,
   // que não é a causa.) Exercita a cadeia inteira — gate, migrations, `.env`, tipos, testes —
@@ -137,7 +137,7 @@ function paraPascalCase(kebab) {
   return kebab.split('-').map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1)).join('');
 }
 
-/** O nome que `create-adapter.mjs` registra em `src/composicao.*` para este binding+provedor —
+/** O nome que `create-adapter.mjs` registra em `src/composition.*` para este binding+provedor —
  * mesma regra de `create-adapter.mjs:nomeDoProvedor`. */
 export function nomeDoSimbolo(binding, provedor) {
   const pascal = paraPascalCase(provedor);
@@ -166,7 +166,7 @@ export function passosDeAdapter() {
  * este autoteste deixar de medir esse defeito.
  *
  * Python não tem passo `build`/`lint` separado: o binding não empacota front-end (sem `web/` nos
- * módulos Python — medido, `bindings/python/_template` não tem pasta `web`), e `verificar.py` já
+ * módulos Python — medido, `bindings/python/_template` não tem pasta `web`), e `verify.py` já
  * cobre forma + limiares + tipos + testes num só passo, como o `npm run verify` do lado Node.
  *
  * `rapido`: só a combinação PADRÃO (sem flag) — medido, as quatro juntas custam ~70s (TS) / ~52s
@@ -340,7 +340,7 @@ function rodarNpm(args, cwd) {
 }
 
 /**
- * `prettier --write` sobre `src/composicao.*` — o passo que, em uso real, é o editor (ou o hook de
+ * `prettier --write` sobre `src/composition.*` — o passo que, em uso real, é o editor (ou o hook de
  * agente `padrao-format` da base Sarak) quem faz, arquivo por arquivo, a cada edição salva. `npm run
  * formato` só ACUSA (`--check`), nunca escreve (comentário no `package.json` do molde: "só o hook
  * escreve") — e `create-adapter.mjs` deliberadamente não formata o que grava, pelo mesmo motivo que
@@ -352,7 +352,7 @@ function rodarNpm(args, cwd) {
 function rodarPrettierWrite(destino) {
   const entrada = entrypointDoPacote(destino, 'prettier');
   if (entrada === null) return { error: new Error('prettier nao encontrado em node_modules do projeto'), status: null };
-  return spawnSync(NODE, [entrada, '--write', 'src/composicao.*'], { cwd: destino, encoding: 'utf8', shell: false });
+  return spawnSync(NODE, [entrada, '--write', 'src/composition.*'], { cwd: destino, encoding: 'utf8', shell: false });
 }
 
 /** `SARAK_PYTHON` (caminho do binário) sobrepõe; senão, `python`/`python3` no PATH — mesma técnica
@@ -371,12 +371,12 @@ function caminhoRuffDoVenv(venvDir) {
   return platform() === 'win32' ? join(venvDir, 'Scripts', 'ruff.exe') : join(venvDir, 'bin', 'ruff');
 }
 
-/** `ruff format` sobre `src/composicao.py` — equivalente Python de `rodarPrettierWrite`, mesmo
+/** `ruff format` sobre `src/composition.py` — equivalente Python de `rodarPrettierWrite`, mesmo
  * motivo (ver comentário de `formatarAdaptersPy` em `passosDoBinding`). */
 function rodarRuffFormat(destino, venvDir) {
   const executavel = caminhoRuffDoVenv(venvDir);
   if (!existsSync(executavel)) return { error: new Error('ruff nao encontrado no venv do projeto'), status: null };
-  return spawnSync(executavel, ['format', 'src/composicao.py'], { cwd: destino, encoding: 'utf8', shell: false });
+  return spawnSync(executavel, ['format', 'src/composition.py'], { cwd: destino, encoding: 'utf8', shell: false });
 }
 
 /** ÚNICO ponto que roda um interpretador Python de verdade — nunca `shell: true`. */
@@ -422,16 +422,16 @@ function podarNaoRastreado(pasta, raizProjeto, rastreados) {
   if (readdirSync(pasta).length === 0) rmSync(pasta, { recursive: true, force: true });
 }
 
-/** O `src/composicao.*` que `create-adapter.mjs` reescreve, por binding — mesma regra de
+/** O `src/composition.*` que `create-adapter.mjs` reescreve, por binding — mesma regra de
  * `create-adapter.mjs:caminhoDeComposicao`. */
 function caminhoDeComposicao(destino, binding) {
-  const nome = binding === 'python' ? 'composicao.py' : `composicao.${binding === 'typescript' ? 'ts' : 'js'}`;
+  const nome = binding === 'python' ? 'composition.py' : `composition.${binding === 'typescript' ? 'ts' : 'js'}`;
   return join(destino, 'src', nome);
 }
 
 /**
  * Roda `create-adapter.mjs` e, só se ele saiu 0, confere que a fábrica apareceu DE VERDADE em
- * `src/composicao.*` — exit 0 sozinho não distingue "registrou" de "não fez nada", que é a classe
+ * `src/composition.*` — exit 0 sozinho não distingue "registrou" de "não fez nada", que é a classe
  * exata dos dois bugs da rodada anterior (a âncora não batia, mas um regex que batesse ERRADO por
  * acidente escreveria algo sem ser o esperado e passaria calada, sem este segundo confronto). Erro
  * de conteúdo vira o MESMO formato `{ error, status }` que `classificarPasso` já entende — precedente
@@ -516,14 +516,14 @@ function executarPasso(passo, ctx) {
     case 'pip-install':
       return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['-m', 'pip', 'install', '-e', '.[dev]'], ctx.destino);
     case 'verificar-py':
-      return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verificar.py'], ctx.destino, { SARAK_NODE: NODE });
+      return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verify.py'], ctx.destino, { SARAK_NODE: NODE });
     case 'ci-dependencias-py':
       // `--dependencias` delega para `ci-dependencies.mjs` (Node), que por sua vez resolve UM
       // interpretador Python para `pip_audit` via `SARAK_PYTHON` (ou PATH). Sem `SARAK_PYTHON`
       // apontado para o venv desta rodada, ele cai no `python`/`python3` do PATH — que pode nem
       // ter `pip_audit` instalado. Medido: sem isto, o passo reprova com "ferramenta de auditoria
       // ausente", mesmo com tudo instalado no venv certo.
-      return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verificar.py', '--dependencias'], ctx.destino, {
+      return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verify.py', '--dependencias'], ctx.destino, {
         SARAK_NODE: NODE,
         SARAK_PYTHON: caminhoPythonDoVenv(ctx.venvDir),
       });

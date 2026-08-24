@@ -4,7 +4,7 @@
 //   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro
 //
 // Nenhuma rota monta erro a mao: quem transforma excecao em resposta e o tratador, no fim da cadeia.
-import { ErroApi, errorEnvelope } from '../erros.js';
+import { ErroApi, errorEnvelope } from '../errors.js';
 
 /** Correlaciona log, trilha de auditoria e envelope de erro. Primeiro da cadeia, sempre. */
 export function requestId(gerar) {
@@ -25,7 +25,7 @@ export function securityHeaders(config) {
   };
 }
 
-/** Origens sao DECLARADAS em config/seguranca.json. `*` e proibido (regra `cors-aberto`). */
+/** Origens sao DECLARADAS em config/security.json. `*` e proibido (regra `cors-aberto`). */
 export function cors(config) {
   return (req, res, next) => {
     const origem = req.headers.origin;

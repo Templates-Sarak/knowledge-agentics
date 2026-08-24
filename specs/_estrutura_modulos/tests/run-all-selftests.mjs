@@ -118,10 +118,10 @@ function arquivosComAutoteste() {
  * caminho absoluto, de qualquer diretório, é seguro). Cresce só de propósito: um arquivo NOVO com
  * `--autoteste` reprova como ÓRFÃO até alguém decidir o runtime dele e acrescentar aqui.
  *
- * `composicao.py`/`.js`/`.ts` ficam DE FORA de propósito (declarados, não esquecidos — mesma
- * disciplina de `config/conformidade.json`): o `--autoteste` de cada um só roda dentro de um projeto
- * INSTANCIADO — `python -m src.composicao --autoteste` depende do módulo `src`, que não existe
- * solto na base; `composicao.js`/`.ts` importam `express` de `node_modules`, que também não existe
+ * `composition.py`/`.js`/`.ts` ficam DE FORA de propósito (declarados, não esquecidos — mesma
+ * disciplina de `config/compliance.json`): o `--autoteste` de cada um só roda dentro de um projeto
+ * INSTANCIADO — `python -m src.composition --autoteste` depende do módulo `src`, que não existe
+ * solto na base; `composition.js`/`.ts` importam `express` de `node_modules`, que também não existe
  * solto na base (medido: os dois estouram `ERR_MODULE_NOT_FOUND` ao rodar direto daqui). Cobri-los
  * exige um projeto gerado — o passo `criar-modulo` de `autoteste:template`, não este runner —
  * registrado como pendência, não escondido.
@@ -183,9 +183,9 @@ const REGISTRO = [
  */
 
 const DECLARADOS_FORA = new Set([
-  'specs/_estrutura_modulos/bindings/python/root/src/composicao.py',
-  'specs/_estrutura_modulos/bindings/javascript/root/src/composicao.js',
-  'specs/_estrutura_modulos/bindings/typescript/root/src/composicao.ts',
+  'specs/_estrutura_modulos/bindings/python/root/src/composition.py',
+  'specs/_estrutura_modulos/bindings/javascript/root/src/composition.js',
+  'specs/_estrutura_modulos/bindings/typescript/root/src/composition.ts',
 ]);
 
 function rodarUm(registro) {

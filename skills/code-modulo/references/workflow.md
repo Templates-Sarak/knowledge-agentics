@@ -16,7 +16,7 @@ O Fluxo A termina chamando o Fluxo B, uma vez por módulo inicial.
 **Objetivo:** não sobrescrever trabalho alheio.
 
 O `create-project` **aborta** se o destino já tem `modules/`, e também se já tem os arquivos de raiz do
-binding (`package.json`, `pyproject.toml`, `tsconfig.json`, `jsconfig.json`, `.gitignore`, `verificar.py`).
+binding (`package.json`, `pyproject.toml`, `tsconfig.json`, `jsconfig.json`, `.gitignore`, `verify.py`).
 
 | Situação | O que fazer |
 |---|---|
@@ -71,7 +71,7 @@ pago, e o `conector` **por último** — ele agrega os outros e precisa que exis
 
 ```
 node tools/gate/validate.mjs --todos          # inclui import-lateral e consome-ciclo
-npm run verify                                # ou: python verificar.py
+npm run verify                                # ou: python verify.py
 ```
 
 O `--todos` é o único que enxerga as duas regras **globais**. Rodar só o gate por módulo deixa passar

@@ -225,7 +225,7 @@ function empacotarBackend(raizProjeto, destino) {
     version: '0.0.0',
     private: true,
     type: 'module',
-    scripts: { start: 'node dist/src/composicao.js' },
+    scripts: { start: 'node dist/src/composition.js' },
     dependencies: mesclarDependencias(fontesDeDependencies),
   };
   writeFileSync(join(destino, 'package.json'), `${JSON.stringify(pacote, null, 2)}\n`, 'utf8');

@@ -19,9 +19,9 @@ modules/catalogo/
 ├── config/
 │   ├── api.json             { "paginaTamanhoMaximo": 100 }
 │   ├── domain.json          { "statusValidos": ["rascunho","vigente"] }
-│   ├── seguranca.json       rate limit, CORS declarado, headers
+│   ├── security.json        rate limit, CORS declarado, headers
 │   ├── ports.json           { "repositorio": "postgres" }  ← único lugar com nome de fornecedor
-│   └── textos.json          rótulos exibidos ao usuário
+│   └── texts.json           rótulos exibidos ao usuário
 ├── core/
 │   ├── domain/              tipos + validação
 │   ├── ports/                o que preciso de INFRAESTRUTURA

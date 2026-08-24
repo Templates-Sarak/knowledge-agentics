@@ -45,7 +45,7 @@ tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 ## As regras que este molde já cabeia
 
 - **Zero hardcoded:** nenhuma URL, porta, timeout, limite ou rótulo literal. Segredo no `.env`; tunable em
-  `config/`; texto em `config/textos.json`.
+  `config/`; texto em `config/texts.json`.
 - **Falha rápida:** env ou config ausente **derruba o boot**. `process.env['X'] ?? 'http://localhost'` é violação.
 - **Infraestrutura desacoplada:** o módulo fala com `core/ports`, nunca com fornecedor. O nome do provedor só
   aparece em `config/ports.json` — trocar de banco é editar uma linha de JSON.

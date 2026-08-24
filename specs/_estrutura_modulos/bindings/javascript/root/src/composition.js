@@ -78,7 +78,7 @@ export function resolveDependencies(modulo) {
     const fabrica = FABRICAS[porta]?.[provedor ?? ''];
     if (fabrica === undefined) {
       throw new Error(
-        `[composicao] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`,
+        `[composition] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`,
       );
     }
     dependencias[porta] = fabrica(modulo);
@@ -108,7 +108,7 @@ export function verifyRoutesUnique(modulos) {
   if (colisoes.length === 0) return;
 
   const detalhe = colisoes.map(([rota, ids]) => `"${rota}" (${ids.join(', ')})`).join('; ');
-  throw new Error(`[composicao] rotaBase colidindo entre modulos: ${detalhe}`);
+  throw new Error(`[composition] rotaBase colidindo entre modulos: ${detalhe}`);
 }
 
 /** Import dinamico do modulo, pelo CAMINHO — a mesma descoberta por declaracao, nunca por lista fixa. */
@@ -174,7 +174,7 @@ function envRequiredRoot(chave) {
   const valor = process.env[chave];
   if (valor === undefined || valor === '') {
     throw new Error(
-      `[composicao] variavel obrigatoria ausente: ${chave} (declare em project.json:requiredEnv)`,
+      `[composition] variavel obrigatoria ausente: ${chave} (declare em project.json:requiredEnv)`,
     );
   }
   return valor;
@@ -191,7 +191,7 @@ export async function startSystem(raiz) {
 
   return new Promise((resolve) => {
     const servidor = app.listen(porta, () => {
-      process.stdout.write(`[composicao] sistema no ar na porta ${porta}\n`);
+      process.stdout.write(`[composition] sistema no ar na porta ${porta}\n`);
       resolve(servidor);
     });
   });
@@ -253,7 +253,7 @@ function runSelftest() {
 }
 
 // ================================================================================================
-// CLI — so quando executado diretamente (`node src/composicao.js`), nunca quando importado por teste.
+// CLI — so quando executado diretamente (`node src/composition.js`), nunca quando importado por teste.
 // ================================================================================================
 
 const ehExecucaoDireta =

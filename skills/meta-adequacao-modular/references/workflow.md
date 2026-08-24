@@ -139,7 +139,7 @@ O item 2 do Passo 3 (`SKILL.md`) não é mais "instale sempre": é condicionado 
 | `template_instalado.estado` | O que o Passo 3 faz |
 |---|---|
 | `"nao-instalado"` | instala as oito peças inteiras — o caso comum de legado puro |
-| `"parcial"` | instala **só** as peças de `faltando` — reinstalar o que já existe arrisca sobrescrever ajuste feito à mão numa rodada anterior da campanha (ex.: `config/verificacao.json` com cobertura já calibrada) |
+| `"parcial"` | instala **só** as peças de `faltando` — reinstalar o que já existe arrisca sobrescrever ajuste feito à mão numa rodada anterior da campanha (ex.: `config/verification.json` com cobertura já calibrada) |
 | `"completo"` | **não instala nada**. Segue direto para rodar o gate (item 3) — a verificação nunca se pula, só a instalação |
 
 Se `estado == "completo"` **e** `modulos_candidatos` veio vazio, isto não é mais "avaliar a adequação
@@ -150,7 +150,7 @@ situações medidas que produzem exatamente este sinal.
 **O que `faltando` não sabe: o equivalente sob outro nome.** A classificação é por **presença de caminho** —
 `tools/gate/validate.mjs` existe ou não existe. Um legado maduro costuma ter o aparato **com outro nome**:
 gate em `validar-modulos.mjs`, scaffolder em `criar-modulo.mjs` — os dois sob a pasta `scripts/` **do
-alvo** —, `conformidade.json` já próprio. O relatório dirá `faltando: ["gate", ...]`, e instalar o canônico ali produz **dois donos da mesma
+alvo** —, `compliance.json` já próprio. O relatório dirá `faltando: ["gate", ...]`, e instalar o canônico ali produz **dois donos da mesma
 lei** — exatamente o que a campanha existe para desfazer.
 
 Medido num legado real (ERP, 2026-08): gate próprio de 544 linhas implementando ~20 regras **mais estritas**
@@ -230,7 +230,7 @@ node tools/gate/validate.mjs --todos
 ```
 
 Isto **vai** dar vermelho — é o resultado correto no dia 1. Cada violação relatada se torna uma linha em
-`config/conformidade.json:excecoes`, com as quatro chaves exatas do schema (`modulo`, `regra`, `motivo`,
+`config/compliance.json:excecoes`, com as quatro chaves exatas do schema (`modulo`, `regra`, `motivo`,
 `decisao`) — nenhuma a mais, nenhuma a menos (o schema tem `additionalProperties: false`). `decisao` aponta
 um `## ADR-NNN` **real** dentro de `specs/adr/*.md` — sem ele o gate rejeita a própria exceção. Se o ADR
 ainda não existe, escreva-o antes de declarar a exceção; não inverta a ordem.
@@ -252,7 +252,7 @@ A saída não é inventar uma — é usar o que o template **já** oferece:
   de comentário dizendo desde quando e por quê.
 - Para `eslint`/`tsc` na área legada: declare o(s) `include`/`exclude` que a deixam de fora do lint/typecheck
   da raiz, na mesma lista de "caminhos ignorados" que vira a **segunda métrica** da campanha (ao lado do
-  número de exceções em `conformidade.json`). Cada módulo que nasce do template traz o próprio escopo de
+  número de exceções em `compliance.json`). Cada módulo que nasce do template traz o próprio escopo de
   volta — a lista só encolhe.
 
 ### Passo 4 — dois fatos medidos por trás das regras curtas
@@ -309,7 +309,7 @@ Ordem fixa, e as duas campanhas (Nível 1 desta skill, Nível 0 de `code-`) só 
 3. **Adequar Nível 0** (`/code3-adequar`, consumindo o backlog do `/code1-auditar` — campanha **separada** e
    complementar, não gerada por esta skill).
 4. **Gate verde** (`node tools/gate/validate.mjs modules/<id>`).
-5. **Apagar as exceções daquele módulo** em `config/conformidade.json` — nunca deixe uma exceção resolvida
+5. **Apagar as exceções daquele módulo** em `config/compliance.json` — nunca deixe uma exceção resolvida
    na lista; ela é o que prova que o módulo terminou a migração.
 
 Git: a campanha roda em **branch**, nunca em `main`; o commit é sempre do usuário. Como o repositório vai

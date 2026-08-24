@@ -53,7 +53,7 @@ const CABECALHO_ENV_REAL = [
 ];
 
 /** Cabecalho da secao da raiz. As chaves dela sao `ROOT_*`; as de modulo, `<MODULO>_*`. */
-const SECAO_DA_RAIZ = '# --- RAIZ: a fiacao (adapters/, src/, packages/) — project.json ---';
+const SECAO_DA_RAIZ = '# --- ROOT: a fiacao (adapters/, src/, packages/) — project.json ---';
 
 /** Cabecalho da secao de chaves que nenhum manifesto exige mais. */
 const SECAO_ORFAS = '# --- ORFAS: nenhum manifesto exige mais. Comentadas, valor preservado — apague a mao se tiver certeza ---';

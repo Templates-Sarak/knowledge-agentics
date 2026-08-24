@@ -23,9 +23,9 @@ requestId → headers de segurança → CORS → rate limit → autenticação �
 
 1. **`requestId`** — gerado na entrada, propagado no log e devolvido no envelope de erro. É o que liga o log
    à trilha de auditoria.
-2. **Headers** — HSTS, `nosniff`, `frame-deny`, `referrer-policy`, vindos de `config/seguranca.json`.
+2. **Headers** — HSTS, `nosniff`, `frame-deny`, `referrer-policy`, vindos de `config/security.json`.
 3. **CORS** — origens **declaradas**. `*` é proibido.
-4. **Rate limit** — janela e limites em `config/seguranca.json`, com limites distintos para leitura, escrita
+4. **Rate limit** — janela e limites em `config/security.json`, com limites distintos para leitura, escrita
    e operações caras. Estouro devolve `LIMITE_EXCEDIDO` com `Retry-After`.
 5. **Autenticação — deny by default.** Toda rota exige token, **exceto** as declaradas em
    `module.json:publicRoutes`. Rota pública é **opt-in explícito**, e o método faz parte da declaração:
@@ -94,7 +94,7 @@ pulam a checagem de variável obrigatória quando o processo está sob teste (`N
 `PYTEST_CURRENT_TEST` definido) — sem isso, todo `it()`/`def test_` cairia antes de rodar, porque nenhum
 `.env` real existe em CI nem no ambiente de quem escreve o módulo. **A consequência aceita:** `npm
 test`/`pytest` verde, sozinho, **não prova** que a fiação de ambiente do módulo está correta — só o boot
-real (`npm run start`, `python verificar.py` via boot de verdade) prova isso fim a fim. **O que fecha a
+real (`npm run start`, `python verify.py` via boot de verdade) prova isso fim a fim. **O que fecha a
 lacuna:** `tests/contract/config.test.ts`/`.js`/`test_config.py` chama a função **diretamente**, com a
 flag de teste removida do ambiente só durante a chamada, e afirma que ela DE FATO lança quando falta
 variável — a mesma disciplina de "declaração sem verificador não é lei" (`04-regras.md` §1) aplicada ao
@@ -194,8 +194,8 @@ consegue afirmar (04-regras.md §7.2).
 
 ## 7.2 Cobertura — por que fica de fora do local, e onde ela mora
 
-`config/verificacao.json:cobertura.minima` é política real, com verificador real — mas o verificador
-não é o gate, não é o `verificar`/`verificar.py`, e não é o hook local. É **CI**, e a decisão foi
+`config/verification.json:cobertura.minima` é política real, com verificador real — mas o verificador
+não é o gate, não é o `verificar`/`verify.py`, e não é o hook local. É **CI**, e a decisão foi
 **medida**, não suposta: `npm run cobertura` de um módulo recém-gerado, do zero, levou **~23s** — e a
 fatia que domina não é rodar o teste (**~0,5s**), é subir o ambiente de cobertura (**~17s** de
 `environment`, istanbul instrumentando `v8`). Multiplicado por módulo, isso estoura em minutos a
@@ -207,18 +207,18 @@ O comando, por binding:
 
 | Binding | Comando | O que mede | Onde |
 |---|---|---|---|
-| TS/JS | `npm run cobertura` (por módulo) / `npm run ci:cobertura` (todos, via workspaces) | `vitest run --coverage`, threshold em `coverage.thresholds.lines` lido de `config/verificacao.json` | CI |
-| Python | `python verificar.py --cobertura` | `pytest --cov`, piso em `--cov-fail-under` lido da mesma política | CI |
+| TS/JS | `npm run cobertura` (por módulo) / `npm run ci:cobertura` (todos, via workspaces) | `vitest run --coverage`, threshold em `coverage.thresholds.lines` lido de `config/verification.json` | CI |
+| Python | `python verify.py --cobertura` | `pytest --cov`, piso em `--cov-fail-under` lido da mesma política | CI |
 
 Grava `relatorios/cobertura/lcov.info` (formato lcov, para SonarQube/Codecov/Coveralls) e
 `relatorios/junit.xml` (resultado de teste, formato JUnit). **Nunca** roda em `npm test`/`pytest -q`
 comuns — é opt-in por comando próprio, de propósito: relatório escrito a cada teste local é ruído, e
 `relatorios/` é `.gitignore`d nos três bindings. Abaixo do mínimo, a PRÓPRIA ferramenta reprova
 (threshold do vitest; `--cov-fail-under` do pytest-cov) — nenhuma reimplementação de leitura de lcov
-aqui. Ferramenta de cobertura ausente também reprova, nunca "ok" (lei 7 do gate, `verificar.py`).
+aqui. Ferramenta de cobertura ausente também reprova, nunca "ok" (lei 7 do gate, `verify.py`).
 
 Lint em formato de máquina segue o mesmo desenho: `npm run ci:lint` (JSON, eslint) e
-`python verificar.py --lint-relatorio` (SARIF, ruff — nativo na versão pinada, testado). SARIF no
+`python verify.py --lint-relatorio` (SARIF, ruff — nativo na versão pinada, testado). SARIF no
 eslint exigiria pacote externo (`@microsoft/eslint-formatter-sarif`); não entregue — ver 04-regras.md
 §7.2 pela medição completa.
 
@@ -229,11 +229,11 @@ externo, de propósito — é o que o mantém puro e chamável de dentro de um h
 
 | Comando | O que faz | Fail-closed? |
 |---|---|---|
-| `npm run ci:seguranca` / `python verificar.py --seguranca` | `.env` real versionado (`git ls-files`) + segredo reconhecido no delta desde `--desde` (default `HEAD~1`) | **Sim** — git mudo ou ref inválida REPROVA, nunca "sem problema" |
-| `npm run ci:dependencias` / `python verificar.py --dependencias` | `npm audit --json` / `pip-audit --format=json` contra `config/verificacao.json:dependencias.severidadeMinima` | Não no sentido de "furo" — ferramenta ausente é **parte do pacote** (npm embute audit; `pip-audit` é `optional-dependencies`), então "ausente" deixou de ser um caso a tolerar: reprova como qualquer outra ferramenta que falta (lei 7) |
+| `npm run ci:seguranca` / `python verify.py --seguranca` | `.env` real versionado (`git ls-files`) + segredo reconhecido no delta desde `--desde` (default `HEAD~1`) | **Sim** — git mudo ou ref inválida REPROVA, nunca "sem problema" |
+| `npm run ci:dependencias` / `python verify.py --dependencias` | `npm audit --json` / `pip-audit --format=json` contra `config/verification.json:dependencias.severidadeMinima` | Não no sentido de "furo" — ferramenta ausente é **parte do pacote** (npm embute audit; `pip-audit` é `optional-dependencies`), então "ausente" deixou de ser um caso a tolerar: reprova como qualquer outra ferramenta que falta (lei 7) |
 
 **"Ferramenta ausente REPROVA" matou o fail-open do audit.** A única válvula que sobra é uma exceção
-**nominal, ratificada E DATADA** — `config/conformidade.json:excecoesCve` (§8) — para o caso real que
+**nominal, ratificada E DATADA** — `config/compliance.json:excecoesCve` (§8) — para o caso real que
 resta: um CVE novo sem correção disponível, que deixaria vermelho um build que ontem estava verde sem
 ninguém ter tocado em código.
 
@@ -292,7 +292,7 @@ comando do template os cobre.
 
 # 8. Exceções
 
-`config/conformidade.json` na raiz do projeto aceita exceção **nominal**, em duas listas com a mesma
+`config/compliance.json` na raiz do projeto aceita exceção **nominal**, em duas listas com a mesma
 disciplina e donos diferentes:
 
 - **`excecoes`** — ao catálogo do gate: módulo + regra + motivo + `decisao` (ADR).
@@ -373,7 +373,7 @@ dependência externa (§3 do catálogo). O runner é devDependency de **projeto*
 `psycopg[binary]` (Python), mesmo precedente de `tsx`/`@vitest/coverage-v8`/`pytest-cov` — e por
 isso viaja com o projeto (`scripts/`), não com a base. `adapters/` continua sendo só para o
 processo composto trocar de provedor em **runtime**; migration é ferramenta de **operação**, nunca
-importada por `composicao.*` — mudar `adapters/memory` não afeta o caminho de migrations, e
+importada por `composition.*` — mudar `adapters/memory` não afeta o caminho de migrations, e
 `tools/affected.mjs` não precisa mudar por isso (medido: o runner não importa `adapters/`
 em lugar nenhum).
 

@@ -8,7 +8,7 @@ import { Router } from 'express';
 import type { ConfiguracaoModulo } from '../config.js';
 import type { DependenciasModulo } from '../../../core/ports/index.js';
 import { ErroDeValidacao, buildRecord } from '../../../core/domain/index.js';
-import { ErroApi } from '../erros.js';
+import { ErroApi } from '../errors.js';
 import { requirePermission } from '../middlewares/index.js';
 import { toCollection, toContract, toMeta } from '../mappers/index.js';
 

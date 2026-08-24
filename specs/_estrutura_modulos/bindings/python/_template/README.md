@@ -51,7 +51,7 @@ tests/           domain/ contract/ fixtures/ — sem rede, sem banco
 
 Idênticas ao binding TypeScript, com a sintaxe da linguagem:
 
-- **Zero hardcoded** — segredo no `.env`, tunable em `config/`, texto em `config/textos.json`.
+- **Zero hardcoded** — segredo no `.env`, tunable em `config/`, texto em `config/texts.json`.
 - **Falha rápida** — `os.getenv("X", "http://localhost")` é violação; falta de env **derruba o boot**.
 - **Infraestrutura desacoplada** — `core/ports` define `Protocol`; o provedor só aparece em `config/ports.json`.
 - **Módulo alheio desacoplado** — `core/gateways/`, só HTTP, declarado em `consumes`.

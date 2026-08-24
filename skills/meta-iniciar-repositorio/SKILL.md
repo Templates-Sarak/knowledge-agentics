@@ -79,7 +79,7 @@ Essa decisão é do usuário, nunca sua.
 
 ### 4. Verificar
 O próprio script roda `validate.mjs --todos` ao final. Rode também o comando composto do binding
-(`npm run verify` ou `python verificar.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
+(`npm run verify` ou `python verify.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
 
 Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito — o passo 6 do script
 (`instalar_hooks_git`) já compõe sozinho via `compor_pre_commit` (núcleo puro, provado por

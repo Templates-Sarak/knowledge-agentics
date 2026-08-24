@@ -13,7 +13,7 @@ NAO MORA em tools/ (zero dependencia externa, lei 3 da base) — precisa de driv
 e tools/ so usa node:*/stdlib. `psycopg` e optional-dependency do PROJETO (mesmo grupo `dev`
 de `pip-audit`, `mypy`): o runner VIAJA COM O PROJETO, nao com a base, e por isso mora aqui
 (scripts/) — nao em `adapters/` (adapter e para o processo composto trocar de provedor em RUNTIME;
-isto e ferramenta de operacao, nunca importada por `src/composicao.py`).
+isto e ferramenta de operacao, nunca importada por `src/composition.py`).
 
 DECISAO (a) [psql via subprocess] x (b) [driver `psycopg`] — medido antes de escolher: nesta base de
 desenvolvimento `psql` nao esta disponivel (fora do PATH, e o winget so oferece SERVIDOR completo,
@@ -152,7 +152,7 @@ def _read_pairs_env(caminho: Path) -> list[tuple[str, str]]:
 
 def _load_env_root() -> None:
     """Carrega o `.env` UNICO da raiz no processo, sem sobrescrever o que ja veio de fora — mesma
-    precedencia de `src/composicao.py:_load_env_root` (ADR-004)."""
+    precedencia de `src/composition.py:_load_env_root` (ADR-004)."""
     caminho = RAIZ / ".env"
     if not caminho.exists():
         return

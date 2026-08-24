@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-"""verificar.py — o comando composto de verificacao do projeto (binding Python).
+"""verify.py — o comando composto de verificacao do projeto (binding Python).
 
-    python verificar.py [--rapido]
-    python verificar.py --cobertura          so cobertura (dezenas de segundos por modulo) — CI,
-                                              nunca o `verify` de cima: ver 03-operacao.md §7
-    python verificar.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
-    python verificar.py --seguranca          .env versionado + segredo no delta — CI, fail-closed
-    python verificar.py --dependencias       pip-audit contra o piso de severidade — CI
-    python verificar.py --migrations up|down|ciclo <modulo>   delega a scripts/migrations.py
+    python verify.py [--rapido]
+    python verify.py --cobertura          so cobertura (dezenas de segundos por modulo) — CI,
+                                           nunca o `verify` de cima: ver 03-operacao.md §7
+    python verify.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
+    python verify.py --seguranca          .env versionado + segredo no delta — CI, fail-closed
+    python verify.py --dependencias       pip-audit contra o piso de severidade — CI
+    python verify.py --migrations up|down|ciclo <modulo>   delega a scripts/migrations.py
 
 Argumento fora dessa lista REPROVA (exit 1) — nunca cai no caminho padrao em silencio.
 
@@ -109,10 +109,10 @@ def _modules() -> list[Path]:
 
 
 def _minimum_coverage() -> int | None:
-    """`cobertura.minima` de `config/verificacao.json` — a MESMA politica que `hooks/test-cobertura.js`
+    """`cobertura.minima` de `config/verification.json` — a MESMA politica que `hooks/test-cobertura.js`
     le para o push, uma fonte so. Ausente ou ilegivel: sem piso (o gate, nao este comando, cobra a
     ausencia da politica via `verificacao-declarada`)."""
-    caminho = RAIZ / "config" / "verificacao.json"
+    caminho = RAIZ / "config" / "verification.json"
     if not caminho.exists():
         return None
     try:
@@ -213,7 +213,7 @@ def _run_migrations(resto: list[str]) -> int:
     (`scripts/migrations.py` é arquivo solto, não módulo instalado) — mesmo motivo de `_resolve`
     para os outros passos Python: um venv não ativado não aparece pelo PATH."""
     if not resto:
-        _write("uso: python verificar.py --migrations up|down|ciclo <modulo>\n")
+        _write("uso: python verify.py --migrations up|down|ciclo <modulo>\n")
         return 1
     resultado = subprocess.run([sys.executable, "scripts/migrations.py", *resto], cwd=RAIZ, check=False)
     return resultado.returncode
@@ -221,7 +221,7 @@ def _run_migrations(resto: list[str]) -> int:
 
 # As UNICAS flags que este comando reconhece. Argumento fora desta lista REPROVA (`_recusar_
 # desconhecidas`) em vez de cair no caminho padrao: sem isso, `--coberturra` (typo) rodava a cadeia
-# INTEIRA, imprimia "verificar: OK" e saia 0 — quem lesse o exit code concluiria que a cobertura
+# INTEIRA, imprimia "verify: OK" e saia 0 — quem lesse o exit code concluiria que a cobertura
 # rodou. Falso positivo silencioso e a direcao proibida (03-operacao.md §7); "nao verificado" nunca
 # pode se parecer com "ok".
 FLAGS = frozenset(
@@ -302,7 +302,7 @@ def main() -> int:
             if parar_no_primeiro:
                 break
 
-    _write(f"\nverificar: {'OK' if falhas == 0 else f'REPROVADO — {falhas} passo(s)'}\n")
+    _write(f"\nverify: {'OK' if falhas == 0 else f'REPROVADO — {falhas} passo(s)'}\n")
     return 1 if falhas > 0 else 0
 
 

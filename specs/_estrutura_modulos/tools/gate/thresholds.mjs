@@ -10,7 +10,7 @@
  *     lá deixaria de existir no primeiro `git init` do módulo novo.
  *
  * O que é de fato ajustável por projeto (cobertura mínima, severidade de CVE, qual ferramenta)
- * mora em `config/verificacao.json`, na raiz — e nada dali entra neste arquivo.
+ * mora em `config/verification.json`, na raiz — e nada dali entra neste arquivo.
  *
  * Este módulo é a única fonte EXECUTÁVEL: `rules/writing.mjs` o consome, e
  * `tools/generate-lint-config.mjs` gera a config do linter de cada linguagem a partir dele.

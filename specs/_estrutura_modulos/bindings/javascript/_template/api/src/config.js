@@ -108,8 +108,8 @@ export function loadConfiguration(raiz = findRootModule()) {
     manifesto,
     api: readJson(raiz, 'config/api.json'),
     dominio: readJson(raiz, 'config/domain.json'),
-    seguranca: readJson(raiz, 'config/seguranca.json'),
+    seguranca: readJson(raiz, 'config/security.json'),
     portas: readJson(raiz, 'config/ports.json'),
-    textos: readJson(raiz, 'config/textos.json'),
+    textos: readJson(raiz, 'config/texts.json'),
   };
 }

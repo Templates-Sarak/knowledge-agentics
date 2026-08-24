@@ -235,7 +235,7 @@ function importaAdapter(alvo) {
  *
  * **A distinção que sustenta estas três regras: IMPORT é dependência; leitura de arquivo é
  * descoberta.** Só o que `importesDe` extrai chega aqui, e ele extrai forma de import — nunca
- * `readdirSync(join(root, 'modules'))`. É por isso que `src/composicao.*`, que alcança todos os
+ * `readdirSync(join(root, 'modules'))`. É por isso que `src/composition.*`, que alcança todos os
  * módulos lendo o `module.json` de cada pasta, passa limpo: import amarra em tempo de compilação e mata a
  * substituição; leitura de arquivo é o mecanismo que permite acrescentar módulo sem tocar na
  * composição. Uma regra que procurasse a string `modules` acusaria o próprio desenho que protege.
@@ -514,7 +514,7 @@ export default [
     /**
      * A composição DESCOBRE os módulos, nunca os importa — e a diferença entre as duas é a regra.
      *
-     * `src/composicao` alcança todos os módulos por `readdirSync(modules/)` + `module.json`, e
+     * `src/composition` alcança todos os módulos por `readdirSync(modules/)` + `module.json`, e
      * isso é a doutrina funcionando (00-arquitetura.md §3.4). Import é o oposto: fixa a lista em
      * tempo de compilação, e acrescentar um módulo passaria a exigir editar este arquivo.
      *

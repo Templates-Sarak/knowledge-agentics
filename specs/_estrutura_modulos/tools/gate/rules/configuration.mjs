@@ -28,7 +28,7 @@ import { textoDeCodigo } from '../text.mjs';
 // a regra e o gerador de divergirem — o defeito que o gerador existe para eliminar, um nível acima.
 import { BINDINGS, saidaDe } from '../../generate-lint-config.mjs';
 
-const CONFIGS = ['api', 'domain', 'seguranca', 'ports', 'textos'];
+const CONFIGS = ['api', 'domain', 'security', 'ports', 'texts'];
 
 /**
  * Chave de ambiente da RAIZ. `ROOT_` é prefixo RESERVADO, e é o que a distingue da chave de módulo
@@ -245,11 +245,11 @@ export default [
     nivel: 'erro',
     escopo: 'module',
     verificar(ctx) {
-      const cors = ctx.configs.seguranca.valor?.cors;
+      const cors = ctx.configs.security.valor?.cors;
       if (cors === undefined) return [];
       // `*` devolve o recurso para QUALQUER origem. Origem se declara, uma a uma.
       if ((cors.origensPermitidas ?? []).includes('*')) {
-        return ['config/seguranca.json: cors.origensPermitidas contem "*" — origem e DECLARADA, nunca aberta'];
+        return ['config/security.json: cors.origensPermitidas contem "*" — origem e DECLARADA, nunca aberta'];
       }
       return [];
     },
@@ -450,18 +450,18 @@ export default [
       // tornaria "nenhuma politica declarada" indistinguivel de "politica conforme" — a confusao
       // que este gate inteiro existe para impedir.
       if (!presente) {
-        return ['config/verificacao.json ausente na raiz do projeto — declare cobertura, severidade'
+        return ['config/verification.json ausente na raiz do projeto — declare cobertura, severidade'
           + ' de dependencia e ferramenta por linguagem (schema em tools/gate/schemas/)'];
       }
-      if (valor === null) return ['config/verificacao.json nao e JSON valido'];
-      return validar(valor, carregarEsquema('verificacao'), 'config/verificacao.json');
+      if (valor === null) return ['config/verification.json nao e JSON valido'];
+      return validar(valor, carregarEsquema('verification'), 'config/verification.json');
     },
   },
   {
     id: 'conformidade-declarada',
     nivel: 'erro',
     escopo: 'root',
-    // Ate esta regra, `config/conformidade.json` era o unico config sem schema e sem dono: JSON
+    // Ate esta regra, `config/compliance.json` era o unico config sem schema e sem dono: JSON
     // malformado caia num catch silencioso de `carregarExcecoes` (exit 0, exececoes todas
     // descartadas caladas) e chave em ingles (`module`/`rule`) so falhava calada tambem — a
     // excecao nao pegava, e nada dizia por que. `decisao` resolver a um ADR de verdade continua
@@ -471,11 +471,11 @@ export default [
       if (!projeto.ehProjeto) return [];
       const { presente, valor } = projeto.conformidade;
       if (!presente) {
-        return ['config/conformidade.json ausente na raiz do projeto — a lista de excecoes comeca'
+        return ['config/compliance.json ausente na raiz do projeto — a lista de excecoes comeca'
           + ' vazia, e esse e o estado correto, mas o arquivo precisa existir (schema em tools/gate/schemas/)'];
       }
-      if (valor === null) return ['config/conformidade.json nao e JSON valido'];
-      return validar(valor, carregarEsquema('conformidade'), 'config/conformidade.json');
+      if (valor === null) return ['config/compliance.json nao e JSON valido'];
+      return validar(valor, carregarEsquema('compliance'), 'config/compliance.json');
     },
   },
   {

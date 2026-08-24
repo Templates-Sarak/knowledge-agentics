@@ -13,8 +13,8 @@ exigir editar este arquivo.
 
 Uso, sempre da RAIZ do projeto (ROOT_API_PORT no ambiente ou no `.env` da raiz):
 
-    python -m src.composicao              sobe o processo
-    python -m src.composicao --autoteste  roda a prova interna das decisoes puras
+    python -m src.composition              sobe o processo
+    python -m src.composition --autoteste  roda a prova interna das decisoes puras
 """
 
 from __future__ import annotations
@@ -89,7 +89,7 @@ def resolve_dependencies(modulo: dict[str, Any]) -> dict[str, Any]:
         if fabrica is None:
             identificador = modulo["id"]
             raise RuntimeError(
-                f'[composicao] {identificador}: porta "{porta}" com provedor '
+                f'[composition] {identificador}: porta "{porta}" com provedor '
                 f'"{provedor}" sem fabrica registrada'
             )
         dependencias[porta] = fabrica(modulo)
@@ -114,7 +114,7 @@ def verify_routes_unique(modulos: list[dict[str, Any]]) -> None:
     if not colisoes:
         return
     detalhe = "; ".join(f'"{rota}" ({", ".join(ids)})' for rota, ids in colisoes.items())
-    raise RuntimeError(f"[composicao] rotaBase colidindo entre modulos: {detalhe}")
+    raise RuntimeError(f"[composition] rotaBase colidindo entre modulos: {detalhe}")
 
 
 def choose_base_route(rotas_base: list[str], caminho: str) -> str | None:
@@ -256,7 +256,7 @@ def _env_required_root(chave: str) -> str:
     """Le uma variavel obrigatoria da RAIZ. Ausente = boot morre com mensagem acionavel."""
     valor = os.environ.get(chave)
     if valor is None or valor == "":
-        raise RuntimeError(f"[composicao] variavel obrigatoria ausente: {chave} (declare em project.json)")
+        raise RuntimeError(f"[composition] variavel obrigatoria ausente: {chave} (declare em project.json)")
     return valor
 
 
@@ -264,7 +264,7 @@ def start_system(raiz: Path) -> None:
     """Sobe o processo: um app ASGI, uma porta (specs/arquitetura/00-arquitetura.md §5). A porta
     vem do ambiente — nenhum literal aqui — e a falta dela DERRUBA o boot, nomeando a chave."""
     # Lazy DE PROPOSITO: uvicorn e servidor ASGI, so preciso para SUBIR o processo de verdade.
-    # `--autoteste` (composicao.py) e os testes importam este modulo sem nunca chamar
+    # `--autoteste` (composition.py) e os testes importam este modulo sem nunca chamar
     # start_system — import no topo pagaria o custo desse import em todo caminho que so quer
     # build_system()/verify_routes_unique(), nunca boot real.
     import uvicorn  # noqa: PLC0415

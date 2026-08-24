@@ -108,11 +108,11 @@ convenções REST/camelCase, hardcoded de config **não-secreta** (porta/URL). J
 
 Duas fontes, nesta ordem:
 
-1. **`config/verificacao.json` do projeto**, quando existe — projeto vindo do template de módulos declara
+1. **`config/verification.json` do projeto**, quando existe — projeto vindo do template de módulos declara
    a política dele ali, e ela vence. O hook acha a raiz por `CLAUDE_PROJECT_DIR` e, na falta dela, subindo
    do `cwd` até achar o arquivo.
 2. **`hooks/config.json`** desta base, como fallback — é o caso da própria base (que não tem
-   `config/verificacao.json`) e de projeto que não veio do template.
+   `config/verification.json`) e de projeto que não veio do template.
 
 O vocabulário difere de propósito entre os dois: o template nomeia **binding**
 (`typescript`/`javascript`/`python`) e usa `formatador`; os hooks nomeiam **área** (`js`/`python`) e usam

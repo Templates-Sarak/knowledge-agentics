@@ -6,7 +6,7 @@
  *   node tools/create-adapter.mjs <porta> <provedor> [--binding typescript]
  *
  * Mesma forma do `create-module.mjs`: copia o molde (`adapters/_template`, instalado por
- * `create-project.mjs`), substitui marcadores, registra a fábrica em `src/composicao.*` e roda o
+ * `create-project.mjs`), substitui marcadores, registra a fábrica em `src/composition.*` e roda o
  * gate. `<porta>` tem de estar no vocabulário conhecido (`tools/gate/ports-vocabulary.mjs`)
  * — nome fora dele é rejeitado antes de tocar disco.
  *
@@ -130,7 +130,7 @@ function substituirMarcadores(texto, porta, provedor, pasta) {
  * exportam (medido) — o molde é a verdade (mesmo precedente das âncoras de `registrarFabrica*`).
  * A forma antiga (`criarAdapter`) nunca casava com `\breplaceAll\b`, e a rescrita nunca disparava:
  * TODO adapter TS/JS já criado manteve `export function createAdapter` no arquivo, enquanto
- * `composicao.*` importava o nome CORRETO (`criarG`, calculado, nunca escrito) — `tsc` reprova ao
+ * `composition.*` importava o nome CORRETO (`criarG`, calculado, nunca escrito) — `tsc` reprova ao
  * primeiro adapter novo, mas nada rodava `tsc` depois de `create-adapter.mjs` até esta rede existir.
  */
 const NOME_GENERICO = { typescript: 'createAdapter', javascript: 'createAdapter', python: 'AdapterPendente' };
@@ -157,7 +157,7 @@ function copiarEAdaptarMolde(molde, destino, opcoes) {
 }
 
 /**
- * Registra a fábrica nova em `src/composicao.*`, por SUBSTITUIÇÃO DE TEXTO — mesma técnica de
+ * Registra a fábrica nova em `src/composition.*`, por SUBSTITUIÇÃO DE TEXTO — mesma técnica de
  * `generate-port-schemas.mjs:comEnumDePortasAtualizado`. Duas formas: a porta JÁ tem entrada
  * (acrescenta um provedor a mais na MESMA linha) ou é porta NOVA (acrescenta uma linha antes do
  * fechamento do objeto). Devolve `null` se nenhuma das duas âncoras bateu — o chamador ABORTA em
@@ -233,7 +233,7 @@ function registrarFabricaPy(conteudo, { porta, provedor, nomeSimbolo, caminhoImp
 }
 
 function caminhoDeComposicao(raizProjeto, binding) {
-  const nome = binding === 'python' ? 'composicao.py' : `composicao.${binding === 'typescript' ? 'ts' : 'js'}`;
+  const nome = binding === 'python' ? 'composition.py' : `composition.${binding === 'typescript' ? 'ts' : 'js'}`;
   return join(raizProjeto, 'src', nome);
 }
 
@@ -280,7 +280,7 @@ function rodarGate(raizProjeto) {
 // contra fixtures em memória, sem tocar disco. Precedente de `verify-map.mjs`/`verify-catalog.mjs`.
 //
 // As fixtures de `registrarFabrica*` são cópias FIÉIS do trecho real de cada `bindings/<b>/root/
-// src/composicao.*` — não simplificadas — porque o valor deste autoteste é justamente flagrar quando
+// src/composition.*` — não simplificadas — porque o valor deste autoteste é justamente flagrar quando
 // a ÂNCORA do regex e o arquivo real se separam. Foi rodando este autoteste contra o texto real,
 // antes do refactor de §4.7 (`max-params`), que dois bugs pré-existentes apareceram — nenhum era do
 // refactor, e os dois foram corrigidos na mesma rodada:

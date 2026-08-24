@@ -16,7 +16,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from core.ports import Auth, GeradorId
-from .erros import ErroApi, error_envelope
+from .errors import ErroApi, error_envelope
 from .logger import Logger
 
 Proximo = Callable[[Request], Awaitable[Any]]
@@ -79,12 +79,16 @@ def _respond_error(erro: ErroApi, request: Request, logger: Logger) -> JSONRespo
             "detalhe": erro.detalhe or erro.mensagem,
         },
     )
-    return JSONResponse(status_code=erro.status, content=error_envelope(erro, request_id))
+    return JSONResponse(
+        status_code=erro.status, content=error_envelope(erro, request_id)
+    )
 
 
 def _apply_headers(resposta: Any, headers: dict[str, Any]) -> None:
     if headers["hsts"]:
-        resposta.headers["strict-transport-security"] = "max-age=31536000; includeSubDomains"
+        resposta.headers["strict-transport-security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
     if headers["noSniff"]:
         resposta.headers["x-content-type-options"] = "nosniff"
     if headers["frameDeny"]:
@@ -93,16 +97,20 @@ def _apply_headers(resposta: Any, headers: dict[str, Any]) -> None:
 
 
 def _apply_cors(request: Request, resposta: Any, cors: dict[str, Any]) -> None:
-    """Origens sao DECLARADAS em config/seguranca.json. `*` e proibido."""
+    """Origens sao DECLARADAS em config/security.json. `*` e proibido."""
     origem = request.headers.get("origin")
     if origem is not None and origem in cors["origensPermitidas"]:
         resposta.headers["access-control-allow-origin"] = origem
         resposta.headers["access-control-allow-methods"] = ", ".join(cors["metodos"])
 
 
-def _limit(request: Request, config: dict[str, Any], janelas: dict[str, tuple[float, int]]) -> None:
+def _limit(
+    request: Request, config: dict[str, Any], janelas: dict[str, tuple[float, int]]
+) -> None:
     """Contador em memoria: suficiente para um processo. Multi-instancia exige porta dedicada."""
-    limite = config["limiteLeitura"] if request.method == "GET" else config["limiteEscrita"]
+    limite = (
+        config["limiteLeitura"] if request.method == "GET" else config["limiteEscrita"]
+    )
     chave = f"{request.client.host if request.client else '?'}:{request.method}"
     now = time.monotonic()
     inicio, contagem = janelas.get(chave, (now, 0))
@@ -115,7 +123,9 @@ def _limit(request: Request, config: dict[str, Any], janelas: dict[str, tuple[fl
     janelas[chave] = (inicio, contagem + 1)
 
 
-async def _authenticate(request: Request, auth: Auth, publicas: set[str], rota_base: str) -> None:
+async def _authenticate(
+    request: Request, auth: Auth, publicas: set[str], rota_base: str
+) -> None:
     """DENY BY DEFAULT: so as rotas de `module.json:publicRoutes` passam sem token."""
     relativo = _path_relative(request.url.path, rota_base)
     if f"{request.method} {relativo}".upper() in publicas:

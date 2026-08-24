@@ -19,7 +19,7 @@ import type { Pool } from 'pg';
 
 import type { Auditoria, EventoDeAuditoria, Pagina, Repositorio } from '../../packages/ports/index.js';
 
-/** O suficiente do manifesto para o adapter se configurar — nunca o tipo inteiro de `src/composicao.ts`:
+/** O suficiente do manifesto para o adapter se configurar — nunca o tipo inteiro de `src/composition.ts`:
  * `adapters/` não pode importar de `src/` (regra `adapter-isolado`), então este tipo é local e mínimo. */
 export interface ModuloParaAdapter {
   id: string;
@@ -87,7 +87,7 @@ const pools = new Map<string, Pool>();
 
 /** Lazy DE PROPÓSITO — mesma forma de `scripts/migrations.mjs`: `pg` não pode ser dependência de
  * import estático de VALOR aqui, senão carregar este arquivo (ex.: para autoteste de
- * `composicao.ts`) exigiria o pacote instalado mesmo em um caminho que nunca toca banco. O `import
+ * `composition.ts`) exigiria o pacote instalado mesmo em um caminho que nunca toca banco. O `import
  * type { Pool }` acima é diferente: é apagado na compilação, nunca vira um `require('pg')`. */
 async function poolFor(url: string): Promise<Pool> {
   const existente = pools.get(url);

@@ -85,7 +85,7 @@ _conexoes: dict[str, Any] = {}
 
 async def _connection_for(url: str) -> Any:
     """Lazy DE PROPOSITO — mesma forma de `scripts/migrations.py`: `psycopg` e optional-dependency
-    `dev`, e carregar este arquivo (ex.: autoteste de `composicao.py`) nao pode exigi-lo."""
+    `dev`, e carregar este arquivo (ex.: autoteste de `composition.py`) nao pode exigi-lo."""
     existente = _conexoes.get(url)
     if existente is not None:
         return existente
@@ -190,7 +190,7 @@ async def _count_records(modulo: dict[str, Any]) -> int:
 
 class RepositorioPostgres:
     """`Repositorio` real, sobre a tabela `<prefix>metadados` que o molde cria. Recebe o manifesto
-    do modulo (`dict`, o mesmo formato de `discover_modules`) — nunca o tipo de `src/composicao.py`."""
+    do modulo (`dict`, o mesmo formato de `discover_modules`) — nunca o tipo de `src/composition.py`."""
 
     def __init__(self, modulo: dict[str, Any]) -> None:
         self._modulo = modulo

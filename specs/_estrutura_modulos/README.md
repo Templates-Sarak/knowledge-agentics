@@ -96,7 +96,7 @@ pode morar num lugar que se perde ao trocar de provedor. Plugar o gate em qualqu
 |---|---|---|
 | `typescript` | `npm run verify` | **verde** — gate + env + `tsc` + 24 testes |
 | `javascript` | `npm run verify` | **verde** — gate + env + `tsc --checkJs` (JSDoc) + 24 testes |
-| `python` | `python verificar.py` | **verde** — gate + env + ruff + mypy + 19 testes |
+| `python` | `python verify.py` | **verde** — gate + env + ruff + mypy + 19 testes |
 
 Nos três, o projeto instanciado sai com `packages/ports`, `adapters/memory` (obrigatório — é o que
 permite testar sem rede) e `src/composicao` prontos, e o comando de verificação passa de saída.

@@ -141,7 +141,7 @@ export function normalizarCaminho(bruto, raizProjeto) {
  * Passo 1 sobre `tools/`, `config/`, `.env`, `package.json`/`pyproject.toml` da raiz e config
  * de linter viram a MESMA linha de código: nenhum desses é `modules/`, `adapters/`, `src/` ou
  * `packages/`, então caem aqui por construção, sem precisar nomear cada arquivo (`.env`,
- * `.gitignore`, `tsconfig.json`, `.ruff.toml`, `verificar.py`, `project.json`, `specs/**`, ...).
+ * `.gitignore`, `tsconfig.json`, `.ruff.toml`, `verify.py`, `project.json`, `specs/**`, ...).
  * Medido (Passo 1): mudar o VERIFICADOR (`tools/`) ou a POLÍTICA do projeto (config raiz,
  * manifesto raiz, lint gerado) pode mudar o resultado de QUALQUER checagem — a resposta segura é
  * literalmente "tudo", e é isso que este `default` devolve sem lista para manter.
@@ -179,7 +179,7 @@ function classificarCaminho(caminho, grafo) {
   if (primeiro === 'packages') {
     // Medido (Passo 1): módulo importar `packages/ports` é OPCIONAL por projeto (o molde traz
     // cópia local "para ser autossuficiente desde o primeiro teste" — comentário de
-    // `api/src/erros.ts`), e `packages/ui-kit` só entra quando `ui.modo: "kit"`. As duas são
+    // `api/src/errors.ts`), e `packages/ui-kit` só entra quando `ui.modo: "kit"`. As duas são
     // condicionais que só se resolvem PARSEANDO import de cada módulo — a mesma máquina de
     // `isolation.mjs`, que este script não deveria duplicar. Sem essa máquina, não dá pra provar
     // que um módulo NÃO importa `packages/`, e por "erra para mais" a resposta segura é afetar a
@@ -392,7 +392,7 @@ function casosDeAutoteste() {
     {
       nome: 'src/ afeta a raiz mas nenhum modulo (composicao nao e codigo de modulo)',
       grafo: grafoDeTeste(),
-      caminhos: ['src/composicao.ts'],
+      caminhos: ['src/composition.ts'],
       esperado: { tudo: false, raiz: true, modulos: [] },
     },
     {
@@ -404,7 +404,7 @@ function casosDeAutoteste() {
     {
       nome: 'config/policy da raiz vira "tudo" (cai no default, nenhum prefixo reconhecido)',
       grafo: grafoDeTeste(),
-      caminhos: ['config/verificacao.json'],
+      caminhos: ['config/verification.json'],
       esperado: { tudo: true },
     },
     {

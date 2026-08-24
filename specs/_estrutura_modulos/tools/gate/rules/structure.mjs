@@ -41,7 +41,7 @@ const ENTRADAS_PERMITIDAS = new Set([
   'contract', 'config', 'core', 'api', 'web', 'database', 'tests', 'generated',
 ]);
 
-const CONFIGS = ['api', 'domain', 'seguranca', 'ports', 'textos'];
+const CONFIGS = ['api', 'domain', 'security', 'ports', 'texts'];
 
 /**
  * As três pastas que `generatesArtifact` declara (01-modulo.md §2, "só se generatesArtifact").

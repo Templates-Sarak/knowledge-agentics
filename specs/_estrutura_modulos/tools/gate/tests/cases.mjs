@@ -34,9 +34,9 @@ export const CASOS = [
   {
     regra: 'estrutura',
     descricao: 'arquivo previsto na arvore ausente',
-    // `config/textos.json` e item da arvore que so a `estrutura` cobra — `contract/openapi.yaml`
+    // `config/texts.json` e item da arvore que so a `estrutura` cobra — `contract/openapi.yaml`
     // e coberto por outra regra (`contract`), nunca por esta.
-    mutar: (m) => m.remover('config/textos.json'),
+    mutar: (m) => m.remover('config/texts.json'),
   },
   {
     regra: 'estrutura-estrita',
@@ -74,7 +74,7 @@ export const CASOS = [
   {
     regra: 'web-declarado',
     descricao: 'webPath declarada sem pagina real',
-    // Cascata legitima: sem as paginas, as chaves de `config/textos.json` ficam sem leitor. So em
+    // Cascata legitima: sem as paginas, as chaves de `config/texts.json` ficam sem leitor. So em
     // TS/JS — o molde Python nasce sem `web/`, e por isso `tambem` e teto, nao obrigacao.
     //
     // `testes-web` e o co-achado inverso, e so no PYTHON: ligar `webPath` num molde que nasce sem
@@ -269,8 +269,8 @@ export const CASOS = [
     // A SEGUNDA clausula da regra, com caso proprio: sob um id so, ela poderia parar de acusar sem
     // nada falhar. A fiacao INSTANCIA o adapter — depender dela inverte a direcao.
     mutar: (m) => m.acrescentarEm('adapterRaiz', {
-      js: "\nimport { resolverAuth } from '../../src/composicao.js';\n",
-      py: '\nfrom src.composicao import resolver_auth\n',
+      js: "\nimport { resolverAuth } from '../../src/composition.js';\n",
+      py: '\nfrom src.composition import resolver_auth\n',
     }),
   },
   {
@@ -490,16 +490,16 @@ export const CASOS = [
   },
   {
     regra: 'verificacao-declarada',
-    descricao: 'projeto sem config/verificacao.json na raiz',
+    descricao: 'projeto sem config/verification.json na raiz',
     // `../../` sobe da pasta do modulo para a raiz do PROJETO: e la que a politica mora, e e por
     // isso que estas duas regras leem `ctx.projeto` em vez do modulo.
-    mutar: (m) => m.remover('../../config/verificacao.json'),
+    mutar: (m) => m.remover('../../config/verification.json'),
   },
   {
     regra: 'conformidade-declarada',
-    descricao: 'projeto sem config/conformidade.json na raiz',
+    descricao: 'projeto sem config/compliance.json na raiz',
     // `../../` sobe da pasta do modulo para a raiz do PROJETO, como `verificacao-declarada`.
-    mutar: (m) => m.remover('../../config/conformidade.json'),
+    mutar: (m) => m.remover('../../config/compliance.json'),
   },
   {
     regra: 'conformidade-declarada',
@@ -508,7 +508,7 @@ export const CASOS = [
     // dizia por que. `additionalProperties:false` reprova o campo a mais, e o `modulo` obrigatorio
     // ausente reprova junto — um erro, duas mensagens, as duas apontando a forma certa.
     mutar: (m) => m.escrever(
-      '../../config/conformidade.json',
+      '../../config/compliance.json',
       JSON.stringify({ excecoes: [{ module: 'legado', regra: 'estrutura-estrita', motivo: 'x', decisao: 'ADR-001' }], excecoesCve: [] }),
     ),
   },
@@ -731,7 +731,7 @@ export const CASOS = [
   {
     regra: 'cors-aberto',
     descricao: 'CORS liberado com asterisco',
-    mutar: (m) => m.config('seguranca', (x) => ({ ...x, cors: { ...x.cors, origensPermitidas: ['*'] } })),
+    mutar: (m) => m.config('security', (x) => ({ ...x, cors: { ...x.cors, origensPermitidas: ['*'] } })),
   },
   {
     regra: 'hardcode-url',
@@ -905,7 +905,7 @@ export const CASOS = [
     regra: 'contrato-sincronizado',
     descricao: 'rota no codigo e ausente do contrato',
     // Alvo LOGICO + trecho por sintaxe: o caminho do arquivo de rotas muda por binding
-    // (`api/src/rotas.py` no Python) e a forma de registrar rota tambem (decorator). Fixar os dois
+    // (`api/src/routes.py` no Python) e a forma de registrar rota tambem (decorator). Fixar os dois
     // deixaria esta regra provada so em TypeScript.
     mutar: (m) => m.acrescentarEm('rotas', {
       js: "\nrouter.get('/nao-declarada', () => undefined);\n",

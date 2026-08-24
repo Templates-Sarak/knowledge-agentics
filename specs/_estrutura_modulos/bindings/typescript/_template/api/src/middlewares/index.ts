@@ -7,7 +7,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import type { ConfigSeguranca } from '../config.js';
-import { ErroApi, errorEnvelope } from '../erros.js';
+import { ErroApi, errorEnvelope } from '../errors.js';
 import type { Logger } from '../logger.js';
 
 declare module 'express-serve-static-core' {
@@ -36,7 +36,7 @@ export function securityHeaders(config: ConfigSeguranca['headers']): RequestHand
   };
 }
 
-/** Origens sao DECLARADAS em config/seguranca.json. `*` e proibido (specs/arquitetura/03-operacao.md §2.1). */
+/** Origens sao DECLARADAS em config/security.json. `*` e proibido (specs/arquitetura/03-operacao.md §2.1). */
 export function cors(config: ConfigSeguranca['cors']): RequestHandler {
   return (req, res, next) => {
     const origem = req.headers.origin;

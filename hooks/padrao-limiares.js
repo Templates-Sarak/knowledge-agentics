@@ -13,7 +13,7 @@
 // Agora os limiares vêm de onde a lei manda (`ferramentas/gate/limiares.mjs` → config gerada), e a
 // concordância entre hook e `verificar` é por construção, não por disciplina.
 //
-// Política CONFIGURÁVEL por projeto (`config/verificacao.json` → `qualidade`, com fallback para
+// Política CONFIGURÁVEL por projeto (`config/verification.json` → `qualidade`, com fallback para
 // `hooks/config.json`): modo block = cobra correção | warn = só avisa | off = ignora.
 // Só sinaliza quando a saída contém os marcadores das regras (evita falso-positivo de parser).
 // NÃO cobre (é julgamento, fica com a skill): SRP, nomes, testes, encapsulamento de módulo.
@@ -190,7 +190,7 @@ const sinaliza = acao === "block" ? blockPostTool : warnPostTool;
 const linter = cfg.linguagens[lang]?.linter;
 if (!linter) allow(); // area sem linter declarado na politica para estas regras
 
-// A raiz do projeto, ou o cwd. `projectRoot()` acha a raiz pelo `config/verificacao.json`; fora de um
+// A raiz do projeto, ou o cwd. `projectRoot()` acha a raiz pelo `config/verification.json`; fora de um
 // projeto do template ela e nula, e ai o cwd e a melhor aproximacao que existe.
 const raiz = projectRoot() ?? process.cwd();
 

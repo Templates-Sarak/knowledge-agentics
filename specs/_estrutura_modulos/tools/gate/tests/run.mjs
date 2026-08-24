@@ -48,7 +48,7 @@ const ALVOS = {
   rotas: {
     typescript: 'api/src/routes/index.ts',
     javascript: 'api/src/routes/index.js',
-    python: 'api/src/rotas.py',
+    python: 'api/src/routes.py',
   },
   // Sobe da pasta do módulo para a raiz do PROJETO: é lá que moram os alvos das regras de escopo
   // `root` (`verificacao-declarada`, `lint-derivado`, `manifesto-raiz`, `env-raiz-declarado`), e
@@ -60,9 +60,9 @@ const ALVOS = {
   },
   // A raiz de composição — o arquivo da FIAÇÃO onde a chave de ambiente da raiz é lida de verdade.
   composicaoRaiz: {
-    typescript: '../../src/composicao.ts',
-    javascript: '../../src/composicao.js',
-    python: '../../src/composicao.py',
+    typescript: '../../src/composition.ts',
+    javascript: '../../src/composition.js',
+    python: '../../src/composition.py',
   },
   // As outras duas pontas do diagrama de dependência. O caso muta o arquivo REAL da fiação, e não
   // um arquivo inventado ao lado: é o mesmo arquivo que o molde conforme mantém limpo, e é o que

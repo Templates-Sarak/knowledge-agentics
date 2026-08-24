@@ -15,14 +15,14 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 /**
- * `cobertura.minima` vem de `config/verificacao.json` da RAIZ do projeto (dois níveis acima do
+ * `cobertura.minima` vem de `config/verification.json` da RAIZ do projeto (dois níveis acima do
  * módulo) — a MESMA política que `hooks/test-cobertura.js` lê para o push, uma fonte só. Sem o
  * arquivo (módulo solto, fora de projeto), o vitest não aplica piso nenhum: o gate (`verificacao-declarada`)
  * é quem cobra a ausência da política, não a cobertura.
  */
 function minimumCoverage() {
   try {
-    const { cobertura } = JSON.parse(readFileSync('../../config/verificacao.json', 'utf8'));
+    const { cobertura } = JSON.parse(readFileSync('../../config/verification.json', 'utf8'));
     return typeof cobertura?.minima === 'number' ? cobertura.minima : undefined;
   } catch {
     return undefined;

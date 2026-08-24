@@ -70,7 +70,7 @@
  * config/ports.json e a uma entrada de module.json:ports — o gate cobra que os tres concordem.
  *
  * `notificador` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
- * fabrica (`FABRICAS.notificador`, src/composicao.js) e alcancada de verdade no boot, nao so
+ * fabrica (`FABRICAS.notificador`, src/composition.js) e alcancada de verdade no boot, nao so
  * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  *
  * @typedef {object} DependenciasModulo
