@@ -68,5 +68,5 @@ pytest                       testes, sem rede e sem banco
 mypy .                       tipos em modo estrito
 ruff check .                 limiares de escrita
 node ../../tools/gate/validate.mjs .              gate de conformidade
-node ../../tools/gate/validate.mjs --extracao .   vira microsserviço hoje?
+node ../../tools/gate/validate.mjs --extraction . vira microsserviço hoje?
 ```

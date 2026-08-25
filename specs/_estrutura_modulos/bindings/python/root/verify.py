@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 """verify.py — o comando composto de verificacao do projeto (binding Python).
 
-    python verify.py [--rapido]
-    python verify.py --cobertura          so cobertura (dezenas de segundos por modulo) — CI,
+    python verify.py [--fast]
+    python verify.py --coverage           so cobertura (dezenas de segundos por modulo) — CI,
                                            nunca o `verify` de cima: ver 03-operacao.md §7
     python verify.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
-    python verify.py --seguranca          .env versionado + segredo no delta — CI, fail-closed
-    python verify.py --dependencias       pip-audit contra o piso de severidade — CI
+    python verify.py --security           .env versionado + segredo no delta — CI, fail-closed
+    python verify.py --dependencies       pip-audit contra o piso de severidade — CI
     python verify.py --migrations up|down|ciclo <module>   delega a scripts/migrations.py
 
 Argumento fora dessa lista REPROVA (exit 1) — nunca cai no caminho padrao em silencio.
 
 Equivalente ao `npm run verify` do binding TypeScript. Roda, nesta ordem:
 
-    1. gate de conformidade em todos os modulos      (tools/gate/validate.mjs --todos)
-    2. .env.example em dia com os manifestos         (tools/sync-env.mjs --conferir)
+    1. gate de conformidade em todos os modulos      (tools/gate/validate.mjs --all)
+    2. .env.example em dia com os manifestos         (tools/sync-env.mjs --check)
     3. forma                                         (ruff format --check)
     4. limiares e idiomas                            (ruff check)
     5. tipos                                         (mypy)
@@ -38,7 +38,7 @@ Busca: `$SARAK_NODE` (caminho do binario, se definido) > `$PATH`.
 Se nenhuma achar o Node, o passo REPROVA. Deixa-lo passar com aviso tornaria "verde" indistinguivel
 de "nao verificou" — o defeito que este template inteiro existe para impedir.
 
-Sai com 0 se tudo passar; 1 no primeiro passo que falhar (`--rapido`) ou ao fim (padrao).
+Sai com 0 se tudo passar; 1 no primeiro passo que falhar (`--fast`) ou ao fim (padrao).
 """
 
 from __future__ import annotations
@@ -159,8 +159,8 @@ def _coverage_command(minima: int | None) -> list[str]:
 
 
 def _run_coverage() -> int:
-    """`--cobertura`: SO cobertura, por modulo — nao roda o resto do `verify`. E o analogo do
-    `ci:cobertura` do package.json: comando proprio, custa dezenas de segundos por modulo
+    """`--coverage`: SO cobertura, por modulo — nao roda o resto do `verify`. E o analogo do
+    `ci:coverage` do package.json: comando proprio, custa dezenas de segundos por modulo
     (03-operacao.md §7), por isso nao entra no `verify` de cima nem no pre-commit/pre-push."""
     minima = _minimum_coverage()
     modulos = _modules()
@@ -220,17 +220,17 @@ def _run_migrations(resto: list[str]) -> int:
 
 
 # As UNICAS flags que este comando reconhece. Argumento fora desta lista REPROVA (`_recusar_
-# desconhecidas`) em vez de cair no caminho padrao: sem isso, `--coberturra` (typo) rodava a cadeia
+# desconhecidas`) em vez de cair no caminho padrao: sem isso, `--coveragee` (typo) rodava a cadeia
 # INTEIRA, imprimia "verify: OK" e saia 0 — quem lesse o exit code concluiria que a cobertura
 # rodou. Falso positivo silencioso e a direcao proibida (03-operacao.md §7); "nao verificado" nunca
 # pode se parecer com "ok".
 FLAGS = frozenset(
     {
-        "--rapido",
-        "--cobertura",
+        "--fast",
+        "--coverage",
         "--lint-relatorio",
-        "--seguranca",
-        "--dependencias",
+        "--security",
+        "--dependencies",
         "--migrations",
     }
 )
@@ -255,13 +255,13 @@ def _dispatch_mode(argv: list[str]) -> int | None:
     tools/gate/thresholds.mjs): despachar modo e uma responsabilidade, rodar a cadeia e outra.
     Suprimir o limiar aqui seria o verificador isentando a si mesmo da regra que ele cobra.
     """
-    if "--cobertura" in argv:
+    if "--coverage" in argv:
         return _run_coverage()
     if "--lint-relatorio" in argv:
         return _run_lint_report()
-    if "--seguranca" in argv:
+    if "--security" in argv:
         return _run_delegated("seguranca", "ci-security.mjs")
-    if "--dependencias" in argv:
+    if "--dependencies" in argv:
         return _run_delegated("dependencias", "ci-dependencies.mjs")
     if "--migrations" in argv:
         return _run_migrations(argv[argv.index("--migrations") + 1 :])
@@ -278,13 +278,13 @@ def main() -> int:
     if modo is not None:
         return modo
 
-    parar_no_primeiro = "--rapido" in sys.argv
+    parar_no_primeiro = "--fast" in sys.argv
     # Anotado: sem isto o tipo e inferido dos quatro primeiros (pasta=None) e os passos de
     # teste, que carregam um Path, nao entram.
     passos: list[tuple[str, list[str], Path | None]] = [
-        ("conformidade (gate)", ["node", "tools/gate/validate.mjs", "--todos"], None),
-        ("ambiente (.env.example)", ["node", "tools/sync-env.mjs", "--conferir"], None),
-        ("schemas de portas", ["node", "tools/generate-port-schemas.mjs", "--conferir"], None),
+        ("conformidade (gate)", ["node", "tools/gate/validate.mjs", "--all"], None),
+        ("ambiente (.env.example)", ["node", "tools/sync-env.mjs", "--check"], None),
+        ("schemas de portas", ["node", "tools/generate-port-schemas.mjs", "--check"], None),
         # `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.
         ("formato (ruff format)", ["ruff", "format", "--check", "."], None),
         ("limiares (ruff)", ["ruff", "check", "."], None),

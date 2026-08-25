@@ -17,7 +17,7 @@ copiar uma pasta e recortar as chaves `<MODULE>_*` do `.env` — não reescrever
 ```bash
 # [base] a partir de specs/_estrutura_modulos/
 # 1. instanciar um projeto novo
-node tools/create-project.mjs ../meu-sistema --binding typescript --escopo acme
+node tools/create-project.mjs ../meu-sistema --binding typescript --scope acme
 
 # [projeto] daqui em diante, dentro do projeto gerado
 cd ../meu-sistema
@@ -25,7 +25,7 @@ cd ../meu-sistema
 node tools/create-module.mjs catalogo --role domain
 
 # 3. verificar
-node tools/gate/validate.mjs --todos
+node tools/gate/validate.mjs --all
 ```
 
 O projeto nasce com a **doutrina** e as **ferramentas** dentro dele. A verificabilidade viaja junto e não
@@ -74,12 +74,12 @@ ela. Regra que não está lá não é regra; regra que não pode ser verificada 
 ## Ferramentas
 
 ```
-create-project.mjs <destino> [--binding b] [--escopo e]   instancia um projeto
-create-module.mjs <id> --role domain|gateway|connector [--sem-artefato] [--sem-web]
+create-project.mjs <destino> [--binding b] [--scope e]     instancia um projeto
+create-module.mjs <id> --role domain|gateway|connector [--no-artifact] [--no-web]
 gate/validate.mjs <caminho-do-modulo>                      valida UM módulo
-gate/validate.mjs --todos                                  todos + as regras globais
-gate/validate.mjs --extracao <caminho>                     vira microsserviço hoje?
-sync-env.mjs [--conferir]                                  regenera os .env.example
+gate/validate.mjs --all                                     todos + as regras globais
+gate/validate.mjs --extraction <caminho>                   vira microsserviço hoje?
+sync-env.mjs [--check]                                      regenera os .env.example
 ```
 
 **A unidade de verificação é o módulo, não o repositório.** Se o verificador só funcionasse no repositório

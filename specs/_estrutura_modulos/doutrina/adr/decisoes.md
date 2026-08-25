@@ -1326,3 +1326,241 @@ decisão. Registrado como decisão, para não reabrir a cada leitura futura.
    provedores `memoria`/`memory`/`postgres` de `ports.json` (achado da Onda 3, ainda parado); e qualquer
    símbolo estrutural fora da lista comissionada que uma varredura futura, dedicada, venha a achar — este
    ADR não afirma exaustividade sobre o 4º eixo inteiro, só sobre os 24 símbolos que decidiu.
+
+---
+
+## ADR-019 — O encerramento da campanha de idioma: o que fica em português, e por quê
+
+**Status:** 🟢 Aceito
+
+**Contexto.** Sete eixos aplicados (`ADR-013` a `018`), ~2.000 ocorrências, gate verde em todas as ondas.
+Ao varrer o fim da campanha apareceram dois conjuntos que **não** entraram em nenhum dos sete: os
+identificadores locais dentro de `bindings/**` (item 3.1) e as chaves de npm script dos `package.json` de
+TS/JS (item 3.2). Este ADR existe para que os dois sejam **decisão registrada**, não resto — para que a
+próxima leitura não os confunda com esquecimento. Fecha também o único item que o `ADR-018` deixou aberto
+por não comissionamento: `DadosDoManifesto`→`ManifestData` e `ContextoDeTabela`→`TableContext`
+(`bindings/typescript/root/adapters/postgres/index.ts`), estruturais pela mesma régua do `ADR-018`
+(raiz `Dados`/`Contexto`), aplicados nesta conversa.
+
+### 3.1 Identificadores locais dentro de `bindings/**` — **fechado: ficam em português**
+
+`caminho`, `manifesto`, `modulo`, `resposta`, `pagina`, `valor`, `linha`, `texto`, `entrada`, `saida`,
+`limite`, `prefixo`, … Medido nesta conversa (`grep -rIo -w`, sobre `specs/_estrutura_modulos/bindings/`,
+doze identificadores amostrados): **1.591 ocorrências**; `modulo` sozinho, **550**. O eixo inteiro passa
+dos milhares — mais que toda a campanha somada (`ADR-013` a `018` juntos mediram, ao longo das sete
+ondas, pouco acima de 2.000 ocorrências no total).
+
+Três motivos, em ordem de força:
+
+1. **Não é árvore.** `ADR-009` linha 3 fala em *"**funções** do esqueleto"*, e as funções **já estão em
+   inglês**: `createRepository`, `discoverModules`, `readData`, `tableContext`, `verifyRoutesUnique`, e as
+   24 do `ADR-018`. O que sobrou é o **corpo** das funções — os nomes de parâmetro e de variável local — e
+   o princípio do `ADR-009` é literal: *"a árvore de arquivos é inglês; o conteúdo dela é português"*. Um
+   parâmetro chamado `modulo` dentro de uma função chamada `discoverModules` não é meio-traduzido: é a
+   fronteira exata que o princípio desenha, aplicada até o fim.
+2. **Nada depende disso.** Nenhuma regra do gate lê nome de variável local — as 76 regras leem estrutura de
+   arquivo, forma de import, padrão de texto, nunca identificador de escopo de função. Nenhum grep de
+   isolamento (`portas-pura`, `adapter-isolado`, `sdk-fornecedor`) depende de nome de parâmetro. A extração
+   de módulo (`ADR-001`) não muda uma vírgula: o que viaja na extração é arquivo e import, nunca o nome que
+   uma variável tem dentro de uma função.
+3. **O custo é maior que o da campanha inteira, e o benefício é estético.** As sete ondas já fechadas
+   somaram ~2.000 ocorrências e cada uma tinha um motivo funcional escrito — vocabulário de porta lido por
+   `config/ports.json`, marcador interpretado por dois substituidores, símbolo estrutural citado em prosa.
+   Este eixo sozinho é maior que a soma das sete, e nenhuma ocorrência dele é lida por máquina nenhuma. É o
+   inverso exato do critério que abriu a campanha.
+
+**O que isto NÃO autoriza.** Nome de função, tipo, classe, constante exportada e chave de config
+**continuam** em inglês — são os `ADR-013` a `018`, e nenhum deles é revisto aqui. A fronteira é
+**corpo × superfície**, não "português onde der": um identificador que a régua da campanha já mandou para
+o inglês (porque é lido por regra, ou porque é nome de função/tipo/constante exportada) permanece em
+inglês mesmo que pareça "só uma variável a mais" — a régua é a natureza do símbolo, nunca a impressão de
+quem lê.
+
+### 3.2 Chaves de npm script — **aberto, com o enquadramento**
+
+`validar`, `validar:env`, `validar:schemas`, `criar-modulo`, `tipos`, `formato`, `ci:cobertura`,
+`ci:seguranca`, `ci:dependencias`, `start:autoteste` — nos `package.json` de TypeScript e JavaScript.
+
+**A favor de traduzir:**
+- É a **superfície de CLI que o dev digita** (`npm run validar`) — exatamente o argumento que `ADR-009`
+  linha 5 já usa para os nomes de arquivo de `tools/`: é "o que o dev digita todo dia", não conteúdo.
+- **O template já se contradiz consigo mesmo.** `verify`/`start` (raiz, script `verify.py`/binário `node`)
+  convivem com `validar`/`criar-modulo` no mesmo `package.json`; `ci:seguranca` chama `ci-security.mjs`
+  (arquivo em inglês, chave em português, mesmo padrão de confound que a Onda 2a já corrigiu uma vez para
+  nome de arquivo).
+
+**Contra:**
+- Não está em nenhuma das onze linhas da tabela do `ADR-009` — a régua nomeia "nome de arquivo dentro de
+  `tools/`" (linha 5) e "chaves do manifesto" (linha 8), nunca "chave de `scripts` de `package.json`". Um
+  ADR que decidisse aqui estaria estendendo a régua por analogia, não aplicando uma linha existente.
+- O raio medido nesta conversa **não é um `package.json`**: `tools/verify-commit.mjs` (o motor de
+  `.githooks/pre-commit`/`pre-push`) chama `npm run formato`/`npm run tipos` por **string literal**;
+  `doutrina/03-operacao.md` cita os comandos em prosa; `config/verification.json` e o schema que o valida
+  carregam o vocabulário de política (`ci:cobertura` etc.); `tests/template-self-test.mjs` monta o pipeline
+  de CI do autoteste em cima dos mesmos nomes. Medido: ~32 arquivos citam pelo menos uma das dez chaves,
+  entre `tools/`, doutrina e os `package.json` dos dois bindings — não é edição de um arquivo, é reabrir
+  uma onda.
+
+**A decisão é do dono, como foi a do marcador** (`ADR-014` §5): registrado aqui para não desaparecer, sem
+decisão fingida nenhuma dos dois lados.
+
+### 3.3 Consequências
+
+1. **A campanha de idioma está encerrada.** Contrato final: `ADR-013` a `019`, lidos juntos.
+2. **O que ficar em português a partir daqui está declarado em 3.1, ou aberto em 3.2 — nada mais.** Um
+   símbolo em português achado fora dessas duas listas, depois deste ADR, é achado novo — não presuma que
+   já foi decidido aqui.
+3. **A régua para quem chegar depois, numa frase:** superfície em inglês, corpo em português — e
+   "superfície" é o que o `ADR-009` **enumera**, não o que parece técnico. `modulo` como nome de parâmetro
+   parece técnico e fica português; `criar-modulo` como chave de `scripts` parece prosa e é candidato a
+   ir — a aparência engana nos dois sentidos, só a enumeração do `ADR-009` decide.
+
+---
+
+## ADR-020 — A superfície de CLI do template vai para o inglês: o §3.2 do ADR-019, decidido
+
+**Status:** 🟢 Aceito
+
+**Contexto.** `ADR-019` §3.2 registrou as chaves de npm script como **aberto**, com os dois lados escritos
+e nenhuma decisão tomada. Este ADR é essa decisão — a última da campanha de idioma. Junto com ela, duas
+descobertas da varredura desta conversa que também são superfície de CLI e nenhum ADR anterior cobriu:
+as **flags** das ferramentas do template (dezessete candidatas, quinze efetivamente do template) e
+`module.json:ui.modo`, chave de manifesto que `ADR-009` linha 8 já manda para o inglês e que escapou de
+todas as oito ondas anteriores porque a régua descrevia o alvo e ninguém conferiu o estado real da árvore.
+
+**Escopo, por decisão do dono:** só `specs/_estrutura_modulos/`. `skills/`, `agents/`, `commands/`,
+`hooks/`, `README.md`, `CLAUDE.md`, `.github/` ficam de fora — mesmo onde citam a CLI que este ADR renomeia.
+A consequência dessa fronteira está no item 4, com número.
+
+### 1. Chaves de npm script
+
+| `scripts` da raiz (PT) | Alvo | `scripts` do módulo (PT) | Alvo |
+|---|---|---|---|
+| `validar` | `validate` | `validar` | `validate` |
+| `validar:env` | `validate:env` | `validar:extracao` | `validate:extraction` |
+| `validar:schemas` | `validate:schemas` | `tipos` | `typecheck` |
+| `criar-modulo` | `create-module` | `cobertura` | `coverage` |
+| `tipos` | `typecheck` | `cobertura:conferir` | `coverage:check` |
+| `formato` | `format` | `test:observar` | `test:watch` |
+| `ci:cobertura` | `ci:coverage` | | |
+| `ci:seguranca` | `ci:security` | | |
+| `ci:dependencias` | `ci:dependencies` | | |
+| `start:autoteste` | `start:selftest` | | |
+
+Conferido contra os quatro `package.json` (`bindings/{typescript,javascript}/{root,_template}/`): as dez
+chaves da raiz e as seis do módulo existem exatamente como acima, mais as chaves-comentário que as
+documentam (`"//tipos"`, `"//ci:cobertura"`, `"//ci:seguranca"`, `"//formato"`, `"//start:autoteste"`,
+`"//cobertura"` — a convenção `//<chave>` do template) e a cadeia `"verify": "npm run validar && npm run
+validar:env && npm run validar:schemas && npm run formato && npm run lint && npm run tipos && npm test"`,
+que cita quatro das dez por nome dentro do próprio valor. `criar-modulo`/`cobertura`/`cobertura:conferir`
+seguem para inglês pela mesma decisão — não são chaves diferentes, são a mesma superfície.
+
+**O argumento que decide, e é o mais forte:** o template já se contradiz consigo mesmo. `verify`/`start`/
+`test`/`build`/`lint`/`migrations` estão em inglês no mesmo `package.json` que `validar`/`criar-modulo`;
+`ci:contract`/`ci:lint` convivem com `ci:seguranca`, que chama `ci-security.mjs` — arquivo que a Onda 2a já
+traduziu, deixando a chave para trás. Um `package.json` bilíngue por acidente é exatamente a "fronteira
+implícita" que o `ADR-009` abre dizendo que existe para evitar.
+
+### 2. Flags de CLI das ferramentas
+
+Levantadas em `specs/_estrutura_modulos/` inteiro (tools, tests, `verify.py`) e conferidas quanto a quem
+de fato **define** cada uma — mais de uma flag tem definição **independente** em ferramentas diferentes, e
+duas das dezessete propostas não pertencem ao template:
+
+| Flag (PT) | Alvo | Definida em | Nota |
+|---|---|---|---|
+| `--todos` | `--all` | `validate.mjs` | |
+| `--conferir` | `--check` | `sync-env.mjs`, `generate-lint-config.mjs`, `generate-port-schemas.mjs`, `verify-map.mjs`, `verify-catalog.mjs` | **cinco** definições independentes, mesma flag |
+| `--conferir-vocabulario` | `--check-vocabulary` | `verify-catalog.mjs` | |
+| `--extracao` | `--extraction` | `validate.mjs` | |
+| `--forcar` | `--force` | `create-project.mjs` | ver item 4 — quebra downstream real, não só citação |
+| `--sem-web` | `--no-web` | `create-module.mjs` | |
+| `--sem-artefato` | `--no-artifact` | `create-module.mjs` | |
+| `--rapido` | `--fast` | `template-self-test.mjs`, `verify.py` | duas definições independentes |
+| `--escopo` | `--scope` | `create-project.mjs` | |
+| `--raiz` | `--root` | `affected.mjs` | **não** confundir com `resultado.raiz`/`raiz` local (booleano "toca a raiz", sem relação) — fica intocado |
+| `--seguranca` | `--security` | `verify.py` | |
+| `--cobertura` | `--coverage` | `verify.py` | |
+| `--dependencias` | `--dependencies` | `verify.py` | |
+| `--desde` | `--since` | `ci-security.mjs`, `contract-compatible.mjs`, `affected.mjs` | três definições independentes |
+| `--manter` | `--keep` | `template-self-test.mjs` | |
+| `--destino` | `--target` | `generate-lint-config.mjs` | **não** confundir com `destino`/`opcoes.destino` de `create-project.mjs` — ali é posicional, nunca veio de `--destino`; fica intocado |
+
+**`--modulos` fica fora da tabela — não é flag do template.** Nenhuma ferramenta de
+`specs/_estrutura_modulos/` a define; ela pertence a `skills/meta-iniciar-repositorio/scripts/init_repo.py`
+e a `skills/meta-adequacao-modular/scripts/diagnosticar_terreno.py`, os dois fora de escopo. As duas
+citações que a varredura achou dentro do template (`tools/create-module.mjs`, comentário citando o
+vocabulário de `init_repo.py`; `tests/verify-routine.mjs`, teste que invoca `init_repo.py` de propósito
+para testar rejeição) são sobre o script **externo** — tocá-las quebraria a citação, não a corrigiria.
+
+Flags já em inglês (`--json`, `--role`, `--binding`, `--redact`, `--migrations`, `--check`, `--version`) e
+flags **de terceiros** (`--if-present`, `--no-fund`, `--cov-fail-under`, `--name-only`, `--abbrev-ref`, …)
+não entram — as últimas nem são nossas para renomear.
+
+### 3. `--autoteste` — fica, e o motivo é mecânico, não estético
+
+`tests/run-all-selftests.mjs` **descobre** os arquivos verificáveis varrendo por essa flag literal. Dos 25
+que ele encontra hoje, quatro são scripts de **skill**, fora do template
+(`diagnosticar_terreno.py`, `audit_base.py`, `scan_segredos.py`, `validate.py` de `padrao-python`) — a
+linha 11 do `ADR-009` já classifica nome de skill como fora de escopo, e o mesmo vale para a **convenção**
+que os liga ao descobridor. Renomear `--autoteste` só no template quebraria a descoberta desses quatro
+(o descobridor buscaria uma string que eles não têm); renomeá-la também nas skills sairia do escopo desta
+conversa. Fica em português nos dois lados — é a mesma disciplina do `ADR-009` linha 4, aplicada a uma
+convenção de descoberta em vez de um símbolo.
+
+### 4. `module.json:ui.modo` — a chave de manifesto que escapou
+
+`ADR-009` linha 8 põe toda chave de manifesto em inglês; as outras dezoito (`basePath`, `requiredEnv`,
+`generatesArtifact`, `data.prefix`, `navigation.icon`, …) já estavam. `ui.modo` não — a régua descrevia o
+alvo, e nenhuma das oito ondas conferiu essa chave especificamente contra a árvore real.
+
+**Decisão, com os valores:** `ui.modo` → `ui.mode`. Os dois valores do enum são vocabulário estrutural, e
+`ADR-009` linha 8 já resolveu esta classe: *"enum de valor estrutural... segue a mesma tradução da pasta
+homônima — é o mesmo conceito, não uma exceção"* (o precedente é `role: domain|gateway|connector`). Decidido
+símbolo a símbolo: `"proprio"` → `"own"`; `"kit"` fica — já é inglês (é literalmente "kit de UI").
+
+Alcança: os três `_template/module.json` (`"ui": {"modo": "proprio"}`), `module.schema.json`
+(`required: ["modo"]` + `properties.modo.enum`), as cinco linhas de `tools/gate/rules/isolation.mjs` que
+citam `ui.modo` em comentário ou mensagem de achado (13, 82, 436, 446 — que também cita `"proprio"` no
+texto —, 552; a **leitura de propriedade** de verdade é só `ctx.manifesto?.ui?.modo` na linha 289), e a
+doutrina (`00-arquitetura.md`, `01-modulo.md` §7, `04-regras.md` — catálogo e §7.2).
+
+**`ui.pacote` fica de fora, nominalmente.** Mesma classe de chave, mesma régua — mas não foi comissionada
+nesta conversa. Registrado para a próxima varredura não o redescobrir do zero, não renomeado aqui.
+
+### 5. O custo desta decisão de escopo — a dívida, com números
+
+O dono decidiu corrigir **só o template**. Medido nesta conversa (`grep -rIo` em `skills/`, `agents/`,
+`commands/`, `README.md`, sete termos amostrados): **57 citações** ficam obsoletas — `--todos` 20,
+`--forcar` 16, `--extracao` 8, `--conferir` 5, `--sem-artefato` 4, `criar-modulo` 4, `--rapido` 0 (a única
+das sete sem citação fora do template). O número do prompt que abriu esta conversa (~59) era estimativa; a
+varredura vale mais.
+
+**Um achado mais sério que citação obsoleta, e o mais importante deste item:**
+`skills/meta-iniciar-repositorio/scripts/init_repo.py:301` faz `comando.append("--forcar")` para repassar a
+flag a `create-project.mjs` quando o usuário autoriza sobrescrever. `create-project.mjs` lê a flag por
+`brutos.includes('--forcar')` — depois desta onda, `'--forcar'` nunca mais aparece em `brutos`, e a
+checagem **falha para `false` em silêncio**, nunca lança erro. `meta-iniciar-repositorio` continua rodando,
+sem avisar, e o `--forcar` que o usuário autorizou deixa de sobrescrever qualquer coisa — exatamente o
+"verde indistinguível de não verificou" que `04-regras.md` §7 existe para proibir, só que na direção
+inversa (silêncio onde devia haver ação). **Não é corrigível nesta conversa** (o arquivo é de skill, fora
+do escopo) — fica registrado para quem reabrir `meta-iniciar-repositorio` coordenar as duas pontas.
+
+**Duas convenções de CLI passam a coexistir no ecossistema**: o template dirá `--all`/`--check`/`--force`;
+`diagnosticar_terreno.py`, `audit_base.py` e as demais skills continuam dizendo `--todos`/`--conferir`/
+`--forcar`. Nenhum verificador pega a divergência — `ponteiros.py` (`meta-verificacao-base`) resolve
+**caminho de arquivo**, nunca flag de CLI dentro de um comando citado em prosa.
+
+### 6. Consequências
+
+1. **A campanha de idioma se encerra aqui.** Com esta onda, **toda linha da coluna inglês da tabela do
+   `ADR-009` está satisfeita** — as onze categorias, conferidas: 1/3/5/8/9 (árvore/função/arquivo de
+   `tools/`/manifesto/env) em inglês de fato; 2/4/6/7/10 (doutrina, símbolo de `tools/`, id de regra,
+   mensagem, domínio/dados) em português por decisão escrita; 11 fora de escopo. O que restar em português
+   depois desta onda está na coluna portuguesa do `ADR-009`, fechado no `ADR-019` §3.1, ou nominalmente
+   registrado como aberto (`ui.pacote`, item 4; provedores de `ports.json`, `ADR-016`/`018`; `$comentario`
+   já fechado no `ADR-018`).
+2. **`ADR-019` §3.2 deixa de estar aberto.** A tabela do item 1 é a decisão que faltava.
+3. **A dívida do item 5 é declarada, não escondida** — em particular a quebra funcional de
+   `init_repo.py:301`, que precisa de coordenação (não conserto silencioso) no dia em que
+   `meta-iniciar-repositorio` for revisitada.

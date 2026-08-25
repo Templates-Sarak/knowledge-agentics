@@ -248,13 +248,13 @@ function idsDosModulos() {
  * sem saber por quê. `(root)` sem módulo nenhum ainda precisa cobrar as regras de escopo raiz: elas
  * rodam em QUALQUER invocação de `validate.mjs` com ao menos um módulo no projeto
  * (`engine.mjs:rodarRegrasDeRaiz` usa `contextos[0].projeto`, não o alvo pedido) — por isso basta
- * passar UM módulo qualquer como referência, não `--todos`.
+ * passar UM módulo qualquer como referência, não `--all`.
  */
 function rodarGate(resultado) {
   const validar = join('tools', 'gate', 'validate.mjs');
   if (resultado.tudo) {
     escrever(`  (tudo) — ${resultado.motivo}\n`);
-    return rodar('gate (--todos)', NODE, [validar, '--todos']);
+    return rodar('gate (--all)', NODE, [validar, '--all']);
   }
 
   const alvos = [...resultado.modulos];
@@ -276,7 +276,7 @@ function formatoELint() {
   const bind = binding();
   if (bind === 'node') {
     return [
-      () => rodarNpm('formato (prettier --check)', ['run', 'formato']),
+      () => rodarNpm('formato (prettier --check)', ['run', 'format']),
       () => rodarNpm('lint (eslint)', ['run', 'lint']),
     ];
   }
@@ -299,20 +299,20 @@ function preCommit() {
 
 /** `sync-env.mjs` é sempre Node, nos dois bindings — não passa por `formatoELint`. */
 function rodarSincronizarEnv() {
-  return rodar('env (.env.example)', NODE, [join('tools', 'sync-env.mjs'), '--conferir']);
+  return rodar('env (.env.example)', NODE, [join('tools', 'sync-env.mjs'), '--check']);
 }
 
 /** `generate-port-schemas.mjs` é sempre Node, nos dois bindings — mesma forma de `rodarSincronizarEnv`,
  * não passa por `formatoELint`. */
 function rodarSchemasDePortas() {
-  return rodar('schemas de portas', NODE, [join('tools', 'generate-port-schemas.mjs'), '--conferir']);
+  return rodar('schemas de portas', NODE, [join('tools', 'generate-port-schemas.mjs'), '--check']);
 }
 
 /** Tipos e testes de UM módulo Node, escopados pelo workspace — nunca o repositório inteiro. */
 function tiposETestesDoModuloNode(id) {
   const alvo = `--workspace=modules/${id}`;
   return [
-    () => rodarNpm(`tipos: ${id}`, ['run', 'tipos', alvo, '--if-present']),
+    () => rodarNpm(`tipos: ${id}`, ['run', 'typecheck', alvo, '--if-present']),
     () => rodarNpm(`testes: ${id}`, ['test', alvo, '--if-present']),
   ];
 }
@@ -341,7 +341,7 @@ function prePush() {
 
   // `_template` fica de fora: não é workspace npm ("workspaces": ["modules/[a-z]*", ...] — o
   // padrão já exclui o molde DE PROPÓSITO, package.json:"//workspaces" explica o motivo), então
-  // `npm run tipos --workspace=modules/_template` sempre falha com "No workspaces found", mesmo
+  // `npm run typecheck --workspace=modules/_template` sempre falha com "No workspaces found", mesmo
   // sem nada errado no molde. `create-module.mjs`/`create-project.mjs` já tratam `_template` como não
   // sendo um pacote publicável pelo mesmo motivo — aqui é a mesma exclusão, não uma nova regra.
   const semMolde = (id) => !id.startsWith('_');

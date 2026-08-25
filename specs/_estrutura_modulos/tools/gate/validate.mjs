@@ -3,8 +3,8 @@
  * validate.mjs — a INTERFACE do gate. Lei dona: specs/arquitetura/04-regras.md
  *
  *   node tools/gate/validate.mjs <caminho-do-modulo>   valida UM modulo
- *   node tools/gate/validate.mjs --todos               todos + regras globais
- *   node tools/gate/validate.mjs --extracao <caminho>  a estrutura permite extrair?
+ *   node tools/gate/validate.mjs --all                  todos + regras globais
+ *   node tools/gate/validate.mjs --extraction <caminho> a estrutura permite extrair?
  *   node tools/gate/validate.mjs --json <caminho>      saida para maquina
  *
  * A unidade de verificacao e o MODULO, nunca o repositorio: e o que permite ao modulo extraido
@@ -52,9 +52,9 @@ function resolverAlvo(argumento, raizPadrao) {
 function lerArgumentos() {
   const brutos = process.argv.slice(2);
   return {
-    todos: brutos.includes('--todos'),
+    todos: brutos.includes('--all'),
     json: brutos.includes('--json'),
-    extracao: brutos.includes('--extracao'),
+    extracao: brutos.includes('--extraction'),
     caminho: brutos.find((a) => !a.startsWith('--')) ?? null,
   };
 }
@@ -65,7 +65,7 @@ function lerArgumentos() {
  * foi analisada", que é a confusão que este gate existe para impedir. Sem `modules/` não há raiz de
  * projeto a analisar (módulo solto), e aí o bloco não aparece porque não haveria o que afirmar.
  *
- * Em `--extracao` ele também não aparece: ali `analisar` filtra para `REGRAS_DE_EXTRACAO`, nenhuma
+ * Em `--extraction` ele também não aparece: ali `analisar` filtra para `REGRAS_DE_EXTRACAO`, nenhuma
  * regra de raiz sobrevive ao filtro, e um bloco vazio afirmaria uma verificação que não houve. A
  * pergunta da extração é sobre o MÓDULO, não sobre a raiz que ele vai deixar para trás.
  */
@@ -107,7 +107,7 @@ function principal() {
 
   const alvo = opcoes.todos ? null : resolverAlvo(opcoes.caminho ?? '', raizProjeto);
   if (!opcoes.todos && alvo === null) {
-    process.stderr.write('uso: validate.mjs <caminho-do-modulo> | --todos | --extracao <caminho>\n');
+    process.stderr.write('uso: validate.mjs <caminho-do-modulo> | --all | --extraction <caminho>\n');
     return 1;
   }
 

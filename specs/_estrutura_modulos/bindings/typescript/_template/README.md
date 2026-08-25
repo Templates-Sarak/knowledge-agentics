@@ -23,7 +23,7 @@ gateways) · `specs/arquitetura/02-contrato-e-dados.md` (API, erro, schema) ·
 | `<escopo>` | escopo dos packages (`acme`) | nome do package, schema do banco |
 
 Módulo que **não gera artefato** descarta `core/engine`, `core/templates`, `database/` e `generated/`
-(`--sem-artefato`). Módulo sem tela descarta `web/` (`--sem-web`). **Descartar é permitido; renomear, não.**
+(`--no-artifact`). Módulo sem tela descarta `web/` (`--no-web`). **Descartar é permitido; renomear, não.**
 
 ## Anatomia
 

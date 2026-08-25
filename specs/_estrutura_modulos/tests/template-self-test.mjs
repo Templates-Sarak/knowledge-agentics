@@ -3,7 +3,7 @@
  * template-self-test.mjs — prova que o TEMPLATE gera projeto que passa na própria cadeia que ele
  * prescreve.
  *
- *   node template-self-test.mjs [--binding typescript] [--manter] [--autoteste]
+ *   node template-self-test.mjs [--binding typescript] [--keep] [--autoteste]
  *
  * Fora de `tools/` DE PROPÓSITO: este script é consumido por quem MANTÉM o template, nunca por um
  * projeto gerado — `create-project.mjs` copia `tools/` inteiro para o destino, e um script de teste
@@ -11,8 +11,8 @@
  * gera projetos; este script ali seria peso sem consumidor.
  *
  * ESCOPO: as CINCO entradas de `COMBINACOES_DE_MODULO` — as quatro combinações de flag de
- * `create-module.mjs` (padrão, `--sem-artefato`,
- * `--sem-web`, as duas juntas) — ver `COMBINACOES_DE_MODULO` abaixo.
+ * `create-module.mjs` (padrão, `--no-artifact`,
+ * `--no-web`, as duas juntas) — ver `COMBINACOES_DE_MODULO` abaixo.
  *
  * NÚCLEO × CASCA, precedente de `tools/affected.mjs`/`ci-dependencies.mjs`/`ci-security.mjs`:
  * `passosDoBinding` (que passos rodam, em que ordem) e `classificarPasso` (como um resultado de
@@ -99,9 +99,9 @@ export const COMBINACOES_DE_MODULO = [
   // nenhuma com a flag testada — o comprimento do id é que importa. `sonda` (5) tinha
   // folga; estes quatro (6–8) mantêm a mesma folga.
   { id: 'sondapad', flags: [] },
-  { id: 'sondaart', flags: ['--sem-artefato'] },
-  { id: 'sondaweb', flags: ['--sem-web'] },
-  { id: 'sondaamb', flags: ['--sem-artefato', '--sem-web'] },
+  { id: 'sondaart', flags: ['--no-artifact'] },
+  { id: 'sondaweb', flags: ['--no-web'] },
+  { id: 'sondaamb', flags: ['--no-artifact', '--no-web'] },
   // O id COM HÍFEN, e com 8 chars pelo mesmo motivo dos quatro acima: medido, a linha mais longa
   // que carrega o id (`api/src/errors.py`) fica em 105/110 com 8 chars — a MESMA folga de 5 que
   // `sondapad` tem. (`sonda-hifen`, 11, cabia em 108/110, mas com folga 2: passa hoje e quebra no
@@ -170,8 +170,8 @@ export function passosDeAdapter() {
  * cobre forma + limiares + tipos + testes num só passo, como o `npm run verify` do lado Node.
  *
  * `rapido`: só a combinação PADRÃO (sem flag) — medido, as quatro juntas custam ~70s (TS) / ~52s
- * (JS), e o `--rapido` combinado (TS+JS) foi de ~25s para ~1m58s — bem em cima do teto de ~2min
- * para caber em pre-commit. Mesma solução que o binding Python já usa (`--rapido` pula Python
+ * (JS), e o `--fast` combinado (TS+JS) foi de ~25s para ~1m58s — bem em cima do teto de ~2min
+ * para caber em pre-commit. Mesma solução que o binding Python já usa (`--fast` pula Python
  * inteiro, cobrindo-o só na agenda): a combinatória cara fica para o run COMPLETO (agenda),
  * pre-commit continua rápido.
  *
@@ -217,7 +217,7 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
 
   // Depois de `verificar`, nos dois bindings — o mapa instalado é doutrina, não código do módulo,
   // então não precisa esperar o `clone-simulado`: entra assim que o projeto existe. Sem esta linha,
-  // `verify-map.mjs --conferir` seria um `--conferir` que existe e ninguém chama.
+  // `verify-map.mjs --check` seria um `--check` que existe e ninguém chama.
   const mapaInstalado = { nome: 'mapa', tipo: 'mapa-instalado' };
 
   if (binding === 'python') {
@@ -248,7 +248,7 @@ export function passosDoBinding(binding, { rapido = false } = {}) {
     mapaInstalado,
     { nome: 'build', tipo: 'npm-script', script: 'build' },
     { nome: 'lint', tipo: 'npm-script', script: 'lint' },
-    { nome: 'ci-dependencias', tipo: 'npm-script', script: 'ci:dependencias' },
+    { nome: 'ci-dependencias', tipo: 'npm-script', script: 'ci:dependencies' },
   ];
 }
 
@@ -502,7 +502,7 @@ function executarPasso(passo, ctx) {
       );
     }
     case 'mapa-instalado':
-      return rodarNode([VERIFICAR_MAPA, '--conferir', join(ctx.destino, 'specs', 'arquitetura')], RAIZ_TEMPLATE);
+      return rodarNode([VERIFICAR_MAPA, '--check', join(ctx.destino, 'specs', 'arquitetura')], RAIZ_TEMPLATE);
     case 'npm-script':
       return rodarNpm(['run', passo.script], ctx.destino);
     case 'venv':
@@ -518,12 +518,12 @@ function executarPasso(passo, ctx) {
     case 'verificar-py':
       return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verify.py'], ctx.destino, { SARAK_NODE: NODE });
     case 'ci-dependencias-py':
-      // `--dependencias` delega para `ci-dependencies.mjs` (Node), que por sua vez resolve UM
+      // `--dependencies` delega para `ci-dependencies.mjs` (Node), que por sua vez resolve UM
       // interpretador Python para `pip_audit` via `SARAK_PYTHON` (ou PATH). Sem `SARAK_PYTHON`
       // apontado para o venv desta rodada, ele cai no `python`/`python3` do PATH — que pode nem
       // ter `pip_audit` instalado. Medido: sem isto, o passo reprova com "ferramenta de auditoria
       // ausente", mesmo com tudo instalado no venv certo.
-      return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verify.py', '--dependencias'], ctx.destino, {
+      return rodarPython(caminhoPythonDoVenv(ctx.venvDir), ['verify.py', '--dependencies'], ctx.destino, {
         SARAK_NODE: NODE,
         SARAK_PYTHON: caminhoPythonDoVenv(ctx.venvDir),
       });
@@ -534,7 +534,7 @@ function executarPasso(passo, ctx) {
 
 /**
  * Roda a cadeia inteira de UM binding numa pasta temporária própria. Para no primeiro passo que
- * falhar (`primeiroFalho`). A pasta é sempre removida no `finally` — a MENOS que `--manter` peça
+ * falhar (`primeiroFalho`). A pasta é sempre removida no `finally` — a MENOS que `--keep` peça
  * para preservar (uso: depurar um binding específico sem recriar o projeto do zero).
  */
 function executarBinding(binding, { manter, rapido }) {
@@ -599,17 +599,17 @@ function lerOpcoes(argv) {
   const indiceBinding = argv.indexOf('--binding');
   return {
     binding: indiceBinding === -1 ? null : argv[indiceBinding + 1],
-    manter: argv.includes('--manter'),
+    manter: argv.includes('--keep'),
     autoteste: argv.includes('--autoteste'),
-    rapido: argv.includes('--rapido'),
+    rapido: argv.includes('--fast'),
   };
 }
 
 /**
- * `--rapido` faz DUAS coisas, as duas para caber no teto de ~2min de pre-commit: só os bindings
+ * `--fast` faz DUAS coisas, as duas para caber no teto de ~2min de pre-commit: só os bindings
  * Node (typescript, javascript) — o binding python sozinho leva ~2m40s (venv + pip install do
  * zero) —, e só a PRIMEIRA entrada de `criar-modulo` (as cinco custam ~70s/~52s a
- * mais). Uso pretendido: pre-commit da base roda `--rapido`; a agenda (workflow) roda sem essa
+ * mais). Uso pretendido: pre-commit da base roda `--fast`; a agenda (workflow) roda sem essa
  * flag, cobrindo os três bindings × as cinco entradas — é o consumidor que paga o custo cheio.
  */
 function bindingsAlvo(opcoes) {
@@ -630,7 +630,7 @@ function principal() {
   const alvo = bindingsAlvo(opcoes);
   const pulados = BINDINGS.filter((b) => !alvo.includes(b));
   if (pulados.length > 0) {
-    process.stdout.write(`aviso: pulando ${pulados.join(', ')} (${opcoes.binding !== null ? '--binding' : '--rapido'}) — NAO foram medidos nesta rodada.\n`);
+    process.stdout.write(`aviso: pulando ${pulados.join(', ')} (${opcoes.binding !== null ? '--binding' : '--fast'}) — NAO foram medidos nesta rodada.\n`);
   }
 
   const resultados = alvo.map((binding) => executarBinding(binding, { manter: opcoes.manter, rapido: opcoes.rapido }));

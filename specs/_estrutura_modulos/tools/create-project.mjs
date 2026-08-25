@@ -3,7 +3,7 @@
  * create-project.mjs — instancia um projeto novo a partir do template.
  * Lei dona: specs/arquitetura/00-arquitetura.md §2
  *
- *   node tools/create-project.mjs <destino> [--binding typescript] [--escopo acme] [--forcar]
+ *   node tools/create-project.mjs <destino> [--binding typescript] [--scope acme] [--force]
  *
  * O projeto nasce com a DOUTRINA e as FERRAMENTAS dentro dele — a verificabilidade viaja junto,
  * e nao depende de nenhum provedor de CI (ADR-005).
@@ -28,7 +28,7 @@ const ADR_DO_TEMPLATE = '000-decisoes-do-template.md';
  * `tools/` é vendorizado — "ninguém edita" (a mesma razão de `generate-lint-config.mjs:IGNORADOS`
  * excluir `tools/` do linter da base). `create-module.mjs` (e este próprio arquivo) têm a string
  * `<escopo>` na PRÓPRIA LÓGICA de substituição, não como marcador a preencher: incluir `tools/` na
- * varredura reescreve essa lógica para o VALOR do escopo — `create-project.mjs destino --escopo
+ * varredura reescreve essa lógica para o VALOR do escopo — `create-project.mjs destino --scope
  * verif`, por exemplo, deixaria a cópia de `create-module.mjs` com `.replaceAll('verif', escopo)`
  * em vez de `.replaceAll('<escopo>', escopo)`, corrompendo a PRÓPRIA ferramenta: o próximo
  * `create-module.mjs <id>` rodado nesse projeto mutila qualquer `<id>` que contenha "verif" como
@@ -51,8 +51,8 @@ function lerOpcoes() {
   return {
     destino: brutos.find((a) => !a.startsWith('--')),
     binding: valorDe('binding', 'typescript'),
-    escopo: valorDe('escopo', null),
-    forcar: brutos.includes('--forcar'),
+    escopo: valorDe('scope', null),
+    forcar: brutos.includes('--force'),
   };
 }
 
@@ -192,7 +192,7 @@ function mesclarGitignore(destino, anterior) {
 function imprimirProximosPassos(destino, opcoes, escopo, colisoes) {
   process.stdout.write(`projeto criado em ${destino} (binding ${opcoes.binding}, escopo "${escopo}")\n`);
   process.stdout.write('  doutrina instalada em specs/arquitetura/ e specs/adr/000-decisoes-do-template.md\n');
-  if (colisoes.length > 0) process.stdout.write(`  ATENCAO: sobrescrito por --forcar: ${colisoes.join(', ')}\n`);
+  if (colisoes.length > 0) process.stdout.write(`  ATENCAO: sobrescrito por --force: ${colisoes.join(', ')}\n`);
   // O `pip` que `python -m venv` instala vem do interpretador do SISTEMA, nunca do template, e
   // pode trazer CVE propria — medido com pip 25.2 (6 CVEs): sem o upgrade, `ci:dependencias`
   // reprova mesmo com o projeto inteiro em dia. `--upgrade pip` entra no passo 1, antes do install
@@ -220,7 +220,7 @@ function imprimirProximosPassos(destino, opcoes, escopo, colisoes) {
 
 function principal() {
   const opcoes = lerOpcoes();
-  if (opcoes.destino === undefined) abortar('uso: create-project.mjs <destino> [--binding b] [--escopo e]');
+  if (opcoes.destino === undefined) abortar('uso: create-project.mjs <destino> [--binding b] [--scope e]');
   if (!BINDINGS.includes(opcoes.binding)) abortar(`binding "${opcoes.binding}" invalido — use ${BINDINGS.join(', ')}`);
 
   const destino = resolve(process.cwd(), opcoes.destino);
@@ -231,7 +231,7 @@ function principal() {
 
   const colisoes = existsSync(destino) ? colisoesDeRaiz(destino, opcoes.binding) : [];
   if (colisoes.length > 0 && !opcoes.forcar) {
-    abortar(`o destino ja tem ${colisoes.join(', ')} — mova-os, ou use --forcar para sobrescrever`);
+    abortar(`o destino ja tem ${colisoes.join(', ')} — mova-os, ou use --force para sobrescrever`);
   }
 
   const escopo = opcoes.escopo ?? basename(destino).toLowerCase();

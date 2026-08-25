@@ -4,7 +4,7 @@
  * Lei dona: specs/arquitetura/01-modulo.md §4.2
  *
  *   node tools/sync-env.mjs             regrava os .env.example, MESCLA o .env real
- *   node tools/sync-env.mjs --conferir  só verifica os .env.example (para o gate/CI)
+ *   node tools/sync-env.mjs --check     só verifica os .env.example (para o gate/CI)
  *
  * São DUAS fontes, uma por unidade que declara: `module.json:requiredEnv` para o `.env.example` de
  * cada módulo, e `project.json:requiredEnv` para as chaves da própria RAIZ (a fiação —
@@ -211,7 +211,7 @@ function montarAlvos(raizProjeto, lista) {
 
 /**
  * O alvo do `.env` REAL — `null` quando não há chave nenhuma de raiz a exigir (mesma guarda do
- * `.env.example`). Só entra no MODO ESCRITA (nunca no `--conferir`): o `.env` tem valor de
+ * `.env.example`). Só entra no MODO ESCRITA (nunca no `--check`): o `.env` tem valor de
  * ambiente, e comparar por igualdade byte a byte reprovaria todo projeto com valor preenchido —
  * o oposto do que essa mescla existe para permitir.
  */
@@ -226,7 +226,7 @@ function montarAlvoEnvReal(raizProjeto, lista) {
 }
 
 function principal() {
-  const conferir = process.argv.includes('--conferir');
+  const conferir = process.argv.includes('--check');
   const raizProjeto = acharRaizProjeto();
   const lista = [...listarModulos(raizProjeto), ...listarMoldesDeBinding(raizProjeto)];
   const divergentes = [];

@@ -98,7 +98,7 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | `requiredEnv` | string[] | chaves `<ID>_*` que o módulo consome |
 | `ports` | string[] | portas de infraestrutura que exige (§5) |
 | `consumes` | objeto[] | contratos de **outros módulos** dos quais depende (§6) |
-| `ui.modo` | enum | `proprio` \| `kit` — de onde vêm os componentes visuais (§7) |
+| `ui.mode` | enum | `own` \| `kit` — de onde vêm os componentes visuais (§7) |
 | `permissions` | string[] | permissões que a API exige (`<id>:ler`, `<id>:escrever`) |
 | `publicRoutes` | string[] | rotas sem autenticação, no formato `"MÉTODO /caminho"` — **opt-in explícito** |
 | `sensitiveFields` | string[] | campos que nunca saem em resposta, log ou OpenAPI |
@@ -214,10 +214,10 @@ O módulo declara **o que precisa**; **quem fornece** é decidido fora dele. As 
 Fonte NORMATIVA do vocabulário: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do
 gate são GERADOS dela, e cada `packages/ports/index.*` por binding a espelha à mão.
 A decisão foi **impedir a divergência em vez de acusá-la** — nenhuma regra de raiz compara os três
-lugares; quem impede é `tools/generate-port-schemas.mjs --conferir`, que roda dentro do `verificar`
-de cada binding (script `validar:schemas`, logo depois de `validar:env`) e do `pre-commit`
+lugares; quem impede é `tools/generate-port-schemas.mjs --check`, que roda dentro do `verificar`
+de cada binding (script `validate:schemas`, logo depois de `validate:env`) e do `pre-commit`
 (`tools/verify-commit.mjs`) — o mesmo lugar e a mesma forma de
-`sync-env.mjs --conferir`, o precedente que este mecanismo segue. `fila` SAIU do catálogo: arrasta
+`sync-env.mjs --check`, o precedente que este mecanismo segue. `fila` SAIU do catálogo: arrasta
 retry, *dead-letter*, idempotência e ordem de entrega — desenho de TOPOLOGIA, que [[00-arquitetura]] §5
 diz que o template não escolhe. Volta no dia em que houver um projeto com a decisão tomada, e volta como
 ADR.
@@ -272,16 +272,16 @@ aqui para que a próxima fase não improvise.
 
 # 7. Interface
 
-`ui.modo` declara de onde vêm os componentes visuais:
+`ui.mode` declara de onde vêm os componentes visuais:
 
 | modo | O que significa | O que o gate cobra |
 |---|---|---|
-| `proprio` | o módulo define suas primitivas em `web/src/components/` | proibido importar componente de **outro módulo** — é a regra `import-lateral`, que já cobra isto para o módulo inteiro; não há regra específica de `ui` neste modo |
+| `own` | o módulo define suas primitivas em `web/src/components/` | proibido importar componente de **outro módulo** — é a regra `import-lateral`, que já cobra isto para o módulo inteiro; não há regra específica de `ui` neste modo |
 | `kit` | a renderização vem de `packages/ui-kit` (nome canônico; `ui.pacote` declara outro) | `ui-kit` (erro): nenhum arquivo importa a biblioteca de UI bruta, e algo em `web/` importa o kit — kit declarado e nunca importado é declaração sem consequência. `ui-token` (aviso): zero literal de cor ou fonte em declaração de estilo |
 
 Módulo sem `web/` silencia nos dois modos: descartar a tela é permitido (§2).
 
-Nos dois modos a estrutura de pastas é idêntica, e um módulo migra de `proprio` para `kit` sem mover arquivo.
+Nos dois modos a estrutura de pastas é idêntica, e um módulo migra de `own` para `kit` sem mover arquivo.
 
 O `web/` é sempre um **pacote que exporta suas páginas** (`web/src/index.ts`), mais uma **entrada standalone
 fina e opcional** (`index.html` + `main.tsx`) que só monta a raiz já exportada. Com isso, tanto um shell único
@@ -290,7 +290,7 @@ que importa todos os módulos quanto um SPA por módulo funcionam sem estrutura 
 # 8. Criar um módulo novo
 
 ```
-node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]
+node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--no-artifact]
 ```
 
 O script copia o molde do binding, substitui os marcadores (`<module>` → id, `<MODULE>` → id em maiúscula,

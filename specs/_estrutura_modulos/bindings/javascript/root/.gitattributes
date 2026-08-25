@@ -1,6 +1,6 @@
 # TODO arquivo de texto sai do checkout em LF, em qualquer SO. Windows com core.autocrlf=true (o
 # padrao) converteria para CRLF, e o gate compara disco contra saida de gerador BYTE A BYTE
-# (`lint-derivado`, `gerar-schemas-portas --conferir`) — reprovaria so pela quebra de linha, nunca
+# (`lint-derivado`, `gerar-schemas-portas --check`) — reprovaria so pela quebra de linha, nunca
 # pelo conteudo (medido: clone limpo em CRLF media 1/122 no autoteste do gate).
 #
 # `text=auto` deixa o git decidir texto x binario (nao corrompe asset binario, se algum entrar);

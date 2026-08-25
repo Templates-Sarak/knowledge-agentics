@@ -51,7 +51,7 @@ function requiredUrl(idDoModulo: string): string {
   return valor;
 }
 
-interface DadosDoManifesto {
+interface ManifestData {
   schema: string;
   prefix: string;
 }
@@ -59,15 +59,15 @@ interface DadosDoManifesto {
 /** `data.schema`/`data.prefix` do PRÓPRIO manifesto do módulo — a mesma fonte que a migration
  * 0001 usa para nomear as tabelas, nunca um terceiro lugar (mesmo raciocínio de `migrations.mjs`).
  * Cacheada por pasta — o manifesto não muda em runtime, e cada operação chamaria isto de novo. */
-const dadosCache = new Map<string, DadosDoManifesto>();
+const dadosCache = new Map<string, ManifestData>();
 
-async function readData(modulo: ModuleForAdapter): Promise<DadosDoManifesto> {
+async function readData(modulo: ModuleForAdapter): Promise<ManifestData> {
   const existente = dadosCache.get(modulo.pasta);
   if (existente !== undefined) return existente;
   const { readFile } = await import('node:fs/promises');
   const { join } = await import('node:path');
   const texto = await readFile(join(modulo.pasta, 'module.json'), 'utf8');
-  const manifesto = JSON.parse(texto.replace(/^﻿/, '')) as { data: DadosDoManifesto };
+  const manifesto = JSON.parse(texto.replace(/^﻿/, '')) as { data: ManifestData };
   dadosCache.set(modulo.pasta, manifesto.data);
   return manifesto.data;
 }
@@ -116,13 +116,13 @@ function toRecord(linha: {
 // REPOSITORIO — uma função por método (limiar de 40 linhas), todas passando pelo mesmo contexto.
 // ================================================================================================
 
-interface ContextoDeTabela {
+interface TableContext {
   pool: Pool;
   nome: string;
 }
 
 /** Resolve pool + nome qualificado de UMA vez — as quatro operações abaixo precisam das duas coisas. */
-async function tableContext(modulo: ModuleForAdapter, sufixo: string): Promise<ContextoDeTabela> {
+async function tableContext(modulo: ModuleForAdapter, sufixo: string): Promise<TableContext> {
   const { schema, prefix } = await readData(modulo);
   const pool = await poolFor(requiredUrl(modulo.id));
   return { pool, nome: qualifiedName(schema, `${prefix}${sufixo}`) };

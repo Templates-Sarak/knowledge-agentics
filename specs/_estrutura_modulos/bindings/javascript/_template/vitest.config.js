@@ -42,7 +42,7 @@ export default defineConfig({
     coverage: {
       include: ['core/**', 'api/src/**', 'web/src/**'],
       exclude: ['**/*.d.ts'],
-      // So ativa com `--coverage` (npm run cobertura) — nunca no `npm test` comum, que nao roda o
+      // So ativa com `--coverage` (npm run coverage) — nunca no `npm test` comum, que nao roda o
       // provider e nao escreve nada em `relatorios/`. reporter/dir moram aqui, nao na CLI, porque
       // sao a MESMA config em toda invocacao — repetir na CLI seria uma segunda fonte pra divergir.
       reporter: ['text', 'lcovonly'],

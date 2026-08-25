@@ -3,7 +3,7 @@
  * contract-compatible.mjs — esta mudança no `contract/openapi.yaml` quebra quem consome o módulo?
  * Lei dona: specs/arquitetura/02-contrato-e-dados.md §5 ("v1 é estável... consulte o grafo antes").
  *
- *   node tools/contract-compatible.mjs [--desde <ref>] [<module>] [--json]
+ *   node tools/contract-compatible.mjs [--since <ref>] [<module>] [--json]
  *   node tools/contract-compatible.mjs --autoteste
  *
  * O QUE ISTO NÃO É: não é regra de gate. O gate compara UM estado (04-regras.md); isto compara DOIS —
@@ -50,7 +50,7 @@
  *   `git()` é o ÚNICO ponto que roda `git` de verdade — mesmo isolamento de `caminhosAlteradosDesde`
  *   em `affected.mjs`. `execFileSync` sempre com ARRAY de argumentos, nunca `shell: true`: a etapa
  *   anterior deste plano foi reprovada por shell concatenando argumento hostil em comando — aqui o
- *   argumento hostil é a PRÓPRIA ref (`--desde`), e ela nunca toca um interpretador de shell.
+ *   argumento hostil é a PRÓPRIA ref (`--since`), e ela nunca toca um interpretador de shell.
  *
  * CEGUEIRA ≠ COMPATIBILIDADE — a armadilha central. Se `leiturasFalhas` (gate/spec.mjs) disser que
  * `paths:` ou `servers:` de QUALQUER um dos dois lados não pôde ser lido, a resposta NUNCA é
@@ -281,7 +281,7 @@ function refValida(ref) {
 
 /**
  * Repositório com um commit só não tem `HEAD~1` — sem isto, o primeiro pipeline de todo repositório
- * Sarak nasceria vermelho aqui. `--desde` explícito nunca é substituído em silêncio: só o DEFAULT cai
+ * Sarak nasceria vermelho aqui. `--since` explícito nunca é substituído em silêncio: só o DEFAULT cai
  * para a árvore vazia quando não resolve.
  */
 function refEfetiva(desde) {
@@ -343,7 +343,7 @@ function compararModulo(ref, grafo, id) {
 
 function imprimirHumano(ref, resultados) {
   const rotuloRef = ref === ARVORE_VAZIA ? `${ref} (arvore vazia — sem HEAD~1, repositorio novo)` : ref;
-  process.stdout.write(`contrato-compativel: comparando com --desde ${rotuloRef}\n`);
+  process.stdout.write(`contrato-compativel: comparando com --since ${rotuloRef}\n`);
   if (resultados.length === 0) {
     process.stdout.write('  nenhum contract/openapi.yaml mudou nesta area\n');
     return;
@@ -381,7 +381,7 @@ function lerOpcoes(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--autoteste') { opcoes.autoteste = true; continue; }
     if (argv[i] === '--json') { opcoes.json = true; continue; }
-    if (argv[i] === '--desde') { opcoes.desde = argv[i + 1] ?? null; i += 1; continue; }
+    if (argv[i] === '--since') { opcoes.desde = argv[i + 1] ?? null; i += 1; continue; }
     if (!argv[i].startsWith('--')) { opcoes.module = argv[i]; continue; }
   }
   return opcoes;

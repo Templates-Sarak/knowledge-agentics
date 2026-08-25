@@ -103,7 +103,7 @@ código do template, não a uma regra do gate.
 # 6. Extração — a prova que justifica tudo
 
 ```
-node tools/gate/validate.mjs --extracao modules/<module>
+node tools/gate/validate.mjs --extraction modules/<module>
 ```
 
 O comando responde uma pergunta objetiva: **a ESTRUTURA deste módulo permite extraí-lo hoje?** Ele confere que:
@@ -138,13 +138,13 @@ verificável no repositório novo dele.
 
 ```
 node tools/gate/validate.mjs <caminho-do-modulo>    um módulo
-node tools/gate/validate.mjs --todos                laço + as regras globais
-node tools/gate/validate.mjs --extracao <caminho>   pronto para virar serviço?
+node tools/gate/validate.mjs --all                  laço + as regras globais
+node tools/gate/validate.mjs --extraction <caminho> pronto para virar serviço?
 node tools/gate/validate.mjs --json <caminho>       saída para máquina
 ```
 
 Só **duas** regras são genuinamente do repositório e precisam de visão global: `import-lateral` (nenhum módulo
-importa outro) e `consome-ciclo` (não há ciclo no grafo). Ambas rodam no `--todos`.
+importa outro) e `consome-ciclo` (não há ciclo no grafo). Ambas rodam no `--all`.
 
 **O template não traz pipeline de CI/CD**, de propósito: config de CI é específica de provedor, e a regra não
 pode morar num lugar que se perde ao trocar de provedor. O gate é agnóstico e tem contrato estável (recebe
@@ -174,7 +174,7 @@ A fiação, coluna a coluna da tabela de custo:
 | Custo | Hook | O que roda | Alimentado por |
 |---|---|---|---|
 | Milissegundos + segundos | `pre-commit` | gate (`validate.mjs`) nos módulos **afetados** pelo staged, `.env.example` em dia, schemas de portas em dia, formato, lint | `tools/affected.mjs` sobre `git diff --cached --name-only` |
-| Dezenas de segundos | `pre-push` | tipos e testes dos módulos **afetados** desde o upstream | `tools/affected.mjs --desde @{u}` (sem upstream: primeiro push do branch, verifica tudo) |
+| Dezenas de segundos | `pre-push` | tipos e testes dos módulos **afetados** desde o upstream | `tools/affected.mjs --since @{u}` (sem upstream: primeiro push do branch, verifica tudo) |
 
 A lógica de ambos os hooks mora num lugar só, `tools/verify-commit.mjs` — os arquivos
 `.githooks/pre-commit`/`.githooks/pre-push` são idênticos, byte a byte, nos três bindings, e só
@@ -196,7 +196,7 @@ consegue afirmar (04-regras.md §7.2).
 
 `config/verification.json:coverage.minimum` é política real, com verificador real — mas o verificador
 não é o gate, não é o `verificar`/`verify.py`, e não é o hook local. É **CI**, e a decisão foi
-**medida**, não suposta: `npm run cobertura` de um módulo recém-gerado, do zero, levou **~23s** — e a
+**medida**, não suposta: `npm run coverage` de um módulo recém-gerado, do zero, levou **~23s** — e a
 fatia que domina não é rodar o teste (**~0,5s**), é subir o ambiente de cobertura (**~17s** de
 `environment`, istanbul instrumentando `v8`). Multiplicado por módulo, isso estoura em minutos a
 promessa de "segundos"/"dezenas de segundos" que `verificar` e os hooks locais fazem (§7, a tabela de
@@ -207,8 +207,8 @@ O comando, por binding:
 
 | Binding | Comando | O que mede | Onde |
 |---|---|---|---|
-| TS/JS | `npm run cobertura` (por módulo) / `npm run ci:cobertura` (todos, via workspaces) | `vitest run --coverage`, threshold em `coverage.thresholds.lines` lido de `config/verification.json` | CI |
-| Python | `python verify.py --cobertura` | `pytest --cov`, piso em `--cov-fail-under` lido da mesma política | CI |
+| TS/JS | `npm run coverage` (por módulo) / `npm run ci:coverage` (todos, via workspaces) | `vitest run --coverage`, threshold em `coverage.thresholds.lines` lido de `config/verification.json` | CI |
+| Python | `python verify.py --coverage` | `pytest --cov`, piso em `--cov-fail-under` lido da mesma política | CI |
 
 Grava `relatorios/cobertura/lcov.info` (formato lcov, para SonarQube/Codecov/Coveralls) e
 `relatorios/junit.xml` (resultado de teste, formato JUnit). **Nunca** roda em `npm test`/`pytest -q`
@@ -229,8 +229,8 @@ externo, de propósito — é o que o mantém puro e chamável de dentro de um h
 
 | Comando | O que faz | Fail-closed? |
 |---|---|---|
-| `npm run ci:seguranca` / `python verify.py --seguranca` | `.env` real versionado (`git ls-files`) + segredo reconhecido no delta desde `--desde` (default `HEAD~1`) | **Sim** — git mudo ou ref inválida REPROVA, nunca "sem problema" |
-| `npm run ci:dependencias` / `python verify.py --dependencias` | `npm audit --json` / `pip-audit --format=json` contra `config/verification.json:dependencies.minimumSeverity` | Não no sentido de "furo" — ferramenta ausente é **parte do pacote** (npm embute audit; `pip-audit` é `optional-dependencies`), então "ausente" deixou de ser um caso a tolerar: reprova como qualquer outra ferramenta que falta (lei 7) |
+| `npm run ci:security` / `python verify.py --security` | `.env` real versionado (`git ls-files`) + segredo reconhecido no delta desde `--since` (default `HEAD~1`) | **Sim** — git mudo ou ref inválida REPROVA, nunca "sem problema" |
+| `npm run ci:dependencies` / `python verify.py --dependencies` | `npm audit --json` / `pip-audit --format=json` contra `config/verification.json:dependencies.minimumSeverity` | Não no sentido de "furo" — ferramenta ausente é **parte do pacote** (npm embute audit; `pip-audit` é `optional-dependencies`), então "ausente" deixou de ser um caso a tolerar: reprova como qualquer outra ferramenta que falta (lei 7) |
 
 **"Ferramenta ausente REPROVA" matou o fail-open do audit.** A única válvula que sobra é uma exceção
 **nominal, ratificada E DATADA** — `config/compliance.json:exceptionsCve` (§8) — para o caso real que
@@ -245,9 +245,9 @@ formas genéricas (heurística de entropia, "Bearer" solto, "segredo atribuído"
 de conexão): essas produzem falso positivo, e a lei 1 não aceita essa direção. O que fica de fora está
 declarado em `04-regras.md` §7.2, não escondido — é falso negativo, tolerado porque declarado.
 
-**Nenhum dos dois entra em `pre-commit`/`pre-push`/`verificar` local**: `ci:seguranca` precisa de git
-(estado do repositório, não do arquivo em edição) e `ci:dependencias` precisa de rede/registro externo
-— o mesmo motivo, com sinal trocado, que já mantém `ci:contract` e `ci:cobertura` fora da cadeia local.
+**Nenhum dos dois entra em `pre-commit`/`pre-push`/`verificar` local**: `ci:security` precisa de git
+(estado do repositório, não do arquivo em edição) e `ci:dependencies` precisa de rede/registro externo
+— o mesmo motivo, com sinal trocado, que já mantém `ci:contract` e `ci:coverage` fora da cadeia local.
 
 ## 7.4 Exemplo de fiação de CI — de um provedor, não do template
 
@@ -260,21 +260,21 @@ nada inventado, e onde a escada não tem passo, este exemplo não mostra um:
 
 ```
 # 1. local, em segundos — o que roda em pre-commit/pre-push
-npm run validar          # gate --todos
-npm run validar:env      # sincronizar-env --conferir
-npm run formato
+npm run validate          # gate --all
+npm run validate:env      # sincronizar-env --check
+npm run format
 npm run lint
-npm run tipos
+npm run typecheck
 npm test
 
 # 2. selecao — so quando o pipeline quer escopar por commit, nao rodar tudo
-node tools/affected.mjs --desde origin/main
+node tools/affected.mjs --since origin/main
 
 # 3. so CI — custam rede, git de historico, ou dezenas de segundos
 npm run ci:contract      # breaking change no contract/openapi.yaml
-npm run ci:cobertura     # lcov + junit, por modulo
-npm run ci:seguranca     # estagio 0, fail-closed
-npm run ci:dependencias  # audit + excecao datada
+npm run ci:coverage      # lcov + junit, por modulo
+npm run ci:security      # estagio 0, fail-closed
+npm run ci:dependencies  # audit + excecao datada
 
 # 4. artefato — so no binding que emite (TypeScript; JS/Python nao tem este passo, §9)
 npm run build
@@ -321,7 +321,7 @@ roupa** — comando que não faz nada e devolve `0` é tão falso quanto saída 
 `node tools/package.mjs` (`npm run build`) orquestra os dois lados: compila o backend TS onde
 há `tsconfig.build.json` — e **diz que não emite**, sem erro, onde não há (JS/Python) — e constrói o
 front de todo módulo com `web/vite.config.*`, pulando em silêncio informativo quem não tem (nunca falha
-o passo por um módulo sem `web/` — Python molde nenhum, e qualquer módulo criado com `--sem-web`).
+o passo por um módulo sem `web/` — Python molde nenhum, e qualquer módulo criado com `--no-web`).
 
 ## 9.1 O artefato backend é autossuficiente, e a prova é rodá-lo sem o fonte
 
@@ -352,7 +352,7 @@ dev tipicamente não ter `dist/` nenhum na árvore.
 `tsconfig.build.json` (raiz e módulo) **estende** o `tsconfig.json` de tipos — a mesma árvore que é
 tipada é a que é emitida, exceto pelo `include` do módulo, que precisa ser redeclarado (`extends` não
 mescla `include`/`exclude`, substitui) para excluir `web/` e `tests/`: backend não carrega front, e
-teste não viaja com artefato nenhum. `npm run tipos` de cada módulo continua rodando pelo `tsconfig.json`
+teste não viaja com artefato nenhum. `npm run typecheck` de cada módulo continua rodando pelo `tsconfig.json`
 de sempre (`noEmit: true`) — o módulo continua compilando **isolado**, a condição prática da extração
 (§6 deste documento); a emissão não move nem edita esse arquivo.
 

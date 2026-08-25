@@ -3,8 +3,8 @@
  * create-module.mjs — scaffold determinístico de módulo. Lei dona: specs/arquitetura/01-modulo.md §8
  *
  *   node tools/create-module.mjs <id> --role domain|gateway|connector
- *                                     [--binding typescript] [--escopo acme]
- *                                     [--sem-artefato] [--sem-web]
+ *                                     [--binding typescript] [--scope acme]
+ *                                     [--no-artifact] [--no-web]
  *
  * `--role` e OBRIGATORIO e usa o vocabulario do manifesto (ingles), o mesmo de `init_repo.py`.
  *
@@ -57,9 +57,9 @@ function lerOpcoes() {
     id: brutos.find((a) => !a.startsWith('--') && brutos[brutos.indexOf(a) - 1]?.startsWith('--') !== true) ?? brutos[0],
     binding: valorDe('binding', 'typescript'),
     role: valorDe('role', undefined),
-    escopo: valorDe('escopo', null),
-    semArtefato: brutos.includes('--sem-artefato'),
-    semWeb: brutos.includes('--sem-web'),
+    escopo: valorDe('scope', null),
+    semArtefato: brutos.includes('--no-artifact'),
+    semWeb: brutos.includes('--no-web'),
   };
 }
 
@@ -178,7 +178,7 @@ function podarOuFalhar(texto, agulha, contexto) {
 
 /**
  * O teste de domínio importa `core/engine` para exercitar `generateArtifact`.
- * `--sem-artefato` apaga a PASTA e deixa o teste importando o nada — `tsc`/`import` reprova antes
+ * `--no-artifact` apaga a PASTA e deixa o teste importando o nada — `tsc`/`import` reprova antes
  * mesmo do `vitest` rodar. Poda o import E o bloco de teste, por binding; o teste de domínio
  * (`buildRecord`/`build_record`) fica intacto, porque não depende do motor.
  */
@@ -285,7 +285,7 @@ function instalarDependencias(raizProjeto, binding) {
 }
 
 function validarOpcoes(opcoes) {
-  if (opcoes.id === undefined) abortar('uso: create-module.mjs <id> --role domain|gateway|connector [--binding b] [--sem-artefato] [--sem-web]');
+  if (opcoes.id === undefined) abortar('uso: create-module.mjs <id> --role domain|gateway|connector [--binding b] [--no-artifact] [--no-web]');
   if (!/^[a-z][a-z0-9-]*$/.test(opcoes.id)) abortar(`id "${opcoes.id}" invalido — use kebab-case minusculo`);
   if (!BINDINGS.includes(opcoes.binding)) abortar(`binding "${opcoes.binding}" invalido — use ${BINDINGS.join(', ')}`);
   // Sem default: papel adivinhado e escolha feita por quem nao estava la. `init_repo.py` ja recusa
@@ -335,7 +335,7 @@ function principal() {
 }
 
 function finalizar(opcoes, raizProjeto) {
-  // `sync-env.mjs` (sem `--conferir`) MESCLA o `.env` real com as chaves de TODOS os
+  // `sync-env.mjs` (sem `--check`) MESCLA o `.env` real com as chaves de TODOS os
   // manifestos, inclusive as deste modulo novo — nao so o `.env.example`. Ele nunca sobrescreve
   // valor ja preenchido, entao chamar em todo `criar-modulo` (nao so no primeiro) e seguro; e o
   // que faz o `.env` real acompanhar o segundo modulo em diante, o que uma criacao unica (so no

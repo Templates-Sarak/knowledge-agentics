@@ -10,7 +10,7 @@
  * em vez de conferi-la por regra (`generate-lint-config.mjs`). Os DOIS schemas
  * (`tools/gate/schemas/config-ports.schema.json` e a metade `ports.items.enum` de
  * `module.schema.json`) são GERADOS desta lista por `tools/generate-port-schemas.mjs`, com
- * `--conferir` para detectar edição manual — o mesmo padrão do `lint-derivado`.
+ * `--check` para detectar edição manual — o mesmo padrão do `lint-derivado`.
  *
  * O TERCEIRO lugar, `packages/ports/index.{ts,js,py}` de cada binding, **não é gerado**: é
  * interface de LINGUAGEM de verdade (TS/JS/Python, cada um com a própria sintaxe e as próprias

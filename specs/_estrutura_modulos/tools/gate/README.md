@@ -10,8 +10,8 @@ Quem o executa é decisão sua; o que ele promete está aqui.
 
 ```
 node tools/gate/validate.mjs <caminho-do-modulo>   valida UM módulo
-node tools/gate/validate.mjs --todos               todos + as 4 regras globais
-node tools/gate/validate.mjs --extracao <caminho>  vira microsserviço hoje?
+node tools/gate/validate.mjs --all                  todos + as 4 regras globais
+node tools/gate/validate.mjs --extraction <caminho> vira microsserviço hoje?
 node tools/gate/validate.mjs --json <caminho>      saída estruturada
 ```
 
@@ -38,7 +38,7 @@ Se o verificador só funcionasse no repositório inteiro, o módulo extraído pe
 conformidade morreria exatamente no momento em que a arquitetura foi cobrada. Verificar o repositório é um
 **laço** sobre `modules/*`, não uma capacidade separada.
 
-Só **quatro** regras precisam de visão global e por isso rodam apenas no `--todos`: `import-lateral`,
+Só **quatro** regras precisam de visão global e por isso rodam apenas no `--all`: `import-lateral`,
 `tabela-alheia`, `consome-ciclo` e `consome-contrato`.
 
 Regra sobre o **projeto** não é global: ela tem escopo `root`, recebe `ctx.projeto` em vez de um contexto de
@@ -76,8 +76,8 @@ sem erro nenhum. No primeiro commit do projeto, rode `git update-index --chmod=+
 **Qualquer CI** — o passo é o mesmo em qualquer provedor:
 
 ```yaml
-- run: node tools/gate/validate.mjs --todos
-- run: node tools/sync-env.mjs --conferir
+- run: node tools/gate/validate.mjs --all
+- run: node tools/sync-env.mjs --check
 ```
 
 **Divisão por custo**, não por importância:
@@ -95,7 +95,7 @@ ler o `contract/openapi.yaml` de ANTES, via git, e o gate não roda git de prop�
 `tools/contract-compatible.mjs`, ferramenta separada (não regra, não conta para o catálogo):
 
 ```
-node tools/contract-compatible.mjs [--desde <ref>] [<module>] [--json]
+node tools/contract-compatible.mjs [--since <ref>] [<module>] [--json]
 ```
 
 Sem argumento, compara com `HEAD~1` e descobre sozinho quais `contract/openapi.yaml` mudaram. Acha

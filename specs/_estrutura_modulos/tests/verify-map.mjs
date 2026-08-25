@@ -6,7 +6,7 @@
  * motivo de ficar fora de `tools/`: um projeto gerado não gera projeto, e não precisa reverificar o
  * PRÓPRIO mapa depois de instalado).
  *
- *   node tests/verify-map.mjs --conferir <pastaArquitetura>   confere um specs/arquitetura/ real
+ *   node tests/verify-map.mjs --check <pastaArquitetura>   confere um specs/arquitetura/ real
  *   node tests/verify-map.mjs --autoteste                     prova o núcleo com fixtures em memória
  *
  * A TRAVA É O PONTEIRO, NÃO O BYTE: não compara o mapa byte a byte com uma cópia de
@@ -207,9 +207,9 @@ function principal() {
   const argv = process.argv.slice(2);
   if (argv.includes('--autoteste')) return rodarAutoteste();
 
-  const indice = argv.indexOf('--conferir');
+  const indice = argv.indexOf('--check');
   if (indice === -1 || argv[indice + 1] === undefined) {
-    process.stderr.write('uso: node tests/verify-map.mjs --conferir <pastaArquitetura>\n'
+    process.stderr.write('uso: node tests/verify-map.mjs --check <pastaArquitetura>\n'
       + '     node tests/verify-map.mjs --autoteste\n');
     return 1;
   }

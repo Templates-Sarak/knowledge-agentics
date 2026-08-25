@@ -3,7 +3,7 @@
  * generate-port-schemas.mjs — deriva os dois schemas de porta de `ports-vocabulary.mjs`.
  * Lei dona: specs/arquitetura/01-modulo.md §5.1.
  *
- *   node tools/generate-port-schemas.mjs [--conferir]
+ *   node tools/generate-port-schemas.mjs [--check]
  *
  * A fonte é `tools/gate/ports-vocabulary.mjs`, e só ela. Dois arquivos, dois tratamentos:
  *
@@ -16,7 +16,7 @@
  *     `properties.ports.items.enum` é tocada, por SUBSTITUIÇÃO DE TEXTO — o resto do arquivo,
  *     inclusive espaçamento, sai bit a bit igual.
  *
- * `--conferir` não escreve nada: sai 1 se algum dos dois arquivos divergir do que seria gerado, e
+ * `--check` não escreve nada: sai 1 se algum dos dois arquivos divergir do que seria gerado, e
  * nomeia qual.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -67,7 +67,7 @@ function conteudoConfigPortas() {
  *
  * `"ports"` aqui é a CHAVE do manifesto (`module.schema.json`) — não confundir com
  * `config-ports.schema.json`, o arquivo. Os dois lados (este regex e o schema) têm de dizer
- * `"ports"` — se um lado divergir do outro, o padrão nunca casa e `--conferir` reporta OK mesmo
+ * `"ports"` — se um lado divergir do outro, o padrão nunca casa e `--check` reporta OK mesmo
  * com o enum desatualizado, em silêncio.
  */
 function comEnumDePortasAtualizado(textoOriginal, portas) {
@@ -84,7 +84,7 @@ function lerOuNulo(caminho) {
 }
 
 function principal() {
-  const conferir = process.argv.includes('--conferir');
+  const conferir = process.argv.includes('--check');
 
   const configPortasEsperado = conteudoConfigPortas();
   const configPortasEmDisco = lerOuNulo(CAMINHO_CONFIG_PORTAS);

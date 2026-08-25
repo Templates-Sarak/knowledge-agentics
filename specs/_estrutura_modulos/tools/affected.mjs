@@ -6,7 +6,7 @@
  *
  *   node tools/affected.mjs <caminho...>          caminhos por argumento
  *   git diff --name-only | node tools/affected.mjs   caminhos por stdin (sem argumento)
- *   node tools/affected.mjs --desde <ref>          chama `git diff --name-only <ref>`
+ *   node tools/affected.mjs --since <ref>          chama `git diff --name-only <ref>`
  *   node tools/affected.mjs ... --json             saida estruturada em vez de texto
  *   node tools/affected.mjs --autoteste            roda a prova interna (fixtures em memoria)
  *
@@ -56,7 +56,7 @@ function lerTexto(caminho) {
  * tratamento especial. Reusar `listarModulos` em vez de reimplementar significa aceitar a definição
  * dela inteira — e é segura aqui pelo mesmo motivo que é segura no gate: nenhum módulo REAL declara
  * `consumes` apontando pra `_template` (não faria sentido semântico), então o conjunto afetado por
- * uma mudança nele é, na prática, só ele mesmo — o mesmo isolamento que `validate.mjs --todos` já
+ * uma mudança nele é, na prática, só ele mesmo — o mesmo isolamento que `validate.mjs --all` já
  * mostra ao reportar "molde" como uma unidade própria, separada dos módulos reais.
  *
  * A CHAVE do grafo é o NOME DA PASTA, não o `id` de dentro do manifesto. É a mesma chave que
@@ -179,7 +179,7 @@ function classificarCaminho(caminho, grafo) {
   if (primeiro === 'packages') {
     // Medido (Passo 1): módulo importar `packages/ports` é OPCIONAL por projeto (o molde traz
     // cópia local "para ser autossuficiente desde o primeiro teste" — comentário de
-    // `api/src/errors.ts`), e `packages/ui-kit` só entra quando `ui.modo: "kit"`. As duas são
+    // `api/src/errors.ts`), e `packages/ui-kit` só entra quando `ui.mode: "kit"`. As duas são
     // condicionais que só se resolvem PARSEANDO import de cada módulo — a mesma máquina de
     // `isolation.mjs`, que este script não deveria duplicar. Sem essa máquina, não dá pra provar
     // que um módulo NÃO importa `packages/`, e por "erra para mais" a resposta segura é afetar a
@@ -474,15 +474,16 @@ function rodarAutoteste() {
 // ================================================================================================
 
 function lerOpcoes(argv) {
-  const flagsComValor = new Set(['--desde', '--raiz']);
+  const flagsComValor = new Set(['--since', '--root']);
   const opcoes = { autoteste: false, json: false, desde: null, raiz: null, caminhos: [] };
+  const nomeInterno = { since: 'desde', root: 'raiz' };
 
   for (let indice = 0; indice < argv.length; indice += 1) {
     const atual = argv[indice];
     if (atual === '--autoteste') { opcoes.autoteste = true; continue; }
     if (atual === '--json') { opcoes.json = true; continue; }
     if (flagsComValor.has(atual)) {
-      opcoes[atual.slice(2)] = argv[indice + 1] ?? null;
+      opcoes[nomeInterno[atual.slice(2)]] = argv[indice + 1] ?? null;
       indice += 1;
       continue;
     }
@@ -491,7 +492,7 @@ function lerOpcoes(argv) {
   return opcoes;
 }
 
-/** `null` quando não há entrada nenhuma (nem argumento, nem `--desde`, nem stdin com dado). */
+/** `null` quando não há entrada nenhuma (nem argumento, nem `--since`, nem stdin com dado). */
 function lerCaminhosDeEntrada(opcoes, raizProjeto) {
   if (opcoes.desde !== null) return caminhosAlteradosDesde(opcoes.desde, raizProjeto);
   if (opcoes.caminhos.length > 0) return opcoes.caminhos;
@@ -508,7 +509,7 @@ function principal() {
   if (brutos === null) {
     process.stderr.write(
       'uso: node tools/affected.mjs <caminho...>\n'
-      + '     node tools/affected.mjs --desde <ref>\n'
+      + '     node tools/affected.mjs --since <ref>\n'
       + '     <algo que lista arquivos> | node tools/affected.mjs\n'
       + '     node tools/affected.mjs --autoteste\n',
     );

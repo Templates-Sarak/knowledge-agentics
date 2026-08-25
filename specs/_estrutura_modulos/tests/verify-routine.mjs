@@ -191,7 +191,7 @@ function passosCatalogo() {
       // `verify-catalog.mjs` e em `04-regras.md` §7.2.
       nome: 'catalogo — a catraca lei <-> codigo (ids + contagem em tools/**)',
       fn: () => deProcesso(rodarNode([
-        join(AQUI, 'verify-catalog.mjs'), '--conferir',
+        join(AQUI, 'verify-catalog.mjs'), '--check',
         join(RAIZ_TEMPLATE, 'doutrina', '04-regras.md'), join(RAIZ_TEMPLATE, 'tools', 'gate', 'engine.mjs'),
         join(RAIZ_TEMPLATE, 'tools'),
       ], RAIZ_BASE)),
@@ -200,7 +200,7 @@ function passosCatalogo() {
       // PORTAS_CONHECIDAS duplicada a mao em cinco lugares, nada comparava — a mesma disciplina
       // da checagem de ids acima, aplicada ao vocabulario de portas em vez do catalogo de regras.
       nome: 'catalogo — vocabulario de portas identico nas cinco fontes',
-      fn: () => deProcesso(rodarNode([join(AQUI, 'verify-catalog.mjs'), '--conferir-vocabulario', RAIZ_TEMPLATE], RAIZ_BASE)),
+      fn: () => deProcesso(rodarNode([join(AQUI, 'verify-catalog.mjs'), '--check-vocabulary', RAIZ_TEMPLATE], RAIZ_BASE)),
     },
   ];
 }
@@ -288,11 +288,11 @@ function passosProjetoGerado(python) {
   const passos = [
     {
       nome: 'F — create-project.mjs gera o projeto',
-      fn: () => deProcesso(rodarNode([join(RAIZ_TEMPLATE, 'tools', 'create-project.mjs'), destino, '--binding', 'typescript', '--escopo', 'acme'], RAIZ_BASE)),
+      fn: () => deProcesso(rodarNode([join(RAIZ_TEMPLATE, 'tools', 'create-project.mjs'), destino, '--binding', 'typescript', '--scope', 'acme'], RAIZ_BASE)),
     },
     {
-      nome: 'F — verify-map.mjs --conferir no projeto gerado',
-      fn: () => deProcesso(rodarNode([join(AQUI, 'verify-map.mjs'), '--conferir', t('specs', 'arquitetura')], RAIZ_BASE)),
+      nome: 'F — verify-map.mjs --check no projeto gerado',
+      fn: () => deProcesso(rodarNode([join(AQUI, 'verify-map.mjs'), '--check', t('specs', 'arquitetura')], RAIZ_BASE)),
     },
     {
       nome: 'F — nenhum vazamento de "_estrutura_modulos" alem da linha declarada',
@@ -306,20 +306,20 @@ function passosProjetoGerado(python) {
       fn: () => deProcesso(rodarNode([join(destino, 'tools', 'create-module.mjs'), 'catalogo', '--role', 'domain'], destino)),
     },
     {
-      nome: 'G — camada 1: gate --todos no projeto gerado',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'gate', 'validate.mjs'), '--todos'], destino)),
+      nome: 'G — camada 1: gate --all no projeto gerado',
+      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'gate', 'validate.mjs'), '--all'], destino)),
     },
     {
-      nome: 'G — sync-env.mjs --conferir',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'sync-env.mjs'), '--conferir'], destino)),
+      nome: 'G — sync-env.mjs --check',
+      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'sync-env.mjs'), '--check'], destino)),
     },
     {
-      nome: 'G — generate-port-schemas.mjs --conferir',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'generate-port-schemas.mjs'), '--conferir'], destino)),
+      nome: 'G — generate-port-schemas.mjs --check',
+      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'generate-port-schemas.mjs'), '--check'], destino)),
     },
     {
-      nome: 'G — generate-lint-config.mjs --conferir',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'generate-lint-config.mjs'), '--conferir'], destino)),
+      nome: 'G — generate-lint-config.mjs --check',
+      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'generate-lint-config.mjs'), '--check'], destino)),
     },
   ];
   return { passos, limpar: () => rmSync(destino, { recursive: true, force: true }) };

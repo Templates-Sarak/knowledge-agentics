@@ -10,8 +10,8 @@
  * porque a pergunta é a mesma — quem pode depender de quem —, só que na direção complementar:
  * `import-lateral` e `import-adapter` cobram o módulo; estas três cobram a raiz.
  *
- * O `ui.modo` do manifesto tem duas cláusulas (01-modulo.md §7) e só UMA delas ganha regra própria:
- * a do modo `proprio` ("proibido importar componente de outro módulo") **é** a `import-lateral`
+ * O `ui.mode` do manifesto tem duas cláusulas (01-modulo.md §7) e só UMA delas ganha regra própria:
+ * a do modo `own` ("proibido importar componente de outro módulo") **é** a `import-lateral`
  * inteira — o import de `@<escopo>/<vizinho>` e o caminho relativo que sai da pasta. Escrever uma
  * segunda regra para ela daria duas mensagens e um conserto só.
  */
@@ -79,7 +79,7 @@ const COR_LITERAL = new RegExp(
 const FONTE_LITERAL = new RegExp(`\\b(?:${PROPRIEDADES_DE_FONTE.join('|')})\\s*:\\s*['"\`]`);
 
 /**
- * Folha de estilo entra na varredura, e não é detalhe: em `ui.modo: "kit"` ela é o lugar MAIS
+ * Folha de estilo entra na varredura, e não é detalhe: em `ui.mode: "kit"` ela é o lugar MAIS
  * provável de a cor literal aparecer, e `ctx.codigo` é filtrado por extensão de linguagem — sem
  * esta lista, um `.css` nunca chega aqui, e a regra fica limpa exatamente onde o defeito mora.
  *
@@ -281,12 +281,12 @@ function ehImportDoKit(ctx, alvo) {
 /**
  * O modo `kit` se aplica a este módulo? Duas guardas, e as duas silenciam por DESENHO.
  *
- * Modo `proprio` não tem regra aqui (ver o cabeçalho). E módulo sem `web/` é o caso ordinário —
+ * Modo `own` não tem regra aqui (ver o cabeçalho). E módulo sem `web/` é o caso ordinário —
  * descartar a tela é permitido (01-modulo.md §2) e é o que o molde Python faz: cobrar tela de quem
  * decidiu não ter uma seria falso positivo garantido.
  */
 function modoKitSeAplica(ctx) {
-  return ctx.manifesto?.ui?.modo === 'kit' && temArquivoEm(ctx, 'web/');
+  return ctx.manifesto?.ui?.mode === 'kit' && temArquivoEm(ctx, 'web/');
 }
 
 /** O laco de `alvo` isolado do de `import-lateral.verificar` — mesma tecnica das outras familias,
@@ -433,7 +433,7 @@ export default [
         for (const alvo of importesDe(arquivo)) {
           const raiz = raizDoPacote(alvo);
           if (BIBLIOTECAS_DE_UI.some((lib) => raiz === lib || alvo.startsWith(lib))) {
-            achados.push(`${arquivo.rel}: importa a biblioteca de UI bruta "${alvo}" — em ui.modo "kit" o unico ponto de contato com ela e o pacote do kit`);
+            achados.push(`${arquivo.rel}: importa a biblioteca de UI bruta "${alvo}" — em ui.mode "kit" o unico ponto de contato com ela e o pacote do kit`);
           }
         }
       }
@@ -443,7 +443,7 @@ export default [
       const doWeb = ctx.codigo.filter((a) => a.rel.startsWith('web/') && !a.eTeste);
       if (!doWeb.some((a) => importesDe(a).some((alvo) => ehImportDoKit(ctx, alvo)))) {
         const esperado = pacoteDoKit(ctx) ?? '@<escopo>/ui-kit';
-        achados.push(`ui.modo "kit" declarado mas nenhum arquivo de web/ importa o kit ("${esperado}") — declaracao sem consequencia; importe o kit em web/, declare o nome dele em ui.pacote, ou volte a ui.modo "proprio"`);
+        achados.push(`ui.mode "kit" declarado mas nenhum arquivo de web/ importa o kit ("${esperado}") — declaracao sem consequencia; importe o kit em web/, declare o nome dele em ui.pacote, ou volte a ui.mode "own"`);
       }
       return achados;
     },
@@ -549,7 +549,7 @@ export default [
         // `/* ... */`, de uma linha ou de varias, e a linha de continuacao iniciada por `*`.
         for (const { numero, texto } of arquivo.linhasCodigo) {
           if (temLiteralVisual(texto, eEstilo)) {
-            achados.push(`${arquivo.rel}:${numero}: literal de cor ou fonte em declaracao de estilo — em ui.modo "kit" cor e fonte vem de token do kit`);
+            achados.push(`${arquivo.rel}:${numero}: literal de cor ou fonte em declaracao de estilo — em ui.mode "kit" cor e fonte vem de token do kit`);
           }
         }
       }

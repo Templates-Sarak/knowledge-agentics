@@ -24,7 +24,7 @@ import { PADRAO_CREDENCIAL, varrerRaiz } from './operation.mjs';
 // `textoDeCodigo` remove comentario e docstring. Regra que julga CODIGO nao pode ler o texto cru:
 // a chave citada num comentario ("nunca leia MODULO_SEGREDO aqui") vira uso de verdade.
 import { textoDeCodigo } from '../text.mjs';
-// A MESMA função que o `--conferir` do gerador usa. Importar (e não reimplementar) é o que impede
+// A MESMA função que o `--check` do gerador usa. Importar (e não reimplementar) é o que impede
 // a regra e o gerador de divergirem — o defeito que o gerador existe para eliminar, um nível acima.
 import { BINDINGS, saidaDe } from '../../generate-lint-config.mjs';
 
@@ -523,7 +523,7 @@ export default [
      * que nada consome — e é exatamente o vício que esta base já pagou caro com `ui`,
      * `exportsSummary` e `generatesArtifact`.
      *
-     * O `.env.example` em si NÃO é cobrado aqui: `sync-env.mjs --conferir` já o compara com
+     * O `.env.example` em si NÃO é cobrado aqui: `sync-env.mjs --check` já o compara com
      * os manifestos, e roda no `verificar` dos três bindings. Duplicar isso em regra daria duas
      * mensagens para um conserto só.
      */

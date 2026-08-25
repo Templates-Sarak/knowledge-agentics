@@ -3,14 +3,14 @@
  * verify-catalog.mjs — a catraca que falta entre a lei e o código: prova que os ids de regra do
  * `engine.mjs` e as linhas de tabela de `# 4. O catálogo` em `04-regras.md` são o MESMO conjunto —
  * com o terceiro argumento, que nenhum comentário de `tools/**` cita uma contagem defasada — e,
- * com `--conferir-vocabulario`, que o vocabulário de portas é o MESMO nos cinco lugares que o
+ * com `--check-vocabulary`, que o vocabulário de portas é o MESMO nos cinco lugares que o
  * repetem à mão.
  * Lei dona: nenhuma — ferramenta de manutenção do TEMPLATE, como `verify-map.mjs` (mesmo motivo de
  * ficar fora de `tools/`: um projeto gerado não gera catálogo novo, e não precisa reverificar o
  * PRÓPRIO catálogo depois de instalado).
  *
- *   node tests/verify-catalog.mjs --conferir <04-regras.md> <engine.mjs> [<raiz-de-tools>]
- *   node tests/verify-catalog.mjs --conferir-vocabulario <raiz-do-template>
+ *   node tests/verify-catalog.mjs --check <04-regras.md> <engine.mjs> [<raiz-de-tools>]
+ *   node tests/verify-catalog.mjs --check-vocabulary <raiz-do-template>
  *   node tests/verify-catalog.mjs --autoteste   prova o núcleo com fixtures
  *
  * Sem a checagem de ids, a lei podia citar um id que o código não tem — ou o código ganhar um id que a
@@ -34,7 +34,7 @@
  * frases usadas lá (medido) são "N regras com caso" e "N regras suas", sempre no PRESENTE, nunca
  * narrando transição.
  *
- * A checagem de VOCABULÁRIO (`--conferir-vocabulario`) fecha um terceiro primo: o vocabulário de
+ * A checagem de VOCABULÁRIO (`--check-vocabulary`) fecha um terceiro primo: o vocabulário de
  * portas está duplicado à mão em cinco lugares (`ports-vocabulary.mjs` — a "FONTE ÚNICA" segundo o
  * próprio cabeçalho dele —, `module.schema.json:ports.items.enum`, e os três `packages/ports/index.*`
  * de TS/JS/Python), e nada comparava as cinco. **Desde a Onda 3 do `ADR-013`/`ADR-016`, o SÍMBOLO que
@@ -484,8 +484,8 @@ function rodarAutoteste() {
 // ================================================================================================
 
 function uso() {
-  process.stderr.write('uso: node tests/verify-catalog.mjs --conferir <04-regras.md> <engine.mjs> [<raiz-de-tools>]\n'
-    + '     node tests/verify-catalog.mjs --conferir-vocabulario <raiz-do-template>\n'
+  process.stderr.write('uso: node tests/verify-catalog.mjs --check <04-regras.md> <engine.mjs> [<raiz-de-tools>]\n'
+    + '     node tests/verify-catalog.mjs --check-vocabulary <raiz-do-template>\n'
     + '     node tests/verify-catalog.mjs --autoteste\n');
   return 1;
 }
@@ -494,7 +494,7 @@ async function principal() {
   const argv = process.argv.slice(2);
   if (argv.includes('--autoteste')) return rodarAutoteste();
 
-  const indiceVocabulario = argv.indexOf('--conferir-vocabulario');
+  const indiceVocabulario = argv.indexOf('--check-vocabulary');
   if (indiceVocabulario !== -1) {
     if (argv[indiceVocabulario + 1] === undefined) return uso();
     const resultado = conferirVocabulario(resolve(argv[indiceVocabulario + 1]));
@@ -504,7 +504,7 @@ async function principal() {
     return resultado.ok ? 0 : 1;
   }
 
-  const indice = argv.indexOf('--conferir');
+  const indice = argv.indexOf('--check');
   if (indice === -1 || argv[indice + 1] === undefined || argv[indice + 2] === undefined) return uso();
 
   const caminhoDoutrina = resolve(argv[indice + 1]);

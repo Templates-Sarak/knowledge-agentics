@@ -29,7 +29,7 @@
   ],
   "consumes": [],
   "ui": {
-    "modo": "proprio"
+    "mode": "own"
   },
   "permissions": [
     "<module>:ler",

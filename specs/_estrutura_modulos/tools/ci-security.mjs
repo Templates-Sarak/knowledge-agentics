@@ -9,7 +9,7 @@
  * exigiria git ls-files, e o gate não roda git de propósito... O .env que já foi commitado é do passo
  * de CI, fail-closed, e do hook cyber-git-seguro na fronteira do git."* Este arquivo é esse passo.
  *
- *   node tools/ci-security.mjs [--desde <ref>] [--json]
+ *   node tools/ci-security.mjs [--since <ref>] [--json]
  *   node tools/ci-security.mjs --autoteste
  *
  * NÃO é regra de gate: compara ESTADO DO GIT (rastreados, delta), o gate não roda git de propósito.
@@ -182,7 +182,7 @@ function refValida(ref) {
 
 /**
  * Repositório com um commit só não tem `HEAD~1` — sem isto, o PRIMEIRO pipeline de todo repositório
- * Sarak nasce vermelho aqui (medido no teste real). `--desde` explícito
+ * Sarak nasce vermelho aqui (medido no teste real). `--since` explícito
  * NUNCA é substituído em silêncio: só o DEFAULT cai para a árvore vazia quando não resolve — uma ref
  * que o usuário escolheu errada continua reprovando, para não esconder o erro dele.
  */
@@ -283,7 +283,7 @@ function imprimirHumano(r) {
     return;
   }
   const rotuloRef = r.ref === ARVORE_VAZIA ? `${r.ref} (arvore vazia — sem HEAD~1, repositorio novo)` : r.ref;
-  process.stdout.write(`ci-seguranca: comparando com --desde ${rotuloRef}\n`);
+  process.stdout.write(`ci-seguranca: comparando com --since ${rotuloRef}\n`);
   if (r.situacao === 'delta-vazio') {
     process.stdout.write('  delta vazio — nada mudou nesta execucao (diferente de "nao verifiquei": o git respondeu, e a resposta foi "nada")\n');
   }
@@ -321,7 +321,7 @@ function lerOpcoes(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--autoteste') { opcoes.autoteste = true; continue; }
     if (argv[i] === '--json') { opcoes.json = true; continue; }
-    if (argv[i] === '--desde') { opcoes.desde = argv[i + 1] ?? null; i += 1; continue; }
+    if (argv[i] === '--since') { opcoes.desde = argv[i + 1] ?? null; i += 1; continue; }
   }
   return opcoes;
 }

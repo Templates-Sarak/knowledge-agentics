@@ -313,8 +313,8 @@ export const CASOS = [
   },
   {
     regra: 'ui-kit',
-    descricao: 'ui.modo kit importando biblioteca de UI bruta',
-    // Liga `ui.modo: "kit"` no manifesto: os moldes nascem `proprio`, entao depender do default
+    descricao: 'ui.mode kit importando biblioteca de UI bruta',
+    // Liga `ui.mode: "kit"` no manifesto: os moldes nascem `own`, entao depender do default
     // deixaria as duas regras de UI sem exercicio nenhum.
     //
     // Um id so, e nao dois achados de ids diferentes: as DUAS clausulas do `ui-kit` disparam aqui
@@ -324,7 +324,7 @@ export const CASOS = [
     // No molde Python o arquivo estoura ENOENT (nao ha `web/`) e o runner marca SEM COBERTURA. E o
     // correto: la a regra silencia por desenho, e "sem cobertura" nao e aprovacao.
     mutar: (m) => {
-      m.manifesto((x) => ({ ...x, ui: { ...x.ui, modo: 'kit' } }));
+      m.manifesto((x) => ({ ...x, ui: { ...x.ui, mode: 'kit' } }));
       m.escrever(
         'web/src/components/Bruto.tsx',
         "import { Button } from '@mui/material';\nexport const Botao = Button;\n",
@@ -338,7 +338,7 @@ export const CASOS = [
     // caso deixaria de provar qual das duas regras esta viva. `<escopo>` e trocado em memoria pelo
     // carregador do contexto, entao o import vale nos tres bindings.
     mutar: (m) => {
-      m.manifesto((x) => ({ ...x, ui: { ...x.ui, modo: 'kit' } }));
+      m.manifesto((x) => ({ ...x, ui: { ...x.ui, mode: 'kit' } }));
       m.escrever(
         'web/src/components/Cores.tsx',
         "import { Caixa } from '@<escopo>/ui-kit';\n"
@@ -352,11 +352,11 @@ export const CASOS = [
     descricao: 'literal de cor em folha de estilo (.css), que nao e arquivo de codigo',
     // O `.css` nao entra em `ctx.codigo` (filtrado por extensao de linguagem), entao sem esta
     // varredura ele nunca chega a regra — e `color: #ff0000` em CSS e `propriedade: valor`, a
-    // forma exata que o recorte persegue. Fica limpo onde, em `ui.modo: "kit"`, a cor mais vive.
+    // forma exata que o recorte persegue. Fica limpo onde, em `ui.mode: "kit"`, a cor mais vive.
     //
     // O `.tsx` importa o kit para a clausula (b) do `ui-kit` nao acusar junto: este caso emite UM id.
     mutar: (m) => {
-      m.manifesto((x) => ({ ...x, ui: { ...x.ui, modo: 'kit' } }));
+      m.manifesto((x) => ({ ...x, ui: { ...x.ui, mode: 'kit' } }));
       m.escrever(
         'web/src/components/DoKit.tsx',
         "import { Caixa } from '@<escopo>/ui-kit';\nexport const C = Caixa;\n",

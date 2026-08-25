@@ -3,7 +3,7 @@
  * generate-lint-config.mjs — deriva a config do linter dos limiares do gate.
  * Lei dona: specs/arquitetura/04-regras.md §4.7
  *
- *   node tools/generate-lint-config.mjs [--binding b] [--destino dir] [--conferir]
+ *   node tools/generate-lint-config.mjs [--binding b] [--target dir] [--check]
  *
  * A fonte é `tools/gate/thresholds.mjs`, e só ela. O linter e o gate cobram os MESMOS três
  * números porque um é gerado do outro — se cada lado guardasse a sua cópia, a precedência do
@@ -15,7 +15,7 @@
  * determinístico e re-executável: rodar duas vezes produz byte idêntico, e é o que permite a uma
  * regra do gate comparar o disco com a saída dele e acusar a deriva.
  *
- * `--conferir` não escreve nada: sai 1 se o disco divergir do que seria gerado.
+ * `--check` não escreve nada: sai 1 se o disco divergir do que seria gerado.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -155,7 +155,7 @@ function ruffConfig() {
 /**
  * Qual arquivo cada binding gera, e com que conteúdo. PURA: não toca disco, não lê argumento.
  *
- * É exportada porque a regra `lint-derivado` do gate precisa da MESMA resposta que o `--conferir`
+ * É exportada porque a regra `lint-derivado` do gate precisa da MESMA resposta que o `--check`
  * daqui. Uma segunda cópia da lógica seria uma segunda fonte da verdade — o defeito exato que este
  * gerador existe para eliminar, reencenado um nível acima. Por isso o CLI abaixo só roda quando
  * este arquivo é o entrypoint: importá-lo tem de ser inerte.
@@ -191,11 +191,11 @@ function lerOpcoes() {
     const indice = brutos.indexOf(`--${nome}`);
     return indice === -1 ? null : brutos[indice + 1];
   };
-  const destino = resolve(process.cwd(), valorDe('destino') ?? acharRaizProjeto());
+  const destino = resolve(process.cwd(), valorDe('target') ?? acharRaizProjeto());
   return {
     destino,
     binding: valorDe('binding') ?? detectarBinding(destino),
-    conferir: brutos.includes('--conferir'),
+    conferir: brutos.includes('--check'),
   };
 }
 

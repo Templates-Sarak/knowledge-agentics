@@ -64,9 +64,9 @@
     "ui": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["modo"],
+      "required": ["mode"],
       "properties": {
-        "modo": { "type": "string", "enum": ["proprio", "kit"] },
+        "mode": { "type": "string", "enum": ["own", "kit"] },
         "pacote": { "type": "string", "minLength": 1 }
       }
     },

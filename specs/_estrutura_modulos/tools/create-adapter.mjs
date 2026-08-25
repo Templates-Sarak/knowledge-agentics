@@ -265,7 +265,7 @@ function rodarGate(raizProjeto) {
   try {
     process.stdout.write(execFileSync(
       process.execPath,
-      [join(raizProjeto, 'tools', 'gate', 'validate.mjs'), '--todos'],
+      [join(raizProjeto, 'tools', 'gate', 'validate.mjs'), '--all'],
       { encoding: 'utf8', cwd: raizProjeto },
     ));
   } catch (causa) {

@@ -83,7 +83,7 @@ adapter, do mesmo jeito que sempre escreveu para qualquer outro fornecedor (01-m
 | Package | Papel |
 |---|---|
 | `ports/` | interfaces canônicas das portas + taxonomia fechada de erro |
-| `ui-kit/` | ponto único de contato com a biblioteca de UI — só em projeto com `ui.modo: "kit"` |
+| `ui-kit/` | ponto único de contato com a biblioteca de UI — só em projeto com `ui.mode: "kit"` |
 
 Regra de negócio **nunca** entra aqui. Se dois módulos precisam da mesma regra, **duplica-se**.
 

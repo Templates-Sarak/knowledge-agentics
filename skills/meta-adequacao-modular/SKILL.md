@@ -278,8 +278,8 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
   `eslint`/`tsc`/`prettier`, e as seis armadilhas medidas.
 - `references/templates.md` — os sete itens de renomeação (+ raio de alcance), checklist de
   `_estrutura_base`, esqueleto de plan `xx-*`, exceção em `compliance.json` e relatório da Fase B.
-- `references/examples.md` — dois cenários percorridos ponta a ponta, e o resultado do legado sintético
-  usado para validar esta skill.
+- `references/examples.md` — os três caminhos (`sem-specs`/`specs-divergentes`/`com-specs`) percorridos
+  ponta a ponta, e o resultado do legado sintético usado para validar esta skill.
 - `scripts/diagnosticar_terreno.py` — diagnóstico mecânico: fase, caminho tri-estado (`sinais_sdd`),
   branch/árvore suja, aparato do template (oito peças, `equivalentes_suspeitos` sob outro nome), colisão
   só quando é legado de verdade, geração do template e candidatos a módulo. `--autoteste` prova o núcleo.
