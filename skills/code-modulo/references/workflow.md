@@ -22,7 +22,7 @@ binding (`package.json`, `pyproject.toml`, `tsconfig.json`, `jsconfig.json`, `.g
 |---|---|
 | Diretório vazio ou repositório recém-criado | siga |
 | Já tem `modules/` | é o **Fluxo B**, não este |
-| Já tem `package.json`/`pyproject.toml` de um projeto em andamento | **pare e pergunte.** `--forcar` sobrescreve; o `.gitignore` é mesclado, mas o manifesto de pacote **não** |
+| Já tem `package.json`/`pyproject.toml` de um projeto em andamento | **pare e pergunte.** `--force` sobrescreve; o `.gitignore` é mesclado, mas o manifesto de pacote **não** |
 
 ## A2: Entrevista
 
@@ -43,7 +43,7 @@ tocado**. Aguarde confirmação explícita.
 ## A4: Instanciar
 
 ```
-node <template>/tools/create-project.mjs <destino> --binding <b> --escopo <e>
+node <template>/tools/create-project.mjs <destino> --binding <b> --scope <e>
 ```
 
 Nasce com: `tools/` (o gate), `packages/ports`, `adapters/memory` (**obrigatório** — é o que permite
@@ -70,11 +70,11 @@ pago, e o `conector` **por último** — ele agrega os outros e precisa que exis
 ## A7: Verificar
 
 ```
-node tools/gate/validate.mjs --todos          # inclui import-lateral e consome-ciclo
+node tools/gate/validate.mjs --all            # inclui import-lateral e consome-ciclo
 npm run verify                                # ou: python verify.py
 ```
 
-O `--todos` é o único que enxerga as duas regras **globais**. Rodar só o gate por módulo deixa passar
+O `--all` é o único que enxerga as duas regras **globais**. Rodar só o gate por módulo deixa passar
 exatamente o acoplamento que a arquitetura existe para impedir.
 
 ---
@@ -137,7 +137,7 @@ resposta ambígua.
 **Objetivo:** materializar a árvore canônica sem digitar caminho à mão.
 
 ```
-node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]
+node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--no-artifact]
 ```
 
 O script copia o molde do binding, substitui os marcadores (`<module>`, `<MODULE>`, `<Module>`), ajusta o
@@ -263,7 +263,7 @@ Depois, preencha os **valores reais** no `.env` da **raiz**.
 
 ```
 node tools/gate/validate.mjs modules/<id>
-node tools/gate/validate.mjs --extracao modules/<id>
+node tools/gate/validate.mjs --extraction modules/<id>
 ```
 
 O segundo comando responde a pergunta que justifica a arquitetura inteira: **este módulo vira microsserviço

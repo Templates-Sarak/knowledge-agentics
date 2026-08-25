@@ -117,11 +117,11 @@ da campanha, ao lado do número de exceções em `compliance.json`.
 
 | Verificação | Resultado |
 |---|---|
-| `validate.mjs --todos` | <0 erros / N erros> |
+| `validate.mjs --all` | <0 erros / N erros> |
 | `verify` / `verify.py` | <exit 0 / falhou em ...> |
 | Exceções em `compliance.json` | <N previstas / N encontradas — divergência: ...> |
 | Caminhos ignorados (lint/prettier) | <== declarado / divergência: ...> |
-| `validate.mjs --extracao <module>` por módulo tocado | <0 erros / lista> |
+| `validate.mjs --extraction <module>` por módulo tocado | <0 erros / lista> |
 | `specs/plan/` sem `xx-*` pendente | <sim / pendentes: ...> |
 
 **Julgamento humano — as specs continuam verdadeiras em relação ao código?** <sim/não + evidência>

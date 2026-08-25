@@ -29,7 +29,7 @@ arquitetura de módulos instalada, o fluxo SDD montado, os primeiros módulos cr
 6. .agents/ + hooks de git      gate de segredos + auto-índice (script), COMPOSTO com o
                                 pre-commit/pre-push do template de módulos (§1 do gate) — nunca um
                                 substituindo o outro
-7. gate --todos                 não encerra vermelho
+7. gate --all                   não encerra vermelho
 ```
 
 **A doutrina não vira árvore paralela.** Ela é a spec de arquitetura do projeto e cai dentro de `specs/`.
@@ -78,7 +78,7 @@ sobrescreve o manifesto de pacote do projeto — o `.gitignore` é mesclado, mas
 Essa decisão é do usuário, nunca sua.
 
 ### 4. Verificar
-O próprio script roda `validate.mjs --todos` ao final. Rode também o comando composto do binding
+O próprio script roda `validate.mjs --all` ao final. Rode também o comando composto do binding
 (`npm run verify` ou `python verify.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
 
 Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito — o passo 6 do script
@@ -133,5 +133,5 @@ que o script escreve já é o final — nada a fazer aqui.
 - [ ] `.agents/` com `gerar_indice.py`, `core.hooksPath` apontando para `.githooks`, e — em projeto
       modular — `.githooks/pre-commit` com o gate de segredos **e** `verify-commit.mjs` do template
       compostos (nunca um sobrescrevendo o outro), `.githooks/pre-push` intacto?
-- [ ] `validate.mjs --todos` verde?
+- [ ] `validate.mjs --all` verde?
 - [ ] Pendências de HITL comunicadas (`.env`, `00-contexto.md`, ADRs, primeiro commit)?

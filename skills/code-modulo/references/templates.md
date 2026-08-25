@@ -230,7 +230,7 @@ Toda tabela tem `id`, `hash`, `created_at`, `updated_at`, RLS ligado e bloco `--
 | Consome | `<outro>` via `GET /<recurso>` \| nenhum |
 | Env acrescentada | `<ID>_API_PORT`, `<ID>_DB_URL` — **valores pendentes no `.env` da raiz** |
 
-**Gate:** `validate` ✅ · `validate --extracao` ✅
+**Gate:** `validate` ✅ · `validate --extraction` ✅
 
 **Pendente**
 - [ ] Preencher os valores das chaves novas no `.env` da raiz

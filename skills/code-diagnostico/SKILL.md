@@ -58,7 +58,7 @@ Se o repositório tem `modules/*/module.json` e `tools/gate/`, **não refaça à
 máquina**:
 
 ```
-node tools/gate/validate.mjs --todos --json
+node tools/gate/validate.mjs --all --json
 ```
 
 Cada achado já vem com o **id da regra** — use-o direto como `regra` da violação. Depois, diagnostique **só o

@@ -136,7 +136,7 @@ que reprovam no gate e que o gate não conserta sozinho. A porta é a skill **`c
 
 **Nível 1 — a verificação por máquina.** Não confira de cabeça o que o gate cobra melhor:
 - [ ] `node tools/gate/validate.mjs <caminho-do-modulo>` verde?
-- [ ] `node tools/gate/validate.mjs --todos` verde (inclui `import-lateral` e `consome-ciclo`)?
+- [ ] `node tools/gate/validate.mjs --all` verde (inclui `import-lateral` e `consome-ciclo`)?
 - [ ] Projeto **sem** o template de módulos? Então o Nível 1 não se aplica — só a lista acima vale.
 
 **Nível 2 — o idioma da linguagem:** `padrao-typescript` · `padrao-python`. São as duas com idioma documentado

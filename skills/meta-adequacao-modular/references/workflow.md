@@ -35,7 +35,7 @@ caminho comum sozinho.
 | `sinais_sdd` | nomes de `SINAIS_SDD` (`INDEX.md`, `00-indice.md`, `plan`, `adr`, `arquitetura`, …) achados como entrada de `specs/` do alvo — só relevante quando `caminho != "com-specs"` | é o que fundamenta `specs-divergentes`; confira cada nome contra o que a spec canônica esperaria no lugar |
 | `branch` | lido de `.git/HEAD` (sem chamar `git`); `arvore_suja` vem de `git status --porcelain` | `e_padrao: true` → **pare**, vá ao portão de branch. `atual` vazio/`"(destacado)"` e `arvore_suja: null` significam **não sei** — pergunte, não presuma |
 | `template_instalado` | **lido antes do Passo 3.** As oito peças do aparato (`tools/gate/validate.mjs`, `tools/create-module.mjs`, `project.json`, `packages/ports`, `adapters/memory`, `config`, `.githooks`, `modules/_template`) — quantas existem já | `nao-instalado` → Passo 3 instala tudo; `parcial` → instala só `faltando`; `completo` + sem candidatos → **pare**, nada a planejar |
-| `colisao_raiz` | `package.json`/`pyproject.toml`/`.gitignore` que colidiriam com o scaffold — **só reportado quando `template_instalado.estado == "nao-instalado"`** (senão são o próprio scaffold do template, não legado) | HITL — nunca `--forcar` sem autorização; mesclar `scripts`/`workspaces` na mão |
+| `colisao_raiz` | `package.json`/`pyproject.toml`/`.gitignore` que colidiriam com o scaffold — **só reportado quando `template_instalado.estado == "nao-instalado"`** (senão são o próprio scaffold do template, não legado) | HITL — nunca `--force` sem autorização; mesclar `scripts`/`workspaces` na mão |
 | `geracao_antiga` | achou `ferramentas/`/`modulos/`/`projeto.json` — nomes de **duas renomeações atrás do próprio template** | isto é migração de versão do template, **não** adequação de legado puro — não confunda os dois diagnósticos |
 | `workspaces_legado` | `workspaces` declarado no `package.json`, **menos** as entradas que já são o trio canônico do template (`modules/[a-z]*`, `packages/*`, `adapters/*`) — só sobra o que é legado de verdade | mesclar é do usuário (armadilha #2 abaixo) |
 | `hooks_legado` | achou `.husky/` ou `husky`/`lint-staged` no `package.json` | terceiro caso de composição de `pre-commit` (armadilha #3) |
@@ -47,7 +47,7 @@ caminho comum sozinho.
 `create-project.mjs` + `create-module.mjs` — 100% conforme — tinha `colisao_raiz: [".gitignore",
 "package.json"]` e `workspaces_legado: ["modules/[a-z]*", "packages/*", "adapters/*"]` na versão anterior
 deste script: os dois eram os próprios arquivos do template, apontando o usuário para o portão de HITL mais
-caro (`--forcar`) sobre um repositório que não precisava de nada. Medido reproduzindo exatamente
+caro (`--force`) sobre um repositório que não precisava de nada. Medido reproduzindo exatamente
 `create-project.mjs --binding typescript` + `create-module.mjs catalogo --role domain` e rodando o
 diagnóstico em cima.
 
@@ -226,7 +226,7 @@ Depois de instalar (as peças que `template_instalado.faltando` listava — nunc
 que já existe), rode:
 
 ```
-node tools/gate/validate.mjs --todos
+node tools/gate/validate.mjs --all
 ```
 
 Isto **vai** dar vermelho — é o resultado correto no dia 1. Cada violação relatada se torna uma linha em
@@ -271,7 +271,7 @@ regra só estava no lugar errado do fluxo de leitura. Prompt de execução, de c
 
 ## § 4 — as seis armadilhas medidas
 
-1. **`--forcar` sobrescreve `package.json`.** Todo legado tem um. Nunca use `--forcar` sem autorização
+1. **`--force` sobrescreve `package.json`.** Todo legado tem um. Nunca use `--force` sem autorização
    explícita — mescle `scripts` manualmente na colisão.
 2. **`workspaces: ["modules/[a-z]*", ...]` já existe** em monorepo legado. Mesclar com o que o template
    precisa é decisão do usuário, não automatizável — os dois arrays podem convergir ou não.

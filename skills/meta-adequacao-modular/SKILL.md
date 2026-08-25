@@ -146,7 +146,7 @@ Ordem, e nenhuma delas espera pelo passo 5:
    só; `ENV_ROOT=../../.env` quebra com um nível a mais).
 3. **Confira antes se o alvo proíbe exceção** própria em `compliance.json` (medido: campanha
    auto-reprovada por norma do prompt de revisor — se proibir, é portão de HITL). Rode
-   `node tools/gate/validate.mjs --todos` e **deixe vermelho honesto**; converta cada violação em exceção
+   `node tools/gate/validate.mjs --all` e **deixe vermelho honesto**; converta cada violação em exceção
    nominal (`module`+`rule`+`reason`+`decision` com ADR **real**) — a métrica é o número de exceções.
 4. Ponha a área ainda-não-migrada **fora de escopo de lint/tipos, declarada e encolhendo** (o
    `eslint`/`tsc`/`prettier` não têm dívida — §7 abaixo); "caminhos ignorados" é a segunda métrica.
@@ -199,11 +199,11 @@ mecânica acima já aponta Fase B (todas as `xx-*` são `🟢`/`⚪`).
 
 ### Passo 7 — critério mecânico, quase todo máquina
 ```
-node tools/gate/validate.mjs --todos            → 0 erros
+node tools/gate/validate.mjs --all              → 0 erros
 npm run verify  (ou python verify.py)        → exit 0
 exceções reais em compliance.json             == as previstas no plano da Fase A
 caminhos ignorados (lint/prettier)              == os declarados no passo 3
-node tools/gate/validate.mjs --extracao <module> → 0 erros, por módulo tocado
+node tools/gate/validate.mjs --extraction <module> → 0 erros, por módulo tocado
 specs/plan/ sem nenhuma "xx-*" pendente          (todas sintetizadas e expurgadas)
 ```
 Com isso mecânico, o **único** julgamento do revisor é o que máquina não confere: **as specs continuaram
@@ -223,7 +223,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 | a fronteira da área legada (fora de lint/tipos) | define o que fica sem cobertura, e por quanto tempo |
 | ordem de execução (o `nn` das plans) | trade-off risco × valor |
 | antes de qualquer migração SQL | backup — já é regra da `db-migrations` |
-| colisão de `package.json`/`pyproject.toml` (só quando `template_instalado.estado == "nao-instalado"`) | mesclar scripts; **NUNCA `--forcar`** sem autorização |
+| colisão de `package.json`/`pyproject.toml` (só quando `template_instalado.estado == "nao-instalado"`) | mesclar scripts; **NUNCA `--force`** sem autorização |
 | branch e primeiro commit da campanha | irreversível e externo |
 | o plano completo, antes de escrever qualquer plan | o gate de "confirma?" que encerra a Fase A |
 

@@ -18,7 +18,7 @@ nome bate `^[a-z][a-z0-9-]*$` e qual seria o kebab-case sugerido.
 `package.json`/`.gitignore` — que sao o PROPRIO scaffold do template, copiados por
 `bindings/<binding>/root/` — e `workspaces_legado` acusava `["modules/[a-z]*", "packages/*",
 "adapters/*"]`, que e exatamente o `workspaces` que o template escreve. Os dois apontavam o usuario para
-o portao de HITL mais caro (`--forcar`) sobre um repositorio que nao precisava de nada. Medido, nao
+o portao de HITL mais caro (`--force`) sobre um repositorio que nao precisava de nada. Medido, nao
 suposto: rodar este script contra a saida de `create-project.mjs --binding typescript` +
 `create-module.mjs catalogo --role domain` reproduzia os dois falsos positivos byte a byte.
 
@@ -268,11 +268,11 @@ def gerar_candidatos_equivalentes(marcador: str) -> list:
 
 
 def detectar_colisao_raiz(entradas_raiz: set, estado_template: str) -> list:
-    """Manifestos que o create-project/create-module abortariam ao encontrar sem `--forcar` — SO
+    """Manifestos que o create-project/create-module abortariam ao encontrar sem `--force` — SO
     quando o aparato do template ainda nao existe ali (`estado_template == "nao-instalado"`). Uma vez
     que qualquer peca do template ja esta presente (parcial ou completo), `package.json`/`.gitignore`/
     `pyproject.toml` sao o PROPRIO scaffold do template (copiados por `bindings/<binding>/root/`), nao
-    legado colidindo — sinalizar colisao ali aponta o usuario para o `--forcar` sobre nada."""
+    legado colidindo — sinalizar colisao ali aponta o usuario para o `--force` sobre nada."""
     if estado_template != "nao-instalado":
         return []
     return sorted(entradas_raiz & set(ENTRADAS_DE_COLISAO))

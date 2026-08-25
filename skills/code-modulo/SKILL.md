@@ -43,7 +43,7 @@ do projeto quando ele existe — leia `module.json` de um vizinho antes de abrir
 Detalhe de cada passo em `references/workflow.md` §A.
 
 1. **Confirmar o terreno** — diretório vazio ou repositório sem `modules/`. Se já houver `package.json`,
-   `pyproject.toml` ou `.gitignore`, o `create-project` **aborta**: decida com o usuário antes de `--forcar`.
+   `pyproject.toml` ou `.gitignore`, o `create-project` **aborta**: decida com o usuário antes de `--force`.
 2. **Entrevista** — o bloco A de `references/templates.md`:
 
    | Bloco | Extrai |
@@ -57,12 +57,12 @@ Detalhe de cada passo em `references/workflow.md` §A.
 
 3. **HITL — plano** — a árvore que será criada, os módulos, e **o que não será tocado**.
    → "⚠️ Confirma?" **Aguarde.**
-4. **Instanciar** — `node <template>/tools/create-project.mjs <destino> --binding <b> --escopo <e>`.
+4. **Instanciar** — `node <template>/tools/create-project.mjs <destino> --binding <b> --scope <e>`.
    A doutrina cai em `specs/arquitetura/`; as decisões, em `specs/adr/000-decisoes-do-template.md`.
 5. **Registrar as decisões do projeto** — idioma das pastas, topologia de schema e `ui.modo` viram ADR novo
    em `specs/adr/`, não comentário solto.
 6. **Criar cada módulo** — repita o Fluxo B para cada um, na ordem: `conector` por último (ele agrega os outros).
-7. **Verificar** — `validate.mjs --todos` + o comando `verificar` do binding. **Não encerre vermelho.**
+7. **Verificar** — `validate.mjs --all` + o comando `verificar` do binding. **Não encerre vermelho.**
 8. **Reportar** — árvore criada, módulos, decisões registradas, o que ficou pendente.
 
 ---
@@ -84,14 +84,14 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
    | Segurança | `permissions`, `publicRoutes` (opt-in, **método incluso**), `sensitiveFields`, `requiredEnv` |
 
 3. **HITL — plano** → "⚠️ Confirma a criação do módulo `<id>`?" **Aguarde.**
-4. **Scaffold** — `node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]`.
+4. **Scaffold** — `node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--no-artifact]`.
 5. **Declarar no manifesto** — `data`, `requiredEnv`, `ports`, `consumes`, `permissions`, `publicRoutes`,
    `sensitiveFields`, `navigation`. **Não declarado, não existe** — é daqui que o gate lê.
 6. **Contrato antes do código** — `contract/openapi.yaml` **primeiro**, com `/health`, `/meta` e `/resumo`.
 7. **Preencher nesta ordem** — `core/domain` → `api/src/routes` → `api/src/mappers` (saída por
    **allowlist**) → `database/` (migration com `-- rollback`) → `web/src/pages` → `tests/`.
 8. **Sincronizar ambiente** — `node tools/sync-env.mjs`; valores reais no `.env` da **raiz**.
-9. **Gate verde** — `validate.mjs modules/<id>` **e** `validate.mjs --extracao modules/<id>`.
+9. **Gate verde** — `validate.mjs modules/<id>` **e** `validate.mjs --extraction modules/<id>`.
 10. **Reportar** — id, role, binding, rotas, tabelas, portas, `consumes` e pendências.
 
 ---
@@ -124,7 +124,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 - [ ] `consumes` sem ciclo, e cada gateway com a sua entrada declarada?
 - [ ] `.env.example` gerado pelo script (não editado à mão) e valores no `.env` da raiz?
 - [ ] Testes de domínio e de contrato rodando **sem rede e sem banco** (adapters de memória)?
-- [ ] `validate <module>` e `validate --extracao <module>` verdes? (Fluxo A: também `--todos`.)
+- [ ] `validate <module>` e `validate --extraction <module>` verdes? (Fluxo A: também `--all`.)
 - [ ] Fluxo A: decisões do projeto (idioma, schema, `ui.modo`) registradas em `specs/adr/`?
 
 ## Referências (Camada 3 — leia sob demanda)

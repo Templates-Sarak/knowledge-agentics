@@ -73,8 +73,8 @@ As quatro fronteiras que a tornam verdadeira, cada uma com regra de gate própri
 | Criar um sistema modular do zero | skill **`code-modulo`** (Fluxo A) — ou `/sarak:meta-iniciar-repositorio`, que faz a inicialização completa |
 | Criar um módulo num projeto que já adota o template | skill **`code-modulo`** (Fluxo B) |
 | Saber se o que escrevi está conforme | `node tools/gate/validate.mjs <caminho-do-modulo>` |
-| Verificar o repositório inteiro | `node tools/gate/validate.mjs --todos` |
-| Saber se um módulo já pode virar serviço | `node tools/gate/validate.mjs --extracao <caminho>` |
+| Verificar o repositório inteiro | `node tools/gate/validate.mjs --all` |
+| Saber se um módulo já pode virar serviço | `node tools/gate/validate.mjs --extraction <caminho>` |
 | Adequar um projeto **legado** que não segue o template | skill `code-diagnostico` → `code-adequacao` |
 
 **Ninguém cria módulo copiando a pasta do molde à mão.** Módulo manual nasce sem manifesto e com nome

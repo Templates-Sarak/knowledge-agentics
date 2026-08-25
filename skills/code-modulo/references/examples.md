@@ -14,7 +14,7 @@ preço vigente de cada item para outros módulos e tem tela própria. Não gera 
 1. **Terreno confirmado** — `tools/` e `modules/` presentes; `specs/arquitetura/01-modulo.md` lido.
 2. **Identidade coletada e aprovada no HITL** — `id: catalogo`, `role: domain`, `binding: typescript`,
    `webPath: /catalogo`, `ui.modo: kit`, `generatesArtifact: false`.
-3. **Scaffold** — `node tools/create-module.mjs catalogo --binding typescript --role domain --sem-artefato`.
+3. **Scaffold** — `node tools/create-module.mjs catalogo --binding typescript --role domain --no-artifact`.
 4. **Contrato escrito antes do código**, com `/itens/{hash}/preco-vigente` — o endpoint que outros módulos
    vão consumir.
 5. **Código preenchido na ordem**, com a regra de preço resolvida no `core/domain` do dono do dado.
@@ -38,7 +38,7 @@ modules/catalogo/
 ```
 $ node tools/gate/validate.mjs modules/catalogo
 catalogo: 0 erro(s), 0 aviso(s)
-$ node tools/gate/validate.mjs --extracao modules/catalogo
+$ node tools/gate/validate.mjs --extraction modules/catalogo
 extracao: OK — 1 modulo(s), 0 erro(s)
 ```
 

@@ -40,7 +40,7 @@ rodado sobre um legado sintético construído só para validar esta skill — ne
   achado sob `specs/` do alvo, então não há ambiguidade com `specs-divergentes` (exemplo 2).
 - `template_instalado.estado: "nao-instalado"` → o Passo 3 instala o aparato inteiro (nenhuma das oito
   peças existe ainda) — é o caso comum de legado puro.
-- `colisao_raiz: ["package.json"]` → HITL: mesclar `scripts`/`workspaces` na mão, nunca `--forcar`.
+- `colisao_raiz: ["package.json"]` → HITL: mesclar `scripts`/`workspaces` na mão, nunca `--force`.
 - `hooks_legado: true` → armadilha #3 (§4 do `workflow.md`): decidir com o usuário como o `husky`/
   `lint-staged` existentes convivem com o `pre-commit` do template.
 - `modulos_candidatos` → o portão central de HITL: `Propostas`→`propostas`, `Contratos`→`contratos` —
@@ -137,13 +137,13 @@ conferir (Fase B) uma campanha que nunca chegou a rodar.
 
 Depois da execução (fora desta skill), uma segunda conversa — revisor diferente — roda o critério do §7 do
 `SKILL.md` e produz o relatório de `templates.md` §6. Um veredito **reprovado** típico: `validate.mjs
---todos` verde, mas `specs/plan/` ainda tem uma `xx-04-modulo-contratos` em `🟡 Em execução` — a Fase B para
+--all` verde, mas `specs/plan/` ainda tem uma `xx-04-modulo-contratos` em `🟡 Em execução` — a Fase B para
 aqui e devolve para `/code3-adequar` terminar, sem fingir que a campanha encerrou.
 
 ## 6. O alvo NÃO é legado — projeto 100% gerado pelo template
 
 **Cenário.** A skill é invocada contra um repositório produzido só por
-`create-project.mjs --binding typescript --escopo acme` + `create-module.mjs catalogo --role domain` —
+`create-project.mjs --binding typescript --scope acme` + `create-module.mjs catalogo --role domain` —
 zero código escrito à mão, gate já verde. **Saída real** do diagnóstico sobre essa árvore:
 
 ```json
@@ -184,5 +184,5 @@ zero código escrito à mão, gate já verde. **Saída real** do diagnóstico so
 - `colisao_raiz: []` e `workspaces_legado: []` — **antes da correção que motivou este script**, o mesmo
   repositório produzia `colisao_raiz: [".gitignore", "package.json"]` e `workspaces_legado:
   ["modules/[a-z]*", "packages/*", "adapters/*"]`: os próprios arquivos do template, acusados como se
-  fossem legado colidindo — o defeito que apontava o usuário para o portão de HITL mais caro (`--forcar`)
+  fossem legado colidindo — o defeito que apontava o usuário para o portão de HITL mais caro (`--force`)
   sobre um repositório que já estava pronto.
