@@ -1,10 +1,10 @@
-// Cadeia de seguranca do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
+// Cadeia de seguranca do modulo <module>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
 //
 // Ordem obrigatoria, igual em todo modulo:
 //   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro
 //
 // Nenhuma rota monta erro a mao: quem transforma excecao em resposta e o tratador, no fim da cadeia.
-import { ErroApi, errorEnvelope } from '../errors.js';
+import { ApiError, errorEnvelope } from '../errors.js';
 
 /** Correlaciona log, trilha de auditoria e envelope de erro. Primeiro da cadeia, sempre. */
 export function requestId(gerar) {
@@ -55,7 +55,7 @@ export function rateLimit(config) {
     atual.contagem += 1;
     if (atual.contagem > limite) {
       res.setHeader('retry-after', String(config.windowSeconds));
-      next(new ErroApi('LIMITE_EXCEDIDO', 'limite de requisicoes excedido'));
+      next(new ApiError('LIMITE_EXCEDIDO', 'limite de requisicoes excedido'));
       return;
     }
     next();
@@ -86,14 +86,14 @@ export function authentication(auth, rotasPublicas, rotaBase) {
     }
     const cabecalho = req.headers.authorization;
     if (typeof cabecalho !== 'string' || !cabecalho.startsWith('Bearer ')) {
-      next(new ErroApi('NAO_AUTENTICADO', 'token ausente'));
+      next(new ApiError('NAO_AUTENTICADO', 'token ausente'));
       return;
     }
     auth
       .verify(cabecalho.slice(7))
       .then((claims) => {
         if (claims === null) {
-          next(new ErroApi('NAO_AUTENTICADO', 'token invalido'));
+          next(new ApiError('NAO_AUTENTICADO', 'token invalido'));
           return;
         }
         req.permissoes = claims.permissoes;
@@ -107,7 +107,7 @@ export function authentication(auth, rotasPublicas, rotaBase) {
 export function requirePermission(permissao) {
   return (req, _res, next) => {
     if (!req.permissoes?.includes(permissao)) {
-      next(new ErroApi('NAO_AUTORIZADO', 'permissao insuficiente'));
+      next(new ApiError('NAO_AUTORIZADO', 'permissao insuficiente'));
       return;
     }
     next();
@@ -118,9 +118,9 @@ export function requirePermission(permissao) {
 export function errorHandler(logger) {
   return (erro, req, res, _next) => {
     const conhecido =
-      erro instanceof ErroApi
+      erro instanceof ApiError
         ? erro
-        : new ErroApi('INTERNO', 'erro interno', erro instanceof Error ? erro.message : String(erro));
+        : new ApiError('INTERNO', 'erro interno', erro instanceof Error ? erro.message : String(erro));
 
     logger.error('falha na requisicao', {
       requestId: req.requestId,

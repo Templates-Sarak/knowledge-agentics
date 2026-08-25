@@ -1,24 +1,24 @@
 {
-  "id": "<modulo>",
-  "name": "<Modulo>",
+  "id": "<module>",
+  "name": "<Module>",
   "version": "0.1.0",
   "description": "Descreva em uma linha o dominio de negocio deste modulo.",
   "role": "domain",
   "binding": "javascript",
-  "basePath": "/api/v1/<modulo>",
-  "webPath": "/<modulo>",
+  "basePath": "/api/v1/<module>",
+  "webPath": "/<module>",
   "data": {
     "schema": "<escopo>",
-    "prefix": "<modulo_snake>_",
+    "prefix": "<module_snake>_",
     "tables": [
-      "<modulo_snake>_migrations",
-      "<modulo_snake>_metadados",
-      "<modulo_snake>_auditoria"
+      "<module_snake>_migrations",
+      "<module_snake>_metadados",
+      "<module_snake>_auditoria"
     ]
   },
   "requiredEnv": [
-    "<MODULO>_API_PORT",
-    "<MODULO>_DB_URL"
+    "<MODULE>_API_PORT",
+    "<MODULE>_DB_URL"
   ],
   "ports": [
     "repository",
@@ -32,8 +32,8 @@
     "modo": "proprio"
   },
   "permissions": [
-    "<modulo>:ler",
-    "<modulo>:escrever"
+    "<module>:ler",
+    "<module>:escrever"
   ],
   "publicRoutes": [
     "GET /health",
@@ -42,7 +42,7 @@
   ],
   "sensitiveFields": [],
   "navigation": {
-    "label": "<Modulo>",
+    "label": "<Module>",
     "icon": "Box",
     "order": 100
   },

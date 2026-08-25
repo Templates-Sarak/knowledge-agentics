@@ -2,7 +2,7 @@
   "_comment": "UNICO lugar do modulo onde o nome de um fornecedor aparece. Trocar de provedor e editar aqui.",
   "repository": "memory",
   "audit": "memory",
-  "clock": "sistema",
-  "idGenerator": "padrao",
+  "clock": "system",
+  "idGenerator": "default",
   "notifier": "memory"
 }

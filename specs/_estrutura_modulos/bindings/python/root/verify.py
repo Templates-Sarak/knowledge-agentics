@@ -7,7 +7,7 @@
     python verify.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
     python verify.py --seguranca          .env versionado + segredo no delta — CI, fail-closed
     python verify.py --dependencias       pip-audit contra o piso de severidade — CI
-    python verify.py --migrations up|down|ciclo <modulo>   delega a scripts/migrations.py
+    python verify.py --migrations up|down|ciclo <module>   delega a scripts/migrations.py
 
 Argumento fora dessa lista REPROVA (exit 1) — nunca cai no caminho padrao em silencio.
 
@@ -207,13 +207,13 @@ def _run_delegated(rotulo: str, script: str) -> int:
 
 
 def _run_migrations(resto: list[str]) -> int:
-    """`--migrations up|down|ciclo <modulo>` delega para `scripts/migrations.py` — script de
+    """`--migrations up|down|ciclo <module>` delega para `scripts/migrations.py` — script de
     PROJETO, não ferramenta (03-operação.md §9.3): precisa de driver de Postgres, fora do
     zero-dependência de `tools/` (lei 3). Roda pelo interpretador ATUAL, não por `-m`
     (`scripts/migrations.py` é arquivo solto, não módulo instalado) — mesmo motivo de `_resolve`
     para os outros passos Python: um venv não ativado não aparece pelo PATH."""
     if not resto:
-        _write("uso: python verify.py --migrations up|down|ciclo <modulo>\n")
+        _write("uso: python verify.py --migrations up|down|ciclo <module>\n")
         return 1
     resultado = subprocess.run([sys.executable, "scripts/migrations.py", *resto], cwd=RAIZ, check=False)
     return resultado.returncode
@@ -236,9 +236,9 @@ FLAGS = frozenset(
 )
 
 
-def _recusar_desconhecidas(argv: list[str]) -> str | None:
+def _reject_unknown(argv: list[str]) -> str | None:
     """Motivo, se houver argumento nao reconhecido. `--migrations` consome o resto (up|down|ciclo
-    <modulo>), entao nada depois dela e julgado aqui — o dono daqueles argumentos e o runner."""
+    <module>), entao nada depois dela e julgado aqui — o dono daqueles argumentos e o runner."""
     if "--migrations" in argv:
         argv = argv[: argv.index("--migrations")]
     for arg in argv:
@@ -247,7 +247,7 @@ def _recusar_desconhecidas(argv: list[str]) -> str | None:
     return None
 
 
-def _despachar_modo(argv: list[str]) -> int | None:
+def _dispatch_mode(argv: list[str]) -> int | None:
     """Exit code do modo dedicado que `argv` pede, ou `None` quando o pedido e a cadeia inteira.
 
     Separado de `main` para que o guard de argumento desconhecido coubesse sem estourar os
@@ -269,12 +269,12 @@ def _despachar_modo(argv: list[str]) -> int | None:
 
 
 def main() -> int:
-    motivo = _recusar_desconhecidas(sys.argv[1:])
+    motivo = _reject_unknown(sys.argv[1:])
     if motivo is not None:
         _write(f"{motivo}\n")
         return 1
 
-    modo = _despachar_modo(sys.argv)
+    modo = _dispatch_mode(sys.argv)
     if modo is not None:
         return modo
 

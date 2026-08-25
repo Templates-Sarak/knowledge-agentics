@@ -1,4 +1,4 @@
-"""Gateways do modulo <modulo>: o que ele precisa de OUTROS MODULOS.
+"""Gateways do modulo <module>: o que ele precisa de OUTROS MODULOS.
 Lei dona: specs/arquitetura/01-modulo.md §6.  Decisao: ADR-002 (specs/adr/000-decisoes-do-template.md).
 
 PORTA e infraestrutura (banco, storage, auth). GATEWAY e outro modulo.
@@ -15,7 +15,7 @@ Este modulo nasce sem gateway (`consumes: []`). Para acrescentar um, crie
 
     # core/gateways/financeiro.py
     import httpx
-    from . import ErroDeGateway
+    from . import GatewayError
 
     class FinanceGateway:
         def __init__(self, base_url: str) -> None:
@@ -25,14 +25,14 @@ Este modulo nasce sem gateway (`consumes: []`). Para acrescentar um, crie
             async with httpx.AsyncClient() as cliente:
                 resposta = await cliente.get(f"{self._base_url}/aliquotas/vigente")
             if resposta.status_code != 200:
-                raise ErroDeGateway("financeiro", f"HTTP {resposta.status_code}")
+                raise GatewayError("financeiro", f"HTTP {resposta.status_code}")
             return float(resposta.json()["valor"])   # projete SO a fatia que declarou precisar
 """
 
 from __future__ import annotations
 
 
-class ErroDeGateway(Exception):
+class GatewayError(Exception):
     """Falha ao falar com outro modulo. A borda a traduz para DEPENDENCIA_EXTERNA (502)."""
 
     def __init__(self, modulo: str, motivo: str) -> None:

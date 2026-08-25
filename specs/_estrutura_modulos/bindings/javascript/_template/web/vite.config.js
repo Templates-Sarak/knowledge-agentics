@@ -1,6 +1,6 @@
-// Build do front do modulo <modulo>.
+// Build do front do modulo <module>.
 //
-// Deliberadamente MINIMO. O front consome `/api/v1/<modulo>` por caminho relativo na mesma
+// Deliberadamente MINIMO. O front consome `/api/v1/<module>` por caminho relativo na mesma
 // origem (specs/arquitetura/00-arquitetura.md §4.4), entao nao ha URL de API para configurar aqui —
 // mas a raiz de composicao NAO e essa origem: ela so sobe a API (um processo, uma porta), nunca
 // o build estatico deste `web/`. Quem publica os dois sob a mesma origem e decisao de DEPLOY

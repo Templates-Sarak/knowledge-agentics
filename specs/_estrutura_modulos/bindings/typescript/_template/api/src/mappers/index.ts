@@ -1,4 +1,4 @@
-// Mapeadores do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.
+// Mapeadores do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.
 //
 // Duas responsabilidades, e so estas:
 //   1. FRONTEIRA DE CAIXA — o banco fala snake_case, o contrato fala camelCase. A conversao e
@@ -12,7 +12,7 @@
 // seria pior.
 
 import type { Registro } from '../../../core/domain/index.js';
-import type { Manifesto } from '../config.js';
+import type { Manifest } from '../config.js';
 
 /** Linha crua do banco. Nunca sai desta camada. */
 export interface LinhaRegistro {
@@ -60,7 +60,7 @@ export function toContract(registro: Registro): Record<string, unknown> {
  * esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
  * `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota.
  */
-export function toMeta(manifesto: Manifesto): Record<string, unknown> {
+export function toMeta(manifesto: Manifest): Record<string, unknown> {
   return {
     id: manifesto.id,
     name: manifesto.name,

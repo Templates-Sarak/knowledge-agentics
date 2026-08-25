@@ -29,7 +29,7 @@ Seções obrigatórias (template em `assets/README.template.md`; o `auditar_docs
 
 ### 2. `README.md` por módulo *(recomendado)*
 Em `modules/<m>/`: o que o módulo faz, seu contrato `api/`, suas tabelas `<m>_*` e suas env vars
-`<MODULO>_*`. Reforça a fatia vertical e facilita extrair o módulo depois.
+`<MODULE>_*`. Reforça a fatia vertical e facilita extrair o módulo depois.
 
 ### 3. Documentação de contrato (`api/`)
 Já exigida pelo padrão. Por módulo, o contrato descreve cada rota: **método, path, entrada/saída em

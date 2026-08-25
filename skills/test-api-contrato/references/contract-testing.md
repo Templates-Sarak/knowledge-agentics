@@ -5,7 +5,7 @@ O contrato só vale se **as duas pontas o respeitam**: o **provider** entrega o 
 
 Estes testes **executam**. É essa a divisão de trabalho com o gate: o gate compara textos e não roda nada;
 estes testes rodam o app e olham a resposta de verdade. Só entram depois de
-`node tools/gate/validate.mjs <modulo>` estar verde.
+`node tools/gate/validate.mjs <module>` estar verde.
 
 ## As duas direções
 

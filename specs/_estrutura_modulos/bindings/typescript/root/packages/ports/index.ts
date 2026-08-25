@@ -9,7 +9,7 @@
 // (ou espelha) o que esta aqui, e viaja com o modulo na extracao.
 
 /** Taxonomia FECHADA de erro (specs/arquitetura/02-contrato-e-dados.md §3.1). */
-export const CODIGOS_DE_ERRO = {
+export const ERROR_CODES = {
   VALIDACAO: 400,
   NAO_AUTENTICADO: 401,
   NAO_AUTORIZADO: 403,
@@ -20,17 +20,17 @@ export const CODIGOS_DE_ERRO = {
   INTERNO: 500,
 } as const;
 
-export type CodigoErro = keyof typeof CODIGOS_DE_ERRO;
+export type ErrorCode = keyof typeof ERROR_CODES;
 
 /** Falha de porta. O adapter TRADUZ o erro do fornecedor para ca — o dominio nunca ve o SDK. */
-export class ErroPorta extends Error {
+export class PortError extends Error {
   constructor(
-    public readonly codigo: CodigoErro,
+    public readonly codigo: ErrorCode,
     mensagem: string,
     public readonly detalhe?: string,
   ) {
     super(mensagem);
-    this.name = 'ErroPorta';
+    this.name = 'PortError';
   }
 }
 

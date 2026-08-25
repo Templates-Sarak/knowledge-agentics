@@ -95,7 +95,7 @@ ler o `contract/openapi.yaml` de ANTES, via git, e o gate não roda git de prop�
 `tools/contract-compatible.mjs`, ferramenta separada (não regra, não conta para o catálogo):
 
 ```
-node tools/contract-compatible.mjs [--desde <ref>] [<modulo>] [--json]
+node tools/contract-compatible.mjs [--desde <ref>] [<module>] [--json]
 ```
 
 Sem argumento, compara com `HEAD~1` e descobre sozinho quais `contract/openapi.yaml` mudaram. Acha
@@ -140,7 +140,7 @@ depois da tabela de precisão dos verificadores.
 ## O molde também é validado
 
 Pasta iniciada por `_` (o `_template` de cada binding) é tratada como **molde**: o contexto substitui os
-marcadores `<modulo>`, `<MODULO>` e `<Modulo>` **em memória** por um id sintético, e o molde passa pelas mesmas
+marcadores `<module>`, `<MODULE>` e `<Module>` **em memória** por um id sintético, e o molde passa pelas mesmas
 regras que um módulo real. Nada é escrito de volta.
 
 Isso não é preciosismo. Sem esta verificação, o molde seria a única pasta que o validador pula — apodrece

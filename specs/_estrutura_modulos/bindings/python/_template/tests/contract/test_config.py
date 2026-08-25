@@ -6,7 +6,7 @@ Isso deixa "suite verde" incapaz de provar, sozinha, que a fiacao de ambiente es
 boot real prova. Este teste fecha essa lacuna removendo `PYTEST_CURRENT_TEST` do ambiente, de
 proposito, so durante a chamada.
 
-Usa `<MODULO>_API_PORT` (ja declarada em module.json:requiredEnv pelo molde) em vez de inventar uma
+Usa `<MODULE>_API_PORT` (ja declarada em module.json:requiredEnv pelo molde) em vez de inventar uma
 chave nova: uma chave sintetica usada via `os.environ[...]` seria acusada por `env-declarado` — "usada
 no codigo e ausente do manifesto" — por um vazamento que nao tem nada a ver com este teste.
 
@@ -24,20 +24,20 @@ import pytest
 
 from api.src.config import _check_env_required
 
-CHAVE = "<MODULO>_API_PORT"
+CHAVE = "<MODULE>_API_PORT"
 
 MANIFESTO_BASE = {
-    "id": "<modulo>",
-    "name": "<Modulo>",
+    "id": "<module>",
+    "name": "<Module>",
     "version": "0.1.0",
     "role": "domain",
-    "basePath": "/api/v1/<modulo>",
+    "basePath": "/api/v1/<module>",
     "webPath": None,
     "navigation": None,
     "exportsSummary": False,
     "data": {
         "schema": "<escopo>",
-        "prefix": "<modulo_snake>_",
+        "prefix": "<module_snake>_",
         "tables": [],
     },
     "requiredEnv": [CHAVE],

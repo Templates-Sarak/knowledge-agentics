@@ -85,7 +85,7 @@ export function temArquivoEm(ctx, prefixo) {
 
 /**
  * Barril da pasta — `index` em TS/JS, `__init__` em Python. Ele DOCUMENTA o slot e não é um gateway:
- * no molde ele exporta só `ErroDeGateway` e traz o gateway de verdade como exemplo comentado.
+ * no molde ele exporta só `GatewayError` e traz o gateway de verdade como exemplo comentado.
  */
 const BARRIS_DE_PASTA = ['index', '__init__'];
 

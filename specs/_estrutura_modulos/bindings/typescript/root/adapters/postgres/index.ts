@@ -21,7 +21,7 @@ import type { Audit, AuditEvent, Pagina, Repository } from '../../packages/ports
 
 /** O suficiente do manifesto para o adapter se configurar — nunca o tipo inteiro de `src/composition.ts`:
  * `adapters/` não pode importar de `src/` (regra `adapter-isolado`), então este tipo é local e mínimo. */
-export interface ModuloParaAdapter {
+export interface ModuleForAdapter {
   id: string;
   pasta: string;
 }
@@ -61,7 +61,7 @@ interface DadosDoManifesto {
  * Cacheada por pasta — o manifesto não muda em runtime, e cada operação chamaria isto de novo. */
 const dadosCache = new Map<string, DadosDoManifesto>();
 
-async function readData(modulo: ModuloParaAdapter): Promise<DadosDoManifesto> {
+async function readData(modulo: ModuleForAdapter): Promise<DadosDoManifesto> {
   const existente = dadosCache.get(modulo.pasta);
   if (existente !== undefined) return existente;
   const { readFile } = await import('node:fs/promises');
@@ -122,14 +122,14 @@ interface ContextoDeTabela {
 }
 
 /** Resolve pool + nome qualificado de UMA vez — as quatro operações abaixo precisam das duas coisas. */
-async function tableContext(modulo: ModuloParaAdapter, sufixo: string): Promise<ContextoDeTabela> {
+async function tableContext(modulo: ModuleForAdapter, sufixo: string): Promise<ContextoDeTabela> {
   const { schema, prefix } = await readData(modulo);
   const pool = await poolFor(requiredUrl(modulo.id));
   return { pool, nome: qualifiedName(schema, `${prefix}${sufixo}`) };
 }
 
 async function listRecords(
-  modulo: ModuloParaAdapter,
+  modulo: ModuleForAdapter,
   pagina: number,
   tamanho: number,
 ): Promise<Pagina<RegistroDoMolde>> {
@@ -147,7 +147,7 @@ async function listRecords(
   return { itens: linhas.rows.map(toRecord), pagina, tamanho, total: contagem.rows[0].total };
 }
 
-async function findRecordByHash(modulo: ModuloParaAdapter, hash: string): Promise<RegistroDoMolde | null> {
+async function findRecordByHash(modulo: ModuleForAdapter, hash: string): Promise<RegistroDoMolde | null> {
   const { pool, nome } = await tableContext(modulo, 'metadados');
   const clausulaSelect = 'select hash, titulo, status, created_at';
   const clausulaFrom = `from ${nome}`;
@@ -156,7 +156,7 @@ async function findRecordByHash(modulo: ModuloParaAdapter, hash: string): Promis
   return resultado.rows[0] === undefined ? null : toRecord(resultado.rows[0]);
 }
 
-async function insertRecord(modulo: ModuloParaAdapter, registro: RegistroDoMolde): Promise<void> {
+async function insertRecord(modulo: ModuleForAdapter, registro: RegistroDoMolde): Promise<void> {
   const { pool, nome } = await tableContext(modulo, 'metadados');
   const nomeEColunas = `${nome} (hash, titulo, status, created_at, updated_at)`;
   const clausulaInsert = 'insert into';
@@ -165,7 +165,7 @@ async function insertRecord(modulo: ModuloParaAdapter, registro: RegistroDoMolde
   await pool.query(consulta, [registro.hash, registro.titulo, registro.status, registro.criadoEm]);
 }
 
-async function countRecords(modulo: ModuloParaAdapter): Promise<number> {
+async function countRecords(modulo: ModuleForAdapter): Promise<number> {
   const { pool, nome } = await tableContext(modulo, 'metadados');
   const clausulaSelect = 'select count(*)::int as total';
   const clausulaFrom = `from ${nome}`;
@@ -173,7 +173,7 @@ async function countRecords(modulo: ModuloParaAdapter): Promise<number> {
   return resultado.rows[0].total;
 }
 
-export function createPostgresRepository(modulo: ModuloParaAdapter): Repository<RegistroDoMolde> {
+export function createPostgresRepository(modulo: ModuleForAdapter): Repository<RegistroDoMolde> {
   return {
     list: (pagina, tamanho) => listRecords(modulo, pagina, tamanho),
     findByHash: (hash) => findRecordByHash(modulo, hash),
@@ -186,7 +186,7 @@ export function createPostgresRepository(modulo: ModuloParaAdapter): Repository<
 // AUDITORIA
 // ================================================================================================
 
-async function recordAuditEvent(modulo: ModuloParaAdapter, evento: AuditEvent): Promise<void> {
+async function recordAuditEvent(modulo: ModuleForAdapter, evento: AuditEvent): Promise<void> {
   const { pool, nome } = await tableContext(modulo, 'auditoria');
   const nomeEColunas = `${nome} (hash, acao, sujeito, campos_alterados, request_id)`;
   const clausulaInsert = 'insert into';
@@ -201,7 +201,7 @@ async function recordAuditEvent(modulo: ModuloParaAdapter, evento: AuditEvent): 
   ]);
 }
 
-export function createPostgresAudit(modulo: ModuloParaAdapter): Audit {
+export function createPostgresAudit(modulo: ModuleForAdapter): Audit {
   return { record: (evento) => recordAuditEvent(modulo, evento) };
 }
 

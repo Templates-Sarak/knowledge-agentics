@@ -1,16 +1,16 @@
 openapi: 3.1.0
 
-# A FONTE do contrato do modulo <modulo>. O codigo segue esta spec, nunca o inverso.
+# A FONTE do contrato do modulo <module>. O codigo segue esta spec, nunca o inverso.
 # Lei dona: specs/arquitetura/02-contrato-e-dados.md
 info:
-  title: <Modulo> — contrato publico
+  title: <Module> — contrato publico
   version: 1.0.0
   description: >
-    Unica superficie publica do modulo <modulo>. O front dele, o conector e qualquer
+    Unica superficie publica do modulo <module>. O front dele, o conector e qualquer
     outro modulo obtem dado por aqui — nunca pelo banco, nunca por import.
 
 servers:
-  - url: /api/v1/<modulo>
+  - url: /api/v1/<module>
 
 paths:
   /health:

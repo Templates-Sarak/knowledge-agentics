@@ -1,4 +1,4 @@
-// Estado da listagem do modulo <modulo>.
+// Estado da listagem do modulo <module>.
 // O hook e dono dos TRES estados que toda tela precisa ter (specs/arquitetura/01-modulo.md §9.7):
 // carregando, vazio e erro. Tela que so trata o caminho feliz reprova em revisao.
 import { useEffect, useState } from 'react';

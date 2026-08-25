@@ -87,7 +87,7 @@ inegociável ou o mapa de roteamento. Nunca por conta própria fora de uma plan.
 >
 > | Tipo de tarefa | Leia antes (specs fixas) | Capacidade |
 > |---|---|---|
-> | Alterar regra de negócio de \<módulo\> | `specs/NN-<modulo>.md` | [[00-knowledge]] |
+> | Alterar regra de negócio de \<módulo\> | `specs/NN-<module>.md` | [[00-knowledge]] |
 > | Criar/alterar endpoint | `arquitetura/NN-api.md` + spec do módulo | [[00-knowledge]] |
 > | Mexer em schema/migration | `arquitetura/NN-dados.md` + ADR relevante | [[00-knowledge]] |
 > | Mudar decisão estrutural | todos os `adr/` + `arquitetura/` | [[00-knowledge]] |

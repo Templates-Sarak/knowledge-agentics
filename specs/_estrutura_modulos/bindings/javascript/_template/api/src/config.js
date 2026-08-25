@@ -1,4 +1,4 @@
-// Carregador UNICO de configuracao do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §4.
+// Carregador UNICO de configuracao do modulo <module>. Lei dona: specs/arquitetura/01-modulo.md §4.
 //
 // Regras que este arquivo materializa:
 //   - SO ele toca o ambiente. Qualquer outro arquivo lendo env e aviso do gate.

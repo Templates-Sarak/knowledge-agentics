@@ -1,4 +1,4 @@
-"""Dominio do modulo <modulo>: tipos e validacao. Lei dona: specs/arquitetura/01-modulo.md §2.
+"""Dominio do modulo <module>: tipos e validacao. Lei dona: specs/arquitetura/01-modulo.md §2.
 
 Regras desta camada:
   - ZERO I/O. Nada de rede, banco, arquivo ou ambiente.
@@ -26,7 +26,7 @@ class Registro:
         return asdict(self)
 
 
-class ErroDeValidacao(Exception):
+class ValidationError(Exception):
     """Falha de validacao do dominio. A borda a traduz para VALIDACAO (400)."""
 
     def __init__(self, campo: str, mensagem: str) -> None:
@@ -36,17 +36,17 @@ class ErroDeValidacao(Exception):
 
 def _require_title(titulo: Any) -> str:
     if not isinstance(titulo, str) or titulo.strip() == "":
-        raise ErroDeValidacao("titulo", "titulo e obrigatorio")
+        raise ValidationError("titulo", "titulo e obrigatorio")
     return titulo.strip()
 
 
 def _require_status(status: Any, status_validos: Sequence[str]) -> str:
     if not status_validos:
-        raise ErroDeValidacao("status", "config/domain.json:validStatuses esta vazio")
+        raise ValidationError("status", "config/domain.json:validStatuses esta vazio")
     if status is None:
         return status_validos[0]
     if not isinstance(status, str) or status not in status_validos:
-        raise ErroDeValidacao(
+        raise ValidationError(
             "status", f"status deve ser um de: {', '.join(status_validos)}"
         )
     return status

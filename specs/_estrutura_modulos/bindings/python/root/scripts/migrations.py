@@ -3,9 +3,9 @@
 
 Lei dona: specs/arquitetura/02-contrato-e-dados.md §6.3.
 
-    python scripts/migrations.py up <modulo>       aplica as PENDENTES, em ordem — pula o que ja foi
-    python scripts/migrations.py down <modulo>     reverte so o ULTIMO aplicado (bloco "-- rollback")
-    python scripts/migrations.py ciclo <modulo>    up -> down -> up — prova que o rollback fecha, de
+    python scripts/migrations.py up <module>       aplica as PENDENTES, em ordem — pula o que ja foi
+    python scripts/migrations.py down <module>     reverte so o ULTIMO aplicado (bloco "-- rollback")
+    python scripts/migrations.py ciclo <module>    up -> down -> up — prova que o rollback fecha, de
                                                     qualquer estado inicial (vazio ou ja migrado)
     python scripts/migrations.py --autoteste       prova interna (parser, ordem, pending/ultimo)
 
@@ -51,7 +51,7 @@ MINIMO_DE_ARGUMENTOS = 2
 # NUCLEO PURO — nunca toca disco nem rede. E a metade que --autoteste prova.
 # ====================================================================================================
 
-# `<modulo>` valido — kebab-case minusculo, a MESMA forma que `create-module.mjs` exige ao nascer.
+# `<module>` valido — kebab-case minusculo, a MESMA forma que `create-module.mjs` exige ao nascer.
 # Serve DUAS funcoes: e o formato certo, E recusa de saida qualquer metacaractere de shell (`;`,
 # `$()`, `&`, espaco) — nenhuma entrada adversarial passa daqui para caminho de arquivo nem para
 # chave de ambiente.
@@ -114,7 +114,7 @@ def order_migrations(nomes: list[str], direcao: str) -> list[str]:
 
 
 def environment_key(id_do_modulo: str) -> str:
-    """`<modulo>` -> `<MODULO>_DB_URL` — a MESMA convencao de `module.json:requiredEnv`."""
+    """`<module>` -> `<MODULE>_DB_URL` — a MESMA convencao de `module.json:requiredEnv`."""
     return f"{id_do_modulo.upper().replace('-', '_')}_DB_URL"
 
 
@@ -161,7 +161,7 @@ def _load_env_root() -> None:
 
 
 def _module_folder(id_do_modulo: str) -> Path:
-    """`<modulo>` valido E dentro de `modules/` — nunca escapa por `..` nem separador. Falha
+    """`<module>` valido E dentro de `modules/` — nunca escapa por `..` nem separador. Falha
     nomeando a entrada recusada, nunca silenciosa."""
     if not ID_DE_MODULO_VALIDO.match(id_do_modulo):
         raise RuntimeError(f'[migrations] "{id_do_modulo}" nao e kebab-case minusculo valido')
@@ -486,7 +486,7 @@ def main() -> int:
 
     if len(argv) < MINIMO_DE_ARGUMENTOS or argv[0] not in ("up", "down", "ciclo"):
         sys.stderr.write(
-            "uso: python scripts/migrations.py up|down|ciclo <modulo>\n"
+            "uso: python scripts/migrations.py up|down|ciclo <module>\n"
             "     python scripts/migrations.py --autoteste\n"
         )
         return 1

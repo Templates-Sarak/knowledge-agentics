@@ -1,4 +1,4 @@
-// Dublês das portas do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §5.
+// Dublês das portas do modulo <module>. Lei dona: specs/arquitetura/03-operacao.md §5.
 //
 // TODO teste do modulo roda com estes — sem rede e sem banco. Isso nao e preferencia de teste:
 // e a PROVA EXECUTAVEL de que o desacoplamento existe. Se um teste precisar de infraestrutura,
@@ -8,7 +8,7 @@
 // o relogio do sistema, e o que prova que o dominio nao chama `new Date()` escondido.
 import type {
   Audit,
-  DependenciasModulo,
+  ModuleDependencies,
   IdGenerator,
   Clock,
   Repository,
@@ -62,7 +62,7 @@ export function createSequentialGenerator(): IdGenerator {
   };
 }
 
-export function createDependencies(iniciais: Registro[] = []): DependenciasModulo {
+export function createDependencies(iniciais: Registro[] = []): ModuleDependencies {
   return {
     repository: createInMemoryRepository(iniciais),
     audit: createInMemoryAudit(),

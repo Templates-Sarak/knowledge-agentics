@@ -1,4 +1,4 @@
-"""Testes de contrato do modulo <modulo> — cada rota do contract/openapi.yaml.
+"""Testes de contrato do modulo <module> — cada rota do contract/openapi.yaml.
 
 Cobre o que a lei exige (specs/arquitetura/03-operacao.md §5): rota declarada, auth NEGADA por padrao e
 payload malformado rejeitado. Roda com adapters de memoria — sem rede, sem banco.
@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from api.src import create_app
 from tests.fixtures import AuthDeTeste, create_dependencies, record_example
 
-ROTA_BASE = "/api/v1/<modulo>"
+ROTA_BASE = "/api/v1/<module>"
 CREDENCIAL_DE_TESTE = "token-de-teste"
 
 
@@ -20,7 +20,7 @@ CREDENCIAL_DE_TESTE = "token-de-teste"
 def client() -> TestClient:
     app = create_app(
         deps=create_dependencies([record_example()]),
-        auth=AuthDeTeste(["<modulo>:ler", "<modulo>:escrever"], CREDENCIAL_DE_TESTE),
+        auth=AuthDeTeste(["<module>:ler", "<module>:escrever"], CREDENCIAL_DE_TESTE),
     )
     return TestClient(app)
 

@@ -1,11 +1,11 @@
-// Taxonomia FECHADA de erro do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
+// Taxonomia FECHADA de erro do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
 //
 // Fechada quer dizer: acrescentar codigo aqui e mudanca de contrato, nao improviso de rota.
 // Num projeto com `packages/ports`, este arquivo re-exporta a versao canonica de la — assim
 // todos os modulos falam a mesma lingua de erro. O molde traz a copia local para ser
 // autossuficiente desde o primeiro `npm test`.
 
-export const CODIGOS = {
+export const CODES = {
   VALIDACAO: 400,
   NAO_AUTENTICADO: 401,
   NAO_AUTORIZADO: 403,
@@ -16,28 +16,28 @@ export const CODIGOS = {
   INTERNO: 500,
 } as const;
 
-export type CodigoErro = keyof typeof CODIGOS;
+export type ErrorCode = keyof typeof CODES;
 
 /**
  * O unico erro que a borda sabe traduzir em resposta.
  * A `mensagem` e generica e estavel — o detalhe vai para o log, ligado pelo requestId.
  */
-export class ErroApi extends Error {
+export class ApiError extends Error {
   constructor(
-    public readonly codigo: CodigoErro,
+    public readonly codigo: ErrorCode,
     mensagem: string,
     public readonly detalhe?: string,
   ) {
     super(mensagem);
-    this.name = 'ErroApi';
+    this.name = 'ApiError';
   }
 
   get status(): number {
-    return CODIGOS[this.codigo];
+    return CODES[this.codigo];
   }
 }
 
 /** Envelope unico de erro. Toda falha sai exatamente nesta forma. */
-export function errorEnvelope(erro: ErroApi, requestId: string): Record<string, unknown> {
+export function errorEnvelope(erro: ApiError, requestId: string): Record<string, unknown> {
   return { erro: { codigo: erro.codigo, mensagem: erro.message, requestId } };
 }

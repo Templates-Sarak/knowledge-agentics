@@ -2,9 +2,9 @@
 // Runner de migrations — aplica e reverte database/migrations/*.sql de um modulo contra Postgres.
 // Lei dona: specs/arquitetura/02-contrato-e-dados.md §6.3.
 //
-//   node scripts/migrations.mjs up <modulo>       aplica as PENDENTES, em ordem — pula o que ja foi
-//   node scripts/migrations.mjs down <modulo>     reverte so o ULTIMO aplicado (bloco "-- rollback")
-//   node scripts/migrations.mjs ciclo <modulo>    up -> down -> up — prova que o rollback fecha,
+//   node scripts/migrations.mjs up <module>       aplica as PENDENTES, em ordem — pula o que ja foi
+//   node scripts/migrations.mjs down <module>     reverte so o ULTIMO aplicado (bloco "-- rollback")
+//   node scripts/migrations.mjs ciclo <module>    up -> down -> up — prova que o rollback fecha,
 //                                                  de qualquer estado inicial (vazio ou ja migrado)
 //   node scripts/migrations.mjs --autoteste       prova interna (parser, ordem, pending/ultimo)
 //
@@ -51,7 +51,7 @@ const RAIZ = resolve(AQUI, '..');
 // NUCLEO PURO — nunca toca disco nem rede. E a metade que `--autoteste` prova.
 // ================================================================================================
 
-/** `<modulo>` valido — kebab-case minusculo, a MESMA forma que `create-module.mjs` exige ao nascer.
+/** `<module>` valido — kebab-case minusculo, a MESMA forma que `create-module.mjs` exige ao nascer.
  * Serve DUAS funcoes: e o formato certo, E recusa de saida qualquer metacaractere de shell (`;`,
  * `$()`, `&`, espaco) — nenhuma entrada adversarial passa daqui para caminho de arquivo nem para
  * chave de ambiente. */
@@ -108,7 +108,7 @@ export function orderMigrations(nomes, direcao) {
   return direcao === 'down' ? ordenados.reverse() : ordenados;
 }
 
-/** `<modulo>` -> `<MODULO>_DB_URL` — a MESMA convencao de `module.json:requiredEnv`. */
+/** `<module>` -> `<MODULE>_DB_URL` — a MESMA convencao de `module.json:requiredEnv`. */
 export function environmentKey(idDoModulo) {
   return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
@@ -156,7 +156,7 @@ function loadEnvRoot() {
   }
 }
 
-/** `<modulo>` valido E dentro de `modules/` — nunca escapa por `..` nem separador. Falha nomeando
+/** `<module>` valido E dentro de `modules/` — nunca escapa por `..` nem separador. Falha nomeando
  * a entrada recusada, nunca silenciosa. */
 function moduleFolder(idDoModulo) {
   if (!ID_DE_MODULO_VALIDO.test(idDoModulo)) {
@@ -502,7 +502,7 @@ async function principal() {
 
   if (!['up', 'down', 'ciclo'].includes(comando) || alvo === undefined) {
     process.stderr.write(
-      'uso: node scripts/migrations.mjs up|down|ciclo <modulo>\n' +
+      'uso: node scripts/migrations.mjs up|down|ciclo <module>\n' +
         '     node scripts/migrations.mjs --autoteste\n',
     );
     return 1;

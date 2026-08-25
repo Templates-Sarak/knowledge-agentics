@@ -1,6 +1,6 @@
-# Módulo `<modulo>` — binding Python
+# Módulo `<module>` — binding Python
 
-Fatia vertical autossuficiente do domínio **<Modulo>**, em Python. A **anatomia, o manifesto, o contrato e o
+Fatia vertical autossuficiente do domínio **<Module>**, em Python. A **anatomia, o manifesto, o contrato e o
 catálogo de regras são idênticos** ao binding TypeScript — só a materialização muda.
 
 > **Não copie esta pasta à mão.** Use `node tools/create-module.mjs <id> --binding python`.
@@ -43,7 +43,7 @@ core/            engine interna, sem I/O
   gateways/      o que preciso de OUTROS MÓDULOS — só HTTP
   engine/         geração determinística do artefato
 api/src/         a única superfície pública (FastAPI)
-database/        schema.sql + migrations das tabelas <modulo_snake>_*
+database/        schema.sql + migrations das tabelas <module_snake>_*
 tests/           domain/ contract/ fixtures/ — sem rede, sem banco
 ```
 

@@ -1,4 +1,4 @@
-// Primitiva visual do modulo <modulo>.
+// Primitiva visual do modulo <module>.
 //
 // ui.modo = "proprio": o modulo define suas primitivas AQUI e nao importa componente de outro
 // modulo. Se o projeto usar ui.modo = "kit", troque o corpo por um componente de

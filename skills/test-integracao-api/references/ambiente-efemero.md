@@ -66,14 +66,14 @@ teste não prova persistência nenhuma:
 
 ```typescript
 test('POST /registros persiste o registro', async () => {
-  const resposta = await request(app).post('/api/v1/<modulo>/registros').send({ titulo: 'x' });
+  const resposta = await request(app).post('/api/v1/<module>/registros').send({ titulo: 'x' });
 
   // asserção 1 — o contrato HTTP
   expect(resposta.status).toBe(201);
   expect(resposta.body.hash).toBeDefined();
 
   // asserção 2 — o estado real no banco, lido DIRETO (sem passar pela API de volta)
-  const linha = await db.query('SELECT * FROM <modulo>_registros WHERE hash = $1', [resposta.body.hash]);
+  const linha = await db.query('SELECT * FROM <module>_registros WHERE hash = $1', [resposta.body.hash]);
   expect(linha.rows).toHaveLength(1);
   expect(linha.rows[0].titulo).toBe('x');
 });
@@ -86,7 +86,7 @@ não lê o banco diretamente, só observa através da UI/API).
 
 ## Onde isto mora num projeto do template modular — a correção que importa
 
-**Isto não entra em `modules/<modulo>/tests/`.** A árvore de testes do módulo (`domain/`, `contract/`,
+**Isto não entra em `modules/<module>/tests/`.** A árvore de testes do módulo (`domain/`, `contract/`,
 `web/`, `fixtures/`) roda **inteira** com `adapters/memory` — é lei, não escolha de estilo
 (`specs/arquitetura/03-operacao.md` §5: *"Se um teste do módulo precisa de infraestrutura, a porta está
 mal desenhada ou o adapter de memória está faltando"*). Um teste do módulo que suba um Testcontainer
@@ -98,7 +98,7 @@ A validação contra banco real, num projeto do template, mora em **dois lugares
 1. **`adapters/<tecnologia>/`** (ex.: `adapters/postgres/`) — é aqui, na raiz do projeto, que o driver
    real vive (`00-arquitetura.md` §3.2); é o adapter concreto que se testa contra um Testcontainer, não
    o módulo que o consome através da porta.
-2. **`scripts/migrations.mjs ciclo <modulo>`** (`03-operacao.md` §9.3) — prova `up → down → up` contra um
+2. **`scripts/migrations.mjs ciclo <module>`** (`03-operacao.md` §9.3) — prova `up → down → up` contra um
    Postgres efêmero de verdade, de qualquer estado inicial. É o comando que já faz o papel de "as
    migrations rodam limpo" que o setup acima replica manualmente.
 

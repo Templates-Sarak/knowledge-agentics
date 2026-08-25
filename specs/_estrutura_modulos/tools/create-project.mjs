@@ -98,7 +98,7 @@ const MARCADORES_DE_COMANDO = {
   python: { '<comando-verificar>': 'python verify.py', '<comando-iniciar>': 'python -m src.composition' },
 };
 
-/** Substitui os marcadores de comando do mapa pelo comando real do binding — precedente de `<modulo>`
+/** Substitui os marcadores de comando do mapa pelo comando real do binding — precedente de `<module>`
  * em `create-module.mjs`: uma fonte só, marcador substituído na instalação. */
 function aplicarComandosDoMapa(caminhoReadme, binding) {
   if (!existsSync(caminhoReadme)) return;

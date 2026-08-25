@@ -103,16 +103,16 @@ function resolverEscopo(raizProjeto, informado) {
 
 function substituir(texto, id, escopo) {
   return texto
-    // `<modulo_snake>` e o id em snake_case, e existe para o BANCO: identificador SQL nao aceita
+    // `<module_snake>` e o id em snake_case, e existe para o BANCO: identificador SQL nao aceita
     // hifen sem aspas, e `schema-manifesto` cobra `^[a-z][a-z0-9_]*$` em `data.tables[]`. Sem ele,
     // todo id kebab-case com hifen (`nota-fiscal`) nascia REPROVADO — `tabela-prefixo` exigia
     // `nota-fiscal_` e o schema proibia o hifen na tabela derivada dele: duas regras do mesmo gate
-    // pedindo coisas incompativeis, sem manifesto valido possivel. Mesma conversao que `<MODULO>`
+    // pedindo coisas incompativeis, sem manifesto valido possivel. Mesma conversao que `<MODULE>`
     // ja fazia para chave de ambiente — a diferenca era so o banco nao ter recebido a dela.
-    .replaceAll('<modulo_snake>', id.replace(/-/g, '_'))
-    .replaceAll('<MODULO>', id.toUpperCase().replace(/-/g, '_'))
-    .replaceAll('<Modulo>', id.charAt(0).toUpperCase() + id.slice(1))
-    .replaceAll('<modulo>', id)
+    .replaceAll('<module_snake>', id.replace(/-/g, '_'))
+    .replaceAll('<MODULE>', id.toUpperCase().replace(/-/g, '_'))
+    .replaceAll('<Module>', id.charAt(0).toUpperCase() + id.slice(1))
+    .replaceAll('<module>', id)
     .replaceAll('<escopo>', escopo);
 }
 
@@ -129,7 +129,7 @@ function aplicarMarcadores(destino, id, escopo) {
   for (const arquivo of percorrer(destino)) {
     writeFileSync(arquivo, substituir(lerTexto(arquivo), id, escopo), 'utf8');
     const nome = arquivo.split(/[\\/]/).pop();
-    if (nome.includes('<modulo>')) renameSync(arquivo, join(dirname(arquivo), substituir(nome, id, escopo)));
+    if (nome.includes('<module>')) renameSync(arquivo, join(dirname(arquivo), substituir(nome, id, escopo)));
   }
 }
 

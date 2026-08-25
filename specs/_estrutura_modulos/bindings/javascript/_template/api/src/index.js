@@ -1,4 +1,4 @@
-// Bootstrap da api do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §5.
+// Bootstrap da api do modulo <module>. Lei dona: specs/arquitetura/01-modulo.md §5.
 //
 // REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria e nunca importa
 // `adapters/*` nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
@@ -24,7 +24,7 @@ import {
  * (specs/arquitetura/00-arquitetura.md §3.4). Sem isto, `loadConfiguration()` resolve pelo cwd
  * do PROCESSO, que so bate com a pasta do modulo em execucao standalone; a raiz compoe varios
  * modulos no mesmo processo, cwd nenhum serve para todos ao mesmo tempo.
- * @param {{ deps: import('../../core/ports/index.js').DependenciasModulo, auth: import('../../core/ports/index.js').Auth, raiz?: string }} opcoes
+ * @param {{ deps: import('../../core/ports/index.js').ModuleDependencies, auth: import('../../core/ports/index.js').Auth, raiz?: string }} opcoes
  */
 export function createApp({ deps, auth, raiz }) {
   const config = loadConfiguration(raiz);
@@ -73,7 +73,7 @@ export function start(opcoes) {
     nivelMinimo: config.api.logLevel,
     camposSensiveis: config.manifesto.sensitiveFields,
   });
-  const porta = Number(envRequired('<MODULO>_API_PORT'));
+  const porta = Number(envRequired('<MODULE>_API_PORT'));
 
   createApp(opcoes).listen(porta, () => {
     logger.info('api no ar', { porta, rotaBase: config.manifesto.basePath });

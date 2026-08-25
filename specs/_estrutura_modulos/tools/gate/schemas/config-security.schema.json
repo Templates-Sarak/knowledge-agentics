@@ -1,5 +1,5 @@
 {
-  "$comentario": "Cadeia de seguranca da api. Lei dona: specs/arquitetura/03-operacao.md §2.1. `allowedOrigins` nunca contem '*' — cobrado pela regra `cors-aberto`.",
+  "$comment": "Cadeia de seguranca da api. Lei dona: specs/arquitetura/03-operacao.md §2.1. `allowedOrigins` nunca contem '*' — cobrado pela regra `cors-aberto`.",
   "type": "object",
   "additionalProperties": false,
   "required": ["rateLimit", "cors", "headers"],

@@ -1,4 +1,4 @@
-// Gateways do modulo <modulo>: o que ele precisa de OUTROS MODULOS.
+// Gateways do modulo <module>: o que ele precisa de OUTROS MODULOS.
 // Lei dona: specs/arquitetura/01-modulo.md §6.  Decisao: ADR-002 (specs/adr/000-decisoes-do-template.md).
 //
 // PORTA e infraestrutura (banco, storage, auth). GATEWAY e outro modulo.
@@ -24,7 +24,7 @@
 //     return {
 //       async obterAliquotaVigentePct(): Promise<number> {
 //         const resposta = await fetch(`${baseUrl}/aliquotas/vigente`);
-//         if (!resposta.ok) throw new ErroDeGateway('financeiro', `HTTP ${resposta.status}`);
+//         if (!resposta.ok) throw new GatewayError('financeiro', `HTTP ${resposta.status}`);
 //         const { valor } = (await resposta.json()) as { valor: number };
 //         return valor;   // projete SO a fatia que voce declarou precisar
 //       },
@@ -32,12 +32,12 @@
 //   }
 
 /** Falha ao falar com outro modulo. A borda a traduz para DEPENDENCIA_EXTERNA (502). */
-export class ErroDeGateway extends Error {
+export class GatewayError extends Error {
   constructor(
     public readonly modulo: string,
     motivo: string,
   ) {
     super(`gateway "${modulo}" indisponivel: ${motivo}`);
-    this.name = 'ErroDeGateway';
+    this.name = 'GatewayError';
   }
 }

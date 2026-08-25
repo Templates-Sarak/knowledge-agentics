@@ -16,7 +16,7 @@ from typing import Protocol, Sequence, TypeVar
 
 T = TypeVar("T")
 
-CODIGOS_DE_ERRO: dict[str, int] = {
+ERROR_CODES: dict[str, int] = {
     "VALIDACAO": 400,
     "NAO_AUTENTICADO": 401,
     "NAO_AUTORIZADO": 403,
@@ -47,7 +47,7 @@ KNOWN_PORTS = (
 )
 
 
-class ErroPorta(Exception):
+class PortError(Exception):
     """Falha de porta. O adapter TRADUZ o erro do fornecedor para ca — o dominio nunca ve o SDK."""
 
     def __init__(self, codigo: str, mensagem: str, detalhe: str | None = None) -> None:

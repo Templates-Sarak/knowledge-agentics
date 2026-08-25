@@ -7,7 +7,7 @@ description: Cria sistemas modulares e módulos conforme o template de módulos 
 
 Porta única para o **template de módulos**: cada módulo é uma fatia vertical autossuficiente — dono do
 próprio front, da própria API, do próprio motor e da própria fatia de banco. O módulo nasce **extraível**:
-virar microsserviço depois é copiar a pasta e recortar as chaves `<MODULO>_*` do `.env`, sem refactor.
+virar microsserviço depois é copiar a pasta e recortar as chaves `<MODULE>_*` do `.env`, sem refactor.
 
 > **Fonte normativa:** o catálogo `specs/arquitetura/04-regras.md` **do projeto** (na base Sarak:
 > `specs/_estrutura_modulos/doutrina/04-regras.md`). **Não duplique regra aqui.** Esta skill conduz o fluxo;
@@ -105,7 +105,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
   módulo — infraestrutura só por porta; o nome do provedor só aparece em `config/ports.json`.
 - **NUNCA** escreva rota antes do `contract/openapi.yaml` — código divergente da spec é erro de gate.
 - **NUNCA** declare `data.schema` como `public`, nem tabela sem o prefixo `<id>_`.
-- **NUNCA** ponha segredo no `.env` do módulo — ele só aceita `ENV_ROOT` e chaves `<MODULO>_*`.
+- **NUNCA** ponha segredo no `.env` do módulo — ele só aceita `ENV_ROOT` e chaves `<MODULE>_*`.
 - **NUNCA** confirme um `consumes` sem checar ciclo: `A→B` e `B→A` reprova, e o conserto é redesenho.
 - **NÃO** use fallback de infraestrutura (`env['X'] ?? 'http://localhost'`) — falta de config **derruba o boot**.
 - **NÃO** devolva registro cru na resposta — a saída é montada campo a campo pelo mapeador.
@@ -124,7 +124,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 - [ ] `consumes` sem ciclo, e cada gateway com a sua entrada declarada?
 - [ ] `.env.example` gerado pelo script (não editado à mão) e valores no `.env` da raiz?
 - [ ] Testes de domínio e de contrato rodando **sem rede e sem banco** (adapters de memória)?
-- [ ] `validate <modulo>` e `validate --extracao <modulo>` verdes? (Fluxo A: também `--todos`.)
+- [ ] `validate <module>` e `validate --extracao <module>` verdes? (Fluxo A: também `--todos`.)
 - [ ] Fluxo A: decisões do projeto (idioma, schema, `ui.modo`) registradas em `specs/adr/`?
 
 ## Referências (Camada 3 — leia sob demanda)

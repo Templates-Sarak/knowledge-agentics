@@ -1,4 +1,4 @@
-"""Portas do modulo <modulo>: o que ele precisa de INFRAESTRUTURA.
+"""Portas do modulo <module>: o que ele precisa de INFRAESTRUTURA.
 Lei dona: specs/arquitetura/01-modulo.md §5.
 
 Aqui mora o CONTRATO ("preciso de um repositorio"), nunca a implementacao ("falo com Postgres").
@@ -64,7 +64,7 @@ class Notifier(Protocol):
 
 
 @dataclass(frozen=True)
-class DependenciasModulo:
+class ModuleDependencies:
     """O conjunto que o bootstrap RECEBE.
 
     Cada nome aqui corresponde a uma chave de config/ports.json e a uma entrada de

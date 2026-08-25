@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from adapters.memory import (
-    AuthQueNega,
+    DenyingTokenVerifier,
     DefaultIdGenerator,
     InMemoryAudit,
     InMemoryNotifier,
@@ -47,8 +47,8 @@ from adapters.postgres import PostgresAudit, PostgresRepository
 FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {
     "repository": {"memory": lambda modulo: InMemoryRepository(), "postgres": PostgresRepository},
     "audit": {"memory": lambda modulo: InMemoryAudit(), "postgres": PostgresAudit},
-    "clock": {"sistema": lambda modulo: SystemClock()},
-    "idGenerator": {"padrao": lambda modulo: DefaultIdGenerator()},
+    "clock": {"system": lambda modulo: SystemClock()},
+    "idGenerator": {"default": lambda modulo: DefaultIdGenerator()},
     "storage": {"memory": lambda modulo: InMemoryStorage()},
     "notifier": {"memory": lambda modulo: InMemoryNotifier()},
 }
@@ -96,10 +96,10 @@ def resolve_dependencies(modulo: dict[str, Any]) -> dict[str, Any]:
     return dependencias
 
 
-def resolve_auth() -> AuthQueNega:
+def resolve_token_verifier() -> DenyingTokenVerifier:
     """Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem token estao
     declaradas em `publicRoutes` de cada modulo, e so elas passam."""
-    return AuthQueNega()
+    return DenyingTokenVerifier()
 
 
 def verify_routes_unique(modulos: list[dict[str, Any]]) -> None:
@@ -125,7 +125,7 @@ def choose_base_route(rotas_base: list[str], caminho: str) -> str | None:
     prefixo casado antes de repassar, mas cada sub-app de modulo ja tem a propria rotaBase
     embutida no roteador dela (o `create_app` do modulo aplica `prefix=manifesto["basePath"]`) —
     stripar de novo faria toda rota do modulo responder 404. O dispatcher, por isso, so ESCOLHE o
-    app certo e repassa o `scope` intacto (`RaizAsgi` abaixo). Ordena por comprimento decrescente
+    app certo e repassa o `scope` intacto (`AsgiRoot` abaixo). Ordena por comprimento decrescente
     para a rotaBase mais especifica vencer primeiro, caso um dia existam rotas aninhadas.
     """
     for rota_base in sorted(rotas_base, key=len, reverse=True):
@@ -159,7 +159,7 @@ def _import_api_module(modulo: dict[str, Any]) -> Any:
         sys.path.remove(pasta)
 
 
-class RaizAsgi:
+class AsgiRoot:
     """O app do PROCESSO: dispatcha por rotaBase para o app ASGI do modulo dono, sem `Mount` (ver
     `choose_base_route`). So entende `http` e `lifespan` — nenhum modulo declara websocket."""
 
@@ -206,27 +206,27 @@ class RaizAsgi:
         await send({"type": "http.response.body", "body": corpo})
 
 
-def build_system(raiz: Path) -> RaizAsgi:
+def build_system(raiz: Path) -> AsgiRoot:
     """Monta o app do PROCESSO: um app ASGI por modulo, sob a `basePath` dele. Cada modulo ja
     expoe suas rotas sob a propria rotaBase — `create_app` cuida disso; aqui NAO se remonta rota
-    nenhuma, so se escolhe qual app atende cada requisicao (`RaizAsgi`)."""
+    nenhuma, so se escolhe qual app atende cada requisicao (`AsgiRoot`)."""
     modulos = discover_modules(raiz)
     verify_routes_unique(modulos)
 
-    auth = resolve_auth()
+    auth = resolve_token_verifier()
     apps: dict[str, Any] = {}
     for modulo in modulos:
         deps_por_nome = resolve_dependencies(modulo)
         api = _import_api_module(modulo)
-        # `DependenciasModulo` e um dataclass POR MODULO (core/ports/__init__.py de cada um, nao
+        # `ModuleDependencies` e um dataclass POR MODULO (core/ports/__init__.py de cada um, nao
         # um tipo global) — o bootstrap acessa `deps.idGenerator` por ATRIBUTO, nunca por chave. Como
         # `_import_api_module` ja deixou o `core.ports` FRESCO deste modulo em `sys.modules`
         # (import transitivo de `api.src`), a classe certa e essa — nunca uma importada aqui em
         # cima, que colidiria com o `core` de outro modulo pelo mesmo motivo do import da api.
-        deps = sys.modules["core.ports"].DependenciasModulo(**deps_por_nome)
+        deps = sys.modules["core.ports"].ModuleDependencies(**deps_por_nome)
         config = api.load_configuration(modulo["pasta"])
         apps[modulo["basePath"]] = api.create_app(deps, auth, config)
-    return RaizAsgi(apps)
+    return AsgiRoot(apps)
 
 
 def _read_pairs_env(caminho: Path) -> list[tuple[str, str]]:

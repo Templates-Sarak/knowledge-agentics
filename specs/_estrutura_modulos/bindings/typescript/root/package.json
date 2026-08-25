@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Federacao de modulos autossuficientes.",
-  "//workspaces": "O padrao `modules/[a-z]*` exclui os moldes (`_template`) DE PROPOSITO: o package.json deles carrega o marcador `<modulo>` no nome, que nao e um nome npm valido. Trocar por `modules/*` quebra `npm install` na raiz com EINVALIDPACKAGENAME. O molde continua sendo validado pelo gate (ADR-006, specs/adr/000-decisoes-do-template.md) — o que ele nao e, e membro do workspace.",
+  "//workspaces": "O padrao `modules/[a-z]*` exclui os moldes (`_template`) DE PROPOSITO: o package.json deles carrega o marcador `<module>` no nome, que nao e um nome npm valido. Trocar por `modules/*` quebra `npm install` na raiz com EINVALIDPACKAGENAME. O molde continua sendo validado pelo gate (ADR-006, specs/adr/000-decisoes-do-template.md) — o que ele nao e, e membro do workspace.",
   "workspaces": [
     "modules/[a-z]*",
     "packages/*",
@@ -41,7 +41,7 @@
     "start:autoteste": "tsx src/composition.ts --autoteste",
     "//build": "Compila o backend (raiz + cada modulo, tsc -p tsconfig.build.json) e constroi o front de todo modulo com web/ (vite build) — 03-operacao.md §9. `node tools/package.mjs <destino>` faz o mesmo MAIS empacota um artefato backend autossuficiente em <destino>.",
     "build": "node tools/package.mjs",
-    "//migrations": "Aplica/reverte database/migrations/*.sql de UM modulo contra Postgres (03-operacao.md §9.3) — `<MODULO>_DB_URL` no .env da raiz. NAO mora em tools/ (zero dependencia, lei 3): usa `pg`, devDependency de PROJETO. `-- up|down|ciclo <modulo>`: o `--` repassa o argumento ao script (sem ele, npm interpreta como flag do proprio npm).",
+    "//migrations": "Aplica/reverte database/migrations/*.sql de UM modulo contra Postgres (03-operacao.md §9.3) — `<MODULE>_DB_URL` no .env da raiz. NAO mora em tools/ (zero dependencia, lei 3): usa `pg`, devDependency de PROJETO. `-- up|down|ciclo <module>`: o `--` repassa o argumento ao script (sem ele, npm interpreta como flag do proprio npm).",
     "migrations": "node scripts/migrations.mjs"
   },
   "dependencies": {

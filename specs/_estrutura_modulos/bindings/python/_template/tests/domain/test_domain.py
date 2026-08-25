@@ -1,10 +1,10 @@
-"""Testes do dominio do modulo <modulo> — regras e validacao, sem I/O."""
+"""Testes do dominio do modulo <module> — regras e validacao, sem I/O."""
 
 from __future__ import annotations
 
 import pytest
 
-from core.domain import ErroDeValidacao, build_record
+from core.domain import ValidationError, build_record
 from core.engine import generate_artifact
 from tests.fixtures import record_example
 
@@ -24,12 +24,12 @@ def test_remove_espaco_em_volta_do_titulo() -> None:
 
 
 def test_recusa_titulo_vazio() -> None:
-    with pytest.raises(ErroDeValidacao):
+    with pytest.raises(ValidationError):
         build_record({"titulo": "   "}, STATUS_VALIDOS, "10001", INSTANTE)
 
 
 def test_recusa_status_fora_do_vocabulario() -> None:
-    with pytest.raises(ErroDeValidacao):
+    with pytest.raises(ValidationError):
         build_record({"titulo": "X", "status": "inventado"}, STATUS_VALIDOS, "10001", INSTANTE)
 
 

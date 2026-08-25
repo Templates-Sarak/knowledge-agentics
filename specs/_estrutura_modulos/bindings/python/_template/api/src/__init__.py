@@ -1,4 +1,4 @@
-"""Bootstrap da api do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §5.
+"""Bootstrap da api do modulo <module>. Lei dona: specs/arquitetura/01-modulo.md §5.
 
 REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria e nunca importa
 adapter nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
@@ -9,17 +9,17 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from core.ports import Auth, DependenciasModulo
-from .config import ConfiguracaoModulo, load_configuration, env_required
+from core.ports import Auth, ModuleDependencies
+from .config import ModuleConfiguration, load_configuration, env_required
 from .logger import create_logger
-from .middlewares import ContextoDaBorda, record_middlewares
+from .middlewares import EdgeContext, record_middlewares
 from .routes import create_routes
 
 __all__ = ["create_app", "listen_port", "load_configuration", "env_required"]
 
 
 def create_app(
-    deps: DependenciasModulo, auth: Auth, config: ConfiguracaoModulo | None = None
+    deps: ModuleDependencies, auth: Auth, config: ModuleConfiguration | None = None
 ) -> FastAPI:
     """Monta o modulo num FastAPI. Usado pela raiz de composicao E pelos testes de contrato."""
     configuracao = config or load_configuration()
@@ -38,7 +38,7 @@ def create_app(
         redoc_url=None,
     )
     record_middlewares(
-        app, configuracao, ContextoDaBorda(deps.idGenerator, auth, logger)
+        app, configuracao, EdgeContext(deps.idGenerator, auth, logger)
     )
     app.include_router(create_routes(deps, configuracao), prefix=manifesto["basePath"])
     return app
@@ -50,8 +50,8 @@ def listen_port() -> int:
     A porta vem do ambiente, e a falta dela DERRUBA o boot (specs/arquitetura/01-modulo.md §4.3).
     O limite de corpo (config/api.json:maxBodyKb) e aplicado pelo servidor ASGI na frente.
     """
-    return int(env_required("<MODULO>_API_PORT"))
+    return int(env_required("<MODULE>_API_PORT"))
 
 
-def body_limit_bytes(config: ConfiguracaoModulo) -> int:
+def body_limit_bytes(config: ModuleConfiguration) -> int:
     return int(config.api["maxBodyKb"]) * 1024

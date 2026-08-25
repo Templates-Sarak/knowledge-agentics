@@ -1,11 +1,11 @@
-// Logger estruturado do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §3.
+// Logger estruturado do modulo <module>. Lei dona: specs/arquitetura/03-operacao.md §3.
 //
 // Uma linha JSON por evento, com requestId. Campos de `sensitiveFields` sao redigidos AQUI —
 // nao e responsabilidade de quem chama lembrar. `console.*` e proibido no modulo (regra `log`);
 // a saida vai por process.stdout, que e o unico canal do logger.
 
 const NIVEIS = ['debug', 'info', 'warn', 'error'] as const;
-export type Nivel = (typeof NIVEIS)[number];
+export type Level = (typeof NIVEIS)[number];
 
 export interface Logger {
   debug(mensagem: string, dados?: Record<string, unknown>): void;
@@ -16,7 +16,7 @@ export interface Logger {
 
 interface OpcoesLogger {
   modulo: string;
-  nivelMinimo: Nivel;
+  nivelMinimo: Level;
   camposSensiveis: string[];
 }
 
@@ -38,7 +38,7 @@ export function createLogger({ modulo, nivelMinimo, camposSensiveis }: OpcoesLog
   const sensiveis = new Set(camposSensiveis);
   const minimo = NIVEIS.indexOf(nivelMinimo);
 
-  const emit = (nivel: Nivel, mensagem: string, dados?: Record<string, unknown>): void => {
+  const emit = (nivel: Level, mensagem: string, dados?: Record<string, unknown>): void => {
     if (NIVEIS.indexOf(nivel) < minimo) return;
     const linha = { nivel, modulo, mensagem, ...(redact(dados ?? {}, sensiveis) as object) };
     process.stdout.write(`${JSON.stringify(linha)}\n`);

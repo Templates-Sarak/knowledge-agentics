@@ -1,4 +1,4 @@
-"""Taxonomia FECHADA de erro do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
+"""Taxonomia FECHADA de erro do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
 
 Fechada quer dizer: acrescentar codigo aqui e mudanca de contrato, nao improviso de rota.
 A mensagem ao cliente e generica e estavel; o detalhe vai so para o log, ligado pelo requestId.
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-CODIGOS: dict[str, int] = {
+CODES: dict[str, int] = {
     "VALIDACAO": 400,
     "NAO_AUTENTICADO": 401,
     "NAO_AUTORIZADO": 403,
@@ -20,7 +20,7 @@ CODIGOS: dict[str, int] = {
 }
 
 
-class ErroApi(Exception):
+class ApiError(Exception):
     """O unico erro que a borda sabe traduzir em resposta."""
 
     def __init__(self, codigo: str, mensagem: str, detalhe: str | None = None) -> None:
@@ -31,10 +31,10 @@ class ErroApi(Exception):
 
     @property
     def status(self) -> int:
-        return CODIGOS[self.codigo]
+        return CODES[self.codigo]
 
 
-def error_envelope(erro: ErroApi, request_id: str) -> dict[str, Any]:
+def error_envelope(erro: ApiError, request_id: str) -> dict[str, Any]:
     """Envelope UNICO de erro. Toda falha sai exatamente nesta forma."""
     return {
         "erro": {

@@ -82,10 +82,10 @@ npx artillery run --output resultado.json script.yml
 
 ## Onde isto mora num projeto do template modular
 
-Um script de carga **não** entra em `modules/<modulo>/tests/` — essa árvore (`domain/`, `contract/`,
+Um script de carga **não** entra em `modules/<module>/tests/` — essa árvore (`domain/`, `contract/`,
 `web/`, `fixtures/`) roda inteira com adapters de memória, sem rede (`specs/arquitetura/03-operacao.md`
 §5); um script k6/Artillery faz o oposto por natureza — martela HTTP contra uma instância **de verdade**
-rodando em algum lugar. Trate-o como script de **operação**, ao lado de `node scripts/migrations.mjs ciclo <modulo>`
+rodando em algum lugar. Trate-o como script de **operação**, ao lado de `node scripts/migrations.mjs ciclo <module>`
 (`03-operacao.md` §9.3) — por exemplo `scripts/carga/<endpoint>.js` na raiz do projeto — nunca dentro da
 pasta de um módulo. Fora do template, o lugar convencional é uma pasta própria na raiz (`load/`,
 `tests/carga/`), fora da suíte que roda em CI comum a cada commit.

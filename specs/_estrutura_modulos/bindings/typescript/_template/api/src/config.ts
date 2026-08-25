@@ -1,4 +1,4 @@
-// Carregador UNICO de configuracao do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §4.
+// Carregador UNICO de configuracao do modulo <module>. Lei dona: specs/arquitetura/01-modulo.md §4.
 //
 // Regras que este arquivo materializa:
 //   - SO ele toca o ambiente. Qualquer outro arquivo lendo env e aviso do gate.
@@ -14,13 +14,13 @@ export interface ConfigApi {
   logLevel: 'debug' | 'info' | 'warn' | 'error';
 }
 
-export interface ConfigSeguranca {
+export interface ConfigSecurity {
   rateLimit: { windowSeconds: number; readLimit: number; writeLimit: number };
   cors: { allowedOrigins: string[]; methods: string[] };
   headers: { hsts: boolean; noSniff: boolean; frameDeny: boolean; referrerPolicy: string };
 }
 
-export interface Manifesto {
+export interface Manifest {
   id: string;
   name: string;
   version: string;
@@ -37,12 +37,12 @@ export interface Manifesto {
   sensitiveFields: string[];
 }
 
-export interface ConfiguracaoModulo {
+export interface ModuleConfiguration {
   raiz: string;
-  manifesto: Manifesto;
+  manifesto: Manifest;
   api: ConfigApi;
   dominio: { validStatuses: string[] };
-  seguranca: ConfigSeguranca;
+  seguranca: ConfigSecurity;
   portas: Record<string, string>;
   textos: Record<string, string>;
 }
@@ -130,7 +130,7 @@ export function envRequired(chave: string): string {
  * boot real (`npm run start`) ou este mesmo teste, chamando a funcao com `NODE_ENV` diferente de
  * `test` de proposito.
  */
-export function checkEnvRequired(manifesto: Manifesto): void {
+export function checkEnvRequired(manifesto: Manifest): void {
   const faltando = manifesto.requiredEnv.filter((chave) => process.env[chave] === undefined);
   if (faltando.length > 0 && process.env['NODE_ENV'] !== 'test') {
     throw new Error(`[config] ${manifesto.id}: variaveis ausentes no ambiente: ${faltando.join(', ')}`);
@@ -138,8 +138,8 @@ export function checkEnvRequired(manifesto: Manifesto): void {
 }
 
 /** Carrega e valida TUDO no boot; qualquer falta derruba o processo antes de servir. */
-export function loadConfiguration(raiz: string = findRootModule()): ConfiguracaoModulo {
-  const manifesto = readJson<Manifesto>(raiz, 'module.json');
+export function loadConfiguration(raiz: string = findRootModule()): ModuleConfiguration {
+  const manifesto = readJson<Manifest>(raiz, 'module.json');
   resolveEnvironment(raiz);
   checkEnvRequired(manifesto);
 
@@ -148,7 +148,7 @@ export function loadConfiguration(raiz: string = findRootModule()): Configuracao
     manifesto,
     api: readJson<ConfigApi>(raiz, 'config/api.json'),
     dominio: readJson<{ validStatuses: string[] }>(raiz, 'config/domain.json'),
-    seguranca: readJson<ConfigSeguranca>(raiz, 'config/security.json'),
+    seguranca: readJson<ConfigSecurity>(raiz, 'config/security.json'),
     portas: readJson<Record<string, string>>(raiz, 'config/ports.json'),
     textos: readJson<Record<string, string>>(raiz, 'config/texts.json'),
   };

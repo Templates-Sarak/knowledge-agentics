@@ -1,4 +1,4 @@
-// Portas do modulo <modulo>: o que ele precisa de INFRAESTRUTURA.
+// Portas do modulo <module>: o que ele precisa de INFRAESTRUTURA.
 // Lei dona: specs/arquitetura/01-modulo.md §5.
 //
 // Aqui mora o CONTRATO ("preciso de um repositorio"), nunca a implementacao ("falo com Postgres").
@@ -57,7 +57,7 @@ export interface Notifier {
  * fabrica (`FABRICAS.notifier`, src/composition.ts) e alcancada de verdade no boot, nao so
  * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  */
-export interface DependenciasModulo {
+export interface ModuleDependencies {
   repository: Repository;
   audit: Audit;
   clock: Clock;

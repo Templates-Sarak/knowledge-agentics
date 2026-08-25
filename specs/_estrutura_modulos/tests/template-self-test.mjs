@@ -78,7 +78,7 @@ export const BINDINGS = ['typescript', 'javascript', 'python'];
 
 /**
  * As CINCO entradas: as QUATRO combinações de flag de `create-module.mjs` MAIS o id com hífen
- * (regressão do `<modulo_snake>`, ver abaixo) — o invariante é que *qualquer* combinação
+ * (regressão do `<module_snake>`, ver abaixo) — o invariante é que *qualquer* combinação
  * produz módulo que passa em `verificar`, e "qualquer" só vira prova rodando as quatro, não uma. Um
  * id por combinação, para os quatro módulos conviverem no MESMO projeto (um só
  * `npm install`/`pip install`, um só `verificar` cobrindo os quatro via workspace/descoberta) —
@@ -86,13 +86,13 @@ export const BINDINGS = ['typescript', 'javascript', 'python'];
  */
 export const COMBINACOES_DE_MODULO = [
   // UM id COM HIFEN é obrigatório aqui, e é regressão, não variedade: `id` é kebab-case por lei
-  // (01-modulo.md §3), e até a correção do marcador `<modulo_snake>` NENHUM id com hífen tinha
+  // (01-modulo.md §3), e até a correção do marcador `<module_snake>` NENHUM id com hífen tinha
   // manifesto válido possível — `tabela-prefixo` exigia `nota-fiscal_` e `schema-manifesto` proibia
   // o hífen na tabela que começa por ele. O defeito sobreviveu justamente porque todo id daqui era
   // de uma palavra só: o teste foi ajustado para desviar dele em vez de acusá-lo. Tirar
   // `sonda-hifen` desta lista devolve o ponto cego inteiro.
   //
-  // CURTO de propósito, e é a SEGUNDA medição, não só a primeira: `<modulo>` entra em comentário de
+  // CURTO de propósito, e é a SEGUNDA medição, não só a primeira: `<module>` entra em comentário de
   // CABEÇALHO em vários arquivos do molde Python (`api/src/errors.py:1`, o mais apertado, tem só 13
   // caracteres de folga antes de estourar os 110 do ruff). Ids mais longos ("sondasemartefato",
   // 16 chars) reprovam `ruff check` (E501) e `ruff format --check` no binding Python, sem relação
@@ -713,8 +713,8 @@ function casosDeAutoteste() {
     // `nota-fiscal_` enquanto `schema-manifesto` proibia o hífen na tabela derivada — nenhum id com
     // hífen tinha manifesto válido. A rede foi ajustada para desviar do defeito, e com ela verde o
     // defeito virou invisível. Agora a rede EXIGE o caso que antes proibia: sem um id hifenizado, a
-    // cadeia inteira volta a nunca exercitar `<modulo_snake>`.
-    { nome: 'COMBINACOES_DE_MODULO: PELO MENOS um id com hifen (regressao do <modulo_snake>)', fn: () => (
+    // cadeia inteira volta a nunca exercitar `<module_snake>`.
+    { nome: 'COMBINACOES_DE_MODULO: PELO MENOS um id com hifen (regressao do <module_snake>)', fn: () => (
       COMBINACOES_DE_MODULO.some((c) => c.id.includes('-'))
     ) },
     { nome: 'passosDoBinding(..., {rapido:true}): so a combinacao PADRAO, nos tres bindings', fn: () => (

@@ -140,7 +140,7 @@ resposta ambígua.
 node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]
 ```
 
-O script copia o molde do binding, substitui os marcadores (`<modulo>`, `<MODULO>`, `<Modulo>`), ajusta o
+O script copia o molde do binding, substitui os marcadores (`<module>`, `<MODULE>`, `<Module>`), ajusta o
 manifesto, cria o `.env` com o ponteiro `ENV_ROOT` e roda o gate ao final.
 
 **O que detectar:** exit ≠ 0. O scaffold já valida o que criou — pendência aqui é do molde, não sua.
@@ -170,7 +170,7 @@ Preencha `module.json` conforme `references/templates.md`. Regra que atravessa t
 
 **O que detectar:**
 - Tabela usada no código e ausente de `data.tables` → o gate varre **uso**, não só declaração.
-- Chave `<MODULO>_*` lida no código e ausente de `requiredEnv` → erro.
+- Chave `<MODULE>_*` lida no código e ausente de `requiredEnv` → erro.
 - `data.schema` igual a `public` → erro, sem exceção.
 - Permissão de outro módulo declarada aqui → o módulo declara **só o que possui**.
 
@@ -229,7 +229,7 @@ export function criarGatewayCatalogo(baseUrl: string): CatalogoGateway {
   return {
     async obterPrecoVigente(hash: string): Promise<number> {
       const resposta = await fetch(`${baseUrl}/itens/${hash}/preco-vigente`)
-      if (!resposta.ok) throw new ErroDeGateway('catalogo', `HTTP ${resposta.status}`)
+      if (!resposta.ok) throw new GatewayError('catalogo', `HTTP ${resposta.status}`)
       const { valor } = await resposta.json()
       return valor   // projete SO a fatia que voce declarou precisar
     },

@@ -1,4 +1,4 @@
-// Bootstrap da api do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §5.
+// Bootstrap da api do modulo <module>. Lei dona: specs/arquitetura/01-modulo.md §5.
 //
 // REGRA CENTRAL: este arquivo RECEBE os adapters ja instanciados — nunca os cria e nunca importa
 // `adapters/*` nem SDK de fornecedor. Quem escolhe o provedor e a raiz de composicao, lendo
@@ -6,7 +6,7 @@
 import express, { type Express } from 'express';
 
 import { loadConfiguration, envRequired } from './config.js';
-import type { DependenciasModulo } from '../../core/ports/index.js';
+import type { ModuleDependencies } from '../../core/ports/index.js';
 import { createLogger } from './logger.js';
 import { createRoutes } from './routes/index.js';
 import {
@@ -19,8 +19,8 @@ import {
   errorHandler,
 } from './middlewares/index.js';
 
-export interface OpcoesModulo {
-  deps: DependenciasModulo;
+export interface ModuleOptions {
+  deps: ModuleDependencies;
   auth: Auth;
   /**
    * Pasta do modulo, quando quem monta o app ja a conhece — a raiz de composicao (specs/arquitetura/00-arquitetura.md §3.4).
@@ -32,7 +32,7 @@ export interface OpcoesModulo {
 }
 
 /** Monta o modulo num Express. Usado pela raiz de composicao E pelos testes de contrato. */
-export function createApp({ deps, auth, raiz }: OpcoesModulo): Express {
+export function createApp({ deps, auth, raiz }: ModuleOptions): Express {
   const config = loadConfiguration(raiz);
   const { seguranca, manifesto } = config;
   const logger = createLogger({
@@ -72,14 +72,14 @@ export function createApp({ deps, auth, raiz }: OpcoesModulo): Express {
  * No monolito modular quem sobe e a raiz de composicao; aqui a porta vem do ambiente, e a falta
  * dela DERRUBA o boot (specs/arquitetura/01-modulo.md §4.3).
  */
-export function start(opcoes: OpcoesModulo): void {
+export function start(opcoes: ModuleOptions): void {
   const config = loadConfiguration();
   const logger = createLogger({
     modulo: config.manifesto.id,
     nivelMinimo: config.api.logLevel,
     camposSensiveis: config.manifesto.sensitiveFields,
   });
-  const porta = Number(envRequired('<MODULO>_API_PORT'));
+  const porta = Number(envRequired('<MODULE>_API_PORT'));
 
   createApp(opcoes).listen(porta, () => {
     logger.info('api no ar', { porta, rotaBase: config.manifesto.basePath });

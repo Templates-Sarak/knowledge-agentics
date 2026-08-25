@@ -1,17 +1,17 @@
--- Estado ALVO do schema do modulo <modulo>, depois da ultima migration.
+-- Estado ALVO do schema do modulo <module>, depois da ultima migration.
 -- Este arquivo e um espelho, nao a fonte: a fonte sao as migrations em database/migrations/.
 -- Alterar schema em ambiente com dado real e HITL (specs/arquitetura/02-contrato-e-dados.md §6.3).
 
 create schema if not exists "<escopo>";
 
-create table "<escopo>"."<modulo_snake>_migrations" (
+create table "<escopo>"."<module_snake>_migrations" (
   arquivo      text        primary key,
   aplicada_em  timestamptz not null default now()
 );
 
-alter table "<escopo>"."<modulo_snake>_migrations" enable row level security;
+alter table "<escopo>"."<module_snake>_migrations" enable row level security;
 
-create table "<escopo>"."<modulo_snake>_metadados" (
+create table "<escopo>"."<module_snake>_metadados" (
   id          uuid primary key default gen_random_uuid(),
   hash        text        not null unique,
   titulo      text        not null,
@@ -20,9 +20,9 @@ create table "<escopo>"."<modulo_snake>_metadados" (
   updated_at  timestamptz not null default now()
 );
 
-alter table "<escopo>"."<modulo_snake>_metadados" enable row level security;
+alter table "<escopo>"."<module_snake>_metadados" enable row level security;
 
-create table "<escopo>"."<modulo_snake>_auditoria" (
+create table "<escopo>"."<module_snake>_auditoria" (
   id               uuid primary key default gen_random_uuid(),
   hash             text        not null,
   acao             text        not null,
@@ -33,4 +33,4 @@ create table "<escopo>"."<modulo_snake>_auditoria" (
   updated_at       timestamptz not null default now()
 );
 
-alter table "<escopo>"."<modulo_snake>_auditoria" enable row level security;
+alter table "<escopo>"."<module_snake>_auditoria" enable row level security;

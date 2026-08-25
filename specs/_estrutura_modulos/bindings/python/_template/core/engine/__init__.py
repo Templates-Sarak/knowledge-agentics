@@ -1,4 +1,4 @@
-"""Motor do modulo <modulo>: geracao DETERMINISTICA do artefato publicavel.
+"""Motor do modulo <module>: geracao DETERMINISTICA do artefato publicavel.
 Lei dona: specs/arquitetura/01-modulo.md §2 (so existe se generatesArtifact = true).
 
 Deterministico significa: mesma entrada, saida byte a byte identica. Por isso o instante e o

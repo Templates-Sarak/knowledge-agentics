@@ -18,7 +18,7 @@ numa tarefa (quebra a verificação isolada).
 
 ```jsonc
 {
-  "id": "orders-003",              // estável: <modulo>-<seq>. Liga tarefa → status → commit → condição do /goal
+  "id": "orders-003",              // estável: <module>-<seq>. Liga tarefa → status → commit → condição do /goal
   "modulo": "orders",
   "arquivo": "backend/orders/order_service.py",
   "linhas": "45-118",              // faixa afetada (referência, não trava)

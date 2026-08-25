@@ -66,7 +66,7 @@ export function createSequentialGenerator(inicio = 10000) {
 }
 
 /** Auth que NEGA tudo. E o default seguro enquanto o projeto nao tem login (deny by default). */
-export function createDenyingAuth() {
+export function createDenyingTokenVerifier() {
   return {
     async verify() {
       return null;

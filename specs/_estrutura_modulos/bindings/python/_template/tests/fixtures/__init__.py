@@ -1,4 +1,4 @@
-"""Dubles das portas do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §5.
+"""Dubles das portas do modulo <module>. Lei dona: specs/arquitetura/03-operacao.md §5.
 
 TODO teste do modulo roda com estes — sem rede e sem banco. Isso nao e preferencia de teste: e a
 PROVA EXECUTAVEL de que o desacoplamento existe. Se um teste precisar de infraestrutura, a porta
@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 from core.domain import Registro
-from core.ports import DependenciasModulo, Pagina
+from core.ports import ModuleDependencies, Pagina
 
 INSTANTE_FIXO = "2024-01-01T00:00:00.000Z"
 
@@ -81,8 +81,8 @@ class AuthDeTeste:
         return {"permissions": self._permissoes} if token == self._token else None
 
 
-def create_dependencies(iniciais: Sequence[Registro] = ()) -> DependenciasModulo:
-    return DependenciasModulo(
+def create_dependencies(iniciais: Sequence[Registro] = ()) -> ModuleDependencies:
+    return ModuleDependencies(
         repository=InMemoryRepository(iniciais),
         audit=InMemoryAudit(),
         clock=FixedClock(),

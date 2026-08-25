@@ -1,8 +1,8 @@
-"""Rotas do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
+"""Rotas do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
 
 O contrato manda: toda rota daqui existe em contract/openapi.yaml, e o inverso tambem.
 Regras cobradas aqui: valida na borda ANTES do dominio; exige permissao nomeada; monta a resposta
-pelo mapeador (nunca o registro cru); lanca ErroApi (nunca resposta de erro ad hoc).
+pelo mapeador (nunca o registro cru); lanca ApiError (nunca resposta de erro ad hoc).
 """
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 
-from core.domain import ErroDeValidacao, Registro, build_record
-from core.ports import DependenciasModulo
-from .errors import ErroApi
+from core.domain import ValidationError, Registro, build_record
+from core.ports import ModuleDependencies
+from .errors import ApiError
 from .mappers import to_collection, to_contract, to_meta
 from .middlewares import require_permission
 
@@ -40,10 +40,10 @@ def _read_pagination(request: Request, config: Any) -> tuple[int, int]:
         "tamanho", str(config.api["defaultPageSize"])
     )
     if not bruto_pagina.isdigit() or int(bruto_pagina) < 1:
-        raise ErroApi("VALIDACAO", 'parametro "pagina" deve ser inteiro >= 1')
+        raise ApiError("VALIDACAO", 'parametro "pagina" deve ser inteiro >= 1')
     teto = config.api["maxPageSize"]
     if not bruto_tamanho.isdigit() or not 1 <= int(bruto_tamanho) <= teto:
-        raise ErroApi("VALIDACAO", f'parametro "tamanho" deve estar entre 1 e {teto}')
+        raise ApiError("VALIDACAO", f'parametro "tamanho" deve estar entre 1 e {teto}')
     return int(bruto_pagina), int(bruto_tamanho)
 
 
@@ -51,14 +51,14 @@ def _read_body(corpo: Any) -> dict[str, Any]:
     """Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado
     (specs/arquitetura/02-contrato-e-dados.md §3.2)."""
     if not isinstance(corpo, dict):
-        raise ErroApi("VALIDACAO", "corpo deve ser um objeto")
+        raise ApiError("VALIDACAO", "corpo deve ser um objeto")
     desconhecido = next((c for c in corpo if c not in _CAMPOS_PERMITIDOS), None)
     if desconhecido is not None:
-        raise ErroApi("VALIDACAO", f'campo desconhecido no corpo: "{desconhecido}"')
+        raise ApiError("VALIDACAO", f'campo desconhecido no corpo: "{desconhecido}"')
     return corpo
 
 
-def create_routes(deps: DependenciasModulo, config: Any) -> APIRouter:
+def create_routes(deps: ModuleDependencies, config: Any) -> APIRouter:
     router = APIRouter()
     ler, escrever = _permissions_for(config)
 
@@ -89,7 +89,7 @@ def create_routes(deps: DependenciasModulo, config: Any) -> APIRouter:
         require_permission(request, ler)
         registro = await deps.repository.find_by_hash(hash_universal)
         if registro is None:
-            raise ErroApi("NAO_ENCONTRADO", "registro nao encontrado")
+            raise ApiError("NAO_ENCONTRADO", "registro nao encontrado")
         return to_contract(registro)
 
     @router.post("/registros", status_code=201)
@@ -103,7 +103,7 @@ def create_routes(deps: DependenciasModulo, config: Any) -> APIRouter:
 
 
 async def _persist(
-    corpo: dict[str, Any], deps: DependenciasModulo, config: Any, request_id: str
+    corpo: dict[str, Any], deps: ModuleDependencies, config: Any, request_id: str
 ) -> Registro:
     """Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO
     (specs/arquitetura/02-contrato-e-dados.md §3.2)."""
@@ -114,8 +114,8 @@ async def _persist(
             deps.idGenerator.hash(),
             deps.clock.now(),
         )
-    except ErroDeValidacao as causa:
-        raise ErroApi("VALIDACAO", str(causa)) from causa
+    except ValidationError as causa:
+        raise ApiError("VALIDACAO", str(causa)) from causa
 
     await deps.repository.insert(registro)
     await deps.audit.record(

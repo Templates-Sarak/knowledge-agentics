@@ -1,10 +1,10 @@
-// Cliente da API do PROPRIO modulo <modulo>. Lei dona: specs/arquitetura/00-arquitetura.md §4.4.
+// Cliente da API do PROPRIO modulo <module>. Lei dona: specs/arquitetura/00-arquitetura.md §4.4.
 //
-// O front de um modulo fala EXCLUSIVAMENTE com /api/v1/<modulo>, por caminho RELATIVO na mesma
+// O front de um modulo fala EXCLUSIVAMENTE com /api/v1/<module>, por caminho RELATIVO na mesma
 // origem. Nunca com o banco, nunca com a api de outro modulo — dado alheio e responsabilidade da
 // api/ deste modulo, via core/gateways/. Caminho relativo tambem evita URL literal no bundle.
 
-const ROTA_BASE = '/api/v1/<modulo>';
+const ROTA_BASE = '/api/v1/<module>';
 
 async function request(caminho, opcoes = {}) {
   const resposta = await fetch(`${ROTA_BASE}${caminho}`, {

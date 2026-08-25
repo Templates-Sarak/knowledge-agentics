@@ -5,8 +5,8 @@
  * O contexto é o ÚNICO ponto que toca o disco. Regra nenhuma lê arquivo — todas recebem
  * o contexto pronto. É o que mantém as regras testáveis e o gate rápido.
  *
- * Molde: pasta iniciada por "_" é um _template. Os marcadores (<modulo>, <modulo_snake>,
- * <MODULO>, <Modulo>) são substituídos EM MEMÓRIA por um id sintético, de modo que o molde
+ * Molde: pasta iniciada por "_" é um _template. Os marcadores (<module>, <module_snake>,
+ * <MODULE>, <Module>) são substituídos EM MEMÓRIA por um id sintético, de modo que o molde
  * passe exatamente pelas mesmas regras que um módulo real (ADR-006). Nada é escrito de volta.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -75,10 +75,10 @@ function percorrer(pasta, acumulado = []) {
 function trocarMarcadores(texto, eMolde) {
   if (!eMolde) return texto;
   return texto
-    .replaceAll('<modulo_snake>', ID_SINTETICO_DO_MOLDE.replace(/-/g, '_'))
-    .replaceAll('<MODULO>', ID_SINTETICO_DO_MOLDE.toUpperCase())
-    .replaceAll('<Modulo>', 'Molde')
-    .replaceAll('<modulo>', ID_SINTETICO_DO_MOLDE)
+    .replaceAll('<module_snake>', ID_SINTETICO_DO_MOLDE.replace(/-/g, '_'))
+    .replaceAll('<MODULE>', ID_SINTETICO_DO_MOLDE.toUpperCase())
+    .replaceAll('<Module>', 'Molde')
+    .replaceAll('<module>', ID_SINTETICO_DO_MOLDE)
     .replaceAll('<escopo>', 'escopo');
 }
 

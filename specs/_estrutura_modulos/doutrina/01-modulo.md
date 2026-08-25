@@ -19,9 +19,9 @@ exata em [[04-regras]].
 Todo módulo tem exatamente esta forma. Divergir dela exige decisão registrada em [[decisoes]], não improviso.
 
 ```
-modules/<modulo>/
+modules/<module>/
 ├── module.json          identidade + contrato — o sistema DESCOBRE o módulo por aqui
-├── package.json         @<escopo>/<modulo>        (pyproject.toml no binding Python)
+├── package.json         @<escopo>/<module>        (pyproject.toml no binding Python)
 ├── .env                 ENV_ROOT + overrides — NÃO versionado, criado pelo scaffold
 ├── .env.example         GERADO de module.json:requiredEnv — nunca editado à mão
 ├── README.md
@@ -52,14 +52,14 @@ modules/<modulo>/
 │       ├── mappers/  snake↔camel + projeção de saída por allowlist
 │       └── logger.ts    logger estruturado com redação de campo sensível
 │
-├── web/                 front — consome só /api/v1/<modulo>, por caminho relativo
+├── web/                 front — consome só /api/v1/<module>, por caminho relativo
 │   ├── index.html       entrada standalone (fina, opcional)
 │   └── src/
 │       ├── index.ts     exporta as páginas — é assim que um shell consome o módulo
 │       ├── main.tsx     monta a raiz exportada
 │       ├── pages/  components/  hooks/  api-client/
 │
-├── database/            só tabelas <modulo>_*
+├── database/            só tabelas <module>_*
 │   ├── schema.sql       estado alvo depois da última migration
 │   └── migrations/      NNNN-verbo-objeto.sql, cada uma com -- rollback
 │
@@ -130,7 +130,7 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 
 | Tipo de valor | Lugar | Exemplo |
 |---|---|---|
-| Segredo, credencial, URL de infraestrutura, valor por ambiente | `.env`, prefixado `<MODULO>_` | `CATALOGO_DB_URL` |
+| Segredo, credencial, URL de infraestrutura, valor por ambiente | `.env`, prefixado `<MODULE>_` | `CATALOGO_DB_URL` |
 | Tunable não-secreto: paginação, timeout, limite de corpo, nível de log | `config/api.json` | `"maxPageSize": 100` |
 | Parâmetro de negócio: status válidos, moedas, percentuais | `config/domain.json` | `"moedasAceitas": ["BRL"]` |
 | Rate limit, CORS, headers | `config/security.json` | `"writeLimit": 20` |
@@ -161,7 +161,7 @@ extração, você apaga a linha `ENV_ROOT` e preenche os valores localmente: **n
 porque o carregador simplesmente não acha o ponteiro e usa o que está local. A fronteira fica declarada por
 escrito dentro do módulo.
 
-**Regras:** o `.env` do módulo só aceita `ENV_ROOT` e chaves `<MODULO>_*` — chave de outro módulo ali é erro.
+**Regras:** o `.env` do módulo só aceita `ENV_ROOT` e chaves `<MODULE>_*` — chave de outro módulo ali é erro.
 O `.env.example` é **gerado** de `requiredEnv`; ninguém o edita à mão, então ele nunca mente sobre o que o
 módulo exige.
 
@@ -238,8 +238,8 @@ ADR.
   por `create-adapter.mjs`, porque já existe: materializa a forma que
   `create-module.mjs` já cria (`<prefix>metadados`/`<prefix>auditoria`). `memory` continua o
   DEFAULT de todo módulo; trocar é a mesma linha de `config/ports.json`, agora verdadeira nos dois
-  sentidos. A fábrica recebe o **manifesto do módulo** (`ManifestoDescoberto`/`dict`), não zero
-  argumentos — é o que permite um adapter genérico saber `data.schema`/`data.prefix`/`<MODULO>_DB_URL`
+  sentidos. A fábrica recebe o **manifesto do módulo** (`DiscoveredManifest`/`dict`), não zero
+  argumentos — é o que permite um adapter genérico saber `data.schema`/`data.prefix`/`<MODULE>_DB_URL`
   de quem o está chamando; `memory` ignora o argumento.
 
 # 6. Gateways — todo módulo alheio desacoplado
@@ -293,8 +293,8 @@ que importa todos os módulos quanto um SPA por módulo funcionam sem estrutura 
 node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--sem-artefato]
 ```
 
-O script copia o molde do binding, substitui os marcadores (`<modulo>` → id, `<MODULO>` → id em maiúscula,
-`<Modulo>` → rótulo), ajusta o manifesto, cria o `.env` com o ponteiro e roda o gate ao final.
+O script copia o molde do binding, substitui os marcadores (`<module>` → id, `<MODULE>` → id em maiúscula,
+`<Module>` → rótulo), ajusta o manifesto, cria o `.env` com o ponteiro e roda o gate ao final.
 
 **Ninguém cria módulo à mão.** Módulo manual nasce com nome divergente e sem manifesto — as duas coisas que
 quebram o gate e que o gate não consegue consertar sozinho.
@@ -373,12 +373,12 @@ nunca o cite em schema de resposta.
 
 ## 9.6 Tabela nova
 
-1. `module.json:data.tables`, com o prefixo `<modulo>_`.
+1. `module.json:data.tables`, com o prefixo `<module>_`.
 2. Migration + `schema.sql`.
 3. Acesso pela porta `repository`; nada de SQL de fornecedor dentro do módulo.
 4. **Nunca** referencie tabela de outro módulo — o dado alheio vem pela `api/` dele.
 
-**Nada a fazer por conta do controle de estado.** `<modulo>_migrations` (§2, criada pela migration
+**Nada a fazer por conta do controle de estado.** `<module>_migrations` (§2, criada pela migration
 `0001` do molde) registra sozinha o que já rodou — `scripts/migrations.{mjs,py} up` aplica só as
 migrations pendentes, `down` reverte só a última aplicada. Uma migration nova não pede nenhum passo
 a mais aqui: ela só precisa existir em `database/migrations/`, na ordem (`NNNN-verbo-objeto.sql`),

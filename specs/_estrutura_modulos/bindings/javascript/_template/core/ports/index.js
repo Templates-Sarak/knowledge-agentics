@@ -1,4 +1,4 @@
-// Portas do modulo <modulo>: o que ele precisa de INFRAESTRUTURA.
+// Portas do modulo <module>: o que ele precisa de INFRAESTRUTURA.
 // Lei dona: specs/arquitetura/01-modulo.md §5.
 //
 // Aqui mora o CONTRATO ("preciso de um repositorio"), nunca a implementacao ("falo com Postgres").
@@ -73,7 +73,7 @@
  * fabrica (`FABRICAS.notifier`, src/composition.js) e alcancada de verdade no boot, nao so
  * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  *
- * @typedef {object} DependenciasModulo
+ * @typedef {object} ModuleDependencies
  * @property {Repository} repository
  * @property {Audit} audit
  * @property {Clock} clock

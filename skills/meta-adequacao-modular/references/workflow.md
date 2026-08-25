@@ -191,7 +191,7 @@ buildar, testar, descartar — **é a prova de vida do template**. A skill, até
 isso no alvo. Consequência medida, num repositório real, depois de uma campanha inteira já aprovada:
 `pnpm criar-modulo <id>` produzia um módulo que **não compilava, não buildava e não passava em teste** —
 faltavam `tsconfig`/`vitest.config`, o front tinha `.gitkeep` onde devia ter página, e o `package.json` do
-molde carregava o marcador `<modulo>` sem substituir no nome. Nada disso apareceu em momento algum porque
+molde carregava o marcador `<module>` sem substituir no nome. Nada disso apareceu em momento algum porque
 o marcador que o script confere é `exists()`, e um molde podre também existe.
 
 O item 6 do Passo 3 fecha essa lacuna: se o alvo tem `modules/_template` próprio, rode o ciclo de ADR-006
@@ -205,7 +205,7 @@ resolvidas. Dois exemplos medidos:
 - o binding centraliza `tsconfig`/`tsconfig.build`/`vitest.config` na **raiz do módulo** — três arquivos,
   onde um alvo real tinha seis, um por camada;
 - o `package.json` da raiz do binding traz, em `"//workspaces"`, o motivo do padrão ser `modules/[a-z]*` e
-  não `modules/*`: o molde carrega `<modulo>` no nome, que não é nome npm válido, e `modules/*` quebra
+  não `modules/*`: o molde carrega `<module>` no nome, que não é nome npm válido, e `modules/*` quebra
   `npm install` na raiz com `EINVALIDPACKAGENAME`. Um alvo real tinha exatamente esse bug, e a plan dele
   deixava a solução **em aberto como decisão do usuário** — com a resposta já escrita na base, sem
   chegar ao alvo.

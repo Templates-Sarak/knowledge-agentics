@@ -80,13 +80,8 @@ class SequentialIdGenerator:
         return str(self._atual)
 
 
-class AuthQueNega:
-    """NEGA tudo. E o default seguro enquanto o projeto nao tem login (deny by default).
-
-    NOME NAO deriva do vocabulario atual da porta (`tokenVerifier`) — carrega o nome
-    pre-ADR-010 (`auth`) e nunca foi varrido por nenhuma onda de idioma (ADR-013/014/015/016).
-    Continua implementando `TokenVerifier` corretamente; so o NOME ficou para tras. Registrado
-    como achado, nao corrigido nesta onda — ver ADR-016 §1.3."""
+class DenyingTokenVerifier:
+    """NEGA tudo. E o default seguro enquanto o projeto nao tem login (deny by default)."""
 
     async def verify(self, token: str) -> dict[str, object] | None:
         return None

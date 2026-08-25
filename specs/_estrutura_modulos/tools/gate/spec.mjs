@@ -54,7 +54,7 @@ export function rotasDaSpec(yaml) {
 /**
  * `servers[0].url` — o prefixo em que o módulo atende. `null` se a spec não declarar.
  *
- * É aqui que o prefixo mora, e NÃO nas chaves de `paths:`: a spec declara `/api/v1/<modulo>` em
+ * É aqui que o prefixo mora, e NÃO nas chaves de `paths:`: a spec declara `/api/v1/<module>` em
  * `servers` e os paths saem dele relativos (`/health`). Procurar `/api/v1/` no path reprovaria
  * todo contrato conforme.
  */

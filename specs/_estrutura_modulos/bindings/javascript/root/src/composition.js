@@ -21,7 +21,7 @@ import express from 'express';
 
 import {
   createAuditLog,
-  createDenyingAuth,
+  createDenyingTokenVerifier,
   createIdGenerator,
   createInMemoryNotifier,
   createClock,
@@ -41,8 +41,8 @@ import { createPostgresAudit, createPostgresRepository } from '../adapters/postg
 const FABRICAS = {
   repository: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
   audit: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
-  clock: { sistema: () => createClock() },
-  idGenerator: { padrao: () => createIdGenerator() },
+  clock: { system: () => createClock() },
+  idGenerator: { default: () => createIdGenerator() },
   storage: { memoria: () => createInMemoryStorage() },
   notifier: { memoria: () => createInMemoryNotifier() },
 };
@@ -90,8 +90,8 @@ export function resolveDependencies(modulo) {
  * Auth do sistema. Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem
  * token estao declaradas em `publicRoutes` de cada modulo, e so elas passam.
  */
-export function resolveAuth() {
-  return createDenyingAuth();
+export function resolveTokenVerifier() {
+  return createDenyingTokenVerifier();
 }
 
 /**
@@ -153,7 +153,7 @@ export async function buildSystem(raiz) {
   const modulos = discoverModules(raiz);
   verifyRoutesUnique(modulos);
 
-  const auth = resolveAuth();
+  const auth = resolveTokenVerifier();
   const app = express();
 
   for (const modulo of modulos) {

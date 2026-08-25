@@ -43,7 +43,7 @@ tests/       manutenção do próprio template — NÃO viaja
 ```
 
 **O princípio único:** a fronteira física de pastas **é** a fronteira de dependência. Extrair um módulo
-para infraestrutura própria é copiar uma pasta e recortar as chaves `<MODULO>_*` do `.env` — nunca
+para infraestrutura própria é copiar uma pasta e recortar as chaves `<MODULE>_*` do `.env` — nunca
 reescrever import.
 
 **Ele se verifica sozinho**, em quatro camadas: o gate cobra o projeto · o gate se testa · o template

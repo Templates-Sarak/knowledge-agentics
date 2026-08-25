@@ -1,4 +1,4 @@
-"""Mapeadores do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.
+"""Mapeadores do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.
 
 Duas responsabilidades, e so estas:
   1. FRONTEIRA DE CAIXA — o banco fala snake_case, o contrato fala camelCase. Explicita, nas

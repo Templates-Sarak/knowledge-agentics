@@ -1,7 +1,7 @@
-// Testes do dominio do modulo <modulo> — regras e validacao, sem I/O.
+// Testes do dominio do modulo <module> — regras e validacao, sem I/O.
 import { describe, expect, it } from 'vitest';
 
-import { ErroDeValidacao, buildRecord } from '../../core/domain/index.js';
+import { ValidationError, buildRecord } from '../../core/domain/index.js';
 import { generateArtifact } from '../../core/engine/index.js';
 import { recordExample } from '../fixtures/index.js';
 
@@ -25,13 +25,13 @@ describe('buildRecord', () => {
   });
 
   it('recusa titulo vazio', () => {
-    expect(() => buildRecord({ titulo: '   ' }, STATUS_VALIDOS, '10001', INSTANTE)).toThrow(ErroDeValidacao);
+    expect(() => buildRecord({ titulo: '   ' }, STATUS_VALIDOS, '10001', INSTANTE)).toThrow(ValidationError);
   });
 
   it('recusa status fora do vocabulario de config/domain.json', () => {
     expect(() =>
       buildRecord({ titulo: 'X', status: 'inventado' }, STATUS_VALIDOS, '10001', INSTANTE),
-    ).toThrow(ErroDeValidacao);
+    ).toThrow(ValidationError);
   });
 
   it('nao inventa instante nem identificador — os dois vem de fora', () => {

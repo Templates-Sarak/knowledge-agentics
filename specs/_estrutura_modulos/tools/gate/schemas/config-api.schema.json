@@ -1,5 +1,5 @@
 {
-  "$comentario": "Tunables NAO-secretos da api. Lei dona: specs/arquitetura/01-modulo.md §4.1. Segredo vai para .env, nunca aqui.",
+  "$comment": "Tunables NAO-secretos da api. Lei dona: specs/arquitetura/01-modulo.md §4.1. Segredo vai para .env, nunca aqui.",
   "type": "object",
   "additionalProperties": false,
   "required": ["defaultPageSize", "maxPageSize", "maxBodyKb", "logLevel"],

@@ -183,7 +183,7 @@ Por módulo, nesta ordem (as duas campanhas — Nível 1 desta skill e Nível 0 
 caracterizar (/code2-caracterizar)
   → mover para a árvore fechada (a xx-* plan, pelo ciclo SDD padrão: revisor→executor)
   → adequar Nível 0 (/code3-adequar, backlog de /code1-auditar — campanha separada e complementar)
-  → gate verde (validate.mjs <modulo>)
+  → gate verde (validate.mjs <module>)
   → apagar as exceções daquele módulo em compliance.json
 ```
 
@@ -203,7 +203,7 @@ node tools/gate/validate.mjs --todos            → 0 erros
 npm run verify  (ou python verify.py)        → exit 0
 exceções reais em compliance.json             == as previstas no plano da Fase A
 caminhos ignorados (lint/prettier)              == os declarados no passo 3
-node tools/gate/validate.mjs --extracao <modulo> → 0 erros, por módulo tocado
+node tools/gate/validate.mjs --extracao <module> → 0 erros, por módulo tocado
 specs/plan/ sem nenhuma "xx-*" pendente          (todas sintetizadas e expurgadas)
 ```
 Com isso mecânico, o **único** julgamento do revisor é o que máquina não confere: **as specs continuaram

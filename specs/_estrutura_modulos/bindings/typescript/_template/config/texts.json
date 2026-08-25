@@ -1,6 +1,6 @@
 {
   "_comment": "Rotulos e mensagens exibidos ao usuario. Nenhum texto literal no codigo.",
-  "title": "<Modulo>",
+  "title": "<Module>",
   "loading": "Carregando...",
   "emptyList": "Nenhum registro ainda.",
   "genericError": "Nao foi possivel carregar os dados."

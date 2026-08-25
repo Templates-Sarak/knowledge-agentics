@@ -6,7 +6,7 @@
 specs/_estrutura_modulos/bindings/<binding>/_template/contract/openapi.yaml
 ```
 
-Num projeto instanciado, o contrato de cada módulo mora em `modules/<modulo>/contract/openapi.yaml` —
+Num projeto instanciado, o contrato de cada módulo mora em `modules/<module>/contract/openapi.yaml` —
 **não** em `api/`. `api/` é quem implementa; `core/` é interno e nunca aparece no contrato.
 
 Este documento não é template copiável. Ele diz **o que já está garantido** por máquina, para você não
@@ -36,13 +36,13 @@ e as três rotas obrigatórias são singulares por desenho.
 
 ```yaml
 servers:
-  - url: /api/v1/<modulo>
+  - url: /api/v1/<module>
 paths:
   /registros:
   /registros/{hash}:
 ```
 
-Escrever `/api/v1/<modulo>/registros` dentro de `paths:` é erro — `rota-nomenclatura` compara
+Escrever `/api/v1/<module>/registros` dentro de `paths:` é erro — `rota-nomenclatura` compara
 `servers[0].url` com o `basePath`, e o path sai relativo dali.
 
 **Bloco, nunca flow style.** O leitor do gate é linha a linha, sem dependência externa — é o que permite o

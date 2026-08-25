@@ -3,7 +3,7 @@
  * contract-compatible.mjs — esta mudança no `contract/openapi.yaml` quebra quem consome o módulo?
  * Lei dona: specs/arquitetura/02-contrato-e-dados.md §5 ("v1 é estável... consulte o grafo antes").
  *
- *   node tools/contract-compatible.mjs [--desde <ref>] [<modulo>] [--json]
+ *   node tools/contract-compatible.mjs [--desde <ref>] [<module>] [--json]
  *   node tools/contract-compatible.mjs --autoteste
  *
  * O QUE ISTO NÃO É: não é regra de gate. O gate compara UM estado (04-regras.md); isto compara DOIS —

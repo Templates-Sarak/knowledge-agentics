@@ -5,7 +5,7 @@ Idiomas da linguagem vêm de `padrao-python` / `padrao-typescript`. Testes ficam
 ## Python — `pytest`
 ```bash
 <SARAK_PYTHON_VENV> -m pytest                          # roda a suíte (consulte a Tabela de Roteamento)
-<SARAK_PYTHON_VENV> -m pytest --cov=<modulo> --cov-report=term-missing   # cobertura (pytest-cov)
+<SARAK_PYTHON_VENV> -m pytest --cov=<module> --cov-report=term-missing   # cobertura (pytest-cov)
 ```
 - **Fixtures** (`@pytest.fixture`) para arrange reutilizável; `tmp_path` para fs.
 - **Mock**: `monkeypatch` (patch leve) ou `unittest.mock`/`pytest-mock` (`mocker`).

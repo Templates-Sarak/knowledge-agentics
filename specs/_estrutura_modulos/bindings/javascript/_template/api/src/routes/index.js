@@ -1,12 +1,12 @@
-// Rotas do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
+// Rotas do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
 //
 // O contrato manda: toda rota daqui existe em contract/openapi.yaml, e o inverso tambem
 // (regra `contrato-sincronizado`). Valide na borda ANTES do dominio; exija permissao nomeada;
-// monte a resposta pelo mapeador; lance ErroApi — nunca `res.status(...)` ad hoc.
+// monte a resposta pelo mapeador; lance ApiError — nunca `res.status(...)` ad hoc.
 import { Router } from 'express';
 
-import { ErroDeValidacao, buildRecord } from '../../../core/domain/index.js';
-import { ErroApi } from '../errors.js';
+import { ValidationError, buildRecord } from '../../../core/domain/index.js';
+import { ApiError } from '../errors.js';
 import { requirePermission } from '../middlewares/index.js';
 import { toCollection, toContract, toMeta } from '../mappers/index.js';
 
@@ -15,10 +15,10 @@ function readPagination(query, config) {
   const pagina = Number(query.pagina ?? 1);
   const tamanho = Number(query.tamanho ?? config.api.defaultPageSize);
   if (!Number.isInteger(pagina) || pagina < 1) {
-    throw new ErroApi('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
+    throw new ApiError('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
   }
   if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.maxPageSize) {
-    throw new ErroApi(
+    throw new ApiError(
       'VALIDACAO',
       `parametro "tamanho" deve estar entre 1 e ${config.api.maxPageSize}`,
     );
@@ -29,12 +29,12 @@ function readPagination(query, config) {
 /** Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado (specs/arquitetura/02-contrato-e-dados.md §3.2). */
 function readBody(corpo) {
   if (typeof corpo !== 'object' || corpo === null) {
-    throw new ErroApi('VALIDACAO', 'corpo deve ser um objeto');
+    throw new ApiError('VALIDACAO', 'corpo deve ser um objeto');
   }
   const permitidos = new Set(['titulo', 'status']);
   const desconhecido = Object.keys(corpo).find((chave) => !permitidos.has(chave));
   if (desconhecido !== undefined) {
-    throw new ErroApi('VALIDACAO', `campo desconhecido no corpo: "${desconhecido}"`);
+    throw new ApiError('VALIDACAO', `campo desconhecido no corpo: "${desconhecido}"`);
   }
   return corpo;
 }
@@ -85,7 +85,7 @@ function recordRoutes(router, { deps, config }) {
     deps.repository
       .findByHash(req.params.hash)
       .then((registro) => {
-        if (registro === null) throw new ErroApi('NAO_ENCONTRADO', 'registro nao encontrado');
+        if (registro === null) throw new ApiError('NAO_ENCONTRADO', 'registro nao encontrado');
         res.json(toContract(registro));
       })
       .catch(next);
@@ -120,7 +120,7 @@ async function create(corpo, deps, config, requestId) {
 
 /** Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO (specs/arquitetura/02-contrato-e-dados.md §3.2). */
 function translate(causa) {
-  if (causa instanceof ErroDeValidacao) return new ErroApi('VALIDACAO', causa.message);
+  if (causa instanceof ValidationError) return new ApiError('VALIDACAO', causa.message);
   return causa;
 }
 

@@ -37,18 +37,18 @@ entre módulos é da thread principal (do command `/code1-auditar`) — não a f
    contrato de API, validação na borda). Critérios em `code-diagnostico/references/backlog-format.md`.
 4. **Avaliar cobertura** — há `tests/` cobrindo o comportamento? Marque `cobertura: sem-testes | parcial | ok`.
    Sem testes → `precisaCaracterizacao: true` em toda tarefa que **muda código**.
-5. **Decompor em `tarefas[]`** — schema de `references/decomposicao.md`: `id` (`<modulo>-<seq>`), `arquivo`,
+5. **Decompor em `tarefas[]`** — schema de `references/decomposicao.md`: `id` (`<module>-<seq>`), `arquivo`,
    `dimensao`, `regra`, `estadoAtual`/`estadoAlvo`, `risco`, `precisaCaracterizacao`, `dependeDe`, `verificacao`,
    `onda`, `status: pending`. Átomo = **uma mudança coerente por arquivo** (não uma-violação-por-tarefa).
-6. **Gravar os artefatos do módulo** (Write **só** sob `.sarak/audit/<modulo>/`):
-   - `.sarak/audit/<modulo>/backlog.json` — `{ modulo, cobertura, resumo, tarefas[] }`, tarefas ordenadas por (risco asc, severidade desc).
-   - `.sarak/audit/<modulo>/auditoria.md` — preenchendo `assets/auditoria.template.md` com o escopo do módulo.
+6. **Gravar os artefatos do módulo** (Write **só** sob `.sarak/audit/<module>/`):
+   - `.sarak/audit/<module>/backlog.json` — `{ modulo, cobertura, resumo, tarefas[] }`, tarefas ordenadas por (risco asc, severidade desc).
+   - `.sarak/audit/<module>/auditoria.md` — preenchendo `assets/auditoria.template.md` com o escopo do módulo.
 7. **Devolver um resumo compacto** à thread principal (NÃO despeje os arquivos inteiros): contagens por dimensão,
    `cobertura`, nº de tarefas por onda, top 2-3 riscos, e os **caminhos** dos dois artefatos gravados.
 
 ## Regras e limites
 - **NUNCA** edite/crie/remova arquivo de **código-fonte** — você é estritamente read-only sobre o source.
-- **Write SÓ** sob `.sarak/audit/<modulo>/` — nenhum outro caminho. Artefato de auditoria ≠ modificar o projeto.
+- **Write SÓ** sob `.sarak/audit/<module>/` — nenhum outro caminho. Artefato de auditoria ≠ modificar o projeto.
 - **NÃO** audite outros módulos nem consolide entre módulos — é só o seu; a consolidação é do command.
 - **NÃO** redefina o padrão nem classifique como violação o que `padrao-escrita` **permite** (snake_case interno em Python, PascalCase em componentes).
 - **NÃO** invente achados quando o validador falta — registre a lacuna e siga.

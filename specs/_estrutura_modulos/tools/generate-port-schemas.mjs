@@ -44,7 +44,7 @@ function conteudoConfigPortas() {
     .join(',\n');
   return [
     '{',
-    `  "$comentario": "${COMENTARIO_CONFIG_PORTAS}",`,
+    `  "$comment": "${COMENTARIO_CONFIG_PORTAS}",`,
     '  "type": "object",',
     '  "additionalProperties": false,',
     '  "properties": {',

@@ -17,7 +17,7 @@ própria fatia de banco. Nenhum depende de código de outro.
 
 Essa independência não é estética. Ela existe para que **qualquer módulo possa ser extraído para
 infraestrutura própria sem refactor**: a fronteira física de pastas **é** a fronteira de dependência. Extrair
-um módulo é copiar uma pasta e recortar as chaves `<MODULO>_*` do `.env` — não reescrever import.
+um módulo é copiar uma pasta e recortar as chaves `<MODULE>_*` do `.env` — não reescrever import.
 
 # 2. As camadas do template
 
@@ -38,7 +38,7 @@ Confundir estas peças é a forma mais rápida de destruir a extraibilidade.
 
 ## 3.1 Módulo — a fatia vertical
 
-`modules/<modulo>/` contém tudo que o domínio precisa: `contract/`, `config/`, `core/`, `api/`, `web/`,
+`modules/<module>/` contém tudo que o domínio precisa: `contract/`, `config/`, `core/`, `api/`, `web/`,
 `database/`, `tests/` e o manifesto `module.json`. A anatomia completa está em [[01-modulo]].
 
 Um módulo tem um **papel**, declarado no manifesto:
@@ -66,7 +66,7 @@ e-mail ou um LLM. Fica **fora** do módulo, e por dois motivos:
 
 - **Adapter é código de fornecedor, sem uma linha de domínio.** Duplicá-lo por módulo significa N lugares para
   corrigir a mesma falha no dia da CVE do driver.
-- **Ele viaja na extração.** Extrair um módulo é copiar `modules/<modulo>/` **mais** os adapters que ele declara.
+- **Ele viaja na extração.** Extrair um módulo é copiar `modules/<module>/` **mais** os adapters que ele declara.
 
 `adapters/memory/` é **obrigatório** em todo projeto: é ele que permite os testes rodarem sem rede. Sem
 variante de memória para cada porta, o desacoplamento não é verificável — e o que não é verificável é folclore.
@@ -129,14 +129,14 @@ isso, a porta está mal desenhada.
 
 - Schema **nunca** `public`. Um schema por módulo ou schema único é decisão do projeto, declarada em
   `module.json:data.schema`.
-- Toda tabela é prefixada `<modulo>_` **nas duas topologias**. Redundante quando há schema dedicado, e é
+- Toda tabela é prefixada `<module>_` **nas duas topologias**. Redundante quando há schema dedicado, e é
   justamente aí que vale mais: no dia de consolidar ou separar, nada precisa ser renomeado.
 - **Proibido JOIN, view ou foreign key cruzando módulos.** O dado de outro módulo chega pelo contrato da `api/`
   dele. A referência cruzada é um **valor** (um hash), não uma dependência.
 
 ## 4.4 Fronteira de rede — cada front fala só com a sua API
 
-O `web/` de um módulo consome **exclusivamente** `/api/v1/<modulo>`, por caminho relativo. Nunca o banco,
+O `web/` de um módulo consome **exclusivamente** `/api/v1/<module>`, por caminho relativo. Nunca o banco,
 nunca a API de outro módulo.
 
 Caminho relativo exige mesma origem — e a raiz de composição (§3.4) **não é** essa origem: ela só sobe a

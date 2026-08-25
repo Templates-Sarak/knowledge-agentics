@@ -51,7 +51,7 @@ Daí sai o escopo desta skill, e só ele:
 ## Anatomia do módulo (para não procurar no lugar errado)
 
 ```
-modules/<modulo>/
+modules/<module>/
   contract/openapi.yaml     <- O CONTRATO mora aqui, nao em api/
   api/                      <- a borda que implementa o contrato (rotas, mapeadores, middlewares)
   core/{domain,engine,ports,gateways,templates}
@@ -71,7 +71,7 @@ no contrato. Consumidor fala com o `api/` do provider via `core/gateways/` — n
 Um módulo por vez. Matriz e ferramentas em `references/contract-testing.md`; leitura da spec do molde
 em `references/openapi-basico.md`.
 
-1. **Gate verde primeiro** — `node tools/gate/validate.mjs <modulo>`. Vermelho? Pare e conserte lá.
+1. **Gate verde primeiro** — `node tools/gate/validate.mjs <module>`. Vermelho? Pare e conserte lá.
    Estrutura, nomenclatura e projeção não são trabalho desta skill.
 2. **Ler o contrato** — `contract/openapi.yaml`: rotas, schemas de resposta, taxonomia de erro. Identifique
    quem consome o módulo (`grep` por `"module": "<id>"` nos `consumes` dos outros `module.json`).

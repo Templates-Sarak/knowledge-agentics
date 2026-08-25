@@ -114,7 +114,7 @@ def arquivos_auditaveis(base_dir):
 
 
 def _e_placeholder(token):
-    """`<modulo>`, `[modulo]`, `caminho/para/x` — molde, não caminho real."""
+    """`<module>`, `[modulo]`, `caminho/para/x` — molde, não caminho real."""
     return any(c in token for c in "<>[]*|") or " " in token or "para/" in token
 
 

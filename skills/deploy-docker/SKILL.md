@@ -49,7 +49,7 @@ Trate **um módulo/imagem por vez**. Templates em `assets/docker-templates/`; ta
 7. **HITL — plano de build/push** — apresente: módulo, stack/base fixada, resultado da validação, tag
    pretendida (semântica, **sem `latest`**), registry de destino. → "⚠️ Confirma o build/push da imagem?".
    **Aguarde.**
-8. **Build + push** — `docker build -t <registry>/<modulo>:<versão>` → suba o container e valide o healthcheck →
+8. **Build + push** — `docker build -t <registry>/<module>:<versão>` → suba o container e valide o healthcheck →
    `docker push`. Documente imagem/tag/porta/env na conclusão.
 
 ## Regras e limites

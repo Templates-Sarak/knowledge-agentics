@@ -1,4 +1,4 @@
-// Cadeia de seguranca do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
+// Cadeia de seguranca do modulo <module>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
 //
 // Ordem obrigatoria, igual em todo modulo:
 //   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro
@@ -6,8 +6,8 @@
 // Nenhuma rota monta erro a mao: quem transforma excecao em resposta e o tratador, no fim da cadeia.
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import type { ConfigSeguranca } from '../config.js';
-import { ErroApi, errorEnvelope } from '../errors.js';
+import type { ConfigSecurity } from '../config.js';
+import { ApiError, errorEnvelope } from '../errors.js';
 import type { Logger } from '../logger.js';
 
 declare module 'express-serve-static-core' {
@@ -26,7 +26,7 @@ export function requestId(gerar: () => string): RequestHandler {
   };
 }
 
-export function securityHeaders(config: ConfigSeguranca['headers']): RequestHandler {
+export function securityHeaders(config: ConfigSecurity['headers']): RequestHandler {
   return (_req, res, next) => {
     if (config.hsts) res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
     if (config.noSniff) res.setHeader('x-content-type-options', 'nosniff');
@@ -37,7 +37,7 @@ export function securityHeaders(config: ConfigSeguranca['headers']): RequestHand
 }
 
 /** Origens sao DECLARADAS em config/security.json. `*` e proibido (specs/arquitetura/03-operacao.md §2.1). */
-export function cors(config: ConfigSeguranca['cors']): RequestHandler {
+export function cors(config: ConfigSecurity['cors']): RequestHandler {
   return (req, res, next) => {
     const origem = req.headers.origin;
     if (typeof origem === 'string' && config.allowedOrigins.includes(origem)) {
@@ -49,7 +49,7 @@ export function cors(config: ConfigSeguranca['cors']): RequestHandler {
 }
 
 /** Contador em memoria: suficiente para um processo. Multi-instancia exige uma porta dedicada. */
-export function rateLimit(config: ConfigSeguranca['rateLimit']): RequestHandler {
+export function rateLimit(config: ConfigSecurity['rateLimit']): RequestHandler {
   const janelas = new Map<string, { inicio: number; contagem: number }>();
 
   return (req, res, next) => {
@@ -66,7 +66,7 @@ export function rateLimit(config: ConfigSeguranca['rateLimit']): RequestHandler 
     atual.contagem += 1;
     if (atual.contagem > limite) {
       res.setHeader('retry-after', String(config.windowSeconds));
-      next(new ErroApi('LIMITE_EXCEDIDO', 'limite de requisicoes excedido'));
+      next(new ApiError('LIMITE_EXCEDIDO', 'limite de requisicoes excedido'));
       return;
     }
     next();
@@ -79,7 +79,7 @@ export interface Auth {
 
 /**
  * `publicRoutes` e declarado RELATIVO a rotaBase ("GET /health"), mas esta cadeia roda ANTES do
- * router ser montado — aqui `req.path` ainda e absoluto ("/api/v1/<modulo>/health"). Sem tirar o
+ * router ser montado — aqui `req.path` ainda e absoluto ("/api/v1/<module>/health"). Sem tirar o
  * prefixo, nenhuma rota publica casaria e /health, /meta e /resumo responderiam 401.
  */
 function pathRelative(caminho: string, rotaBase: string): string {
@@ -101,14 +101,14 @@ export function authentication(auth: Auth, rotasPublicas: string[], rotaBase: st
     }
     const cabecalho = req.headers.authorization;
     if (typeof cabecalho !== 'string' || !cabecalho.startsWith('Bearer ')) {
-      next(new ErroApi('NAO_AUTENTICADO', 'token ausente'));
+      next(new ApiError('NAO_AUTENTICADO', 'token ausente'));
       return;
     }
     auth
       .verify(cabecalho.slice(7))
       .then((claims) => {
         if (claims === null) {
-          next(new ErroApi('NAO_AUTENTICADO', 'token invalido'));
+          next(new ApiError('NAO_AUTENTICADO', 'token invalido'));
           return;
         }
         req.permissoes = claims.permissoes;
@@ -122,7 +122,7 @@ export function authentication(auth: Auth, rotasPublicas: string[], rotaBase: st
 export function requirePermission(permissao: string): RequestHandler {
   return (req, _res, next) => {
     if (!req.permissoes?.includes(permissao)) {
-      next(new ErroApi('NAO_AUTORIZADO', 'permissao insuficiente'));
+      next(new ApiError('NAO_AUTORIZADO', 'permissao insuficiente'));
       return;
     }
     next();
@@ -133,9 +133,9 @@ export function requirePermission(permissao: string): RequestHandler {
 export function errorHandler(logger: Logger) {
   return (erro: unknown, req: Request, res: Response, _next: NextFunction): void => {
     const conhecido =
-      erro instanceof ErroApi
+      erro instanceof ApiError
         ? erro
-        : new ErroApi('INTERNO', 'erro interno', erro instanceof Error ? erro.message : String(erro));
+        : new ApiError('INTERNO', 'erro interno', erro instanceof Error ? erro.message : String(erro));
 
     logger.error('falha na requisicao', {
       requestId: req.requestId,

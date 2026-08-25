@@ -1,4 +1,4 @@
-"""Cadeia de seguranca do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
+"""Cadeia de seguranca do modulo <module>. Lei dona: specs/arquitetura/03-operacao.md §2.1.
 
 Ordem obrigatoria, igual em todo modulo:
   requestId -> headers -> CORS -> rate limit -> autenticacao -> autorizacao -> rota -> erro
@@ -16,7 +16,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from core.ports import Auth, IdGenerator
-from .errors import ErroApi, error_envelope
+from .errors import ApiError, error_envelope
 from .logger import Logger
 
 Proximo = Callable[[Request], Awaitable[Any]]
@@ -32,7 +32,7 @@ def _path_relative(caminho: str, rota_base: str) -> str:
 
 
 @dataclass(frozen=True)
-class ContextoDaBorda:
+class EdgeContext:
     """O que a cadeia precisa alem da config. Agrupado para respeitar o limiar de 4 parametros
     (specs/arquitetura/04-regras.md §4.7) — e porque os tres andam sempre juntos."""
 
@@ -41,7 +41,7 @@ class ContextoDaBorda:
     logger: Logger
 
 
-def record_middlewares(app: Any, config: Any, borda: ContextoDaBorda) -> None:
+def record_middlewares(app: Any, config: Any, borda: EdgeContext) -> None:
     gerador, auth, logger = borda.gerador, borda.auth, borda.logger
     seguranca = config.seguranca
     manifesto = config.manifesto
@@ -55,10 +55,10 @@ def record_middlewares(app: Any, config: Any, borda: ContextoDaBorda) -> None:
             _limit(request, seguranca["rateLimit"], janelas)
             await _authenticate(request, auth, publicas, manifesto["basePath"])
             resposta = await proximo(request)
-        except ErroApi as erro:
+        except ApiError as erro:
             return _respond_error(erro, request, logger)
         except Exception as causa:  # noqa: BLE001 — traduzido, nunca engolido
-            interno = ErroApi("INTERNO", config.textos["genericError"], str(causa))
+            interno = ApiError("INTERNO", config.textos["genericError"], str(causa))
             return _respond_error(interno, request, logger)
 
         _apply_headers(resposta, seguranca["headers"])
@@ -67,7 +67,7 @@ def record_middlewares(app: Any, config: Any, borda: ContextoDaBorda) -> None:
         return resposta
 
 
-def _respond_error(erro: ErroApi, request: Request, logger: Logger) -> JSONResponse:
+def _respond_error(erro: ApiError, request: Request, logger: Logger) -> JSONResponse:
     """Unico lugar que transforma excecao em resposta. Detalhe vai para o log, nunca ao cliente."""
     request_id = getattr(request.state, "request_id", "")
     logger.error(
@@ -117,7 +117,7 @@ def _limit(
         janelas[chave] = (now, 1)
         return
     if contagem + 1 > limite:
-        raise ErroApi("LIMITE_EXCEDIDO", "limite de requisicoes excedido")
+        raise ApiError("LIMITE_EXCEDIDO", "limite de requisicoes excedido")
     janelas[chave] = (inicio, contagem + 1)
 
 
@@ -132,15 +132,15 @@ async def _authenticate(
 
     cabecalho = request.headers.get("authorization", "")
     if not cabecalho.startswith("Bearer "):
-        raise ErroApi("NAO_AUTENTICADO", "token ausente")
+        raise ApiError("NAO_AUTENTICADO", "token ausente")
 
     claims = await auth.verify(cabecalho[7:])
     if claims is None:
-        raise ErroApi("NAO_AUTENTICADO", "token invalido")
+        raise ApiError("NAO_AUTENTICADO", "token invalido")
     request.state.permissoes = claims.get("permissions", [])
 
 
 def require_permission(request: Request, permissao: str) -> None:
     """Autorizacao por permissao NOMEADA. RLS no banco e defesa em profundidade, nao o controle."""
     if permissao not in getattr(request.state, "permissoes", []):
-        raise ErroApi("NAO_AUTORIZADO", "permissao insuficiente")
+        raise ApiError("NAO_AUTORIZADO", "permissao insuficiente")

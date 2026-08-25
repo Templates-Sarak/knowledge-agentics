@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 
-class AdapterPendente:
+class PendingAdapter:
     """TODO: implemente os metodos da porta "<porta>" aqui (packages/ports/__init__.py)."""
 
     def __init__(self, modulo: dict[str, Any]) -> None:

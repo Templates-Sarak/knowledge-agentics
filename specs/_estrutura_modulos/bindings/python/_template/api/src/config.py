@@ -1,4 +1,4 @@
-"""Carregador UNICO de configuracao do modulo <modulo>. Lei dona: specs/arquitetura/01-modulo.md §4.
+"""Carregador UNICO de configuracao do modulo <module>. Lei dona: specs/arquitetura/01-modulo.md §4.
 
 Regras que este arquivo materializa:
   - SO ele toca o ambiente. Qualquer outro arquivo lendo env e aviso do gate.
@@ -16,7 +16,7 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class ConfiguracaoModulo:
+class ModuleConfiguration:
     raiz: Path
     manifesto: dict[str, Any]
     api: dict[str, Any]
@@ -121,14 +121,14 @@ def _check_env_required(manifesto: dict[str, Any]) -> None:
         )
 
 
-def load_configuration(raiz: Path | None = None) -> ConfiguracaoModulo:
+def load_configuration(raiz: Path | None = None) -> ModuleConfiguration:
     """Carrega e valida TUDO no boot; qualquer falta derruba o processo antes de servir."""
     raiz_modulo = raiz or find_root_module()
     manifesto = _read_json(raiz_modulo, "module.json")
     _resolve_environment(raiz_modulo)
     _check_env_required(manifesto)
 
-    return ConfiguracaoModulo(
+    return ModuleConfiguration(
         raiz=raiz_modulo,
         manifesto=manifesto,
         api=_read_json(raiz_modulo, "config/api.json"),

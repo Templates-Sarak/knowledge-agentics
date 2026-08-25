@@ -1,12 +1,12 @@
-# Módulo `<modulo>` — binding JavaScript
+# Módulo `<module>` — binding JavaScript
 
 > Anatomia, manifesto, contrato e catálogo de regras **idênticos** ao binding TypeScript. A diferença é a
 > materialização: sem anotação de tipo, o contrato de fronteira é **JSDoc**, cobrado por `tsc --checkJs` via
 > `jsconfig.json`. Trocar de binding não muda uma linha da doutrina.
 
-Fatia vertical autossuficiente do domínio **<Modulo>**. A fronteira física de pastas **é** a fronteira de
+Fatia vertical autossuficiente do domínio **<Module>**. A fronteira física de pastas **é** a fronteira de
 dependência: extrair este módulo é copiar esta pasta, os adapters que ele declara, e recortar as chaves
-`<MODULO>_*` do `.env` da raiz. Nenhum import muda.
+`<MODULE>_*` do `.env` da raiz. Nenhum import muda.
 
 > **Não copie esta pasta à mão.** Use `node tools/create-module.mjs <id>` — ele substitui os marcadores,
 > ajusta o manifesto, cria o `.env` com o ponteiro e roda o gate. Módulo manual nasce sem manifesto e com nome
@@ -21,9 +21,9 @@ gateways) · `specs/arquitetura/02-contrato-e-dados.md` (API, erro, schema) ·
 
 | Marcador | Vira | Aparece em |
 |---|---|---|
-| `<modulo>` | id em kebab-case (`catalogo`) | pastas, rotas, prefixo de tabela, package |
-| `<MODULO>` | id em MAIÚSCULA (`CATALOGO`) | variáveis de ambiente |
-| `<Modulo>` | rótulo humano (`Catalogo`) | manifesto, textos |
+| `<module>` | id em kebab-case (`catalogo`) | pastas, rotas, prefixo de tabela, package |
+| `<MODULE>` | id em MAIÚSCULA (`CATALOGO`) | variáveis de ambiente |
+| `<Module>` | rótulo humano (`Catalogo`) | manifesto, textos |
 | `<escopo>` | escopo dos packages (`acme`) | nome do package, schema do banco |
 
 Módulo que **não gera artefato** descarta `core/engine`, `core/templates`, `database/` e `generated/`
@@ -41,8 +41,8 @@ core/            engine interna, sem I/O
   gateways/      o que preciso de OUTROS MÓDULOS — só HTTP
   engine/         geração determinística do artefato
 api/src/         a única superfície pública
-web/src/         front — consome só /api/v1/<modulo>
-database/        schema.sql + migrations das tabelas <modulo_snake>_*
+web/src/         front — consome só /api/v1/<module>
+database/        schema.sql + migrations das tabelas <module_snake>_*
 tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 ```
 
@@ -59,7 +59,7 @@ tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 - **Deny by default:** toda rota exige token, exceto as de `publicRoutes`.
 - **Log estruturado** com `requestId` e redação automática de campo sensível. `console.*` é proibido.
 - **Determinismo:** `Math.random()` e `new Date()` proibidos em `core/` — use `idGenerator` e `clock`.
-- **Dados:** tabela `<modulo_snake>_*` no schema declarado (**nunca** `public`), RLS ligada, trilha append-only.
+- **Dados:** tabela `<module_snake>_*` no schema declarado (**nunca** `public`), RLS ligada, trilha append-only.
 
 ## Comandos
 

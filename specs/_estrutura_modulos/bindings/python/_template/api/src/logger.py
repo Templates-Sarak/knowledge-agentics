@@ -1,4 +1,4 @@
-"""Logger estruturado do modulo <modulo>. Lei dona: specs/arquitetura/03-operacao.md §3.
+"""Logger estruturado do modulo <module>. Lei dona: specs/arquitetura/03-operacao.md §3.
 
 Uma linha JSON por evento, com requestId. Campos de `sensitiveFields` sao redigidos AQUI — nao e
 responsabilidade de quem chama lembrar. `print()` e proibido no modulo (regra `log`): a saida vai

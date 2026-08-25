@@ -397,7 +397,7 @@ export const CASOS = [
     // para uma tabela que nao existe.
     mutar: (m) => m.manifesto((x) => ({
       ...x,
-      data: { ...x.data, tables: [...x.data.tables, '<modulo_snake>_inexistente'] },
+      data: { ...x.data, tables: [...x.data.tables, '<module_snake>_inexistente'] },
     })),
   },
   {
@@ -426,7 +426,7 @@ export const CASOS = [
     // Agnostico de binding: os dois arquivos sao identicos nos tres moldes. `migrations` segue
     // calada — ela cobra nome e bloco de rollback, e nenhum dos dois muda aqui.
     mutar: (m) => {
-      const alter = 'alter table "<escopo>"."<modulo_snake>_auditoria" enable row level security;';
+      const alter = 'alter table "<escopo>"."<module_snake>_auditoria" enable row level security;';
       m.substituir('database/schema.sql', alter, '');
       m.substituir('database/migrations/0001-cria-metadados.sql', alter, '');
     },
@@ -450,7 +450,7 @@ export const CASOS = [
   {
     regra: 'env-fora-do-carregador',
     descricao: 'env lida fora do carregador de config',
-    // `process.env` NU: sem chave `<MODULO>_*` (senao acusaria `env-declarado`) e sem default
+    // `process.env` NU: sem chave `<MODULE>_*` (senao acusaria `env-declarado`) e sem default
     // literal (senao acusaria `fallback-silencioso`). Isola a regra, que ate aqui so vivia como
     // `tambem` de casos alheios.
     mutar: (m) => m.escrever('core/domain/mau.ts', 'export const ambiente = process.env;\n'),
@@ -686,7 +686,7 @@ export const CASOS = [
   {
     regra: 'porta-declarada',
     descricao: 'porta CONFIGURADA em config/ports.json e ausente do manifesto',
-    // A primeira das duas brechas que o `$comentario` do schema afirmava fechar e nao fechava:
+    // A primeira das duas brechas que o `$comment` do schema afirmava fechar e nao fechava:
     // `storage` esta no vocabulario do schema, entao `schema-config` passa. O caso acusa UM id.
     mutar: (m) => m.config('ports', (x) => ({ ...x, storage: 'disco' })),
   },
@@ -795,7 +795,7 @@ export const CASOS = [
       [
         'openapi: 3.1.0',
         'servers:',
-        '  - url: /api/v1/<modulo>',
+        '  - url: /api/v1/<module>',
         'paths:',
         '  /outra:',
         '    get:',
@@ -836,7 +836,7 @@ export const CASOS = [
       'contract/openapi.yaml',
       [
         'openapi: 3.1.0',
-        'servers: [{url: /api/v1/<modulo>}]',
+        'servers: [{url: /api/v1/<module>}]',
         'paths: {"/health": {get: {responses: {"200": {description: ok}}}},'
           + ' "/meta": {get: {responses: {"200": {description: ok}}}},'
           + ' "/resumo": {get: {responses: {"200": {description: ok}}}}}',
@@ -852,7 +852,7 @@ export const CASOS = [
     mutar: (m) => m.escrever('contract/openapi.yaml', [
       'openapi: 3.1.0',
       'servers:',
-      '  - url: /api/v1/<modulo>',
+      '  - url: /api/v1/<module>',
       'paths:',
       '    /health:',
       '        get:',
@@ -875,7 +875,7 @@ export const CASOS = [
   {
     regra: 'rota-nomenclatura',
     descricao: 'servers[0].url diverge do rotaBase do manifesto',
-    mutar: (m) => m.substituir('contract/openapi.yaml', 'url: /api/v1/<modulo>', 'url: /api/v1/outro-lugar'),
+    mutar: (m) => m.substituir('contract/openapi.yaml', 'url: /api/v1/<module>', 'url: /api/v1/outro-lugar'),
   },
   {
     regra: 'rota-nomenclatura',

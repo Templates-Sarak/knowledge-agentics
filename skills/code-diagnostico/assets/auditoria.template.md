@@ -40,4 +40,4 @@ abaixo; o contrato máquina completo está no `backlog-[DATA].json`.
 ---
 
 ## Apêndice — backlog.json
-Contrato máquina consumido por `/code3-adequar`. Ver `backlog-[DATA].json` (e por módulo em `.sarak/audit/<modulo>/backlog.json`).
+Contrato máquina consumido por `/code3-adequar`. Ver `backlog-[DATA].json` (e por módulo em `.sarak/audit/<module>/backlog.json`).

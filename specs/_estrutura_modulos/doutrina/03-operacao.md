@@ -30,7 +30,7 @@ requestId → headers de segurança → CORS → rate limit → autenticação �
 5. **Autenticação — deny by default.** Toda rota exige token, **exceto** as declaradas em
    `module.json:publicRoutes`. Rota pública é **opt-in explícito**, e o método faz parte da declaração:
    abrir a leitura nunca pode abrir a escrita do mesmo caminho por descuido.
-6. **Autorização** — a rota exige uma permissão nomeada (`<modulo>:ler`, `<modulo>:escrever`), verificada
+6. **Autorização** — a rota exige uma permissão nomeada (`<module>:ler`, `<module>:escrever`), verificada
    contra as claims. Autorização é da `api/` do módulo; RLS no banco é defesa em profundidade, não o controle
    primário.
 7. **Validação na borda** — antes do domínio, com allowlist de campos e limite de corpo ([[02-contrato-e-dados]] §3.2).
@@ -103,7 +103,7 @@ código do template, não a uma regra do gate.
 # 6. Extração — a prova que justifica tudo
 
 ```
-node tools/gate/validate.mjs --extracao modules/<modulo>
+node tools/gate/validate.mjs --extracao modules/<module>
 ```
 
 O comando responde uma pergunta objetiva: **a ESTRUTURA deste módulo permite extraí-lo hoje?** Ele confere que:
@@ -121,9 +121,9 @@ fez um comando de extração "passar" sem nunca ter rodado um teste sequer.
 
 **O procedimento de extração**, quando chegar o dia:
 
-1. Copiar `modules/<modulo>/` para o repositório novo.
+1. Copiar `modules/<module>/` para o repositório novo.
 2. Copiar os `adapters/<tec>` que ele declara e os `packages/` que ele usa.
-3. Recortar as chaves `<MODULO>_*` do `.env` da raiz para o `.env` do módulo, e **apagar a linha `ENV_ROOT`**.
+3. Recortar as chaves `<MODULE>_*` do `.env` da raiz para o `.env` do módulo, e **apagar a linha `ENV_ROOT`**.
 4. Substituir os gateways por chamadas à URL pública dos módulos que ficaram.
 5. Copiar `specs/arquitetura/`, `specs/adr/000-decisoes-do-template.md` e `tools/` — a lei e a
    verificabilidade viajam junto.
@@ -280,8 +280,8 @@ npm run ci:dependencias  # audit + excecao datada
 npm run build
 
 # 5. migrations — contra o Postgres efemero QUE O PROVEDOR sobe (services:, docker run — nunca
-#    o template), com <MODULO>_DB_URL apontando pra ele
-node scripts/migrations.mjs ciclo <modulo>
+#    o template), com <MODULE>_DB_URL apontando pra ele
+node scripts/migrations.mjs ciclo <module>
 ```
 
 **O que este exemplo não mostra, de propósito:** subir o Postgres (`services:` do provedor,
@@ -362,9 +362,9 @@ de sempre (`noEmit: true`) — o módulo continua compilando **isolado**, a cond
 `scripts/migrations.{mjs,py}` aplica o `up` e reverte o `down`, contra um Postgres de verdade:
 
 ```
-node scripts/migrations.mjs up <modulo>       # ou: python scripts/migrations.py up <modulo>
-node scripts/migrations.mjs down <modulo>     # reverte so a ULTIMA aplicada (bloco "-- rollback")
-node scripts/migrations.mjs ciclo <modulo>    # up -> down -> up — prova que o rollback fecha,
+node scripts/migrations.mjs up <module>       # ou: python scripts/migrations.py up <module>
+node scripts/migrations.mjs down <module>     # reverte so a ULTIMA aplicada (bloco "-- rollback")
+node scripts/migrations.mjs ciclo <module>    # up -> down -> up — prova que o rollback fecha,
                                                # de qualquer estado inicial
 ```
 
@@ -377,7 +377,7 @@ importada por `composition.*` — mudar `adapters/memory` não afeta o caminho d
 `tools/affected.mjs` não precisa mudar por isso (medido: o runner não importa `adapters/`
 em lugar nenhum).
 
-**A URL vem do ambiente, sempre `<MODULO>_DB_URL`** (já em `module.json:requiredEnv` desde o
+**A URL vem do ambiente, sempre `<MODULE>_DB_URL`** (já em `module.json:requiredEnv` desde o
 molde) — o runner não sabe de onde ela veio nem como o Postgres subiu (ADR-005: o template traz o
 contrato, não o provedor). Ausente, o runner falha nomeando a chave exata, antes de tentar
 conectar.

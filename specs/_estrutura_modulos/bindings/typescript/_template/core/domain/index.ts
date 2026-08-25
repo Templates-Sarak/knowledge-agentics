@@ -1,4 +1,4 @@
-// Dominio do modulo <modulo>: tipos e validacao. Lei dona: specs/arquitetura/01-modulo.md §2.
+// Dominio do modulo <module>: tipos e validacao. Lei dona: specs/arquitetura/01-modulo.md §2.
 //
 // Regras desta camada:
 //   - ZERO I/O. Nada de rede, banco, arquivo ou env.
@@ -21,19 +21,19 @@ export interface NovoRegistro {
 }
 
 /** Falha de validacao do dominio. A borda a traduz para VALIDACAO (400). */
-export class ErroDeValidacao extends Error {
+export class ValidationError extends Error {
   constructor(
     public readonly campo: string,
     mensagem: string,
   ) {
     super(mensagem);
-    this.name = 'ErroDeValidacao';
+    this.name = 'ValidationError';
   }
 }
 
 function requireTitle(titulo: unknown): string {
   if (typeof titulo !== 'string' || titulo.trim() === '') {
-    throw new ErroDeValidacao('titulo', 'titulo e obrigatorio');
+    throw new ValidationError('titulo', 'titulo e obrigatorio');
   }
   return titulo.trim();
 }
@@ -41,11 +41,11 @@ function requireTitle(titulo: unknown): string {
 function requireStatus(status: unknown, statusValidos: readonly string[]): string {
   const padrao = statusValidos[0];
   if (padrao === undefined) {
-    throw new ErroDeValidacao('status', 'config/domain.json:validStatuses esta vazio');
+    throw new ValidationError('status', 'config/domain.json:validStatuses esta vazio');
   }
   if (status === undefined) return padrao;
   if (typeof status !== 'string' || !statusValidos.includes(status)) {
-    throw new ErroDeValidacao('status', `status deve ser um de: ${statusValidos.join(', ')}`);
+    throw new ValidationError('status', `status deve ser um de: ${statusValidos.join(', ')}`);
   }
   return status;
 }

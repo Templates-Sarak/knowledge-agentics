@@ -1,31 +1,31 @@
-// Rotas do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
+// Rotas do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
 //
 // O contrato manda: toda rota daqui existe em contract/openapi.yaml, e o inverso tambem.
 // Regras cobradas aqui: valida na borda ANTES do dominio; exige permissao nomeada; monta a
-// resposta pelo mapeador (nunca o registro cru); lanca ErroApi (nunca `res.status()` ad hoc).
+// resposta pelo mapeador (nunca o registro cru); lanca ApiError (nunca `res.status()` ad hoc).
 import { Router } from 'express';
 
-import type { ConfiguracaoModulo } from '../config.js';
-import type { DependenciasModulo } from '../../../core/ports/index.js';
-import { ErroDeValidacao, buildRecord } from '../../../core/domain/index.js';
-import { ErroApi } from '../errors.js';
+import type { ModuleConfiguration } from '../config.js';
+import type { ModuleDependencies } from '../../../core/ports/index.js';
+import { ValidationError, buildRecord } from '../../../core/domain/index.js';
+import { ApiError } from '../errors.js';
 import { requirePermission } from '../middlewares/index.js';
 import { toCollection, toContract, toMeta } from '../mappers/index.js';
 
 interface Opcoes {
-  deps: DependenciasModulo;
-  config: ConfiguracaoModulo;
+  deps: ModuleDependencies;
+  config: ModuleConfiguration;
 }
 
 /** Paginacao validada na borda, com padrao e teto vindos de config/api.json. */
-function readPagination(query: Record<string, unknown>, config: ConfiguracaoModulo): [number, number] {
+function readPagination(query: Record<string, unknown>, config: ModuleConfiguration): [number, number] {
   const pagina = Number(query['pagina'] ?? 1);
   const tamanho = Number(query['tamanho'] ?? config.api.defaultPageSize);
   if (!Number.isInteger(pagina) || pagina < 1) {
-    throw new ErroApi('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
+    throw new ApiError('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
   }
   if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.maxPageSize) {
-    throw new ErroApi(
+    throw new ApiError(
       'VALIDACAO',
       `parametro "tamanho" deve estar entre 1 e ${config.api.maxPageSize}`,
     );
@@ -36,12 +36,12 @@ function readPagination(query: Record<string, unknown>, config: ConfiguracaoModu
 /** Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado (specs/arquitetura/02-contrato-e-dados.md §3.2). */
 function readBody(corpo: unknown): { titulo: unknown; status?: unknown } {
   if (typeof corpo !== 'object' || corpo === null) {
-    throw new ErroApi('VALIDACAO', 'corpo deve ser um objeto');
+    throw new ApiError('VALIDACAO', 'corpo deve ser um objeto');
   }
   const permitidos = new Set(['titulo', 'status']);
   const desconhecido = Object.keys(corpo).find((chave) => !permitidos.has(chave));
   if (desconhecido !== undefined) {
-    throw new ErroApi('VALIDACAO', `campo desconhecido no corpo: "${desconhecido}"`);
+    throw new ApiError('VALIDACAO', `campo desconhecido no corpo: "${desconhecido}"`);
   }
   return corpo as { titulo: unknown; status?: unknown };
 }
@@ -72,7 +72,7 @@ function requiredRoutes(router: Router, { deps, config }: Opcoes): void {
  * As permissoes vem do manifesto, nunca de literal no codigo.
  * Manifesto incompleto derruba o boot aqui — melhor que servir rota sem autorizacao.
  */
-function permissionsFor(config: ConfiguracaoModulo): { ler: string; escrever: string } {
+function permissionsFor(config: ModuleConfiguration): { ler: string; escrever: string } {
   const [ler, escrever] = config.manifesto.permissions;
   if (ler === undefined || escrever === undefined) {
     throw new Error('[rotas] module.json:permissions precisa declarar leitura e escrita');
@@ -96,13 +96,13 @@ function recordRoutes(router: Router, { deps, config }: Opcoes): void {
   router.get('/registros/:hash', requirePermission(ler), (req, res, next) => {
     const hash = req.params['hash'];
     if (hash === undefined || hash === '') {
-      next(new ErroApi('VALIDACAO', 'hash ausente no caminho'));
+      next(new ApiError('VALIDACAO', 'hash ausente no caminho'));
       return;
     }
     deps.repository
       .findByHash(hash)
       .then((registro) => {
-        if (registro === null) throw new ErroApi('NAO_ENCONTRADO', 'registro nao encontrado');
+        if (registro === null) throw new ApiError('NAO_ENCONTRADO', 'registro nao encontrado');
         res.json(toContract(registro));
       })
       .catch(next);
@@ -118,8 +118,8 @@ function recordRoutes(router: Router, { deps, config }: Opcoes): void {
 
 async function create(
   corpo: unknown,
-  deps: DependenciasModulo,
-  config: ConfiguracaoModulo,
+  deps: ModuleDependencies,
+  config: ModuleConfiguration,
   requestId: string,
 ) {
   const entrada = readBody(corpo);
@@ -142,7 +142,7 @@ async function create(
 
 /** Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO (specs/arquitetura/02-contrato-e-dados.md §3.2). */
 function translate(causa: unknown): unknown {
-  if (causa instanceof ErroDeValidacao) return new ErroApi('VALIDACAO', causa.message);
+  if (causa instanceof ValidationError) return new ApiError('VALIDACAO', causa.message);
   return causa;
 }
 

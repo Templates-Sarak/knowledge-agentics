@@ -1,11 +1,11 @@
-// Taxonomia FECHADA de erro do modulo <modulo>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
+// Taxonomia FECHADA de erro do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §3.1.
 //
 // Fechada quer dizer: acrescentar codigo aqui e mudanca de contrato, nao improviso de rota.
 // Num projeto com `packages/ports`, este arquivo re-exporta a versao canonica de la — assim
 // todos os modulos falam a mesma lingua de erro. O molde traz a copia local para ser
 // autossuficiente desde o primeiro `npm test`.
 
-export const CODIGOS = {
+export const CODES = {
   VALIDACAO: 400,
   NAO_AUTENTICADO: 401,
   NAO_AUTORIZADO: 403,
@@ -20,21 +20,21 @@ export const CODIGOS = {
  * O unico erro que a borda sabe traduzir em resposta.
  * A `mensagem` e generica e estavel — o detalhe vai para o log, ligado pelo requestId.
  */
-export class ErroApi extends Error {
+export class ApiError extends Error {
   /**
-   * @param {keyof typeof CODIGOS} codigo
+   * @param {keyof typeof CODES} codigo
    * @param {string} mensagem
    * @param {string} [detalhe]
    */
   constructor(codigo, mensagem, detalhe) {
     super(mensagem);
-    this.name = 'ErroApi';
+    this.name = 'ApiError';
     this.codigo = codigo;
     this.detalhe = detalhe;
   }
 
   get status() {
-    return CODIGOS[this.codigo];
+    return CODES[this.codigo];
   }
 }
 

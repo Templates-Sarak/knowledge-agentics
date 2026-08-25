@@ -32,7 +32,7 @@ consolida os achados num **plano de adequação** e **persiste** em `.sarak/audi
 
 2. **Fan-out (um `code-auditor` por módulo, em paralelo)** — dispare, via **Task**, o agente `code-auditor`
    para **cada módulo**, passando o caminho do módulo. Os agentes rodam em **Sonnet**, são **read-only** sobre o
-   source e gravam `.sarak/audit/<modulo>/{backlog.json,auditoria.md}`. Cada um devolve só um **resumo compacto**
+   source e gravam `.sarak/audit/<module>/{backlog.json,auditoria.md}`. Cada um devolve só um **resumo compacto**
    (contagens por dimensão, cobertura, tarefas por onda, top riscos, caminhos). **Não** re-leia os arquivos
    inteiros — trabalhe com os resumos.
 

@@ -32,7 +32,7 @@ const CONFIGS = ['api', 'domain', 'security', 'ports', 'texts'];
 
 /**
  * Chave de ambiente da RAIZ. `ROOT_` é prefixo RESERVADO, e é o que a distingue da chave de módulo
- * (`<MODULO>_*`, cobrada por `env-modulo`): sem convenção não há como uma regra dizer de quem é a
+ * (`<MODULE>_*`, cobrada por `env-modulo`): sem convenção não há como uma regra dizer de quem é a
  * chave. O vocabulário já chamava a raiz assim — o `.env` do módulo aponta para ela por `ENV_ROOT`.
  */
 const CHAVE_DE_RAIZ = /\bROOT_[A-Z0-9_]+\b/g;

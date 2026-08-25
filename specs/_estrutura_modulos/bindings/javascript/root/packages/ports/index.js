@@ -11,7 +11,7 @@
 // Sem interface de linguagem, o contrato e JSDoc — cobrado por `tsc --checkJs`.
 
 /** Taxonomia FECHADA de erro (specs/arquitetura/02-contrato-e-dados.md §3.1). */
-export const CODIGOS_DE_ERRO = {
+export const ERROR_CODES = {
   VALIDACAO: 400,
   NAO_AUTENTICADO: 401,
   NAO_AUTORIZADO: 403,
@@ -23,15 +23,15 @@ export const CODIGOS_DE_ERRO = {
 };
 
 /** Falha de porta. O adapter TRADUZ o erro do fornecedor para ca — o dominio nunca ve o SDK. */
-export class ErroPorta extends Error {
+export class PortError extends Error {
   /**
-   * @param {keyof typeof CODIGOS_DE_ERRO} codigo
+   * @param {keyof typeof ERROR_CODES} codigo
    * @param {string} mensagem
    * @param {string} [detalhe]
    */
   constructor(codigo, mensagem, detalhe) {
     super(mensagem);
-    this.name = 'ErroPorta';
+    this.name = 'PortError';
     this.codigo = codigo;
     this.detalhe = detalhe;
   }

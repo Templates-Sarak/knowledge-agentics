@@ -15,7 +15,7 @@ Esta lei define a forma do contrato, a identidade dos registros, a forma dos dad
 
 # 2. Forma das rotas
 
-- Prefixo `/api/v1/<modulo>` (= `module.json:basePath`), recursos no **plural kebab-case**, **sem verbo** no
+- Prefixo `/api/v1/<module>` (= `module.json:basePath`), recursos no **plural kebab-case**, **sem verbo** no
   path. A ação é o método HTTP: `POST /api/v1/catalogo`, nunca `/criarItem`.
 - Filtro por query string; paginação `?pagina=&tamanho=`, com padrão e teto em `config/api.json`.
 - O identificador na URL é o **hash universal** (§4), nunca o `id` interno do banco.
@@ -180,7 +180,7 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
 ## 6.4 Trilha de auditoria
 
 Toda escrita registra `hash`, `acao`, `sujeito`, `campos_alterados`, `request_id` e `ocorrido_em` em
-`<modulo>_auditoria`, tabela **append-only** do próprio módulo, implementada pela porta `audit`.
+`<module>_auditoria`, tabela **append-only** do próprio módulo, implementada pela porta `audit`.
 
 **Não confunda com log.** O log é operacional e efêmero (stdout, para diagnosticar); a trilha é registro
 **durável e consultável** de negócio, que responde "quem mudou o status deste registro em março". O `requestId`

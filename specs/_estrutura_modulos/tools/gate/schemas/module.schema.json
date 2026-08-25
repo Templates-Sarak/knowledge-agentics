@@ -1,5 +1,5 @@
 {
-  "$comentario": "Forma do module.json. Lei dona: specs/arquitetura/01-modulo.md §3. Campo nao previsto REPROVA: o manifesto e contrato, e contrato nao aceita campo inventado em silencio.",
+  "$comment": "Forma do module.json. Lei dona: specs/arquitetura/01-modulo.md §3. Campo nao previsto REPROVA: o manifesto e contrato, e contrato nao aceita campo inventado em silencio.",
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -79,7 +79,7 @@ um teto como critério de "não chegou a tempo de importar".
 
 ## Onde isto mora num projeto do template modular
 
-Ao contrário de `test-integracao-api`, este harness **cabe** dentro de `modules/<modulo>/tests/contract/`
+Ao contrário de `test-integracao-api`, este harness **cabe** dentro de `modules/<module>/tests/contract/`
 — exercitar o endpoint WS/SSE do módulo é a mesma categoria de "exercitar a app fiada com adapters de
 memória" que os testes de contrato REST já fazem (`04-regras.md` §7.1: *"o `tests/contract/` já exercita
 a app fiada com adapters de memória"*). Um socket local, em processo de teste, não é a infraestrutura

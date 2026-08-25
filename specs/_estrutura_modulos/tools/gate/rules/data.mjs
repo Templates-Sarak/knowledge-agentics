@@ -50,7 +50,7 @@ export default [
       // `schema-manifesto` cobra `^[a-z][a-z0-9_]*$` em `data.tables[]`. Exigir aqui o id cru
       // tornava `nota-fiscal` IMPOSSIVEL — esta regra pedia `nota-fiscal_` e o schema proibia
       // o hifen na tabela que comeca por ele: duas regras do mesmo gate pedindo coisas
-      // incompativeis. E a mesma conversao que `<modulo_snake>` faz no molde.
+      // incompativeis. E a mesma conversao que `<module_snake>` faz no molde.
       const esperado = `${ctx.manifesto.id.replace(/-/g, '_')}_`;
       const achados = [];
       if (data.prefix !== esperado) {

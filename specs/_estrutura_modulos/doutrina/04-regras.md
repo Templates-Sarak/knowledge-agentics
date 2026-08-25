@@ -65,8 +65,8 @@ gate de auditar.
 |---|---|---|
 | Pasta-raiz de módulos | minúscula, plural | `modules/` |
 | Pasta de módulo | kebab-case minúsculo | `modules/catalogo/` |
-| Package do módulo | `@<escopo>/<modulo>` | `@<escopo>/catalogo` |
-| Package de camada | `@<escopo>/<modulo>-<camada>` | `@<escopo>/catalogo-api` |
+| Package do módulo | `@<escopo>/<module>` | `@<escopo>/catalogo` |
+| Package de camada | `@<escopo>/<module>-<camada>` | `@<escopo>/catalogo-api` |
 | Package compartilhado | `@<escopo>/<assunto>` | `@<escopo>/ui-kit`, `@<escopo>/ports` |
 | Package de adapter | `@<escopo>/adapter-<tecnologia>` | `@<escopo>/adapter-postgres` |
 | Componente/página | PascalCase, um por arquivo | `List.tsx` |
@@ -76,15 +76,15 @@ gate de auditar.
 | Rota REST | `servers[0].url` = `basePath`; segmentos kebab-case, **sem verbo**; parâmetro de caminho camelCase — tudo cobrado por `rota-nomenclatura`. Recurso no **plural** é convenção, sem verificador | `/api/v1/catalogo/{hash}` |
 | Campo do payload | camelCase | `clienteApelido` |
 | Schema do banco | declarado em `data.schema`, **nunca** `public` | `"<escopo>"` |
-| Tabela | `<modulo>_<entidade>`, snake_case | `catalogo_metadados` |
+| Tabela | `<module>_<entidade>`, snake_case | `catalogo_metadados` |
 | Coluna | snake_case | `cliente_apelido` |
 | Migration | `NNNN-verbo-objeto.sql`, sequencial | `0003-adiciona-comissao.sql` |
-| Variável de ambiente | `<MODULO>_<ASSUNTO>`, SCREAMING_SNAKE | `CATALOGO_DB_URL` |
+| Variável de ambiente | `<MODULE>_<ASSUNTO>`, SCREAMING_SNAKE | `CATALOGO_DB_URL` |
 | Variável de ambiente **da raiz** | `ROOT_<ASSUNTO>` — prefixo **reservado** | `ROOT_JWT_SECRET` |
-| Variável exposta ao browser | prefixo do build + `<MODULO>_` | `VITE_CATALOGO_API_BASE_URL` |
+| Variável exposta ao browser | prefixo do build + `<MODULE>_` | `VITE_CATALOGO_API_BASE_URL` |
 | Arquivo de config | kebab-case, um assunto por arquivo | `config/security.json` |
 | Chave de config | camelCase | `maxPageSize` |
-| Permissão | `<modulo>:<acao>` | `catalogo:escrever` |
+| Permissão | `<module>:<acao>` | `catalogo:escrever` |
 | Código de erro | SCREAMING_SNAKE da taxonomia fechada | `NAO_ENCONTRADO` |
 
 **Um nome, um lugar.** O identificador do módulo é o mesmo na pasta, no package, na rota, no prefixo de tabela,
@@ -92,11 +92,11 @@ no prefixo de env e no `module.json`. Divergência é erro de gate, não estilo.
 
 **As duas transliterações do `id`, e por que não são exceção à regra acima.** O `id` é kebab-case; onde o
 destino não aceita hífen, ele viaja convertido, sempre pela mesma correspondência 1:1 e reversível:
-`<MODULO>_` em env (`nota-fiscal` → `NOTA_FISCAL_`) e `data.prefix` em banco (`nota-fiscal` → `nota_fiscal_`).
+`<MODULE>_` em env (`nota-fiscal` → `NOTA_FISCAL_`) e `data.prefix` em banco (`nota-fiscal` → `nota_fiscal_`).
 Continua sendo **um** nome — hífen e sublinhado são a mesma fronteira de palavra, escrita no alfabeto que cada
-destino aceita. Quem gera as duas é o mesmo marcador do molde (`<MODULO>`, `<modulo_snake>`), nunca digitação.
+destino aceita. Quem gera as duas é o mesmo marcador do molde (`<MODULE>`, `<module_snake>`), nunca digitação.
 
-**`ROOT_` é prefixo reservado, e a reserva é a razão de ele existir.** A chave de módulo é `<MODULO>_*`
+**`ROOT_` é prefixo reservado, e a reserva é a razão de ele existir.** A chave de módulo é `<MODULE>_*`
 (cobrada por `env-modulo`); sem uma convenção própria, nenhuma regra conseguiria dizer se `JWT_SECRET` é da
 raiz ou de um módulo, e a chave mais sensível do sistema continuaria sem dono. O vocabulário já chamava a raiz
 assim: o `.env` de cada módulo aponta para a dela por `ENV_ROOT`. Cobrada por `env-raiz-declarado`.
@@ -209,9 +209,9 @@ quem o carrega.
 | `hardcode-url` | erro | nenhuma URL literal (`http://`, `https://`) no código do módulo, fora de teste e de comentário | módulo |
 | `hardcode-numero` | erro | nenhum literal numérico (≥ 2 dígitos) atribuído a identificador de infraestrutura (`porta`, `timeout`, `limite`, `max*`, `ttl`, `janela`, `intervalo`, `tentativas`) fora de `config/` e de teste | módulo |
 | `fallback-silencioso` | erro | nenhum `process.env[...] ?? '<literal>'` (nem `or`/`getenv(..., '<literal>')` no Python) | módulo |
-| `env-declarado` | erro | toda chave `<MODULO>_*` usada no código está em `module.json:requiredEnv` | módulo |
+| `env-declarado` | erro | toda chave `<MODULE>_*` usada no código está em `module.json:requiredEnv` | módulo |
 | `env-exemplo` | erro | o `.env.example` do módulo e o `requiredEnv` do manifesto coincidem exatamente, nos dois sentidos | módulo |
-| `env-modulo` | erro | o `.env` do módulo só contém `ENV_ROOT` e chaves `<MODULO>_*` — nunca chave de outro módulo | módulo |
+| `env-modulo` | erro | o `.env` do módulo só contém `ENV_ROOT` e chaves `<MODULE>_*` — nunca chave de outro módulo | módulo |
 | `env-fora-do-carregador` | aviso | `process.env` lido fora do carregador de config e da config de build | módulo |
 | `env-raiz-declarado` | erro | toda chave `ROOT_*` usada na **fiação** (`adapters/`, `src/`, `packages/`) está em `project.json:requiredEnv`, **e toda declarada é usada** — o análogo de `env-declarado`, nos dois sentidos. A segunda direção entra porque a chave declarada vai para o `.env.example` e passa a exigir do operador um valor que nada lê. O `.env.example` da raiz **não** é cobrado aqui: quem o compara com os manifestos é `sync-env.mjs --conferir`, dentro do `verificar` (§7.2) | raiz |
 | `hardcode-url-raiz` | erro | nenhuma URL literal (`http://`, `https://`) na **fiação**, fora de teste e de comentário — o gêmeo de `hardcode-url`, com a mesma implementação. O adapter é onde o endereço do fornecedor aparece, e o endereço vem do ambiente: declare a chave em `project.json:requiredEnv` | raiz |
@@ -338,7 +338,7 @@ verificável mecanicamente (§1, lei 2).
 | **Teste de integração com banco real (`tests/integracao/`)** | o [[03-operacao]] §5 fecha a questão: *"Tudo roda com adapters de memória, sem rede e sem banco… Se um teste do módulo precisa de infraestrutura, a porta está mal desenhada ou o adapter de memória está faltando"*. Uma regra exigindo a pasta cobraria do módulo exatamente o que a lei proíbe, e a tabela de camadas do §5 é **fechada** em quatro | o `tests/contract/` já exercita a app fiada com adapters de memória; banco de verdade é do comando `verificar` e do CI (*migrations executáveis contra banco efêmero*), nunca do gate |
 | **"o mock do gateway vem do contrato, não da implementação"** | é julgamento, não forma: o mesmo objeto de mock serve às duas origens, e nada no arquivo diz de qual delas ele veio | a metade verificável virou regra — `testes-gateway` afirma que o teste **existe**; a origem do mock fica com a **revisão humana** |
 | **`dependencia-fixada` — "lockfile presente"** | o lockfile é **produto do `npm install`**, e o gate promete rodar **sem instalar nada** — é o que permite ele viajar dentro do módulo extraído. Uma regra que exige a saída de um install inverte o contrato do próprio verificador, e a medição mostra o efeito: projeto recém-criado pelo `create-project.mjs` **não tem lockfile em nenhum dos três bindings**, então a regra reprovaria todo projeto no minuto em que ele nasce. No Python não há sequer o que exigir — o template declara `pyproject.toml` e nenhum arquivo de trava. O `package-lock.json` que `structure.mjs` conhece é entrada **permitida** da árvore do MÓDULO, não exigida, e não fala da raiz | etapa de CI. `npm ci` **falha sozinho** sem lockfile, com mensagem melhor que a do gate — a checagem sai de graça no passo que já roda o install |
-| **"toda permissão declarada é exigida em alguma rota"** | não é inverificável — é **incompatível** com `permissao-literal`. Detectá-la exigiria procurar a string `<modulo>:ler` no código, que é exatamente o que a outra regra proíbe; e o consumo real é **posicional** (`const [ler, escrever] = config.manifesto.permissions`), então a string nunca aparece — nem deve | fica com a **revisão humana**. Permissão declarada e nunca exigida é peso morto, mas cobrá-la mecanicamente obrigaria a escrevê-la no código, que é o defeito maior |
+| **"toda permissão declarada é exigida em alguma rota"** | não é inverificável — é **incompatível** com `permissao-literal`. Detectá-la exigiria procurar a string `<module>:ler` no código, que é exatamente o que a outra regra proíbe; e o consumo real é **posicional** (`const [ler, escrever] = config.manifesto.permissions`), então a string nunca aparece — nem deve | fica com a **revisão humana**. Permissão declarada e nunca exigida é peso morto, mas cobrá-la mecanicamente obrigaria a escrevê-la no código, que é o defeito maior |
 
 A linha do `src/` é a mais recente, e vale registrar por que ela parou aqui em vez de virar regra. A direção de
 dependência é forma — `import` está no arquivo ou não está —, e virou as três regras de §4.2. "Não contém regra de

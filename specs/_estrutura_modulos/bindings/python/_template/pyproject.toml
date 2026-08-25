@@ -1,7 +1,7 @@
 [project]
-name = "<escopo>-<modulo>"
+name = "<escopo>-<module>"
 version = "0.1.0"
-description = "Modulo <modulo> — fatia vertical autossuficiente (contrato + core + api)."
+description = "Modulo <module> — fatia vertical autossuficiente (contrato + core + api)."
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115",

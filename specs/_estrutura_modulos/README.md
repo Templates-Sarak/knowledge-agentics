@@ -5,7 +5,7 @@ próprio front, da própria API, do próprio motor e da própria fatia de banco.
 
 A independência não é estética. Ela existe para que **qualquer módulo possa ser extraído para infraestrutura
 própria sem refactor**: a fronteira física de pastas **é** a fronteira de dependência. Extrair um módulo é
-copiar uma pasta e recortar as chaves `<MODULO>_*` do `.env` — não reescrever import.
+copiar uma pasta e recortar as chaves `<MODULE>_*` do `.env` — não reescrever import.
 
 ## Começar
 
@@ -69,7 +69,7 @@ ela. Regra que não está lá não é regra; regra que não pode ser verificada 
 2. **Infraestrutura** — o módulo declara `core/ports/` e o provedor é escolhido em `config/ports.json`.
    O nome do fornecedor não aparece em nenhum outro lugar do módulo.
 3. **Módulo alheio** — dado de outro módulo vem por `core/gateways/`, **só HTTP**, declarado em `consumes`.
-4. **Dados** — schema nunca `public`, tabela sempre prefixada `<modulo>_`, sem JOIN ou FK cruzando módulos.
+4. **Dados** — schema nunca `public`, tabela sempre prefixada `<module>_`, sem JOIN ou FK cruzando módulos.
 
 ## Ferramentas
 

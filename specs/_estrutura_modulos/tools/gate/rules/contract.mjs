@@ -32,7 +32,7 @@ const FORMA_ACEITA = {
     + '("  /registros:") e cada metodo, uma chave de recuo EXATAMENTE 4 ("    get:") — recuo '
     + 'diferente disso e bloco valido que o leitor nao alcanca',
   servers: 'em "servers:", o PRIMEIRO item declara "url:" — na linha do traco '
-    + '("  - url: /api/v1/<modulo>") ou em qualquer outra linha do mesmo item; aspas simples ou '
+    + '("  - url: /api/v1/<module>") ou em qualquer outra linha do mesmo item; aspas simples ou '
     + 'duplas sao aceitas',
 };
 

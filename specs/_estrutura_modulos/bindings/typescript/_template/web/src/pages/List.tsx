@@ -1,4 +1,4 @@
-// Listagem do modulo <modulo>.
+// Listagem do modulo <module>.
 // Os TRES estados sao obrigatorios e testados (specs/arquitetura/03-operacao.md §5).
 // Nenhum texto literal: todo rotulo vem de config/texts.json (specs/arquitetura/01-modulo.md §4.1).
 import textos from '../../../config/texts.json';
@@ -21,7 +21,7 @@ export function List() {
       <ul>
         {state.registros.map((registro) => (
           <li key={registro.hash}>
-            <a href={`/<modulo>/${registro.hash}`}>{registro.titulo}</a>
+            <a href={`/<module>/${registro.hash}`}>{registro.titulo}</a>
             <span>{registro.status}</span>
           </li>
         ))}

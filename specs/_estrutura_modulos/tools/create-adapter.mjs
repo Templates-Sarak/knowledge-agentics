@@ -16,10 +16,10 @@
  * evitaria. O molde importa nada, devolve um tipo genérico e lança "TODO: implemente" nomeando a
  * porta e o arquivo; o gate NÃO cobra método (não é AST), só isolamento e forma.
  *
- * LIMITE CONHECIDO: `tokenVerifier` é resolvida por `resolveAuth()`/`resolve_auth()`, não por
+ * LIMITE CONHECIDO: `tokenVerifier` é resolvida por `resolveTokenVerifier()`/`resolve_token_verifier()`, não por
  * `FABRICAS` — é a auth ÚNICA do sistema, nunca por-módulo. Registrar um adapter para a porta
  * "tokenVerifier" aqui ACRESCENTA a entrada em `FABRICAS` (coerente com o vocabulário), mas
- * nada a consulta hoje; trocar o provedor de auth continua sendo editar `resolveAuth()` à mão. Não
+ * nada a consulta hoje; trocar o provedor de auth continua sendo editar `resolveTokenVerifier()` à mão. Não
  * é bug deste script — é a mesma arquitetura de antes dele. Nome da porta por ADR-010
  * (`specs/adr/000-decisoes-do-template.md`) — era `auth`, e colidia com a auth da fiação.
  */
@@ -93,7 +93,7 @@ function acharMolde(raizProjeto, binding) {
   return candidatos.find((caminho) => existsSync(caminho)) ?? null;
 }
 
-/** PascalCase a partir de kebab-case — "aws-s3" -> "AwsS3". Mesmo uso de `<Modulo>` em criar-modulo. */
+/** PascalCase a partir de kebab-case — "aws-s3" -> "AwsS3". Mesmo uso de `<Module>` em criar-modulo. */
 function paraPascalCase(kebab) {
   return kebab.split('-').map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1)).join('');
 }
@@ -133,7 +133,7 @@ function substituirMarcadores(texto, porta, provedor, pasta) {
  * `composition.*` importava o nome CORRETO (`criarG`, calculado, nunca escrito) — `tsc` reprova ao
  * primeiro adapter novo, mas nada rodava `tsc` depois de `create-adapter.mjs` até esta rede existir.
  */
-const NOME_GENERICO = { typescript: 'createAdapter', javascript: 'createAdapter', python: 'AdapterPendente' };
+const NOME_GENERICO = { typescript: 'createAdapter', javascript: 'createAdapter', python: 'PendingAdapter' };
 
 function nomeDoProvedor(binding, provedor) {
   const pascal = paraPascalCase(provedor);
@@ -179,7 +179,7 @@ function registrarFabricaTs(conteudo, { porta, provedor, nomeSimbolo, caminhoImp
     return comImport.replace(linhaDaPorta, `$1, '${provedor}': () => ${nomeSimbolo}()$2`);
   }
   // `[^>]*` no lugar da assinatura do parâmetro (em vez de `\(\)` fixo): o molde real declara
-  // `(modulo: ManifestoDescoberto) => unknown`, não `() => unknown` — a âncora antiga, presa à
+  // `(modulo: DiscoveredManifest) => unknown`, não `() => unknown` — a âncora antiga, presa à
   // forma SEM parâmetro, nunca casava contra o molde de verdade. Medido: a única porta que hoje
   // alcança este ramo (`FABRICAS` já tem as outras seis) sai com "nao encontrei onde registrar a
   // fabrica", sempre. `[^>]*` tolera qualquer assinatura de parâmetro futura sem reabrir o mesmo
@@ -286,7 +286,7 @@ function rodarGate(raizProjeto) {
 // refactor, e os dois foram corrigidos na mesma rodada:
 //
 // (1) TS: o tipo de `FABRICAS` no molde real é `Record<string, Record<string, (modulo:
-//     ManifestoDescoberto) => unknown>>`, mas a âncora de "porta nova" em `registrarFabricaTs`
+//     DiscoveredManifest) => unknown>>`, mas a âncora de "porta nova" em `registrarFabricaTs`
 //     esperava `() => unknown` (sem parâmetro) — drift entre o gerador e o molde. Consertado:
 //     `[^>]*` no lugar da assinatura do parâmetro, tolerante à forma sem reabrir o mesmo drift.
 // (2) Python: a âncora de importação em `registrarFabricaPy` era `)\n\n# Fabrica de adapter`, presa
@@ -303,7 +303,7 @@ const FIXTURE_TS_MOLDE_REAL = [
   "} from '../adapters/memory/index.js';",
   "import { createPostgresRepository } from '../adapters/postgres/index.js';",
   '',
-  'const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {',
+  'const FABRICAS: Record<string, Record<string, (modulo: DiscoveredManifest) => unknown>> = {',
   '  repository: { memoria: () => createRepository() },',
   '};',
   '',

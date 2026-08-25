@@ -52,7 +52,7 @@ pode ser verificada por máquina não entra lá.
 > **A fronteira física de pastas É a fronteira de dependência.**
 
 Cada módulo é uma fatia vertical autossuficiente: dono do próprio front, da própria API, do próprio motor e
-da própria fatia de banco. Extrair um módulo é **copiar uma pasta e recortar as chaves `<MODULO>_*` do
+da própria fatia de banco. Extrair um módulo é **copiar uma pasta e recortar as chaves `<MODULE>_*` do
 `.env`** — nunca reescrever import. Tudo no Nível 1 existe para sustentar essa frase.
 
 As quatro fronteiras que a tornam verdadeira, cada uma com regra de gate própria:

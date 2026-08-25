@@ -22,7 +22,7 @@ import express, { type Express } from 'express';
 
 import {
   createAuditLog,
-  createDenyingAuth,
+  createDenyingTokenVerifier,
   createIdGenerator,
   createInMemoryNotifier,
   createClock,
@@ -32,7 +32,7 @@ import {
 import { createPostgresAudit, createPostgresRepository } from '../adapters/postgres/index.js';
 import type { TokenVerifier } from '../packages/ports/index.js';
 
-export interface ManifestoDescoberto {
+export interface DiscoveredManifest {
   id: string;
   name: string;
   basePath: string;
@@ -44,22 +44,22 @@ export interface ManifestoDescoberto {
 /**
  * Fabrica de adapter por (porta, provedor). Acrescentar provedor e acrescentar linha AQUI, so.
  *
- * Recebe o `ManifestoDescoberto` do modulo que esta compondo — `memory` ignora (nao precisa saber
+ * Recebe o `DiscoveredManifest` do modulo que esta compondo — `memory` ignora (nao precisa saber
  * QUEM a chamou), `postgres` usa (`module.id` para a chave de ambiente, `module.pasta` para ler
  * `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um adapter que precisa de contexto
  * por-modulo nao teria como sabe-lo.
  */
-const FABRICAS: Record<string, Record<string, (modulo: ManifestoDescoberto) => unknown>> = {
+const FABRICAS: Record<string, Record<string, (modulo: DiscoveredManifest) => unknown>> = {
   repository: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
   audit: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
-  clock: { sistema: () => createClock() },
-  idGenerator: { padrao: () => createIdGenerator() },
+  clock: { system: () => createClock() },
+  idGenerator: { default: () => createIdGenerator() },
   storage: { memoria: () => createInMemoryStorage() },
   notifier: { memoria: () => createInMemoryNotifier() },
 };
 
 /** Le todos os manifestos. E a DESCOBERTA: o sistema conhece os modulos por declaracao, nao por import. */
-export function discoverModules(raiz: string): ManifestoDescoberto[] {
+export function discoverModules(raiz: string): DiscoveredManifest[] {
   const base = join(raiz, 'modules');
   if (!existsSync(base)) return [];
 
@@ -68,7 +68,7 @@ export function discoverModules(raiz: string): ManifestoDescoberto[] {
     .filter((nome) => existsSync(join(base, nome, 'module.json')))
     .map((nome) => {
       const pasta = join(base, nome);
-      const manifesto = JSON.parse(readFileSync(join(pasta, 'module.json'), 'utf8')) as ManifestoDescoberto;
+      const manifesto = JSON.parse(readFileSync(join(pasta, 'module.json'), 'utf8')) as DiscoveredManifest;
       return { ...manifesto, pasta };
     });
 }
@@ -77,7 +77,7 @@ export function discoverModules(raiz: string): ManifestoDescoberto[] {
  * Resolve as portas declaradas por um modulo, lendo a ESCOLHA em config/ports.json dele.
  * Porta declarada sem provedor conhecido derruba o boot — melhor falhar aqui que servir errado.
  */
-export function resolveDependencies(modulo: ManifestoDescoberto): Record<string, unknown> {
+export function resolveDependencies(modulo: DiscoveredManifest): Record<string, unknown> {
   const escolhas = JSON.parse(readFileSync(join(modulo.pasta, 'config', 'ports.json'), 'utf8')) as Record<
     string,
     string
@@ -101,8 +101,8 @@ export function resolveDependencies(modulo: ManifestoDescoberto): Record<string,
  * Auth do sistema. Enquanto nao houver login, NEGA tudo — as rotas que precisam funcionar sem
  * token estao declaradas em `publicRoutes` de cada modulo, e so elas passam.
  */
-export function resolveAuth(): TokenVerifier {
-  return createDenyingAuth();
+export function resolveTokenVerifier(): TokenVerifier {
+  return createDenyingTokenVerifier();
 }
 
 /**
@@ -110,7 +110,7 @@ export function resolveAuth(): TokenVerifier {
  * alcancado (o Express do primeiro responde por ele antes), e o defeito ficaria mudo ate alguem
  * notar uma rota "sumida". PURO — dado o array de manifestos, so decide; nao toca disco nem rede.
  */
-export function verifyRoutesUnique(modulos: ManifestoDescoberto[]): void {
+export function verifyRoutesUnique(modulos: DiscoveredManifest[]): void {
   const porRota = new Map<string, string[]>();
   for (const modulo of modulos) {
     porRota.set(modulo.basePath, [...(porRota.get(modulo.basePath) ?? []), modulo.id]);
@@ -142,7 +142,7 @@ export function chooseModuleEntrypoint(pastaModulo: string, emitidoExiste: boole
 }
 
 /** Import dinamico do modulo, pelo CAMINHO — a mesma descoberta por declaracao, nunca por lista fixa. */
-async function importApi(modulo: ManifestoDescoberto): Promise<ModuloApi> {
+async function importApi(modulo: DiscoveredManifest): Promise<ModuloApi> {
   const emitido = join(modulo.pasta, 'dist', 'api', 'src', 'index.js');
   const caminho = chooseModuleEntrypoint(modulo.pasta, existsSync(emitido));
   return (await import(pathToFileURL(caminho).href)) as ModuloApi;
@@ -184,7 +184,7 @@ export async function buildSystem(raiz: string): Promise<Express> {
   const modulos = discoverModules(raiz);
   verifyRoutesUnique(modulos);
 
-  const auth = resolveAuth();
+  const auth = resolveTokenVerifier();
   const app = express();
 
   for (const modulo of modulos) {
@@ -233,11 +233,11 @@ export async function startSystem(raiz: string): Promise<Server> {
 // provados pela subida real de processo (relatorio do bloco), nao por fixture em memoria.
 // ================================================================================================
 
-function testManifest(id: string, basePath: string): ManifestoDescoberto {
+function testManifest(id: string, basePath: string): DiscoveredManifest {
   return { id, name: id, basePath, role: 'domain', ports: [], pasta: `/fake/${id}` };
 }
 
-function uniqueRoutesCases(): Array<{ nome: string; modulos: ManifestoDescoberto[]; esperaErro: boolean }> {
+function uniqueRoutesCases(): Array<{ nome: string; modulos: DiscoveredManifest[]; esperaErro: boolean }> {
   return [
     { nome: 'lista vazia', modulos: [], esperaErro: false },
     { nome: 'um so modulo', modulos: [testManifest('a', '/api/v1/a')], esperaErro: false },

@@ -1045,3 +1045,284 @@ Estado, não decisão:
 3. **A definição de pronto ganha um item além dos testes de gate/selftest**:
    `node tools/generate-port-schemas.mjs --conferir` sai 0 — é a prova de que os dois schemas derivados
    foram gerados, não editados à mão, depois da tradução do array-fonte.
+
+---
+
+## ADR-017 — O marcador de módulo vai para o inglês: o eixo que o ADR-014 adiou
+
+**Status:** 🟢 Aceito
+
+**Contexto.** O `ADR-014` §5 adiou este eixo **deliberadamente**, com dois motivos técnicos, não por
+esquecimento: o marcador `<modulo>`/`<MODULO>`/`<Modulo>`/`<modulo_snake>` é um **eixo transversal** —
+aparece em nome de pasta, nome de package, código, config e `.env.example`, atravessando toda a árvore do
+molde de uma vez — e `tools/gate/context.mjs` o substitui **em memória** por um id sintético para validar o
+molde como módulo real (`ADR-006`); mexer nele durante qualquer uma das ondas de vocabulário contaminaria o
+isolamento de eixo que garante que cada onda seja migrável isoladamente por um alvo (`ADR-013`, consequência
+nº 1). O `ADR-014` foi explícito: *"Ele volta como onda própria ou ADR próprio, com decisão escrita."* Este
+é esse ADR.
+
+Medido nesta conversa (`grep -rIo` das quatro formas sobre `specs skills hooks agents commands plugin
+README.md`): **450 ocorrências em 152 arquivos** — `<modulo>` 254, `<modulo_snake>` 100, `<MODULO>` 66,
+`<Modulo>` 30. É o maior número bruto da campanha, mas — como a seção seguinte explica — é também o eixo de
+**menor risco por ocorrência** dela inteira.
+
+**Decisão.** As quatro formas, tradução literal, sem inventar abreviação — a mesma disciplina do `ADR-015`:
+
+| Português (hoje) | Inglês (alvo) |
+|---|---|
+| `<modulo>` | `<module>` |
+| `<MODULO>` | `<MODULE>` |
+| `<Modulo>` | `<Module>` |
+| `<modulo_snake>` | `<module_snake>` |
+
+Fundamento: `ADR-009` linha 9 já escreve o alvo literalmente (`<MODULE>_DB_URL`, citado desde a redação
+original da linha) — este ADR não inventa a forma, fecha a divergência que o `ADR-014` §5 já tinha
+**declarado, não escondido**, entre esse exemplo e o marcador real do template (`<MODULO>_`). O marcador é
+**andaime**: nome que o padrão Sarak impõe sobre a árvore, não conteúdo do módulo gerado — por isso segue a
+régua da árvore (`ADR-009` linha 1/3/9), não a do domínio. O **valor** que ele substitui continua sendo
+decisão de quem cria o módulo e continua em português (o `id`: `catalogo`, `propostas`) — este ADR traduz o
+molde do carimbo, nunca o carimbo em si.
+
+**Por que o eixo é seguro apesar do tamanho.** As quatro formas vêm **sempre** entre `<` e `>`. Isso as
+desambigua de todo o resto da árvore de um jeito que nenhuma onda anterior teve: a Onda 2a tinha confound
+entre palavra comum e nome de arquivo (`conformidade.json` × `rótulo = '...: conformidade'`); a Onda 3 tinha
+confound entre chave de config e símbolo interno na MESMA grafia (`e.modulo === a.modulo` em
+`validate.mjs:24`). Aqui não há grafia compartilhada: `<modulo>` (com delimitador) e `modulo`/`módulo`/
+`Modulo` (sem delimitador, palavra corrente da prosa e de símbolos como `listarModulos`,
+`caminhoModulo`) são strings **literalmente diferentes** — um `grep -F '<modulo>'` nunca casa a palavra
+solta, e vice-versa. É esse fato, medido e não presumido, que justifica ADR e aplicação na **mesma
+conversa**: a régua da campanha (`ADR-016`, "nada se renomeia que não esteja num ADR do contrato") continua
+valendo — a tabela acima é a decisão escrita —, mas a via seguinte (varredura → classificação → edição) não
+precisa de uma segunda conversa para conferir um risco que o delimitador já eliminou. Registrar isto aqui
+existe para que a exceção fique como raciocínio, não como atalho: se um eixo futuro não tiver delimitador
+igualmente inequívoco, ele volta a exigir duas conversas.
+
+**Os dois substituidores.** Só dois lugares **interpretam** o marcador — leem a string e decidem algo a
+partir dela; todo o resto da tabela de 152 arquivos apenas **carrega** o marcador como texto, sem lógica
+em cima:
+
+- **`tools/gate/context.mjs:74-83`** (`trocarMarcadores`) — substitui as quatro formas **em memória**, nunca
+  grava em disco, para o molde (`_template`) passar pelas mesmas 76 regras que um módulo real (`ADR-006`).
+  A ordem hoje é `<modulo_snake>` → `<MODULO>` → `<Modulo>` → `<modulo>` → `<escopo>`.
+- **`tools/create-module.mjs:104-117`** (`substituir` + `aplicarMarcadores`) — o scaffold de verdade: grava
+  o texto substituído em disco, e a linha 132 (`if (nome.includes('<modulo>')) renameSync(...)`) trata
+  **nome de arquivo** como um segundo alvo, separado do conteúdo — hoje sem efeito prático (nenhum arquivo
+  do molde tem o marcador no próprio nome, `find bindings -iname "*modulo*"` não devolve nada), mas a
+  lógica precisa continuar reconhecendo a forma nova, porque um nome de arquivo com marcador é uma
+  possibilidade real do template, só não uma que exista hoje.
+
+**A ordem dos `replaceAll` não importa, e isto é prova, não suposição.** Nenhuma das quatro formas é
+substring de outra — `<modulo_snake>` não contém `<modulo>` como substring porque depois de "modulo" vem
+`_snake>`, nunca `>` sozinho; `<MODULO>`/`<Modulo>`/`<modulo>` divergem por maiúscula/minúscula, e string
+literal em JS é case-sensitive. Verificado nesta conversa com um script que aplica as quatro substituições
+em três ordens diferentes (incluindo a canônica) sobre um texto sintético com as quatro formas coladas
+umas nas outras — pior caso possível para colisão — e compara os três resultados byte a byte: **idênticos
+nas três ordens**. `create-adapter.mjs` **não é um terceiro substituidor** — tem uma única citação em
+comentário (`Mesmo uso de \`<Modulo>\` em criar-modulo`, linha 96), texto que acompanha o rename como
+qualquer outra prosa, mas nenhuma lógica de substituição de marcador de módulo mora ali (a substituição que
+esse arquivo faz é de outro marcador, `<porta>`/`<provedor>`, família diferente).
+
+**`<module_snake>` existe por causa do banco, não por redundância.** `<MODULO>` já cobria a necessidade de
+maiúscula (chave de ambiente); `<modulo_snake>` nasceu depois, e o comentário de `create-module.mjs:106-111`
+explica por quê: identificador SQL não aceita hífen sem aspas, e a regra `schema-manifesto` cobra
+`^[a-z][a-z0-9_]*$` em `data.tables[]`. Sem essa quarta forma, todo `id` kebab-case com hífen
+(`nota-fiscal`) nascia com manifesto **impossível de validar** — `tabela-prefixo` exigia `nota-fiscal_` e o
+schema proibia o hífen na tabela derivada dele, duas regras do mesmo gate pedindo formas incompatíveis. A
+forma alvo (`<module_snake>`) preserva esse motivo: é tradução de idioma sobre um marcador que resolve um
+problema real de charset, não ornamento.
+
+**O que fica de fora, nominalmente — para não ser arrastado por analogia:**
+- **A palavra `modulo`/`módulo`/`Modulo` sem `<>`** — português corrente na prosa e nos símbolos internos
+  de `tools/` (`listarModulos`, `idDaPasta`, `caminhoModulo`, `MARCADORES_GERACAO_ANTIGA`), por `ADR-009`
+  linha 4/7. Nenhuma ocorrência sem delimitador entra nesta tabela.
+- **`modulos` (sem `<>`) em `skills/meta-adequacao-modular/scripts/diagnosticar_terreno.py`** — nome de
+  pasta de uma **geração antiga do template**, vocabulário fechado de `MARCADORES_GERACAO_ANTIGA` e de
+  `raizes_de_modulos`/`ler_pastas_de_modulos`. Confundi-lo com o marcador quebraria o diagnóstico da skill
+  contra repositórios legados — é detecção de uma convenção que já não existe, não o marcador vigente.
+- **`ID_SINTETICO_DO_MOLDE = 'molde'`** e o literal `'Molde'` de `context.mjs:80` — são o **valor** que
+  substitui o marcador durante a validação em memória (símbolo e string internos de `tools/`, português por
+  `ADR-009` linha 4), não o marcador em si. O que muda em `context.mjs` é a string **procurada**
+  (`'<modulo>'` → `'<module>'`, …), nunca a string **usada como substituto**.
+
+**Consequências.**
+1. **O contrato final é `ADR-013` + `014` + `015` + `016` + `017` lidos juntos.** Este é o último eixo que
+   o `ADR-014` §5 tinha deixado nomeado e pendente; não sobra nenhum eixo de idioma adiado com decisão já
+   escrita esperando aplicação.
+2. **O que continua aberto depois desta onda, registrado como estado, não como decisão:**
+   - **O 4º eixo** — símbolos estruturais do esqueleto em português que não derivam de porta nem de
+     marcador (`ConfigSeguranca`, `ConfiguracaoModulo`, `DependenciasModulo`, `ContextoDaBorda`, `ErroApi`,
+     `CODIGOS_DE_ERRO`, `ManifestoDescoberto`, `ErroPorta`, `Pagina`, `CodigoErro`, `RegistroDoMolde`,
+     `ModuloParaAdapter`, `DadosDoManifesto`, `ContextoDeTabela`, …) — ordem de grandeza ~33 símbolos,
+     ~389 ocorrências (treze símbolos já nomeados pelo `ADR-016` somam 171 ocorrências medidas nesta
+     conversa; a lista completa seguiria a mesma disciplina de varredura das ondas anteriores, não medida
+     exaustivamente aqui). Nenhum ADR do contrato os lista.
+   - **Os valores de `ports.json`** (`"sistema"`, `"padrao"`) e as chaves de provedor correspondentes em
+     `FABRICAS` — são ids de adapter, não vocabulário de porta nem marcador; nenhum ADR os lista (`ADR-016`
+     já registrou o mesmo para os nomes de porta).
+   - **`$comentario` como chave** nos `tools/gate/schemas/*.json` — questão aberta desde o `ADR-015`,
+     carregada adiante sem solução aqui.
+   - **~22 nomes de função/símbolo em Python que incorporam "modulo" sem `<>`** — candidatos ao 4º eixo se
+     ele um dia abrir (`raizes_de_modulos`, `criar_modulos`, `avaliar_id_modulo`, … — a varredura desta
+     conversa achou dez definições de função nessa forma; o número maior citado na abertura desta conversa
+     não foi reproduzido de forma exaustiva aqui e fica para quem abrir esse eixo confirmar por conta
+     própria, mesma disciplina de não inventar contagem que as ondas anteriores já seguem).
+3. **A definição de pronto** é a mesma das ondas anteriores — gate tests + self-tests verdes —, **mais o
+   smoke test end-to-end** (`create-project.mjs` → `create-module.mjs` → grep de resíduo `<module` no
+   destino → `validate.mjs --todos`) como prova de que os dois substituidores continuam produzindo módulo
+   sem marcador residual, porque é o único dos cinco ADRs desta campanha cujo mecanismo central roda em
+   memória, não é conferível só lendo arquivo.
+
+---
+
+## ADR-018 — Os símbolos estruturais do esqueleto: o eixo que fecha a campanha de idioma
+
+**Status:** 🟢 Aceito
+
+**Contexto.** `ADR-009` linha 3 manda todo símbolo do esqueleto (`bindings/**`) para o inglês; linha 4 isenta
+só o que mora **dentro de** `tools/`/`tests/`; linha 6 isenta ids de regra; linha 10 protege o domínio do
+módulo de exemplo. `ADR-016` item 3 já batizou este conjunto de **4º eixo** ao excluir `ErroPorta`/`Pagina`/
+`CodigoErro` da Onda 3, e `ADR-017` consequência nº 2 o deixou nomeado e pendente. Este ADR fecha a
+campanha de idioma: depois dele não sobra eixo com decisão escrita esperando aplicação.
+
+**A régua, e por que ela é mais arriscada que as seis anteriores.** Nas ondas de porta e de marcador, um
+delimitador (`<>`) ou uma fonte única (`ports-vocabulary.mjs`) faziam a classificação quase mecânica. Aqui
+não há delimitador: o que decide se um símbolo entra é a **raiz do nome**, julgada caso a caso.
+
+| Raiz | Natureza | Ação |
+|---|---|---|
+| `Registro`, `Pagina`, `Colecao`, `Situacao` | domínio do módulo de exemplo (`ADR-009` linha 10) | **fica em português** — e tudo que os contém: `NovoRegistro`, `LinhaRegistro`, `RegistroDoMolde`, `_RegistroDoMolde`, `_PaginaDoMolde` |
+| `Configuracao`, `Dependencias`, `Opcoes`, `Contexto`, `Manifesto`, `Erro`, `Codigo`, `Nivel`, `Raiz`, `Adapter` | estrutural — o esqueleto (`ADR-009` linha 3) | **vai para o inglês** |
+
+Contagem de rastro nos seis símbolos de domínio, medida nesta conversa (`grep -rIo -w`, fora de
+`decisoes.md`) — **baseline que a aplicação não pode mudar**: `Registro` 86/33, `Pagina` 27/12,
+`NovoRegistro` 13/7, `Colecao` 4/2, `Situacao` 7/5, `LinhaRegistro` 3/1 (ocorrências/arquivos); mais
+`RegistroDoMolde` 9/2, `_RegistroDoMolde` 9/2, `_PaginaDoMolde` 7/2. Os números do prompt que abriu esta
+conversa eram o ponto de partida, não a verdade — a varredura vale mais que a estimativa, mesma disciplina
+de todas as ondas anteriores.
+
+### 1. A tabela — 24 símbolos renomeados, 4 excluídos por decisão fundamentada
+
+**Forma de tradução: preservar a posição das partes, não normalizar para ordem inglesa idiomática —
+com uma exceção grafada abaixo.** `ConfigSeguranca` vira `ConfigSecurity`, não `SecurityConfig`: o prefixo
+`Config` já é compartilhado com `ConfigApi`, símbolo irmão que **já está em inglês** e que nenhum ADR
+autoriza tocar — normalizar a ordem só de `ConfigSeguranca` quebraria o agrupamento visual que os dois
+nomes formam hoje (`ConfigApi`, `ConfigSecurity`, ambos localizáveis pelo mesmo prefixo). A mesma lógica
+não se estende a compostos que não compartilham essa família de prefixo com nada existente: onde a ordem
+portuguesa produziria inglês agramatical (`ManifestoDescoberto` → `ManifestDiscovered` não é inglês;
+`AdapterPendente` → `AdapterPending` também soa estranho como nome de classe), o alvo usa a ordem
+gramaticalmente correta (`DiscoveredManifest`, `PendingAdapter`) — uma tradução que produz inglês quebrado
+não preserva nada, só transporta o erro. E para as classes que **estendem `Error`/`Exception`**, o alvo
+segue a convenção universal da própria linguagem (sufixo `Error`: `ApiError`, `ValidationError`), pela
+mesma razão que `<modulo_snake>` (`ADR-017`) seguiu a convenção do SQL — não é estilo, é o formato que a
+linguagem-alvo exige para o tipo de símbolo que é.
+
+**Erros:**
+
+| Símbolo | Ocorrências medidas | Alvo |
+|---|---|---|
+| `ErroApi` | 27 | `ApiError` |
+| `ErroDeValidacao` | 9 | `ValidationError` |
+| `ErroDeGateway` | 5 (+2 citação) | `GatewayError` |
+| `ErroPorta` | 3 | `PortError` |
+| `CodigoErro` | 2 | `ErrorCode` |
+| `CODIGOS_DE_ERRO` | 3 | `ERROR_CODES` |
+| `CODIGOS` | 3 | `CODES` |
+| `Nivel` | 3 | `Level` |
+
+**Config e manifesto:**
+
+| Símbolo | Ocorrências medidas | Alvo |
+|---|---|---|
+| `Manifesto` | 8 reais (TS só — JS/Python usam `dict`/objeto solto, sem tipo nomeado) | `Manifest` |
+| `DependenciasModulo` | 11 arquivos | `ModuleDependencies` |
+| `ManifestoDescoberto` | TS só (composition.ts) + 2 citações (doutrina, `tools/create-adapter.mjs`) | `DiscoveredManifest` |
+| `ConfiguracaoModulo` | TS + Python (JS não tem) | `ModuleConfiguration` |
+| `ModuloParaAdapter` | TS só (adapter Postgres) | `ModuleForAdapter` |
+| `ConfigSeguranca` | TS só | `ConfigSecurity` |
+| `ContextoDaBorda` | Python só | `EdgeContext` |
+| `RaizAsgi` | Python só | `AsgiRoot` |
+| `OpcoesModulo` | TS só | `ModuleOptions` |
+| `AdapterPendente` | Python (`_adapter/__init__.py`) + valor de `NOME_GENERICO.python` em `tools/create-adapter.mjs` | `PendingAdapter` |
+
+**A dívida do `ADR-010` — corrigida, não copiada do prompt que abriu esta conversa.** O prompt listava sete
+símbolos como "a dívida" (`createDenyingAuth`, `AuthQueNega`, `resolveAuth`, `authentication`, `createAuth`,
+`resolve_auth`, `AuthDeTeste`). A leitura de `ADR-010` (linhas 269-275, carregadas adiante pelo `ADR-013`)
+diz, textualmente, que existem **duas declarações independentes**: a porta plugável (hoje `tokenVerifier`) e
+*"a auth da fiação... injetada em todo `createApp` via `resolveAuth()`"* — a interface fixa de
+`api/src/middlewares/index.ts` (TS/JS) e de `core/ports/__init__.py` (Python), **sempre a mesma
+implementação, nunca escolhida por módulo**, que o próprio `ADR-010` deixou **de fora** da renomeação de
+propósito. Conferido símbolo a símbolo contra o código real:
+
+| Símbolo | O que retorna/consome | É a porta (`TokenVerifier`)? | Ação |
+|---|---|---|---|
+| `createDenyingAuth` | `TokenVerifier` (adapters/memory, TS/JS) | sim | renomeia → `createDenyingTokenVerifier` |
+| `AuthQueNega` | `TokenVerifier` (adapters/memory, Python) | sim | renomeia → `DenyingTokenVerifier` |
+| `resolveAuth` | `TokenVerifier` (composition.ts/js) | sim | renomeia → `resolveTokenVerifier` |
+| `resolve_auth` | `TokenVerifier` (composition.py, via `AuthQueNega`) | sim | renomeia → `resolve_token_verifier` |
+| `authentication` | recebe `Auth` (a interface FIXA de middlewares) | não | **fica** |
+| `createAuth` | devolve `Auth` (fixture de teste de contrato, TS/JS) | não | **fica** |
+| `AuthDeTeste` | implementa `Auth` (fixture de teste de contrato, Python) | não | **fica** |
+| `Auth` (interface/Protocol) | a auth fixa em si — nunca foi `verificadorDeToken`/`tokenVerifier` | não | **fica** |
+
+Renomear os quatro de baixo colapsaria a distinção que o `ADR-010` existe para proteger — os dois lados têm
+o mesmo método (`verify(token)`) por coincidência estrutural, e é exatamente essa coincidência que o
+`ADR-010` avisa para não confundir. Alinhar `authentication`/`createAuth`/`AuthDeTeste`/`Auth` ao nome da
+porta seria repetir, em sentido inverso, o próprio erro que motivou aquele ADR.
+
+**Privados Python** (`bindings/python/root/verify.py`, esqueleto — `ADR-009` linha 3, não `tools/`):
+
+| Símbolo | Alvo |
+|---|---|
+| `_despachar_modo` | `_dispatch_mode` |
+| `_recusar_desconhecidas` | `_reject_unknown` |
+
+**O que fica de fora desta tabela, nominalmente:**
+- **`DadosDoManifesto`, `ContextoDeTabela`** (adapter Postgres, TS) — claramente estruturais pela régua, mas
+  **não estavam na lista que abriu esta conversa**; nenhum ADR os comissiona. Registrados aqui para a
+  próxima onda não os redescobrir do zero, não renomeados nesta.
+- **Chaves de `CODIGOS`/`CODIGOS_DE_ERRO`** (`VALIDACAO`, `NAO_AUTENTICADO`, …) — os CONTÊINERES mudam de
+  nome, as chaves não: não estavam na lista, e mensagem/vocabulário de erro tem argumento próprio para
+  ficar português (`ADR-009` linha 7) que este ADR não reabre.
+- **`NIVEIS`, `OpcoesLogger`** (logger.ts) — vizinhos de `Nivel`, fora da lista comissionada.
+
+### 2. Os três itens miúdos do `ADR-016` item 5
+
+**Valores de `ports.json` e chaves de provedor em `FABRICAS`.** **Entram**, só os dois que a Onda 3 deixou
+pendurados: `"sistema"` → `"system"`, `"padrao"` → `"default"`, nos três `config/ports.json` e nas chaves
+correspondentes de `FABRICAS` em `composition.*`. Seleciona exatamente as fábricas que a Onda 3 renomeou
+(`SystemClock`, `DefaultIdGenerator`) — hoje o arquivo mais lido de todo módulo tem a chave em português
+apontando para uma classe em inglês. **Não entram** (não comissionados, mesma disciplina): os provedores
+`memoria`/`memory`/`postgres` — inclusive a divergência TS/JS (`memoria`) × Python (`memory`) já registrada
+na Onda 3, que continua sendo achado, não decisão desta conversa.
+
+**`$comentario` como chave, nos 9 `tools/gate/schemas/*.json`.** **Entra**, vira `$comment`. Conferido
+`tools/gate/schema.mjs:80-85`: o validador só pula chave **`_`-prefixada** (`chave.startsWith('_')`) ao
+checar `additionalProperties` do **dado validado** — `$comentario` mora no **próprio arquivo de schema**,
+nunca no dado, e o leitor de schema (`schema.mjs`) só lê palavras-chave nomeadas (`type`, `properties`,
+`required`, `additionalProperties`, …) por acesso direto de propriedade; uma chave extra no documento de
+schema, com qualquer nome, é inerte para ele. Renomear é seguro por construção, não por sorte. O argumento
+que decide é `$comment` ser a **palavra-chave padrão do próprio JSON Schema** — mais forte que qualquer lado
+do `ADR-009` em disputa, porque não é escolha de vocabulário Sarak, é o nome que o formato já usa.
+`tools/generate-port-schemas.mjs:47` (que GERA `config-ports.schema.json`) muda junto — o símbolo
+`COMENTARIO_CONFIG_PORTAS` fica (é `tools/`), só a chave que ele escreve vira `$comment`.
+
+**~22 nomes de função de teste em Python que incorporam "modulo"/domínio como identificador.** **Ficam em
+português.** São descrição de comportamento que a sintaxe do Python força a virar símbolo
+(`test_recusa_titulo_vazio`); os equivalentes em TS/JS são strings dentro de `it('recusa título vazio')`,
+prosa livre pela mesma régua que já protege mensagem e erro de runtime (`ADR-009` linha 7). Traduzir só o
+lado que a linguagem obrigou a virar identificador inverteria o critério — o TS/JS continuaria narrando o
+comportamento em português, e só o Python passaria a fazê-lo em inglês, pelo acidente de sintaxe, não por
+decisão. Registrado como decisão, para não reabrir a cada leitura futura.
+
+### 3. Consequências
+
+1. **O contrato final da campanha de idioma é `ADR-013` a `018`, lidos juntos.** Não sobra eixo nomeado e
+   pendente — o que sobrar depois desta onda (item 4 abaixo) é fronteira nova, não dívida represada.
+2. **A campanha de idioma fecha aqui.** As seis ondas (`013`–`018`) tratam o mesmo objeto — o vocabulário do
+   template — sob o mesmo princípio (`ADR-009`: árvore em inglês, conteúdo em português) e a mesma
+   disciplina (nada se renomeia sem ADR do contrato, medição antes de aplicação, texto que cita acompanha o
+   rename). Trabalho de nomenclatura depois disto é eixo **novo**, com ADR **próprio**.
+3. **Aberto, registrado como estado:** `DadosDoManifesto`/`ContextoDeTabela` (achado, item 1); os
+   provedores `memoria`/`memory`/`postgres` de `ports.json` (achado da Onda 3, ainda parado); e qualquer
+   símbolo estrutural fora da lista comissionada que uma varredura futura, dedicada, venha a achar — este
+   ADR não afirma exaustividade sobre o 4º eixo inteiro, só sobre os 24 símbolos que decidiu.

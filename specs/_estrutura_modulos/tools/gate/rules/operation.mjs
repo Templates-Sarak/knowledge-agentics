@@ -365,7 +365,7 @@ export default [
      * Cobra UMA coisa, e o nome diz qual. A outra metade — "toda permissão declarada é exigida em
      * alguma rota", o análogo do `config-morta` — foi DESCARTADA, e não por preguiça: ela é
      * incompatível com esta. O molde consome as permissões por POSIÇÃO
-     * (`const [ler, escrever] = config.manifesto.permissions`), então a string `<modulo>:ler` nunca
+     * (`const [ler, escrever] = config.manifesto.permissions`), então a string `<module>:ler` nunca
      * aparece no código — e não pode aparecer, porque é exatamente o que esta regra proíbe.
      * Procurá-la seria cobrar o oposto do que se cobra na linha de cima. Registrado no §7.1.
      */

@@ -1,4 +1,4 @@
-// Testes de contrato do modulo <modulo> — cada rota do contract/openapi.yaml.
+// Testes de contrato do modulo <module> — cada rota do contract/openapi.yaml.
 // Cobre o que a lei exige (specs/arquitetura/03-operacao.md §5): rota declarada, auth NEGADA por padrao,
 // e payload malformado rejeitado. Roda sobre HTTP real, com dubles de porta em memoria.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../api/src/index.js';
 import { createAuth, createDependencies, recordExample } from '../fixtures/index.js';
 
-const ROTA_BASE = '/api/v1/<modulo>';
+const ROTA_BASE = '/api/v1/<module>';
 const CREDENCIAL_DE_TESTE = 'token-de-teste';
 
 let servidor;
@@ -15,7 +15,7 @@ let base;
 beforeAll(async () => {
   const app = createApp({
     deps: createDependencies([recordExample()]),
-    auth: createAuth(['<modulo>:ler', '<modulo>:escrever'], CREDENCIAL_DE_TESTE),
+    auth: createAuth(['<module>:ler', '<module>:escrever'], CREDENCIAL_DE_TESTE),
   });
   servidor = await new Promise((resolve) => {
     const criado = app.listen(0, () => resolve(criado));

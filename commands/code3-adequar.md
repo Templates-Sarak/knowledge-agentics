@@ -33,7 +33,7 @@ Você é o **orquestrador** da adequação. Caminha o backlog `.sarak/audit/back
    - **Gate do diff** — rode `git-revisao-diff` (`scripts/revisar_diff.py` + julgamento) no diff da tarefa. Bloqueio
      (conflito/debug) → resolva antes de commitar.
    - **Commit (1 por tarefa)** — `git add` do escopo da tarefa + commit com mensagem estruturada:
-     `adequa <modulo>: <estadoAtual> → <estadoAlvo> [<id>]`. Os hooks (limiares/format/segredos) disparam aqui.
+     `adequa <module>: <estadoAtual> → <estadoAlvo> [<id>]`. Os hooks (limiares/format/segredos) disparam aqui.
    - **Registrar** — atualize o backlog (`status → done`) e **append** a entrada em `.sarak/adequacao_update.md`
      (template em `code-adequacao/assets/adequacao_update.template.md`).
 
