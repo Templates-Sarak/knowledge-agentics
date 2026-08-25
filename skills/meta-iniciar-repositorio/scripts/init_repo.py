@@ -21,7 +21,7 @@ Monta, nesta ordem:
     4. a base da linguagem em specs/arquitetura/00-base-<binding>.md
     5. os primeiros modulos                              (so com --modulos)
     6. .agents/ + gerador de indice + hook de pre-commit
-    7. verificacao: gate --todos
+    7. verificacao: gate --all
 
 NAO commita e NAO cria remoto: isso e HITL, e fica com a skill (git-commit-inicial).
 Sem --binding, roda no modo antigo — so specs e .agents.
@@ -294,11 +294,13 @@ def instalar_projeto_modular(target: Path, template: Path, args) -> bool:
     if not criar_projeto.exists():
         print(f"[ERRO] Template de modulos nao encontrado em {template}")
         return False
+    # `args.escopo`/`args.forcar` sao a CLI da skill (fica em portugues); o repasse abaixo e para a
+    # CLI do template (specs/_estrutura_modulos/), em ingles desde o ADR-020 — "--scope"/"--force".
     comando = ["node", str(criar_projeto), ".", "--binding", args.binding]
     if args.escopo:
-        comando += ["--escopo", args.escopo]
+        comando += ["--scope", args.escopo]
     if args.forcar:
-        comando.append("--forcar")
+        comando.append("--force")
     return rodar(f"Projeto modular ({args.binding})", comando, target)
 
 
@@ -400,8 +402,9 @@ def criar_modulos(target: Path, template: Path, modulos: list, binding: str) -> 
         # `quer_artefato` so e True quando role == "domain" (validar_modulos ja recusa ":artefato"
         # em gateway/connector) — entao "nao quer artefato" cobre os dois casos sozinho: domain sem
         # o token, e gateway/connector, que NUNCA geram artefato por arquitetura.
+        # Repasse para a CLI do template (ingles desde o ADR-020): "--no-artifact", nao ":artefato".
         if not quer_artefato:
-            comando.append("--sem-artefato")
+            comando.append("--no-artifact")
         rodar(f"Modulo '{id_modulo}' ({role})", comando, target)
 
 
@@ -513,7 +516,7 @@ def escrever_entrypoint(target: Path, modular: bool) -> None:
     if modular:
         texto += (
             "> **Arquitetura de modulos:** a lei esta em `specs/arquitetura/` (`04-regras.md` e o catalogo "
-            "normativo) e e cobrada por maquina: `node tools/gate/validate.mjs --todos`. "
+            "normativo) e e cobrada por maquina: `node tools/gate/validate.mjs --all`. "
             "Modulo novo so pela skill `code-modulo` — nunca copiando pasta a mao.\n"
         )
     claude_md = target / "CLAUDE.md"
@@ -566,7 +569,9 @@ def verificar(target: Path) -> None:
     validar = target / "tools" / "gate" / "validate.mjs"
     if not validar.exists():
         return
-    rodar("Gate de conformidade (--todos)", ["node", str(validar), "--todos"], target)
+    # Repasse para a CLI do template (ingles desde o ADR-020): "--all", nao "--todos" (o rotulo
+    # abaixo acompanha, para nao divergir do comando que de fato roda).
+    rodar("Gate de conformidade (--all)", ["node", str(validar), "--all"], target)
 
 
 def proximos_passos(modular: bool) -> None:
