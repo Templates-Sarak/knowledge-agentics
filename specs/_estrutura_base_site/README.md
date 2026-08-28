@@ -28,7 +28,7 @@ O modelo é **SDD (Spec-Driven Development)**: **toda e qualquer alteração nas
 | Pasta | Pergunta | Conteúdo | Natureza |
 |---|---|---|---|
 | `arquitetura/` | O **COMO** | Stack, identidade visual, tom de voz, SEO/NAP, a11y/performance, estrutura de código (`01`–`06`) | Documento vivo |
-| `specs/` | O **QUÊ** | Layout global, Home, páginas internas, formulários, páginas legais (`06`–`10`) | Documento vivo |
+| `specs/` | O **QUÊ** | Layout global, Home, páginas internas, formulários, páginas legais (`01`–`05`) | Documento vivo |
 | `adr/` | O **POR QUÊ** | Decisões com trade-off (`001-...`) | **Imutável** — decisão nova = ADR novo |
 | `plan/` | O **COMO CHEGAR LÁ** | **Todas** as plans (`plan-NN-<slug>.md`), do nascimento ao expurgo | Fila de execução — o `status` diz em que pé cada uma está |
 
@@ -51,11 +51,11 @@ Erro mais comum aqui é escrever a coisa certa no arquivo errado:
 | CNPJ, endereço, telefone, keywords, JSON-LD | `arquitetura/04-dados-institucionais-seo.md` — fonte única do NAP |
 | Nível WCAG, orçamento de Core Web Vitals | `arquitetura/05-acessibilidade-e-performance.md` |
 | Onde o arquivo mora, como componentiza, i18n | `arquitetura/06-estrutura-de-codigo.md` |
-| Comportamento de header/footer/menu | `specs/06-layout-global-e-nav.md` |
-| Quais seções a Home tem e em que ordem | `specs/07-pagina-home.md` |
-| Estrutura de página interna, hub & spoke | `specs/08-paginas-internas-e-hub.md` |
-| Campos, validação, destino do lead | `specs/09-formularios-e-contato.md` |
-| Consentimento, cookies, políticas | `specs/10-paginas-legais-e-cookies.md` |
+| Comportamento de header/footer/menu | `specs/01-layout-global-e-nav.md` |
+| Quais seções a Home tem e em que ordem | `specs/02-pagina-home.md` |
+| Estrutura de página interna, hub & spoke | `specs/03-paginas-internas-e-hub.md` |
+| Campos, validação, destino do lead | `specs/04-formularios-e-contato.md` |
+| Consentimento, cookies, políticas | `specs/05-paginas-legais-e-cookies.md` |
 
 ---
 
@@ -86,7 +86,7 @@ cada `⚪` antes de remover o arquivo e a linha da §4.
 > próximo número livre vem do campo `proximo_numero_plan` no `00-indice`, nunca de escanear a pasta. A ordem
 > de execução se muda na coluna `#` do `00-indice`, nunca renomeando o arquivo.
 >
-> ⚠️ **Não confunda** `plan/` com as specs `06`–`10` de `specs/`: aquelas são a verdade das páginas, estas são
+> ⚠️ **Não confunda** `plan/` com as specs `01`–`05` de `specs/`: aquelas são a verdade das páginas, estas são
 > as tarefas que chegam lá.
 
 ---
@@ -134,7 +134,7 @@ qualquer outra marca de autoria de agente.
 
 ## 6. Convenções
 
-- **Nomes** em `kebab-case`, com prefixo numérico: `07-pagina-home.md`, `plan-03-otimizar-lcp.md`.
+- **Nomes** em `kebab-case`, com prefixo numérico: `02-pagina-home.md`, `plan-03-otimizar-lcp.md`.
 - **Frontmatter YAML obrigatório** em toda spec, com os campos do molde correspondente. Não invente campos.
   As `00-*` usam `tipo: "processo"`; as specs fixas ainda não preenchidas usam `tipo: "template"` e
   `status: "🟡 Pendente"` até serem instanciadas no projeto.

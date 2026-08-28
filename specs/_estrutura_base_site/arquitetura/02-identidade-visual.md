@@ -5,6 +5,7 @@ dominio: "UI/UX Front-end"
 status: "🟡 Pendente"
 prioridade: "Alta"
 tags: ["ui", "design", "cores", "tipografia"]
+relacionados: []
 ---
 
 # 1. Visão Geral

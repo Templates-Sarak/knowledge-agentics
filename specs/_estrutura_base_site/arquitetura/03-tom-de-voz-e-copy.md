@@ -5,6 +5,7 @@ dominio: "Conteúdo e Marca"
 status: "🟡 Pendente"
 prioridade: "Média"
 tags: ["copy", "marketing", "persona"]
+relacionados: []
 ---
 
 # 1. Visão Geral

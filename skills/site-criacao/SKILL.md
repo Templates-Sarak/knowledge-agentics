@@ -21,7 +21,7 @@ UI/UX, SEO e de negócio do site.
 1. **Validar o contexto**
    - **Ação:** Verifique (silenciosamente) se `specs/arquitetura/` e `specs/specs/` existem e
      contêm os arquivos Markdown de base gerados pela `spec-site-fundacao` (`arquitetura/01`…`06`
-     e `specs/06`…`10`).
+     e `specs/01`…`05`).
    - **Ação:** Leia `specs/00-contexto.md` para não repetir o que a fundação já definiu.
      **Ignore `specs/plan/`**: é a fila de execução do ciclo SDD, não contém spec de conteúdo.
 2. **Entrevista com formulário granular (HITL obrigatório)**
@@ -61,15 +61,15 @@ UI/UX, SEO e de negócio do site.
      15. **Formulários e Conversão:** Quais os campos exatos do formulário de contato? Qual a estratégia Anti-spam (Honeypot, reCAPTCHA)? A validação ocorre em tempo real (onBlur) ou no envio? O sucesso exibe uma mensagem in-line ou redireciona para `/obrigado`?
      16. **Páginas Legais:** Haverá banner de consentimento de cookies? Teremos páginas dedicadas de Termos de Uso e Política de Privacidade?
 
-     ### PARTE 6: Estrutura de Código e Escabilidade
+     ### PARTE 6: Estrutura de Código e Escalabilidade
      17. **Arquitetura de Pastas (DDD):** A organização dos componentes será orientada a domínio (ex: `components/home`, `components/ui`) ou flat?
      18. **Segregação de Dados:** Haverá separação estrita de conteúdo (textos) do código JSX (ex: usando pastas `data/` ou `messages/` para i18n)?
      19. **Arquivos Nativos:** Exigiremos a geração nativa de `sitemap.ts`, `robots.ts` e `opengraph-image.tsx` na raiz do projeto (Next.js App Router)?
      ```
 3. **Sintetizar e preencher os arquivos**
    - **Ferramenta:** Edição de arquivo (`Write`/multi-replace).
-   - **Ação:** Com base nas respostas, abra um a um os arquivos de arquitetura (`01` a `05`) e
-     specs (`06` a `10`) presentes no repositório. Preencha os espaços reservados (ex.: `[Ex: ...]`)
+   - **Ação:** Com base nas respostas, abra um a um os arquivos de arquitetura (`01` a `06`) e
+     specs (`01` a `05`) presentes no repositório. Preencha os espaços reservados (ex.: `[Ex: ...]`)
      e apague os comentários de placeholder, substituindo-os pelos requisitos concretos do usuário.
    - **Diretriz:** Se o usuário omitir algo irrelevante (ex.: sem CNPJ por ser MVP pessoal), apague
      a respectiva linha de exigência do `.md`, mantendo o documento limpo. Traduza a linguagem
@@ -91,6 +91,6 @@ UI/UX, SEO e de negócio do site.
 
 - [ ] `specs/arquitetura/` e `specs/specs/` validadas como existentes antes da entrevista, e `specs/00-contexto.md` lido para não repetir o que a fundação já definiu?
 - [ ] Formulário completo (19 pontos, 6 partes) enviado e respondido antes de qualquer escrita?
-- [ ] Cada arquivo de arquitetura (`01`-`05`) e spec (`06`-`10`) preenchido com os requisitos concretos, sem placeholder (`[Ex: ...]`) restante?
+- [ ] Cada arquivo de arquitetura (`01`-`06`) e spec (`01`-`05`) preenchido com os requisitos concretos, sem placeholder (`[Ex: ...]`) restante?
 - [ ] Itens irrelevantes/não utilizados removidos dos arquivos, em vez de deixados como pendência?
 - [ ] Usuário informado de que a especificação está 100% completa e pronta para o desenvolvimento técnico?

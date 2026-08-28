@@ -5,6 +5,7 @@ dominio: "UI/UX Front-end"
 status: "🟡 Pendente"
 prioridade: "Alta"
 tags: ["formulario", "contato", "conversao", "leads"]
+relacionados: []
 ---
 
 # 1. Visão Geral

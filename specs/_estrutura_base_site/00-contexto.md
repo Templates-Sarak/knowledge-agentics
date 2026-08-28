@@ -64,10 +64,10 @@ aninhamento ≤ 3; ≤ 4 parâmetros; **zero hardcoded** (tunables em `config.js
   sem otimização/dimensão declarada e script de terceiro sem justificativa reprovam.
 - **SEO não é opcional:** título, descrição, OG, `canonical` e JSON-LD conforme
   `arquitetura/04-dados-institucionais-seo.md`. **NAP consistente** em todo o site — divergir de `04` é defeito.
-- **LGPD:** consentimento e páginas legais conforme `specs/10-paginas-legais-e-cookies.md`. Nenhum script de
+- **LGPD:** consentimento e páginas legais conforme `specs/05-paginas-legais-e-cookies.md`. Nenhum script de
   rastreio dispara antes do consentimento.
 - **Estrutura de arquivos** conforme `arquitetura/06-estrutura-de-codigo.md`, inclusive a separação
-  UI × conteúdo. Texto dentro de componente, quando `06` manda separar, é violação.
+  UI × conteúdo. Texto dentro de componente, quando `arquitetura/06` manda separar, é violação.
 
 **Específicas deste site:**
 
@@ -101,11 +101,11 @@ aninhamento ≤ 3; ≤ 4 parâmetros; **zero hardcoded** (tunables em `config.js
 
 | Tipo de tarefa | Leia antes (specs fixas) | Capacidade |
 |---|---|---|
-| Alterar seção/conteúdo da Home | `specs/07-pagina-home.md` + `arquitetura/02` + `arquitetura/03` | [[00-knowledge]] |
-| Header, footer, menu mobile, navegação | `specs/06-layout-global-e-nav.md` + `arquitetura/06` | `site-organizacao` |
-| Criar página interna ou hub/catálogo | `specs/08-paginas-internas-e-hub.md` + `arquitetura/06` | `site-organizacao` |
-| Criar/alterar rota, sub-aba, i18n | `specs/06-layout-global-e-nav.md` + `arquitetura/06` | `site-organizacao` |
-| Formulário, validação, captura de lead | `specs/09-formularios-e-contato.md` + `specs/10` (consentimento) | `cyber-api` |
+| Alterar seção/conteúdo da Home | `specs/02-pagina-home.md` + `arquitetura/02` + `arquitetura/03` | [[00-knowledge]] |
+| Header, footer, menu mobile, navegação | `specs/01-layout-global-e-nav.md` + `arquitetura/06` | `site-organizacao` |
+| Criar página interna ou hub/catálogo | `specs/03-paginas-internas-e-hub.md` + `arquitetura/06` | `site-organizacao` |
+| Criar/alterar rota, sub-aba, i18n | `specs/01-layout-global-e-nav.md` + `arquitetura/06` | `site-organizacao` |
+| Formulário, validação, captura de lead | `specs/04-formularios-e-contato.md` + `specs/05` (consentimento) | `cyber-api` |
 | Escrever ou revisar texto visível | `arquitetura/03-tom-de-voz-e-copy.md` | — |
 | Cor, fonte, espaçamento, componente visual | `arquitetura/02-identidade-visual.md` | — |
 | Meta tags, JSON-LD, sitemap, robots, GEO/AEO | `arquitetura/04-dados-institucionais-seo.md` | `site-seo` |
@@ -113,7 +113,7 @@ aninhamento ≤ 3; ≤ 4 parâmetros; **zero hardcoded** (tunables em `config.js
 | Contraste, foco, `aria`, navegação por teclado | `arquitetura/05-acessibilidade-e-performance.md` | `site-organizacao` |
 | Organização de pastas, componentes, dados | `arquitetura/06-estrutura-de-codigo.md` | `padrao-typescript` |
 | Stack, build, deploy, hospedagem, domínio | `arquitetura/01-stack-tecnologica.md` | `deploy-vercel` |
-| Cookies, política de privacidade, LGPD | `specs/10-paginas-legais-e-cookies.md` | `cyber-dados` |
+| Cookies, política de privacidade, LGPD | `specs/05-paginas-legais-e-cookies.md` | `cyber-dados` |
 
 <!-- PREENCHER: linhas específicas deste site -->
 

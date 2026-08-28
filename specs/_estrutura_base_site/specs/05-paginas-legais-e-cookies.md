@@ -5,6 +5,7 @@ dominio: "Compliance / Legal"
 status: "🟡 Pendente"
 prioridade: "Média"
 tags: ["legal", "privacidade", "lgpd", "cookies"]
+relacionados: []
 ---
 
 # 1. Visão Geral

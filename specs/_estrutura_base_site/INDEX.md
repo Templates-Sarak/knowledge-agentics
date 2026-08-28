@@ -23,11 +23,11 @@
 | `arquitetura/04-dados-institucionais-seo.md` | NAP, Schema.org, keywords, metadados |
 | `arquitetura/05-acessibilidade-e-performance.md` | Nível WCAG e orçamento de Core Web Vitals |
 | `arquitetura/06-estrutura-de-codigo.md` | Pastas, componentização, separação UI × conteúdo, i18n |
-| `specs/06-layout-global-e-nav.md` | Header, footer, menu mobile, navegação |
-| `specs/07-pagina-home.md` | Blocagem e ordem das seções da Home |
-| `specs/08-paginas-internas-e-hub.md` | Páginas secundárias e padrão hub & spoke |
-| `specs/09-formularios-e-contato.md` | Campos, validação, conversão, leads |
-| `specs/10-paginas-legais-e-cookies.md` | LGPD, políticas, banner de consentimento |
+| `specs/01-layout-global-e-nav.md` | Header, footer, menu mobile, navegação |
+| `specs/02-pagina-home.md` | Blocagem e ordem das seções da Home |
+| `specs/03-paginas-internas-e-hub.md` | Páginas secundárias e padrão hub & spoke |
+| `specs/04-formularios-e-contato.md` | Campos, validação, conversão, leads |
+| `specs/05-paginas-legais-e-cookies.md` | LGPD, políticas, banner de consentimento |
 
 ## Estrutura do Vault
 

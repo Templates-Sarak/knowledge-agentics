@@ -4,7 +4,8 @@ titulo: "Estrutura de Código e Escalabilidade"
 dominio: "Engenharia de Software"
 status: "🟡 Pendente"
 prioridade: "Alta"
-tags: ["arquitetura", "estrutura", "ddd", "i18n", "seo"]
+tags: ["arquitetura", "estrutura", "ddd", "i18n"]
+relacionados: []
 ---
 
 # 1. Visão Geral

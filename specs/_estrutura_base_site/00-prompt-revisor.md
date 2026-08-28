@@ -268,7 +268,7 @@ Na mesma ação, sem deixar pendência:
 2. `status: "🟢 Aprovada"` no frontmatter da plan. **O arquivo não sai do lugar** — plan vive em `specs/plan/`
    do nascimento ao expurgo.
 3. No `00-indice`: **retire a linha da §1** (fila de execução) e **crie-a na §4** (encerradas), com status
-   `🟢`, a data absoluta em *Aprovada em* e o `destino_sintese` da plan na coluna *Destino declarado*. As
+   `🟢`, a data absoluta em *Aprovada em* e o `destino_sintese` da plan na coluna *Spec fixa*. As
    colunas de síntese ficam `—` até o passo seguinte.
 4. Mensagem ao usuário, em **texto livre**, com duas partes:
    - **O veredito** — o que mudou, arquivos tocados, evidência das verificações, e a frase clara de liberação:

@@ -44,12 +44,12 @@ estrutura `_estrutura_base_site` no projeto-alvo.
      | `00-contexto.md`, `00-indice.md`, `00-knowledge.md`, `00-prompt-revisor.md`, `00-prompt-executor.md` | `specs/00-*.md` | **Specs de processo — obrigatórias.** É por elas que qualquer agente se contextualiza |
      | `README.md`, `INDEX.md` | `specs/` | Manual e bússola do diretório |
      | `arquitetura/01`…`06` | `specs/arquitetura/` | Stack, identidade visual, tom de voz, SEO/NAP, a11y/performance, estrutura de código |
-     | `specs/06`…`10` | **`specs/specs/`** | Layout global, Home, páginas internas, formulários, páginas legais |
+     | `specs/01`…`05` | **`specs/specs/`** | Layout global, Home, páginas internas, formulários, páginas legais |
      | `_templates/*.md` | `specs/_templates/` | Moldes, incluindo `template-plan.md` |
      | `adr/` (vazia) | `specs/adr/` | ADRs — decisões imutáveis |
      | `plan/` (vazia) | `specs/plan/` | **Fila de execução** — abriga toda plan (`plan-NN-<slug>.md`) do nascimento ao expurgo. Sem subpasta |
 
-     > ⚠️ **As specs `06`–`10` vão para `specs/specs/`, NUNCA para `specs/plan/`.** A pasta `plan/`
+     > ⚠️ **As specs `01`–`05` vão para `specs/specs/`, NUNCA para `specs/plan/`.** A pasta `plan/`
      > é a fila de execução do ciclo SDD e só recebe arquivos `plan-NN-<slug>.md` escritos pelo
      > agente revisor. Despejar spec de conteúdo ali corrompe o índice de execução.
 4. **Preencher os arquivos iniciais**
@@ -83,8 +83,8 @@ estrutura `_estrutura_base_site` no projeto-alvo.
 
 - [ ] As 8 perguntas do passo 1 foram feitas e respondidas antes de qualquer arquivo ser gerado?
 - [ ] Especialistas (site-organizacao/site-seo/site-criacao) invocados ou recomendados conforme as respostas 6-8?
-- [ ] `_estrutura_base_site` copiada inteira para `specs/`, com a hierarquia preservada — specs `06`-`10` em `specs/specs/`, nunca em `specs/plan/`?
-- [ ] Specs fixas (`arquitetura/` 01-06 + `specs/` 06-10) preenchidas com as respostas da entrevista?
+- [ ] `_estrutura_base_site` copiada inteira para `specs/`, com a hierarquia preservada — specs `01`-`05` em `specs/specs/`, nunca em `specs/plan/`?
+- [ ] Specs fixas (`arquitetura/` 01-06 + `specs/` 01-05) preenchidas com as respostas da entrevista?
 - [ ] `00-contexto.md` só com §1 e §3 preenchidas; blocos `<!-- PREENCHER -->` e `> **Como escrever:**` intactos?
 - [ ] `00-indice.md`, `00-knowledge.md`, `00-prompt-revisor.md`, `00-prompt-executor.md` intocados?
 - [ ] `specs/plan/` permanece vazia?

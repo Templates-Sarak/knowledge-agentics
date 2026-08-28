@@ -5,6 +5,7 @@ dominio: "Engenharia de Software"
 status: "🟡 Pendente"
 prioridade: "Alta"
 tags: ["arquitetura", "stack", "frontend", "backend"]
+relacionados: []
 ---
 
 # 1. Visão Geral

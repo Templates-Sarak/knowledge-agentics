@@ -5,6 +5,7 @@ dominio: "Infraestrutura / SEO"
 status: "🟡 Pendente"
 prioridade: "Média"
 tags: ["seo", "institucional", "schema", "contatos"]
+relacionados: []
 ---
 
 # 1. Visão Geral

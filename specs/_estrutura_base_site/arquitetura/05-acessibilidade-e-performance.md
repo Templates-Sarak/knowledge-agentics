@@ -5,6 +5,7 @@ dominio: "UI/UX Front-end"
 status: "🟡 Pendente"
 prioridade: "Média"
 tags: ["a11y", "acessibilidade", "performance", "web-vitals"]
+relacionados: []
 ---
 
 # 1. Visão Geral
