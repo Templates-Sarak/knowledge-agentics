@@ -3,8 +3,13 @@
 Este diretório (`specs/`) é o "cérebro" do site. É aqui que se define **o que** cada página faz, **como** o
 site é construído e **por qual caminho** qualquer alteração passa.
 
-O modelo é **SDD (Spec-Driven Development)**: **toda e qualquer alteração nasce de uma spec**. Nada é alterado
-"direto no código" — nem uma cor, nem uma linha de copy.
+O modelo é **SDD (Spec-Driven Development)**: **toda e qualquer alteração nasce de uma instrução do agente
+revisor**. Nada é alterado "direto no código" — nem uma cor, nem uma linha de copy.
+
+Essa instrução tem duas formas, e quem escolhe é o revisor, na **triagem** (`00-prompt-revisor` §5.0):
+**plan** quando a alteração deixa verdade documentada para trás (identidade visual, copy publicado, rota,
+regra de formulário); **prompt direto**, sem arquivo nenhum, quando não deixa (typo, `alt` faltando, link
+quebrado, imagem sem otimizar). A via direta encurta a papelada — nunca a verificação.
 
 > Esta é a base de **site institucional/marketing**. Para aplicação/produto, use `_estrutura_base`. O ciclo, os
 > papéis e as specs de processo são **idênticos** nas duas; o que muda são as specs fixas de conteúdo.
@@ -61,8 +66,9 @@ Erro mais comum aqui é escrever a coisa certa no arquivo errado:
 
 ## 3. Os planos (`plan/`) — **sim, entram no Git**
 
-Uma **plan** é a unidade de trabalho: `plan/plan-NN-<slug>.md`, escrita pelo **agente revisor** e executada
-pelo **agente executor**. Contém descrição, escopo, referências, instruções e o **destino da síntese**. O
+Uma **plan** é a unidade de trabalho **quando há verdade a preservar**: `plan/plan-NN-<slug>.md`, escrita
+pelo **agente revisor** e executada pelo **agente executor**. Demanda que não deixa verdade nenhuma não passa
+por aqui — corre pela via direta e não gera arquivo (`00-prompt-revisor` §5.6). Contém descrição, escopo, referências, instruções e o **destino da síntese**. O
 prompt de execução **não** vive nela — é entregue na conversa, como ponteiro (`00-prompt-revisor` §5.3).
 
 Enquanto está ativa ou aguardando síntese, a plan é **versionada e preservada** — é o histórico de por que o
@@ -92,6 +98,11 @@ cada `⚪` antes de remover o arquivo e a linha da §4.
 ---
 
 ## 4. O ciclo de execução
+
+O ciclo abaixo é o da **plan**. Antes dele há sempre a triagem do revisor (`00-prompt-revisor` §5.0): demanda
+que não deixa verdade documentada corre pela **via direta** — o revisor emite o prompt, o executor executa, o
+revisor verifica e o usuário commita. Sem plan, sem linha no índice, sem síntese e sem expurgo; os passos 2,
+6, 7 e 8 simplesmente não existem lá.
 
 ```
 1. usuário traz uma demanda (página nova, ajuste de copy, otimização, correção)

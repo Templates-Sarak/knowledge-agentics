@@ -124,7 +124,17 @@ aninhamento ≤ 3; ≤ 4 parâmetros; **zero hardcoded** (tunables em `config.js
 > **Seção universal — mantenha como está.** Só acrescente desvios reais deste projeto (por exemplo: "toda plan
 > que altera copy publicado exige aprovação do cliente antes da execução").
 
-**Toda e qualquer alteração passa por uma spec.** Nada é alterado "direto no código".
+**Toda e qualquer alteração passa pelo revisor.** Nada é alterado "direto no código" — mas nem toda alteração
+vira arquivo. O revisor **tria** cada demanda ([[00-prompt-revisor]] §5.0):
+
+| A demanda deixa verdade documentada para trás? | Via | O que nasce |
+|---|---|---|
+| **Sim** — identidade visual, copy publicado, rota, regra de formulário, SEO | **plan** | `plan-NN` + linha no [[00-indice]] |
+| **Não** — typo, `alt` faltando, link quebrado, imagem sem otimizar | **prompt direto** | nada; a instrução vive só na conversa |
+
+A via direta encurta a **papelada**, nunca a **verificação**: o executor trabalha igual e o revisor confere o
+diff linha por linha do mesmo jeito. O ciclo abaixo é o da **plan**; a via direta salta os passos de síntese
+e expurgo, porque não há verdade a transportar.
 
 ```
 revisor escreve  specs/plan/plan-NN-<slug>.md

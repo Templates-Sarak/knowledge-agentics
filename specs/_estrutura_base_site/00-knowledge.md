@@ -45,6 +45,7 @@ precisa agir sem pedido para cumprir o papel — hoje três: as normas sempre-re
 |---|---|
 | Escrever/revisar qualquer código | `padrao-escrita` **+** a `padrao-<linguagem>` do alvo |
 | **Criar um módulo, ou estruturar um sistema em módulos** | `code-modulo` — detecta sozinha se é sistema novo ou módulo novo |
+| Iniciar um repositório do zero (git, specs, projeto, 1º módulo, hooks) | `meta-iniciar-repositorio` |
 | Fechar uma tarefa de escrita/refactor antes de dizer "pronto" | `code-auditoria-padrao` (gate obrigatório) |
 | Saber se um código legado está conforme | `code-diagnostico` (read-only) · em escala: `/code1-auditar` |
 | Adequar legado ao padrão sem mudar comportamento | `code-adequacao` · fluxo completo: `/code2-caracterizar` → `/code3-adequar` |
@@ -81,11 +82,24 @@ precisa agir sem pedido para cumprir o papel — hoje três: as normas sempre-re
 > subconjunto curado. Ausência aqui é **defeito**, não decisão editorial, e a checagem inversa do
 > `ponteiros.py` (skill `meta-verificacao-base`) a cobra por máquina.
 
+## 4.0 Os três níveis de norma — quem é dono de quê
+
+Cada regra tem **um** dono. Quem não é dono, aponta; ninguém copia.
+
+| Nível | Assunto | Dono | Verificador |
+|---|---|---|---|
+| **0** | escrita: SRP, limiares, zero hardcoded, segredos, erro, log | `padrao-escrita` | validador da `padrao-<linguagem>` + hook `padrao-limiares` |
+| **1** | arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento | a spec de regras de módulo **do projeto** (no template de módulos, `arquitetura/04-regras.md`) | `node tools/gate/validate.mjs` |
+| **2** | idiomas de cada linguagem | `padrao-<linguagem>` | linter configurado da linguagem |
+
+O Nível 1 só existe em projeto que adota o **template de módulos**. Onde ele não existe, o padrão em vigor é
+o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
+
 ## 4.1 `padrao-` — normas de escrita (proativas; não as únicas — critério e as demais exceções em §2)
 
 | Skill | Quando |
 |---|---|
-| `padrao-escrita` | **Fonte da verdade** universal: clean code, limiares, zero hardcoded, organização microservice-ready. Toda outra skill referencia esta. |
+| `padrao-escrita` | **Porta de entrada e dona do Nível 0**: clean code, limiares, zero hardcoded, segredos. Toda outra skill referencia esta. |
 | `padrao-python` | Código Python — idiomas + validador de limiares (`scripts/validate.py`). |
 | `padrao-typescript` | Código TS/JS — idiomas + validador via API do compilador TS. |
 

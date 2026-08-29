@@ -29,8 +29,11 @@
 
 ## O ciclo em uma linha
 
-`revisor escreve plan` → `executor executa (worktree, sem commit)` → `revisor verifica e aprova` → `usuário
-autoriza` → `revisor sintetiza nas specs fixas (plan vira ⚪)` → `usuário commita` → `spec-atualizar
-reverifica e expurga a plan`
+**Com plan** (a demanda deixa verdade): `revisor escreve plan` → `executor executa (worktree, sem commit)` →
+`revisor verifica e aprova` → `usuário autoriza` → `revisor sintetiza nas specs fixas (plan vira ⚪)` →
+`usuário commita` → `spec-atualizar reverifica e expurga a plan`
+
+**Via direta** (não deixa): `revisor emite o prompt` → `executor executa (worktree, sem commit)` →
+`revisor verifica e aprova` → `usuário commita`. Nenhum arquivo nasce; sem síntese e sem expurgo.
 
 Detalhe em [`README.md`](README.md).

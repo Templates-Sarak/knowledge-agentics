@@ -61,9 +61,11 @@ No projeto gerado, `doutrina/` chega como **`specs/arquitetura/`**. É o mesmo a
 | `specs/_estrutura_base_site/` | o mesmo fluxo, para projetos de site | `specs/` |
 | `specs/_bases_arquiteturais/` | a base por linguagem | `specs/arquitetura/00-base-<binding>.md` |
 
-O **SDD (Spec-Driven Development)** é a regra de trabalho do projeto instalado: *toda alteração nasce de
-uma spec*. Uma plan entra na fila, é executada, revisada, aprovada e então **sintetizada** nas specs
-definitivas — e some. As specs refletem a realidade do sistema; a plan é o caminho até ela.
+O **SDD (Spec-Driven Development)** é a regra de trabalho do projeto instalado: *toda alteração nasce de uma
+instrução do agente revisor*. Quando a alteração deixa verdade documentada para trás, essa instrução é uma
+**plan**: entra na fila, é executada, revisada, aprovada e então **sintetizada** nas specs definitivas — e
+some. Quando não deixa (bug sem mudança de regra, typo, conformidade, limpeza), o revisor emite um **prompt
+direto** e nenhum arquivo nasce. As specs refletem a realidade do sistema; a plan é o caminho até ela.
 
 ### 2.3 Skills — o comportamento do agente
 

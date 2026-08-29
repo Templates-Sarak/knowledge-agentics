@@ -104,7 +104,17 @@ inegociável ou o mapa de roteamento. Nunca por conta própria fora de uma plan.
 > **Como escrever:** esta seção é **universal — copie o bloco abaixo como está**. Só acrescente desvios reais
 > deste repositório (por exemplo: "toda plan que toca `pagamentos/` exige ADR"). Não reescreva o ciclo.
 
-**Toda e qualquer alteração passa por uma spec.** Nada é alterado "direto no código".
+**Toda e qualquer alteração passa pelo revisor.** Nada é alterado "direto no código" — mas nem toda alteração
+vira arquivo. O revisor **tria** cada demanda ([[00-prompt-revisor]] §5.0):
+
+| A demanda deixa verdade documentada para trás? | Via | O que nasce |
+|---|---|---|
+| **Sim** — muda regra, contrato, stack, comportamento | **plan** | `plan-NN` + linha no [[00-indice]] |
+| **Não** — bug sem mudança de regra, typo, conformidade, limpeza | **prompt direto** | nada; a instrução vive só na conversa |
+
+A via direta encurta a **papelada**, nunca a **verificação**: o executor trabalha igual e o revisor confere o
+diff linha por linha do mesmo jeito. O ciclo abaixo é o da **plan**; a via direta salta os passos de síntese
+e expurgo, porque não há verdade a transportar.
 
 ```
 revisor escreve  specs/plan/plan-NN-<slug>.md
