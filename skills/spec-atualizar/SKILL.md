@@ -1,138 +1,110 @@
 ---
 name: spec-atualizar
-description: Expurga do diretório de specs as plans já sintetizadas (⚪) — reverifica que a verdade está mesmo na spec fixa de destino, que a spec bate com o código e que a plan já existe no histórico do Git, e só então remove o arquivo e a linha do 00-indice. Use APENAS quando o usuário pedir explicitamente a limpeza/expurgo das plans. NÃO sintetiza — a síntese é do agente revisor, no ato da aprovação. NÃO acione proativamente.
+description: Reconcilia o diretório de plans com o 00-indice e limpa resíduo — plan sintetizada que ficou em disco, linha órfã no índice, plan órfã sem linha, plan abandonada há muito tempo. Ferramenta de REPARO, não rotina do ciclo — no fluxo normal o revisor sintetiza e remove a plan na mesma ação. Use APENAS quando o usuário pedir a reconciliação/limpeza do diretório de specs. NÃO sintetiza. NÃO acione proativamente.
 ---
 
-# Skill: Expurgar as Plans já Sintetizadas
+# Skill: Reconciliar e Limpar o Diretório de Plans
 
-Última etapa do ciclo SDD, e a **única** rotina autorizada a remover uma plan do repositório.
+**Esta skill não faz parte do ciclo normal.** No fluxo corrente, o agente revisor sintetiza a plan aprovada
+e **remove o arquivo e a linha do índice na mesma ação** (`00-prompt-revisor.md` §7.4) — não existe estado
+"sintetizada aguardando limpeza", e nada se acumula esperando por esta skill.
 
-Quando esta skill roda, a síntese **já aconteceu**: o agente revisor transportou a verdade da plan para a spec
-fixa de destino no momento da aprovação, sob autorização do usuário (`00-prompt-revisor.md` §7.3), e deixou a
-plan marcada `⚪ Sintetizada`. O que sobra em `specs/plan/` é **resíduo**: arquivo cujo conteúdo já vive em
-outro lugar.
+Ela existe para os casos em que o invariante quebrou:
 
-O trabalho aqui não é escrever spec — é **provar que a plan pode sumir sem perda** e, provado isso, apagá-la.
-A pergunta que a skill responde, uma vez por plan: *"se este arquivo desaparecer agora, alguma informação
-deixa de existir?"* Se a resposta não for um **não** demonstrado, a plan fica.
+> **Invariante:** uma linha no `00-indice` ⟷ um arquivo em `specs/plan/`. Sempre, nos dois sentidos.
 
-> **Esta skill não sintetiza.** Encontrou uma plan `🟢 Aprovada` (síntese pendente)? Ela **não é sua** — passe
-> ao usuário para que o revisor a sintetize. Escrever spec fixa aqui seria fazer, sem o contexto do diff, o
-> que o revisor faz com o diff na frente.
+Quebra quando um ciclo é interrompido no meio, quando um repositório vem do modelo antigo (que mantinha
+plans marcadas `⚪ Sintetizada` até um expurgo manual), ou quando alguém editou à mão. O trabalho aqui é
+**restaurar o invariante sem perder informação**.
+
+> **Esta skill não sintetiza.** Encontrou plan `🟢 Aprovada` com síntese pendente, ou plan cuja verdade não
+> está na spec fixa? Ela **não é sua** — relate ao usuário para que o revisor a sintetize, com o diff na
+> frente. Escrever spec fixa aqui seria fazer às cegas o que o revisor faz com evidência.
 
 ## Quando usar
 
-- O usuário pediu explicitamente para **limpar / expurgar / remover as plans sintetizadas**.
-- **Só manual.** Não roda por gatilho, não roda "de vez em quando por conta própria", não é acionada ao fim de
-  uma aprovação. Quem decide a hora é o usuário.
-- **Não** é usada para sintetizar (revisor, na aprovação), executar (executor) nem escrever plan (revisor).
+- O usuário pediu **reconciliação, limpeza ou auditoria** do diretório de plans.
+- O `00-indice` e `specs/plan/` divergiram, ou o repositório veio do modelo antigo com resíduo `⚪`.
+- **Só manual.** Nunca por gatilho, nunca ao fim de uma aprovação, nunca "de vez em quando".
 
 ## O que ela lê
 
 | Local | Papel |
 |---|---|
-| `specs/plan/` — status `⚪ Sintetizada` | **A entrada desta skill.** Candidatas ao expurgo |
-| `specs/plan/` — status `🟢 Aprovada` | **Não são suas.** Síntese pendente — relate ao usuário e siga |
-| `specs/plan/` — demais status | Fila ativa. Nem olhe para remoção |
-| `specs/00-indice.md` §4 | A linha de cada candidata, e a data/destino da síntese |
-| A spec fixa declarada no bloco `## Síntese` de cada plan | **A prova** — é nela que a verdade tem de estar |
-| Código-fonte que a plan tocou | **A contraprova** — a spec fixa tem de bater com o que o código faz hoje |
-| `git log -- <caminho da plan>` | O rastro. Sem commit, não há histórico a recuperar depois |
+| `specs/plan/` — todos os arquivos | Um lado do invariante |
+| `specs/00-indice.md` — a tabela | O outro lado |
+| Bloco `## Síntese` de cada plan | Diz se a verdade já foi transportada, e para onde |
+| A spec fixa citada nesse bloco | **A prova** — é nela que a verdade tem de estar |
+| `git log -- <caminho da plan>` | O rastro. Sem commit, não há o que recuperar depois |
 
 ## Workflow
 
 ### 1. Levantamento
 
-- Liste `specs/plan/` e separe **apenas** as plans com `status: "⚪ Sintetizada"`.
-- Nenhuma? **Pare** e informe: nada a expurgar. Não invente trabalho, não vá procurar `🟢` para processar.
-- Registre também as `🟢 Aprovada` encontradas — elas entram no relato final (§5) como **síntese pendente**,
-  nunca no lote.
-- Leia a §4 do `00-indice.md` para localizar a linha de cada candidata.
+Monte as duas listas e cruze:
 
-### 2. Os quatro portões (por plan, um a um)
+| Situação | O que é | Ação |
+|---|---|---|
+| Linha **e** arquivo, status igual | Saudável | Nada |
+| Linha **e** arquivo, status **divergente** | Índice mentindo | A **plan** é a verdade — corrija o índice |
+| Arquivo **sem** linha | Plan órfã — trabalho invisível | Recrie a linha, no status da plan |
+| Linha **sem** arquivo | Índice mentindo — a plan já saiu | Remova a linha |
+| Plan com bloco `## Síntese` ainda em disco | **Resíduo** (modelo antigo, ou ciclo interrompido) | Vai para os portões da §2 |
+| Plan `⛔ Bloqueada` há muito tempo | Não é trabalho aberto | Leve ao usuário: volta para `🔴`, ou sai e o que sobra desce para `00-backlog.md` |
 
-Uma plan só é removida se as **quatro** verificações passarem. Falhou uma? Ela **fica**, com o motivo
-registrado. Nunca remova "as outras três passaram, vai".
+### 2. Portões — só para o resíduo com `## Síntese`
 
-| # | Portão | Como verificar | Se falhar |
+Uma plan só é removida se **todos** passarem. Qualquer "não" e ela fica, com o motivo relatado.
+
+| # | Portão | Como conferir | Se falhar |
 |---|---|---|---|
-| 1 | **Síntese registrada** | A plan tem o bloco `## Síntese` com data e destino, `status: ⚪` e a linha da §4 com *Sintetizada em* preenchida | Fica. É `🟢` mal fechada — devolva ao revisor |
-| 2 | **Verdade na spec fixa** | Abra a spec fixa citada no bloco `## Síntese` e confirme que o conteúdo declarado está **de fato lá** — o texto, não só o arquivo | Fica. Síntese incompleta — leve ao usuário |
-| 3 | **Spec fixa × código** | Confronte a spec fixa com o código que a plan tocou. Ela descreve o sistema como ele **é hoje**? | Fica. Divergência é achado de primeira ordem — vira plan nova de reconciliação |
-| 4 | **Rastro no Git** | `git log --oneline -- specs/plan/plan-NN-<slug>.md` retorna pelo menos um commit | Fica. Plan nunca commitada não tem histórico: apagá-la é perda total, não expurgo |
+| 1 | **Síntese registrada** | A plan tem o bloco `## Síntese` com data e destino | Fica. É `🟢` mal fechada — devolva ao revisor |
+| 2 | **Verdade na spec fixa** | Abra a spec de destino e ache lá o que a plan transportava | Fica. Devolva ao revisor: sintetizar não é seu |
+| 3 | **Spec bate com o código** | O que a spec fixa afirma é o que o código faz hoje | Fica. Divergência é achado — relate |
+| 4 | **Rastro no Git** | `git log --oneline -- specs/plan/plan-NN-*.md` retorna ≥ 1 commit | Fica. Plan nunca commitada não tem histórico: apagá-la é **perda total**, não limpeza |
 
-Sobre o **portão 4**: ele existe porque o rastro de uma plan expurgada vive só no Git
-(`git log --diff-filter=D`). Se o arquivo nunca foi commitado, esse rastro não existe — remover seria apagar
-contexto, veredito e resumo de execução para sempre. Não cobre o usuário por isso: apenas **não remova**, diga
-que basta commitar e rodar a skill de novo.
+Destino `—` (nada a transportar) dispensa os portões 2 e 3 — mas **não** o 1 nem o 4.
 
-Sobre o **portão 3**: é a reconciliação que dá sentido ao intervalo em `⚪`. Entre a síntese e o expurgo existe
-uma janela em que a plan inteira ainda está em disco — é a última chance de perceber que a spec fixa ficou
-errada **com a evidência original ainda à mão**. Usar essa janela é o trabalho; pulá-la torna a skill um `rm`
-com etapas.
+### 3. HITL
 
-### 3. HITL — uma confirmação para o lote
+Apresente o lote e **pare**:
 
-Apresente o resultado dos portões **antes** de remover qualquer coisa, em tabela: uma linha por plan, o
-veredito de cada portão e a decisão (remover / fica, com motivo). Depois pergunte:
+```
+⚠️ Confirma a reconciliação abaixo?
+```
 
-`⚠️ Confirma o expurgo das plans marcadas para remoção?`
+Liste, separadamente: plans a **remover** (com o destino de síntese de cada uma), linhas de índice a
+**corrigir ou remover**, plans que **ficam** e por qual portão falharam.
 
-E **aguarde**. Sem resposta positiva, nada é removido. O usuário pode excluir plans específicas do lote — nesse
-caso remova só as que ele manteve na lista, sem discutir.
+### 4. Aplicar
 
-### 4. Remoção (só o que passou nos quatro portões e foi confirmado)
+- `git rm` de cada plan aprovada no lote — **sem commit**; quem commita é o usuário.
+- Corrija o `00-indice` na mesma passada: linha removida junto com o arquivo, status corrigido onde divergia,
+  linha recriada onde faltava.
+- Nada meio feito: arquivo e linha andam juntos.
 
-Para cada plan aprovada no HITL, na mesma passada:
+### 5. Relatório
 
-1. `git rm specs/plan/plan-NN-<slug>.md` — **sem commit**. Quem commita é o usuário, sempre.
-2. No `specs/00-indice.md`, **apague a linha** correspondente da §4. Não a marque, não a mova: apague.
-3. **Não toque** no `proximo_numero_plan`. A numeração é monotônica: o `NN` da plan removida não volta a ser
-   usado, nunca.
-
-Arquivo removido com linha sobrando no índice (ou o inverso) é índice quebrado. As duas coisas andam juntas.
-
-### 5. Entrega
-
-Relate, sem omitir nada:
-
-- **Expurgadas:** quais plans, e para que spec fixa cada uma tinha sido sintetizada.
-- **Mantidas:** quais ficaram, em que portão pararam e o que falta para poderem sair na próxima rodada.
-- **Síntese pendente:** as `🟢 Aprovada` encontradas — o revisor precisa sintetizá-las antes que virem
-  candidatas.
-- **Achados de reconciliação:** toda divergência do portão 3, com a sugestão de plan nova.
-- As alterações (inclusive os `git rm`) estão no **worktree, sem commit**.
-
-Plan pulada em silêncio é falha: ela ficaria ocupando o diretório para sempre, sem ninguém saber por quê.
+- **Removidas:** quais plans, e para que spec fixa cada uma tinha sido sintetizada.
+- **Índice corrigido:** linhas criadas, removidas, status ajustados.
+- **Ficaram:** quais, e o portão que falhou.
+- **Para o revisor:** plans `🟢` com síntese pendente, e divergências spec×código encontradas no portão 3.
+- **Para o backlog:** o que sobrou de plan abandonada e ainda vale registrar.
 
 ## Regras e limites
 
-- **NUNCA sintetize.** Se a verdade não está na spec fixa, a plan **fica** e o caso vai para o revisor. Esta
-  skill não escreve em `specs/`, `arquitetura/`, `adr/` nem `00-contexto.md`.
-- **NUNCA remova plan que não esteja `⚪ Sintetizada`.** `🟢` tem síntese pendente; a fila ativa está em jogo.
-- **NUNCA remova sem os quatro portões verdes e sem o HITL confirmado.** Nenhum atalho, nem "é óbvio que pode".
-- **NUNCA reaproveite o número de uma plan removida.** `proximo_numero_plan` no `00-indice.md` continua sendo
-  a única fonte do próximo `NN`.
-- **NUNCA commite e NUNCA adicione co-autoria.** Nem `Co-Authored-By`, nem qualquer outra marca de autoria de
-  agente. Commit é ato do usuário; a única exceção é solicitação expressa dele naquela conversa.
-- **NÃO conserte a divergência que encontrar.** Achado do portão 3 vira plan nova, escrita pelo revisor — não
-  uma edição avulsa aqui.
-- **NÃO acione esta skill proativamente.**
+- **NUNCA sintetize.** Verdade fora da spec fixa = a plan fica e o caso vai para o revisor.
+- **NUNCA remova plan sem os quatro portões**, e nunca uma plan da fila ativa (🔴 🟡 🟠 🔵).
+- **NUNCA commite.** `git rm` deixa a remoção no índice do Git; o commit é do usuário.
+- **NUNCA edite spec fixa, código ou plan** — esta skill só remove plan e conserta linha de índice.
+- **NÃO transforme achado em trabalho.** O que merecer registro vai para `00-backlog.md`, não para uma plan.
 
 ## Checklist "pronta"
 
-- [ ] `specs/plan/` lido; só as `⚪ Sintetizada` entraram no lote.
-- [ ] `🟢 Aprovada` encontradas foram relatadas como síntese pendente, não processadas.
-- [ ] Os quatro portões verificados **por plan**, com evidência real (spec fixa aberta, código conferido,
-      `git log` rodado) — não por leitura do frontmatter.
-- [ ] Tabela de vereditos apresentada e HITL confirmado antes de qualquer remoção.
-- [ ] Cada plan removida: `git rm` do arquivo **e** linha apagada da §4 do `00-indice`, na mesma passada.
-- [ ] `proximo_numero_plan` intocado.
-- [ ] Plans mantidas relatadas com o portão em que pararam.
-- [ ] Nada commitado. Nenhuma co-autoria. Nenhuma spec fixa escrita.
-
-## Referências
-
-- `references/workflow.md` — os portões na prática, formulação do HITL e do relato final.
-- `00-prompt-revisor.md` §7.3 (no repositório do projeto) — como a síntese foi feita, e portanto o que esta
-  skill está verificando.
+- [ ] As duas listas (arquivos × linhas) foram cruzadas, e cada divergência classificada pela §1?
+- [ ] Cada candidata a remoção passou pelos **quatro** portões, com evidência nomeada?
+- [ ] O portão 4 (`git log`) foi rodado em cada uma — nenhuma plan sem commit foi apagada?
+- [ ] HITL apresentado com os três grupos (remover, corrigir, ficam) e confirmado?
+- [ ] Arquivo e linha removidos juntos, sem sobra nos dois lados?
+- [ ] Nada commitado, nenhuma spec fixa tocada, nenhuma síntese feita?
+- [ ] Relatório entregue, com o que voltou para o revisor e o que desceu para o backlog?

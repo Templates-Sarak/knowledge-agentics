@@ -30,7 +30,7 @@ instalado antes de qualquer refactor**; a execução em si é de `/code2-caracte
 ```
 existem plans "xx-*" em specs/plan/ ?
    nenhuma                              → FASE A (planejar)
-   existem e todas 🟢/⚪                → FASE B (conferir)
+   existem e todas 🟢                   → FASE B (conferir)
    existem e alguma ainda ativa         → campanha em andamento — aponte /code3-adequar e pare
 ```
 
@@ -97,8 +97,9 @@ presuma que está seguro. `arvore_suja: null` é *"não consegui verificar"*, ja
   invente trabalho aqui.
 - **`specs-divergentes`:** regra de absorção — nada se remove antes de o conteúdo não-obsoleto ter
   destino escrito. Mecânica em `references/workflow.md` §1.
-- **`com-specs`:** `plan/` **tem** de ficar sem nenhuma plan `🟢 Aprovada` pendente de síntese — sintetize
-  (o revisor, na própria conversa) e rode `spec-atualizar` para expurgar as `⚪`.
+- **`com-specs`:** `plan/` **tem** de ficar sem nenhuma plan `🟢 Aprovada` pendente de síntese — o revisor
+  sintetiza na própria conversa e, na mesma ação, **remove** a plan e a linha do índice
+  (`00-prompt-revisor` §7.4). Sobrou resíduo de um ciclo interrompido? Aí sim, `spec-atualizar` reconcilia.
 
 ### Passo 2 — specs vs código
 - **`sem-specs`:** a adequação **inclui instalar** a pasta de specs. Só `00-contexto.md` e `00-indice.md`
@@ -195,7 +196,7 @@ nunca SQL improvisado dentro de uma plan. Se o passo 1 revelou segredo no histó
 
 ### Passo 6 — reabrir
 Usuário abre conversa nova como revisor **diferente** do que executou, invoca esta skill — a detecção
-mecânica acima já aponta Fase B (todas as `xx-*` são `🟢`/`⚪`).
+mecânica acima já aponta Fase B (todas as `xx-*` são `🟢`).
 
 ### Passo 7 — critério mecânico, quase todo máquina
 ```

@@ -11,14 +11,17 @@ Expande o passo-a-passo da skill com exemplos dos quatro portões, condução do
 
 Suponha `specs/plan/` com seis arquivos:
 
-| Plan | Status | O que significa |
+| Plan | Situação | O que significa |
 |---|---|---|
-| `plan-03-ajustar-cache.md` | ⚪ Sintetizada | Candidata |
-| `plan-04-endpoint-sessao.md` | ⚪ Sintetizada | Candidata |
-| `plan-05-tabela-sessions.md` | ⚪ Sintetizada | Candidata |
+| `plan-03-ajustar-cache.md` | tem `## Síntese`, ficou em disco | **Resíduo** — candidata |
+| `plan-04-endpoint-sessao.md` | tem `## Síntese`, ficou em disco | **Resíduo** — candidata |
+| `plan-05-tabela-sessions.md` | sem linha no `00-indice` | **Órfã** — recrie a linha, não remova |
 | `plan-06-tela-login.md` | 🟢 Aprovada | **Síntese pendente** — não é sua, vai no relato |
 | `plan-07-corrigir-lcp-home.md` | 🔴 A executar | Fila ativa — nem olhe |
 | `plan-08-form-contato.md` | 🟡 Em execução | Fila ativa — nem olhe |
+
+> No fluxo corrente, resíduo **não deveria existir**: o revisor sintetiza e remove a plan na mesma ação
+> (`00-prompt-revisor` §7.4). Ele aparece em repositório vindo do modelo antigo, ou em ciclo interrompido.
 
 Lote: **03, 04, 05**. A `plan-06` só volta a ser assunto depois que o revisor a sintetizar.
 
@@ -38,8 +41,8 @@ Observações: a tabela `sessions` e seus índices foram para a spec de dados; a
 virou ADR. O script de migration em si não foi transportado (é código, vive no repositório).
 ```
 
-Sem esse bloco, ou com `status` divergente da §4 do índice, o portão **falha** — a plan está marcada `⚪` mas
-ninguém consegue provar o que foi transportado.
+Sem esse bloco, o portão **falha** — a plan ficou em disco mas ninguém consegue provar o que foi
+transportado. Devolva ao revisor: sintetizar não é seu.
 
 ### Portão 2 — A verdade está mesmo na spec fixa
 
@@ -55,7 +58,8 @@ Falhou? A plan fica, e o caso vai ao usuário: **a síntese ficou incompleta**, 
 
 ### Portão 3 — A spec fixa bate com o código
 
-Este é o portão que justifica a janela `⚪`. Abra os arquivos que a plan tocou e confronte:
+Este é o portão que impede apagar uma plan cuja síntese ficou errada. Abra os arquivos que a plan tocou e
+confronte:
 
 - A spec diz que a resposta inclui `expiresAt` em ISO-8601 — o código devolve isso mesmo?
 - A spec descreve a validação de e-mail antes da persistência — é onde ela está de fato?
@@ -115,11 +119,11 @@ git rm specs/plan/plan-03-ajustar-cache.md
 git rm specs/plan/plan-04-endpoint-sessao.md
 ```
 
-E as linhas correspondentes somem da §4 do `specs/00-indice.md`:
+E as linhas correspondentes somem da tabela do `specs/00-indice.md`:
 
 ```diff
-- | [plan-03-ajustar-cache](plan/plan-03-ajustar-cache.md) | ⚪ | 2026-07-20 | 2026-07-20 | — |
-- | [plan-04-endpoint-sessao](plan/plan-04-endpoint-sessao.md) | ⚪ | 2026-07-28 | 2026-07-28 | arquitetura/03-api.md |
+- | 4 | [plan-03-ajustar-cache](plan/plan-03-ajustar-cache.md) | Reduzir o TTL do cache de sessão | — | 🟢 | — |
+- | 5 | [plan-04-endpoint-sessao](plan/plan-04-endpoint-sessao.md) | Expor o endpoint de sessão | — | 🟢 | arquitetura/03-api.md |
 ```
 
 Nada substitui essas linhas. E o `proximo_numero_plan` do frontmatter **não muda**: `plan-03` e `plan-04`

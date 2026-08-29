@@ -81,6 +81,29 @@ silêncio sobre a lacuna — é o defeito que este próprio arquivo existe para 
   higiene — a mesma regra vale por escrito, não só na faxina.
 - **Changelog em comentário** (`// alterado em 2026-01-01 por fulano: ...`) — isso é mensagem de
   commit, não comentário de código; duplica o que `git log`/`git blame` já respondem melhor.
+- **Referência a plan — proibido.** `// conforme plan-07`, `// ver plan-12-refatorar-auth` e
+  equivalentes não entram no código. Plan é **efêmera por construção**: ela é removida no mesmo ato
+  em que sua verdade vai para a spec fixa, e a partir daí o comentário aponta para um arquivo que
+  não existe. Ponteiro morto é pior que nenhum ponteiro — manda o próximo leitor procurar o que foi
+  apagado de propósito.
+
+### Referência a spec fixa — permitida, mas não é o caminho normal
+
+`arquitetura/`, `specs/` e `adr/` **persistem**, então citá-las não cria ponteiro morto e não é
+proibido. Ainda assim, prefira não citar: um bom comentário explica o **porquê ali mesmo**, e quem
+manda o leitor abrir outro arquivo em geral está terceirizando a explicação que devia ter escrito.
+
+| Situação | Comentário |
+|---|---|
+| ❌ Proibido | `// implementado conforme plan-07` |
+| ⚠️ Permitido, evite | `// regra de arredondamento definida em specs/04-faturamento.md` |
+| ✅ Preferido | `// arredonda para cima: contrato com a operadora cobra a fração de minuto` |
+
+A exceção legítima é o **trade-off registrado**: quando o código é deliberadamente o pior caminho
+óbvio e o motivo é longo demais para caber ali, um ponteiro para o `adr/NNN` que decidiu isso vale
+mais que três linhas de resumo — o ADR é imutável e não vai sumir. Ainda assim, escreva a conclusão
+em uma linha **antes** do ponteiro, para o leitor não precisar sair do arquivo para entender o
+básico.
 
 ## Marcadores (`TODO`/`FIXME`)
 

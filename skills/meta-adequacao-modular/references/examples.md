@@ -112,7 +112,8 @@ removida numa correção de bug sem plan de atualização de spec).
 
 **O que muda em relação ao exemplo 1:**
 - Passo 1 **não** é no-op: se houver alguma `🟢 Aprovada` pendente de síntese, ela é sintetizada primeiro
-  (nesta mesma conversa), e depois `spec-atualizar` expurga as `⚪` — `plan/` fica só com o que está ativo.
+  (nesta mesma conversa) e, na mesma ação, remove a plan e a linha do índice — `plan/` fica só com o que
+  está ativo.
 - Passo 2 é o trabalho de maior valor: cada spec de `arquitetura/` é conferida contra o código real. A rota
   removida gera uma plan `xx-nn-specs-arquitetura-api` (não uma edição direta) que **atualiza** a spec para
   refletir o sistema como ele é hoje.
@@ -128,7 +129,7 @@ sobre o mesmo legado sintético do exemplo 1, sem tocar em nenhum sistema real:
 |---|---|
 | nenhuma plan `xx-*` | `"A"` |
 | `xx-01-modulo-propostas.md` presente, `status: "🔴 A executar"` | `"EM_ANDAMENTO"` |
-| a mesma plan, `status: "⚪ Sintetizada"` | `"B"` |
+| a mesma plan já sintetizada (logo, **removida** do disco) | `"B"` |
 
 Isto é o que impede a skill de reabrir o planejamento em cima de uma campanha ainda ativa, e de tentar
 conferir (Fase B) uma campanha que nunca chegou a rodar.

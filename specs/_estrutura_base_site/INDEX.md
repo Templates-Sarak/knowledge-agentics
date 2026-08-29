@@ -36,19 +36,20 @@
 - 📁 **`arquitetura/`**: design vivo e regras globais do site (O COMO).
 - 📁 **`specs/`**: specs vivas de páginas e componentes (O QUÊ).
 - 📁 **`adr/`**: decisões imutáveis (O POR QUÊ). Decisão nova = ADR novo.
-- 📁 **`plan/`**: **todas** as plans (`plan-NN-<slug>.md`), do nascimento ao expurgo — toda alteração do site
-  passa por elas. Não há subpasta: o `status` do frontmatter é que diz se a plan está na fila (🔴 🟡 🟠 🔵 ⛔),
-  aprovada aguardando síntese (🟢) ou já sintetizada aguardando expurgo (⚪). A skill `spec-atualizar`,
-  disparada manualmente, reverifica as ⚪ e as remove; depois disso o rastro fica no histórico do Git.
+- 📁 **`plan/`**: as plans **abertas** (`plan-NN-<slug>.md`). Não há subpasta: o `status` do frontmatter diz
+  se a plan está na fila (🔴 🟡 🟠 🔵 ⛔) ou aprovada aguardando a autorização de síntese (🟢). **A plan é
+  temporária** — no ato da síntese o revisor a remove junto com a linha do índice, e o rastro passa a viver
+  no histórico do Git.
+- 📄 **`00-backlog.md`**: achados registrados e **não agendados** — sem status, sem fila, ninguém executa.
 - 📁 **`_templates/`**: moldes (`template-spec`, `template-arquitetura`, `template-adr`, `template-plan`).
 
 ## O ciclo em uma linha
 
 **Com plan** (a demanda deixa verdade): `revisor escreve plan` → `executor executa (worktree, sem commit)` →
-`revisor verifica e aprova` → `usuário autoriza` → `revisor sintetiza nas specs fixas (plan vira ⚪)` →
-`usuário commita` → `spec-atualizar reverifica e expurga a plan`
+`revisor verifica e aprova` → `usuário autoriza` → `revisor sintetiza nas specs fixas **e remove a plan**` →
+`usuário commita`
 
 **Via direta** (não deixa): `revisor emite o prompt` → `executor executa (worktree, sem commit)` →
-`revisor verifica e aprova` → `usuário commita`. Nenhum arquivo nasce; sem síntese e sem expurgo.
+`revisor verifica e aprova` → `usuário commita`. Nenhum arquivo nasce; sem síntese.
 
 Detalhe em [`README.md`](README.md).

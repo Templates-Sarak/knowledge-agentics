@@ -77,10 +77,11 @@ precisa de um destino decidido (absorvido numa spec fixa, virar uma `xx-nn-specs
 declarado como resíduo a apagar **depois** de confirmado, nunca antes) antes de qualquer exclusão.
 
 **`com-specs`:**
-1. Liste `specs/plan/` e separe as `🟢 Aprovada` (síntese pendente) das `⚪ Sintetizada` (resíduo).
+1. Liste `specs/plan/` e separe as `🟢 Aprovada` (síntese pendente) do resíduo — plan com bloco
+   `## Síntese` que ficou em disco por ciclo interrompido.
 2. Toda `🟢` precisa ser sintetizada **antes** de seguir — é o revisor desta própria conversa que sintetiza,
    sob autorização do usuário (o mecanismo é o do ciclo SDD padrão, `00-prompt-revisor.md` §7.3).
-3. Rode a skill `spec-atualizar` para expurgar as `⚪` (ela reverifica os quatro portões antes de remover —
+3. Resíduo sobrando? Rode `spec-atualizar` para reconciliar (ela reverifica os quatro portões antes de remover —
    não reimplemente a verificação aqui).
 4. Resultado esperado: `plan/` só com o que ainda está ativo (nunca nenhuma `xx-*` — esta campanha ainda não
    começou).
@@ -117,7 +118,7 @@ erro que esta nota existe para evitar.
 
 **Legenda de status — compare símbolo a símbolo (`specs-divergentes` e `com-specs`).** A legenda canônica
 (`00-indice.md` §2) é `🔴 A executar · 🟡 Em execução · 🟠 Em revisão · 🔵 Em correção · ⛔ Bloqueada`
-(mais `🟢 Aprovada` · `⚪ Sintetizada`). Um alvo real usava `🔴 Reprovado · 🔵 Em execução · ⬜ A executar`
+(mais `🟢 Aprovada`). Um alvo real usava `🔴 Reprovado · 🔵 Em execução · ⬜ A executar`
 — **mesmo símbolo, significado oposto** entre `🔵` nos dois vocabulários. O revisor marcou as primeiras
 plans como `🟡 Planejado` (que no canônico é "em execução"), sem perceber a colisão. Reporte toda colisão
 de símbolo **antes** de escrever a primeira plan — nunca assuma que o alvo usa o vocabulário canônico só

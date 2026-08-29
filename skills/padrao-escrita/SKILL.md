@@ -76,10 +76,13 @@ Corolário: **sem estado global mutável** — dado compartilhado que muda é de
 **Documentação do contrato** — o `api/` de cada módulo é documentado (o que entra/sai).
 
 **Comentários** — explicam o **porquê**, não o **o quê**: a decisão não óbvia por trás do código,
-nunca uma paráfrase dele. Nenhuma metade desta norma tem verificador hoje — é convenção de leitura
-humana, pendência declarada, não lacuna escondida (`04-regras.md` §1, lei 2: regra sem verificação
-não se cobra em revisão). Cabeçalho de arquivo, docstring por linguagem, marcadores `TODO`/`FIXME`
-e idioma: `references/comentarios.md`.
+nunca uma paráfrase dele. **Nunca citam uma plan** (`// conforme plan-07`): plan é efêmera e some na
+síntese, deixando o comentário apontando para arquivo inexistente. Citar spec **fixa**
+(`arquitetura/`, `specs/`, `adr/`) não é proibido — elas persistem — mas o comentário bom explica
+ali mesmo em vez de mandar o leitor a outro arquivo. Nenhuma metade desta norma tem verificador hoje
+— é convenção de leitura humana, pendência declarada, não lacuna escondida (`04-regras.md` §1, lei
+2: regra sem verificação não se cobra em revisão). Cabeçalho de arquivo, docstring por linguagem,
+marcadores `TODO`/`FIXME` e idioma: `references/comentarios.md`.
 
 ## Nível 1 — Organização (microservice-ready)
 

@@ -6,7 +6,7 @@ site é construído e **por qual caminho** qualquer alteração passa.
 O modelo é **SDD (Spec-Driven Development)**: **toda e qualquer alteração nasce de uma instrução do agente
 revisor**. Nada é alterado "direto no código" — nem uma cor, nem uma linha de copy.
 
-Essa instrução tem duas formas, e quem escolhe é o revisor, na **triagem** (`00-prompt-revisor` §5.0):
+Essa instrução tem duas formas, e quem escolhe é o revisor, na **triagem** (`00-prompt-revisor` §4):
 **plan** quando a alteração deixa verdade documentada para trás (identidade visual, copy publicado, rota,
 regra de formulário); **prompt direto**, sem arquivo nenhum, quando não deixa (typo, `alt` faltando, link
 quebrado, imagem sem otimizar). A via direta encurta a papelada — nunca a verificação.
@@ -26,7 +26,8 @@ quebrado, imagem sem otimizar). A via direta encurta a papelada — nunca a veri
 | `00-indice.md` | Fila de execução das plans: ordem, dependências, status, destino | **Por projeto** — mantido pelo revisor |
 | `00-knowledge.md` | Roteador de capacidades (skills/commands/agents/hooks/MCP) | **Universal** — idêntico ao de `_estrutura_base` |
 | `00-prompt-revisor.md` | Prompt que forma o agente revisor numa conversa nova | **Universal** |
-| `00-prompt-executor.md` | Prompt que forma o agente executor (a cada execução de plan) | **Universal** |
+| `00-prompt-executor.md` | Prompt que forma o agente executor (a cada execução) | **Universal** |
+| `00-backlog.md` | Achados registrados e **não agendados** — sem status, sem fila | **Por projeto** — mantido pelo revisor |
 
 ### 1.2 Specs de conteúdo (a verdade do site)
 
@@ -68,27 +69,27 @@ Erro mais comum aqui é escrever a coisa certa no arquivo errado:
 
 Uma **plan** é a unidade de trabalho **quando há verdade a preservar**: `plan/plan-NN-<slug>.md`, escrita
 pelo **agente revisor** e executada pelo **agente executor**. Demanda que não deixa verdade nenhuma não passa
-por aqui — corre pela via direta e não gera arquivo (`00-prompt-revisor` §5.6). Contém descrição, escopo, referências, instruções e o **destino da síntese**. O
+por aqui — corre pela via direta e não gera arquivo (`00-prompt-revisor` §6). Contém descrição, escopo, referências, instruções e o **destino da síntese**. O
 prompt de execução **não** vive nela — é entregue na conversa, como ponteiro (`00-prompt-revisor` §5.3).
 
 Enquanto está ativa ou aguardando síntese, a plan é **versionada e preservada** — é o histórico de por que o
 site é como é, com cada veredito de revisão. **Nenhuma plan é apagada antes de sintetizada, e nenhuma é
 apagada sem que sua verdade já esteja na spec fixa correspondente.**
 
-**Nenhum arquivo se move durante o ciclo.** Toda plan vive em `plan/`, e o que responde "em que pé está isto?"
-é o `status` do frontmatter — espelhado nas duas tabelas do `00-indice`:
+**Nenhum arquivo se move durante o ciclo.** Toda plan viva tem uma linha no `00-indice`, e o `status` do
+frontmatter diz em que pé ela está — `🔴 A executar` · `🟡 Em execução` · `🟠 Em revisão` · `🔵 Em correção` ·
+`⛔ Bloqueada` · `🟢 Aprovada`.
 
-| Status | Onde aparece no índice | O que é |
-|---|---|---|
-| 🔴 🟡 🟠 🔵 ⛔ | §1 Fila de execução | O que está em jogo agora e exige ação |
-| 🟢 Aprovada | §4 Encerradas | Verificada; a síntese aguarda a autorização do usuário |
-| ⚪ Sintetizada | §4 Encerradas | Verdade já transportada; o arquivo é resíduo aguardando expurgo |
+**A plan é temporária, e some no ato da síntese.** Quando o revisor transporta a verdade dela para a spec
+fixa de destino, ele **remove o arquivo e a linha do índice na mesma ação** (`00-prompt-revisor` §7.4). Não
+existe estado "sintetizada aguardando limpeza": sintetizou, saiu. É isso que mantém o `00-indice` do tamanho
+do trabalho aberto, em vez de crescer com a idade do site.
 
-A síntese é feita pelo **revisor**, na própria conversa da aprovação e sob autorização do usuário. O
-**expurgo** é outra coisa e tem outro dono — a skill `spec-atualizar`, disparada manualmente, que reverifica
-cada `⚪` antes de remover o arquivo e a linha da §4.
+A janela de conferência não se perdeu: o commit que remove a plan mostra a plan inteira no diff
+(`git log --diff-filter=D -- specs/plan/plan-NN-*.md`). A única trava antes do `git rm` é o rastro — plan
+nunca commitada fica, porque apagá-la seria perda total.
 
-> Numeração é **monotônica e definitiva**: `plan-07` é `plan-07` para sempre, mesmo depois de expurgada. O
+> Numeração é **monotônica e definitiva**: `plan-07` é `plan-07` para sempre, mesmo depois de removida. O
 > próximo número livre vem do campo `proximo_numero_plan` no `00-indice`, nunca de escanear a pasta. A ordem
 > de execução se muda na coluna `#` do `00-indice`, nunca renomeando o arquivo.
 >
@@ -99,10 +100,10 @@ cada `⚪` antes de remover o arquivo e a linha da §4.
 
 ## 4. O ciclo de execução
 
-O ciclo abaixo é o da **plan**. Antes dele há sempre a triagem do revisor (`00-prompt-revisor` §5.0): demanda
+O ciclo abaixo é o da **plan**. Antes dele há sempre a triagem do revisor (`00-prompt-revisor` §4): demanda
 que não deixa verdade documentada corre pela **via direta** — o revisor emite o prompt, o executor executa, o
-revisor verifica e o usuário commita. Sem plan, sem linha no índice, sem síntese e sem expurgo; os passos 2,
-6, 7 e 8 simplesmente não existem lá.
+revisor verifica e o usuário commita. Sem plan, sem linha no índice e sem síntese; os passos 2 e 6 não
+existem lá.
 
 ```
 1. usuário traz uma demanda (página nova, ajuste de copy, otimização, correção)
@@ -111,20 +112,20 @@ revisor verifica e o usuário commita. Sem plan, sem linha no índice, sem sínt
 4. EXECUTOR executa → alterações no worktree → resumo escrito na própria plan (🟠)
 5. REVISOR verifica DIRETAMENTE o worktree (não confia no resumo)
      ├─ reprovado → 🔵 + prompt de correção → volta ao 4
-     └─ aprovado  → 🟢 + linha migra da §1 para a §4 do 00-indice
-                    + REVISOR propõe a síntese e espera a autorização do usuário
+     └─ aprovado  → 🟢 + REVISOR propõe a síntese e espera a autorização do usuário
 6. USUÁRIO autoriza → REVISOR sintetiza em arquitetura/ · specs/ · adr/, acrescenta o
-   bloco `## Síntese` à plan, marca ⚪ e completa a linha da §4
-7. USUÁRIO commita — código, spec fixa e plan ⚪ na mesma unidade de verdade
-8. periodicamente: usuário dispara a skill `spec-atualizar` → cada ⚪ é REVERIFICADA e
-   então removida (arquivo + linha do 00-indice)
+   bloco `## Síntese` à plan e então REMOVE a plan (git rm) e a linha do 00-indice
+7. USUÁRIO commita — código, spec fixa e a remoção da plan na mesma unidade de verdade
+
+Achado fora do escopo, em qualquer passo, desce para o 00-backlog — nunca vira plan
+nova no meio do caminho.
 ```
 
 | Papel | Prompt de entrada | Pode escrever | Nunca faz |
 |---|---|---|---|
-| **Revisor** | `00-prompt-revisor.md` | plans, specs fixas (na síntese autorizada), prompts, mensagens | tocar código · commitar · remover plan |
-| **Executor** | `00-prompt-executor.md` | código + resumo na própria plan | criar/alterar outras specs · commitar · mover ou remover plan |
-| **Usuário** | — | qualquer coisa | — (é quem commita, autoriza a síntese e dispara `spec-atualizar`) |
+| **Revisor** | `00-prompt-revisor.md` | plans, `00-indice`, `00-backlog`, specs fixas (na síntese autorizada), prompts | tocar código · commitar |
+| **Executor** | `00-prompt-executor.md` | código + resumo (na plan, ou na conversa) | criar/alterar outras specs · commitar · mover ou remover plan |
+| **Usuário** | — | qualquer coisa | — (é quem commita, autoriza a síntese e promove itens do backlog) |
 
 **Nenhum agente commita e nenhum agente adiciona co-autoria.** Commit é ato do usuário; a única exceção é
 solicitação expressa dele naquela conversa — e, mesmo então, a mensagem sai **sem `Co-Authored-By`** e sem

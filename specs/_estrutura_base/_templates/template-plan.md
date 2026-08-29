@@ -2,7 +2,7 @@
 tipo: "plan"
 titulo: "Título curto no infinitivo (Ex: Extrair validação de CPF para o domínio)"
 dominio: "Nome do Módulo (Ex: Autenticação)"
-status: "🔴 A executar" # 🔴 A executar · 🟡 Em execução · 🟠 Em revisão · 🔵 Em correção · 🟢 Aprovada · ⚪ Sintetizada · ⛔ Bloqueada
+status: "🔴 A executar" # 🔴 A executar · 🟡 Em execução · 🟠 Em revisão · 🔵 Em correção · 🟢 Aprovada · ⛔ Bloqueada
 prioridade: "Alta"
 tags: ["plan"]
 relacionados: [] # Ex: [[arquitetura/03-api]], [[specs/02-login]]
@@ -12,8 +12,12 @@ destino_sintese: "" # arquitetura/NN-*.md · adr/NNN-*.md · specs/NN-*.md · 00
 
 > **Molde de plan.** Escrita pelo **agente revisor** ([[00-prompt-revisor]]), executada pelo **agente
 > executor** ([[00-prompt-executor]]). Nome do arquivo: `plan-NN-<slug-kebab>.md`, com `NN` monotônico e
-> definitivo. Vive em `plan/` do nascimento ao expurgo — nunca muda de pasta; o que muda é o `status`. Ao
-> criar, adicione a linha correspondente na §1 do [[00-indice]].
+> definitivo. Vive em `plan/` até ser sintetizada — nunca muda de pasta; o que muda é o `status`. Ao criar,
+> adicione a linha correspondente na tabela do [[00-indice]].
+>
+> ⚠️ **Esta plan é temporária.** No ato da síntese ela é **removida** junto com a linha do índice: sua
+> verdade passa a viver na spec fixa de destino (§8) e o rastro, no Git. Nada de código deve apontar para
+> ela — comentário não cita plan (`padrao-escrita`, `references/comentarios.md`).
 >
 > **Critério de qualidade:** um executor **sem nenhum contexto prévio** consegue realizar esta plan lendo
 > apenas ela e o que ela aponta. Se não consegue, a plan está incompleta.
@@ -87,8 +91,11 @@ O que deve ser levado para a spec fixa depois (texto pronto para transporte, se 
 `—`, escreva o motivo: esta execução não altera nenhuma verdade documentada.
 
 > A síntese é feita pelo **revisor**, no momento da aprovação e **sob autorização do usuário**
-> ([[00-prompt-revisor]] §7.3). Esta seção apenas a prepara. Depois de sintetizada, a plan fica `⚪` até o
-> usuário disparar a skill `spec-atualizar`, que reverifica e a expurga.
+> ([[00-prompt-revisor]] §7.4). Esta seção apenas a prepara — **escreva aqui o texto pronto para
+> transporte**, porque no ato da síntese esta plan deixa de existir.
+>
+> `adr/NNN-*.md` como destino? Passe antes o portão de `_templates/template-adr.md`: sem duas alternativas
+> reais descartadas, com custo nomeado, **não é ADR**.
 
 ---
 
@@ -104,9 +111,11 @@ O que deve ser levado para a spec fixa depois (texto pronto para transporte, se 
 
 # 11. Síntese
 
-<!-- Preenchido pelo REVISOR ao sintetizar, depois de autorizado. Muda o status para ⚪ Sintetizada. -->
+<!-- Preenchido pelo REVISOR ao sintetizar, depois de autorizado — e é a última coisa escrita nesta plan:
+     na mesma ação a spec fixa é atualizada, o arquivo sai do disco (git rm) e a linha sai do 00-indice.
+     O bloco existe para aparecer no diff do commit de remoção, que é onde o rastro passa a viver. -->
 
 > **Nota:** os prompts de execução, de correção e de conclusão (o texto que o usuário cola numa conversa nova
 > com o executor ou com o revisor) **não vivem nesta plan**. São gerados e entregues sempre direto na conversa,
-> em bloco ` ```md `, como **ponteiros** para esta plan — ver [[00-prompt-revisor]] §5.3 e §7.2, e
+> em bloco ` ```md `, como **ponteiros** para esta plan — ver [[00-prompt-revisor]] §5.3 e §7.3, e
 > [[00-prompt-executor]] §6.1.

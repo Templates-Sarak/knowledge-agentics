@@ -4,7 +4,7 @@ titulo: "Contexto do Repositório — Briefing de Entrada"
 dominio: "Governança de Specs (SDD)"
 status: "🟢 Vigente"
 tags: ["processo", "contexto", "sdd"]
-relacionados: ["[[00-knowledge]]", "[[00-indice]]", "[[00-prompt-revisor]]", "[[00-prompt-executor]]"]
+relacionados: ["[[00-knowledge]]", "[[00-indice]]", "[[00-backlog]]", "[[00-prompt-revisor]]", "[[00-prompt-executor]]"]
 ---
 
 # 0. O que é este arquivo
@@ -105,7 +105,7 @@ inegociável ou o mapa de roteamento. Nunca por conta própria fora de uma plan.
 > deste repositório (por exemplo: "toda plan que toca `pagamentos/` exige ADR"). Não reescreva o ciclo.
 
 **Toda e qualquer alteração passa pelo revisor.** Nada é alterado "direto no código" — mas nem toda alteração
-vira arquivo. O revisor **tria** cada demanda ([[00-prompt-revisor]] §5.0):
+vira arquivo. O revisor **tria** cada demanda ([[00-prompt-revisor]] §4):
 
 | A demanda deixa verdade documentada para trás? | Via | O que nasce |
 |---|---|---|
@@ -117,7 +117,7 @@ diff linha por linha do mesmo jeito. O ciclo abaixo é o da **plan**; a via dire
 e expurgo, porque não há verdade a transportar.
 
 ```
-revisor escreve  specs/plan/plan-NN-<slug>.md
+revisor escreve  specs/plan/plan-NN-<slug>.md  +  linha no 00-indice
       ↓
 executor lê  00-prompt-executor  +  plan-NN  e executa
       ↓
@@ -125,25 +125,26 @@ alterações ficam no worktree (nenhum agente commita)
       ↓
 revisor VERIFICA diretamente (não confia no resumo do executor)
       ├─ reprovado → prompt de correção → executor corrige → repete
-      └─ aprovado  → status 🟢 + [[00-indice]] atualizado + revisor PROPÕE a síntese
+      └─ aprovado  → status 🟢 + revisor PROPÕE a síntese
       ↓
 usuário AUTORIZA → revisor sintetiza nas specs fixas (adr/ · arquitetura/ · specs/),
-a plan ganha o bloco `## Síntese` e o status ⚪
+acrescenta o bloco `## Síntese` e então REMOVE a plan e a linha do índice
       ↓
-usuário commita — código, spec fixa e plan ⚪ na mesma unidade
-      ↓
-periodicamente: spec-atualizar REVERIFICA cada ⚪ e a remove (arquivo + linha do
-índice). A spec fixa já era a única fonte viva dessa verdade desde a síntese
+usuário commita — código, spec fixa e a remoção da plan na mesma unidade
 ```
 
-**Toda plan vive em `specs/plan/`**, do nascimento ao expurgo — não há subpasta e nenhum arquivo se move. O
-que diz em que pé está cada uma é o `status` do frontmatter, espelhado no [[00-indice]].
+**A plan é temporária**: vive em `specs/plan/` enquanto o trabalho está aberto e **some no ato da síntese**.
+Não há estado "sintetizada aguardando limpeza" — o rastro passa a viver no Git. Por isso o [[00-indice]] tem
+tamanho limitado pelo trabalho em andamento, e não pela idade do repositório.
+
+Achado fora do escopo, em qualquer ponto, desce para o [[00-backlog]] — **nunca** vira plan nova no meio do
+caminho.
 
 | Papel | Spec de entrada | Pode escrever | Nunca faz |
 |---|---|---|---|
-| **Revisor** | [[00-prompt-revisor]] | plans, specs fixas (na síntese autorizada), prompts, mensagens | tocar código · commitar · remover plan |
-| **Executor** | [[00-prompt-executor]] | código + resumo na própria plan | criar/alterar outras specs · commitar · mover ou remover plan |
-| **Usuário** | — | qualquer coisa | — (é quem commita, autoriza a síntese e dispara `/spec-atualizar`) |
+| **Revisor** | [[00-prompt-revisor]] | plans, `00-indice`, `00-backlog`, specs fixas (na síntese autorizada), prompts | tocar código · commitar |
+| **Executor** | [[00-prompt-executor]] | código + resumo (na plan, ou na conversa) | criar/alterar outras specs · commitar · mover ou remover plan |
+| **Usuário** | — | qualquer coisa | — (é quem commita, autoriza a síntese e promove itens do backlog) |
 
 > **Nenhum agente commita e nenhum agente adiciona co-autoria.** A única exceção é solicitação expressa do
 > usuário naquela conversa — e, mesmo então, sem `Co-Authored-By` e sem qualquer outra marca de autoria de
