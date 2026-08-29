@@ -22,8 +22,9 @@ triagem normal ([[00-prompt-revisor]] §4) como qualquer outra demanda.
 **Quem escreve:** o **revisor**, sempre. O executor **relata** achados no resumo dele (é o formato da
 [[00-prompt-executor]] §5); quem transcreve para cá é o revisor, no veredito.
 **Quem promove:** só o **usuário**. Nenhum agente decide sozinho que chegou a hora de um item.
-**Quem remove:** quem promoveu (o item sai daqui quando vira plan ou prompt direto) — ou o revisor, quando
-o achado deixou de existir.
+**Quem remove:** quem promoveu (o item sai daqui quando vira plan ou prompt direto) — ou o revisor, ao
+registrar um achado novo (§4), quando encontra um antigo que deixou de valer. O usuário pode podar a
+qualquer momento.
 
 ---
 
@@ -81,9 +82,11 @@ dívida — é exatamente para isso que ele existe.
 
 # 4. Regras de manutenção
 
-- **Este arquivo não cresce sem limite.** Ele registra o que **ainda** é verdade. Achado corrigido de
-  passagem por outra tarefa, código que deixou de existir, problema que a spec fixa passou a permitir: a
-  linha **sai**, e o revisor diz isso na resposta.
+- **Este arquivo não cresce sem limite, e o dreno tem gatilho.** Ele registra o que **ainda** é verdade.
+  **Ao registrar um achado, o revisor relê os que já estão aqui** — é a única vez em que alguém abre o
+  arquivo inteiro, e por isso é onde ele se drena. Achado corrigido de passagem por outra tarefa, código que
+  deixou de existir, problema que a spec fixa passou a permitir: a linha **sai** na mesma ação, e o revisor
+  diz isso na resposta. Regra de limpeza sem gatilho não roda — foi assim que o índice virou cemitério.
 - **Não duplique.** Antes de registrar, procure — o mesmo achado visto em duas execuções é uma linha só.
 - **Sem status, sem dono, sem prazo.** Se você sentiu falta de um desses campos, o item não é backlog: é
   plan. Promova ou deixe.

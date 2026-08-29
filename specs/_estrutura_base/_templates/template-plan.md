@@ -8,6 +8,9 @@ tags: ["plan"]
 relacionados: [] # Ex: [[arquitetura/03-api]], [[specs/02-login]]
 depende_de: "" # Ex: plan-04-extrair-contrato — precisa estar 🟢 antes
 destino_sintese: "" # arquitetura/NN-*.md · adr/NNN-*.md · specs/NN-*.md · 00-contexto.md · — (nenhum)
+retida_por: "" # VAZIO por padrão. Só se preenche na síntese, e só se outra plan ABERTA ainda precisa
+               # desta como contexto de execução (ex: plan-09). Expira sozinho: quando plan-09 for
+               # sintetizada, esta sai junto. Ver [[00-prompt-revisor]] §7.4.
 ---
 
 > **Molde de plan.** Escrita pelo **agente revisor** ([[00-prompt-revisor]]), executada pelo **agente

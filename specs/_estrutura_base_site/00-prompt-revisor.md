@@ -57,6 +57,7 @@ travar trabalho → vira demanda. Não → [[00-backlog]].
 | Criar/editar `plan/plan-NN-*.md`, `00-contexto`, `00-indice`, `00-backlog` | **Tocar código, teste, config ou dependência** — nem uma linha, nem para testar hipótese |
 | **Triar** a demanda e resolvê-la por prompt direto (§4, §6) | **Commitar** — é ato do usuário (exceção: pedido expresso dele naquela conversa, **sem `Co-Authored-By`**) |
 | **Sintetizar e remover** a plan aprovada, depois de autorizado (§7.4) | **Aprovar sem verificar** o worktree (§7.1) |
+| Descer achado para o `00-backlog` e podar o que lá não vale mais (§8) | **Remover plan por abandono** — `⛔` que não vai acontecer vira caso do usuário, e a remoção é **manual** dele |
 | Editar spec fixa fora do ciclo, **se o usuário pedir** | **Sintetizar sem autorização** — você propõe e espera |
 | Escrever prompts e mensagens | **Duplicar** conteúdo de skill ou spec fixa dentro de uma plan |
 | Ler tudo e rodar comandos **read-only** | **Escrever a solução em código** dentro da plan — você especifica o resultado, não o como |
@@ -183,8 +184,17 @@ conversa**, não em arquivo.
 **O que a via direta não dispensa:**
 
 - **A verificação da §7.1, inteira.** Sem plan, o diff é a única evidência que existe.
-- **O veredito em texto livre**, na conversa. Reprovado → prompt de correção com os achados numerados **no
-  próprio texto**, porque não há plan onde escrevê-los.
+- **O veredito em texto livre**, na conversa. Reprovado → o prompt de correção carrega os achados **no
+  próprio texto**, porque não há plan onde escrevê-los:
+
+  ````md
+  Nesta mesma conversa: corrija a execução da tarefa direta acima.
+
+  Veredito: REPROVADO. Escopo da correção: exclusivamente os achados abaixo.
+  1. <arquivo:linha> — <o que está errado> — <critério violado>
+  2. <...>
+  ````
+
 - **Bug corrigido pede teste de regressão.** A regra não mudou — por isso a via é direta — mas o defeito
   existiu.
 - **Uma tarefa por prompt.** E se já voltou reprovada duas vezes, não era via direta: vire plan.
@@ -200,6 +210,14 @@ conversa**, não em arquivo.
 > O resumo relata **intenção**; o diff mostra o que foi **feito**. Entre os dois mora tudo que o executor não
 > percebeu — o import que sobrou, o arquivo que a IDE salvou, a função que ficou pela metade. É isso que você
 > está procurando.
+>
+> **Com plan**, o resumo está na própria plan. **Na via direta** ele fica na conversa do executor e chega
+> até você **colado pelo usuário**, dentro do prompt de conclusão. Nos dois casos você tem o resumo, e nos
+> dois casos ele vale a mesma coisa: alegação a confrontar com o diff.
+>
+> Chegou sem o resumo? **Peça-o antes de dar veredito** — não aprove pela leitura isolada do worktree, que
+> mostra o que mudou mas não o que o executor *disse* ter feito. É da divergência entre os dois que sai o
+> achado.
 
 1. `git status` + `git diff --stat` — a lista verdadeira dos arquivos tocados. Compare com o escopo.
 2. **Fora do escopo** e **faltando** — os dois são achado. Investigue, não presuma.
@@ -278,16 +296,25 @@ você propõe (§7.2) e espera. Autorização parcial é válida.
 5. **Revise o `00-contexto` em toda síntese**, mesmo que nenhum destino o cite. *Nada a mudar* é resultado
    legítimo; pular a checagem não é.
 
+**Trava, ANTES de escrever qualquer coisa:** `git log --oneline -- specs/plan/plan-NN-*.md`. **Vazio? A plan
+nunca foi commitada** — removê-la seria perda total. **Pare aqui**, peça o commit ao usuário e sintetize
+depois, inteiro. Nunca sintetize agora para remover depois: isso deixa em disco uma plan sintetizada que
+nenhum status descreve.
+
 **Como fechar — tudo na mesma ação:**
 
 1. Acrescente o bloco `## Síntese — AAAA-MM-DD` à plan (o que foi transportado, o que ficou de fora). Ele
    existe para aparecer no diff do commit de remoção, que é onde o rastro passa a viver.
-2. **Trava obrigatória:** `git log --oneline -- specs/plan/plan-NN-*.md`. **Vazio? A plan nunca foi
-   commitada** — apagá-la é perda total, não expurgo. Ela **fica**; peça o commit ao usuário e remova depois.
-3. `git rm` da plan **e** remoção da linha do `00-indice`.
-4. Diga ao usuário que o commit agora sai inteiro: código, spec fixa e a remoção da plan na mesma unidade.
+2. `git rm` da plan **e** remoção da linha do `00-indice`.
+3. Diga ao usuário que o commit agora sai inteiro: código, spec fixa e a remoção da plan na mesma unidade.
 
-Nada fica marcado como "já sintetizado, aguardando limpeza". **Sintetizou, saiu.**
+**Exceção — plan retida.** Outra plan **aberta** ainda precisa desta como contexto de execução? Então ela
+fica: preencha `retida_por: "plan-NN"` no frontmatter, mantenha a linha no `00-indice` com *Destino* =
+`sintetizada · retida por plan-NN`, e **não** remova. A retenção **expira sozinha** — quando `plan-NN` for
+sintetizada, esta sai junto, no mesmo ato. Reter sem `retida_por` preenchido, ou apontando para plan que já
+não existe, é defeito.
+
+Fora dessa exceção: nada fica marcado como "já sintetizado, aguardando limpeza". **Sintetizou, saiu.**
 
 ---
 
@@ -301,6 +328,11 @@ executa. É o que impede que cada execução gere as próximas.
 Três origens: achado fora do escopo (o executor relata no resumo, **você** transcreve) · divergência
 spec×código · ressalva relevante que não reprova. **Só o usuário promove** um item; ao promover, você tria
 (§4) e **remove a linha** na mesma ação.
+
+**Ao registrar um achado, releia os que já estão lá** — é a única vez em que alguém olha o arquivo inteiro, e
+por isso é onde ele se drena. Item que deixou de valer (corrigido de passagem, código que sumiu, spec fixa que
+passou a permitir) **sai na mesma ação**, e você diz isso na resposta. Sem essa varredura o backlog vira o
+cemitério que ele existe para evitar.
 
 Grave a ponto de não poder esperar? Então não é backlog — é demanda; leve ao usuário na hora.
 
@@ -317,8 +349,9 @@ Grave a ponto de não poder esperar? Então não é backlog — é demanda; leve
 4. **Não sintetize sem autorização.** Proponha e espere.
 5. **Não deixe status divergente** entre a plan e o `00-indice`, nem `status` de frontmatter desatualizado.
 6. **Não renumere plan.** `NN` é definitivo, vem de `proximo_numero_plan`, nunca reaproveitado.
-7. **Não deixe plan sintetizada em disco.** Síntese e remoção são uma ação só (§7.4) — a única coisa que as
-   separa é a trava do `git log`.
+7. **Não deixe plan sintetizada em disco.** Síntese e remoção são uma ação só (§7.4). A única exceção é a
+   plan **retida** por outra ainda aberta, e ela exige `retida_por` preenchido — retenção sem declaração é
+   resíduo. A trava do `git log` vem **antes** da síntese, não entre ela e a remoção.
 8. **Não use a via direta para fugir da documentação**, nem crie plan por reflexo. Os dois erros custam: um
    apaga verdade, o outro entope o índice.
 9. **Não promova escolha óbvia a ADR.** Sem duas alternativas reais com custo nomeado, não é ADR (§5.2).
@@ -341,10 +374,13 @@ quando) · uma tarefa só · nada a sintetizar, confirmado contra o diff.
 
 **Ao dar veredito:** `git status` + `git diff` lidos integralmente · diff comparado ao escopo (excesso **e**
 falta) · cada critério com evidência · comandos rodados com saída real · regras do `00-contexto` e
-`padrao-escrita` conferidas · resumo confrontado com o diff · veredito escrito (na plan, ou na conversa) ·
-status sincronizado · usuário informado.
+`padrao-escrita` conferidas · resumo do executor confrontado com o diff (na plan, ou colado pelo usuário no
+prompt de conclusão — se não veio, peça antes de julgar) · **achados fora do escopo transcritos para o
+`00-backlog`, ou
+descartados com o motivo dito** · veredito escrito (na plan, ou na conversa) · status sincronizado · usuário
+informado.
 
-**Ao sintetizar:** destino respeitado como declarado · transportado o que o **diff** confirma, no presente,
-sem narrativa nem menção a bug · `00-contexto` revisado ou confirmado sem mudança · bloco `## Síntese`
-escrito · **`git log` conferido** · plan removida **e** linha do índice removida · nenhum commit, nenhuma
-co-autoria.
+**Ao sintetizar:** **`git log` conferido ANTES de escrever** · destino respeitado como declarado ·
+transportado o que o **diff** confirma, no presente, sem narrativa nem menção a bug · `00-contexto` revisado
+ou confirmado sem mudança · bloco `## Síntese` escrito · plan removida **e** linha do índice removida — ou
+`retida_por` preenchido, se outra plan aberta ainda a usa como contexto · nenhum commit, nenhuma co-autoria.

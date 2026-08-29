@@ -19,6 +19,11 @@ O **mapa do trabalho em andamento**. Responde a duas perguntas, sempre:
 plan só existe enquanto não foi sintetizada. **Sintetizar remove a plan e a linha, na mesma ação**
 ([[00-prompt-revisor]] §7.4): a verdade passa a viver na spec fixa de destino, e o rastro completo, no Git.
 
+**Exceção — plan retida.** Uma plan sintetizada pode **ficar** quando outra plan aberta ainda precisa dela
+como contexto de execução. Isso é declarado no campo `retida_por` do frontmatter, e **expira sozinho**: no
+instante em que a plan citada é sintetizada, a retida sai junto. Sem `retida_por` preenchido, sintetizou →
+saiu. É a única razão para uma plan sintetizada existir em disco.
+
 Por isso o tamanho deste arquivo é limitado pelo **trabalho aberto**, não pela idade do repositório. Índice
 que cresce é índice quebrado.
 
@@ -77,8 +82,9 @@ dois, sempre, na mesma ação.**
 > `🟢` que passou o dia parado é sinal de proposta de síntese não respondida, não de estado normal.
 >
 > **`⛔` não é depósito.** Plan bloqueada há tempo demais deixou de ser trabalho aberto: ou o impedimento caiu
-> e ela volta para `🔴`, ou ela não vai acontecer — e então o revisor a remove, descendo o que sobrou de útil
-> para o [[00-backlog]]. Abandono silencioso é o que faz índice virar cemitério.
+> e ela volta para `🔴`, ou ela não vai acontecer. No segundo caso o revisor **não remove nada** — ele leva o
+> caso ao usuário e desce para o [[00-backlog]] o que sobrou de útil; a **remoção é manual, do usuário**,
+> quando for o caso. Abandono silencioso é o que faz índice virar cemitério.
 
 ---
 
@@ -112,9 +118,14 @@ Toda plan declara, **desde o momento em que é escrita**, para onde seu conteúd
   é trabalho invisível. Divergiu? A **plan** é a fonte da verdade e este índice está errado — corrija aqui.
 - **Status e arquivo andam juntos.** Aprovou → `🟢` na plan **e** aqui. Sintetizou → spec fixa atualizada,
   `git rm` da plan **e** remoção da linha, na mesma passada. Nunca um sem o outro.
-- **Antes de remover, confirme o rastro.** `git log --oneline -- specs/plan/plan-NN-*.md` tem de retornar ao
-  menos um commit. Vazio significa que a plan nunca foi commitada: apagá-la é **perda total**, não expurgo —
-  ela fica, e o usuário commita antes. Esta é a única trava entre a síntese e o `git rm`.
+- **Antes de SINTETIZAR, confirme o rastro.** `git log --oneline -- specs/plan/plan-NN-*.md` tem de retornar
+  ao menos um commit. Vazio significa que a plan nunca foi commitada: removê-la seria **perda total**. A
+  checagem vem **antes** de escrever qualquer coisa — o usuário commita a plan primeiro, e só então a síntese
+  acontece inteira. Nunca sintetize agora para remover depois: isso cria uma plan sintetizada em disco sem
+  status que a descreva.
+- **Plan retida (`retida_por`) é exceção declarada, não estado.** Ela fica com a linha aqui, na posição em
+  que estava, e o campo *Destino* passa a mostrar `sintetizada · retida por plan-NN`. Some no mesmo ato em
+  que a plan citada é sintetizada. `retida_por` apontando para plan que não existe mais é defeito: remova.
 - **Dependência é contrato:** não libere (`🔴`) uma plan cuja dependência ainda esteja aberta. Dependência
   que sumiu da tabela **foi sintetizada** — logo já está embutida na spec fixa de destino, e deixa de ser
   "plan-NN" para ser essa spec.

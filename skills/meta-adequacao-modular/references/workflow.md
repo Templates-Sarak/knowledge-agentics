@@ -80,9 +80,11 @@ declarado como resíduo a apagar **depois** de confirmado, nunca antes) antes de
 1. Liste `specs/plan/` e separe as `🟢 Aprovada` (síntese pendente) do resíduo — plan com bloco
    `## Síntese` que ficou em disco por ciclo interrompido.
 2. Toda `🟢` precisa ser sintetizada **antes** de seguir — é o revisor desta própria conversa que sintetiza,
-   sob autorização do usuário (o mecanismo é o do ciclo SDD padrão, `00-prompt-revisor.md` §7.3).
-3. Resíduo sobrando? Rode `spec-atualizar` para reconciliar (ela reverifica os quatro portões antes de remover —
-   não reimplemente a verificação aqui).
+   sob autorização do usuário, e **a mesma ação remove a plan e a linha do índice**
+   (`00-prompt-revisor.md` §7.4).
+3. Resíduo sobrando de um ciclo interrompido? Reconcilie à mão, sem inventar rotina: confirme que a verdade
+   está na spec fixa de destino, que a spec bate com o código e que `git log` no path da plan não vem vazio —
+   só então remova o arquivo e a linha. Falhou qualquer um dos três? A plan **fica**, e o caso vai ao usuário.
 4. Resultado esperado: `plan/` só com o que ainda está ativo (nunca nenhuma `xx-*` — esta campanha ainda não
    começou).
 
@@ -261,8 +263,8 @@ A saída não é inventar uma — é usar o que o template **já** oferece:
 **`xx-` não consome `proximo_numero_plan`.** A skill exige o prefixo `xx-`; o `00-indice.md` canônico tem
 numeração monotônica "só sobe, nunca reaproveitada" (§5 daquele arquivo). Nada dizia como os dois
 convivem, e um revisor teve de declarar a regra por conta própria no meio de uma campanha. `xx-` é
-namespace separado — nunca toca o contador — e, ao expurgar a campanha inteira via `spec-atualizar`, o
-`proximo_numero_plan` segue exatamente de onde estava, porque nunca avançou por causa dela.
+namespace separado — nunca toca o contador — e, quando as plans da campanha forem sintetizadas e removidas,
+o `proximo_numero_plan` segue exatamente de onde estava, porque nunca avançou por causa dela.
 
 **Prompt não vive em arquivo.** O `template-plan.md` já avisa: *"contexto que existe só no prompt se perde
 na primeira rodada de correção"*. Mas a skill é o que se lê primeiro, e o molde é o que se lê por último —

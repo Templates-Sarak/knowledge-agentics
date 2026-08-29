@@ -68,7 +68,6 @@ precisa agir sem pedido para cumprir o papel — hoje três: as normas sempre-re
 | Estruturar logging / métricas e alertas | `obs-logs` · `obs-monitoramento` |
 | Publicar na Vercel / containerizar | `/deploy-vercel` · `/deploy-docker` |
 | Escrever ou padronizar uma spec | `spec-write` |
-| Reconciliar `plan/` com o índice / limpar resíduo de plan | `spec-atualizar` (reparo, não rotina) |
 | Registrar um achado que não é para agora | `00-backlog.md` — o revisor escreve; ninguém executa |
 | Definir o alicerce arquitetural de um repo novo | `spec-fundacao` |
 | Criar/revisar uma skill | `meta-create-skill` · `/meta-criar-skill` |
@@ -129,7 +128,6 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | Skill | Quando |
 |---|---|
 | `spec-write` | Traduzir ideia/requisito em spec padronizada (usa os moldes de `_templates/`). |
-| `spec-atualizar` | **Reparo do ciclo SDD**: reconcilia `specs/plan/` com o `00-indice` e limpa resíduo — plan sintetizada que ficou em disco, linha órfã, plan abandonada. Só manual. **Não sintetiza e não é rotina**: no fluxo normal o revisor sintetiza e remove na mesma ação ([[00-prompt-revisor]] §7.4). |
 | `spec-fundacao` | Wizard HITL do alicerce arquitetural/tecnológico de um repo novo → gera os ADRs. |
 | `spec-site-fundacao` | Idem, para projeto de site (institucional/marketing). |
 

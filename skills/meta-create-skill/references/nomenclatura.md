@@ -14,7 +14,7 @@
 |---|---|---|
 | `padrao-` | Normas de escrita/organização (sempre referenciadas) | `padrao-escrita`, `padrao-python`, `padrao-typescript` |
 | `code-` | Operações sobre código (inclui criação de módulo/sistema modular) | `code-diagnostico`, `code-adequacao`, `code-assinatura`, `code-licenca` |
-| `spec-` | Especificações e fluxo SDD | `spec-write`, `spec-fundacao`, `spec-site-fundacao`, `spec-atualizar` |
+| `spec-` | Especificações e fluxo SDD | `spec-write`, `spec-fundacao`, `spec-site-fundacao` |
 | `test-` | Testes (inclui contract testing de API) | `test-unitario`, `test-e2e`, `test-api-contrato` |
 | `db-` | Banco de dados | `db-migrations` |
 | `deploy-` | Publicação/entrega | `deploy-vercel`, `deploy-docker` |

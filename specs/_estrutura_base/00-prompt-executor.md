@@ -167,11 +167,18 @@ pela via direta (00-prompt-revisor §6) — não há plan.
 
 <cole aqui o bloco de prompt direto que você recebeu, na íntegra>
 
-O resumo da execução está na conversa do executor; a evidência é o worktree.
+Abaixo, o resumo da execução, como entregue pelo executor:
+
+<cole aqui o resumo da §5 que o executor escreveu na conversa>
 ````
 
-> Este é o **único** caso em que você copia texto para dentro de um prompt — e é o texto do **revisor**, não
-> o seu relato. Sem isso ele não sabe que escopo autorizou. Seu resumo continua fora do bloco.
+> **Como isto chega ao revisor:** sem plan, seu resumo fica **nesta conversa** — e é o **usuário** que o
+> encaminha, junto com este bloco, ao abrir a conversa de revisão. Por isso o bloco tem dois espaços para
+> colar: o **prompt do revisor** (sem ele, ele não sabe que escopo autorizou) e o **seu resumo** (sem ele,
+> não há o que confrontar com o `git diff`, que é a verificação mais forte do ciclo).
+>
+> **É o único caso em que conteúdo entra num prompt** — e é porque não existe arquivo fazendo esse papel.
+> Escreva o resumo (§5) na conversa **antes** de emitir este bloco, para o usuário ter o que copiar.
 
 ---
 

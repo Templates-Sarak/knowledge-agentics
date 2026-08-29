@@ -7,8 +7,8 @@ description: Traduz ideia ou requisito do usuário em especificação padronizad
 
 O "funil" que obriga toda especificação e decisão arquitetural do ecossistema Sarak a nascer no
 formato padronizado. É a **fonte de forma** — as demais skills de spec (`spec-fundacao`,
-`spec-site-fundacao`, `spec-atualizar`) e o fluxo SDD inteiro assumem que uma spec/plan/ADR
-gravada em disco passou por aqui.
+`spec-site-fundacao`) e o fluxo SDD inteiro assumem que uma spec/plan/ADR gravada em disco
+passou por aqui.
 
 ## Quando usar
 

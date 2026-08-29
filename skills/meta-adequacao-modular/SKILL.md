@@ -7,7 +7,7 @@ description: Leva um repositório legado (já em produção, git+GitHub) ao temp
 
 > **Dependência:** aplica `padrao-escrita` (Nível 0) e o catálogo `specs/arquitetura/04-regras.md` do
 > projeto-alvo (na base Sarak: `specs/_estrutura_modulos/doutrina/04-regras.md` — Nível 1). Reusa
-> `meta-iniciar-repositorio` (instalação), `spec-atualizar` (expurgo de plan sintetizada), `code-diagnostico`
+> `meta-iniciar-repositorio` (instalação), `code-diagnostico`
 > + `code-adequacao` (via `/code1-auditar` → `/code2-caracterizar` → `/code3-adequar`, campanha de Nível 0
 > que **compõe** com esta), `db-migrations` (renomear tabela com dado real) e `git-especialista-repositorio`
 > (`/git1-auditar`, o momento mais barato para rodar antes de reestruturar). **Não duplique regra de
@@ -99,7 +99,7 @@ presuma que está seguro. `arvore_suja: null` é *"não consegui verificar"*, ja
   destino escrito. Mecânica em `references/workflow.md` §1.
 - **`com-specs`:** `plan/` **tem** de ficar sem nenhuma plan `🟢 Aprovada` pendente de síntese — o revisor
   sintetiza na própria conversa e, na mesma ação, **remove** a plan e a linha do índice
-  (`00-prompt-revisor` §7.4). Sobrou resíduo de um ciclo interrompido? Aí sim, `spec-atualizar` reconcilia.
+  (`00-prompt-revisor` §7.4) — não há etapa de expurgo depois, e `plan/` fica só com o que está aberto.
 
 ### Passo 2 — specs vs código
 - **`sem-specs`:** a adequação **inclui instalar** a pasta de specs. Só `00-contexto.md` e `00-indice.md`
