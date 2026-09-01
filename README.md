@@ -48,7 +48,7 @@ reescrever import.
 
 **Ele se verifica sozinho**, em quatro camadas: o gate cobra o projeto · o gate se testa · o template
 prova que gera projeto que passa na própria cadeia · toda ferramenta com `--autoteste` é executada.
-Verde significa que verificou — e **76 regras** são cobradas por máquina, não de memória.
+Verde significa que verificou — e **78 regras** são cobradas por máquina, não de memória.
 
 No projeto gerado, `doutrina/` chega como **`specs/arquitetura/`**. É o mesmo arquivo, instalado.
 

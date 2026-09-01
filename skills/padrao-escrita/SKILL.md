@@ -90,7 +90,7 @@ marcadores `TODO`/`FIXME` e idioma: `references/comentarios.md`.
 
 | Onde | O quê |
 |---|---|
-| `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~76 regras, cada uma com id e verificador |
+| `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~78 regras, cada uma com id e verificador |
 | `specs/_estrutura_modulos/doutrina/` — `00-arquitetura.md` · `01-modulo.md` · `02-contrato-e-dados.md` · `03-operacao.md` | por que a regra existe e como trabalhar dentro dela |
 | `tools/gate/validate.mjs` | **o verificador** — a regra é cobrada por máquina, não por memória |
 

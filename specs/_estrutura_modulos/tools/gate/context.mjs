@@ -36,7 +36,7 @@ const ID_SINTETICO_DO_MOLDE = 'molde';
  *
  * Sao estas tres e mais nenhuma. `tools/` fica de fora de proposito: e o gate, que o template
  * instala e ninguem edita — varre-lo faria as regras de raiz julgarem o proprio verificador.
- * `modules/` fica de fora porque ja tem 58 regras suas.
+ * `modules/` fica de fora porque ja tem 60 regras suas.
  */
 const PASTAS_DA_RAIZ = ['adapters', 'src', 'packages'];
 

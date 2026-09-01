@@ -409,6 +409,12 @@ export const CASOS = [
   {
     regra: 'migrations',
     descricao: 'migration sem bloco de rollback',
+    // Cascata legitima: `create table x` e uma tabela de verdade, criada por uma migration real —
+    // fica sem declaracao (`tabela-nao-declarada`) e sem espelho em schema.sql
+    // (`schema-espelha-migrations`), os dois defeitos reais que a mutacao introduz junto do que o
+    // caso quer provar (falta de rollback). Nao trocar por algo que nao crie tabela: perderia a
+    // cobertura de que uma migration com CREATE TABLE de verdade continua acusando "sem rollback".
+    tambem: ['tabela-nao-declarada', 'schema-espelha-migrations'],
     mutar: (m) => m.escrever('database/migrations/0002-cria-outra.sql', 'create table x (id uuid);\n'),
   },
   {
@@ -429,6 +435,41 @@ export const CASOS = [
       const alter = 'alter table "<escopo>"."<module_snake>_auditoria" enable row level security;';
       m.substituir('database/schema.sql', alter, '');
       m.substituir('database/migrations/0001-cria-metadados.sql', alter, '');
+    },
+  },
+  {
+    regra: 'tabela-nao-declarada',
+    descricao: 'tabela criada no SQL do modulo e ausente de data.tables',
+    // A mesma tabela nasce em migrations E em schema.sql — os dois espelhos concordam entre si, e
+    // o unico defeito e a declaracao ausente. Criar so num dos dois acusaria tambem
+    // `schema-espelha-migrations`, ruido que este caso nao quer provar.
+    mutar: (m) => {
+      const criacao = 'create table "<escopo>"."<module_snake>_outra" (id uuid);\n';
+      m.escrever(
+        'database/migrations/0002-cria-outra.sql',
+        `${criacao}\n-- rollback\n-- drop table if exists "<escopo>"."<module_snake>_outra";\n`,
+      );
+      m.acrescentar('database/schema.sql', `\n${criacao}`);
+    },
+  },
+  {
+    regra: 'schema-espelha-migrations',
+    descricao: 'tabela que a migration cria e o database/schema.sql nao tem',
+    // Declara a tabela nova e liga RLS nela para o caso acusar SO este id: sem a declaracao,
+    // `tabela-nao-declarada` acusaria junto (tabela criada e sem data.tables); sem o RLS, o aviso
+    // `rls` tambem apareceria (tabela declarada, criada, e sem ENABLE ROW LEVEL SECURITY em lugar
+    // nenhum) — nenhum dos dois e o defeito que este caso persegue, que e so o espelho desatualizado.
+    mutar: (m) => {
+      m.manifesto((x) => ({
+        ...x,
+        data: { ...x.data, tables: [...x.data.tables, '<module_snake>_outra'] },
+      }));
+      m.escrever(
+        'database/migrations/0002-cria-outra.sql',
+        'create table "<escopo>"."<module_snake>_outra" (id uuid);\n'
+          + 'alter table "<escopo>"."<module_snake>_outra" enable row level security;\n\n'
+          + '-- rollback\n-- drop table if exists "<escopo>"."<module_snake>_outra";\n',
+      );
     },
   },
 

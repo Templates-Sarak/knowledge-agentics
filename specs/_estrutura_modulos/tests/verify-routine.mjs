@@ -165,7 +165,7 @@ function passosResto() {
 // ── B. o catálogo de regras (§4.2) ──────────────────────────────────────────────────────────────
 
 const FAMILIAS_ESPERADAS = {
-  configuration: 21, contract: 11, data: 6, isolation: 12, operation: 11, structure: 11, writing: 4,
+  configuration: 21, contract: 11, data: 8, isolation: 12, operation: 11, structure: 11, writing: 4,
 };
 
 function passosCatalogo() {
@@ -180,9 +180,9 @@ function passosCatalogo() {
   const por = (chave) => REGRAS.reduce((a, r) => ({ ...a, [r[chave]]: (a[r[chave]] ?? 0) + 1 }), {});
 
   return [
-    { nome: 'catalogo — total de regras', fn: () => compararValor('regras', REGRAS.length, 76) },
-    { nome: 'catalogo — por escopo', fn: () => compararValor('escopo', por('escopo'), { module: 58, root: 14, global: 4 }) },
-    { nome: 'catalogo — por nivel', fn: () => compararValor('nivel', por('nivel'), { erro: 72, aviso: 4 }) },
+    { nome: 'catalogo — total de regras', fn: () => compararValor('regras', REGRAS.length, 78) },
+    { nome: 'catalogo — por escopo', fn: () => compararValor('escopo', por('escopo'), { module: 60, root: 14, global: 4 }) },
+    { nome: 'catalogo — por nivel', fn: () => compararValor('nivel', por('nivel'), { erro: 74, aviso: 4 }) },
     { nome: 'catalogo — por familia', fn: () => compararValor('familia', porFamilia(), FAMILIAS_ESPERADAS) },
     {
       // O terceiro argumento varre `tools/**` atras de "N regras com caso"/"N regras suas"
