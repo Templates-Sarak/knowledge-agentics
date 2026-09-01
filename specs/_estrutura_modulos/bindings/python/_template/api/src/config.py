@@ -35,9 +35,7 @@ def find_root_module(partida: Path | None = None) -> Path:
         if atual.parent == atual:
             break
         atual = atual.parent
-    raise RuntimeError(
-        f"[config] module.json nao encontrado a partir de {partida or Path.cwd()}"
-    )
+    raise RuntimeError(f"[config] module.json nao encontrado a partir de {partida or Path.cwd()}")
 
 
 def _read_json(raiz: Path, relativo: str) -> Any:
@@ -45,13 +43,9 @@ def _read_json(raiz: Path, relativo: str) -> Any:
     try:
         return json.loads(caminho.read_text(encoding="utf-8-sig"))
     except OSError as causa:
-        raise RuntimeError(
-            f'[config] nao foi possivel ler "{relativo}": {causa}'
-        ) from causa
+        raise RuntimeError(f'[config] nao foi possivel ler "{relativo}": {causa}') from causa
     except json.JSONDecodeError as causa:
-        raise RuntimeError(
-            f'[config] "{relativo}" nao e JSON valido: {causa}'
-        ) from causa
+        raise RuntimeError(f'[config] "{relativo}" nao e JSON valido: {causa}') from causa
 
 
 def _read_pairs_env(caminho: Path) -> list[tuple[str, str]]:
@@ -88,9 +82,7 @@ def _resolve_environment(raiz: Path) -> None:
     if ponteiro is None:
         return
 
-    alvo = (
-        Path(ponteiro) if Path(ponteiro).is_absolute() else (raiz / ponteiro).resolve()
-    )
+    alvo = Path(ponteiro) if Path(ponteiro).is_absolute() else (raiz / ponteiro).resolve()
     if not alvo.exists():
         raise RuntimeError(f'[config] ENV_ROOT aponta para "{alvo}", que nao existe')
     _apply_without_overwrite(_read_pairs_env(alvo))

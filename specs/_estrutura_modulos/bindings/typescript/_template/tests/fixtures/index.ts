@@ -6,13 +6,7 @@
 //
 // Clock e idGenerator sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar
 // o relogio do sistema, e o que prova que o dominio nao chama `new Date()` escondido.
-import type {
-  Audit,
-  ModuleDependencies,
-  IdGenerator,
-  Clock,
-  Repository,
-} from '../../core/ports/index.js';
+import type { Audit, ModuleDependencies, IdGenerator, Clock, Repository } from '../../core/ports/index.js';
 import type { Registro } from '../../core/domain/index.js';
 import type { Auth } from '../../api/src/middlewares/index.js';
 

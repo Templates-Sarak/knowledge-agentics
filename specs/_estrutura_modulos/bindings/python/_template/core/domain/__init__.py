@@ -46,9 +46,7 @@ def _require_status(status: Any, status_validos: Sequence[str]) -> str:
     if status is None:
         return status_validos[0]
     if not isinstance(status, str) or status not in status_validos:
-        raise ValidationError(
-            "status", f"status deve ser um de: {', '.join(status_validos)}"
-        )
+        raise ValidationError("status", f"status deve ser um de: {', '.join(status_validos)}")
     return status
 
 

@@ -71,9 +71,7 @@ class SequentialIdGenerator:
 class AuthDeTeste:
     """Aceita um token conhecido. Qualquer outro e negado — deny by default."""
 
-    def __init__(
-        self, permissoes: Sequence[str], token_valido: str = "token-de-teste"
-    ) -> None:
+    def __init__(self, permissoes: Sequence[str], token_valido: str = "token-de-teste") -> None:
         self._permissoes = list(permissoes)
         self._token = token_valido
 

@@ -18,10 +18,7 @@ function readPagination(query, config) {
     throw new ApiError('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
   }
   if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.maxPageSize) {
-    throw new ApiError(
-      'VALIDACAO',
-      `parametro "tamanho" deve estar entre 1 e ${config.api.maxPageSize}`,
-    );
+    throw new ApiError('VALIDACAO', `parametro "tamanho" deve estar entre 1 e ${config.api.maxPageSize}`);
   }
   return [pagina, tamanho];
 }

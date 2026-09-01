@@ -27,18 +27,14 @@ def _permissions_for(config: Any) -> tuple[str, str]:
     """As permissoes vem do manifesto, nunca de literal. Manifesto incompleto derruba o boot."""
     permissoes = config.manifesto["permissions"]
     if len(permissoes) < _PERMISSOES_MINIMAS:
-        raise RuntimeError(
-            "[routes] module.json:permissions precisa declarar leitura e escrita"
-        )
+        raise RuntimeError("[routes] module.json:permissions precisa declarar leitura e escrita")
     return permissoes[0], permissoes[1]
 
 
 def _read_pagination(request: Request, config: Any) -> tuple[int, int]:
     """Paginacao validada na borda, com padrao e teto vindos de config/api.json."""
     bruto_pagina = request.query_params.get("pagina", "1")
-    bruto_tamanho = request.query_params.get(
-        "tamanho", str(config.api["defaultPageSize"])
-    )
+    bruto_tamanho = request.query_params.get("tamanho", str(config.api["defaultPageSize"]))
     if not bruto_pagina.isdigit() or int(bruto_pagina) < 1:
         raise ApiError("VALIDACAO", 'parametro "pagina" deve ser inteiro >= 1')
     teto = config.api["maxPageSize"]
@@ -80,9 +76,7 @@ def create_routes(deps: ModuleDependencies, config: Any) -> APIRouter:
         require_permission(request, ler)
         pagina, tamanho = _read_pagination(request, config)
         resultado = await deps.repository.list(pagina, tamanho)
-        return to_collection(
-            resultado.itens, resultado.pagina, resultado.tamanho, resultado.total
-        )
+        return to_collection(resultado.itens, resultado.pagina, resultado.tamanho, resultado.total)
 
     @router.get("/registros/{hash_universal}")
     async def get(request: Request, hash_universal: str) -> dict[str, Any]:
@@ -102,9 +96,7 @@ def create_routes(deps: ModuleDependencies, config: Any) -> APIRouter:
     return router
 
 
-async def _persist(
-    corpo: dict[str, Any], deps: ModuleDependencies, config: Any, request_id: str
-) -> Registro:
+async def _persist(corpo: dict[str, Any], deps: ModuleDependencies, config: Any, request_id: str) -> Registro:
     """Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO
     (specs/arquitetura/02-contrato-e-dados.md §3.2)."""
     try:

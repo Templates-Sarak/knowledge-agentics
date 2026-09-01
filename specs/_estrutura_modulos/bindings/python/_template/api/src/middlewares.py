@@ -79,16 +79,12 @@ def _respond_error(erro: ApiError, request: Request, logger: Logger) -> JSONResp
             "detalhe": erro.detalhe or erro.mensagem,
         },
     )
-    return JSONResponse(
-        status_code=erro.status, content=error_envelope(erro, request_id)
-    )
+    return JSONResponse(status_code=erro.status, content=error_envelope(erro, request_id))
 
 
 def _apply_headers(resposta: Any, headers: dict[str, Any]) -> None:
     if headers["hsts"]:
-        resposta.headers["strict-transport-security"] = (
-            "max-age=31536000; includeSubDomains"
-        )
+        resposta.headers["strict-transport-security"] = "max-age=31536000; includeSubDomains"
     if headers["noSniff"]:
         resposta.headers["x-content-type-options"] = "nosniff"
     if headers["frameDeny"]:
@@ -104,9 +100,7 @@ def _apply_cors(request: Request, resposta: Any, cors: dict[str, Any]) -> None:
         resposta.headers["access-control-allow-methods"] = ", ".join(cors["methods"])
 
 
-def _limit(
-    request: Request, config: dict[str, Any], janelas: dict[str, tuple[float, int]]
-) -> None:
+def _limit(request: Request, config: dict[str, Any], janelas: dict[str, tuple[float, int]]) -> None:
     """Contador em memoria: suficiente para um processo. Multi-instancia exige porta dedicada."""
     limite = config["readLimit"] if request.method == "GET" else config["writeLimit"]
     chave = f"{request.client.host if request.client else '?'}:{request.method}"
@@ -121,9 +115,7 @@ def _limit(
     janelas[chave] = (inicio, contagem + 1)
 
 
-async def _authenticate(
-    request: Request, auth: Auth, publicas: set[str], rota_base: str
-) -> None:
+async def _authenticate(request: Request, auth: Auth, publicas: set[str], rota_base: str) -> None:
     """DENY BY DEFAULT: so as rotas de `module.json:publicRoutes` passam sem token."""
     relativo = _path_relative(request.url.path, rota_base)
     if f"{request.method} {relativo}".upper() in publicas:

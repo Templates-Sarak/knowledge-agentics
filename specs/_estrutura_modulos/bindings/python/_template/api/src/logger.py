@@ -25,17 +25,13 @@ def _redact(valor: Any, sensiveis: set[str], profundidade: int = 0) -> Any:
     if not isinstance(valor, dict):
         return valor
     return {
-        chave: REDIGIDO
-        if chave in sensiveis
-        else _redact(conteudo, sensiveis, profundidade + 1)
+        chave: REDIGIDO if chave in sensiveis else _redact(conteudo, sensiveis, profundidade + 1)
         for chave, conteudo in valor.items()
     }
 
 
 class Logger:
-    def __init__(
-        self, modulo: str, nivel_minimo: str, campos_sensiveis: Sequence[str]
-    ) -> None:
+    def __init__(self, modulo: str, nivel_minimo: str, campos_sensiveis: Sequence[str]) -> None:
         self._modulo = modulo
         self._minimo = NIVEIS.index(nivel_minimo)
         self._sensiveis = set(campos_sensiveis)
@@ -63,8 +59,6 @@ class Logger:
         self._emit("error", mensagem, dados)
 
 
-def create_logger(
-    modulo: str, nivel_minimo: str, campos_sensiveis: Sequence[str]
-) -> Logger:
+def create_logger(modulo: str, nivel_minimo: str, campos_sensiveis: Sequence[str]) -> Logger:
     """`nivel_minimo` vem de config/api.json:logLevel — nunca literal no codigo."""
     return Logger(modulo, nivel_minimo, campos_sensiveis)
