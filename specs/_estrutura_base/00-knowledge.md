@@ -45,6 +45,7 @@ precisa agir sem pedido para cumprir o papel — hoje três: as normas sempre-re
 |---|---|
 | Escrever/revisar qualquer código | `padrao-escrita` **+** a `padrao-<linguagem>` do alvo |
 | **Criar um módulo, ou estruturar um sistema em módulos** | `code-modulo` — detecta sozinha se é sistema novo ou módulo novo |
+| **Transformar um módulo existente em módulo genérico reutilizável** | `code-generalizacao-modulo` — repositório próprio, sem rastro da origem |
 | Iniciar um repositório do zero (git, specs, projeto, 1º módulo, hooks) | `meta-iniciar-repositorio` |
 | Fechar uma tarefa de escrita/refactor antes de dizer "pronto" | `code-auditoria-padrao` (gate obrigatório) |
 | Saber se um código legado está conforme | `code-diagnostico` (read-only) · em escala: `/code1-auditar` |
@@ -114,6 +115,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | Skill | Quando |
 |---|---|
 | `code-modulo` | **Criar módulo ou sistema modular** conforme o template. Dois fluxos, detecção automática, HITL antes do scaffold, gate verde ao final. |
+| `code-generalizacao-modulo` | **Destilar um módulo existente** num módulo genérico, em repositório próprio — sem negócio e sem origem, com seis degraus de verificação. |
 | `code-auditoria-padrao` | **Gate de fechamento**: invoca os validadores de AST antes de declarar uma tarefa concluída. |
 | `code-diagnostico` | Diagnosticar conformidade de legado (read-only) e gerar backlog priorizado. |
 | `code-adequacao` | Adequar legado item por item, com rede de caracterização, **preservando comportamento**. |

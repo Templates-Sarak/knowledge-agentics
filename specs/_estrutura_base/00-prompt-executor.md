@@ -79,6 +79,9 @@ Suposição não registrada é reprovação garantida.
    Norma completa: `padrao-escrita`, `references/comentarios.md`.
 7. **Mudou comportamento? Tem teste.** Use a skill `test-*` indicada. Bug corrigido pede teste de regressão.
 8. **Gate bloqueou? Corrija a causa.** Nunca contorne, silencie nem desative. Contornar reprova a execução.
+   Plan que declarou `Gate: <regra>` (não `nenhum`) na §7 pede mais que isso: para cada limite e falso
+   positivo que a regra promete não ter, mostre no resumo a entrada exata e o resultado — suíte verde
+   prova que a regra roda, não que ela está certa ([[00-prompt-revisor]] §5.4).
 9. **Nada irreversível ou externo** (deploy, migration real, reescrita de histórico, `push`, deleção em
    massa) sem a instrução mandar — e, ainda assim, confirme com o usuário.
 
@@ -87,6 +90,8 @@ Suposição não registrada é reprovação garantida.
 # 4. Autoverificação (antes de entregar)
 
 - [ ] Rodei os testes/linters/validadores pedidos e **li** a saída.
+- [ ] Se a instrução declarou `Gate: <regra>` (§3, item 8): mostrei entrada exata e resultado para cada
+  limite/falso positivo que a regra promete não ter — não só suíte verde.
 - [ ] `git status` e `git diff` conferem com o escopo — nada a mais, nada a menos.
 - [ ] Percorri os critérios de aceite e sei apontar a evidência de cada um.
 - [ ] Sem debug, `TODO` novo, teste em skip, segredo ou hardcoded.

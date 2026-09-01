@@ -40,6 +40,11 @@ repita a investigação já feita. Sem história longa.
 - `caminho/do/arquivo.ext` — o que muda nele
 - `caminho/do/modulo/` — o que muda nele
 
+> **Plan que CRIA regra de gate lista o conjunto inteiro aqui, e ele é maior do que parece:** a regra
+> em si, a linha no catálogo (`arquitetura/04-regras.md`), o caso de teste, **e toda contagem de
+> regras citada em prosa** — inclusive fora da árvore do template, onde nenhuma catraca automática as
+> alcança. Ache-as varrendo (`grep`), nunca de memória.
+
 ## 3.2 Fora (o que NÃO pode ser tocado)
 - `caminho/intocavel.ext` — motivo
 - Qualquer refactor não listado em §5, mesmo que pareça óbvio.
@@ -85,6 +90,13 @@ Escrito **antes** da execução. Os comandos e checagens exatos do veredito:
 - `<comando de teste>` → verde.
 - `<validador>` → sem violação nova.
 - Leitura de `<arquivo:linha>` → confirma \<o que\>.
+- **Gate:** `<id da regra nova>` | `nenhum — <motivo em meia linha>`. **Obrigatória sempre** — a
+  obrigatoriedade está em DECLARAR, não em preencher: `nenhum` é a resposta mais comum e legítima, a
+  mesma economia do §8 (Destino da síntese). Critério de qual das três formas a verificação toma —
+  teste, regra de gate ou `--check` do gerador — vive em [[00-prompt-revisor]] §5.4; não repita aqui.
+  **Se a resposta não for `nenhum`, o "como verificar" acima não basta:** para cada limite que a regra
+  declara e cada falso positivo que promete não ter, exija a entrada exata e o resultado — suíte verde
+  não distingue "a regra está certa" de "a lei está mentindo sobre a regra".
 
 # 8. Destino da síntese
 

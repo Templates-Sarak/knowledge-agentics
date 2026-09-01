@@ -95,6 +95,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 |---|---|
 | Iniciar um repositório do zero | skill `meta-iniciar-repositorio` → `spec-fundacao` → `git-commit-inicial` |
 | Criar um módulo, ou um sistema modular | skill `code-modulo` |
+| **Transformar um módulo existente em módulo genérico de prateleira** | skill `code-generalizacao-modulo` (um módulo, um repositório) |
 | **Adequar um sistema legado ao template** | skill `meta-adequacao-modular` (Fase A planeja · Fase B confere) |
 | Adequar código legado ao Nível 0 | `/code1-auditar` → `/code2-caracterizar` → `/code3-adequar` |
 | Auditar segurança | `/cyber1-auditar` → `/cyber2-adequar` |
@@ -295,7 +296,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 | Área | skill | hook | command | agent |
 |---|---|---|---|---|
-| `code-` | `code-diagnostico`, `code-adequacao`, `code-modulo` … (9) | — | ✅ `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar`, `/code-entregar` | ✅ `code-auditor`, `code-adequador`, `code-revisor` |
+| `code-` | `code-diagnostico`, `code-adequacao`, `code-modulo`, `code-generalizacao-modulo` … (10) | — | ✅ `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar`, `/code-entregar` | ✅ `code-auditor`, `code-adequador`, `code-revisor` |
 | `cyber-` | `cyber-segredos` … `cyber-infra` (9) | `cyber-git-seguro`, `cyber-dependencias` | ✅ `/cyber1-auditar`, `/cyber2-adequar` | ✅ `cyber-auditor` |
 | `git-` | `git-especialista-repositorio`, `git-verificacao-commit`, `git-revisao-diff` | _(pre-commit)_ | ✅ `/git1-auditar`, `/git2-adequar` | ✅ `git-auditor` |
 | `test-` | `test-unitario` … `test-carga` (6) | `test-cobertura` | ⬜ | ⬜ |
@@ -311,12 +312,12 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 ## 7. Inventário atual
 
-### Skills (51, por área)
+### Skills (52, por área)
 
 | Prefixo | Skills |
 |---|---|
 | `padrao-` (3) | `padrao-escrita`, `padrao-python`, `padrao-typescript` |
-| `code-` (9) | `code-adequacao`, `code-assinatura`, `code-auditoria-padrao`, `code-diagnostico`, `code-documentacao`, `code-entrega`, `code-licenca`, `code-limpeza-projeto`, `code-modulo` |
+| `code-` (10) | `code-adequacao`, `code-assinatura`, `code-auditoria-padrao`, `code-diagnostico`, `code-documentacao`, `code-entrega`, `code-generalizacao-modulo`, `code-licenca`, `code-limpeza-projeto`, `code-modulo` |
 | `spec-` (3) | `spec-fundacao`, `spec-site-fundacao`, `spec-write` |
 | `test-` (6) | `test-api-contrato`, `test-carga`, `test-e2e`, `test-integracao-api`, `test-unitario`, `test-ws-realtime` |
 | `db-` (1) | `db-migrations` |

@@ -112,7 +112,7 @@ Critério: um executor **sem nenhum contexto desta conversa** realiza a plan len
 | **Referências** | Specs fixas + **skills por nome** + arquivos a ler. **Exaustiva**: o prompt é ponteiro e não repete nada daqui, então o que não estiver aqui não será carregado — e contexto que só existiu no prompt já se perdeu na segunda rodada, porque o executor relê a plan, não a conversa. |
 | **Instruções** | Passos numerados. Um passo = uma ação com critério de pronto. |
 | **Critérios de aceite** | Checklist `- [ ]` objetivo, cada item verificável por você em §7.1. |
-| **Como verificar** | Os comandos exatos do seu veredito. Escritos **antes** da execução. |
+| **Como verificar** | Os comandos exatos do seu veredito. Escritos **antes** da execução — inclusive a linha `Gate:`, sempre presente (mesmo `nenhum`). Critério de qual forma a verificação toma: §5.4. |
 | **Destino da síntese** | Obrigatório, inclusive `—`. Ver §5.2. |
 | **Resumo / Veredito / Síntese** | Cabeçalhos vazios, append-only, reservados a executor e a você. |
 
@@ -155,6 +155,25 @@ ar; pule o passo 6"). Sentiu falta de outra coisa? O defeito está na §4 da pla
 Uma plan = uma responsabilidade (dois "e" independentes = duas plans com dependência) · grande demais para
 verificar de uma vez é grande demais para existir · muda comportamento → exige teste (aponte a skill `test-*`)
 · legado sem cobertura → caracterização **antes**.
+
+**Que FORMA a verificação por máquina toma — decida na criação da plan, nunca na execução.** Todo
+invariante novo tem exatamente um dono:
+
+- vale só sobre ESTE módulo, é comportamento observável dele → **teste** do módulo (aponte a skill
+  `test-*`);
+- vale para TODO módulo, ou é sobre a RELAÇÃO entre módulos → **regra de gate** — nenhum teste enxerga
+  o vizinho, é a única forma que faz isso;
+- é sobre um ARQUIVO DERIVADO de outra fonte → **`--check` do gerador**, o idioma que o template já
+  usa (`sync-env --check`, `generate-port-schemas --check`, `lint-derivado`).
+
+O resultado vira a linha `Gate:` na §7 da plan (`template-plan.md`) — declarada sempre, `nenhum` incluso.
+
+**Duas travas contra o catálogo de regras inflar:**
+
+- **No máximo uma regra de gate por plan.** Duas regras são dois invariantes — duas plans, mesmo que
+  nasçam da mesma investigação.
+- **Regra para a qual não se consegue escrever um caso que FALHA não é regra.** É recomendação; a plan
+  pediu a coisa errada, reformule o objetivo antes de prosseguir.
 
 **Ao criar, na mesma ação:** grave a plan `🔴` · adicione a linha no `00-indice` · entregue na conversa o
 caminho, o prompt (§5.3) e as dependências pendentes.
@@ -366,8 +385,9 @@ o motivo.
 
 **Ao criar uma plan:** objetivo em uma frase · escopo dentro **e** fora · §4 exaustiva (nada só no prompt) ·
 instruções verificáveis · exigência de teste se muda comportamento · critérios de aceite + "como verificar"
-preenchidos antes · `destino_sintese` declarado (inclusive `—`) · ADR só se passou a régua §5.2 · prompt na
-conversa · linha no `00-indice` · nenhum código tocado.
+preenchidos antes · linha `Gate:` declarada (inclusive `nenhum`, critério em §5.4) · `destino_sintese`
+declarado (inclusive `—`) · ADR só se passou a régua §5.2 · prompt na conversa · linha no `00-indice` ·
+nenhum código tocado.
 
 **Na via direta:** nenhum arquivo criado · prompt completo (objetivo, dentro, fora, referências, pronto
 quando) · uma tarefa só · nada a sintetizar, confirmado contra o diff.
