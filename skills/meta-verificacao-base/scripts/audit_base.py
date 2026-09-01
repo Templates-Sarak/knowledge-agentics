@@ -26,6 +26,7 @@ from nomenclatura import (  # noqa: E402
     prefixos_do_texto,
     raiz_do_prefixo,
 )
+from paridade import auditar_paridade, divergencias as divergencias_de_paridade  # noqa: E402
 from proatividade import (  # noqa: E402
     PROATIVAS,
     auditar_proatividade,
@@ -236,12 +237,60 @@ def autoteste():
             f"hooks_wireados deveria dedupar o hook repetido em dois eventos (achou {nomes!r})"
         )
 
+    # Tarefa 8: paridade entre specs/_estrutura_base e specs/_estrutura_base_site — par identico
+    # nao acusa, CRLF vs LF do MESMO conteudo nao e divergencia real, arquivo que so existe de um
+    # lado nao acusa (e o desenho, nao defeito), excecao declarada nao acusa mesmo divergindo, e
+    # par realmente divergente acusa nomeando o arquivo.
+    par_identico = divergencias_de_paridade(
+        {"x.md": "igual\n"}, {"x.md": "igual\n"}, excecoes={}
+    )
+    if par_identico != []:
+        falhas.append(
+            f"divergencias (paridade) nao deveria acusar par identico (achou {par_identico!r})"
+        )
+    so_fim_de_linha = divergencias_de_paridade(
+        {"x.md": "um\r\ndois\r\n"}, {"x.md": "um\ndois\n"}, excecoes={}
+    )
+    if so_fim_de_linha != []:
+        falhas.append(
+            f"divergencias (paridade) nao deveria acusar CRLF vs LF do mesmo conteudo (achou {so_fim_de_linha!r})"
+        )
+    so_de_um_lado = divergencias_de_paridade(
+        {"x.md": "a", "so-aqui.md": "y"}, {"x.md": "a"}, excecoes={}
+    )
+    if so_de_um_lado != []:
+        falhas.append(
+            f"divergencias (paridade) nao deveria acusar arquivo que so existe de um lado (achou {so_de_um_lado!r})"
+        )
+    isento = divergencias_de_paridade(
+        {"README.md": "a"}, {"README.md": "b"}, excecoes={"README.md": "motivo"}
+    )
+    if isento != []:
+        falhas.append(
+            f"divergencias (paridade) nao deveria acusar arquivo isento por excecao (achou {isento!r})"
+        )
+    par_divergente = divergencias_de_paridade({"x.md": "a"}, {"x.md": "b"}, excecoes={})
+    if len(par_divergente) != 1 or "x.md" not in par_divergente[0]:
+        falhas.append(
+            f"divergencias (paridade) deveria acusar par divergente, nomeando o arquivo (achou {par_divergente!r})"
+        )
+    # Achado da rodada de correção: filtro por extensão ".md" contradizia a docstring ("arquivo
+    # compartilhado NOVO nasce COBRADO por default"). Agora o recorte é por PASTA, nunca por
+    # extensão — par não-`.md` divergente tem de acusar, texto ou binário (bytes).
+    par_nao_md_diverge = divergencias_de_paridade(
+        {"config.json": '{"a": 1}'}, {"config.json": '{"a": 2}'}, excecoes={}
+    )
+    if len(par_nao_md_diverge) != 1 or "config.json" not in par_nao_md_diverge[0]:
+        falhas.append(
+            f"divergencias (paridade) deveria acusar par nao-.md divergente (achou {par_nao_md_diverge!r})"
+        )
+
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 32/32 ok")
+    print("autoteste (audit_base): 38/38 ok")
     return 0
 
 
@@ -258,6 +307,7 @@ def audit_base(base_dir):
         "nomenclatura": [],
         "proatividade": [],
         "secoes": [],
+        "paridade": [],
     }
 
     # 1. Agents
@@ -350,6 +400,11 @@ def audit_base(base_dir):
 
     # 5e. Secoes obrigatorias do molde: "## Quando usar", "## Regras...", "## Checklist..."
     report["secoes"] = auditar_secoes(base_dir)
+
+    # 5f. Paridade: specs/_estrutura_base/ e specs/_estrutura_base_site/ ensinam o MESMO fluxo
+    # SDD — todo .md presente nas duas arvores tem de ser identico, exceto a divergencia
+    # declarada em paridade.EXCECOES (ver paridade.py)
+    report["paridade"] = auditar_paridade(base_dir)
 
     # 6. Vazamentos
     patterns = {

@@ -172,8 +172,8 @@ const REGISTRO = [
  * `otimizacao-nivel-1/scripts/auditar_assets.py`, `site-seo/scripts/auditar_seo.py` — erram para
  * MENOS gravidade (relatório incompleto), nunca para aprovação falsa, e por isso ficam de fora de
  * propósito nesta rodada. (`meta-verificacao-base/scripts/{limiares,ponteiros,nomenclatura,
- * proatividade,secoes}.py` NÃO entram nesta lista: são módulos importados por `audit_base.py`,
- * provados pelo `--autoteste` DELE, não scripts standalone.)
+ * proatividade,secoes,contagens,paridade}.py` NÃO entram nesta lista: são módulos importados por
+ * `audit_base.py`, provados pelo `--autoteste` DELE, não scripts standalone.)
  *
  * 4 hooks sem `--autoteste`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —
  * a parte pura de cada um ainda não foi separada da chamada de ferramenta externa (gitleaks/

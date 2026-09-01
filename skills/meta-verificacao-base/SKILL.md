@@ -55,3 +55,11 @@ Trate **a base inteira** como um único bloco.
   editorial vira dono de decisão que não é dele. As isenções estão documentadas no topo do arquivo: ele
   resolve só o que consegue ancorar sem ambiguidade e **prefere falso negativo a falso positivo**, como a
   família heurística do gate (`04-regras.md` §7.2).
+- `scripts/paridade.py` — chamada pelo `audit_base.py`: cobra que `specs/_estrutura_base/` e
+  `specs/_estrutura_base_site/` ensinam o MESMO fluxo SDD. Compara **TODO arquivo, de qualquer
+  extensão**, presente nas duas árvores e exige identidade — exceto a divergência **declarada** em
+  `paridade.EXCECOES` (hoje `00-contexto.md`, `INDEX.md`, `README.md`, cada um com o motivo ao
+  lado) e as pastas geradas/cache de `paridade.PASTAS_IGNORADAS` (`.ruff_cache` e afins — nunca
+  conteúdo do repositório). Arquivo que só existe numa das árvores é o desenho (specs próprias do
+  site), não achado. Fim de linha (CRLF/LF) é
+  normalizado antes de comparar, nunca contado como divergência de conteúdo.
