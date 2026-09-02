@@ -105,7 +105,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ **50** skills por área (§7) |
+| `skills/` | ✅ **52** skills por área (§7) |
 | `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
 | `hooks/` | ✅ **5** hooks · **4** garantias (segredo no git, padrão de escrita, dependências, cobertura — `hooks/README.md`) |
@@ -318,7 +318,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 |---|---|
 | `padrao-` (3) | `padrao-escrita`, `padrao-python`, `padrao-typescript` |
 | `code-` (10) | `code-adequacao`, `code-assinatura`, `code-auditoria-padrao`, `code-diagnostico`, `code-documentacao`, `code-entrega`, `code-generalizacao-modulo`, `code-licenca`, `code-limpeza-projeto`, `code-modulo` |
-| `spec-` (3) | `spec-fundacao`, `spec-site-fundacao`, `spec-write` |
+| `spec-` (4) | `spec-fundacao`, `spec-revisao`, `spec-site-fundacao`, `spec-write` |
 | `test-` (6) | `test-api-contrato`, `test-carga`, `test-e2e`, `test-integracao-api`, `test-unitario`, `test-ws-realtime` |
 | `db-` (1) | `db-migrations` |
 | `deploy-` (2) | `deploy-docker`, `deploy-vercel` |

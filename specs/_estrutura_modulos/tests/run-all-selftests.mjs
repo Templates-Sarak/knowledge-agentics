@@ -151,6 +151,7 @@ const REGISTRO = [
   { caminho: 'skills/code-generalizacao-modulo/scripts/verificar_neutralidade.py', runtime: 'python' },
   { caminho: 'skills/code-generalizacao-modulo/scripts/verificar_entregavel.py', runtime: 'python' },
   { caminho: 'skills/cyber-segredos/scripts/scan_segredos.py', runtime: 'python' },
+  { caminho: 'skills/spec-revisao/scripts/verificar_paridade.py', runtime: 'python' },
   { caminho: 'skills/padrao-python/scripts/validate.py', runtime: 'python' },
   { caminho: 'skills/padrao-typescript/scripts/validate.mjs', runtime: 'node' },
   { caminho: 'hooks/_lib.js', runtime: 'node' },

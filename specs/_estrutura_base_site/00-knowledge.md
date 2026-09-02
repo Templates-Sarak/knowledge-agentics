@@ -69,6 +69,7 @@ precisa agir sem pedido para cumprir o papel — hoje três: as normas sempre-re
 | Estruturar logging / métricas e alertas | `obs-logs` · `obs-monitoramento` |
 | Publicar na Vercel / containerizar | `/deploy-vercel` · `/deploy-docker` |
 | Escrever ou padronizar uma spec | `spec-write` |
+| Conferir se as specs ainda batem com o código | `spec-revisao` |
 | Registrar um achado que não é para agora | `00-backlog.md` — o revisor escreve; ninguém executa |
 | Definir o alicerce arquitetural de um repo novo | `spec-fundacao` |
 | Criar/revisar uma skill | `meta-create-skill` · `/meta-criar-skill` |
@@ -132,6 +133,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `spec-write` | Traduzir ideia/requisito em spec padronizada (usa os moldes de `_templates/`). |
 | `spec-fundacao` | Wizard HITL do alicerce arquitetural/tecnológico de um repo novo → gera os ADRs. |
 | `spec-site-fundacao` | Idem, para projeto de site (institucional/marketing). |
+| `spec-revisao` | Contraprova de paridade specs × código (e specs × specs) — read-only, aponta divergência e propõe o canal. |
 
 ## 4.4 `test-` — testes
 
