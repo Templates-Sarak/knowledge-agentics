@@ -19,11 +19,6 @@ O **mapa do trabalho em andamento**. Responde a duas perguntas, sempre:
 plan só existe enquanto não foi sintetizada. **Sintetizar remove a plan e a linha, na mesma ação**
 ([[00-prompt-revisor]] §7.4): a verdade passa a viver na spec fixa de destino, e o rastro completo, no Git.
 
-**Exceção — plan retida.** Uma plan sintetizada pode **ficar** quando outra plan aberta ainda precisa dela
-como contexto de execução. Isso é declarado no campo `retida_por` do frontmatter, e **expira sozinho**: no
-instante em que a plan citada é sintetizada, a retida sai junto. Sem `retida_por` preenchido, sintetizou →
-saiu. É a única razão para uma plan sintetizada existir em disco.
-
 Por isso o tamanho deste arquivo é limitado pelo **trabalho aberto**, não pela idade do repositório. Índice
 que cresce é índice quebrado.
 
@@ -123,12 +118,11 @@ Toda plan declara, **desde o momento em que é escrita**, para onde seu conteúd
   checagem vem **antes** de escrever qualquer coisa — o usuário commita a plan primeiro, e só então a síntese
   acontece inteira. Nunca sintetize agora para remover depois: isso cria uma plan sintetizada em disco sem
   status que a descreva.
-- **Plan retida (`retida_por`) é exceção declarada, não estado.** Ela fica com a linha aqui, na posição em
-  que estava, e o campo *Destino* passa a mostrar `sintetizada · retida por plan-NN`. Some no mesmo ato em
-  que a plan citada é sintetizada. `retida_por` apontando para plan que não existe mais é defeito: remova.
 - **Dependência é contrato:** não libere (`🔴`) uma plan cuja dependência ainda esteja aberta. Dependência
   que sumiu da tabela **foi sintetizada** — logo já está embutida na spec fixa de destino, e deixa de ser
-  "plan-NN" para ser essa spec.
+  "plan-NN" para ser essa spec. **Plan sintetizada nunca fica em disco para servir de contexto a outra**: se
+  a dependente precisa de algo que a spec fixa não carrega, a síntese estava incompleta — o revisor a
+  completa **antes** de remover ([[00-prompt-revisor]] §7.4).
 - **Plan nunca referencia outra plan como fonte de conteúdo** — só `depende_de`, que é ordem de execução.
 - **Uma plan `🟡 Em execução` por vez**, salvo plans comprovadamente disjuntas (arquivos sem interseção) — o
   revisor declara a disjunção ao liberar as duas.

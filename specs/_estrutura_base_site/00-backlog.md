@@ -56,7 +56,8 @@ via normal.
 >
 > - **#** — sequencial simples. Reaproveitável: sai um, o número volta a ficar livre. Isto **não** é `plan-NN`.
 > - **Achado** — o que há de errado, em uma frase, com `arquivo:linha` quando existir.
-> - **Origem** — `plan-NN`, `via direta` ou `ritual`. Rastreia de onde veio, sem prender o item a nada.
+> - **Origem** — `execução`, `via direta` ou `ritual`. **Nunca `plan-NN`**: a plan é removida na síntese e a
+>   referência morre. Saber que o achado veio de uma execução basta; de qual plan, não ajuda depois que ela sai.
 > - **Registrado em** — data absoluta (`AAAA-MM-DD`).
 > - **Peso** — `alto` · `médio` · `baixo`. É uma dica ao usuário, não uma fila: nada aqui é agendado.
 

@@ -249,7 +249,8 @@ conversa**, não em arquivo.
    encapsulamento de módulo, `shared/` sem lógica.
 7. **Sinais de atalho** — `TODO`/`FIXME` novos, debug esquecido, teste comentado ou em skip, `any`/cast para
    calar tipo, hook contornado, dependência sem justificativa, arquivo apagado sem instrução, **comentário
-   citando uma plan** (proibido — `padrao-escrita`, `references/comentarios.md`).
+   citando uma plan** (proibido — `padrao-escrita`, `references/comentarios.md`) e **spec fixa citando uma
+   plan**, na prosa ou em `relacionados` (§7.4 passo 5 — o ponteiro morre na síntese).
 8. **Regressão** — rode a suíte, não deduza.
 
 **Reprova sempre:** escopo excedido sem justificativa · critério atendido "por interpretação" · suíte
@@ -311,8 +312,23 @@ você propõe (§7.2) e espera. Autorização parcial é válida.
    | "Refatoramos `auth.ts`" | (nada — refactor tem destino `—`) |
 
    **Bug corrigido nunca aparece na spec fixa** — nem o defeito, nem o ato de corrigir.
-4. **Preserve o que continua válido**; atualize `status` e `relacionados` da spec de destino.
-5. **Revise o `00-contexto` em toda síntese**, mesmo que nenhum destino o cite. *Nada a mudar* é resultado
+4. **Sintetizar é substituir, não acrescentar.** Antes de escrever **cada** linha, três perguntas:
+
+   1. **A spec fixa já diz isto**, mesmo com outras palavras? → **não escreva.** Não havia o que transportar.
+   2. **Isto substitui algo que está lá?** → **reescreva a frase existente**, no lugar dela. Duas frases sobre
+      a mesma regra fazem a spec ter duas respostas, e a próxima leitura não sabe qual vale.
+   3. **É regra, ou é exemplo e história da execução?** → só regra entra.
+
+   > **Síntese que só acrescenta é suspeita.** Numa spec fixa madura, a maioria das sínteses ou não escreve
+   > nada, ou reescreve uma frase. Crescimento monotônico é sinal de que se está registrando execução em vez
+   > de consolidar verdade — e spec inflada deixa de ser lida, que é o mesmo que não existir.
+
+   Preserve o que continua válido, e atualize `status` da spec de destino.
+5. **A spec fixa NUNCA cita uma plan.** Nem na prosa, nem em `relacionados`, nem num ADR. A plan é removida
+   na síntese, e o ponteiro morre no mesmo ato. A verdade transportada não carrega procedência — procedência
+   é o Git (`git log --diff-filter=D -- specs/plan/plan-NN-*.md`). O `relacionados` da spec de destino aceita
+   **só outras specs fixas**.
+6. **Revise o `00-contexto` em toda síntese**, mesmo que nenhum destino o cite. *Nada a mudar* é resultado
    legítimo; pular a checagem não é.
 
 **Trava, ANTES de escrever qualquer coisa:** `git log --oneline -- specs/plan/plan-NN-*.md`. **Vazio? A plan
@@ -322,18 +338,19 @@ nenhum status descreve.
 
 **Como fechar — tudo na mesma ação:**
 
-1. Acrescente o bloco `## Síntese — AAAA-MM-DD` à plan (o que foi transportado, o que ficou de fora). Ele
-   existe para aparecer no diff do commit de remoção, que é onde o rastro passa a viver.
+1. Acrescente o bloco `## Síntese — AAAA-MM-DD` à plan, com **duas** coisas: o que foi transportado, e **o
+   que você decidiu NÃO transportar, com o motivo**. A segunda é obrigatória e é o que torna a régua do
+   passo 4 auditável — sem ela, não escrever vira omissão silenciosa em vez de decisão. O bloco existe para
+   aparecer no diff do commit de remoção, que é onde o rastro passa a viver.
 2. `git rm` da plan **e** remoção da linha do `00-indice`.
 3. Diga ao usuário que o commit agora sai inteiro: código, spec fixa e a remoção da plan na mesma unidade.
 
-**Exceção — plan retida.** Outra plan **aberta** ainda precisa desta como contexto de execução? Então ela
-fica: preencha `retida_por: "plan-NN"` no frontmatter, mantenha a linha no `00-indice` com *Destino* =
-`sintetizada · retida por plan-NN`, e **não** remova. A retenção **expira sozinha** — quando `plan-NN` for
-sintetizada, esta sai junto, no mesmo ato. Reter sem `retida_por` preenchido, ou apontando para plan que já
-não existe, é defeito.
+**Outra plan depende desta?** Antes de sintetizar, confirme que **o que a dependente precisa está na spec
+fixa**. Se estiver, remova normalmente: a dependente passa a ler a spec fixa, e a dependência deixa de ser
+"plan-NN" para ser essa spec. Se **não** estiver, a síntese está incompleta — **termine-a** e só então remova.
 
-Fora dessa exceção: nada fica marcado como "já sintetizado, aguardando limpeza". **Sintetizou, saiu.**
+Plan sintetizada **não fica em disco por dependência**: guardar a plan seria admitir que a spec fixa não
+carrega a verdade, que é exatamente o que a síntese promete. **Sintetizou, saiu** — sem exceção.
 
 ---
 
@@ -368,13 +385,16 @@ Grave a ponto de não poder esperar? Então não é backlog — é demanda; leve
 4. **Não sintetize sem autorização.** Proponha e espere.
 5. **Não deixe status divergente** entre a plan e o `00-indice`, nem `status` de frontmatter desatualizado.
 6. **Não renumere plan.** `NN` é definitivo, vem de `proximo_numero_plan`, nunca reaproveitado.
-7. **Não deixe plan sintetizada em disco.** Síntese e remoção são uma ação só (§7.4). A única exceção é a
-   plan **retida** por outra ainda aberta, e ela exige `retida_por` preenchido — retenção sem declaração é
-   resíduo. A trava do `git log` vem **antes** da síntese, não entre ela e a remoção.
-8. **Não use a via direta para fugir da documentação**, nem crie plan por reflexo. Os dois erros custam: um
+7. **Não deixe plan sintetizada em disco, nem por dependência.** Síntese e remoção são uma ação só (§7.4),
+   sem exceção. A trava do `git log` vem **antes** da síntese, não entre ela e a remoção.
+8. **Não deixe spec fixa apontando para plan** — nem prosa, nem `relacionados`, nem ADR. É ponteiro que morre
+   no mesmo ato em que você remove a plan.
+9. **Não use a via direta para fugir da documentação**, nem crie plan por reflexo. Os dois erros custam: um
    apaga verdade, o outro entope o índice.
-9. **Não promova escolha óbvia a ADR.** Sem duas alternativas reais com custo nomeado, não é ADR (§5.2).
-10. **Não duplique conteúdo** — nem de skill/spec dentro de plan, nem de plan dentro de prompt.
+10. **Não promova escolha óbvia a ADR.** Sem duas alternativas reais com custo nomeado, não é ADR (§5.2).
+11. **Não infle spec fixa.** Síntese é substituição (§7.4 passo 4); acrescentar ao lado do que já existe cria
+    duas respostas para a mesma pergunta.
+12. **Não duplique conteúdo** — nem de skill/spec dentro de plan, nem de plan dentro de prompt.
 
 ---
 
@@ -401,6 +421,9 @@ descartados com o motivo dito** · veredito escrito (na plan, ou na conversa) ·
 informado.
 
 **Ao sintetizar:** **`git log` conferido ANTES de escrever** · destino respeitado como declarado ·
-transportado o que o **diff** confirma, no presente, sem narrativa nem menção a bug · `00-contexto` revisado
-ou confirmado sem mudança · bloco `## Síntese` escrito · plan removida **e** linha do índice removida — ou
-`retida_por` preenchido, se outra plan aberta ainda a usa como contexto · nenhum commit, nenhuma co-autoria.
+transportado o que o **diff** confirma, no presente, sem narrativa nem menção a bug · **três perguntas do
+passo 4 aplicadas linha a linha** (o que a spec já dizia não foi reescrito ao lado) · **nenhuma citação a
+plan** na spec fixa, prosa ou `relacionados` · plan de que outra depende: confirmado que o necessário está na
+spec fixa **antes** de remover · `00-contexto` revisado ou confirmado sem mudança · bloco `## Síntese` com o
+transportado **e o não-transportado com motivo** · plan removida **e** linha do índice removida · nenhum
+commit, nenhuma co-autoria.

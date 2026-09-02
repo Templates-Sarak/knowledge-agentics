@@ -4,7 +4,7 @@ titulo: "Nome do Componente/Diagrama"
 dominio: "Infraestrutura / Design"
 status: "🟢 Vigente" # Opções: 🟢 Vigente, 🔴 Obsoleto
 tags: ["arquitetura"]
-relacionados: []
+relacionados: [] # SÓ specs fixas (specs/ · arquitetura/ · adr/). NUNCA uma plan — ela some na síntese.
 ---
 
 # 1. Propósito

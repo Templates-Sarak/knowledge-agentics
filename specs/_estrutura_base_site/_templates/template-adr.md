@@ -3,7 +3,7 @@ tipo: "adr"
 titulo: "Título Curto e Direto (Ex: Escolha do PostgreSQL)"
 status: "Proposto" # Opções: Proposto, 🟢 Aceito, Rejeitado, 🔴 Substituído
 tags: ["adr"]
-relacionados: []
+relacionados: [] # SÓ specs fixas e outros ADRs. NUNCA uma plan — ela some na síntese.
 substitui: ""      # Ex: [[001-escolha-mysql]]
 substituido_por: ""
 alternativas_consideradas: # OBRIGATÓRIO, no mínimo 2 — ver o portão abaixo

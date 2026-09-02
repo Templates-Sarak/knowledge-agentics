@@ -5,7 +5,8 @@ dominio: "Nome do Módulo (Ex: Autenticação)"
 status: "🔴 A Implementar" # Opções: 🔴 A Implementar, 🟡 Em Progresso, 🟢 Implementado
 prioridade: "Alta"
 tags: ["spec"]
-relacionados: [] # Ex: [[02-banco-de-dados]]
+relacionados: [] # Ex: [[02-banco-de-dados]]. SÓ specs fixas (specs/ · arquitetura/ · adr/).
+                 # NUNCA uma plan: ela é removida na síntese e o ponteiro morre junto.
 ---
 
 # 1. Visão Geral
