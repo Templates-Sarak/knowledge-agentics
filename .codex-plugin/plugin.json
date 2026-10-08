@@ -1,0 +1,22 @@
+{
+  "name": "sarak",
+  "version": "1.0.0",
+  "description": "Ecossistema de inteligência Sarak com skills e guardrails de engenharia.",
+  "author": {
+    "name": "Igor Sarak",
+    "email": "igorsarak@gmail.com"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Sarak",
+    "shortDescription": "Skills e guardrails de engenharia.",
+    "longDescription": "Ecossistema Sarak de skills, padrões e hooks para engenharia de software.",
+    "developerName": "Igor Sarak",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Use a skill Sarak para revisar este projeto.",
+      "Aplique os padrões Sarak nesta alteração."
+    ]
+  }
+}

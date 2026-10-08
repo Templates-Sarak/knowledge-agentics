@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { readInput, denyPreTool, askPreTool, allow, commandExists, loadConfig, run } = require("./_lib");
+const { readInput, denyPreTool, askOrDenyPreTool, allow, commandExists, loadConfig, run } = require("./_lib");
 
 const input = readInput();
 const cmd = input.tool_input?.command || "";
@@ -102,6 +102,6 @@ if (!abaixo.length) {
   allow();
 }
 if (modo === "block") denyPreTool(msg);
-if (modo === "ask") askPreTool(msg);
+if (modo === "ask") askOrDenyPreTool(msg);
 process.stderr.write(`[test-cobertura] AVISO:\n${msg}\n`); // modo warn: prossegue avisando
 allow();

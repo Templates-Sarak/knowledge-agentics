@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "sarak",
+  "version": "1.0.0",
+  "description": "Ecossistema de inteligência Sarak com skills e guardrails de engenharia.",
+  "author": {
+    "name": "Igor Sarak",
+    "email": "igorsarak@gmail.com"
+  }
+}

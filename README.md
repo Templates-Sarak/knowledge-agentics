@@ -118,11 +118,11 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | O que é | Como dispara | Onde mora |
 |---|---|---|---|
-| **CLAUDE.md** | Inegociáveis sempre no contexto | **Automático** — toda sessão | raiz (projeto) e `~/.claude` (global) |
+| **CLAUDE.md / AGENTS.md** | Inegociáveis sempre no contexto | **Automático** — toda sessão | `CLAUDE.md` no Claude; `AGENTS.md` no Codex |
 | **skills/** | Capacidade que o **modelo** usa quando faz sentido | Modelo decide pela `description`, **ou** você digita `/nome` | `skills/<nome>/SKILL.md` (3 camadas) |
 | **commands/** | **Atalho** de prompt que **você** dispara | **Manual** — você digita `/nome` | `commands/<nome>.md` |
 | **agents/** | **Subagente** com contexto próprio | Modelo **delega** (`Task`) ou você cita pelo nome | `agents/<nome>.md` |
-| **hooks/** | Comando shell em **eventos** do harness | **Automático/determinístico** no evento — **Claude Code apenas** (ver nota abaixo) | `hooks/hooks.json` (scripts em `hooks/`) |
+| **hooks/** | Comando shell em **eventos** do harness | **Automático/determinístico** no evento — Claude Code e Codex (ver nota abaixo) | `hooks/hooks.json` (scripts em `hooks/`) |
 | **specs/** | A **doutrina** e o **template** replicável (§2) | Copiado no início do projeto + `validate.mjs` | `specs/` |
 | **plugin/** | Sincronizador para IDEs sem marketplace | **Manual** (`sync_ide.py`) | `plugin/` |
 | **settings.json** | Configuração (permissões, env, model, hooks) | **Automático** | `.claude/settings.json` |
@@ -131,10 +131,10 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 > **Regra de ouro do disparo:** **hooks garantem** (determinístico) · **skills/agents o modelo decide**
 > (julgamento pela `description`) · **commands você dispara** (`/`) · **CLAUDE.md está sempre on**.
 
-> **A lacuna do `hooks/`, declarada.** "Hooks garantem" vale só dentro do **Claude Code** —
-> `hooks.json` é wiring nativo dele (`PreToolUse`/`PostToolUse`). O `plugin/sync_ide.py` copia
+> **A lacuna do `hooks/`, declarada.** "Hooks garantem" vale dentro do **Claude Code** e do
+> **Codex** — ambos usam o wiring `PreToolUse`/`PostToolUse`. O `plugin/sync_ide.py` copia
 > `hooks/` para o diretório do Antigravity também, mas **nada liga os scripts lá**: não existe
-> equivalente de `hooks.json` nesse provedor. Fora do Claude Code, as quatro garantias
+> equivalente de `hooks.json` nesse provedor. Fora de Claude Code e Codex, as quatro garantias
 > determinísticas (segredo no git, dependências, cobertura, padrão de escrita) **não rodam** — a
 > skill/norma que cada hook operacionaliza continua valendo por julgamento do modelo, só sem a
 > garantia mecânica. Não há equivalente implementado para outros provedores; isto é lacuna
@@ -396,6 +396,14 @@ cd plugin
 python sync_ide.py --target all          # Claude + Antigravity
 python sync_ide.py --target antigravity  # só o Antigravity
 ```
+
+### Codex — plugin nativo
+
+O mesmo repositório também contém o manifesto Codex em `.codex-plugin/plugin.json` e o manifesto
+portátil `plugin.json`. No diretório de Plugins do Codex, adicione este repositório como marketplace,
+instale `sarak` e revise/autorize os hooks do plugin. Abra uma nova conversa após a instalação para
+o catálogo de skills e os hooks serem carregados. O Codex reconhece o marketplace legado em
+`.claude-plugin/marketplace.json`, preservando a distribuição já usada pelo Claude.
 
 ### Iniciar um projeto a partir do template
 

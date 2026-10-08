@@ -508,7 +508,7 @@ def instalar_estrutura_agents(target: Path, xskills_root: Path) -> Path:
 
 
 def escrever_entrypoint(target: Path, modular: bool) -> None:
-    """Passo 6b: o ponteiro sempre-ativo do CLAUDE.md do projeto-alvo."""
+    """Passo 6b: ponteiros sempre-ativos para Claude e Codex no projeto-alvo."""
     texto = (
         "\n\n> **Atencao (IA):** Sou um projeto Sarak. Antes de codificar, leia as regras de negocio "
         "locais em `.agents/index.md`.\n"
@@ -519,10 +519,11 @@ def escrever_entrypoint(target: Path, modular: bool) -> None:
             "normativo) e e cobrada por maquina: `node tools/gate/validate.mjs --all`. "
             "Modulo novo so pela skill `code-modulo` — nunca copiando pasta a mao.\n"
         )
-    claude_md = target / "CLAUDE.md"
-    with open(claude_md, "a" if claude_md.exists() else "w", encoding="utf-8") as arquivo:
-        arquivo.write(texto)
-    print("[OK] Entrypoint CLAUDE.md atualizado.")
+    for nome in ("CLAUDE.md", "AGENTS.md"):
+        caminho = target / nome
+        with open(caminho, "a" if caminho.exists() else "w", encoding="utf-8") as arquivo:
+            arquivo.write(texto)
+    print("[OK] Entrypoints CLAUDE.md e AGENTS.md atualizados.")
 
 
 def _marcar_executavel(caminho: Path) -> None:

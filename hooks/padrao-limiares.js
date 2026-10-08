@@ -20,7 +20,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { readInput, allow, blockPostTool, warnPostTool, commandExists, loadConfig, langOf, projectRoot, run } = require("./_lib");
+const { readInput, allow, blockPostTool, warnPostTool, commandExists, editedFiles, loadConfig, langOf, projectRoot, run } = require("./_lib");
 
 /**
  * A config do linter que o PROJETO declara, por área. Sem ela o hook não tem o que aplicar: os
@@ -177,61 +177,37 @@ function autoteste() {
 if (process.argv.includes("--autoteste")) process.exit(autoteste());
 
 const input = readInput();
-const fp = input.tool_input?.file_path || "";
-const lang = langOf(fp);
-if (!lang) allow();
-
 const cfg = loadConfig();
 const q = cfg.qualidade;
 const acao = acaoDoModo(q.modo);
 if (acao === "allow") allow();
 
 const sinaliza = acao === "block" ? blockPostTool : warnPostTool;
-const linter = cfg.linguagens[lang]?.linter;
-if (!linter) allow(); // area sem linter declarado na politica para estas regras
-
-// A raiz do projeto, ou o cwd. `projectRoot()` acha a raiz pelo `config/verification.json`; fora de um
-// projeto do template ela e nula, e ai o cwd e a melhor aproximacao que existe.
 const raiz = projectRoot() ?? process.cwd();
+const achados = [];
 
-const exe = acharLinter(raiz, linter);
-if (exe === null) {
-  sinaliza(
-    `${linter} não instalado — verificação de padrão de escrita (modo "${q.modo}"). ` +
-      `Instale ${linter} para validar limiares, ausência de print/console e exceção não engolida em ${lang}.`
-  );
-  allow();
+for (const fp of editedFiles(input)) {
+  const lang = langOf(fp);
+  if (!lang) continue;
+  const linter = cfg.linguagens[lang]?.linter;
+  if (!linter) continue;
+  const exe = acharLinter(raiz, linter);
+  if (exe === null) {
+    achados.push(`${linter} não instalado — verificação de padrão de escrita (modo "${q.modo}"). Instale ${linter} para validar ${lang}.`);
+    continue;
+  }
+  const temConfig = (CONFIGS_DE_LINTER[lang] ?? []).some((nome) => fs.existsSync(path.join(raiz, nome)));
+  if (!temConfig) {
+    achados.push(`Sem config de ${linter} na raiz de ${raiz} — os limiares vivem nessa config (modo "${q.modo}"). ${comoGerarAConfig(raiz)}`);
+    continue;
+  }
+  const marcas = marcadores(lang);
+  const res = marcas ? invocar(lang, exe, raiz, fp) : null;
+  const out = `${res?.stdout || ""}${res?.stderr || ""}`.trim();
+  if (violaPadrao(out, marcas)) {
+    achados.push(`Padrão de escrita violado em ${fp} pela config de ${linter}:\n${out.slice(0, 1500)}\nCorrija conforme a skill padrao-escrita.`);
+  }
 }
 
-// PROJETO SEM CONFIG DE LINTER: o hook SINALIZA e segue, nunca reprova por conta propria.
-//
-// Antes ele funcionava sem config porque carregava os proprios numeros — e era exatamente esse
-// atalho que criava a quarta copia dos limiares. Perdida a injecao, config ausente significa que
-// NAO HA limiar a aplicar, e inventar um seria repor o defeito. Quem decide a severidade disso e a
-// politica que ja existe: `qualidade.modo` (`warn` por padrao) — em `off` cala, em `warn` avisa, e
-// so em `block` cobra, porque ai foi o projeto que pediu para ser cobrado.
-const temConfig = (CONFIGS_DE_LINTER[lang] ?? []).some((nome) => fs.existsSync(path.join(raiz, nome)));
-if (!temConfig) {
-  sinaliza(
-    `Sem config de ${linter} na raiz de ${raiz} — os limiares vivem nessa config, então não há o que ` +
-      `aplicar aqui (modo "${q.modo}"). ${comoGerarAConfig(raiz)}`
-  );
-  allow();
-}
-
-const marcas = marcadores(lang);
-if (!marcas) allow();
-
-const res = invocar(lang, exe, raiz, fp);
-if (!res) allow();
-
-const out = `${res.stdout || ""}${res.stderr || ""}`.trim();
-if (violaPadrao(out, marcas)) {
-  sinaliza(
-    `Padrão de escrita violado em ${fp} — limiares, print/console e exceção engolida, tudo pela ` +
-      `config de ${linter} deste repositório:\n${out.slice(0, 1500)}\n` +
-      `Corrija conforme a skill padrao-escrita.`
-  );
-}
-
+if (achados.length > 0) sinaliza(achados.join("\n\n"));
 allow();

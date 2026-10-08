@@ -48,6 +48,27 @@ function askPreTool(reason) {
   });
 }
 
+/** Extrai arquivos afetados tanto do payload Claude quanto de um patch do Codex. */
+function editedFiles(input) {
+  const legacyPath = input?.tool_input?.file_path;
+  if (typeof legacyPath === "string" && legacyPath) return [legacyPath];
+
+  const patch = input?.tool_input?.command;
+  if (typeof patch !== "string") return [];
+
+  const files = new Set();
+  for (const match of patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm)) {
+    files.add(match[1].trim());
+  }
+  return [...files];
+}
+
+/** O Codex ainda não suporta `ask` no PreToolUse; bloqueia de forma explícita nesse runtime. */
+function askOrDenyPreTool(reason) {
+  if (process.env.PLUGIN_ROOT) denyPreTool(reason);
+  askPreTool(reason);
+}
+
 /** PostToolUse: devolve feedback ao modelo para corrigir (re-prompt). */
 function blockPostTool(reason) {
   emit({ decision: "block", reason });
@@ -215,6 +236,11 @@ function autoteste() {
   if (langOf("A.TSX") !== "js") falhas.push("langOf deveria ser case-insensitive (.TSX)");
   if (langOf("a.go") !== "go") falhas.push("langOf deveria reconhecer .go como go");
   if (langOf("a.rb") !== null) falhas.push("langOf deveria devolver null para extensao sem area");
+  const arquivosCodex = editedFiles({ tool_input: { command: "*** Update File: src/a.ts\n*** Add File: tests/a.test.ts\n" } });
+  if (arquivosCodex.join(",") !== "src/a.ts,tests/a.test.ts")
+    falhas.push("editedFiles deveria extrair os arquivos de um patch do Codex");
+  if (editedFiles({ tool_input: { file_path: "src/a.py" } }).join() !== "src/a.py")
+    falhas.push("editedFiles deveria preservar o payload de arquivo do Claude");
 
   const defaults = {
     qualidade: { modo: "warn" },
@@ -238,7 +264,7 @@ function autoteste() {
     process.stdout.write(`autoteste (_lib.js): ${falhas.length} falha(s)\n`);
     return 1;
   }
-  process.stdout.write("autoteste (_lib.js): 6/6 ok\n");
+  process.stdout.write("autoteste (_lib.js): 8/8 ok\n");
   return 0;
 }
 
@@ -249,8 +275,10 @@ module.exports = {
   commandExists,
   projectRoot,
   run,
+  editedFiles,
   denyPreTool,
   askPreTool,
+  askOrDenyPreTool,
   blockPostTool,
   warnPostTool,
   addContext,
