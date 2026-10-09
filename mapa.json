@@ -1,0 +1,126 @@
+{
+  "_doc": "Mapa dos sistemas que adotam esta base (moldes do fluxo SDD e, se modulares, o template de módulos). Lista QUAIS sistemas são — NÃO guarda versão: a versão de cada um vive no carimbo .sarak/base.json dentro do próprio sistema. 'caminho' e 'raiz_git' são relativos à raiz desta base, com '/'; 'raiz_git' só difere de 'caminho' quando o sistema é subpasta de um monorepo. tipo: app | site. binding: typescript | javascript | python | null (não se aplica ou não dá para determinar). situacao: ativo | adocao-posterior. 'repo' e 'raiz_git' podem ser null num sistema ainda sem git ou sem remoto. Quem atualiza: meta-iniciar-repositorio/scripts/carimbo.py (--registrar), chamado pelo init_repo.py e pela spec-site-fundacao, com HITL; à mão só para corrigir. O schema é cobrado pelo audit_base.py (categoria 'mapa').",
+  "sistemas": [
+    {
+      "id": "agentes-ads",
+      "nome": "ADS (Agentes)",
+      "caminho": "../Agentes/ADS",
+      "repo": "https://github.com/Templates-Sarak/Agents-ADS.git",
+      "raiz_git": "../Agentes/ADS",
+      "tipo": "app",
+      "modular": false,
+      "binding": "typescript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "sarak-lib-login",
+      "nome": "Sarak Lib Login",
+      "caminho": "../Biblioteca/Sarak-Lib-Login/login-completo",
+      "repo": "https://github.com/Lib-Sarak/Sarak-Lib-Login.git",
+      "raiz_git": "../Biblioteca/Sarak-Lib-Login/login-completo",
+      "tipo": "app",
+      "modular": true,
+      "binding": "typescript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "sarak-lib-ui-core",
+      "nome": "Sarak Lib UI Core",
+      "caminho": "../Biblioteca/Sarak-Lib-UI-Core",
+      "repo": "https://github.com/Lib-Sarak/Sarak-Lib-UI-Core.git",
+      "raiz_git": "../Biblioteca/Sarak-Lib-UI-Core",
+      "tipo": "app",
+      "modular": false,
+      "binding": "typescript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "setup-is-cripto",
+      "nome": "Setup IS — Cripto",
+      "caminho": "../Code - Cripto/Setup IS - Cripto",
+      "repo": "https://github.com/Setup-I-S/Govenranca-refatorada.git",
+      "raiz_git": "../Code - Cripto/Setup IS - Cripto",
+      "tipo": "app",
+      "modular": true,
+      "binding": "javascript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "recorta-artefatos",
+      "nome": "Recorta — artefatos",
+      "caminho": "../Earendel/Desenvolvimento/Recorta/artefatos",
+      "repo": "https://github.com/Recorta-art/Recorta-art.git",
+      "raiz_git": "../Earendel/Desenvolvimento/Recorta",
+      "tipo": "app",
+      "modular": false,
+      "binding": null,
+      "situacao": "ativo"
+    },
+    {
+      "id": "recorta-site",
+      "nome": "Site Recorta",
+      "caminho": "../Earendel/Desenvolvimento/Recorta/site-recorta",
+      "repo": "https://github.com/Recorta-art/Recorta-art.git",
+      "raiz_git": "../Earendel/Desenvolvimento/Recorta",
+      "tipo": "site",
+      "modular": false,
+      "binding": "typescript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "sellersgo",
+      "nome": "SellersGO",
+      "caminho": "../Earendel/Desenvolvimento/SellersGO",
+      "repo": "https://github.com/Sarak-Igor/SellersGO.git",
+      "raiz_git": "../Earendel/Desenvolvimento/SellersGO",
+      "tipo": "app",
+      "modular": false,
+      "binding": "typescript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "earendel-erp",
+      "nome": "ERP Earendel",
+      "caminho": "../Earendel/ERP",
+      "repo": "https://github.com/Sarak-Igor/ERP-Iarendel.git",
+      "raiz_git": "../Earendel/ERP",
+      "tipo": "app",
+      "modular": true,
+      "binding": "typescript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "earendel-site",
+      "nome": "Site Earendel",
+      "caminho": "../Earendel/Site-Earendel",
+      "repo": "https://github.com/earendel-site/site-testes.git",
+      "raiz_git": "../Earendel/Site-Earendel",
+      "tipo": "site",
+      "modular": false,
+      "binding": "typescript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "zp-relatorios",
+      "nome": "ZP — Automação de relatórios",
+      "caminho": "../ZP/Automacao-relatorios/Novo",
+      "repo": "https://github.com/ZP-relatorios/relatorios-auto.git",
+      "raiz_git": "../ZP/Automacao-relatorios/Novo",
+      "tipo": "app",
+      "modular": true,
+      "binding": "typescript",
+      "situacao": "ativo"
+    },
+    {
+      "id": "agentes-chat",
+      "nome": "Chat (Agentes)",
+      "caminho": "../Agentes/Chat",
+      "repo": "https://github.com/Agents-templates/Agents-Chat.git",
+      "raiz_git": "../Agentes/Chat",
+      "tipo": "app",
+      "modular": false,
+      "binding": null,
+      "situacao": "adocao-posterior"
+    }
+  ]
+}

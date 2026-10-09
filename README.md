@@ -126,6 +126,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 | **specs/** | A **doutrina** e o **template** replicável (§2) | Copiado no início do projeto + `validate.mjs` | `specs/` |
 | **plugin/** | Sincronizador para IDEs sem marketplace | **Manual** (`sync_ide.py`) | `plugin/` |
 | **settings / config** | Configuração (permissões, env, model, hooks) | **Automático** | `.claude/settings.json` (Claude) · `.codex/config.toml` (Codex) |
+| **mapa.json** | Lista dos **sistemas** que adotam a base (não guarda versão — ver "Mapa de sistemas") | **HITL** — `carimbo.py --registrar` | `mapa.json` na raiz |
 | **MCP** | Servidores de **ferramentas externas** | Ferramentas ficam disponíveis ao modelo | `.mcp.json` (Claude) · `config.toml` (Codex) |
 
 > **Regra de ouro do disparo:** **hooks garantem** (determinístico) · **skills/agents o modelo decide**
@@ -418,6 +419,19 @@ próxima atualização pelo app o substitui pela versão do remoto.
 **Identidade do plugin.** `name`, `version`, `description` e `author` vivem em `.claude-plugin/plugin.json`;
 `.codex-plugin/plugin.json`, `plugin.json` e `.claude-plugin/marketplace.json` os repetem, e a paridade é
 cobrada pelo `audit_base.py` (categoria `manifestos`).
+
+### Mapa de sistemas e carimbo
+
+Duas fontes, uma para cada coisa — é o que a **propagação** de atualizações da base lê:
+
+| Arquivo | Onde | O quê | Quem escreve |
+|---|---|---|---|
+| `mapa.json` | raiz desta base (versionado) | **quais** sistemas adotam a base: caminho e `raiz_git` relativos a esta raiz, `repo`, `tipo` (`app`\|`site`), `modular`, `binding`, `situacao` (`ativo`\|`adocao-posterior`). **Não guarda versão.** | `meta-iniciar-repositorio/scripts/carimbo.py --registrar`, com HITL — pelo `init_repo.py` e pela `spec-site-fundacao` |
+| `.sarak/base.json` | dentro de cada sistema | o **carimbo**: `base_repo`, `base_commit` (e se a base tinha alteração local), `data`, `tipo`, `modular`, `binding` e os **pacotes** recebidos. É a fonte da versão. | o mesmo script, **sempre**, ao criar o sistema |
+
+**Pacotes:** `specs-sdd-app` ou `specs-sdd-site` (os moldes do fluxo SDD) e, em sistema modular,
+`template-modulos`. O schema do `mapa.json` é cobrado pelo `audit_base.py` (categoria `mapa`); que os caminhos
+existam, não — o mapa vale também em CI e em outras máquinas.
 
 ### Iniciar um projeto a partir do template
 

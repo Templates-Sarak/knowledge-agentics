@@ -2,7 +2,7 @@
 
     python init_repo.py --target <caminho> [--binding typescript] [--escopo acme]
                         [--modulos catalogo:domain hub:connector pagamentos:gateway]
-                        [--name "Meu Sistema"] [--git-init]
+                        [--name "Meu Sistema"] [--git-init] [--registrar --id meu-sistema]
     python init_repo.py --autoteste   prova compor_pre_commit, validar_modulos e compor_claude_md
                                       com fixtures em memoria (sem --target)
 
@@ -23,6 +23,7 @@ Monta, nesta ordem:
     5. os primeiros modulos                              (so com --modulos)
     6. .agents/ + gerador de indice + entrypoints (AGENTS.md; CLAUDE.md com @AGENTS.md)
        + hook de pre-commit
+       + carimbo .sarak/base.json (sempre) e a entrada no mapa.json da base (so com --registrar)
     7. verificacao: gate --all
 
 NAO commita e NAO cria remoto: isso e HITL, e fica com a skill (git-commit-inicial).
@@ -37,6 +38,8 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import carimbo  # mesmo diretorio: carimbo .sarak/base.json + registro no mapa.json da base
 
 BINDINGS = ("typescript", "javascript", "python")
 SUBPASTAS_AGENTS = ("skills", "commands", "agents", "hooks")
@@ -256,6 +259,8 @@ def get_args():
     )
     parser.add_argument("--git-init", action="store_true", help="Roda git init se nao houver .git")
     parser.add_argument("--forcar", action="store_true", help="Sobrescreve arquivos de raiz existentes")
+    parser.add_argument("--registrar", action="store_true", help="Registra o sistema no mapa.json da base")
+    parser.add_argument("--id", help="Id kebab-case do sistema no mapa (obrigatorio com --registrar)")
     return parser.parse_args()
 
 
@@ -647,6 +652,52 @@ def proximos_passos(modular: bool) -> None:
     print("  4. primeiro commit + remoto: skill 'git-commit-inicial'")
 
 
+def _preparar_alvo(target: Path, args) -> tuple[bool, list | None]:
+    """Antes de escrever qualquer coisa: recusa alvo perigoso, valida `--modulos` e `--registrar`, e
+    cria o diretorio. Devolve `(ok, modulos_validados)`."""
+    perigo = _motivo_alvo_perigoso(target)
+    if perigo is not None:
+        print(f"[ERRO] Alvo recusado ({perigo}): {target}. Confirme um caminho especifico, nunca este.")
+        return False, None
+    if args.registrar and not args.id:
+        print("[ERRO] --registrar exige --id (kebab-case, unico no mapa.json).")
+        return False, None
+    modulos = validar_modulos(args.modulos) if args.modulos else None
+    if args.modulos and modulos is None:
+        return False, None
+    if not target.exists():
+        try:
+            target.mkdir(parents=True)
+        except OSError as erro:
+            print(f"[ERRO] Nao foi possivel criar o diretorio alvo {target}: {erro}")
+            return False, None
+        print(f"[OK] Diretorio alvo criado: {target}")
+    return True, modulos
+
+
+def instalar_conteudo(target: Path, xskills_root: Path, args: argparse.Namespace, modulos: list | None) -> None:
+    """Passos 3-5: specs do fluxo SDD, base da linguagem e os primeiros modulos (os dois ultimos so
+    com `--binding`)."""
+    instalar_specs(target, xskills_root, args.name)
+    if args.binding:
+        instalar_base_de_linguagem(target, xskills_root, args.binding, args.name)
+    if args.binding and modulos:
+        criar_modulos(target, caminho_do_template(xskills_root), modulos, args.binding)
+
+
+def carimbar_e_registrar(target: Path, xskills_root: Path, args: argparse.Namespace, modular: bool) -> bool:
+    """Passo 6d: o carimbo `.sarak/base.json` sempre; o `mapa.json` da base so com `--registrar`."""
+    info = {"tipo": "app", "modular": modular, "binding": args.binding}
+    try:
+        carimbo.carimbar(target, xskills_root, info)
+        if args.registrar:
+            carimbo.registrar(target, xskills_root, {"id": args.id, "nome": args.name, **info})
+    except (ValueError, OSError) as erro:
+        print(f"[ERRO] Carimbo/registro: {erro}")
+        return False
+    return True
+
+
 def rodar_autotestes() -> int:
     """`--autoteste`: roda todos os blocos em sequencia; reprova se qualquer um reprovar."""
     blocos = (rodar_autoteste_pre_commit, rodar_autoteste_modulos, rodar_autoteste_claude_md)
@@ -665,24 +716,9 @@ def main() -> int:
     args = get_args()
     target = Path(args.target).resolve()
 
-    perigo = _motivo_alvo_perigoso(target)
-    if perigo is not None:
-        print(f"[ERRO] Alvo recusado ({perigo}): {target}. Confirme um caminho especifico, nunca este.")
+    ok, modulos_validados = _preparar_alvo(target, args)
+    if not ok:
         return 1
-
-    modulos_validados = None
-    if args.modulos:
-        modulos_validados = validar_modulos(args.modulos)
-        if modulos_validados is None:
-            return 1
-
-    if not target.exists():
-        try:
-            target.mkdir(parents=True)
-        except OSError as erro:
-            print(f"[ERRO] Nao foi possivel criar o diretorio alvo {target}: {erro}")
-            return 1
-        print(f"[OK] Diretorio alvo criado: {target}")
 
     xskills_root = raiz_da_base()
     template = caminho_do_template(xskills_root)
@@ -698,15 +734,13 @@ def main() -> int:
             print("[ERRO] Projeto modular nao instalado - abortando antes de misturar estruturas.")
             return 1
 
-    instalar_specs(target, xskills_root, args.name)
-    if args.binding:
-        instalar_base_de_linguagem(target, xskills_root, args.binding, args.name)
-    if args.binding and modulos_validados:
-        criar_modulos(target, template, modulos_validados, args.binding)
+    instalar_conteudo(target, xskills_root, args, modulos_validados)
 
     instalar_estrutura_agents(target, xskills_root)
     escrever_entrypoint(target, modular)
     instalar_hooks_git(target, xskills_root)
+    if not carimbar_e_registrar(target, xskills_root, args, modular):
+        return 1
 
     if modular:
         verificar(target)

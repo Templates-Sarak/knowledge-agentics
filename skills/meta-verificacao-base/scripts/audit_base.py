@@ -27,6 +27,7 @@ from nomenclatura import (  # noqa: E402
     raiz_do_prefixo,
 )
 from paridade import auditar_paridade, divergencias as divergencias_de_paridade  # noqa: E402
+from mapa import auditar_mapa, divergencias as divergencias_de_mapa
 from manifestos import (
     FONTE as FONTE_DE_MANIFESTO,
     auditar_manifestos,
@@ -80,6 +81,28 @@ def _autoteste_manifestos():
         achados = divergencias_de_manifesto(manifestos, excecoes=excecoes)
         if not esperado(achados):
             falhas.append(f"divergencias (manifestos): {nome} (achou {achados!r})")
+    return falhas
+
+
+def _autoteste_mapa():
+    """Schema do mapa.json: valido nao acusa; id duplicado, tipo invalido e caminho absoluto acusam."""
+    sistema = {
+        "id": "earendel-erp", "nome": "ERP", "caminho": "../Earendel/ERP", "repo": None,
+        "raiz_git": "../Earendel/ERP", "tipo": "app", "modular": True, "binding": "typescript",
+        "situacao": "ativo",
+    }
+    outro = {**sistema, "id": "outro", "caminho": "../Outro"}
+    casos = [
+        ("mapa valido nao acusa", [sistema, outro], lambda r: r == []),
+        ("id duplicado acusa", [sistema, {**outro, "id": "earendel-erp"}], lambda r: len(r) == 1 and "id 'earendel-erp' repetido" in r[0]),
+        ("tipo invalido acusa", [{**sistema, "tipo": "lib"}], lambda r: len(r) == 1 and "'tipo'" in r[0]),
+        ("caminho absoluto acusa", [{**sistema, "caminho": "C:/Code/Earendel/ERP"}], lambda r: len(r) == 1 and "'caminho'" in r[0]),
+    ]
+    falhas = []
+    for nome, sistemas, esperado in casos:
+        achados = divergencias_de_mapa({"sistemas": sistemas})
+        if not esperado(achados):
+            falhas.append(f"divergencias (mapa): {nome} (achou {achados!r})")
     return falhas
 
 
@@ -322,13 +345,14 @@ def autoteste():
         )
 
     falhas += _autoteste_manifestos()
+    falhas += _autoteste_mapa()
 
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 43/43 ok")
+    print("autoteste (audit_base): 47/47 ok")
     return 0
 
 
@@ -347,6 +371,7 @@ def audit_base(base_dir):
         "secoes": [],
         "paridade": [],
         "manifestos": [],
+        "mapa": [],
     }
 
     # 1. Agents
@@ -448,6 +473,10 @@ def audit_base(base_dir):
     # 5g. Manifestos: a identidade do plugin (name/version/description/author) vive em
     # .claude-plugin/plugin.json; os outros manifestos a repetem (ver manifestos.py)
     report["manifestos"] = auditar_manifestos(base_dir)
+
+    # 5h. Mapa de sistemas: schema do mapa.json da raiz (campos, tipos, id/caminho unicos, valores
+    # aceitos, caminho relativo com /). Nao cobra que o caminho exista — ver mapa.py
+    report["mapa"] = auditar_mapa(base_dir)
 
     # 6. Vazamentos
     patterns = {

@@ -148,6 +148,7 @@ const REGISTRO = [
   { caminho: 'skills/git-verificacao-commit/scripts/verificar_commit.py', runtime: 'python' },
   { caminho: 'skills/meta-iniciar-repositorio/scripts/comparar_arvore.py', runtime: 'python' },
   { caminho: 'skills/meta-iniciar-repositorio/scripts/init_repo.py', runtime: 'python' },
+  { caminho: 'skills/meta-iniciar-repositorio/scripts/carimbo.py', runtime: 'python' },
   { caminho: 'skills/meta-verificacao-base/scripts/audit_base.py', runtime: 'python' },
   { caminho: 'skills/meta-adequacao-modular/scripts/diagnosticar_terreno.py', runtime: 'python' },
   { caminho: 'skills/code-generalizacao-modulo/scripts/inventariar_origem.py', runtime: 'python' },
@@ -179,7 +180,7 @@ const REGISTRO = [
  * `otimizacao-nivel-1/scripts/auditar_assets.py`, `site-seo/scripts/auditar_seo.py` — erram para
  * MENOS gravidade (relatório incompleto), nunca para aprovação falsa, e por isso ficam de fora de
  * propósito nesta rodada. (`meta-verificacao-base/scripts/{limiares,ponteiros,nomenclatura,
- * proatividade,secoes,contagens,paridade,manifestos}.py` NÃO entram nesta lista: são módulos importados por
+ * proatividade,secoes,contagens,paridade,manifestos,mapa}.py` NÃO entram nesta lista: são módulos importados por
  * `audit_base.py`, provados pelo `--autoteste` DELE, não scripts standalone.)
  *
  * 3 hooks sem `--autoteste`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —

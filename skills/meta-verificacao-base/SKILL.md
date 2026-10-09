@@ -67,3 +67,7 @@ Trate **a base inteira** como um único bloco.
   `.codex-plugin/plugin.json`, `plugin.json` e o `plugins[0]` de `.claude-plugin/marketplace.json`
   repitam a identidade (`name`/`version`/`description`/`author`) da fonte `.claude-plugin/plugin.json`.
   Manifesto ausente é achado, salvo exceção nominal com motivo em `manifestos.EXCECOES`.
+- `scripts/mapa.py` — chamada pelo `audit_base.py` (categoria `mapa`): cobra o **schema** do `mapa.json`
+  da raiz — campos e tipos, `id` único e em kebab-case, `caminho` único, `tipo`/`situacao`/`binding` dentro
+  dos valores aceitos e caminhos relativos com `/`. **Não** cobra que o caminho exista: o audit roda em CI e
+  em outras máquinas, onde os sistemas não estão clonados ao lado da base.

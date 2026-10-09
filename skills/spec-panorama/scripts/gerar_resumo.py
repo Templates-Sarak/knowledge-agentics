@@ -288,21 +288,25 @@ def _por_status(plans: list, status: tuple, limite: int) -> list:
     )
 
 
-def _linha_de_familia(ff: str, nome: str, projeto: dict) -> str:
+def _linha_de_familia(ff: str, nome: str, projeto: dict) -> str | None:
+    """A linha da familia na tabela, ou `None` se ela nao tem item nem plan aberta (ruido)."""
     itens = [item for item in projeto["itens"] if item["ff"] == ff]
     feitos = sum(1 for item in itens if item["estado"] == "✅")
     abertas = sum(1 for plan in projeto["plans"] if plan["ff"] == ff)
+    if not itens and not abertas:
+        return None
     curta = barra(feitos, len(itens), 5) if itens else "—"
     return f"| {ff} | {nome} | {feitos}/{len(itens)} | {curta} | {abertas} |"
 
 
 def _familias(projeto: dict) -> list:
-    if not projeto["catalogo"]:
-        return []
-    linhas = [
+    candidatas = (
         _linha_de_familia(ff, nome, projeto)
         for ff, nome in sorted(projeto["catalogo"].items())
-    ]
+    )
+    linhas = [linha for linha in candidatas if linha]
+    if not linhas:
+        return []
     cabecalho = [
         "| FF | Família | Itens ✅/total | Progresso | Plans abertas |",
         "|---|---|---|---|---|",
@@ -675,6 +679,18 @@ CASOS = [
     (
         "projeto grande: tabela de familias truncada",
         lambda: "| … | +18 famílias | | | |" in renderizar(_projeto_grande()),
+    ),
+    (
+        "familia sem item e sem plan aberta sai da tabela",
+        lambda: "| 00 | Fundação |" not in renderizar(montar_projeto(_textos_ok())),
+    ),
+    (
+        "familia com item continua na tabela",
+        lambda: "| 01 | Conexão | 1/2 |" in renderizar(montar_projeto(_textos_ok())),
+    ),
+    (
+        "tabela sem nenhuma familia com conteudo vira —",
+        lambda: "## Por família\n—\n" in renderizar(montar_projeto({"planejamento": "| 00 | Fundação | x |\n"})),
     ),
 ]
 

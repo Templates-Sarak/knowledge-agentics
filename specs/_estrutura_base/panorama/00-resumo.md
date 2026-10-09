@@ -20,9 +20,7 @@ sem horizonte definido
 —
 
 ## Por família
-| FF | Família | Itens ✅/total | Progresso | Plans abertas |
-|---|---|---|---|---|
-| 00 | Fundação | 0/0 | — | 0 |
+—
 
 ## Atenção
 —

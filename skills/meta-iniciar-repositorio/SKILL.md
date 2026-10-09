@@ -29,6 +29,8 @@ arquitetura de módulos instalada, o fluxo SDD montado, os primeiros módulos cr
 6. .agents/ + hooks de git      gate de segredos + auto-índice (script), COMPOSTO com o
                                 pre-commit/pre-push do template de módulos (§1 do gate) — nunca um
                                 substituindo o outro
+                                + carimbo .sarak/base.json (sempre) e a entrada no mapa.json
+                                da base (só com --registrar, depois do HITL)
 7. gate --all                   não encerra vermelho
 ```
 
@@ -45,13 +47,15 @@ Se você vir uma pasta `doutrina/` na raiz do alvo, algo rodou errado.
 | Nome oficial do sistema | se houver git com remoto, proponha o nome do repo e peça só confirmação |
 | **Binding**: `typescript` \| `javascript` \| `python` | **não há binding para Go/Java** — ver Limites |
 | Escopo dos packages (`@acme`) | derive do nome do sistema e confirme |
+| Registrar o sistema no `mapa.json` da base? Com que `id` (kebab-case, único) | sim → `--registrar --id <id>` (o nome do mapa é o `--name`); não → a recusa é dita na entrega |
 | Primeiros módulos e o papel de cada um | mínimo um `domain`; um `connector` se houver mais de um módulo com tela — id sugerido: `hub` |
 
 **Sem binding** (repositório que não é um sistema modular — um site, uma lib, uma base de conhecimento):
 rode sem `--binding`. O script instala só `specs/` e `.agents/`, e o Nível 1 não se aplica.
 
 ### 2. HITL — plano
-Apresente: alvo, binding, escopo, módulos com papel, **o que será criado** e **o que não será tocado**.
+Apresente: alvo, binding, escopo, módulos com papel, **se o sistema entra no `mapa.json`** (e com que `id`),
+**o que será criado** e **o que não será tocado**.
 → "⚠️ Confirma a inicialização de `<alvo>`?" **Aguarde.**
 
 ### 3. Executar
@@ -59,7 +63,8 @@ Apresente: alvo, binding, escopo, módulos com papel, **o que será criado** e *
 python skills/meta-iniciar-repositorio/scripts/init_repo.py \
   --target "<caminho-alvo>" --name "<nome>" \
   --binding <typescript|javascript|python> --escopo <escopo> \
-  --modulos <id>:<role>[:artefato] [<id>:<role>[:artefato]...] --git-init
+  --modulos <id>:<role>[:artefato] [<id>:<role>[:artefato]...] --git-init \
+  [--registrar --id <id-kebab>]
 ```
 
 Cada módulo é `<id>:<role>[:artefato]` — o sufixo de papel é **obrigatório**
@@ -134,4 +139,6 @@ que o script escreve já é o final — nada a fazer aqui.
       modular — `.githooks/pre-commit` com o gate de segredos **e** `verify-commit.mjs` do template
       compostos (nunca um sobrescrevendo o outro), `.githooks/pre-push` intacto?
 - [ ] `validate.mjs --all` verde?
+- [ ] Carimbo `.sarak/base.json` escrito no alvo (commit da base de onde ele veio)?
+- [ ] Sistema registrado no `mapa.json` da base — ou a recusa do usuário registrada na entrega?
 - [ ] Pendências de HITL comunicadas (`.env`, `00-contexto.md`, ADRs, primeiro commit)?

@@ -53,7 +53,15 @@ estrutura `_estrutura_base_site` no projeto-alvo.
      > ⚠️ **As specs `03.01`–`03.05` vão para `specs/specs/`, NUNCA para `specs/plan/`.** A pasta `plan/`
      > é a fila de execução do ciclo SDD e só recebe arquivos `plan-FF.NN-<slug>.md` escritos pelo
      > agente revisor. Despejar spec de conteúdo ali corrompe o índice de execução.
-4. **Preencher os arquivos iniciais**
+4. **Carimbar e, com aceite, registrar**
+   - **Ferramenta:** terminal.
+   - **Ação (HITL):** pergunte ao usuário se o site entra no `mapa.json` da base, e com que `id`
+     (kebab-case, único) e nome. Depois rode `meta-iniciar-repositorio/scripts/carimbo.py --target
+     <projeto> --tipo site [--binding typescript|javascript|python]`, acrescentando `--registrar --id <id>
+     --nome "<nome>"` só se ele aceitou.
+   - **Critério:** `.sarak/base.json` escrito no projeto (o commit da base de onde ele veio); com aceite,
+     a entrada no `mapa.json` da base — rodar de novo não duplica. Recusa de registro é dita na entrega.
+5. **Preencher os arquivos iniciais**
    - **Ferramenta:** `Write`.
    - **Ação:** Preencha, com as respostas da entrevista, **apenas as specs fixas** — as 6 de
      `specs/arquitetura/` e as 5 de `specs/specs/`. Adapte os moldes aos requisitos reais.
@@ -63,7 +71,7 @@ estrutura `_estrutura_base_site` no projeto-alvo.
      manutenção da spec, completado depois pelo agente revisor.
    - **NÃO** altere `00-indice.md`, `00-knowledge.md`, `00-prompt-revisor.md` nem
      `00-prompt-executor.md`: são **universais**, idênticas em todos os projetos.
-5. **Entrega**
+6. **Entrega**
    - Informe ao usuário que a fundação do site foi documentada: specs fixas populadas
      (`arquitetura/` + `specs/`), specs de processo instaladas (`00-*`) e o ciclo SDD pronto
      (`plan/` vazia, aguardando a primeira plan).
@@ -84,8 +92,9 @@ estrutura `_estrutura_base_site` no projeto-alvo.
 
 - [ ] As 8 perguntas do passo 1 foram feitas e respondidas antes de qualquer arquivo ser gerado?
 - [ ] Especialistas (site-organizacao/site-seo/site-criacao) invocados ou recomendados conforme as respostas 6-8?
-- [ ] `_estrutura_base_site` copiada inteira para `specs/`, com a hierarquia preservada — specs `01`-`05` em `specs/specs/`, nunca em `specs/plan/`?
-- [ ] Specs fixas (`arquitetura/` 01-06 + `specs/` 01-05) preenchidas com as respostas da entrevista?
+- [ ] `_estrutura_base_site` copiada inteira para `specs/`, com a hierarquia preservada — specs `03.01`-`03.05` em `specs/specs/`, nunca em `specs/plan/`?
+- [ ] Carimbo `.sarak/base.json` escrito, e o site registrado no `mapa.json` — ou a recusa do usuário dita na entrega?
+- [ ] Specs fixas (`arquitetura/` 01.01-02.03 + `specs/` 03.01-03.05) preenchidas com as respostas da entrevista?
 - [ ] `00-contexto.md` só com §1 e §3 preenchidas; blocos `<!-- PREENCHER -->` e `> **Como escrever:**` intactos?
 - [ ] `00-indice.md`, `00-knowledge.md`, `00-prompt-revisor.md`, `00-prompt-executor.md` intocados?
 - [ ] `specs/plan/` permanece vazia?

@@ -66,8 +66,6 @@ EXCECOES = {
     "panorama/00-planejamento.md": "o catalogo de familias da base de projeto nasce so com a familia 00 "
     "(fundacao); o do site ja traz as familias dos moldes de site (01 Identidade e conteudo, 02 "
     "Engenharia, 03 Paginas)",
-    "panorama/00-resumo.md": "e a saida do gerador (spec-panorama) sobre o molde da arvore — a tabela "
-    "Por familia espelha o catalogo, que no site ja traz as familias 01, 02 e 03",
 }
 
 
