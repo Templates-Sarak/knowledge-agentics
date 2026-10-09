@@ -192,6 +192,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `meta-atualizar-base` | `meta-` | Atualizar a Fonte da Verdade Sarak e espelhar para as IDEs (`sync_ide.py`). |
 | `meta-verificacao-base` | `meta-` | Verificar integridade da base: YAML, contratos JSON, ponteiros órfãos. |
 | `meta-fluxos` | `meta-` | Executar um fluxo de `commands/` pelo nome num harness sem commands (Codex) — roteia, não copia. |
+| `meta-propagar-base` | `meta-` | Propagar atualizações da base aos sistemas do `mapa.json` — hoje, só o plano por sistema (somente leitura). |
 
 ---
 

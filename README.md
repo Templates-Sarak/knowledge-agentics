@@ -105,7 +105,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ **54** skills por área (§7) |
+| `skills/` | ✅ **55** skills por área (§7) |
 | `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
 | `hooks/` | ✅ **5** hooks · **4** garantias (segredo no git, padrão de escrita, dependências, cobertura — `hooks/README.md`) |
@@ -304,7 +304,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `deploy-` | `deploy-vercel`, `deploy-docker` | — | ✅ `/deploy-vercel`, `/deploy-docker` | — |
 | `site-` | `site-organizacao`, `site-seo`, `site-criacao` | — | ✅ `/site-organizar`, `/site-seo` | — |
 | `spec-` | `spec-write`, `spec-fundacao`, `spec-site-fundacao`, `spec-revisao`, `spec-panorama` | — | — | — |
-| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base`, `meta-fluxos` | — | ✅ `/meta-criar-skill` | — |
+| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base`, `meta-fluxos`, `meta-propagar-base` | — | ✅ `/meta-criar-skill` | — |
 | `padrao-` | `padrao-escrita`, `padrao-python`, `padrao-typescript` | `padrao-limiares`, `padrao-format` | ⬜ (subsumido pelo `code-`) | ⬜ |
 
 **Governança:** a criação de **skills** é regida pela `meta-create-skill`. Para commands/agents/hooks,
@@ -314,7 +314,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 ## 7. Inventário atual
 
-### Skills (54, por área)
+### Skills (55, por área)
 
 | Prefixo | Skills |
 |---|---|
@@ -329,7 +329,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `site-` (3) | `site-criacao`, `site-organizacao`, `site-seo` |
 | `git-` (4) | `git-commit-inicial`, `git-especialista-repositorio`, `git-revisao-diff`, `git-verificacao-commit` |
 | `cyber-` (9) | `cyber-api`, `cyber-auth`, `cyber-codigo`, `cyber-config`, `cyber-dados`, `cyber-dependencias`, `cyber-ia`, `cyber-infra`, `cyber-segredos` |
-| `meta-` (6) | `meta-adequacao-modular`, `meta-atualizar-base`, `meta-create-skill`, `meta-fluxos`, `meta-iniciar-repositorio`, `meta-verificacao-base` |
+| `meta-` (7) | `meta-adequacao-modular`, `meta-atualizar-base`, `meta-create-skill`, `meta-fluxos`, `meta-iniciar-repositorio`, `meta-propagar-base`, `meta-verificacao-base` |
 
 > **Critério, não lista de nomes:** skill **mutativa** (edita/gera/apaga arquivo) ou de **varredura**
 > (audita/relata sem julgamento novo) termina a `description` com a trava `NÃO acione
@@ -432,6 +432,12 @@ Duas fontes, uma para cada coisa — é o que a **propagação** de atualizaçõ
 **Pacotes:** `specs-sdd-app` ou `specs-sdd-site` (os moldes do fluxo SDD) e, em sistema modular,
 `template-modulos`. O schema do `mapa.json` é cobrado pelo `audit_base.py` (categoria `mapa`); que os caminhos
 existam, não — o mapa vale também em CI e em outras máquinas.
+
+**Propagação.** A skill `meta-propagar-base` lê os dois e compara cada sistema com uma **instalação de
+referência** — o que a base instalaria hoje, gerada em temporário pelos próprios instaladores (nunca cópia
+crua) —, classificando cada arquivo como universal, molde de projeto ou gerado. **Hoje ela só faz o
+plano** (`scripts/propagar.py --plano`, somente leitura); o modo aplicar vem depois, desenhado a partir dos
+planos reais. Sem carimbo, todo universal diferente sai como `divergente`, para revisão humana.
 
 ### Iniciar um projeto a partir do template
 

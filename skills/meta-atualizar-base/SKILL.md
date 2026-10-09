@@ -53,6 +53,9 @@ Esta skill orquestra a distribuição de novas features, correções ou ajustes 
      detecta isso** — o agente simplesmente segue sem roteamento. Nesse caso, mande recolar a frase.
      Contexto e motivo: `plugin/README.md`.
 
+> **Depois de atualizar a base**, para levar a mudança aos sistemas do `mapa.json`: skill
+> `meta-propagar-base` (nesta versão, só o plano — somente leitura).
+
 ## Regras
 - **NÃO** modifique regras ou lógica interna das IDEs nesta skill, a responsabilidade é apenas garantir que o pipeline de sincronização rode.
 
