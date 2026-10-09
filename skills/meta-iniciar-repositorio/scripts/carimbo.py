@@ -32,6 +32,9 @@ from pathlib import Path
 TIPOS = ("app", "site")
 BINDINGS = ("typescript", "javascript", "python")
 SITUACOES = ("ativo", "adocao-posterior")
+# Resultado da ULTIMA propagacao (nao uma comparacao ao vivo com o HEAD). Sistema recem-instalado nasce
+# `atualizado`; `desatualizado` = nunca recebeu propagacao nem adocao; `pendente` = sobrou decisao humana.
+STATUS = ("desatualizado", "pendente", "atualizado")
 ID_KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 PACOTE_SDD = {"app": "specs-sdd-app", "site": "specs-sdd-site"}
 PACOTE_MODULAR = "template-modulos"
@@ -116,6 +119,13 @@ def entrada_do_mapa(ident: str, nome: str, locais: dict, info: dict) -> dict:
         "bindings": list(info["bindings"]),
         "situacao": "ativo",
     }
+
+
+def com_status(entrada: dict, status: str, commit: str | None) -> dict:
+    """Nucleo: a entrada com `status` e `status_base` (o commit CURTO da base em que o status foi definido)."""
+    if status not in STATUS:
+        raise ValueError(f"status '{status}' invalido — use {' | '.join(STATUS)}")
+    return {**entrada, "status": status, "status_base": commit[:7] if commit else None}
 
 
 def registrar_no_mapa(mapa: dict, sistema: dict) -> dict:
@@ -227,6 +237,8 @@ def registrar(target: Path, raiz: Path, cadastro: dict, mapa: Path | None = None
         else {"sistemas": []}
     )
     entrada = entrada_do_mapa(ident, nome, _locais(target, raiz), info)
+    # Instalacao nova: a base acabou de ser aplicada inteira — nasce `atualizado`, no commit do carimbo.
+    entrada = com_status(entrada, "atualizado", estado_da_base(raiz)["commit"])
     _escrever_json(destino, registrar_no_mapa(atual, entrada))
     print(f"[OK] Sistema '{ident}' registrado em {destino}.")
     return entrada
@@ -307,6 +319,12 @@ def _entrada(ident: str = "earendel-erp", caminho: str = "../Earendel/ERP") -> d
 MAPA = {"_doc": "x", "sistemas": [_entrada("outro", "../Outro")]}
 
 CASOS = [
+    (
+        "status: instalacao nova nasce atualizado no commit curto",
+        lambda: com_status(_entrada(), "atualizado", "973a0f589c7d0efd")["status_base"] == "973a0f5"
+        and com_status(_entrada(), "atualizado", "973a0f589c7d0efd")["status"] == "atualizado",
+    ),
+    ("status invalido e erro", lambda: _erro(lambda: com_status(_entrada(), "ok", None))),
     (
         "carimbo de app modular: sdd-app + template-modulos",
         lambda: (

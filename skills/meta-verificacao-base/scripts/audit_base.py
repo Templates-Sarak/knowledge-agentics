@@ -89,7 +89,7 @@ def _autoteste_mapa():
     sistema = {
         "id": "earendel-erp", "nome": "ERP", "caminho": "../Earendel/ERP", "repo": None,
         "raiz_git": "../Earendel/ERP", "tipo": "app", "modular": True, "bindings": ["typescript"],
-        "situacao": "ativo",
+        "situacao": "ativo", "status": "desatualizado", "status_base": None,
     }
     outro = {**sistema, "id": "outro", "caminho": "../Outro", "bindings": ["typescript", "python"]}
     casos = [
@@ -100,6 +100,9 @@ def _autoteste_mapa():
         ("campo antigo binding acusa", [{**sistema, "binding": "typescript"}], lambda r: len(r) == 1 and "campo antigo" in r[0]),
         ("id duplicado acusa", [sistema, {**outro, "id": "earendel-erp"}], lambda r: len(r) == 1 and "id 'earendel-erp' repetido" in r[0]),
         ("tipo invalido acusa", [{**sistema, "tipo": "lib"}], lambda r: len(r) == 1 and "'tipo'" in r[0]),
+        ("status atualizado com commit curto nao acusa", [{**sistema, "status": "atualizado", "status_base": "973a0f5"}], lambda r: r == []),
+        ("status invalido acusa", [{**sistema, "status": "ok"}], lambda r: len(r) == 1 and "'status'" in r[0]),
+        ("status_base fora de commit acusa", [{**sistema, "status_base": "ontem"}], lambda r: len(r) == 1 and "status_base" in r[0]),
         ("caminho absoluto acusa", [{**sistema, "caminho": "C:/Code/Earendel/ERP"}], lambda r: len(r) == 1 and "'caminho'" in r[0]),
     ]
     falhas = []
@@ -356,7 +359,7 @@ def autoteste():
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 51/51 ok")
+    print("autoteste (audit_base): 54/54 ok")
     return 0
 
 

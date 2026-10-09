@@ -31,12 +31,16 @@ CAMPOS = {
     "modular": (bool,),
     "bindings": (list,),
     "situacao": (str,),
+    "status": (str,),
+    "status_base": (str, type(None)),
 }
 VALORES = {
     "tipo": ("app", "site"),
     "situacao": ("ativo", "adocao-posterior"),
+    "status": ("desatualizado", "pendente", "atualizado"),
 }
 BINDINGS = ("typescript", "javascript", "python")
+COMMIT_CURTO = re.compile(r"^[0-9a-f]{7,40}$")
 ID_KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 DRIVE = re.compile(r"^[A-Za-z]:")
 
@@ -81,6 +85,9 @@ def _checar_valores(rotulo: str, sistema: dict) -> list:
             )
     if isinstance(sistema.get("id"), str) and not ID_KEBAB.match(sistema["id"]):
         achados.append(f"{rotulo}: id '{sistema['id']}' fora de kebab-case")
+    base = sistema.get("status_base")
+    if isinstance(base, str) and not COMMIT_CURTO.match(base):
+        achados.append(f"{rotulo}: status_base '{base}' — use um commit da base (7 a 40 hexadecimais) ou null")
     for campo in ("caminho", "raiz_git"):
         valor = sistema.get(campo)
         if isinstance(valor, str) and not _caminho_relativo_com_barra(valor):

@@ -1,5 +1,5 @@
 {
-  "_doc": "Mapa dos sistemas que adotam esta base (moldes do fluxo SDD e, se modulares, o template de módulos). Lista QUAIS sistemas são — NÃO guarda versão: a versão de cada um vive no carimbo .sarak/base.json dentro do próprio sistema. 'caminho' e 'raiz_git' são relativos à raiz desta base, com '/'; 'raiz_git' só difere de 'caminho' quando o sistema é subpasta de um monorepo. tipo: app | site. bindings: lista de typescript | javascript | python, sem repetição — projeto modular pode ser poliglota; sai dos specs/arquitetura/00-base-<binding>.md do sistema (uma base fora dos três, como 00-base-nextjs, não entra); [] = não se aplica ou não dá para determinar. situacao: ativo | adocao-posterior. 'repo' e 'raiz_git' podem ser null num sistema ainda sem git ou sem remoto. Quem atualiza: meta-iniciar-repositorio/scripts/carimbo.py (--registrar), chamado pelo init_repo.py e pela spec-site-fundacao, com HITL; à mão só para corrigir. O schema é cobrado pelo audit_base.py (categoria 'mapa').",
+  "_doc": "Mapa dos sistemas que adotam esta base (moldes do fluxo SDD e, se modulares, o template de módulos). Lista QUAIS sistemas são — NÃO guarda versão: a versão de cada um vive no carimbo .sarak/base.json dentro do próprio sistema. 'caminho' e 'raiz_git' são relativos à raiz desta base, com '/'; 'raiz_git' só difere de 'caminho' quando o sistema é subpasta de um monorepo. tipo: app | site. bindings: lista de typescript | javascript | python, sem repetição — projeto modular pode ser poliglota; sai dos specs/arquitetura/00-base-<binding>.md do sistema (uma base fora dos três, como 00-base-nextjs, não entra); [] = não se aplica ou não dá para determinar. situacao: ativo | adocao-posterior. status: o resultado da ÚLTIMA propagação, não uma comparação ao vivo com o HEAD — desatualizado (nunca recebeu propagação nem adoção) | pendente (recebeu, mas sobraram itens de decisão humana) | atualizado (a última propagação fechou sem pendências, ou o sistema acabou de ser instalado); status_base: o commit curto da base em que o status foi definido, ou null. situacao e status são independentes. Quem escreve o status: o aplicar da meta-propagar-base e, na instalação, o carimbo.py --registrar (nasce atualizado); o --plano só lê. 'repo' e 'raiz_git' podem ser null num sistema ainda sem git ou sem remoto. Quem atualiza: meta-iniciar-repositorio/scripts/carimbo.py (--registrar), chamado pelo init_repo.py e pela spec-site-fundacao, com HITL; à mão só para corrigir. O schema é cobrado pelo audit_base.py (categoria 'mapa').",
   "sistemas": [
     {
       "id": "agentes-ads",
@@ -12,7 +12,9 @@
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "sarak-lib-login",
@@ -25,7 +27,9 @@
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "sarak-lib-ui-core",
@@ -36,7 +40,9 @@
       "tipo": "app",
       "modular": false,
       "bindings": [],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "setup-is-cripto",
@@ -50,7 +56,9 @@
         "javascript",
         "python"
       ],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "recorta-artefatos",
@@ -61,7 +69,9 @@
       "tipo": "app",
       "modular": false,
       "bindings": [],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "recorta-site",
@@ -72,7 +82,9 @@
       "tipo": "site",
       "modular": false,
       "bindings": [],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "sellersgo",
@@ -85,7 +97,9 @@
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "earendel-erp",
@@ -98,7 +112,9 @@
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "earendel-site",
@@ -111,7 +127,9 @@
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "zp-relatorios",
@@ -125,7 +143,9 @@
         "typescript",
         "python"
       ],
-      "situacao": "ativo"
+      "situacao": "ativo",
+      "status": "desatualizado",
+      "status_base": null
     },
     {
       "id": "agentes-chat",
@@ -139,7 +159,9 @@
         "typescript",
         "python"
       ],
-      "situacao": "adocao-posterior"
+      "situacao": "adocao-posterior",
+      "status": "desatualizado",
+      "status_base": null
     }
   ]
 }

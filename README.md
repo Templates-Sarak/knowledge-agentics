@@ -433,6 +433,18 @@ Duas fontes, uma para cada coisa — é o que a **propagação** de atualizaçõ
 `template-modulos`. O schema do `mapa.json` é cobrado pelo `audit_base.py` (categoria `mapa`); que os caminhos
 existam, não — o mapa vale também em CI e em outras máquinas.
 
+**Status de cada sistema** (`status` + `status_base`, o commit curto da base em que foi definido) — é o
+resultado da **última propagação**, não uma comparação ao vivo com o HEAD:
+
+| `status` | Significa | Quem escreve |
+|---|---|---|
+| `desatualizado` | nunca recebeu propagação nem adoção (o valor inicial dos sistemas que já existiam) | à mão, no cadastro inicial |
+| `pendente` | recebeu propagação, mas sobraram itens de decisão humana (conflito, divergente, `adicionar?`) | o aplicar da `meta-propagar-base` |
+| `atualizado` | a última propagação fechou sem pendências — ou o sistema acabou de ser instalado | o aplicar; e o `carimbo.py --registrar` na instalação |
+
+O `--plano` da `meta-propagar-base` só **lê** o status; não o escreve. `situacao` (`ativo` \| `adocao-posterior`)
+e `status` são independentes.
+
 **Propagação.** A skill `meta-propagar-base` lê os dois e compara cada sistema com uma **instalação de
 referência** — o que a base instalaria hoje, gerada em temporário pelos próprios instaladores (nunca cópia
 crua) —, classificando cada arquivo como universal, molde de projeto ou gerado. **Hoje ela só faz o
