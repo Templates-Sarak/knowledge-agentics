@@ -5,7 +5,11 @@
     "_modo_doc": "block = bloqueia/cobra correção | warn = só avisa o modelo | off = ignora",
     "_sem_limiares_nem_proibir_doc": "`qualidade` tem `modo` e nada mais. `limiares` saiu porque os limiares de escrita são LEI, com fonte única em tools/gate/thresholds.mjs, de onde a config do linter é gerada — enquanto o número morava aqui, ele VENCIA a config gerada. `proibir` saiu pelo mesmo argumento com o sinal trocado: o gerador emite no-console/no-empty/T20/E sem ler política nenhuma, então o campo nunca acrescentava cobertura, só escondia do agente um erro que o lint acusava."
   },
-  "formatacao": { "ativo": true },
+  "formatacao": {
+    "ativo": true,
+    "escopo": "conformes",
+    "_escopo_doc": "conformes = só reformata arquivo fora de git, novo, ou cujo HEAD já estava formatado (legado fica intacto, sem diff ruidoso) | arquivo = sempre formata o arquivo inteiro"
+  },
   "cobertura": {
     "modo": "ask",
     "_modo_doc": "ask = pede aprovação do usuário se abaixo do mínimo | block = bloqueia o push | warn = avisa e prossegue | off = ignora",

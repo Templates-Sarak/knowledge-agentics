@@ -159,6 +159,7 @@ const REGISTRO = [
   { caminho: 'skills/padrao-typescript/scripts/validate.mjs', runtime: 'node' },
   { caminho: 'hooks/_lib.js', runtime: 'node' },
   { caminho: 'hooks/padrao-limiares.js', runtime: 'node' },
+  { caminho: 'hooks/padrao-format.js', runtime: 'node' },
   { caminho: 'plugin/sync_ide.py', runtime: 'python' },
 ];
 
@@ -180,14 +181,11 @@ const REGISTRO = [
  * proatividade,secoes,contagens,paridade,manifestos}.py` NÃO entram nesta lista: são módulos importados por
  * `audit_base.py`, provados pelo `--autoteste` DELE, não scripts standalone.)
  *
- * 4 hooks sem `--autoteste`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —
+ * 3 hooks sem `--autoteste`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —
  * a parte pura de cada um ainda não foi separada da chamada de ferramenta externa (gitleaks/
- * npm audit/pip-audit/pytest/vitest) do jeito que `padrao-limiares.js` foi; e `padrao-format.js`,
- * que é OUTRO caso — não falta separar núcleo de casca, é que não HÁ núcleo: 29 linhas, só
- * lookup->formatter->`run()`, `allow()` incondicional no fim (nunca bloqueia). A única "decisão"
- * é uma tabela de mapeamento literal (formatter -> args de CLI) sem ramo que um teste pegasse além
- * do que o próprio `tsc`/parser já garante ao carregar o arquivo. Decisão: fica de fora
- * PERMANENTEMENTE, não é pendência a fechar — reavalie só se ganhar lógica nova.
+ * npm audit/pip-audit/pytest/vitest) do jeito que `padrao-limiares.js` foi. (`padrao-format.js` saiu
+ * desta lista quando ganhou lógica nova — a decisão de escopo `deveFormatar`, pura — e com ela o
+ * `--autoteste`, registrado abaixo.)
  */
 
 const DECLARADOS_FORA = new Set([

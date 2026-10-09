@@ -45,11 +45,27 @@ Segurança não negocia: sem gitleaks, o commit/push é bloqueado. **Não** depe
 | Hook | Evento | Garante |
 |---|---|---|
 | `padrao-limiares.js` | PostToolUse(`Write/Edit`) | Função ≤N linhas, aninhamento ≤N, ≤N params; sem `print`/`console.log`; sem exceção engolida |
-| `padrao-format.js` | PostToolUse(`Write/Edit`) | Formatação consistente (formatter da linguagem) |
+| `padrao-format.js` | PostToolUse(`Write/Edit`) | Formatação consistente (formatter da linguagem), sem reformatar arquivo legado (`formatacao.escopo`) |
 
 Política em `qualidade.modo`: **block** (cobra correção) · **warn** (só avisa) · **off**.
 `padrao-format` é best-effort (sem formatter, pula). Cobre **Python, JS/TS, Go e Java** — cada um pelo
 linter/formatter de `linguagens`.
+
+**`formatacao.escopo` — o que o `padrao-format` reformata.** Formatar o arquivo inteiro a cada edição faz
+uma linha mudada num arquivo legado (que nunca passou pelo formatador) virar centenas de linhas de diff de
+formatação. Com `"conformes"` (default), o hook só formata quando isso não gera ruído:
+
+- fora de um repositório git → formata;
+- arquivo não rastreado (novo), ou rastreado mas nunca commitado → formata;
+- rastreado, e o HEAD já estava conforme ao formatador → formata (o ruído possível é o da própria edição);
+- rastreado, e o HEAD **não** estava conforme (legado) → não formata e avisa o modelo: formate num commit separado;
+- não deu para verificar (formatter sem modo de checagem confirmado — hoje `gofmt` e `google-java-format` —,
+  ou git que falhou) → trata como legado: na dúvida, nada de ruído.
+
+A conformidade do HEAD é checada por stdin: `git show HEAD:<arquivo>` passa por `ruff format --check
+--stdin-filename` ou `prettier --check --stdin-filepath`, com o caminho real para a descoberta de config.
+Para voltar ao comportamento antigo (sempre formatar o arquivo inteiro): `"escopo": "arquivo"`. Formatar
+nunca bloqueia. Evolução possível: formatar só o trecho editado (`--range`).
 
 **O limiar não vem daqui, e isso é o desenho.** `padrao-limiares` roda o linter do projeto **com a config
 do projeto**, cujos 40/3/4 são derivados de `tools/gate/thresholds.mjs` — a fonte única da lei. Ele
@@ -129,7 +145,7 @@ O vocabulário difere de propósito entre os dois: o template nomeia **binding**
     // no-console/no-empty sem ler politica — o campo so escondia erro que o lint acusa)
     "modo": "warn"                   // block | warn | off
   },
-  "formatacao": { "ativo": true },
+  "formatacao": { "ativo": true, "escopo": "conformes" },  // escopo: conformes | arquivo
   "cobertura": {
     "modo": "ask",                   // ask | block | warn | off
     "minima": 80,                    // % mínimo (padrao-escrita §9)

@@ -64,11 +64,24 @@ function editedFiles(input) {
   const patch = input?.tool_input?.command;
   if (typeof patch !== "string") return [];
 
-  const files = new Set();
-  for (const match of patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm)) {
-    files.add(path.resolve(base, match[1].trim()));
+  return [...new Set(arquivosDoPatch(patch).map((rel) => path.resolve(base, rel)))];
+}
+
+/**
+ * Núcleo: os caminhos (como escritos no patch) que EXISTEM depois de um `apply_patch` do Codex. Pura —
+ * a regra é a gramática do patch, não o disco: `Add File` entra; `Update File` entra; um `Move to` logo
+ * após um `Update File` troca a origem (que deixa de existir) pelo destino; `Delete File` não entra.
+ */
+function arquivosDoPatch(patch) {
+  const finais = [];
+  let ultimoUpdate = -1;
+  for (const [, tipo, alvo] of patch.matchAll(/^\*\*\* (Add File|Update File|Delete File|Move to): (.+)$/gm)) {
+    const caminho = alvo.trim();
+    if (tipo === "Move to" && ultimoUpdate >= 0) finais[ultimoUpdate] = caminho;
+    if (tipo === "Add File" || tipo === "Update File") finais.push(caminho);
+    ultimoUpdate = tipo === "Update File" ? finais.length - 1 : -1;
   }
-  return [...files];
+  return finais;
 }
 
 /**
@@ -195,7 +208,7 @@ function loadConfig(cwdDoPayload) {
     qualidade: {
       modo: "warn", // block | warn | off
     },
-    formatacao: { ativo: true },
+    formatacao: { ativo: true, escopo: "conformes" }, // escopo: conformes | arquivo
     cobertura: {
       modo: "ask", // ask | block | warn | off
       minima: 80,
@@ -265,6 +278,22 @@ function autotesteEditedFiles(falhas) {
   const doClaude = path.resolve("/proj/src/a.py");
   if (editedFiles({ tool_input: { file_path: doClaude } }).join() !== doClaude)
     falhas.push("editedFiles deveria preservar o file_path absoluto do Claude");
+  autotestePatchComDeleteEMove(falhas, proj);
+}
+
+/** `editedFiles` no patch do Codex: só o que existe DEPOIS da edição — Delete fora, Move pelo destino. */
+function autotestePatchComDeleteEMove(falhas, proj) {
+  const doPatch = (command) => editedFiles({ cwd: proj, tool_input: { command } }).join(",");
+  const em = (...rels) => rels.map((rel) => path.resolve(proj, rel)).join(",");
+  if (doPatch("*** Begin Patch\n*** Delete File: legado.py\n*** End Patch\n") !== "")
+    falhas.push("editedFiles deveria deixar de fora o arquivo de um Delete File");
+  if (doPatch("*** Update File: velho.py\n*** Move to: novo.py\n@@\n-a\n+b\n") !== em("novo.py"))
+    falhas.push("editedFiles deveria trocar a origem de um Update + Move to pelo destino");
+  const misto = "*** Begin Patch\n*** Add File: add.py\n+x\n*** Update File: mod.py\n@@\n-a\n+b\n"
+    + "*** Delete File: apagado.py\n*** Update File: velho.py\n*** Move to: dir/renomeado.py\n@@\n-c\n+d\n"
+    + "*** Update File: mod.py\n@@\n-e\n+f\n*** End Patch\n";
+  if (doPatch(misto) !== em("add.py", "mod.py", "dir/renomeado.py"))
+    falhas.push("editedFiles deveria, num patch misto, trazer Add + Update + destino do Move, sem Delete e sem duplicata");
 }
 
 /** `projectRoot(cwd)`: acha a raiz partindo do `cwd` do payload, sem `CLAUDE_PROJECT_DIR` mascarando. */
@@ -317,7 +346,7 @@ function autoteste() {
     process.stdout.write(`autoteste (_lib.js): ${falhas.length} falha(s)\n`);
     return 1;
   }
-  process.stdout.write("autoteste (_lib.js): 12/12 ok\n");
+  process.stdout.write("autoteste (_lib.js): 15/15 ok\n");
   return 0;
 }
 
