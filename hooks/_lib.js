@@ -63,7 +63,15 @@ function editedFiles(input) {
   return [...files];
 }
 
-/** O Codex ainda não suporta `ask` no PreToolUse; bloqueia de forma explícita nesse runtime. */
+/**
+ * PreToolUse que pede confirmação (`ask`) — exceto no Codex, onde nega.
+ *
+ * O Codex interpreta `permissionDecision: "ask"` mas não o suporta: marca o hook como falho e deixa a
+ * chamada seguir (fail-open). Pedir confirmação lá equivaleria a liberar, por isso nega. A detecção usa
+ * `PLUGIN_ROOT`, que só o Codex define (ele também define `CLAUDE_PLUGIN_ROOT`, por compatibilidade, então
+ * essa variável não distingue os dois harnesses).
+ * Lacuna declarada: a premissa vale para hooks DE PLUGIN — um hook manual do Codex (`.codex/hooks.json`) não recebe `PLUGIN_ROOT` e cai no `ask`.
+ */
 function askOrDenyPreTool(reason) {
   if (process.env.PLUGIN_ROOT) denyPreTool(reason);
   askPreTool(reason);

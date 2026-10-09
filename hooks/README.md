@@ -15,7 +15,7 @@ O conjunto serve a **quatro garantias** — nada além (hook só cobre o mecanic
 > (`PreToolUse`/`PostToolUse`, payload JSON no stdin) é suportado pelo **Claude Code e Codex**; nenhum
 > outro provedor tem o equivalente. O `plugin/sync_ide.py` espelha `hooks/` para
 > `~/.gemini/config/plugins/sarak/hooks/` (Antigravity) junto com skills/agents/commands, mas
-> **nada naquele diretório liga os scripts** — os arquivos ficam ali, mortos. Fora do Claude Code,
+> **nada naquele diretório liga os scripts** — os arquivos ficam ali, mortos. Fora de Claude Code e Codex,
 > nenhuma das quatro garantias abaixo roda: quem edita via Antigravity ou sem harness nenhum
 > não tem "hooks garantem" — só a skill/norma correspondente, por julgamento do modelo. Não há
 > implementação equivalente para outros provedores nesta base; isto é lacuna conhecida, não
@@ -155,8 +155,19 @@ O vocabulário difere de propósito entre os dois: o template nomeia **binding**
 2. Mescle `hooks/settings.template.json` (bloco `hooks`) no `.claude/settings.json` do projeto-destino.
 3. Ajuste `hooks/config.json` (ex.: `modo: "block"` quando o time estiver pronto).
 
-> Ao empacotar como **plugin** (futuro): troque `$CLAUDE_PROJECT_DIR` por `${CLAUDE_PLUGIN_ROOT}` e
-> mova o wiring para o `hooks/hooks.json` do plugin. O resto não muda.
+> Com o **plugin** `sarak` instalado, o passo 2 não se aplica: o wiring do plugin já é o `hooks/hooks.json`
+> (mesmos scripts, com `${CLAUDE_PLUGIN_ROOT}` no lugar de `$CLAUDE_PROJECT_DIR`). O resto não muda.
+
+### No Codex
+
+- **Sem confiança, nada roda:** instalar ou ativar o plugin não confia nos hooks — o Codex os ignora até o
+  usuário revisar e confiar na definição atual no app.
+- **Edição chega como `apply_patch`:** o patch vem em `tool_input.command`; o matcher do `PostToolUse` nomeia
+  `apply_patch` e o `_lib.js` extrai os arquivos dos cabeçalhos `*** Add/Update/Delete File:`.
+- **`ask` não é suportado:** o Codex marca o hook como falho e segue a chamada (fail-open) — por isso o
+  `askOrDenyPreTool` nega no Codex.
+- **`PostToolUse` com `block` não desfaz a edição:** substitui o resultado da ferramenta pelo feedback, e o
+  modelo segue a partir dele.
 
 ## Pré-requisitos (ferramentas externas)
 

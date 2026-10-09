@@ -237,8 +237,8 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `cyber-git-seguro` | PreToolUse `Bash` | Barra comando git perigoso / commit com segredo. |
 | `cyber-dependencias` | PreToolUse `Bash` | Barra instalação de pacote suspeito/vulnerável. |
 | `test-cobertura` | PreToolUse `Bash` | Cobre a exigência de teste antes de operações de entrega. |
-| `padrao-format` | PostToolUse `Write\|Edit\|MultiEdit` | Formata o que foi escrito. |
-| `padrao-limiares` | PostToolUse `Write\|Edit\|MultiEdit` | Verifica os limiares objetivos (linhas, aninhamento, parâmetros). |
+| `padrao-format` | PostToolUse `Write\|Edit\|MultiEdit\|apply_patch` | Formata o que foi escrito. |
+| `padrao-limiares` | PostToolUse `Write\|Edit\|MultiEdit\|apply_patch` | Verifica os limiares objetivos (linhas, aninhamento, parâmetros). |
 
 Ativação: nativa ao instalar o plugin (`hooks/hooks.json`) — no Claude Code entra ativa; no Codex, depois de
 autorizar os hooks do plugin no app. Modo manual (só Claude Code): mesclar `hooks/settings.template.json` no

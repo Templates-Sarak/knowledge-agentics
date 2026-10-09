@@ -1,5 +1,5 @@
 {
-  "_doc": "Wiring NATIVO dos hooks quando esta base é instalada como plugin do Claude Code. Ativo por padrão ao instalar o plugin 'sarak'. Os caminhos resolvem via ${CLAUDE_PLUGIN_ROOT}; os scripts operam sobre o projeto-alvo (cwd). Equivalente manual (mesclar no settings.json de um projeto): hooks/settings.template.json.",
+  "_doc": "Wiring NATIVO dos hooks quando esta base é instalada como o plugin 'sarak' — vale no Claude Code e no Codex. No Claude Code entra ativo ao instalar o plugin; no Codex, instalar ou ativar o plugin NÃO confia nos hooks: eles ficam ignorados até o usuário revisar e confiar na definição atual no app. Os caminhos resolvem via ${CLAUDE_PLUGIN_ROOT}, que o Codex também define para hooks de plugin (ao lado de PLUGIN_ROOT), por compatibilidade. As edições do Codex chegam como apply_patch, por isso o matcher do PostToolUse o nomeia. Os scripts operam sobre o projeto-alvo (cwd). Equivalente manual, só Claude Code (mesclar no .claude/settings.json de um projeto): hooks/settings.template.json.",
   "hooks": {
     "PreToolUse": [
       {
@@ -13,7 +13,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Write|Edit|MultiEdit|apply_patch",
         "hooks": [
           { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/padrao-format.js\"" },
           { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/padrao-limiares.js\"" }

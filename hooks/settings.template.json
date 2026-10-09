@@ -1,5 +1,5 @@
 {
-  "_doc": "TEMPLATE de ativação dos hooks no projeto que IMPORTA esta base. Não ativa nada na própria base. Para usar: mescle este bloco 'hooks' no .claude/settings.json do projeto-destino. Ao empacotar como plugin, troque $CLAUDE_PROJECT_DIR por ${CLAUDE_PLUGIN_ROOT} e mova para hooks/hooks.json do plugin.",
+  "_doc": "TEMPLATE de ativação MANUAL dos hooks, só para o Claude Code, no projeto que IMPORTA esta base sem o plugin. Não ativa nada na própria base. Para usar: mescle este bloco 'hooks' no .claude/settings.json do projeto-destino. Com o plugin 'sarak' instalado, não use este arquivo: o wiring do plugin já é o hooks/hooks.json (mesmos scripts, via ${CLAUDE_PLUGIN_ROOT}).",
   "hooks": {
     "PreToolUse": [
       {
