@@ -54,7 +54,7 @@ Esta skill orquestra a distribuição de novas features, correções ou ajustes 
      Contexto e motivo: `plugin/README.md`.
 
 > **Depois de atualizar a base**, para levar a mudança aos sistemas do `mapa.json`: skill
-> `meta-propagar-base` (nesta versão, só o plano — somente leitura).
+> `meta-propagar-base` (plano somente leitura; aplicar numa branch do sistema, com HITL e desfazer).
 
 ## Regras
 - **NÃO** modifique regras ou lógica interna das IDEs nesta skill, a responsabilidade é apenas garantir que o pipeline de sincronização rode.
