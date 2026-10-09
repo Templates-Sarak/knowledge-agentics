@@ -32,7 +32,7 @@ prompt direto, §6, que não tem para onde apontar).
 
 1. `specs/00-contexto.md` — o que é o repositório, regras inegociáveis, mapa de roteamento.
 2. `specs/00-indice.md` — o trabalho aberto.
-3. `CLAUDE.md` da raiz.
+3. `AGENTS.md` da raiz (no Claude, o `CLAUDE.md` o importa).
 
 **Sob demanda, conforme a tarefa** — não leia o repositório inteiro por reflexo:
 

@@ -49,7 +49,7 @@ institucionais, metas de performance/a11y ou o mapa de roteamento. Nunca fora de
 > **Regra de ouro: referencie, nunca duplique.** Cada regra abaixo tem uma spec dona — uma linha aqui, o
 > detalhe lá.
 
-**Universais do ecossistema** — `CLAUDE.md` (raiz) + skill `padrao-escrita`: SRP; função ≤ 40 linhas;
+**Universais do ecossistema** — `AGENTS.md` (raiz) + skill `padrao-escrita`: SRP; função ≤ 40 linhas;
 aninhamento ≤ 3; ≤ 4 parâmetros; **zero hardcoded** (tunables em `config.json`, segredos só em `.env`).
 
 **Universais de site:**

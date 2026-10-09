@@ -47,7 +47,7 @@ prompt de conclusão (§6.1), para o usuário levar ao revisor. Esse prompt nunc
    completa**: o prompt é ponteiro e não repete nada dela. *Via direta: quem faz esse papel é a linha
    **Referências** do prompt.* Falta algo que você precisa? É lacuna da instrução — **pergunte, não improvise**.
 4. `specs/00-knowledge.md` — quando a instrução nomear uma skill que você não conhece.
-5. `CLAUDE.md` da raiz.
+5. `AGENTS.md` da raiz (no Claude, o `CLAUDE.md` o importa).
 
 Depois disso, e **antes de editar**: `status: "🟡 Em execução"` no frontmatter da plan. *Via direta não tem
 status — comece.*

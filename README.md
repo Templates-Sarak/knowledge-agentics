@@ -78,8 +78,8 @@ contexto próprio; `hooks/` garantem o que não pode depender de julgamento.
 > **Skill, command e agent REFERENCIAM a lei. Nunca a duplicam.**
 
 A lei vive num lugar só — o `04-regras.md` — e é cobrada por `tools/gate/validate.mjs`. Uma skill que
-copiasse a regra criaria uma segunda fonte, e duas fontes divergem. Por isso `CLAUDE.md`, skills e
-commands **apontam**; quem afirma é a doutrina, e quem cobra é o gate.
+copiasse a regra criaria uma segunda fonte, e duas fontes divergem. Por isso `AGENTS.md`/`CLAUDE.md`,
+skills e commands **apontam**; quem afirma é a doutrina, e quem cobra é o gate.
 
 E os dois níveis não se misturam:
 
@@ -118,7 +118,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | O que é | Como dispara | Onde mora |
 |---|---|---|---|
-| **CLAUDE.md / AGENTS.md** | Inegociáveis sempre no contexto | **Automático** — toda sessão | `CLAUDE.md` no Claude; `AGENTS.md` no Codex |
+| **CLAUDE.md / AGENTS.md** | Inegociáveis sempre no contexto | **Automático** — toda sessão | `AGENTS.md` é a fonte (lido direto pelo Codex); `CLAUDE.md` o importa (`@AGENTS.md`) no Claude |
 | **skills/** | Capacidade que o **modelo** usa quando faz sentido | Modelo decide pela `description`, **ou** você digita `/nome` | `skills/<nome>/SKILL.md` (3 camadas) |
 | **commands/** | **Atalho** de prompt que **você** dispara | **Manual** — você digita `/nome` | `commands/<nome>.md` |
 | **agents/** | **Subagente** com contexto próprio | Modelo **delega** (`Task`) ou você cita pelo nome | `agents/<nome>.md` |
@@ -129,7 +129,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 | **MCP** | Servidores de **ferramentas externas** | Ferramentas ficam disponíveis ao modelo | `.mcp.json` |
 
 > **Regra de ouro do disparo:** **hooks garantem** (determinístico) · **skills/agents o modelo decide**
-> (julgamento pela `description`) · **commands você dispara** (`/`) · **CLAUDE.md está sempre on**.
+> (julgamento pela `description`) · **commands você dispara** (`/`) · **AGENTS.md/CLAUDE.md estão sempre on**.
 
 > **A lacuna do `hooks/`, declarada.** "Hooks garantem" vale dentro do **Claude Code** e do
 > **Codex** — ambos usam o wiring `PreToolUse`/`PostToolUse`. O `plugin/sync_ide.py` copia
@@ -266,7 +266,7 @@ Auditorias e planos persistem em `.sarak/<área>/` no **projeto auditado** (`aud
 - Quer um **atalho** que **você** dispara com `/`? → **command**.
 - Quer **isolar** uma varredura/tarefa pesada em contexto separado? → **agent**.
 - Quer que o **projeto** nasça com estrutura, lei e verificador? → **template** (§2.1).
-- Quer **normas sempre ativas**? → **CLAUDE.md**.
+- Quer **normas sempre ativas**? → **`AGENTS.md`** (o `CLAUDE.md` o importa).
 
 ---
 
@@ -383,9 +383,10 @@ Isso carrega **skills, commands, agents e hooks** nativamente em qualquer projet
 > a cada commit, mas esse hook **não é versionado**: clone novo, outra máquina ou runner de CI não o têm.
 > Verificação que rode "pela skill" precisa **confirmar a sincronização antes**, ou estará testando o passado.
 
-> O `CLAUDE.md` (inegociáveis sempre-ativos) **não** viaja no plugin — mantenha-o na raiz do projeto-alvo
-> ou em `~/.claude/CLAUDE.md`. O modo manual dos hooks (mesclar `hooks/settings.template.json`) segue
-> disponível para quem não usa o plugin.
+> **Nenhum** gancho sempre-ativo (inegociáveis) viaja no plugin. No projeto-alvo, mantenha o `AGENTS.md` (+ um
+> `CLAUDE.md` com `@AGENTS.md`) na raiz. No nível do usuário, o equivalente global é `~/.claude/CLAUDE.md` no
+> Claude e o `AGENTS.md` global do Codex no Codex. O modo manual dos hooks (mesclar
+> `hooks/settings.template.json`) segue disponível para quem não usa o plugin.
 
 ### Antigravity e outros provedores — sincronizador
 

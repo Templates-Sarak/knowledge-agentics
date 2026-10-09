@@ -39,7 +39,7 @@ inegociável ou o mapa de roteamento. Nunca por conta própria fora de uma plan.
 
 > **Como escrever:** liste **apenas** as regras que um agente pode violar sem perceber, em forma de bullets
 > curtos e verificáveis. Duas fontes, nesta ordem:
-> 1. **Universais do ecossistema** — não reescreva: aponte para `CLAUDE.md` (raiz) e para a skill
+> 1. **Universais do ecossistema** — não reescreva: aponte para `AGENTS.md` (raiz) e para a skill
 >    `padrao-escrita`. Cite no máximo os limiares que causam reprovação imediata (SRP; função ≤ 40 linhas;
 >    aninhamento ≤ 3; ≤ 4 parâmetros; zero hardcoded; segredos só em `.env`; nenhuma exceção engolida).
 > 1b. **Arquitetura de módulos** — se este projeto adota o template, **não descreva a anatomia**: aponte para

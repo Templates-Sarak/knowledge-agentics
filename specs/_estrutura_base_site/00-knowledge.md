@@ -29,7 +29,7 @@ aquela cobre *o que respeitar*.
 | **command** | **Manual** — você digita `/nome` | Um agente **não** dispara command; a plan pede ao humano, ou executa a skill equivalente |
 | **agent** | O modelo **delega** (subagente com contexto próprio) | Isola varredura pesada e devolve resumo |
 | **hook** | **Automático e determinístico** no evento do harness | Roda sempre — é a única garantia mecânica |
-| **CLAUDE.md** | Sempre no contexto | Os inegociáveis; nunca precisa ser citado |
+| **AGENTS.md** (o `CLAUDE.md` o importa no Claude) | Sempre no contexto | Os inegociáveis; nunca precisa ser citado |
 
 **Trava de disparo:** critério, não lista de nomes — skill **mutativa** (edita/gera/apaga arquivo) ou de
 **varredura** (audita/relata sem julgamento novo) termina a `description` com *NÃO acione proativamente*; o
@@ -240,8 +240,9 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `padrao-format` | PostToolUse `Write\|Edit\|MultiEdit` | Formata o que foi escrito. |
 | `padrao-limiares` | PostToolUse `Write\|Edit\|MultiEdit` | Verifica os limiares objetivos (linhas, aninhamento, parâmetros). |
 
-Ativação: nativa ao instalar o plugin (`hooks/hooks.json`), ou manual mesclando
-`hooks/settings.template.json` no `.claude/settings.json` do projeto.
+Ativação: nativa ao instalar o plugin (`hooks/hooks.json`) — no Claude Code entra ativa; no Codex, depois de
+autorizar os hooks do plugin no app. Modo manual (só Claude Code): mesclar `hooks/settings.template.json` no
+`.claude/settings.json` do projeto.
 
 > **Hook bloqueou? Não contorne.** O bloqueio é informação: corrija a causa. Executor que burla um hook tem a
 > execução reprovada automaticamente pelo revisor.

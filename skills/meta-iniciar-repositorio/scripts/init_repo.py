@@ -3,7 +3,8 @@
     python init_repo.py --target <caminho> [--binding typescript] [--escopo acme]
                         [--modulos catalogo:domain hub:connector pagamentos:gateway]
                         [--name "Meu Sistema"] [--git-init]
-    python init_repo.py --autoteste   prova compor_pre_commit com fixtures em memoria (sem --target)
+    python init_repo.py --autoteste   prova compor_pre_commit, validar_modulos e compor_claude_md
+                                      com fixtures em memoria (sem --target)
 
 Cada item de --modulos e "<id>:<role>[:artefato]" — o sufixo de papel e OBRIGATORIO (role em
 domain|gateway|connector, o vocabulario do proprio manifesto). Sem ele, erro — nunca um papel
@@ -20,7 +21,8 @@ Monta, nesta ordem:
     3. specs/ do fluxo SDD (00-*, _templates, plan/, adr/)
     4. a base da linguagem em specs/arquitetura/00-base-<binding>.md
     5. os primeiros modulos                              (so com --modulos)
-    6. .agents/ + gerador de indice + hook de pre-commit
+    6. .agents/ + gerador de indice + entrypoints (AGENTS.md; CLAUDE.md com @AGENTS.md)
+       + hook de pre-commit
     7. verificacao: gate --all
 
 NAO commita e NAO cria remoto: isso e HITL, e fica com a skill (git-commit-inicial).
@@ -38,6 +40,7 @@ from pathlib import Path
 
 BINDINGS = ("typescript", "javascript", "python")
 SUBPASTAS_AGENTS = ("skills", "commands", "agents", "hooks")
+LINHA_IMPORT_AGENTS = "@AGENTS.md"
 
 GERADOR_INDICE = '''"""gerar_indice.py — catalogo da inteligencia local (.agents). Gerado pelo init_repo do Sarak."""
 import os
@@ -507,8 +510,67 @@ def instalar_estrutura_agents(target: Path, xskills_root: Path) -> Path:
     return agents_dir
 
 
+def compor_claude_md(existente: str | None) -> str | None:
+    """Decide o `CLAUDE.md` do projeto-alvo: so o import `@AGENTS.md` (o `AGENTS.md` e a fonte).
+    Devolve o conteudo novo, ou `None` quando o import ja existe e nao ha o que mudar."""
+    if existente is None:
+        return f"{LINHA_IMPORT_AGENTS}\n"
+    if any(linha.strip() == LINHA_IMPORT_AGENTS for linha in existente.splitlines()):
+        return None
+    corpo = existente.rstrip("\n")
+    return f"{corpo}\n\n{LINHA_IMPORT_AGENTS}\n" if corpo else f"{LINHA_IMPORT_AGENTS}\n"
+
+
+def _casos_de_autoteste_claude_md() -> list[dict]:
+    """Os tres estados do `CLAUDE.md` no alvo, mais a idempotencia do caso anexado."""
+    sem_import = "# CLAUDE.md do projeto\n\n- regra local\n"
+    return [
+        {
+            "nome": "inexistente -> cria so com @AGENTS.md",
+            "fn": lambda: compor_claude_md(None) == f"{LINHA_IMPORT_AGENTS}\n",
+        },
+        {
+            "nome": "existente sem import -> preserva o conteudo e anexa @AGENTS.md",
+            "fn": lambda: compor_claude_md(sem_import) == f"{sem_import}\n{LINHA_IMPORT_AGENTS}\n",
+        },
+        {
+            "nome": "existente com import -> None, nao toca",
+            "fn": lambda: compor_claude_md(f"# CLAUDE.md\n\n{LINHA_IMPORT_AGENTS}\n") is None,
+        },
+        {
+            "nome": "idempotencia: recompor o anexado -> None",
+            "fn": lambda: compor_claude_md(compor_claude_md(sem_import)) is None,
+        },
+    ]
+
+
+def rodar_autoteste_claude_md() -> int:
+    """`--autoteste`: prova `compor_claude_md` com fixtures em memoria, sem tocar disco."""
+    falhas = 0
+    casos = _casos_de_autoteste_claude_md()
+    for caso in casos:
+        ok = caso["fn"]() is True
+        print(f"  {'ok   ' if ok else 'FALHA'} {caso['nome']}")
+        if not ok:
+            falhas += 1
+    print(f"\nautoteste (compor_claude_md): {len(casos) - falhas}/{len(casos)} ok")
+    return 0 if falhas == 0 else 1
+
+
+def _escrever_claude_md(target: Path) -> str:
+    """Grava o `CLAUDE.md` do alvo via `compor_claude_md`; devolve o rotulo do que aconteceu."""
+    caminho = target / "CLAUDE.md"
+    existente = caminho.read_text(encoding="utf-8") if caminho.exists() else None
+    novo = compor_claude_md(existente)
+    if novo is None:
+        return "ja importa @AGENTS.md, intocado"
+    caminho.write_text(novo, encoding="utf-8")
+    return "criado com @AGENTS.md" if existente is None else "@AGENTS.md anexado"
+
+
 def escrever_entrypoint(target: Path, modular: bool) -> None:
-    """Passo 6b: ponteiros sempre-ativos para Claude e Codex no projeto-alvo."""
+    """Passo 6b: o ponteiro sempre-ativo vai so no `AGENTS.md` (a fonte neutra, lida pelo Codex);
+    o `CLAUDE.md` apenas o importa (`@AGENTS.md`), nunca duplica o texto."""
     texto = (
         "\n\n> **Atencao (IA):** Sou um projeto Sarak. Antes de codificar, leia as regras de negocio "
         "locais em `.agents/index.md`.\n"
@@ -519,11 +581,11 @@ def escrever_entrypoint(target: Path, modular: bool) -> None:
             "normativo) e e cobrada por maquina: `node tools/gate/validate.mjs --all`. "
             "Modulo novo so pela skill `code-modulo` — nunca copiando pasta a mao.\n"
         )
-    for nome in ("CLAUDE.md", "AGENTS.md"):
-        caminho = target / nome
-        with open(caminho, "a" if caminho.exists() else "w", encoding="utf-8") as arquivo:
-            arquivo.write(texto)
-    print("[OK] Entrypoints CLAUDE.md e AGENTS.md atualizados.")
+    caminho_agents = target / "AGENTS.md"
+    with open(caminho_agents, "a" if caminho_agents.exists() else "w", encoding="utf-8") as arquivo:
+        arquivo.write(texto)
+    print("[OK] AGENTS.md atualizado (fonte sempre-ativa).")
+    print(f"[OK] CLAUDE.md: {_escrever_claude_md(target)}.")
 
 
 def _marcar_executavel(caminho: Path) -> None:
@@ -585,12 +647,20 @@ def proximos_passos(modular: bool) -> None:
     print("  4. primeiro commit + remoto: skill 'git-commit-inicial'")
 
 
+def rodar_autotestes() -> int:
+    """`--autoteste`: roda todos os blocos em sequencia; reprova se qualquer um reprovar."""
+    blocos = (rodar_autoteste_pre_commit, rodar_autoteste_modulos, rodar_autoteste_claude_md)
+    resultados = []
+    for indice, bloco in enumerate(blocos):
+        if indice:
+            print()
+        resultados.append(bloco())
+    return 0 if all(r == 0 for r in resultados) else 1
+
+
 def main() -> int:
     if "--autoteste" in sys.argv[1:]:
-        resultado_pre_commit = rodar_autoteste_pre_commit()
-        print()
-        resultado_modulos = rodar_autoteste_modulos()
-        return 0 if resultado_pre_commit == 0 and resultado_modulos == 0 else 1
+        return rodar_autotestes()
 
     args = get_args()
     target = Path(args.target).resolve()
