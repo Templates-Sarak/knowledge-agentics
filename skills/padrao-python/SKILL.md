@@ -11,8 +11,8 @@ Traduz o padrão universal (`padrao-escrita`) para **Python**: idiomas da lingua
 executável** que verifica os limiares objetivos e produz um JSON consumível pelo `code-diagnostico` e
 pelo futuro hook de conformidade.
 
-> Regras universais (SRP, zero hardcoded, segredos, modularidade, testes…) vivem em `padrao-escrita`
-> e no `CLAUDE.md`. Esta skill **não as redefine** — só dá a forma Python e a automação.
+> Regras universais (SRP, zero hardcoded, segredos, modularidade, testes…) vivem em `padrao-escrita`.
+> Esta skill **não as redefine** — só dá a forma Python e a automação.
 
 ## Quando usar
 - Proativa: ao escrever ou revisar **código Python**.

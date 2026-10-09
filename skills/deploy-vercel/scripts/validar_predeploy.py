@@ -7,7 +7,7 @@ Uso:
 Retorno:
     JSON com {config_build, env_requeridas, alertas}.
 
-Regras (CLAUDE.md): zero hardcoded (listas no config.json),
+Regras (padrao-escrita): zero hardcoded (listas no config.json),
 responsabilidade única (apenas valida e reporta — não publica nada).
 """
 import argparse

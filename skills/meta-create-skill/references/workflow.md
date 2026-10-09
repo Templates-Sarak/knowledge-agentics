@@ -168,7 +168,7 @@ arquivos, detectar padrões, contar, converter, validar, gerar estrutura).
 - Mecânica, determinística → **script** (ex.: scanner de segredos, scaffold de pastas).
 - Exige julgamento/contexto → **não** vira script; fica nas instruções (ex.: decidir como modularizar).
 
-**Padrões (alinhados ao `CLAUDE.md`):**
+**Padrões (alinhados à `padrao-escrita`):**
 - Escrito na linguagem do repositório (multiplataforma preferencialmente).
 - **Zero hardcoded:** caminhos/limites/padrões vêm de argumentos ou de `config.json`, nunca embutidos.
 - Zero segredos.

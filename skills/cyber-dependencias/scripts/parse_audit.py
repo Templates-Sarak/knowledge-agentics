@@ -9,7 +9,7 @@ Retorno:
     JSON {total, por_severidade:{critical,high,moderate,low}, pacotes:[{nome, severidade, fix}]}.
     Suporta npm v7+ (`vulnerabilities`) e npm v6 (`advisories`). Para pip-audit/osv-scanner, leia a saída direto.
 
-Regras (CLAUDE.md): responsabilidade única (só normaliza — a correção é decisão com HITL na skill);
+Regras (padrao-escrita): responsabilidade única (só normaliza — a correção é decisão com HITL na skill);
 sem hardcoded relevante (apenas a ordem fixa de severidades).
 """
 import argparse

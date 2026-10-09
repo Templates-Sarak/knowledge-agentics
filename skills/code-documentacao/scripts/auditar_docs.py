@@ -7,7 +7,7 @@ Uso:
 Retorno:
     JSON com {readme_presente, secoes_faltando, docs_dir_presente, license_presente, modulos_sem_readme}.
 
-Regras (CLAUDE.md): zero hardcoded (seções/raízes/globs no config.json),
+Regras (padrao-escrita): zero hardcoded (seções/raízes/globs no config.json),
 responsabilidade única (apenas audita e reporta — não escreve documentação).
 """
 import argparse

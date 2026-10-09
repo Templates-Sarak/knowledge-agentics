@@ -11,7 +11,7 @@ Garante que o projeto não herde vulnerabilidades de terceiros: varre **CVEs** e
 suprimentos** (lockfile, abandono, typosquat, `postinstall`). Mutativa ao corrigir → HITL antes de atualizar.
 
 > Usa as ferramentas consagradas do ecossistema (`npm audit`/`pip-audit`/`osv-scanner`) — não reinventa base
-> de CVE. Segredos em deps/config → `cyber-segredos`; código inseguro → `cyber-codigo`. Globais em `CLAUDE.md`.
+> de CVE. Segredos em deps/config → `cyber-segredos`; código inseguro → `cyber-codigo`. Globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, em auditoria de segurança, antes de publicar, ao adicionar/atualizar dependências relevantes, ou periodicamente.

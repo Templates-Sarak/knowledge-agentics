@@ -13,7 +13,7 @@ Terceiro degrau: quando código (Nível 1) e concessões (Nível 2) não bastam,
 
 > Medição e escada em `references/diagnostico-performance.md` (mora em `otimizacao-nivel-1`). Catálogo de
 > serviços (rot-prone) em `references/fornecedores.md`. A parte Vercel (Edge/ISR/env) se conecta ao
-> `deploy-vercel` — configure lá o que for de deploy. Cobre **frontend e backend**. Globais em `CLAUDE.md`.
+> `deploy-vercel` — configure lá o que for de deploy. Cobre **frontend e backend**. Globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, para público global/múltiplas regiões, ou quando há **orçamento** e Níveis 1–2 não bastaram.
@@ -33,7 +33,7 @@ Trate **um projeto por vez**.
 
 ## Regras e limites
 - **NUNCA** ative serviço pago, contrate plano ou exponha faturamento sem o **HITL** do passo 4.
-- **NUNCA** versione chaves/segredos dos serviços — vão no `.env` (`.gitignore`), com `.env.example` (ver `padrao-escrita`/`CLAUDE.md`).
+- **NUNCA** versione chaves/segredos dos serviços — vão no `.env` (`.gitignore`), com `.env.example` (ver `padrao-escrita`).
 - **NUNCA** otimize sem baseline e re-medição — investir sem provar ganho é desperdício.
 - **NÃO** comece por aqui sem ter passado por Níveis 1 e 2 (dinheiro é o último recurso, não o primeiro).
 - **NÃO** trate preços/limites do catálogo como fixos — confirme no fornecedor (mudam); `fornecedores.md` é referência, não cotação.

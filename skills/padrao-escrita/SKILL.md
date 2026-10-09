@@ -6,10 +6,10 @@ description: Padrão-base de escrita e organização de código do ecossistema S
 # Skill: Padrão de Escrita e Organização
 
 Define a **identidade** de como escrever código no ecossistema Sarak. É a **porta de entrada** do padrão —
-toda outra skill e o `CLAUDE.md` **referenciam** daqui, nunca duplicam.
+toda outra skill e o gancho sempre-ativo (`AGENTS.md`) **referenciam** daqui, nunca duplicam.
 
-> Esta skill é provider-neutra. O gancho sempre-ativo de cada provedor (`CLAUDE.md` no Claude;
-> `GEMINI.md` / `.agents/rules/` no Antigravity) apenas aponta para cá.
+> Esta skill é provider-neutra. O gancho sempre-ativo de cada provedor (`AGENTS.md`, lido pelo Codex e
+> importado pelo `CLAUDE.md` no Claude; `GEMINI.md` / `.agents/rules/` no Antigravity) apenas aponta para cá.
 
 ## Os três níveis — quem é dono de quê
 

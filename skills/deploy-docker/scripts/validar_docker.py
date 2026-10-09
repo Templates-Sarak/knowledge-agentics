@@ -8,7 +8,7 @@ Uso:
 Retorno:
     JSON {dockerignore_presente, dockerfiles:[...], alertas:[{tipo, arquivo, linha, trecho}]}.
 
-Regras (CLAUDE.md): zero hardcoded (listas/padroes no config.json), responsabilidade unica
+Regras (padrao-escrita): zero hardcoded (listas/padroes no config.json), responsabilidade unica
 (apenas valida e reporta — build/push e decisao com HITL na skill).
 """
 import argparse

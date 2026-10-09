@@ -16,7 +16,7 @@ entre módulos é da thread principal (do command `/code1-auditar`) — não a f
 
 > A **lógica e o formato** são da `code-diagnostico` (`SKILL.md` + `references/backlog-format.md` +
 > `references/decomposicao.md` + `assets/auditoria.template.md`). Você **aplica**, não redefine. Critério =
-> `padrao-escrita` + inegociáveis do `CLAUDE.md`.
+> `padrao-escrita` + inegociáveis do `AGENTS.md`.
 
 ## Entrada
 - O **caminho do módulo** a auditar (ex.: `modulos/catalogo`, `backend/orders`, ou `.` quando a topologia não

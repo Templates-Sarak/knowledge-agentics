@@ -13,7 +13,7 @@ Mutativa ao corrigir → HITL antes de refatorar.
 
 > SQLi, **validação de todo input na borda `api/`** e **queries parametrizadas** já são **norma** do
 > `padrao-escrita` — aqui se **audita conformidade**. Segredos → `cyber-segredos`; deps → `cyber-dependencias`;
-> teste dinâmico (DAST) → `cyber-config`. Globais em `CLAUDE.md`.
+> teste dinâmico (DAST) → `cyber-config`.
 
 ## Quando usar
 - Sob demanda, em auditoria de segurança, antes de publicar, ou em revisão de código sensível (auth, pagamentos, upload).

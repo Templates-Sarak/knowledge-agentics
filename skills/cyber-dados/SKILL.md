@@ -12,7 +12,7 @@ e repouso, não vazar PII em logs e respeitar a LGPD (consentimento, retenção,
 Domínio de **revisão/política**; mudanças são mutativas → HITL.
 
 > Cripto **de senha** é da `cyber-auth`; **algoritmos fracos** no código, da `cyber-codigo`; **TLS/headers**,
-> da `cyber-config`; varrer **logs por segredo/PII**, use o scanner da `cyber-segredos`. Globais em `CLAUDE.md`.
+> da `cyber-config`; varrer **logs por segredo/PII**, use o scanner da `cyber-segredos`. Globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, ao auditar tratamento de dados pessoais, antes de publicar sistema com dados de usuário, ou em conformidade LGPD.

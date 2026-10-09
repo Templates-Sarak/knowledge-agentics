@@ -7,7 +7,7 @@ Uso:
 Retorno:
     JSON com {arquivos_lixo, marcadores, arquivos_grandes}.
 
-Regras (CLAUDE.md): zero hardcoded (limites/padrões no config.json),
+Regras (padrao-escrita): zero hardcoded (limites/padrões no config.json),
 responsabilidade única (apenas detecta — a remoção é decisão com HITL).
 """
 import argparse

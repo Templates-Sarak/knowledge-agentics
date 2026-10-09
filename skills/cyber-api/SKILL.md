@@ -13,7 +13,7 @@ com **DAST leve** no próprio app. Mutativa ao corrigir → HITL.
 
 > Escopo de teste ativo: **só no próprio app** (staging/local) ou **alvo autorizado** — nunca terceiros.
 > Autenticação/sessão é da `cyber-auth`; headers/TLS/exposição de arquivos é da `cyber-config` (use o
-> `check_headers.py` de lá para CORS/headers). Validação na borda é norma (`padrao-escrita`). Globais em `CLAUDE.md`.
+> `check_headers.py` de lá para CORS/headers). Validação na borda é norma (`padrao-escrita`).
 
 ## Quando usar
 - Sob demanda, ao auditar endpoints/API, implementar rate limit/autorização, ou antes de publicar uma API.

@@ -9,7 +9,7 @@ Saída:
     JSON {bloqueado, achados_segredo, arquivos_sensiveis}. Segredos mascarados.
     **Exit code 1** se houver qualquer achado (faz o pre-commit hook BLOQUEAR o commit); 0 se limpo.
 
-Regras (CLAUDE.md): zero hardcoded (padrões/listas no config.json), segredos mascarados,
+Regras (padrao-escrita): zero hardcoded (padrões/listas no config.json), segredos mascarados,
 responsabilidade única (só o commit atual/staged — histórico é da git-especialista-repositorio).
 
 `--autoteste` prova as duas camadas, na convenção núcleo puro + casca desta base: `varrer_segredos`,

@@ -12,7 +12,7 @@ velocidade** de forma deliberada. Toda concessão é **perceptível** pelo usuá
 nada é sacrificado sem autorização explícita item a item. Mutativa.
 
 > Medição e a escada de níveis estão em `references/diagnostico-performance.md` (mora em `otimizacao-nivel-1`;
-> rode o `auditar_assets.py` de lá). Cobre **frontend e backend**. Princípios globais em `CLAUDE.md`.
+> rode o `auditar_assets.py` de lá). Cobre **frontend e backend**. Princípios globais em `padrao-escrita`.
 > Pré-requisito: ter passado pelo `otimizacao-nivel-1` e ainda não bater as metas.
 
 ## Quando usar

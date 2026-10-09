@@ -8,7 +8,7 @@ Retorno:
     JSON {total, achados:[{arquivo, linha, tipo, confianca, trecho}]}.
     Heurístico → cada achado é CANDIDATO; o agente triagem (especialmente `confianca: baixa`).
 
-Regras (CLAUDE.md): zero hardcoded (padrões/confiança no config.json),
+Regras (padrao-escrita): zero hardcoded (padrões/confiança no config.json),
 responsabilidade única (apenas detecta — a refatoração é decisão com HITL na skill).
 """
 import argparse

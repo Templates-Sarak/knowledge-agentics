@@ -8,7 +8,7 @@ Retorno:
     JSON {robots_txt, sitemap_xml, paginas:[{arquivo, title, meta_description, og, twitter,
     jsonld, canonical, html_lang, imgs_sem_alt}]}.
 
-Regras (CLAUDE.md): zero hardcoded (extensões/pastas no config.json),
+Regras (padrao-escrita): zero hardcoded (extensões/pastas no config.json),
 responsabilidade única (apenas audita — a implementação/correção é com HITL na skill).
 Nota: detecta tags em markup/HTML estático; metadados via API de framework (Next metadata) não
 aparecem no fonte e exigem conferência manual ou auditoria no HTML buildado.

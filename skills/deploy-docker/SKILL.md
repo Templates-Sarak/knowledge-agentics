@@ -13,7 +13,7 @@ usuário **não-root**, `.dockerignore`, healthcheck, versões fixadas e **zero 
 concreto: cada módulo vira **um container extraível**. É **mutativa** (constrói/publica imagem) → HITL
 obrigatório antes de build/push.
 
-> Princípios globais em `CLAUDE.md`. **1 container por módulo** (módulo=domínio) — a anatomia que sustenta
+> Princípios globais em `padrao-escrita`. **1 container por módulo** (módulo=domínio) — a anatomia que sustenta
 > isso está em `specs/arquitetura/01-modulo.md` (na base, `specs/_estrutura_modulos/doutrina/01-modulo.md`),
 > e o que prova que um módulo já sai sozinho, em `03-operacao.md` §6. O **pré-deploy comum** (build/env/segredos/deps)
 > está em `../deploy-vercel/references/predeploy-comum.md` e é reutilizável por qualquer `deploy-*`. Segredo

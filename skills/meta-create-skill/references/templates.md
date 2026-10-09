@@ -18,7 +18,7 @@ description: [O QUE faz, em 1 frase] + [QUANDO usar / gatilhos: "Use ao…", "ao
 
 [1–2 linhas: o que a skill faz e o que a diferencia.]
 
-> Padrões globais em `CLAUDE.md`; estrutura/contratos de módulo no catálogo `04-regras.md` do template. Referencie, não duplique.
+> Padrões globais em `padrao-escrita`; estrutura/contratos de módulo no catálogo `04-regras.md` do template. Referencie, não duplique.
 
 ## Quando usar
 - [Situação específica que dispara o uso]
@@ -140,7 +140,7 @@ Uso:
 Retorno:
     [o que imprime/gera — ex.: lista de ocorrências em JSON]
 
-Regras (CLAUDE.md): zero hardcoded, zero segredos, responsabilidade única.
+Regras (padrao-escrita): zero hardcoded, zero segredos, responsabilidade única.
 Valores configuráveis vêm de argumentos ou de config.json — nunca embutidos.
 """
 import argparse

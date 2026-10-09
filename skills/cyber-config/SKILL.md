@@ -13,7 +13,7 @@ Mutativa ao corrigir → HITL.
 
 > ⚠️ Teste ativo **só no próprio app** (staging/local) ou **alvo autorizado** — nunca terceiros.
 > CORS é decidido junto da `cyber-api`; flags de cookie junto da `cyber-auth`; aqui mora a **política de
-> headers** e a sondagem de exposição. Globais em `CLAUDE.md`.
+> headers** e a sondagem de exposição. Globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, ao endurecer a config de um app, antes de publicar, ou ao auditar a superfície HTTP.

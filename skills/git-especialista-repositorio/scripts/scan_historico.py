@@ -11,7 +11,7 @@ Uso:
 Retorno:
     JSON {total, achados_conteudo, arquivos_sensiveis_historico, achados_entropia}. Segredos mascarados.
 
-Regras (CLAUDE.md): zero hardcoded (padrões/limites no config.json), segredos mascarados,
+Regras (padrao-escrita): zero hardcoded (padrões/limites no config.json), segredos mascarados,
 responsabilidade única (apenas detecta no histórico — a reescrita/rotação é decisão com HITL).
 """
 import argparse

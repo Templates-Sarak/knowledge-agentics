@@ -12,7 +12,7 @@ Saída:
     JSON {bloqueado, achados:[{arquivo, linha, tipo, severidade, trecho}]}.
     **Exit 1** se houver achado de severidade em `bloquear_em` (faz o pre-commit BLOQUEAR); 0 caso contrário.
 
-Regras (CLAUDE.md): zero hardcoded (padrões/severidades no config.json),
+Regras (padrao-escrita): zero hardcoded (padrões/severidades no config.json),
 responsabilidade única (só marcadores baratos do diff — a revisão de conformidade profunda é do agente).
 """
 import argparse

@@ -7,7 +7,7 @@ Uso:
 Retorno:
     JSON com {total, achados:[{arquivo, linha, trecho}]}.
 
-Regras (CLAUDE.md): zero hardcoded (padrões e autorizados no config.json),
+Regras (padrao-escrita): zero hardcoded (padrões e autorizados no config.json),
 responsabilidade única (apenas detecta — a remoção/padronização é com HITL).
 """
 import argparse

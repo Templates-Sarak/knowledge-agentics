@@ -13,7 +13,7 @@ Mutativa → HITL ao mexer em config/alertas de produção.
 
 > Logs estruturados são da `obs-logs` (complementar — os 3 pilares: logs, métricas, traces). O que **logar
 > de segurança** é do `cyber-dados`. Performance (otimizar o que o monitoramento revelou) → `otimizacao-*`.
-> Globais em `CLAUDE.md`.
+> Globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, ao instrumentar um serviço, montar dashboards/alertas, ou definir SLOs.

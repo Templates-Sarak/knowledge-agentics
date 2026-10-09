@@ -14,7 +14,7 @@ deixando a base **Production Ready**. É **mutativa e destrutiva** → toda remo
 
 > Higiene de repositório ≠ conformidade ao padrão. Adequar código ao padrão Sarak é da `code-adequacao`;
 > diagnosticar violações é da `code-diagnostico`. Aqui só se **remove lixo** — não se refatora nem se
-> corrige bug. Princípios globais em `CLAUDE.md`; padrão de escrita em `padrao-escrita`.
+> corrige bug. Princípios globais e padrão de escrita em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, antes de um merge para `main`, publicação ou deploy; ao fechar uma grande refatoração.

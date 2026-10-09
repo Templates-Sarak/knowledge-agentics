@@ -28,7 +28,7 @@ Monta, nesta ordem:
 NAO commita e NAO cria remoto: isso e HITL, e fica com a skill (git-commit-inicial).
 Sem --binding, roda no modo antigo — so specs e .agents.
 
-Regras (CLAUDE.md): uma responsabilidade por funcao, zero hardcoded de caminho do template
+Regras (padrao-escrita): uma responsabilidade por funcao, zero hardcoded de caminho do template
 (resolvido em tempo de execucao a partir deste arquivo), nunca sobrescreve trabalho alheio.
 """
 import argparse

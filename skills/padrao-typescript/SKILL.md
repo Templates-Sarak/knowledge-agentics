@@ -12,8 +12,8 @@ executável** que verifica os limiares objetivos em `.ts/.tsx/.js/.jsx` e produz
 `code-diagnostico` e pelo futuro hook. TS é tratado como superset; **JS = TS sem tipos** (a regra de
 tipagem é N/A em arquivos JS).
 
-> Regras universais (SRP, zero hardcoded, segredos, modularidade, testes…) vivem em `padrao-escrita`
-> e no `CLAUDE.md`. Esta skill **não as redefine** — só dá a forma TS/JS e a automação.
+> Regras universais (SRP, zero hardcoded, segredos, modularidade, testes…) vivem em `padrao-escrita`.
+> Esta skill **não as redefine** — só dá a forma TS/JS e a automação.
 
 ## Quando usar
 - Proativa: ao escrever ou revisar **código TypeScript ou JavaScript**.

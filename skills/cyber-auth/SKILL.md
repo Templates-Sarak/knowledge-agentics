@@ -12,7 +12,7 @@ cookies protegidos e login resistente a abuso. Domínio de **revisão/julgamento
 correção é mutativa → HITL.
 
 > Rate limiting no login e CORS são da `cyber-api` (referenciar); segredo do JWT hardcoded é da
-> `cyber-segredos`; cripto fraca de hash também aparece no `cyber-codigo`. Globais em `CLAUDE.md`.
+> `cyber-segredos`; cripto fraca de hash também aparece no `cyber-codigo`. Globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, ao auditar/implementar autenticação e sessão, ou antes de publicar sistema com contas/login.

@@ -7,7 +7,7 @@ Uso:
 Retorno:
     JSON com {imagens_legadas, imagens_grandes, img_sem_dimensao, libs_pesadas}.
 
-Regras (CLAUDE.md): zero hardcoded (extensões/limites/libs no config.json),
+Regras (padrao-escrita): zero hardcoded (extensões/limites/libs no config.json),
 responsabilidade única (apenas detecta — a otimização é decisão com HITL nas skills de nível).
 """
 import argparse

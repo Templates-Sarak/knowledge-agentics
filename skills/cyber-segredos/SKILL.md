@@ -12,7 +12,7 @@ Caça **segredos expostos** no projeto e conduz a remediação (mover para `.env
 `git-verificacao-commit` e a `git-especialista-repositorio` usam. Mutativa → HITL antes de alterar.
 
 > Cyber **audita** a norma "segredo no `.env`" do `padrao-escrita` — não a redefine. Histórico do git é da
-> `git-especialista-repositorio`; o gate por commit é da `git-verificacao-commit`. Globais em `CLAUDE.md`.
+> `git-especialista-repositorio`; o gate por commit é da `git-verificacao-commit`.
 
 ## Quando usar
 - Sob demanda, em auditoria de segredos, antes de publicar, ou ao encontrar chave fora do `.env`.

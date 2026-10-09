@@ -10,7 +10,7 @@ description: Auditoria de segurança de Infraestrutura (IaC) e CI/CD — hardeni
 Audita e endurece as engrenagens que levam e mantêm a aplicação no ar: **Pipeline CI/CD**, containers e provisionamento na nuvem (IaC).
 Garante princípios de menor privilégio nos *runners* e *containers* e busca *misconfigurations* comuns. Mutativa ao corrigir → HITL.
 
-> Hardening focado no código de infraestrutura/deploy. Hardening da camada HTTP de aplicação em si fica na `cyber-config`; CVEs do `package.json` na `cyber-dependencias`. Globais em `CLAUDE.md`.
+> Hardening focado no código de infraestrutura/deploy. Hardening da camada HTTP de aplicação em si fica na `cyber-config`; CVEs do `package.json` na `cyber-dependencias`. Globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, ao auditar ou implementar repositórios de IaC, pipelines de CI/CD ou manifestos de Docker/K8s.

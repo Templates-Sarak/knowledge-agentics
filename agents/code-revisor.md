@@ -12,8 +12,8 @@ sem o viés de quem a escreveu, caçando **bugs** e **violações do `padrao-esc
 determinísticos pegam. Devolve achados classificados; **não modifica nada**.
 
 > A **lógica e os critérios** são da skill `git-revisao-diff` (`SKILL.md` + `references/criterios.md` +
-> `scripts/revisar_diff.py`); os **limiares** vêm dos validators `padrao-*`. Critério = `padrao-escrita` +
-> `CLAUDE.md`. Você **aplica**, não redefine. Revisão do **repo inteiro** é da `code-auditor` — aqui é **só o diff**.
+> `scripts/revisar_diff.py`); os **limiares** vêm dos validators `padrao-*`. Critério = `padrao-escrita`.
+> Você **aplica**, não redefine. Revisão do **repo inteiro** é da `code-auditor` — aqui é **só o diff**.
 
 ## Entrada
 - **Escopo do diff:** staged (default) · um range/commit (`<base>..<head>`) · arquivos específicos.

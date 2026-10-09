@@ -12,7 +12,7 @@ Valida **jornadas completas do usuário** atravessando UI → API → dados, com
 **próprio** (local/staging). Aditiva → confirme só o escopo (quais fluxos).
 
 > Unit/integração é da `test-unitario` (base da pirâmide). E2E é caro e lento — cubra só o crítico.
-> Premissa: web (UI) e/ou API HTTP. Princípios globais em `CLAUDE.md`.
+> Premissa: web (UI) e/ou API HTTP. Princípios globais em `padrao-escrita`.
 
 ## Quando usar
 - Para cobrir jornadas críticas (login, cadastro, checkout, fluxo principal do produto), antes de publicar, ou ao validar integração ponta-a-ponta.

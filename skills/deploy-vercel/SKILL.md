@@ -11,7 +11,7 @@ Leva um projeto a um deploy **sem surpresas** na Vercel: previne falhas auditand
 dependências e build **antes** de publicar, e só então publica via CLI — preview primeiro, production depois,
 com confirmação do usuário. É **mutativa** (publica) → HITL obrigatório antes do deploy de produção.
 
-> Princípios globais em `CLAUDE.md`. O **pré-deploy comum** (build/env/segredos/deps) está em
+> Princípios globais em `padrao-escrita`. O **pré-deploy comum** (build/env/segredos/deps) está em
 > `references/predeploy-comum.md` e é **reutilizável pelos futuros `deploy-*`** — aqui o corpo cobre só o
 > que é específico da Vercel. Antes da entrega, rode `code-entrega` (autoria + licença + documentação).
 

@@ -8,7 +8,7 @@ description: Padrão oficial para criar e revisar skills do ecossistema Sarak �
 Skill-base de **meta-criação**: define como toda skill Sarak é construída — estrutura, densidade,
 a `description` que dispara a skill, regras e validação. É a fonte de verdade do padrão.
 
-> Padrões globais de código (clean code, zero hardcoded, segredos no `.env`) vivem no `CLAUDE.md`.
+> Padrões globais de código (clean code, zero hardcoded, segredos no `.env`) vivem em `padrao-escrita`.
 > Estrutura/nomenclatura/contratos de **módulo** vivem no catálogo `04-regras.md` do template (mapa de qual
 > lei responde a quê em `padrao-escrita/references/PADRAO-ORGANIZACAO.md`). **Referencie, nunca duplique.**
 
@@ -101,7 +101,7 @@ Trate **uma skill por vez**. Cada passo é acionável; o detalhe verboso está e
 - **NÃO** crie arquivo de Camada 3 sem ponteiro no `SKILL.md`, nem `templates.md` vazio quando não há output.
 - **NÃO** assuma que o modelo conhece o padrão base de outra skill (ex: padrao-escrita); declare dependências explicitamente no topo do corpo da skill com `> **Dependência:**`.
 - **NÃO** invoque comandos genéricos locais de sistema (`pytest`, `eslint`, `bandit`, `flake8`) que exijam instalação no repositório-alvo do cliente. Oriente a IA a buscar os caminhos absolutos das ferramentas na Tabela de Roteamento (ex: `<SARAK_PYTHON_VENV> -m pytest` e `<SARAK_NODE_BIN>/eslint`).
-- **NÃO** faça hardcoded/segredos em scripts, nem script para tarefa que exige julgamento (CLAUDE.md).
+- **NÃO** faça hardcoded/segredos em scripts, nem script para tarefa que exige julgamento (`padrao-escrita`).
 - **NÃO** referencie skills inexistentes (ex.: sistema de registro/GSD) — o passo de Registro é opcional.
 
 ## Checklist "pronta"

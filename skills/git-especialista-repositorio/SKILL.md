@@ -14,7 +14,7 @@ histórico**), sempre sob **HITL severo**. É a auditoria pesada/sob demanda; o 
 `git-verificacao-commit`.
 
 > Padrões/nomes sensíveis em `scripts/config.json` **derivam do catálogo canônico** da skill `cyber-segredos`
-> (fonte única do ecossistema — manter em sincronia). Princípios globais em `CLAUDE.md`. Reescrita/rotação detalhadas em
+> (fonte única do ecossistema — manter em sincronia). Princípios globais em `padrao-escrita`. Reescrita/rotação detalhadas em
 > `references/remediacao.md`.
 
 > **Em escala:** a **varredura** (passos 1-3) é orquestrada pelo command `/git1-auditar` (agente `git-auditor`,

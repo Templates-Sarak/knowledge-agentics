@@ -12,7 +12,7 @@ e como o site é **acessível** desde a fundação. Mutativa → HITL antes de a
 
 > Premissa de stack: **web (React/Next-first, App Router)**. A **modularização** (extrair componente, SRP,
 > componente "burro" sem lógica de negócio) é norma de `padrao-escrita` (Nível 1 frontend) — aqui se
-> **aplica**, não se redefine. A descoberta (SEO/sitemap/breadcrumb schema) é da `site-seo`. Globais em `CLAUDE.md`.
+> **aplica**, não se redefine. A descoberta (SEO/sitemap/breadcrumb schema) é da `site-seo`.
 
 ## Quando usar
 - Sob demanda, na arquitetura inicial de um site, quando a navegação fica confusa, ou ao pedir organização específica ("quero por abas").

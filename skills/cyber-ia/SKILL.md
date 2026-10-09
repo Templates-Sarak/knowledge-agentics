@@ -10,7 +10,7 @@ description: Auditoria de segurança em IA/LLMs — proteção contra Prompt Inj
 Protege as fronteiras de integração com modelos de Inteligência Artificial, alinhada ao **OWASP Top 10 for LLMs**.
 Foca em defender o sistema contra manipulações no prompt (Prompt Injection), tratar saídas não confiáveis do modelo (Insecure Output Handling) e evitar abusos de tokenização (Model DoS). Mutativa ao corrigir → HITL.
 
-> Rate limiting genérico de API fica na `cyber-api`; vazamento de segredos na `cyber-segredos`. Aqui a atenção é restrita aos **dados trocados com o LLM**. Globais em `CLAUDE.md`.
+> Rate limiting genérico de API fica na `cyber-api`; vazamento de segredos na `cyber-segredos`. Aqui a atenção é restrita aos **dados trocados com o LLM**. Globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, ao auditar ou implementar integrações com APIs de IA/LLMs.

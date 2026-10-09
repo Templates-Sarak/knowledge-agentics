@@ -13,7 +13,7 @@ Retorno:
     Imprime um JSON com {"skill": <nome>, "path": <caminho>, "created": [arquivos criados]}.
     Sai com código != 0 (e mensagem em stderr) se o nome for inválido ou a pasta já existir.
 
-Regras (CLAUDE.md): zero hardcoded (nome e destino vêm de argumentos), zero segredos,
+Regras (padrao-escrita): zero hardcoded (nome e destino vêm de argumentos), zero segredos,
 responsabilidade única (só gera estrutura — não valida conteúdo nem escreve lógica de skill).
 """
 
@@ -76,7 +76,7 @@ description: [O QUE faz, 1 frase] + [QUANDO/gatilhos: "Use ao…"]. [SE sob dema
 
 [1–2 linhas: o que a skill faz e o que a diferencia.]
 
-> Padrões globais em `CLAUDE.md`; estrutura/contratos de módulo no catálogo `04-regras.md` do template. Referencie, não duplique.
+> Padrões globais em `padrao-escrita`; estrutura/contratos de módulo no catálogo `04-regras.md` do template. Referencie, não duplique.
 
 ## Quando usar
 - [Situação que dispara o uso]
@@ -173,7 +173,7 @@ Uso:
 Retorno:
     [o que imprime/gera].
 
-Regras (CLAUDE.md): zero hardcoded, zero segredos, responsabilidade única.
+Regras (padrao-escrita): zero hardcoded, zero segredos, responsabilidade única.
 """
 import argparse
 import json

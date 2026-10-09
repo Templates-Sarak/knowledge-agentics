@@ -12,7 +12,7 @@ correspondente, produz **achados mascarados** e os grava no domínio. É **um en
 domínio) — cuide **só do seu**. A consolidação entre domínios é da thread principal (`/cyber1-auditar`).
 
 > A **lógica por domínio** é das skills `cyber-*`; o **formato dos achados** é
-> `cyber-config/references/achados-format.md`. Critério = `padrao-escrita` (segurança é norma) + `CLAUDE.md`.
+> `cyber-config/references/achados-format.md`. Critério = `padrao-escrita` (segurança é norma).
 > Você **aplica**, não redefine.
 
 ## Entrada

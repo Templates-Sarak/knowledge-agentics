@@ -13,7 +13,7 @@ diante) e estrutura de branches/tag aprovada pelo usuário. Mutativa → HITL an
 
 > O gate e a auditoria não vivem aqui: o gate por commit é da `git-verificacao-commit` (esta skill o
 > **instala**); o check-up profundo do histórico é da `git-especialista-repositorio`. Princípios globais em
-> `CLAUDE.md`; convenção de mensagens em `assets/convencao_commits.md`.
+> `padrao-escrita`; convenção de mensagens em `assets/convencao_commits.md`.
 
 ## Quando usar
 - Sob demanda, ao criar um repositório novo / fazer o primeiro commit / subir um projeto ao GitHub pela 1ª vez.

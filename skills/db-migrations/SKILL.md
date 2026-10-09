@@ -13,7 +13,7 @@ com segurança** (versionado, reversível, sem downtime). Mutativa e arriscada (
 
 > Disciplina de dados (tabelas prefixadas, posse por módulo, **sem JOIN/FK cross-módulo** — dado de outro
 > módulo vem pelo `api/`) é norma `padrao-escrita` §5 — aqui se **aplica**. Performance de query (índices/N+1)
-> é da `otimizacao-nivel-1` (backend). Segredo na connection string → `cyber-segredos`. Globais em `CLAUDE.md`.
+> é da `otimizacao-nivel-1` (backend). Segredo na connection string → `cyber-segredos`.
 
 ## Quando usar
 - Sob demanda, ao criar/alterar schema, escrever uma migration, ou modelar os dados de um módulo.

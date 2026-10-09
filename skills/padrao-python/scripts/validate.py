@@ -12,7 +12,7 @@ Detecta (mecânico, via stdlib `ast`): limiares (tamanho de função, aninhament
 logging (print / exceção engolida), tipagem (assinatura pública sem anotação), segredos (literal em
 nome sensível) e hardcoded heurístico (número mágico / URL) — este marcado com confianca "baixa".
 
-Regras (CLAUDE.md): zero hardcoded (limiares/allowlists/padrões vêm do config.json), zero segredos,
+Regras (padrao-escrita): zero hardcoded (limiares/allowlists/padrões vêm do config.json), zero segredos,
 responsabilidade única (só valida e emite JSON — não corrige).
 """
 

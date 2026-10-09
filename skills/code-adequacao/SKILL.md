@@ -12,7 +12,7 @@ rede de segurança — porque legado geralmente não tem testes e refatorar às 
 
 > O padrão-alvo tem dois donos: **Nível 0** (escrita) em `padrao-escrita`, e **Nível 1** (arquitetura de
 > módulos) no catálogo `specs/_estrutura_modulos/doutrina/04-regras.md` — mapa de qual lei responde a quê em
-> `padrao-escrita/references/PADRAO-ORGANIZACAO.md`. Mais os inegociáveis do `CLAUDE.md`. Esta skill
+> `padrao-escrita/references/PADRAO-ORGANIZACAO.md`. Esta skill
 > **aplica** esse padrão — não o redefine. O diagnóstico/backlog vem da `code-diagnostico`.
 
 ## Quando usar

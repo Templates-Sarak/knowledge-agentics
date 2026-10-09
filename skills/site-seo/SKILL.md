@@ -12,7 +12,7 @@ Torna um site **encontrável e indexável** — por buscadores tradicionais (SEO
 
 > Premissa de stack: **web (React/Next-first)**. **Performance (Core Web Vitals, WebP/lazy/defer)** é da
 > `otimizacao-nivel-1` — aqui se **referencia**, não se duplica. A **hierarquia de rotas** (base do
-> BreadcrumbList) vem da `site-organizacao`. Princípios globais em `CLAUDE.md`.
+> BreadcrumbList) vem da `site-organizacao`. Princípios globais em `padrao-escrita`.
 
 ## Quando usar
 - Sob demanda, ao publicar um site, em auditoria/queda de tráfego orgânico, ou ao adicionar localidades/serviços.

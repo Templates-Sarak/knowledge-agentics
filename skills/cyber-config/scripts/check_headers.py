@@ -9,7 +9,7 @@ Uso:
 Retorno:
     JSON {url, status, headers_presentes, headers_faltando, paths_expostos}.
 
-Regras (CLAUDE.md): zero hardcoded (headers/paths no config.json),
+Regras (padrao-escrita): zero hardcoded (headers/paths no config.json),
 responsabilidade única (apenas observa — a correção é decisão com HITL na skill).
 """
 import argparse

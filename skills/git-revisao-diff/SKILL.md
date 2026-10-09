@@ -14,7 +14,7 @@ parte de **julgamento** (conformidade/clareza, feita pelo agente quando invocada
 > Complementar à `git-verificacao-commit` (aquela é o gate de **segredos**; esta é o gate de **qualidade**).
 > Revisão do **repo inteiro** é da `code-diagnostico`; aqui o foco é o **diff**. Os limiares precisos vêm dos
 > validadores de linguagem (`padrao-python`/`padrao-typescript`) e do hook `padrao-limiares`, que cobra os
-> mesmos limiares também em `.go` e `.java`. Globais em `CLAUDE.md`.
+> mesmos limiares também em `.go` e `.java`. Globais em `padrao-escrita`.
 
 ## Quando usar
 - Ao revisar um diff/PR antes do commit, quando o gate `revisar_diff.py` bloquear, ou para checar o staged manualmente.

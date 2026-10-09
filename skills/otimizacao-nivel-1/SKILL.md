@@ -12,7 +12,7 @@ perceptível**, usando recursos nativos do navegador e ferramentas gratuitas. É
 **sempre primeiro**. Mutativa → HITL antes de aplicar.
 
 > Medição (baseline + re-medição) e a escada de níveis estão em `references/diagnostico-performance.md`
-> (compartilhado com os níveis 2 e 3). Cobre **frontend (web) e backend**. Princípios globais em `CLAUDE.md`;
+> (compartilhado com os níveis 2 e 3). Cobre **frontend (web) e backend**. Princípios globais em `padrao-escrita`;
 > o tree-shaking aqui é de **bundle** (≠ código morto de repo, que é da `code-limpeza-projeto`); índice por
 > performance ≠ modelagem/migration (`db-migrations`).
 

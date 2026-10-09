@@ -43,7 +43,7 @@ PREFIXOS_DE_AREA = (
     "otimizacao", "spec",
 )
 # `\d*` cobre a área numerada dos commands de fluxo sequencial (`code1-`, `cyber2-`, `git1-`).
-# Sem ele, os sete commands mais citados da base — justamente os que o `CLAUDE.md` usa para rotear —
+# Sem ele, os sete commands mais citados da base — justamente os que o `AGENTS.md` usa para rotear —
 # nunca seriam verificados, e renumerar um apodreceria toda citação em silêncio.
 NOME_DE_ARTEFATO = re.compile(r"^(?:%s)\d*-[a-z0-9]+(?:-[a-z0-9]+)*$" % "|".join(PREFIXOS_DE_AREA))
 EM_CRASE = re.compile(r"`([^`\n]+)`")

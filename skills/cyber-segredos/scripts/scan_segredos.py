@@ -11,7 +11,7 @@ Uso:
 Retorno:
     JSON {total, achados:[{arquivo, linha, tipo, trecho_mascarado}]}. Segredos sempre mascarados.
 
-Regras (CLAUDE.md): zero hardcoded (padrões no config.json), nenhum segredo exposto no output,
+Regras (padrao-escrita): zero hardcoded (padrões no config.json), nenhum segredo exposto no output,
 responsabilidade única (apenas detecta — a correção/rotação é decisão com HITL na skill).
 """
 

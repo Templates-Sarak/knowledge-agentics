@@ -16,7 +16,7 @@ Você é disparado pelo command `/code3-adequar`, **uma tarefa por vez** (sequen
 NÃO vêm a você — elas rodam na thread principal com HITL.
 
 > A **lógica** é da `code-adequacao` (`SKILL.md` + `references/caracterizacao.md`/`examples.md`). O alvo/critério
-> da tarefa vem do schema em `code-diagnostico/references/decomposicao.md`. Critério = `padrao-escrita` + `CLAUDE.md`.
+> da tarefa vem do schema em `code-diagnostico/references/decomposicao.md`. Critério = `padrao-escrita`.
 
 ## Entrada
 - **Uma tarefa** (JSON do backlog): `id`, `arquivo`, `linhas`, `dimensao`, `regra`, `estadoAtual`, `estadoAlvo`,

@@ -25,7 +25,7 @@
  * code-auditoria-padrao) lê exit 0 como "conforme"; um parse que falha e ainda assim retorna
  * 0 aprovaria qualquer coisa (fail-open, medido nesta base antes deste conserto).
  *
- * Regras (CLAUDE.md): zero hardcoded (limiares/allowlists vêm do config.json), responsabilidade única.
+ * Regras (padrao-escrita): zero hardcoded (limiares/allowlists vêm do config.json), responsabilidade única.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname, dirname, resolve } from "node:path";
