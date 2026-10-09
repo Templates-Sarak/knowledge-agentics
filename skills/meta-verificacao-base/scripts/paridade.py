@@ -63,6 +63,9 @@ EXCECOES = {
     "projeto (arquitetura/, specs/ do site nao existem no lado projeto)",
     "README.md": "o manual descreve o fluxo no vocabulario do tipo de projeto — 'sistema'/'modulo' "
     "de um lado, 'site'/'pagina' do outro",
+    "panorama/00-planejamento.md": "o catalogo de familias da base de projeto nasce so com a familia 00 "
+    "(fundacao); o do site ja traz as familias dos moldes de site (01 Identidade e conteudo, 02 "
+    "Engenharia, 03 Paginas)",
 }
 
 

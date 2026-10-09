@@ -33,7 +33,7 @@ institucionais, metas de performance/a11y ou o mapa de roteamento. Nunca fora de
 > deve tomar** (a conversão), **quem é o público** e **o que este site NÃO é** (não é e-commerce, não é área
 > logada, não é aplicação). Sem marketing. Um agente lê isto e para de supor.
 >
-> Detalhe de marca, persona e tom não vem aqui — vive em `arquitetura/03-tom-de-voz-e-copy.md`. Aqui é o
+> Detalhe de marca, persona e tom não vem aqui — vive em `arquitetura/01.02-tom-de-voz-e-copy.md`. Aqui é o
 > resumo de uma respiração.
 
 <!-- PREENCHER -->
@@ -54,20 +54,20 @@ aninhamento ≤ 3; ≤ 4 parâmetros; **zero hardcoded** (tunables em `config.js
 
 **Universais de site:**
 - **Nenhum token visual hardcoded.** Cor, fonte, espaçamento e raio vêm do design system definido em
-  `arquitetura/02-identidade-visual.md`. Hex solto no componente é violação.
-- **Nenhum texto visível fora do tom de voz** de `arquitetura/03-tom-de-voz-e-copy.md`. Copy inventado por
+  `arquitetura/01.01-identidade-visual.md`. Hex solto no componente é violação.
+- **Nenhum texto visível fora do tom de voz** de `arquitetura/01.02-tom-de-voz-e-copy.md`. Copy inventado por
   agente é violação — e conteúdo institucional (números, promessas, credenciais) **nunca** é inventado.
 - **Acessibilidade é requisito, não polimento:** o nível WCAG exigido em
-  `arquitetura/05-acessibilidade-e-performance.md` vale para toda entrega — contraste, foco visível, navegação
+  `arquitetura/02.03-acessibilidade-e-performance.md` vale para toda entrega — contraste, foco visível, navegação
   por teclado, `alt` real, hierarquia de headings, rótulo em todo campo.
-- **Performance é orçamento, não meta:** os Core Web Vitals de `arquitetura/05` são limite de aceite. Imagem
+- **Performance é orçamento, não meta:** os Core Web Vitals de `arquitetura/02.03` são limite de aceite. Imagem
   sem otimização/dimensão declarada e script de terceiro sem justificativa reprovam.
 - **SEO não é opcional:** título, descrição, OG, `canonical` e JSON-LD conforme
-  `arquitetura/04-dados-institucionais-seo.md`. **NAP consistente** em todo o site — divergir de `04` é defeito.
-- **LGPD:** consentimento e páginas legais conforme `specs/05-paginas-legais-e-cookies.md`. Nenhum script de
+  `arquitetura/01.03-dados-institucionais-seo.md`. **NAP consistente** em todo o site — divergir de `01.03` é defeito.
+- **LGPD:** consentimento e páginas legais conforme `specs/03.05-paginas-legais-e-cookies.md`. Nenhum script de
   rastreio dispara antes do consentimento.
-- **Estrutura de arquivos** conforme `arquitetura/06-estrutura-de-codigo.md`, inclusive a separação
-  UI × conteúdo. Texto dentro de componente, quando `arquitetura/06` manda separar, é violação.
+- **Estrutura de arquivos** conforme `arquitetura/02.02-estrutura-de-codigo.md`, inclusive a separação
+  UI × conteúdo. Texto dentro de componente, quando `arquitetura/02.02` manda separar, é violação.
 
 **Específicas deste site:**
 
@@ -97,23 +97,26 @@ aninhamento ≤ 3; ≤ 4 parâmetros; **zero hardcoded** (tunables em `config.js
 > **Como escrever:** a tabela abaixo já cobre a estrutura padrão de um site — **mantenha e ajuste**. Acrescente
 > uma linha por tipo de tarefa recorrente que este site tenha e que não esteja prevista (blog, área de
 > downloads, integração com CRM, i18n). Remova o que não existir. Caminhos relativos a `specs/`.
+>
+> As specs fixas são numeradas por **família** (`FF.NN-<slug>.md`); o catálogo é [[00-planejamento]] §1 —
+> aponte para ele, nunca copie as famílias aqui.
 > **Ponteiro órfão é defeito**: toda spec citada tem de existir.
 
 | Tipo de tarefa | Leia antes (specs fixas) | Capacidade |
 |---|---|---|
-| Alterar seção/conteúdo da Home | `specs/02-pagina-home.md` + `arquitetura/02` + `arquitetura/03` | [[00-knowledge]] |
-| Header, footer, menu mobile, navegação | `specs/01-layout-global-e-nav.md` + `arquitetura/06` | `site-organizacao` |
-| Criar página interna ou hub/catálogo | `specs/03-paginas-internas-e-hub.md` + `arquitetura/06` | `site-organizacao` |
-| Criar/alterar rota, sub-aba, i18n | `specs/01-layout-global-e-nav.md` + `arquitetura/06` | `site-organizacao` |
-| Formulário, validação, captura de lead | `specs/04-formularios-e-contato.md` + `specs/05` (consentimento) | `cyber-api` |
-| Escrever ou revisar texto visível | `arquitetura/03-tom-de-voz-e-copy.md` | — |
-| Cor, fonte, espaçamento, componente visual | `arquitetura/02-identidade-visual.md` | — |
-| Meta tags, JSON-LD, sitemap, robots, GEO/AEO | `arquitetura/04-dados-institucionais-seo.md` | `site-seo` |
-| Imagem, fonte, bundle, LCP/CLS | `arquitetura/05-acessibilidade-e-performance.md` | `otimizacao-nivel-1` |
-| Contraste, foco, `aria`, navegação por teclado | `arquitetura/05-acessibilidade-e-performance.md` | `site-organizacao` |
-| Organização de pastas, componentes, dados | `arquitetura/06-estrutura-de-codigo.md` | `padrao-typescript` |
-| Stack, build, deploy, hospedagem, domínio | `arquitetura/01-stack-tecnologica.md` | `deploy-vercel` |
-| Cookies, política de privacidade, LGPD | `specs/05-paginas-legais-e-cookies.md` | `cyber-dados` |
+| Alterar seção/conteúdo da Home | `specs/03.02-pagina-home.md` + `arquitetura/01.01` + `arquitetura/01.02` | [[00-knowledge]] |
+| Header, footer, menu mobile, navegação | `specs/03.01-layout-global-e-nav.md` + `arquitetura/02.02` | `site-organizacao` |
+| Criar página interna ou hub/catálogo | `specs/03.03-paginas-internas-e-hub.md` + `arquitetura/02.02` | `site-organizacao` |
+| Criar/alterar rota, sub-aba, i18n | `specs/03.01-layout-global-e-nav.md` + `arquitetura/02.02` | `site-organizacao` |
+| Formulário, validação, captura de lead | `specs/03.04-formularios-e-contato.md` + `specs/03.05` (consentimento) | `cyber-api` |
+| Escrever ou revisar texto visível | `arquitetura/01.02-tom-de-voz-e-copy.md` | — |
+| Cor, fonte, espaçamento, componente visual | `arquitetura/01.01-identidade-visual.md` | — |
+| Meta tags, JSON-LD, sitemap, robots, GEO/AEO | `arquitetura/01.03-dados-institucionais-seo.md` | `site-seo` |
+| Imagem, fonte, bundle, LCP/CLS | `arquitetura/02.03-acessibilidade-e-performance.md` | `otimizacao-nivel-1` |
+| Contraste, foco, `aria`, navegação por teclado | `arquitetura/02.03-acessibilidade-e-performance.md` | `site-organizacao` |
+| Organização de pastas, componentes, dados | `arquitetura/02.02-estrutura-de-codigo.md` | `padrao-typescript` |
+| Stack, build, deploy, hospedagem, domínio | `arquitetura/02.01-stack-tecnologica.md` | `deploy-vercel` |
+| Cookies, política de privacidade, LGPD | `specs/03.05-paginas-legais-e-cookies.md` | `cyber-dados` |
 
 <!-- PREENCHER: linhas específicas deste site -->
 
@@ -129,7 +132,7 @@ vira arquivo. O revisor **tria** cada demanda ([[00-prompt-revisor]] §4):
 
 | A demanda deixa verdade documentada para trás? | Via | O que nasce |
 |---|---|---|
-| **Sim** — identidade visual, copy publicado, rota, regra de formulário, SEO | **plan** | `plan-NN` + linha no [[00-indice]] |
+| **Sim** — identidade visual, copy publicado, rota, regra de formulário, SEO | **plan** | `plan-FF.NN` + linha no [[00-indice]] |
 | **Não** — typo, `alt` faltando, link quebrado, imagem sem otimizar | **prompt direto** | nada; a instrução vive só na conversa |
 
 A via direta encurta a **papelada**, nunca a **verificação**: o executor trabalha igual e o revisor confere o
@@ -137,9 +140,9 @@ diff linha por linha do mesmo jeito. O ciclo abaixo é o da **plan**; a via dire
 e expurgo, porque não há verdade a transportar.
 
 ```
-revisor escreve  specs/plan/plan-NN-<slug>.md  +  linha no 00-indice
+revisor escreve  specs/plan/plan-FF.NN-<slug>.md  +  linha no 00-indice
       ↓
-executor lê  00-prompt-executor  +  plan-NN  e executa
+executor lê  00-prompt-executor  +  plan-FF.NN  e executa
       ↓
 alterações ficam no worktree (nenhum agente commita)
       ↓

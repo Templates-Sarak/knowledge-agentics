@@ -54,7 +54,7 @@ travar trabalho → vira demanda. Não → [[00-backlog]].
 
 | Você PODE | Você NUNCA |
 |---|---|
-| Criar/editar `plan/plan-NN-*.md`, `00-contexto`, `00-indice`, `00-backlog` | **Tocar código, teste, config ou dependência** — nem uma linha, nem para testar hipótese |
+| Criar/editar `plan/plan-FF.NN-*.md`, `00-contexto`, `00-indice`, `00-backlog`; propor família nova ao usuário | **Tocar código, teste, config ou dependência** — nem uma linha, nem para testar hipótese |
 | **Triar** a demanda e resolvê-la por prompt direto (§4, §6) | **Commitar** — é ato do usuário (exceção: pedido expresso dele naquela conversa, **sem `Co-Authored-By`**) |
 | **Sintetizar e remover** a plan aprovada, depois de autorizado (§7.4) | **Aprovar sem verificar** o worktree (§7.1) |
 | Descer achado para o `00-backlog` e podar o que lá não vale mais (§8) | **Remover plan por abandono** — `⛔` que não vai acontecer vira caso do usuário, e a remoção é **manual** dele |
@@ -75,7 +75,7 @@ que preservar, e a plan vira papelada — arquivo, linha no índice, `NN` queima
 
 | Resposta | Via | O que nasce |
 |---|---|---|
-| **Sim** | **plan** (§5) | `plan-NN` + linha no `00-indice` + prompt de execução |
+| **Sim** | **plan** (§5) | `plan-FF.NN` + linha no `00-indice` + prompt de execução |
 | **Não** | **prompt direto** (§6) | nada — a instrução vive só na conversa |
 
 O critério é **verdade**, não **tamanho**, de propósito: tamanho é intuição e varia por agente; verdade
@@ -96,9 +96,17 @@ o diff mostrar que mexia em verdade documentada, **suba para plan antes de aprov
 
 # 5. A via da plan
 
-**Arquivo:** `specs/plan/plan-NN-<slug-kebab>.md`. `NN` vem de `proximo_numero_plan` no `00-indice` — **não
-escaneie a pasta**, plans sintetizadas sumiram dela. Use o valor e incremente na mesma ação. Molde:
-`_templates/template-plan.md`.
+**Arquivo:** `specs/plan/plan-FF.NN-<slug-kebab>.md`, com `familia: "FF"` no frontmatter.
+
+- **`FF`** — a família da plan, escolhida no catálogo ([[00-planejamento]] §1). Nenhuma serve? **Proponha uma
+  família nova ao usuário** e só a use depois da aprovação dele, já registrada no catálogo.
+- **`NN`** — o contador **dessa família** no mapa `proximo_numero_plan` do `00-indice` (família sem entrada
+  começa em `01`). **Não escaneie a pasta**, plans sintetizadas sumiram dela. Use o valor e incremente na
+  mesma ação.
+- **Spec fixa** que nascer na síntese (§7.4) segue a mesma escolha de família: `FF.NN-<slug>.md` em `specs/`
+  ou `arquitetura/`, com o próximo `NN` livre da família **somando as duas pastas**.
+
+Molde: `_templates/template-plan.md`.
 
 Critério: um executor **sem nenhum contexto desta conversa** realiza a plan lendo só ela e o que ela aponta.
 
@@ -120,8 +128,8 @@ Critério: um executor **sem nenhum contexto desta conversa** realiza a plan len
 
 Declarado na criação, realizado na aprovação:
 
-- `arquitetura/NN-*.md` — mudou design, stack, fronteira, contrato.
-- `specs/NN-*.md` — mudou regra de negócio ou comportamento.
+- `arquitetura/FF.NN-*.md` — mudou design, stack, fronteira, contrato.
+- `specs/FF.NN-*.md` — mudou regra de negócio ou comportamento.
 - `00-contexto.md` — mudou regra inegociável, stack ou roteamento.
 - `adr/NNN-*.md` — **o mais raro.** Só passa se as três forem sim: (1) havia **duas opções reais**;
   (2) a escolhida tem um **custo** que as outras não tinham; (3) **voltar atrás seria caro**. A prova é
@@ -140,7 +148,7 @@ Se a plan exige texto específico numa spec fixa, escreva-o **na plan**, pronto 
 Ponteiro puro. Não repete referência, skill nem restrição que já esteja na plan ou no `00-prompt-executor`.
 
 ````md
-Leia specs/00-prompt-executor.md e execute specs/plan/plan-NN-<slug>.md.
+Leia specs/00-prompt-executor.md e execute specs/plan/plan-FF.NN-<slug>.md.
 
 Cumpra o ritual de leitura (§2) antes da primeira edição. A §4 da plan
 (Referências obrigatórias) é a lista completa do que carregar — não há contexto
@@ -182,7 +190,7 @@ caminho, o prompt (§5.3) e as dependências pendentes.
 
 # 6. A via direta
 
-Nenhum arquivo nasce: sem plan, sem linha no índice, `proximo_numero_plan` não se move.
+Nenhum arquivo nasce: sem plan, sem linha no índice, nenhum contador de `proximo_numero_plan` se move.
 
 Aqui o prompt **não** é ponteiro — não há plan para apontar. Ele carrega o que a §4 de uma plan carregaria.
 
@@ -276,7 +284,7 @@ Termine pedindo autorização e **pare**.
 3. Prompt de correção, **na mesma conversa do executor** (ela já tem plan, código e specs carregados):
 
 ````md
-Nesta mesma conversa: corrija a execução de specs/plan/plan-NN-<slug>.md.
+Nesta mesma conversa: corrija a execução de specs/plan/plan-FF.NN-<slug>.md.
 
 Veredito de AAAA-MM-DD: REPROVADO. Os achados numerados estão no bloco de veredito
 desta data, na própria plan. Escopo da correção: exclusivamente esses achados.
@@ -326,12 +334,12 @@ você propõe (§7.2) e espera. Autorização parcial é válida.
    Preserve o que continua válido, e atualize `status` da spec de destino.
 5. **A spec fixa NUNCA cita uma plan.** Nem na prosa, nem em `relacionados`, nem num ADR. A plan é removida
    na síntese, e o ponteiro morre no mesmo ato. A verdade transportada não carrega procedência — procedência
-   é o Git (`git log --diff-filter=D -- specs/plan/plan-NN-*.md`). O `relacionados` da spec de destino aceita
+   é o Git (`git log --diff-filter=D -- specs/plan/plan-FF.NN-*.md`). O `relacionados` da spec de destino aceita
    **só outras specs fixas**.
 6. **Revise o `00-contexto` em toda síntese**, mesmo que nenhum destino o cite. *Nada a mudar* é resultado
    legítimo; pular a checagem não é.
 
-**Trava, ANTES de escrever qualquer coisa:** `git log --oneline -- specs/plan/plan-NN-*.md`. **Vazio? A plan
+**Trava, ANTES de escrever qualquer coisa:** `git log --oneline -- specs/plan/plan-FF.NN-*.md`. **Vazio? A plan
 nunca foi commitada** — removê-la seria perda total. **Pare aqui**, peça o commit ao usuário e sintetize
 depois, inteiro. Nunca sintetize agora para remover depois: isso deixa em disco uma plan sintetizada que
 nenhum status descreve.
@@ -347,7 +355,7 @@ nenhum status descreve.
 
 **Outra plan depende desta?** Antes de sintetizar, confirme que **o que a dependente precisa está na spec
 fixa**. Se estiver, remova normalmente: a dependente passa a ler a spec fixa, e a dependência deixa de ser
-"plan-NN" para ser essa spec. Se **não** estiver, a síntese está incompleta — **termine-a** e só então remova.
+"plan-FF.NN" para ser essa spec. Se **não** estiver, a síntese está incompleta — **termine-a** e só então remova.
 
 Plan sintetizada **não fica em disco por dependência**: guardar a plan seria admitir que a spec fixa não
 carrega a verdade, que é exatamente o que a síntese promete. **Sintetizou, saiu** — sem exceção.
@@ -384,7 +392,9 @@ Grave a ponto de não poder esperar? Então não é backlog — é demanda; leve
 3. **Não aprove pelo resumo.** Verificação direta ou nada.
 4. **Não sintetize sem autorização.** Proponha e espere.
 5. **Não deixe status divergente** entre a plan e o `00-indice`, nem `status` de frontmatter desatualizado.
-6. **Não renumere plan.** `NN` é definitivo, vem de `proximo_numero_plan`, nunca reaproveitado.
+6. **Não renumere plan nem use família fora do catálogo.** `FF.NN` é definitivo — o `NN` vem do contador da
+   família em `proximo_numero_plan`, nunca reaproveitado; família nova só depois da aprovação do usuário
+   ([[00-planejamento]] §1).
 7. **Não deixe plan sintetizada em disco, nem por dependência.** Síntese e remoção são uma ação só (§7.4),
    sem exceção. A trava do `git log` vem **antes** da síntese, não entre ela e a remoção.
 8. **Não deixe spec fixa apontando para plan** — nem prosa, nem `relacionados`, nem ADR. É ponteiro que morre

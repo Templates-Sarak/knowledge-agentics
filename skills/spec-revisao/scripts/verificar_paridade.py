@@ -7,10 +7,13 @@ Cobre so o que e deterministico (mesma entrada -> mesma saida) na skill `spec-re
 
   1. `ponteiro-morto`    — caminho citado numa spec que nao existe no repositorio.
   2. `wikilink-orfao`    — `[[nome]]` que nao resolve para nenhuma spec da arvore.
-  3. `plan-sem-indice`   — `plan/plan-NN-*.md` em disco sem linha no `00-indice`.
+  3. `plan-sem-indice`   — `plan/plan-FF.NN-*.md` em disco sem linha no `00-indice`.
   4. `indice-sem-plan`   — linha no `00-indice` cuja plan nao existe mais em disco.
   5. `status-divergente` — status do frontmatter da plan != status citado no `00-indice`.
   6. `modulo-sem-spec`   — `modules/<m>/module.json` em disco que nenhuma spec cita.
+  7. `plan-fora-do-formato` — `plan/plan-*.md` cujo nome nao e `plan-FF.NN-<slug>.md` (ex.: o
+     formato antigo `plan-07-x.md`). Sem esta checagem, o arquivo deixaria de casar o regex de plan e
+     sumiria das checagens 3-5 em silencio — invisivel e trabalho perdido.
 
 O que este script NAO faz, de proposito: dizer se a REGRA descrita numa spec e a regra que o
 codigo executa. Isso e julgamento, fica no agente (SKILL.md, passos 3-5) — script que opinasse
@@ -20,7 +23,7 @@ Fora de fence: citacao dentro de bloco ``` e exemplo de comando, nao ponteiro a 
 como ponteiro produziria ruido justamente nas specs que ensinam a rodar alguma coisa.
 
 Nucleo x casca: `citacoes_de_texto`, `wikilinks_de_texto`, `plans_do_indice`,
-`status_do_frontmatter` e `divergencias_de_plan` sao PURAS (recebem texto, nunca tocam `fs`) — sao
+`status_do_frontmatter`, `divergencias_de_plan` e `plan_fora_do_formato` sao PURAS (recebem texto, nunca tocam `fs`) — sao
 o que o `--autoteste` prova com fixtures em memoria. `auditar_*` sao a casca fina que le o disco.
 
 Read-only por construcao: abre arquivo em modo leitura e nunca escreve. Exit 0 sem achado, 1 com
@@ -45,11 +48,13 @@ PASTAS_IGNORADAS = frozenset(
 LINK_MD = re.compile(r"\]\(([^)\s]+)\)")
 EM_CRASE = re.compile(r"`([^`\n]+)`")
 WIKILINK = re.compile(r"\[\[([^\]\n|]+)")
-PLAN_NO_TEXTO = re.compile(r"plan-\d+-[a-z0-9]+(?:-[a-z0-9]+)*")
+# Plan por familia: `plan-FF.NN-<slug>` — dois digitos de familia, ponto, dois digitos de contador.
+PLAN_NO_TEXTO = re.compile(r"plan-\d{2}\.\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*")
+PLAN_ARQUIVO = re.compile(r"plan-\d{2}\.\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.md")
 STATUS_NO_FRONTMATTER = re.compile(r"^status:\s*[\"']?([^\"'\n]+?)[\"']?\s*$", re.M)
 FENCE = re.compile(r"^\s*```")
 # `.py`/`.env` sozinhos sao a EXTENSAO citada em prosa, nunca um arquivo do repo. E `NN` e o
-# placeholder de numeracao do proprio molde (`plan-NN-slug`, `arquitetura/NN-api.md`).
+# placeholder de numeracao do proprio molde (`plan-FF.NN-slug`, `arquitetura/FF.NN-api.md`).
 SO_EXTENSAO = re.compile(r"^\.\w{1,5}$")
 # Placeholder, glob e URL nao sao caminho a resolver. Trecho iniciado por `/` tambem nao: numa spec
 # de site, `/servicos` e ROTA HTTP, e cobrar um arquivo com esse nome acusaria a spec inteira.
@@ -157,6 +162,11 @@ def divergencias_de_plan(
     return achados
 
 
+def plan_fora_do_formato(nome: str) -> bool:
+    """Nucleo: o arquivo de `plan/` se diz plan (`plan-*.md`) mas nao segue `plan-FF.NN-<slug>.md`?"""
+    return nome.startswith("plan-") and nome.endswith(".md") and not PLAN_ARQUIVO.fullmatch(nome)
+
+
 def _achado(classe, arquivo, linha, detalhe):
     return {"classe": classe, "arquivo": arquivo, "linha": linha, "detalhe": detalhe}
 
@@ -186,9 +196,13 @@ def _resolve(candidato, bases, basenames):
 
     Citacao COM barra e caminho: resolve estrito, a partir de cada base. Citacao SEM barra e
     NOME (`04-regras.md`): resolve por basename em qualquer lugar da arvore — cobrar caminho
-    exato de quem nao escreveu caminho seria inventar exigencia que a spec nunca fez.
+    exato de quem nao escreveu caminho seria inventar exigencia que a spec nunca fez. Citacao
+    TERMINADA em `/` e PASTA (`arquitetura/`): resolve se for diretorio a partir de alguma base —
+    a barra final e o sinal; sem ela, vale a regra de arquivo acima.
     """
     alvo = candidato.rstrip("/")
+    if candidato.endswith("/"):
+        return any(os.path.isdir(os.path.join(base, alvo)) for base in bases)
     if "/" not in alvo:
         return alvo in basenames
     return any(os.path.exists(os.path.join(base, alvo)) for base in bases)
@@ -222,7 +236,7 @@ def auditar_wikilinks(arquivos: list[str], raiz: str) -> list[dict]:
 
 
 def _plans_em_disco(specs_dir):
-    """Casca: `{plan: status}` lido de cada `plan/plan-NN-*.md`."""
+    """Casca: `{plan: status}` lido de cada `plan/plan-FF.NN-*.md`."""
     pasta = os.path.join(specs_dir, "plan")
     if not os.path.isdir(pasta):
         return {}
@@ -248,6 +262,18 @@ def auditar_fila(specs_dir: str) -> list[dict]:
     return [
         _achado(classe, "specs/00-indice.md", 0, "%s: %s" % (plan, detalhe))
         for classe, plan, detalhe in triplas
+    ]
+
+
+def auditar_nomes_de_plan(specs_dir: str) -> list[dict]:
+    """Casca: arquivo de `plan/` fora do formato `plan-FF.NN-<slug>.md` (ex.: o antigo `plan-07-x.md`)."""
+    pasta = os.path.join(specs_dir, "plan")
+    if not os.path.isdir(pasta):
+        return []
+    return [
+        _achado("plan-fora-do-formato", f"specs/plan/{nome}", 0, "esperado plan-FF.NN-<slug>.md")
+        for nome in sorted(os.listdir(pasta))
+        if plan_fora_do_formato(nome)
     ]
 
 
@@ -284,13 +310,14 @@ def auditar_modulos(arquivos: list[str], raiz: str) -> list[dict]:
 
 
 def auditar(raiz: str, specs_dir: str) -> list[dict]:
-    """Casca: as seis checagens, na ordem em que o relatorio as apresenta."""
+    """Casca: as sete checagens, na ordem em que o relatorio as apresenta."""
     arquivos = _arquivos_de_spec(specs_dir)
     bases = (raiz, specs_dir, os.path.dirname(specs_dir))
     return (
         auditar_ponteiros(arquivos, bases, raiz, _basenames_do_repo(raiz))
         + auditar_wikilinks(arquivos, raiz)
         + auditar_fila(specs_dir)
+        + auditar_nomes_de_plan(specs_dir)
         + auditar_modulos(arquivos, raiz)
     )
 
@@ -308,6 +335,9 @@ def _imprimir_humano(specs_dir, achados):
     )
     print("\n[%s] %s" % ("OK" if not achados else "ERRO", veredito))
 
+
+# Diretorio desta skill (pai de `scripts/`): ancora real, e somente leitura, para os casos de pasta.
+_DIR_DA_SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Fixtures do `--autoteste`: `(rotulo, predicado)` por invariante de nucleo. Constante de
 # modulo, e nao corpo de funcao, para a prova crescer sem estourar o limiar de 40 linhas.
@@ -333,6 +363,14 @@ CASOS = [
         lambda: _resolve("04-regras.md", (), {"04-regras.md"}) is True,
     ),
     (
+        "pasta existente citada com barra final resolve",
+        lambda: _resolve("scripts/", (_DIR_DA_SKILL,), set()) is True,
+    ),
+    (
+        "pasta inexistente citada com barra final e ponteiro morto",
+        lambda: _resolve("pasta-que-nao-existe/", (_DIR_DA_SKILL,), set()) is False,
+    ),
+    (
         "nome sem barra ausente reprova",
         lambda: _resolve("99-inexistente.md", (), {"04-regras.md"}) is False,
     ),
@@ -344,9 +382,9 @@ CASOS = [
         "indice le plan e status",
         lambda: (
             plans_do_indice(
-                "| 1 | [plan-01-x](plan/plan-01-x.md) | ob | - | ROXO | specs/ |"
+                "| 1 | [plan-01.02-x](plan/plan-01.02-x.md) | ob | - | ROXO | specs/ |"
             )
-            == {"plan-01-x": "ROXO"}
+            == {"plan-01.02-x": "ROXO"}
         ),
     ),
     (
@@ -356,25 +394,52 @@ CASOS = [
     (
         "plan sem indice",
         lambda: (
-            divergencias_de_plan({}, {"plan-01-x": "A"})[0][0] == "plan-sem-indice"
+            divergencias_de_plan({}, {"plan-01.02-x": "A"})[0][0] == "plan-sem-indice"
         ),
     ),
     (
         "indice sem plan",
         lambda: (
-            divergencias_de_plan({"plan-01-x": "A"}, {})[0][0] == "indice-sem-plan"
+            divergencias_de_plan({"plan-01.02-x": "A"}, {})[0][0] == "indice-sem-plan"
         ),
     ),
     (
         "status divergente",
         lambda: (
-            divergencias_de_plan({"plan-01-x": "A"}, {"plan-01-x": "B"})[0][0]
+            divergencias_de_plan({"plan-01.02-x": "A"}, {"plan-01.02-x": "B"})[0][0]
             == "status-divergente"
         ),
     ),
     (
         "paridade de status nao acusa",
-        lambda: divergencias_de_plan({"plan-01-x": "A"}, {"plan-01-x": "A"}) == [],
+        lambda: divergencias_de_plan({"plan-01.02-x": "A"}, {"plan-01.02-x": "A"}) == [],
+    ),
+    (
+        "plan por familia e reconhecida",
+        lambda: PLAN_NO_TEXTO.fullmatch("plan-02.07-ajustar-cache") is not None,
+    ),
+    (
+        "formato antigo plan-07-x.md e acusado como fora do formato",
+        lambda: plan_fora_do_formato("plan-07-x.md") is True,
+    ),
+    (
+        "formato por familia nao e acusado",
+        lambda: plan_fora_do_formato("plan-02.07-x.md") is False,
+    ),
+    (
+        "arquivo que nao se diz plan (.gitkeep) nao e acusado",
+        lambda: plan_fora_do_formato(".gitkeep") is False,
+    ),
+    (
+        "indice ignora linha no formato antigo",
+        lambda: plans_do_indice(
+            "| 1 | [plan-07-x](plan/plan-07-x.md) | ob | - | ROXO | specs/ |"
+        )
+        == {},
+    ),
+    (
+        "placeholder FF.NN do molde nao e candidato a caminho",
+        lambda: _e_candidato("arquitetura/FF.NN-api.md") is False,
     ),
 ]
 

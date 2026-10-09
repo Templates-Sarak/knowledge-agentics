@@ -15,7 +15,7 @@ para que a campanha seja filtrável no `00-indice.md` sem grep manual:
 
 ```yaml
 tags: ["plan", "adequacao-modular"]
-destino_sintese: "arquitetura/NN-<nome>.md"   # ou specs/NN · adr/NNN · 00-contexto.md · —
+destino_sintese: "arquitetura/FF.NN-<nome>.md"   # ou specs/FF.NN · adr/NNN · 00-contexto.md · —
 ```
 
 ## 2. O template de renomeação de módulo — os sete itens, nenhum opcional

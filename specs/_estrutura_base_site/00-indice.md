@@ -5,7 +5,7 @@ dominio: "Governança de Specs (SDD)"
 status: "🟢 Vigente"
 tags: ["processo", "indice", "sdd"]
 relacionados: ["[[00-contexto]]", "[[00-backlog]]", "[[00-prompt-revisor]]", "[[00-prompt-executor]]"]
-proximo_numero_plan: "01" # NN da próxima plan a nascer. Só sobe. Nunca reaproveitado — ver §4.
+proximo_numero_plan: {} # Mapa família → NN da próxima plan dela (ex.: { "01": "04", "02": "01" }). Só sobe. Nunca reaproveitado — ver §4.
 ---
 
 # 0. O que é este arquivo
@@ -31,7 +31,7 @@ que cresce é índice quebrado.
 > arquivo como contrato de manutenção; a tabela começa vazia e é mantida pelo **agente revisor**.
 
 **Quem escreve/atualiza:** exclusivamente o **agente revisor** ([[00-prompt-revisor]]).
-**Quando atualizar:** ao criar uma plan (nova linha + `proximo_numero_plan` sobe), a cada mudança de status,
+**Quando atualizar:** ao criar uma plan (nova linha + o contador da família em `proximo_numero_plan` sobe), a cada mudança de status,
 e ao **sintetizar** (linha removida junto com o arquivo da plan). **Status vive aqui e na própria plan — os
 dois, sempre, na mesma ação.**
 
@@ -43,9 +43,10 @@ dois, sempre, na mesma ação.**
 > **é** o plano; não use a numeração para ordenar. Colunas obrigatórias, nesta ordem:
 >
 > - **#** — posição na fila (1, 2, 3…). Reordenável.
-> - **Plan** — link relativo: `[plan-NN-slug](plan/plan-NN-slug.md)`.
+> - **Plan** — link relativo: `[plan-FF.NN-slug](plan/plan-FF.NN-slug.md)`. `FF` é a família; `NN`, o contador
+>   dela no `proximo_numero_plan` (§4).
 > - **Objetivo** — uma linha, no infinitivo. O que muda no sistema.
-> - **Depende de** — `plan-NN` que precisa estar sintetizada antes, ou `—`.
+> - **Depende de** — `plan-FF.NN` que precisa estar sintetizada antes, ou `—`.
 > - **Status** — um dos valores da §2. **Igual** ao frontmatter da plan.
 > - **Destino** — para onde o conteúdo será sintetizado (§3).
 >
@@ -89,13 +90,13 @@ Toda plan declara, **desde o momento em que é escrita**, para onde seu conteúd
 
 | Valor | Quando usar |
 |---|---|
-| `arquitetura/NN-<nome>.md` | Mudou design estrutural, stack, fronteira de módulo, contrato de API. |
-| `specs/NN-<nome>.md` | Mudou regra de negócio ou comportamento de funcionalidade. |
+| `arquitetura/FF.NN-<nome>.md` | Mudou design estrutural, stack, fronteira de módulo, contrato de API. |
+| `specs/FF.NN-<nome>.md` | Mudou regra de negócio ou comportamento de funcionalidade. |
 | `00-contexto.md` | Mudou regra inegociável, stack ou mapa de roteamento. |
 | `adr/NNN-<nome>.md` | Houve **decisão com alternativa real descartada**. Passa a régua de três perguntas do [[00-prompt-revisor]] §5.2 — se não passa, não é ADR. **É o destino mais raro.** |
 | **`—` (nenhum)** | Execução que não altera verdade documentada: correção de bug sem mudança de regra, refactor de conformidade, ajuste de build/CI, limpeza. |
 
-> Vários destinos são permitidos (`arquitetura/03-api.md` + `adr/004-...`). **`—` é a resposta mais comum** —
+> Vários destinos são permitidos (`arquitetura/02.03-api.md` + `adr/004-...`). **`—` é a resposta mais comum** —
 > não invente destino para preencher a coluna, e não promova uma escolha óbvia a ADR só porque o menu oferece.
 >
 > Se a plan tem destino `—`, ela ainda passa pela síntese: o revisor confirma que não havia o que transportar
@@ -105,22 +106,27 @@ Toda plan declara, **desde o momento em que é escrita**, para onde seu conteúd
 
 # 4. Regras de manutenção
 
-- **Numeração é monotônica e definitiva.** `plan-07` é `plan-07` para sempre, mesmo depois de removida.
-  **Nunca renumere** nem reaproveite um `NN`. O próximo número livre é **sempre** o valor do campo
-  `proximo_numero_plan` no frontmatter deste arquivo — nunca o descubra escaneando `plan/`, porque plans
-  sintetizadas sumiram da pasta. Ao criar uma plan: use o valor atual e **incremente-o** na mesma ação.
+- **Numeração é por família, monotônica e definitiva.** `plan-02.07` é `plan-02.07` para sempre, mesmo depois
+  de removida. **Nunca renumere** nem reaproveite um `NN`. O próximo número livre de uma família é **sempre** o
+  valor dela no mapa `proximo_numero_plan` do frontmatter deste arquivo — família sem entrada começa em `01` —
+  e nunca se descobre escaneando `plan/`, porque plans sintetizadas sumiram da pasta. Ao criar uma plan: use o
+  valor atual da família e **incremente-o** na mesma ação (família sem entrada: use `01` e grave a entrada já
+  em `02`).
+- **A família vem do catálogo** ([[00-planejamento]] §1). Família fora dele é defeito; família nova só entra
+  com aprovação do usuário. O namespace de plan é separado do das specs: `plan-02.03` e `specs/02.03-*.md` não
+  têm relação.
 - **Uma linha aqui = um arquivo em `plan/`.** Sempre. Linha sem arquivo é índice mentindo; arquivo sem linha
   é trabalho invisível. Divergiu? A **plan** é a fonte da verdade e este índice está errado — corrija aqui.
 - **Status e arquivo andam juntos.** Aprovou → `🟢` na plan **e** aqui. Sintetizou → spec fixa atualizada,
   `git rm` da plan **e** remoção da linha, na mesma passada. Nunca um sem o outro.
-- **Antes de SINTETIZAR, confirme o rastro.** `git log --oneline -- specs/plan/plan-NN-*.md` tem de retornar
+- **Antes de SINTETIZAR, confirme o rastro.** `git log --oneline -- specs/plan/plan-FF.NN-*.md` tem de retornar
   ao menos um commit. Vazio significa que a plan nunca foi commitada: removê-la seria **perda total**. A
   checagem vem **antes** de escrever qualquer coisa — o usuário commita a plan primeiro, e só então a síntese
   acontece inteira. Nunca sintetize agora para remover depois: isso cria uma plan sintetizada em disco sem
   status que a descreva.
 - **Dependência é contrato:** não libere (`🔴`) uma plan cuja dependência ainda esteja aberta. Dependência
   que sumiu da tabela **foi sintetizada** — logo já está embutida na spec fixa de destino, e deixa de ser
-  "plan-NN" para ser essa spec. **Plan sintetizada nunca fica em disco para servir de contexto a outra**: se
+  "plan-FF.NN" para ser essa spec. **Plan sintetizada nunca fica em disco para servir de contexto a outra**: se
   a dependente precisa de algo que a spec fixa não carrega, a síntese estava incompleta — o revisor a
   completa **antes** de remover ([[00-prompt-revisor]] §7.4).
 - **Plan nunca referencia outra plan como fonte de conteúdo** — só `depende_de`, que é ordem de execução.

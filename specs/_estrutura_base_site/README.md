@@ -28,15 +28,16 @@ quebrado, imagem sem otimizar). A via direta encurta a papelada — nunca a veri
 | `00-prompt-revisor.md` | Prompt que forma o agente revisor numa conversa nova | **Universal** |
 | `00-prompt-executor.md` | Prompt que forma o agente executor (a cada execução) | **Universal** |
 | `00-backlog.md` | Achados registrados e **não agendados** — sem status, sem fila | **Por projeto** — mantido pelo revisor |
+| `panorama/00-planejamento.md` | Catálogo de **famílias** — a fonte única do `FF` de specs e plans | **Por projeto** — já vem com as famílias do site; família nova só com aprovação do usuário |
 
 ### 1.2 Specs de conteúdo (a verdade do site)
 
 | Pasta | Pergunta | Conteúdo | Natureza |
 |---|---|---|---|
-| `arquitetura/` | O **COMO** | Stack, identidade visual, tom de voz, SEO/NAP, a11y/performance, estrutura de código (`01`–`06`) | Documento vivo |
-| `specs/` | O **QUÊ** | Layout global, Home, páginas internas, formulários, páginas legais (`01`–`05`) | Documento vivo |
+| `arquitetura/` | O **COMO** | Stack, identidade visual, tom de voz, SEO/NAP, a11y/performance, estrutura de código (famílias `01` e `02`) | Documento vivo |
+| `specs/` | O **QUÊ** | Layout global, Home, páginas internas, formulários, páginas legais (família `03`) | Documento vivo |
 | `adr/` | O **POR QUÊ** | Decisões com trade-off (`001-...`) | **Imutável** — decisão nova = ADR novo |
-| `plan/` | O **COMO CHEGAR LÁ** | **Todas** as plans (`plan-NN-<slug>.md`), do nascimento ao expurgo | Fila de execução — o `status` diz em que pé cada uma está |
+| `plan/` | O **COMO CHEGAR LÁ** | **Todas** as plans (`plan-FF.NN-<slug>.md`), do nascimento ao expurgo | Fila de execução — o `status` diz em que pé cada uma está |
 
 Moldes em `_templates/`. Inventário completo das specs fixas em [`INDEX.md`](INDEX.md).
 
@@ -52,22 +53,22 @@ Erro mais comum aqui é escrever a coisa certa no arquivo errado:
 
 | Definição | Vai para |
 |---|---|
-| Cor, fonte, espaçamento, token | `arquitetura/02-identidade-visual.md` — **nunca** hardcoded no componente |
-| Palavra visível ao usuário, tom, promessa | `arquitetura/03-tom-de-voz-e-copy.md` |
-| CNPJ, endereço, telefone, keywords, JSON-LD | `arquitetura/04-dados-institucionais-seo.md` — fonte única do NAP |
-| Nível WCAG, orçamento de Core Web Vitals | `arquitetura/05-acessibilidade-e-performance.md` |
-| Onde o arquivo mora, como componentiza, i18n | `arquitetura/06-estrutura-de-codigo.md` |
-| Comportamento de header/footer/menu | `specs/01-layout-global-e-nav.md` |
-| Quais seções a Home tem e em que ordem | `specs/02-pagina-home.md` |
-| Estrutura de página interna, hub & spoke | `specs/03-paginas-internas-e-hub.md` |
-| Campos, validação, destino do lead | `specs/04-formularios-e-contato.md` |
-| Consentimento, cookies, políticas | `specs/05-paginas-legais-e-cookies.md` |
+| Cor, fonte, espaçamento, token | `arquitetura/01.01-identidade-visual.md` — **nunca** hardcoded no componente |
+| Palavra visível ao usuário, tom, promessa | `arquitetura/01.02-tom-de-voz-e-copy.md` |
+| CNPJ, endereço, telefone, keywords, JSON-LD | `arquitetura/01.03-dados-institucionais-seo.md` — fonte única do NAP |
+| Nível WCAG, orçamento de Core Web Vitals | `arquitetura/02.03-acessibilidade-e-performance.md` |
+| Onde o arquivo mora, como componentiza, i18n | `arquitetura/02.02-estrutura-de-codigo.md` |
+| Comportamento de header/footer/menu | `specs/03.01-layout-global-e-nav.md` |
+| Quais seções a Home tem e em que ordem | `specs/03.02-pagina-home.md` |
+| Estrutura de página interna, hub & spoke | `specs/03.03-paginas-internas-e-hub.md` |
+| Campos, validação, destino do lead | `specs/03.04-formularios-e-contato.md` |
+| Consentimento, cookies, políticas | `specs/03.05-paginas-legais-e-cookies.md` |
 
 ---
 
 ## 3. Os planos (`plan/`) — **sim, entram no Git**
 
-Uma **plan** é a unidade de trabalho **quando há verdade a preservar**: `plan/plan-NN-<slug>.md`, escrita
+Uma **plan** é a unidade de trabalho **quando há verdade a preservar**: `plan/plan-FF.NN-<slug>.md`, escrita
 pelo **agente revisor** e executada pelo **agente executor**. Demanda que não deixa verdade nenhuma não passa
 por aqui — corre pela via direta e não gera arquivo (`00-prompt-revisor` §6). Contém descrição, escopo, referências, instruções e o **destino da síntese**. O
 prompt de execução **não** vive nela — é entregue na conversa, como ponteiro (`00-prompt-revisor` §5.3).
@@ -86,14 +87,15 @@ existe estado "sintetizada aguardando limpeza": sintetizou, saiu. É isso que ma
 do trabalho aberto, em vez de crescer com a idade do site.
 
 A janela de conferência não se perdeu: o commit que remove a plan mostra a plan inteira no diff
-(`git log --diff-filter=D -- specs/plan/plan-NN-*.md`). A única trava antes do `git rm` é o rastro — plan
+(`git log --diff-filter=D -- specs/plan/plan-FF.NN-*.md`). A única trava antes do `git rm` é o rastro — plan
 nunca commitada fica, porque apagá-la seria perda total.
 
-> Numeração é **monotônica e definitiva**: `plan-07` é `plan-07` para sempre, mesmo depois de removida. O
-> próximo número livre vem do campo `proximo_numero_plan` no `00-indice`, nunca de escanear a pasta. A ordem
+> Numeração é **por família, monotônica e definitiva**: `plan-02.07` é `plan-02.07` para sempre, mesmo depois
+> de removida. O próximo número livre vem do contador da família no mapa `proximo_numero_plan` do `00-indice`,
+> nunca de escanear a pasta. A ordem
 > de execução se muda na coluna `#` do `00-indice`, nunca renomeando o arquivo.
 >
-> ⚠️ **Não confunda** `plan/` com as specs `01`–`05` de `specs/`: aquelas são a verdade das páginas, estas são
+> ⚠️ **Não confunda** `plan/` com as specs `03.01`–`03.05` de `specs/`: aquelas são a verdade das páginas, estas são
 > as tarefas que chegam lá.
 
 ---
@@ -107,8 +109,8 @@ existem lá.
 
 ```
 1. usuário traz uma demanda (página nova, ajuste de copy, otimização, correção)
-2. REVISOR escreve  plan/plan-NN-<slug>.md  (status 🔴)  +  linha no 00-indice
-3. usuário abre conversa nova: "leia 00-prompt-executor e execute plan-NN"
+2. REVISOR escreve  plan/plan-FF.NN-<slug>.md  (status 🔴)  +  linha no 00-indice
+3. usuário abre conversa nova: "leia 00-prompt-executor e execute plan-FF.NN"
 4. EXECUTOR executa → alterações no worktree → resumo escrito na própria plan (🟠)
 5. REVISOR verifica DIRETAMENTE o worktree (não confia no resumo)
      ├─ reprovado → 🔵 + prompt de correção → volta ao 4
@@ -146,7 +148,8 @@ qualquer outra marca de autoria de agente.
 
 ## 6. Convenções
 
-- **Nomes** em `kebab-case`, com prefixo numérico: `02-pagina-home.md`, `plan-03-otimizar-lcp.md`.
+- **Nomes** em `kebab-case`, com prefixo de família (`FF.NN`, catálogo em `panorama/00-planejamento.md` §1):
+  `03.02-pagina-home.md`, `plan-02.03-otimizar-lcp.md`. Exceção: os nomes reservados da família `00` (fundação) não seguem `FF.NN` — a lista está no catálogo.
 - **Frontmatter YAML obrigatório** em toda spec, com os campos do molde correspondente. Não invente campos.
   As `00-*` usam `tipo: "processo"`; as specs fixas ainda não preenchidas usam `tipo: "template"` e
   `status: "🟡 Pendente"` até serem instanciadas no projeto.

@@ -20,10 +20,12 @@
 - 📁 **`arquitetura/`**: design vivo e regras globais (O COMO).
 - 📁 **`specs/`**: specs vivas de funcionalidades (O QUÊ).
 - 📁 **`adr/`**: decisões imutáveis (O POR QUÊ). Decisão nova = ADR novo.
-- 📁 **`plan/`**: as plans **abertas** (`plan-NN-<slug>.md`). Não há subpasta: o `status` do frontmatter diz
+- 📁 **`plan/`**: as plans **abertas** (`plan-FF.NN-<slug>.md`). Não há subpasta: o `status` do frontmatter diz
   se a plan está na fila (🔴 🟡 🟠 🔵 ⛔) ou aprovada aguardando a autorização de síntese (🟢). **A plan é
   temporária** — no ato da síntese o revisor a remove junto com a linha do índice, e o rastro passa a viver
   no histórico do Git.
+- 📁 **`panorama/`**: o planejamento — hoje, o **catálogo de famílias** (`00-planejamento.md` §1), fonte
+  única do `FF` que numera specs (`FF.NN-<slug>.md`) e plans (`plan-FF.NN-<slug>.md`).
 - 📁 **`_templates/`**: moldes (`template-spec`, `template-arquitetura`, `template-adr`, `template-plan`).
 
 ## O ciclo em uma linha

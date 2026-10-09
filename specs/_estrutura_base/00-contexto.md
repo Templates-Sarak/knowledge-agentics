@@ -85,11 +85,14 @@ inegociável ou o mapa de roteamento. Nunca por conta própria fora de uma plan.
 > Preencha a coluna "Leia antes" com **specs fixas** (`arquitetura/`, `specs/`, `adr/`) — para skills e
 > commands, aponte para [[00-knowledge]], que é o roteador de capacidades.
 >
+> As specs fixas são numeradas por **família** (`FF.NN-<slug>.md`); o catálogo é [[00-planejamento]] §1 —
+> aponte para ele, nunca copie as famílias aqui.
+>
 > | Tipo de tarefa | Leia antes (specs fixas) | Capacidade |
 > |---|---|---|
-> | Alterar regra de negócio de \<módulo\> | `specs/NN-<module>.md` | [[00-knowledge]] |
-> | Criar/alterar endpoint | `arquitetura/NN-api.md` + spec do módulo | [[00-knowledge]] |
-> | Mexer em schema/migration | `arquitetura/NN-dados.md` + ADR relevante | [[00-knowledge]] |
+> | Alterar regra de negócio de \<módulo\> | `specs/FF.NN-<module>.md` | [[00-knowledge]] |
+> | Criar/alterar endpoint | `arquitetura/FF.NN-api.md` + spec do módulo | [[00-knowledge]] |
+> | Mexer em schema/migration | `arquitetura/FF.NN-dados.md` + ADR relevante | [[00-knowledge]] |
 > | Mudar decisão estrutural | todos os `adr/` + `arquitetura/` | [[00-knowledge]] |
 >
 > Mantenha entre 6 e 15 linhas. Se passar disso, o repositório precisa de specs melhores, não de mais linhas
@@ -109,7 +112,7 @@ vira arquivo. O revisor **tria** cada demanda ([[00-prompt-revisor]] §4):
 
 | A demanda deixa verdade documentada para trás? | Via | O que nasce |
 |---|---|---|
-| **Sim** — muda regra, contrato, stack, comportamento | **plan** | `plan-NN` + linha no [[00-indice]] |
+| **Sim** — muda regra, contrato, stack, comportamento | **plan** | `plan-FF.NN` + linha no [[00-indice]] |
 | **Não** — bug sem mudança de regra, typo, conformidade, limpeza | **prompt direto** | nada; a instrução vive só na conversa |
 
 A via direta encurta a **papelada**, nunca a **verificação**: o executor trabalha igual e o revisor confere o
@@ -117,9 +120,9 @@ diff linha por linha do mesmo jeito. O ciclo abaixo é o da **plan**; a via dire
 e expurgo, porque não há verdade a transportar.
 
 ```
-revisor escreve  specs/plan/plan-NN-<slug>.md  +  linha no 00-indice
+revisor escreve  specs/plan/plan-FF.NN-<slug>.md  +  linha no 00-indice
       ↓
-executor lê  00-prompt-executor  +  plan-NN  e executa
+executor lê  00-prompt-executor  +  plan-FF.NN  e executa
       ↓
 alterações ficam no worktree (nenhum agente commita)
       ↓

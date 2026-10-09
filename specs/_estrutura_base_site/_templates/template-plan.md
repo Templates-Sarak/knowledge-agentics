@@ -1,18 +1,20 @@
 ---
 tipo: "plan"
+familia: "FF" # Família do catálogo (panorama/00-planejamento.md §1). O nome do arquivo começa por ela.
 titulo: "Título curto no infinitivo (Ex: Extrair validação de CPF para o domínio)"
 dominio: "Nome do Módulo (Ex: Autenticação)"
 status: "🔴 A executar" # 🔴 A executar · 🟡 Em execução · 🟠 Em revisão · 🔵 Em correção · 🟢 Aprovada · ⛔ Bloqueada
 prioridade: "Alta"
 tags: ["plan"]
-relacionados: [] # Ex: [[arquitetura/03-api]], [[specs/02-login]]
-depende_de: "" # Ex: plan-04-extrair-contrato — precisa estar 🟢 antes
-destino_sintese: "" # arquitetura/NN-*.md · adr/NNN-*.md · specs/NN-*.md · 00-contexto.md · — (nenhum)
+relacionados: [] # Ex: [[arquitetura/02.03-api]], [[specs/01.02-login]]
+depende_de: "" # Ex: plan-02.04-extrair-contrato — precisa estar 🟢 antes
+destino_sintese: "" # arquitetura/FF.NN-*.md · adr/NNN-*.md · specs/FF.NN-*.md · 00-contexto.md · — (nenhum)
 ---
 
 > **Molde de plan.** Escrita pelo **agente revisor** ([[00-prompt-revisor]]), executada pelo **agente
-> executor** ([[00-prompt-executor]]). Nome do arquivo: `plan-NN-<slug-kebab>.md`, com `NN` monotônico e
-> definitivo. Vive em `plan/` até ser sintetizada — nunca muda de pasta; o que muda é o `status`. Ao criar,
+> executor** ([[00-prompt-executor]]). Nome do arquivo: `plan-FF.NN-<slug-kebab>.md` — `FF` é a família do
+> catálogo ([[00-planejamento]] §1), e `NN` o contador **dessa família** no `proximo_numero_plan` do
+> [[00-indice]], monotônico e definitivo. Vive em `plan/` até ser sintetizada — nunca muda de pasta; o que muda é o `status`. Ao criar,
 > adicione a linha correspondente na tabela do [[00-indice]].
 >
 > ⚠️ **Esta plan é temporária.** No ato da síntese ela é **removida** junto com a linha do índice: sua
@@ -52,8 +54,8 @@ repita a investigação já feita. Sem história longa.
 
 | Tipo | Referência | Por quê |
 |---|---|---|
-| Spec fixa | `arquitetura/NN-<nome>.md` | regra estrutural que restringe a solução |
-| Spec fixa | `specs/NN-<nome>.md` | regra de negócio afetada |
+| Spec fixa | `arquitetura/FF.NN-<nome>.md` | regra estrutural que restringe a solução |
+| Spec fixa | `specs/FF.NN-<nome>.md` | regra de negócio afetada |
 | Contexto | `00-contexto.md` · `00-knowledge.md` | sempre |
 | **Skill** | `padrao-escrita` + `padrao-<linguagem>` | sempre |
 | **Skill** | `<skill-específica>` | o que ela resolve aqui |

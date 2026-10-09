@@ -43,14 +43,15 @@ estrutura `_estrutura_base_site` no projeto-alvo.
      |---|---|---|
      | `00-contexto.md`, `00-indice.md`, `00-knowledge.md`, `00-prompt-revisor.md`, `00-prompt-executor.md` | `specs/00-*.md` | **Specs de processo — obrigatórias.** É por elas que qualquer agente se contextualiza |
      | `README.md`, `INDEX.md` | `specs/` | Manual e bússola do diretório |
-     | `arquitetura/01`…`06` | `specs/arquitetura/` | Stack, identidade visual, tom de voz, SEO/NAP, a11y/performance, estrutura de código |
-     | `specs/01`…`05` | **`specs/specs/`** | Layout global, Home, páginas internas, formulários, páginas legais |
+     | `panorama/00-planejamento.md` | `specs/panorama/` | **Catálogo de famílias** — fonte única do `FF` de specs e plans; já vem com as famílias do site |
+     | `arquitetura/01.01`…`02.03` | `specs/arquitetura/` | Stack, identidade visual, tom de voz, SEO/NAP, a11y/performance, estrutura de código |
+     | `specs/03.01`…`03.05` | **`specs/specs/`** | Layout global, Home, páginas internas, formulários, páginas legais |
      | `_templates/*.md` | `specs/_templates/` | Moldes, incluindo `template-plan.md` |
      | `adr/` (vazia) | `specs/adr/` | ADRs — decisões imutáveis |
-     | `plan/` (vazia) | `specs/plan/` | **Fila de execução** — abriga toda plan (`plan-NN-<slug>.md`) do nascimento ao expurgo. Sem subpasta |
+     | `plan/` (vazia) | `specs/plan/` | **Fila de execução** — abriga toda plan (`plan-FF.NN-<slug>.md`) do nascimento ao expurgo. Sem subpasta |
 
-     > ⚠️ **As specs `01`–`05` vão para `specs/specs/`, NUNCA para `specs/plan/`.** A pasta `plan/`
-     > é a fila de execução do ciclo SDD e só recebe arquivos `plan-NN-<slug>.md` escritos pelo
+     > ⚠️ **As specs `03.01`–`03.05` vão para `specs/specs/`, NUNCA para `specs/plan/`.** A pasta `plan/`
+     > é a fila de execução do ciclo SDD e só recebe arquivos `plan-FF.NN-<slug>.md` escritos pelo
      > agente revisor. Despejar spec de conteúdo ali corrompe o índice de execução.
 4. **Preencher os arquivos iniciais**
    - **Ferramenta:** `Write`.
@@ -74,7 +75,7 @@ estrutura `_estrutura_base_site` no projeto-alvo.
 - **NÃO** adivinhe as informações de marca e identidade — o HITL (as perguntas do passo 1) é inegociável.
 - **NÃO** grave arquivo markdown fora da estrutura de seções proposta pelos originais de `_estrutura_base_site`.
 - **NÃO** crie nenhum arquivo em `specs/plan/`. A pasta nasce **vazia**: só o agente revisor escreve
-  plans, e só no formato `plan-NN-<slug>.md`.
+  plans, e só no formato `plan-FF.NN-<slug>.md`.
 - **NÃO** omita as specs de processo (`00-*`). Sem elas o projeto nasce sem o ciclo SDD e nenhum
   agente consegue se contextualizar.
 - **NÃO** commite. Entregue os arquivos no worktree — quem commita é o usuário.

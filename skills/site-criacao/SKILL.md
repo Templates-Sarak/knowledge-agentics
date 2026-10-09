@@ -20,8 +20,8 @@ UI/UX, SEO e de negócio do site.
 
 1. **Validar o contexto**
    - **Ação:** Verifique (silenciosamente) se `specs/arquitetura/` e `specs/specs/` existem e
-     contêm os arquivos Markdown de base gerados pela `spec-site-fundacao` (`arquitetura/01`…`06`
-     e `specs/01`…`05`).
+     contêm os arquivos Markdown de base gerados pela `spec-site-fundacao` (`arquitetura/01.01`…`02.03`
+     e `specs/03.01`…`03.05`).
    - **Ação:** Leia `specs/00-contexto.md` para não repetir o que a fundação já definiu.
      **Ignore `specs/plan/`**: é a fila de execução do ciclo SDD, não contém spec de conteúdo.
 2. **Entrevista com formulário granular (HITL obrigatório)**

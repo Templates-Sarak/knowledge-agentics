@@ -81,7 +81,7 @@ silêncio sobre a lacuna — é o defeito que este próprio arquivo existe para 
   higiene — a mesma regra vale por escrito, não só na faxina.
 - **Changelog em comentário** (`// alterado em 2026-01-01 por fulano: ...`) — isso é mensagem de
   commit, não comentário de código; duplica o que `git log`/`git blame` já respondem melhor.
-- **Referência a plan — proibido.** `// conforme plan-07`, `// ver plan-12-refatorar-auth` e
+- **Referência a plan — proibido.** `// conforme plan-02.07`, `// ver plan-01.12-refatorar-auth` e
   equivalentes não entram no código. Plan é **efêmera por construção**: ela é removida no mesmo ato
   em que sua verdade vai para a spec fixa, e a partir daí o comentário aponta para um arquivo que
   não existe. Ponteiro morto é pior que nenhum ponteiro — manda o próximo leitor procurar o que foi
@@ -95,8 +95,8 @@ manda o leitor abrir outro arquivo em geral está terceirizando a explicação q
 
 | Situação | Comentário |
 |---|---|
-| ❌ Proibido | `// implementado conforme plan-07` |
-| ⚠️ Permitido, evite | `// regra de arredondamento definida em specs/04-faturamento.md` |
+| ❌ Proibido | `// implementado conforme plan-02.07` |
+| ⚠️ Permitido, evite | `// regra de arredondamento definida em specs/03.04-faturamento.md` |
 | ✅ Preferido | `// arredonda para cima: contrato com a operadora cobra a fração de minuto` |
 
 A exceção legítima é o **trade-off registrado**: quando o código é deliberadamente o pior caminho

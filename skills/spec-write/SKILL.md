@@ -44,7 +44,22 @@ passou por aqui.
 6. **Salvar no repositório-alvo**
    - **Ferramenta:** `Write`.
    - **Ação:** Grave o Markdown na pasta correta do projeto-alvo (`specs/`, `arquitetura/` ou
-     `adr/`), nome de arquivo em `kebab-case` (ex.: `01-autenticacao.md`).
+     `adr/`), nome de arquivo em `kebab-case` com prefixo de família (ex.: `01.01-autenticacao.md` — ver
+     "Famílias e nomes").
+
+## Famílias e nomes
+
+Specs fixas e plans são numeradas por **família** — grupo de assunto com número `FF`. O catálogo é **um só
+por projeto**: `specs/panorama/00-planejamento.md` §1. Leia-o; nunca o copie.
+
+- **`00` é reservada à fundação** — seus nomes chegam fixos e não são renomeados; a lista está no catálogo.
+- **Spec e arquitetura:** `FF.NN-<slug>.md` + `familia: "FF"` no frontmatter. O par `FF.NN` é único na
+  família **somando `specs/` e `arquitetura/`**; o próximo `NN` sai da varredura das duas pastas.
+- **Plan:** `plan-FF.NN-<slug>.md` + `familia: "FF"`. Contador **por família**, monotônico e definitivo, no
+  `proximo_numero_plan` do `00-indice` (família sem entrada começa em `01`). Namespace separado do das specs.
+- **ADR não tem família:** `adr/NNN-<slug>.md`, cronológico.
+- **Família nova** só depois da aprovação do usuário, já registrada no catálogo. Spec ou plan com família
+  fora dele é defeito.
 
 ## Regras e limites
 
@@ -64,4 +79,5 @@ passou por aqui.
 - [ ] Critérios de Aceite em checklist markdown (`- [ ]`), regras em seções numeradas?
 - [ ] Seção `# 4. Plano de Testes` preenchida (unitários, contrato/API, E2E — ou `N/A` justificado)?
 - [ ] Mudança arquitetural avaliada; se houver, o HITL do passo 5 foi feito antes de gerar Arquitetura/ADR extras?
-- [ ] Arquivo salvo em `kebab-case`, na pasta correta (`specs/`, `arquitetura/` ou `adr/`) do repositório-alvo?
+- [ ] Arquivo salvo em `kebab-case`, na pasta correta (`specs/`, `arquitetura/` ou `adr/`) do repositório-alvo, com
+  `FF.NN` de uma família do catálogo (ou `NNN` no ADR) e `familia` no frontmatter?

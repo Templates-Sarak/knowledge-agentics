@@ -168,7 +168,7 @@ Toda plan nasce com o prefixo **`xx-`** (`xx-nn-descricao`), registrada em `spec
 qualquer plan do fluxo SDD (molde `_estrutura_base/_templates/template-plan.md`), com **definição de pronto
 cobrada por máquina** (ex.: *"ao fim desta plan, `compliance.json` tem uma exceção a menos"*). O `nn` é a
 ordem de execução — decisão de HITL (risco × valor), não a ordem em que os módulos foram encontrados.
-`xx-` é namespace próprio — **não** consome `proximo_numero_plan`; o contador segue intocado após o expurgo.
+`xx-` é namespace próprio — **não** consome nenhum contador de família; os contadores seguem intocados após o expurgo.
 
 ### HITL final da Fase A — o plano completo
 Antes de escrever qualquer plan, apresente: fase e caminho detectados, a lista de módulos com o nome
@@ -268,7 +268,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
       (adoção seletiva aplicada)? Cada módulo tem `id` kebab-case, sete itens de renomeação resolvidos, e
       raio de alcance medido antes do HITL final?
 - [ ] Prefixo de tabela e chaves de ambiente: decisão de HITL registrada (renomear ou exceção), por módulo?
-- [ ] Toda plan usa `xx-` (não consome `proximo_numero_plan`), está no `00-indice.md`, com pronto por máquina?
+- [ ] Toda plan usa `xx-` (não consome nenhum contador de família), está no `00-indice.md`, com pronto por máquina?
 - [ ] O HITL do plano completo aconteceu **antes** de qualquer plan ser escrita?
 - [ ] Fase B rodou em conversa separada, por revisor diferente do da execução?
 - [ ] O critério mecânico do §7 foi conferido inteiro antes do veredito, e o julgamento humano ficou restrito

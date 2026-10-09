@@ -25,6 +25,7 @@ limpeza). A via direta encurta a papelada — nunca a verificação.
 | `00-prompt-revisor.md` | Prompt que forma o agente revisor numa conversa nova | **Universal** |
 | `00-prompt-executor.md` | Prompt que forma o agente executor (a cada execução) | **Universal** |
 | `00-backlog.md` | Achados registrados e **não agendados** — sem status, sem fila | **Por projeto** — mantido pelo revisor |
+| `panorama/00-planejamento.md` | Catálogo de **famílias** — a fonte única do `FF` de specs e plans | **Por projeto** — mantido pelo revisor; família nova só com aprovação do usuário |
 
 > As specs **universais** são idênticas em todos os repositórios — é por isso que dependem de `00-contexto` e
 > `00-indice` para conhecer a regra de negócio e a arquitetura locais.
@@ -33,10 +34,10 @@ limpeza). A via direta encurta a papelada — nunca a verificação.
 
 | Pasta | Pergunta | Exemplo | Natureza |
 |---|---|---|---|
-| `specs/` | O **QUÊ** — regras de negócio, validações, comportamento | `01-login.md` | Documento vivo |
+| `specs/` | O **QUÊ** — regras de negócio, validações, comportamento | `01.01-login.md` | Documento vivo |
 | `arquitetura/` | O **COMO** — design estrutural, stack, banco, contratos | `00-base-python.md`, `04-regras.md` | Documento vivo |
 | `adr/` | O **POR QUÊ** — decisões técnicas com trade-off | `000-decisoes-do-template.md`, `001-escolha-do-postgres.md` | **Imutável** — decisão nova = ADR novo |
-| `plan/` | O **COMO CHEGAR LÁ** — trabalho em andamento | `plan-01-extrair-validacao.md` | **Temporária** — removida no ato da síntese |
+| `plan/` | O **COMO CHEGAR LÁ** — trabalho em andamento | `plan-01.01-extrair-validacao.md` | **Temporária** — removida no ato da síntese |
 
 Moldes de todos eles em `_templates/`.
 
@@ -58,7 +59,9 @@ de arquitetura, e por isso não ganham uma árvore paralela:
 por ele; mudar de ideia sobre uma delas é ADR novo em `adr/`. E, diferente de toda outra spec deste
 diretório, elas têm **verificador executável**: `node tools/gate/validate.mjs`.
 
-As decisões que as justificam estão em `adr/000-decisoes-do-template.md`.
+As decisões que as justificam estão em `adr/000-decisoes-do-template.md`. Por chegarem prontas, elas não
+seguem a numeração por família: são nomes reservados da família `00`, listados no catálogo
+(`panorama/00-planejamento.md` §1).
 
 **Regra do SDD:** as specs de `specs/`, `arquitetura/` e `adr/` devem refletir a **realidade exata** do
 repositório — um agente que as lê fica corretamente contextualizado sem abrir uma linha de código. Spec
@@ -68,7 +71,7 @@ divergente do código é defeito de primeira ordem.
 
 ## 2. Os planos (`plan/`) — **sim, entram no Git**
 
-Uma **plan** é a unidade de trabalho do ciclo **quando há verdade a preservar**: `plan/plan-NN-<slug>.md`,
+Uma **plan** é a unidade de trabalho do ciclo **quando há verdade a preservar**: `plan/plan-FF.NN-<slug>.md`,
 escrita pelo **agente revisor** e executada pelo **agente executor**. Demanda que não deixa verdade nenhuma
 não passa por aqui — corre pela via direta e não gera arquivo (`00-prompt-revisor` §6). Ela contém descrição, escopo, referências, instruções, o **prompt de
 execução** e o **destino da síntese**.
@@ -87,15 +90,15 @@ tamanho do `00-indice` é limitado pelo **trabalho aberto**, e a spec fixa é a 
 
 A janela de conferência não se perdeu: o commit que remove a plan **mostra a plan inteira no diff**. Continua
 possível auditar se a spec fixa ficou correta — no lugar onde histórico mora, que é o Git
-(`git log --diff-filter=D -- specs/plan/plan-NN-*.md`).
+(`git log --diff-filter=D -- specs/plan/plan-FF.NN-*.md`).
 
 A **única** trava entre a síntese e o `git rm` é o rastro: se `git log` no path da plan vier vazio, ela nunca
 foi commitada, e apagá-la seria perda total. Nesse caso ela fica até o usuário commitar.
 
-> Numeração é **monotônica e definitiva**: `plan-07` é `plan-07` para sempre, mesmo depois de removida. O
-> próximo número livre **não** vem de escanear a pasta (plans sintetizadas sumiram dela) — vem do campo
-> `proximo_numero_plan` no frontmatter do `00-indice`. A ordem de execução se muda na coluna `#` do
-> `00-indice`, nunca renomeando o arquivo.
+> Numeração é **por família, monotônica e definitiva**: `plan-02.07` é `plan-02.07` para sempre, mesmo depois
+> de removida. O próximo número livre **não** vem de escanear a pasta (plans sintetizadas sumiram dela) — vem
+> do contador da família no mapa `proximo_numero_plan` do frontmatter do `00-indice`. A ordem de execução se
+> muda na coluna `#` do `00-indice`, nunca renomeando o arquivo.
 
 ---
 
@@ -108,8 +111,8 @@ existem lá.
 
 ```
 1. usuário traz uma demanda
-2. REVISOR escreve  plan/plan-NN-<slug>.md  (status 🔴)  +  linha no 00-indice
-3. usuário abre conversa nova: "leia 00-prompt-executor e execute plan-NN"
+2. REVISOR escreve  plan/plan-FF.NN-<slug>.md  (status 🔴)  +  linha no 00-indice
+3. usuário abre conversa nova: "leia 00-prompt-executor e execute plan-FF.NN"
 4. EXECUTOR executa → alterações no worktree → resumo escrito na própria plan (🟠)
 5. REVISOR verifica DIRETAMENTE o worktree (não confia no resumo)
      ├─ reprovado → 🔵 + prompt de correção → volta ao 4
@@ -140,8 +143,8 @@ qualquer outra marca de autoria de agente.
 |---|---|
 | Pedir uma alteração no sistema | leve ao **revisor**: ele tria (`00-prompt-revisor` §4) e escreve uma **plan** (molde `_templates/template-plan.md`) ou emite um **prompt direto** |
 | Registrar um problema que não é para agora | `00-backlog.md` — uma linha, sem status e sem fila |
-| Registrar regra de negócio consolidada | `specs/NN-<nome>.md` — pela síntese do revisor, não à mão |
-| Registrar design/stack consolidados | `arquitetura/NN-<nome>.md` — idem |
+| Registrar regra de negócio consolidada | `specs/FF.NN-<nome>.md` — pela síntese do revisor, não à mão |
+| Registrar design/stack consolidados | `arquitetura/FF.NN-<nome>.md` — idem |
 | Registrar uma decisão com trade-off | `adr/NNN-<nome>.md` — idem |
 | Consultar por que algo foi feito assim | A spec fixa de destino é a verdade atual. Para o veredito e o escopo originais: a plan, se ainda existir; se já foi sintetizada, `git log --diff-filter=D` no path dela |
 | Contextualizar um agente novo | ele lê `00-contexto.md` — você não explica nada no chat |
@@ -154,7 +157,8 @@ qualquer outra marca de autoria de agente.
 
 ## 5. Convenções
 
-- **Nomes** em `kebab-case`, com prefixo numérico: `01-login.md`, `plan-03-ajustar-cache.md`.
+- **Nomes** em `kebab-case`, com prefixo de família (`FF.NN`, catálogo em `panorama/00-planejamento.md` §1):
+  `01.01-login.md`, `plan-02.03-ajustar-cache.md`. Exceção: os nomes reservados da família `00` (fundação) não seguem `FF.NN` — a lista está no catálogo.
 - **Frontmatter YAML obrigatório** em toda spec, com os campos do molde correspondente. Não invente campos.
   As `00-*` usam `tipo: "processo"`.
 - **Referencie, nunca duplique.** Conteúdo copiado desatualiza e passa a mentir. Aponte para a fonte.

@@ -96,7 +96,7 @@ recebem conteúdo do alvo:
 | Spec | Conteúdo |
 |---|---|
 | `00-contexto.md` | identidade real do repositório, regras inegociáveis específicas, mapa de roteamento, e a **fronteira declarada**: *"specs documentam deste ponto em diante; o comportamento anterior à adequação está capturado em `tests/`, não em prosa"* |
-| `00-indice.md` | fila vazia, `proximo_numero_plan: "01"` |
+| `00-indice.md` | fila vazia, `proximo_numero_plan: {}` |
 
 `00-knowledge.md`, `00-prompt-executor.md` e `00-prompt-revisor.md` são **copiados sem reescrever** — releia
 o estado atual deles na base antes de copiar, essa área evolui. `specs/specs/` nasce **vazia**: não
@@ -260,11 +260,12 @@ A saída não é inventar uma — é usar o que o template **já** oferece:
 
 ### Passo 4 — dois fatos medidos por trás das regras curtas
 
-**`xx-` não consome `proximo_numero_plan`.** A skill exige o prefixo `xx-`; o `00-indice.md` canônico tem
+**`xx-` não consome nenhum contador de família.** A skill exige o prefixo `xx-`; o `00-indice.md` canônico tem
 numeração monotônica "só sobe, nunca reaproveitada" (§5 daquele arquivo). Nada dizia como os dois
 convivem, e um revisor teve de declarar a regra por conta própria no meio de uma campanha. `xx-` é
 namespace separado — nunca toca o contador — e, quando as plans da campanha forem sintetizadas e removidas,
-o `proximo_numero_plan` segue exatamente de onde estava, porque nunca avançou por causa dela.
+os contadores de família do `proximo_numero_plan` seguem exatamente de onde estavam, porque nunca avançaram
+por causa dela.
 
 **Prompt não vive em arquivo.** O `template-plan.md` já avisa: *"contexto que existe só no prompt se perde
 na primeira rodada de correção"*. Mas a skill é o que se lê primeiro, e o molde é o que se lê por último —

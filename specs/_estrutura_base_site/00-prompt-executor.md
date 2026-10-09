@@ -18,7 +18,7 @@ Sua entrada chega em **uma de duas formas**, decididas pelo revisor na triagem (
 
 | Forma | Como reconhecer | Onde está a tarefa |
 |---|---|---|
-| **Com plan** | `execute a spec plan-NN-<slug>` | no arquivo `specs/plan/plan-NN-<slug>.md` |
+| **Com plan** | `execute a spec plan-FF.NN-<slug>` | no arquivo `specs/plan/plan-FF.NN-<slug>.md` |
 | **Direta** | `execute a tarefa abaixo` + *"não há plan para esta tarefa"* | **no próprio prompt**, inteira |
 
 A via direta é para demanda que não deixa verdade documentada — bug sem mudança de regra, typo,
@@ -38,7 +38,7 @@ prompt de conclusão (§6.1), para o usuário levar ao revisor. Esse prompt nunc
 
 # 2. Ritual de leitura (antes da primeira edição)
 
-1. **A instrução.** Com plan: `specs/plan/plan-NN-<slug>.md` integralmente, incluindo vereditos anteriores
+1. **A instrução.** Com plan: `specs/plan/plan-FF.NN-<slug>.md` integralmente, incluindo vereditos anteriores
    (é correção, não execução nova). `🟢 Aprovada` significa que o ciclo dela **já terminou** — pare e avise.
    *Via direta: pule este passo, releia o bloco. Não procure uma plan que "deveria existir" — a ausência é
    deliberada.*
@@ -71,10 +71,10 @@ Suposição não registrada é reprovação garantida.
    - **Nível 1** — **só existe se o projeto adota o template de módulos**; então mora na spec de regras de
      módulo que o `00-contexto` indica (no template, `arquitetura/04-regras.md`) e **é cobrado por máquina**:
      `node tools/gate/validate.mjs <module>`, rode antes de entregar. Projeto sem o template (um site) **não
-     tem Nível 1** — lá `arquitetura/04` é outra spec e não vale como norma.
+     tem Nível 1** — lá não há `04-regras.md`, e nenhuma spec de `arquitetura/` vale como norma de módulo.
    - **Nível 2** (`padrao-<linguagem>`): idiomas e limiares da linguagem.
 5. **Escreva o código como o código vizinho.** Não introduza estilo, biblioteca ou paradigma novos.
-6. **Comentário não cita plan.** `// conforme plan-07` é **proibido**: a plan é removida na síntese e o
+6. **Comentário não cita plan.** `// conforme plan-02.07` é **proibido**: a plan é removida na síntese e o
    comentário vira ponteiro morto. Citar spec **fixa** é permitido, mas o bom comentário explica ali mesmo.
    Norma completa: `padrao-escrita`, `references/comentarios.md`.
 7. **Mudou comportamento? Tem teste.** Use a skill `test-*` indicada. Bug corrigido pede teste de regressão.
@@ -160,7 +160,7 @@ estão no worktree, sem commit, prontas para revisão.**
 ## 6.1 O prompt de conclusão
 
 ````md
-Leia specs/00-prompt-revisor.md e revise a execução de specs/plan/plan-NN-<slug>.md.
+Leia specs/00-prompt-revisor.md e revise a execução de specs/plan/plan-FF.NN-<slug>.md.
 ````
 
 **Na via direta** não há plan para apontar e o resumo vive numa conversa que o revisor não vê. Então o
@@ -194,7 +194,8 @@ Abaixo, o resumo da execução, como entregue pelo executor:
 2. **NUNCA remova conteúdo da plan.** Só adicione (§5), e só o resumo e o `status`.
 3. **NUNCA crie nem edite outra spec.** `00-contexto`, `00-indice`, `00-backlog`, `arquitetura/`, `adr/`,
    `specs/` e outras plans são do revisor. **Na via direta você não escreve em spec nenhuma** — nem cria uma
-   plan para "documentar o que fez".
+   plan para "documentar o que fez". **Nem crie família**: o catálogo ([[00-planejamento]] §1) é do revisor,
+   com aprovação do usuário.
 4. **NUNCA mova, renomeie nem apague um arquivo de plan.** Quem a remove, na síntese, é o revisor.
 5. **NUNCA saia do escopo declarado**, e nunca transforme achado fora do escopo em trabalho.
 6. **NUNCA contorne hook, validador ou teste.** Corrija a causa.
