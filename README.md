@@ -7,7 +7,7 @@
 ## 1. O que é este repositório
 
 A **base de inteligência do ecossistema Sarak**: o cérebro compartilhado que orienta como um agente
-(Claude Code, Antigravity, GPT) escreve, organiza, revisa e entrega código — **e** o repositório-modelo
+(Claude Code, Codex, Antigravity) escreve, organiza, revisa e entrega código — **e** o repositório-modelo
 que cada projeto novo recebe como ponto de partida.
 
 Não é o código de um produto. São duas coisas, com destinos diferentes:
@@ -105,7 +105,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ **52** skills por área (§7) |
+| `skills/` | ✅ **53** skills por área (§7) |
 | `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
 | `hooks/` | ✅ **5** hooks · **4** garantias (segredo no git, padrão de escrita, dependências, cobertura — `hooks/README.md`) |
@@ -120,13 +120,13 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 |---|---|---|---|
 | **CLAUDE.md / AGENTS.md** | Inegociáveis sempre no contexto | **Automático** — toda sessão | `AGENTS.md` é a fonte (lido direto pelo Codex); `CLAUDE.md` o importa (`@AGENTS.md`) no Claude |
 | **skills/** | Capacidade que o **modelo** usa quando faz sentido | Modelo decide pela `description`, **ou** você digita `/nome` | `skills/<nome>/SKILL.md` (3 camadas) |
-| **commands/** | **Atalho** de prompt que **você** dispara | **Manual** — você digita `/nome` | `commands/<nome>.md` |
+| **commands/** | **Atalho** de prompt que **você** dispara | **Manual** — você digita `/nome` (no Codex, via skill `meta-fluxos`) | `commands/<nome>.md` |
 | **agents/** | **Subagente** com contexto próprio | Modelo **delega** (`Task`) ou você cita pelo nome | `agents/<nome>.md` |
 | **hooks/** | Comando shell em **eventos** do harness | **Automático/determinístico** no evento — Claude Code e Codex (ver nota abaixo) | `hooks/hooks.json` (scripts em `hooks/`) |
 | **specs/** | A **doutrina** e o **template** replicável (§2) | Copiado no início do projeto + `validate.mjs` | `specs/` |
 | **plugin/** | Sincronizador para IDEs sem marketplace | **Manual** (`sync_ide.py`) | `plugin/` |
-| **settings.json** | Configuração (permissões, env, model, hooks) | **Automático** | `.claude/settings.json` |
-| **MCP** | Servidores de **ferramentas externas** | Ferramentas ficam disponíveis ao modelo | `.mcp.json` |
+| **settings / config** | Configuração (permissões, env, model, hooks) | **Automático** | `.claude/settings.json` (Claude) · `.codex/config.toml` (Codex) |
+| **MCP** | Servidores de **ferramentas externas** | Ferramentas ficam disponíveis ao modelo | `.mcp.json` (Claude) · `config.toml` (Codex) |
 
 > **Regra de ouro do disparo:** **hooks garantem** (determinístico) · **skills/agents o modelo decide**
 > (julgamento pela `description`) · **commands você dispara** (`/`) · **AGENTS.md/CLAUDE.md estão sempre on**.
@@ -302,7 +302,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `test-` | `test-unitario` … `test-carga` (6) | `test-cobertura` | ⬜ | ⬜ |
 | `deploy-` | `deploy-vercel`, `deploy-docker` | — | ✅ `/deploy-vercel`, `/deploy-docker` | — |
 | `site-` | `site-organizacao`, `site-seo`, `site-criacao` | — | ✅ `/site-organizar`, `/site-seo` | — |
-| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base` | — | ✅ `/meta-criar-skill` | — |
+| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base`, `meta-fluxos` | — | ✅ `/meta-criar-skill` | — |
 | `padrao-` | `padrao-escrita`, `padrao-python`, `padrao-typescript` | `padrao-limiares`, `padrao-format` | ⬜ (subsumido pelo `code-`) | ⬜ |
 
 **Governança:** a criação de **skills** é regida pela `meta-create-skill`. Para commands/agents/hooks,
@@ -312,7 +312,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 ## 7. Inventário atual
 
-### Skills (52, por área)
+### Skills (53, por área)
 
 | Prefixo | Skills |
 |---|---|
@@ -327,7 +327,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `site-` (3) | `site-criacao`, `site-organizacao`, `site-seo` |
 | `git-` (4) | `git-commit-inicial`, `git-especialista-repositorio`, `git-revisao-diff`, `git-verificacao-commit` |
 | `cyber-` (9) | `cyber-api`, `cyber-auth`, `cyber-codigo`, `cyber-config`, `cyber-dados`, `cyber-dependencias`, `cyber-ia`, `cyber-infra`, `cyber-segredos` |
-| `meta-` (5) | `meta-adequacao-modular`, `meta-atualizar-base`, `meta-create-skill`, `meta-iniciar-repositorio`, `meta-verificacao-base` |
+| `meta-` (6) | `meta-adequacao-modular`, `meta-atualizar-base`, `meta-create-skill`, `meta-fluxos`, `meta-iniciar-repositorio`, `meta-verificacao-base` |
 
 > **Critério, não lista de nomes:** skill **mutativa** (edita/gera/apaga arquivo) ou de **varredura**
 > (audita/relata sem julgamento novo) termina a `description` com a trava `NÃO acione
@@ -405,6 +405,12 @@ portátil `plugin.json`. No diretório de Plugins do Codex, adicione este reposi
 instale `sarak` e revise/autorize os hooks do plugin. Abra uma nova conversa após a instalação para
 o catálogo de skills e os hooks serem carregados. O Codex reconhece o marketplace legado em
 `.claude-plugin/marketplace.json`, preservando a distribuição já usada pelo Claude.
+
+**Cache.** Como no Claude, o Codex lê a cópia **instalada** do plugin, não o repositório. Uma mudança no
+repo só chega lá depois de atualizar o plugin no app e abrir uma conversa nova.
+
+**Confiança nos hooks.** Sem revisar e confiar nos hooks no app, nenhum deles roda. Toda mudança no
+`hooks/hooks.json` exige confiar de novo.
 
 ### Iniciar um projeto a partir do template
 

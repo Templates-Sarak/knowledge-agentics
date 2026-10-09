@@ -25,10 +25,12 @@ a leitura que a chamou de defeito errava em dois pontos:
 Caminho relativo resolveria contra o projeto errado e falharia **em silêncio** — sem erro nenhum,
 apenas skills que "não existem".
 
-> **Não torne os caminhos relativos.** Isso quebra Antigravity e GPT, e quebra sem avisar.
+> **Não torne os caminhos relativos.** Isso quebra o Antigravity (e qualquer IDE sem plugin nativo), e
+> quebra sem avisar.
 
-**Versionar a saída é redundante, não incorreto.** O uso real é local e multi-agente (Claude,
-Antigravity, GPT) numa máquina só; o `sync_ide.py` regenera a tabela a cada execução.
+**Versionar a saída é redundante, não incorreto.** O uso real é local e multi-agente numa máquina só —
+Claude e Codex consomem pelo plugin; a tabela serve ao Antigravity (e a qualquer IDE sem plugin nativo).
+O `sync_ide.py` regenera a tabela a cada execução.
 
 ## 2. A lacuna: mover a base não tem verificador
 

@@ -49,6 +49,7 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **meta-adequacao-modular**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-adequacao-modular/SKILL.md`
 - **meta-atualizar-base**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-atualizar-base/SKILL.md`
 - **meta-create-skill**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-create-skill/SKILL.md`
+- **meta-fluxos**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-fluxos/SKILL.md`
 - **meta-iniciar-repositorio**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-iniciar-repositorio/SKILL.md`
 - **meta-verificacao-base**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/meta-verificacao-base/SKILL.md`
 - **obs-logs**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/obs-logs/SKILL.md`

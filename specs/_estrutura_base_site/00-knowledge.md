@@ -26,7 +26,7 @@ aquela cobre *o que respeitar*.
 | Bloco | Como entra em ação | Consequência prática |
 |---|---|---|
 | **skill** | O **modelo decide** pela `description`, **ou** você cita o nome | Citar a skill numa plan é o que garante que ela seja aplicada |
-| **command** | **Manual** — você digita `/nome` | Um agente **não** dispara command; a plan pede ao humano, ou executa a skill equivalente |
+| **command** | **Manual** — você digita `/nome` | Um agente **não** dispara command; a plan pede ao humano, ou executa a skill equivalente; num harness sem commands (Codex), a skill `meta-fluxos` executa o fluxo pelo nome |
 | **agent** | O modelo **delega** (subagente com contexto próprio) | Isola varredura pesada e devolve resumo |
 | **hook** | **Automático e determinístico** no evento do harness | Roda sempre — é a única garantia mecânica |
 | **AGENTS.md** (o `CLAUDE.md` o importa no Claude) | Sempre no contexto | Os inegociáveis; nunca precisa ser citado |
@@ -189,6 +189,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `meta-adequacao-modular` | `meta-` | Levar um legado ao template de módulos — diagnóstico, gate instalado antes do refactor, plans `xx-*`, conferência em conversa separada. |
 | `meta-atualizar-base` | `meta-` | Atualizar a Fonte da Verdade Sarak e espelhar para as IDEs (`sync_ide.py`). |
 | `meta-verificacao-base` | `meta-` | Verificar integridade da base: YAML, contratos JSON, ponteiros órfãos. |
+| `meta-fluxos` | `meta-` | Executar um fluxo de `commands/` pelo nome num harness sem commands (Codex) — roteia, não copia. |
 
 ---
 

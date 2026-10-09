@@ -183,7 +183,7 @@ def generate_routing_table(xskills_root):
 
     print("\n[INSTRUÇÃO ÚNICA DE CONFIGURAÇÃO (SETUP)]")
     print(
-        "Cole a frase abaixo nas Regras Globais das suas IDEs (Antigravity e Claude) UMA ÚNICA VEZ:"
+        "Cole a frase abaixo nas Regras Globais das suas IDEs (Antigravity e qualquer IDE sem plugin nativo) UMA ÚNICA VEZ:"
     )
     print("-" * 70)
     print(

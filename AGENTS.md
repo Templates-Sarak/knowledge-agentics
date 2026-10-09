@@ -34,5 +34,5 @@
 
 ## Diferenças por provedor
 - **Claude Code:** carrega skills, commands, agents e hooks pelo plugin `sarak`.
-- **Codex:** carrega skills e specs pelo plugin; `commands/` e `agents/` **não** são carregados; os hooks dependem da autorização do plugin no app.
+- **Codex:** carrega skills e specs pelo plugin; `commands/` e `agents/` **não** são carregados — os fluxos de `commands/` rodam pela skill `meta-fluxos`; os hooks dependem da autorização do plugin no app.
 - **Antigravity:** consome a base via `plugin/sync_ide.py`; os hooks não rodam lá (lacuna declarada no `README.md`).
