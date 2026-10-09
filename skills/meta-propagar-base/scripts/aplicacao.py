@@ -1,19 +1,21 @@
 """aplicacao.py — o APLICAR e o DESFAZER da propagacao (chamados pela CLI do `propagar.py`).
 
-Aplicar: numa branch `sarak/atualiza-base-<commit curto>` criada no sistema, escreve SO o que o plano
-manda e SEM commit — `adicionar`, `substituir`, `substituir-politica` e, com flag explicita por
-execucao, `divergente` e `adicionar?`. Nunca: `conflito`, `obsoleto?` (nunca apaga), `bloqueado`,
+Aplicar: no branch CORRENTE do sistema (nunca cria branch), escreve SO o que o plano manda e SEM commit
+— `adicionar`, `substituir`, `substituir-politica` e, com flag explicita por execucao, `divergente` e
+`adicionar?`; e, por arquivo, o `divergente`/`conflito` dado em `--adotar`. `--manter ... --motivo` nao escreve
+o arquivo: registra a decisao em `mantidos` no carimbo (que o aplicar preserva, descartando as vencidas).
+Nunca: `conflito` sem `--adotar`, `obsoleto?` (nunca apaga), `bloqueado`,
 molde de processo/conteudo presentes, codigo do projeto. Depois: carimbo `.sarak/base.json` (pelas
 funcoes do `carimbo.py`), `00-resumo` (so sem migracao de familias pendente), gate (so modular),
 manifesto `.sarak/propagacao-<curto>.json` e o `status` no `mapa.json`.
 
-Desfazer: pelo manifesto — restaura do HEAD o que existia, apaga o que foi criado, volta a branch
-anterior, apaga a `sarak/...` (se nao tem commit proprio) e restaura o status. So desfaz se o worktree
-contem EXATAMENTE as mudancas do manifesto; qualquer coisa alheia e erro.
+Desfazer: pelo manifesto — restaura do HEAD o que existia, apaga o que foi criado e restaura o status.
+So desfaz se o HEAD do sistema e o mesmo do aplicar (o manifesto o registra) e se o worktree contem
+EXATAMENTE as mudancas do manifesto; commit ou mudanca alheia = erro (reverter e decisao do usuario).
 
 Nucleo x casca: `acoes_aplicaveis`, `compor`, `lacunas_restantes`, `pendencias`, `precondicoes`,
-`precondicoes_desfazer`, `montar_manifesto` e `plano_de_desfazer` sao PUROS — provados pelo
-`--autoteste` do `propagar.py` (este modulo nao tem CLI propria).
+`precondicoes_desfazer`, `montar_manifesto`, `plano_de_desfazer` e `erros_de_desfazer` sao PUROS —
+provados pelo `--autoteste` do `propagar.py` (este modulo nao tem CLI propria).
 """
 
 import datetime
@@ -23,9 +25,9 @@ from pathlib import Path
 
 import propagar as pp
 
-PREFIXO_DA_BRANCH = "sarak/atualiza-base-"
 SEMPRE_APLICADAS = ("adicionar", "substituir", "substituir-politica")
 SEMPRE_PENDENTES = ("conflito", "bloqueado", "obsoleto?")
+DECIDIVEIS = ("divergente", "conflito")
 RESUMO = "specs/panorama/00-resumo.md"
 PLANEJAMENTO = "specs/panorama/00-planejamento.md"
 SARAK_IGNORADO = (
@@ -44,7 +46,65 @@ def acoes_aplicaveis(acoes: dict, flags: dict) -> list:
         *(["divergente"] if flags.get("divergentes") else []),
         *(["adicionar?"] if flags.get("adicionar") else []),
     ]
-    return [(rel, acao) for acao in escolhidas for rel in acoes.get(acao, [])]
+    gerais = [(rel, acao) for acao in escolhidas for rel in acoes.get(acao, [])]
+    ja = {rel for rel, _ in gerais}
+    adotados = [
+        (rel, "adotar")
+        for acao in DECIDIVEIS
+        for rel in acoes.get(acao, [])
+        if rel in flags.get("adotar", ()) and rel not in ja
+    ]
+    return gerais + adotados
+
+
+def decidiveis(acoes: dict) -> set:
+    """Nucleo: o que aceita decisao por arquivo — os `divergente` e `conflito` do plano."""
+    return {rel for acao in DECIDIVEIS for rel in acoes.get(acao, [])}
+
+
+def erros_de_decisao(adotar: list, manter: list, motivos: list, acoes_por_id: dict) -> list:
+    """Nucleo: os erros de `--adotar`/`--manter`/`--motivo` (vazio = pode aplicar). Cada caminho precisa estar
+    em `divergente`/`conflito` de algum dos sistemas escolhidos; cada `--manter` leva o seu `--motivo`."""
+    erros = (
+        [f"cada --manter precisa do seu --motivo e vice-versa ({len(manter)} --manter, {len(motivos)} --motivo)"]
+        if len(manter) != len(motivos)
+        else [f"--motivo vazio para {c}" for c, m in zip(manter, motivos) if not m.strip()]
+    )
+    erros += [f"{c}: em --adotar e em --manter" for c in sorted(set(adotar) & set(manter))]
+    possiveis = set().union(*(decidiveis(a) for a in acoes_por_id.values())) if acoes_por_id else set()
+    erros += [
+        f"{c}: nao esta em divergente/conflito — so esses aceitam --adotar/--manter"
+        for c in dict.fromkeys([*adotar, *manter])
+        if c not in possiveis
+    ]
+    return erros
+
+
+def decisoes_do_sistema(acoes: dict, adotar: list, manter: list, motivos: list) -> tuple:
+    """Nucleo: `(adotar, [(rel, motivo)])` que cabem a um sistema (o caminho esta no `divergente`/`conflito` dele)."""
+    aqui = decidiveis(acoes)
+    return (
+        [r for r in adotar if r in aqui],
+        [(r, m) for r, m in zip(manter, motivos, strict=False) if r in aqui],
+    )
+
+
+def entrada_mantida(rel: str, motivo: str, texto_sistema: str, texto_ref: str) -> dict:
+    """Nucleo: a entrada de `mantidos` no carimbo — o sha1 do conteudo normalizado dos dois lados."""
+    return {
+        "caminho": rel,
+        "motivo": motivo,
+        "sha1_sistema": pp.sha1_comparavel(rel, texto_sistema),
+        "sha1_referencia": pp.sha1_comparavel(rel, texto_ref),
+    }
+
+
+def mesclar_mantidos(validos: list, novos: list, adotados: list) -> list:
+    """Nucleo: os `mantidos` do carimbo novo — as decisoes validas que seguem de pe (menos as adotadas agora)
+    mais as novas (que substituem a antiga do mesmo caminho). As vencidas ja ficaram de fora."""
+    por_caminho = {e["caminho"]: e for e in validos if e["caminho"] not in adotados}
+    por_caminho.update({e["caminho"]: e for e in novos})
+    return [por_caminho[c] for c in sorted(por_caminho)]
 
 
 def _tipo_de_titulo(linha: str) -> str:
@@ -84,8 +144,12 @@ def lacunas_restantes(falta: dict, escritos: set) -> dict:
 
 
 def pendencias(acoes: dict, escritos: set, falta: dict, gate: dict | None) -> list:
-    """Nucleo: o que sobrou para decisao humana. Vazio -> `atualizado`; senao `pendente`."""
-    motivos = [f"{a}: {len(acoes[a])}" for a in SEMPRE_PENDENTES if acoes.get(a)]
+    """Nucleo: o que sobrou para decisao humana. Vazio -> `atualizado`; senao `pendente`. `escritos` = o que
+    foi escrito ou decidido (`--adotar`/`--manter`) agora; `mantido` nunca e pendencia."""
+    motivos = []
+    for acao in SEMPRE_PENDENTES:
+        restam = [r for r in acoes.get(acao, []) if r not in escritos]
+        motivos += [f"{acao}: {len(restam)}"] if restam else []
     for acao in ("divergente", "adicionar?"):
         faltam = [r for r in acoes.get(acao, []) if r not in escritos]
         motivos += [f"{acao} nao aplicado: {len(faltam)}"] if faltam else []
@@ -142,8 +206,7 @@ def precondicoes_desfazer(ids: list, sistemas: list) -> list:
 
 def precondicoes(ids: list, sistemas: list, fatos: dict) -> list:
     """Nucleo: os erros que impedem aplicar. `fatos` = {base_suja: [linhas], ignorados: [ids com o
-    `.sarak/base.json` num .gitignore], repos: {raiz_git: {limpo, branch_atual, alvo, alvo_existe}}}.
-    Qualquer erro -> nada e escrito."""
+    `.sarak/base.json` num .gitignore], repos: {raiz_git: {limpo, head}}}. Qualquer erro -> nada e escrito."""
     por_id = {s["id"]: s for s in sistemas}
     erros = [] if ids else ["informe ao menos um --id"]
     erros += [e for i in ids for e in _erros_do_sistema(por_id.get(i), i)]
@@ -162,15 +225,12 @@ def precondicoes(ids: list, sistemas: list, fatos: dict) -> list:
             if repo["limpo"]
             else [f"{raiz}: worktree sujo — aplicar sobre trabalho alheio e proibido"]
         )
-        if repo["alvo_existe"] and repo["branch_atual"] != repo["alvo"]:
-            erros.append(
-                f"{raiz}: a branch {repo['alvo']} ja existe em outro estado (corrente: {repo['branch_atual']})"
-            )
+        erros += [] if repo["head"] else [f"{raiz}: repositorio sem commit (HEAD)"]
     return erros
 
 
 def montar_manifesto(meta: dict, arquivos: list) -> dict:
-    """Nucleo: o manifesto da aplicacao. `meta` = {id, base_commit, branch, branch_anterior,
+    """Nucleo: o manifesto da aplicacao. `meta` = {id, base_commit, head_no_aplicar,
     status_anterior, status_base_anterior}; `arquivos` = [{caminho, acao, existia, no_head, anterior}]."""
     return {**meta, "arquivos": sorted(arquivos, key=lambda a: a["caminho"])}
 
@@ -196,6 +256,23 @@ def plano_de_desfazer(manifestos: list, sujas: list) -> dict:
             c for c in map(_caminho_da_porcelana, sujas) if c not in arquivos
         ),
     }
+
+
+def erros_de_desfazer(manifestos: list, head_atual: str | None, sujas: list) -> list:
+    """Nucleo: o que impede desfazer um repositorio — o HEAD mudou desde o aplicar (o usuario ja commitou:
+    reverter e decisao dele) ou ha mudanca no worktree alheia ao manifesto."""
+    esperado = manifestos[0]["head_no_aplicar"]
+    erros = (
+        [
+            f"o HEAD do sistema mudou desde o aplicar ({str(esperado)[:7]} -> {str(head_atual)[:7]}) — o resultado ja foi commitado; reverter (git revert) e decisao sua"
+        ]
+        if head_atual != esperado
+        else []
+    )
+    alheios = plano_de_desfazer(manifestos, sujas)["alheios"]
+    return erros + (
+        [f"mudancas ALHEIAS ao manifesto: {', '.join(alheios)}"] if alheios else []
+    )
 
 
 # ------------------------------------------------------------------ casca: apoio
@@ -234,15 +311,10 @@ def _repo(raiz: Path, sistema: dict) -> Path:
     return (raiz / sistema["raiz_git"]).resolve()
 
 
-def _fatos_do_repo(repo: Path, alvo: str) -> dict:
+def _fatos_do_repo(repo: Path) -> dict:
     return {
         "limpo": not pp.linhas_sujas(repo),
-        "branch_atual": pp.git(repo, "rev-parse", "--abbrev-ref", "HEAD"),
-        "alvo": alvo,
-        "alvo_existe": pp.git(
-            repo, "rev-parse", "--verify", "--quiet", f"refs/heads/{alvo}"
-        )
-        is not None,
+        "head": pp.git(repo, "rev-parse", "HEAD"),
     }
 
 
@@ -296,7 +368,7 @@ def _escrever_plano(contexto: dict, plano: dict, ref: dict) -> list:
     ]
 
 
-def _escrever_carimbo(contexto: dict, sistema: dict) -> dict:
+def _escrever_carimbo(contexto: dict, sistema: dict, mantidos: list) -> dict:
     carimbo = _carimbo()
     estado = {
         **carimbo.estado_da_base(contexto["raiz"]),
@@ -310,6 +382,7 @@ def _escrever_carimbo(contexto: dict, sistema: dict) -> dict:
     dados = carimbo.montar_carimbo(
         estado, info, datetime.datetime.now(datetime.UTC).date().isoformat()
     )
+    dados.update({"mantidos": mantidos} if mantidos else {})
     return _escrever(
         contexto["repo"],
         contexto["pasta"] / ".sarak" / "base.json",
@@ -347,8 +420,7 @@ def _gravar_manifesto(contexto: dict, sistema: dict, arquivos: list) -> Path:
     meta = {
         "id": sistema["id"],
         "base_commit": contexto["head"],
-        "branch": contexto["alvo"],
-        "branch_anterior": contexto["branch_anterior"],
+        "head_no_aplicar": contexto["head_repo"],
         "status_anterior": sistema.get("status"),
         "status_base_anterior": sistema.get("status_base"),
     }
@@ -361,15 +433,20 @@ def _gravar_manifesto(contexto: dict, sistema: dict, arquivos: list) -> Path:
 
 
 def aplicar_sistema(contexto: dict, sistema: dict) -> dict:
-    """Casca: aplica num sistema (a branch ja esta corrente). Devolve o resultado para o relatorio e o mapa."""
-    plano, ref, _lido = pp.analisar_sistema(
-        contexto["raiz"], sistema, contexto["head"], contexto["cache"]
-    )
+    """Casca: aplica num sistema (no branch corrente do repositorio). Devolve o resultado para o relatorio e o mapa."""
+    plano, ref, lido = contexto["analises"][sistema["id"]]
     if "erro" in plano:
         return {"id": sistema["id"], "erro": plano["erro"]}
-    contexto = {**contexto, "pasta": (contexto["raiz"] / sistema["caminho"]).resolve()}
+    adotar, manter = decisoes_do_sistema(plano["acoes"], *contexto["decisoes"])
+    contexto = {
+        **contexto,
+        "pasta": (contexto["raiz"] / sistema["caminho"]).resolve(),
+        "flags": {**contexto["flags"], "adotar": adotar},
+    }
+    novos = [entrada_mantida(r, m, lido[r], ref[r]) for r, m in manter]
+    mantidos = mesclar_mantidos(plano["mantidos-validos"], novos, adotar)
     arquivos = _escrever_plano(contexto, plano, ref) + [
-        _escrever_carimbo(contexto, sistema)
+        _escrever_carimbo(contexto, sistema, mantidos)
     ]
     resumo, nota = _regenerar_resumo(contexto, plano["lacunas"])
     arquivos += [resumo] if resumo else []
@@ -378,12 +455,15 @@ def aplicar_sistema(contexto: dict, sistema: dict) -> dict:
         (contexto["repo"] / a["caminho"]).relative_to(contexto["pasta"]).as_posix()
         for a in arquivos
     }
-    motivos = pendencias(plano["acoes"], escritos, plano["lacunas"], gate)
+    decididos = escritos | {r for r, _ in manter}
+    motivos = pendencias(plano["acoes"], decididos, plano["lacunas"], gate)
     manifesto = _gravar_manifesto(contexto, sistema, arquivos)
     return {
         "id": sistema["id"],
         "plano": plano,
         "arquivos": arquivos,
+        "mantidos": [r for r, _ in manter],
+        "vencidos": plano["mantidos-vencidos"],
         "nota": nota,
         "gate": gate,
         "pendencias": motivos,
@@ -393,13 +473,6 @@ def aplicar_sistema(contexto: dict, sistema: dict) -> dict:
 
 
 # ------------------------------------------------------------------ casca: aplicar (CLI)
-
-
-def _preparar_branch(repo: Path, fatos: dict) -> str:
-    """Cria a branch `sarak/...` (ou reutiliza, na reentrada). Devolve a branch anterior."""
-    if fatos["branch_atual"] != fatos["alvo"]:
-        pp.rodar(["git", "-C", str(repo), "checkout", "-b", fatos["alvo"]])
-    return fatos["branch_atual"]
 
 
 def _imprimir_resultado(resultado: dict) -> None:
@@ -412,6 +485,9 @@ def _imprimir_resultado(resultado: dict) -> None:
     print(f"=== {resultado['id']} — status: {resultado['status']}")
     print("  aplicado: " + " · ".join(f"{a} {n}" for a, n in sorted(contagem.items())))
     print(f"  {resultado['nota']}")
+    print(f"  mantidos agora: {', '.join(resultado['mantidos']) or '—'}")
+    if resultado["vencidos"]:
+        print(f"  decisoes `mantido` vencidas (descartadas): {', '.join(resultado['vencidos'])}")
     gate = resultado["gate"]
     print(
         "  gate: nao se aplica (nao modular)"
@@ -436,17 +512,17 @@ def _instrucoes(repos: dict) -> None:
         ]
         print(f"  novos (nao rastreados): {len(novos)}")
     print(
-        "\nProximos passos (HITL): revise o diff; commite NA BRANCH sarak/...; push e PR; commite o mapa.json na base."
+        "\nProximos passos (HITL): o executor confere o diff; o revisor aprova; o usuario commita no repositorio e o mapa.json na base."
     )
     print(
-        "Para voltar atras antes de commitar: propagar.py --desfazer --id <os mesmos ids>."
+        "Para voltar atras antes de commitar: propagar.py --desfazer --id <os mesmos ids> (recusa se o HEAD mudou)."
     )
 
 
-def _fatos_para_aplicar(raiz: Path, args, sistemas: list, alvo: str) -> dict:
+def _fatos_para_aplicar(raiz: Path, args, sistemas: list) -> dict:
     """`--permitir-base-suja` existe SO para teste/desenvolvimento: a referencia vem do HEAD (worktree)."""
     escolhidos = [s for s in sistemas if s["id"] in args.id and s.get("raiz_git")]
-    repos = {s["raiz_git"]: _fatos_do_repo(_repo(raiz, s), alvo) for s in escolhidos}
+    repos = {s["raiz_git"]: _fatos_do_repo(_repo(raiz, s)) for s in escolhidos}
     suja = [] if args.permitir_base_suja else _base_suja_alem_do_mapa(raiz)
     ignorados = [
         s["id"]
@@ -465,34 +541,53 @@ def _contexto_base(args, raiz: Path, head: str) -> dict:
         "raiz": raiz,
         "head": head,
         "curto": head[:7],
-        "alvo": PREFIXO_DA_BRANCH + head[:7],
         "flags": flags,
+        "decisoes": (
+            [c.replace("\\", "/") for c in args.adotar],
+            [c.replace("\\", "/") for c in args.manter],
+            list(args.motivo),
+        ),
         "cache": {},
     }
 
 
+def _falhar(erros: list) -> int:
+    print("\n".join(f"[ERRO] {e}" for e in erros), file=sys.stderr)
+    return 2
+
+
+def _erros_das_decisoes(base: dict, analises: dict) -> list:
+    """Valida `--adotar`/`--manter`/`--motivo` contra o plano de TODOS os sistemas, antes de escrever."""
+    acoes = {i: a[0]["acoes"] for i, a in analises.items() if "erro" not in a[0]}
+    adotar, manter, motivos = base["decisoes"]
+    return erros_de_decisao(adotar, manter, motivos, acoes)
+
+
 def aplicar(args, raiz: Path) -> int:
-    """Casca da CLI `--aplicar`: pre-condicoes, branch, aplicacao por sistema, status no mapa, relatorio."""
+    """Casca da CLI `--aplicar`: pre-condicoes, analise e decisoes validadas ANTES de escrever, aplicacao por
+    sistema no branch corrente, status no mapa, relatorio."""
     caminho_do_mapa, mapa = _ler_mapa(raiz, args)
     head = pp.git(raiz, "rev-parse", "HEAD")
-    alvo = PREFIXO_DA_BRANCH + head[:7]
-    fatos = _fatos_para_aplicar(raiz, args, mapa["sistemas"], alvo)
+    fatos = _fatos_para_aplicar(raiz, args, mapa["sistemas"])
     erros = precondicoes(args.id, mapa["sistemas"], fatos)
     if erros:
-        print("\n".join(f"[ERRO] {e}" for e in erros), file=sys.stderr)
-        return 2
+        return _falhar(erros)
+    escolhidos = [s for s in mapa["sistemas"] if s["id"] in args.id]
+    base = _contexto_base(args, raiz, head)
+    base["analises"] = {
+        s["id"]: pp.analisar_sistema(raiz, s, head, base["cache"]) for s in escolhidos
+    }
+    erros = _erros_das_decisoes(base, base["analises"])
+    if erros:
+        return _falhar(erros)
     repos = {
-        r: {
-            "caminho": (raiz / r).resolve(),
-            "anterior": _preparar_branch((raiz / r).resolve(), f),
-        }
+        r: {"caminho": (raiz / r).resolve(), "head": f["head"]}
         for r, f in fatos["repos"].items()
     }
-    base = _contexto_base(args, raiz, head)
-    for sistema in [s for s in mapa["sistemas"] if s["id"] in args.id]:
+    for sistema in escolhidos:
         repo = repos[sistema["raiz_git"]]
         resultado = aplicar_sistema(
-            {**base, "repo": repo["caminho"], "branch_anterior": repo["anterior"]},
+            {**base, "repo": repo["caminho"], "head_repo": repo["head"]},
             sistema,
         )
         _imprimir_resultado(resultado)
@@ -506,18 +601,20 @@ def aplicar(args, raiz: Path) -> int:
 # ------------------------------------------------------------------ casca: desfazer
 
 
-def _manifestos_do_grupo(raiz: Path, sistemas: list, curto: str) -> tuple:
+def _manifestos_do_grupo(raiz: Path, sistemas: list) -> tuple:
+    """O manifesto de cada sistema e o do `status_base` (o curto do ultimo aplicar, gravado no mapa)."""
     manifestos, erros = [], []
     for sistema in sistemas:
+        curto = sistema.get("status_base")
         caminho = (
-            (raiz / sistema["caminho"]).resolve()
-            / ".sarak"
-            / f"propagacao-{curto}.json"
+            (raiz / sistema["caminho"]).resolve() / ".sarak" / f"propagacao-{curto}.json"
         )
-        if caminho.is_file():
+        if curto and caminho.is_file():
             manifestos.append(json.loads(caminho.read_text(encoding="utf-8")))
         else:
-            erros.append(f"{sistema['id']}: manifesto {caminho} nao encontrado")
+            erros.append(
+                f"{sistema['id']}: manifesto de propagacao nao encontrado (status_base {curto or 'vazio'})"
+            )
     return manifestos, erros
 
 
@@ -572,47 +669,23 @@ def _executar_desfazer(repo: Path, plano: dict, manifestos: list) -> None:
         _apagar_com_pastas_vazias(repo, rel)
 
 
-def _erros_do_grupo_para_desfazer(repo: Path, manifestos: list) -> list:
-    anterior = manifestos[0]["branch_anterior"]
-    proprios = int(pp.git(repo, "rev-list", "--count", f"{anterior}..HEAD") or "0")
-    erros = (
-        [
-            f"{repo}: a branch {manifestos[0]['branch']} tem {proprios} commit(s) proprio(s) — desfazer vira git revert, decisao sua"
-        ]
-        if proprios
-        else []
-    )
-    alheios = plano_de_desfazer(manifestos, pp.linhas_sujas(repo))["alheios"]
-    return erros + (
-        [f"{repo}: mudancas ALHEIAS ao manifesto: {', '.join(alheios)}"]
-        if alheios
-        else []
-    )
-
-
 def _desfazer_repo(raiz: Path, grupo: list) -> tuple:
-    """`(manifestos, erros)` de um repositorio; sem erro, ja desfeito no disco e na branch."""
+    """`(manifestos, erros)` de um repositorio; sem erro, ja desfeito no disco (o branch nao e tocado)."""
     repo = _repo(raiz, grupo[0])
-    atual = pp.git(repo, "rev-parse", "--abbrev-ref", "HEAD") or ""
-    if not atual.startswith(PREFIXO_DA_BRANCH):
-        return [], [
-            f"{repo}: a branch corrente ({atual}) nao e uma {PREFIXO_DA_BRANCH}..."
+    manifestos, erros = _manifestos_do_grupo(raiz, grupo)
+    if not erros:
+        sujas = pp.linhas_sujas(repo)
+        erros = [
+            f"{repo}: {e}"
+            for e in erros_de_desfazer(
+                manifestos, pp.git(repo, "rev-parse", "HEAD"), sujas
+            )
         ]
-    manifestos, erros = _manifestos_do_grupo(
-        raiz, grupo, atual.removeprefix(PREFIXO_DA_BRANCH)
-    )
-    erros += (
-        _erros_do_grupo_para_desfazer(repo, manifestos)
-        if manifestos and not erros
-        else []
-    )
     if erros:
         return [], erros
     _executar_desfazer(
         repo, plano_de_desfazer(manifestos, pp.linhas_sujas(repo)), manifestos
     )
-    pp.rodar(["git", "-C", str(repo), "checkout", manifestos[0]["branch_anterior"]])
-    pp.rodar(["git", "-C", str(repo), "branch", "-D", atual])
     return manifestos, []
 
 
@@ -643,7 +716,7 @@ def desfazer(args, raiz: Path) -> int:
             )
         _gravar_mapa(caminho_do_mapa, mapa)
         print(
-            f"[OK] {raiz_git}: desfeito — branch {manifestos[0]['branch_anterior']}, status restaurado ({', '.join(m['id'] for m in manifestos)})."
+            f"[OK] {raiz_git}: desfeito — branch inalterado, status restaurado ({', '.join(m['id'] for m in manifestos)})."
         )
     return 0
 
@@ -660,6 +733,7 @@ _ACOES = {
     "bloqueado": ["b"],
     "conflito": ["c"],
 }
+_VAZIAS = {a: [] for a in pp.ORDEM_DAS_ACOES}
 _FALTA_LIMPA = {
     "lei-ou-fundacao-fora-do-reservado": [],
     "migracao-de-familias-pendente": [],
@@ -674,12 +748,7 @@ _SIS = [
     {"id": "r2", "situacao": "ativo", "raiz_git": "../R"},
     {"id": "chat", "situacao": "adocao-posterior", "raiz_git": "../C"},
 ]
-_REPO_OK = {
-    "limpo": True,
-    "branch_atual": "main",
-    "alvo": "sarak/atualiza-base-abc1234",
-    "alvo_existe": False,
-}
+_REPO_OK = {"limpo": True, "head": "a" * 40}
 
 
 def _erros(
@@ -747,6 +816,67 @@ def _caso_desfazer() -> bool:
     )
 
 
+def _caso_erros_de_desfazer() -> bool:
+    manifesto = montar_manifesto(
+        {"id": "x", "head_no_aplicar": "a" * 40}, [_arq("specs/a.md", False, False)]
+    )
+    propria = ["?? specs/a.md"]
+    return (
+        erros_de_desfazer([manifesto], "a" * 40, propria) == []
+        and "HEAD do sistema mudou" in erros_de_desfazer([manifesto], "b" * 40, [])[0]
+        and "ALHEIAS" in erros_de_desfazer([manifesto], "a" * 40, [" M src/x.ts"])[0]
+    )
+
+
+def _caso_decisao() -> bool:
+    acoes = {**_VAZIAS, "divergente": ["a", "b"], "conflito": ["c"], "substituir": ["s"]}
+    todas = acoes_aplicaveis(acoes, {"adotar": ["a", "c", "s"]})
+    so_adotar = [(r, x) for r, x in todas if x == "adotar"]
+    ja_incluido = acoes_aplicaveis(acoes, {"divergentes": True, "adotar": ["a"]})
+    por_id = {"x": acoes}
+    return (
+        so_adotar == [("a", "adotar"), ("c", "adotar")]
+        and ("s", "substituir") in todas
+        and [r for r, _ in ja_incluido].count("a") == 1
+        and erros_de_decisao(["a"], ["b"], ["motivo"], por_id) == []
+        and len(erros_de_decisao(["s"], [], [], por_id)) == 1
+        and len(erros_de_decisao([], ["a"], [], por_id)) == 1
+        and len(erros_de_decisao(["a"], ["a"], ["m"], por_id)) == 1
+        and len(erros_de_decisao([], ["b"], [" "], por_id)) == 1
+        and decisoes_do_sistema(acoes, ["a", "z"], ["c"], ["m"]) == (["a"], [("c", "m")])
+    )
+
+
+def _caso_mantido() -> bool:
+    rel = "specs/00-knowledge.md"
+    entrada = entrada_mantida(rel, "x", "meu\r\ncorpo\r\n", "ref\n")
+    plano = {"acoes": {**_VAZIAS, "divergente": [rel], "conflito": ["specs/b.md"]}}
+    ref = {rel: "ref\n", "specs/b.md": "r"}
+    vale = pp.aplicar_mantidos(plano, {rel: "meu\ncorpo\n", "specs/b.md": "s"}, ref, [entrada])
+    editou = pp.aplicar_mantidos(plano, {rel: "meu\ncorpo2\n", "specs/b.md": "s"}, ref, [entrada])
+    base_mudou = pp.aplicar_mantidos(plano, {rel: "meu\ncorpo\n"}, {rel: "ref2\n"}, [entrada])
+    novo = {**entrada, "motivo": "y"}
+    return (
+        len(entrada["sha1_sistema"]) == 40
+        and vale["acoes"]["mantido"] == [rel]
+        and vale["acoes"]["divergente"] == []
+        and vale["acoes"]["conflito"] == ["specs/b.md"]
+        and vale["mantidos"] == {rel: "x"}
+        and editou["acoes"]["divergente"] == [rel]
+        and editou["mantidos-vencidos"] == [rel]
+        and base_mudou["acoes"]["mantido"] == []
+        and mesclar_mantidos([entrada], [novo], []) == [novo]
+        and mesclar_mantidos([entrada], [], [rel]) == []
+    )
+
+
+def _caso_status_mantido() -> bool:
+    acoes = {**_VAZIAS, "mantido": ["m"], "conflito": ["c"], "divergente": ["d"]}
+    sem = pendencias(acoes, {"c", "d"}, _FALTA_LIMPA, {"codigo": 0})
+    com = pendencias(acoes, set(), _FALTA_LIMPA, {"codigo": 0})
+    return sem == [] and len(com) == 2
+
+
 CASOS = [
     (
         "aplicar: so adicionar/substituir/politica por padrao",
@@ -809,15 +939,12 @@ CASOS = [
     ),
     ("pre-condicoes: tudo certo -> nenhum erro", lambda: _erros(["x"]) == []),
     (
-        "pre-condicoes: worktree sujo, base suja e branch em outro estado",
-        lambda: len(_erros(["x"], ["src/a.py"], limpo=False, alvo_existe=True)) == 3,
+        "pre-condicoes: worktree sujo e base suja (sem checagem de branch)",
+        lambda: len(_erros(["x"], ["src/a.py"], limpo=False)) == 2,
     ),
     (
-        "pre-condicoes: reentrada na propria branch e permitida",
-        lambda: (
-            _erros(["x"], branch_atual="sarak/atualiza-base-abc1234", alvo_existe=True)
-            == []
-        ),
+        "pre-condicoes: qualquer branch corrente serve, mas e preciso ter commit",
+        lambda: _erros(["x"], head=None) == ["../X: repositorio sem commit (HEAD)"],
     ),
     (
         "pre-condicoes: monorepo pela metade e adocao-posterior",
@@ -831,6 +958,10 @@ CASOS = [
         lambda: _erros(["x"], ignorados=("x",)) == [f"x: {SARAK_IGNORADO}"],
     ),
     ("desfazer: restaura, reescreve, apaga e acusa o alheio", _caso_desfazer),
+    ("decisao: --adotar filtra divergente/conflito; erros de caminho e de motivo", _caso_decisao),
+    ("mantido: entrada com sha1 normalizado; so vale com os dois sha1 iguais", _caso_mantido),
+    ("status: mantido nao e pendencia; conflito/divergente decididos agora tambem nao", _caso_status_mantido),
+    ("desfazer: recusa HEAD mudado e mudanca alheia", _caso_erros_de_desfazer),
     (
         "desfazer: monorepo pela metade e erro",
         lambda: any("monorepo" in e for e in precondicoes_desfazer(["r2"], _SIS)),

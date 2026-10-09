@@ -442,20 +442,32 @@ resultado da **última propagação**, não uma comparação ao vivo com o HEAD:
 | `pendente` | recebeu propagação, mas sobraram itens de decisão humana (conflito, divergente, `adicionar?`) | o aplicar da `meta-propagar-base` |
 | `atualizado` | a última propagação fechou sem pendências — ou o sistema acabou de ser instalado | o aplicar; e o `carimbo.py --registrar` na instalação |
 
-O `--plano` da `meta-propagar-base` só **lê** o status; o `--aplicar` e o `--desfazer` o escrevem. `situacao` (`ativo` \| `adocao-posterior`)
+O `--plano` e o `--relatorio` da `meta-propagar-base` só **leem** o status; o `--aplicar` e o `--desfazer` o escrevem. `situacao` (`ativo` \| `adocao-posterior`)
 e `status` são independentes.
 
 **Propagação.** A skill `meta-propagar-base` lê os dois e compara cada sistema com uma **instalação de
 referência** — o que a base instalaria hoje, gerada em temporário pelos próprios instaladores (nunca cópia
-crua) —, classificando cada arquivo como universal, molde de projeto ou gerado. O **plano**
-(`scripts/propagar.py --plano`) é somente leitura; sem carimbo, a adoção por histórico reconhece o universal
-igual a alguma versão da base, e o que sobra sai como `divergente`, para revisão humana. Aprovado o plano de
-**um grupo de repositório** (HITL), o **aplicar** (`--aplicar --id <id>`) escreve `adicionar`, `substituir` e
-`substituir-politica` — `divergente` e `adicionar?` só com flag explícita — numa branch
-`sarak/atualiza-base-<commit curto>` do sistema, **sem commit**: carimba, regenera o `00-resumo`, roda o gate
-(modular), grava o manifesto `.sarak/propagacao-<curto>.json` e o `status` no mapa. Arquivo personalizado,
-`conflito`, `obsoleto?` e `bloqueado` nunca são escritos. Commit, push e PR ficam com o usuário; o
-**desfazer** (`--desfazer --id <id>`) restaura pelo manifesto, volta à branch anterior e devolve o status.
+crua) —, classificando cada arquivo como universal, molde de projeto ou gerado. O fluxo é o de **revisor →
+executor**, **sem branch**:
+
+1. **Analisar:** `scripts/propagar.py --relatorio` — um bloco curto por sistema: o status, a **atualização
+   direta** (contagens e até 5 nomes) e as **plans propostas** para o que precisa de adequação (`--plano`
+   dá o detalhe, somente leitura; sem carimbo, a adoção por histórico reconhece o universal igual a alguma
+   versão da base e o que sobra sai `divergente`).
+2. **HITL de seleção:** o usuário escolhe os repositórios (e pode recusar plans propostas).
+3. **Revisor:** para cada repositório escolhido, escreve o **prompt de atualização direta** e as **plans de
+   adequação** no `specs/plan/` dele (com a linha no `00-indice`), na forma daquele repositório.
+4. **Executor** (outra conversa): roda o `--aplicar --id <id>` — escreve `adicionar`, `substituir` e
+   `substituir-politica` (`divergente` e `adicionar?` só com flag explícita) **no branch corrente**, **sem
+   commit**: carimba, regenera o `00-resumo`, roda o gate (modular), grava o manifesto
+   `.sarak/propagacao-<curto>.json` e o `status` no mapa — e executa cada plan no fluxo SDD do repositório.
+5. **Revisar e aprovar:** o revisor confere a atualização direta e as plans; aprovado, o **usuário** commita
+   no repositório e o `mapa.json` na base. Com todas as plans sintetizadas, um novo `--aplicar` fecha o
+   `status` em `atualizado`.
+
+Arquivo personalizado, `conflito`, `obsoleto?` e `bloqueado` nunca são escritos pela atualização direta — só
+por plan. Mudança relevante nunca vira branch. O **desfazer** (`--desfazer --id <id>`) restaura pelo manifesto
+e devolve o status; **recusa** se o HEAD do sistema mudou desde o aplicar (o usuário já commitou).
 
 ### Iniciar um projeto a partir do template
 

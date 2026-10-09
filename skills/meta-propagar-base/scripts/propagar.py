@@ -1,12 +1,16 @@
 """propagar.py — o PLANO e a CLI da propagacao da base aos sistemas do `mapa.json`.
 
     python propagar.py --plano [--id <id>] [--json] [--mapa <arquivo>] [--permitir-base-suja]
+    python propagar.py --relatorio [--id <id>] [--mapa <arquivo>] [--permitir-base-suja]
     python propagar.py --aplicar --id <id> [--id <id> ...] [--incluir-divergentes] [--incluir-adicionar?] [--mapa <arquivo>]
+                       [--adotar <caminho> ...] [--manter <caminho> --motivo "<texto>" ...]
     python propagar.py --desfazer --id <id> [--id <id> ...] [--mapa <arquivo>]
-    python propagar.py --autoteste      prova o nucleo do plano e do aplicar/desfazer (`aplicacao.py`)
+    python propagar.py --autoteste      prova o nucleo do plano, do aplicar/desfazer (`aplicacao.py`) e do relatorio
 
-O `--plano` e somente leitura (nem o `status` do mapa ele escreve). O `--aplicar` e o `--desfazer`
-vivem em `aplicacao.py`: escrevem no sistema numa branch `sarak/...`, SEM commit, com manifesto.
+O `--plano` e o `--relatorio` sao somente leitura (nem o `status` do mapa eles escrevem). O `--relatorio`
+(`relatorio.py`) e o resumo objetivo para o HITL de selecao: a atualizacao direta e as plans propostas. O
+`--aplicar` e o `--desfazer` vivem em `aplicacao.py`: escrevem no sistema, no branch CORRENTE (nao criam
+branch), SEM commit, com manifesto.
 
 ARQUIVOS PERSONALIZADOS NUNCA SAO ALTERADOS — nem pelo plano, nem pelo aplicar: os moldes de processo
 presentes no sistema (`00-contexto`, `00-indice`, `00-backlog`, `panorama/00-planejamento`) e todo
@@ -17,6 +21,12 @@ A ideia central: o sistema e comparado com uma INSTALACAO DE REFERENCIA — o qu
 gerada numa pasta temporaria PELOS PROPRIOS INSTALADORES da base (`init_repo.py`, que chama o
 `create-project.mjs`; `instalar_base_de_linguagem`; a copia de `_estrutura_base_site/`), com os
 parametros do sistema, dentro de um `git worktree` do commit (HEAD, ou o do carimbo).
+
+Decisao por arquivo: `--adotar` aplica so aquele `divergente`/`conflito`; `--manter ... --motivo` nao o escreve e
+o registra em `mantidos` no carimbo `.sarak/base.json` com o sha1 do conteudo NORMALIZADO (CRLF -> LF, sem as
+linhas de titulo) do sistema e da referencia. No plano, um `mantidos` cujos dois sha1 seguem iguais aos atuais
+e a acao `mantido` (sem pendencia); se o projeto editou de novo ou a base mudou a fonte, a decisao VENCEU e
+o arquivo volta a `divergente`/`conflito`.
 
 Titulo do projeto: `specs/README.md`/`specs/INDEX.md` (o H1) e `specs/arquitetura/00-base-*.md` (a linha
 `titulo:` do frontmatter e o H1) levam o nome do projeto — sao comparados SEM essas linhas, e o aplicar
@@ -29,11 +39,13 @@ o `create-project.mjs` aplica o escopo, o escopo do sistema e trocado pelo MARCA
 `tools/` de sistema modular -> `substituir-politica` (ADR-009: vendorizado); fora dele -> `divergente`.
 
 Nucleo x casca: `classificar`, `decidir`, `planejar`, `fonte_direta`, `versao_igual`, `adotar`,
-`politica`, `travar`, `lacunas`, `marcador_de_escopo` e `escopo_do_pacote` sao PUROS — o `--autoteste`
+`politica`, `travar`, `lacunas`, `marcador_de_escopo`, `escopo_do_pacote`, `sha1_comparavel`,
+`separar_mantidos` e `aplicar_mantidos` sao PUROS — o `--autoteste`
 os prova. Git, temporarios e disco sao casca.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -110,7 +122,7 @@ BASE_COM_TITULO = re.compile(r"^specs/arquitetura/00-base-[a-z]+\.md$")
 
 ACOES_LISTADAS = (
     "adicionar", "adicionar?", "bloqueado", "substituir", "substituir-politica", "conflito", "divergente",
-    "obsoleto?", "reportar-molde", "regenerar",
+    "obsoleto?", "mantido", "reportar-molde", "regenerar",
 )
 ORDEM_DAS_ACOES = (*ACOES_LISTADAS, "nada", "extra")
 LEIS_RESERVADAS = ("arquitetura", "modulo", "contrato-e-dados", "operacao", "regras")
@@ -316,6 +328,52 @@ def travar(plano: dict, falta: dict) -> dict:
     return {**plano, "acoes": acoes}
 
 
+# ------------------------------------------------------------------ nucleo: decisoes mantidas
+
+
+def sha1_comparavel(rel: str, texto: str) -> str:
+    """Nucleo: o sha1 do conteudo como se compara (CRLF -> LF, sem as linhas de titulo do projeto)."""
+    return hashlib.sha1(comparavel(rel, texto).encode("utf-8")).hexdigest()
+
+
+def _mantido_vale(entrada: dict, sistema: dict, ref: dict) -> bool:
+    rel = entrada["caminho"]
+    return (
+        rel in sistema
+        and rel in ref
+        and entrada.get("sha1_sistema") == sha1_comparavel(rel, sistema[rel])
+        and entrada.get("sha1_referencia") == sha1_comparavel(rel, ref[rel])
+    )
+
+
+def separar_mantidos(mantidos: list, sistema: dict, ref: dict) -> tuple:
+    """Nucleo: `(validos, vencidos)` — valido = o arquivo do sistema e a fonte da referencia seguem com os
+    mesmos sha1 do momento da decisao. Vencido: o projeto editou de novo ou a base mudou aquela fonte."""
+    validos = [e for e in mantidos if _mantido_vale(e, sistema, ref)]
+    return validos, [e for e in mantidos if e not in validos]
+
+
+def aplicar_mantidos(plano: dict, sistema: dict, ref: dict, mantidos: list) -> dict:
+    """Nucleo: move para `mantido` os `divergente`/`conflito` com decisao valida (sem pendencia). Guarda
+    `mantidos` ({rel: motivo}), `mantidos-validos` (as entradas, para o carimbo) e `mantidos-vencidos`."""
+    validos, vencidos = separar_mantidos(mantidos, sistema, ref)
+    por_caminho = {e["caminho"]: e for e in validos}
+    acoes = dict(plano["acoes"])
+    decididos = sorted(r for a in ("divergente", "conflito") for r in acoes[a] if r in por_caminho)
+    for acao in ("divergente", "conflito"):
+        acoes[acao] = [r for r in acoes[acao] if r not in por_caminho]
+    acoes["mantido"] = decididos
+    return {
+        **plano,
+        "acoes": acoes,
+        "mantidos": {r: por_caminho[r]["motivo"] for r in decididos},
+        "mantidos-validos": validos,
+        "mantidos-vencidos": [e["caminho"] for e in vencidos],
+        "sem-fonte-direta": {r: m for r, m in plano.get("sem-fonte-direta", {}).items() if r not in por_caminho},
+        "sem-versao-igual": [r for r in plano.get("sem-versao-igual", []) if r not in por_caminho],
+    }
+
+
 # ------------------------------------------------------------------ nucleo: lacunas
 
 
@@ -484,6 +542,17 @@ def commit_do_carimbo(pasta: Path) -> str | None:
         return None
 
 
+def mantidos_do_carimbo(pasta: Path) -> list:
+    """Casca: as decisoes `mantidos` gravadas no carimbo (so as bem formadas)."""
+    texto = ler_texto(pasta / ".sarak" / "base.json")
+    try:
+        lista = json.loads(texto).get("mantidos", []) if texto else []
+    except ValueError:
+        return []
+    chaves = {"caminho", "motivo", "sha1_sistema", "sha1_referencia"}
+    return [e for e in lista if isinstance(e, dict) and chaves <= set(e)]
+
+
 def sarak_ignorado(pasta: Path) -> bool:
     """Casca: o `.sarak/base.json` do sistema cai num `.gitignore`? (o carimbo nao seria versionado)."""
     return rodar(["git", "-C", str(pasta), "check-ignore", "-q", ".sarak/base.json"]).returncode == 0
@@ -549,6 +618,7 @@ def analisar_sistema(raiz: Path, sistema: dict, head: str, cache: dict) -> tuple
     plano = planejar(ref, antiga, lido, contexto)
     if antiga is None:
         plano = politica(adotar(plano, lido, *_historia_dos_divergentes(raiz, plano, sistema, cache)), contexto)
+    plano = aplicar_mantidos(plano, lido, ref, mantidos_do_carimbo(pasta))
     falta = lacunas(lido, {**contexto, "sarak_ignorado": sarak_ignorado(pasta)})
     return {**_cabecalho(sistema, carimbo, head), **travar(plano, falta), "lacunas": falta}, ref, lido
 
@@ -569,6 +639,9 @@ def lista_curta(itens: list, limite: int = LIMITE_DE_LISTA) -> str:
 
 def _com_nota(rel: str, plano: dict) -> str:
     commit = plano.get("adocao", {}).get(rel)
+    motivo = plano.get("mantidos", {}).get(rel)
+    if motivo:
+        return f"{rel} (mantido: {motivo})"
     return f"{rel} (adoção: idêntico à base em {commit[:7]})" if commit else rel
 
 
@@ -594,6 +667,8 @@ def _linhas_do_plano(plano: dict) -> list:
         linhas.append(f"    divergente sem fonte direta: {lista_curta(list(plano['sem-fonte-direta']))}")
     if plano.get("sem-versao-igual"):
         linhas.append(f"    sem versão igual no histórico: {lista_curta(plano['sem-versao-igual'])}")
+    if plano.get("mantidos-vencidos"):
+        linhas.append(f"    decisão `mantido` vencida (revisar de novo): {lista_curta(plano['mantidos-vencidos'])}")
     if plano["molde-mudou-na-base"]:
         linhas.append(f"    molde mudou na base (informativo): {lista_curta(plano['molde-mudou-na-base'])}")
     return linhas + linhas_de_lacunas(plano["lacunas"])
@@ -630,7 +705,7 @@ def consolidado(planos: list) -> list:
         linhas.append(f"  {rotulo}: {', '.join(p['id'] for p in validos if p['lacunas'][chave]) or '—'}")
     linhas.append(f"  sem panorama/00-planejamento.md: {', '.join(p['id'] for p in validos if p['lacunas']['sem-planejamento']) or '—'}")
     linhas.append(f"  .sarak/ ignorado pelo git: {', '.join(p['id'] for p in validos if p['lacunas']['sarak-ignorado']) or '—'}")
-    linhas.append("  [NOTA] Isto e so o plano (somente leitura). Para aplicar: --aplicar --id <id>, com HITL por sistema.")
+    linhas.append("  [NOTA] Isto e so o plano (somente leitura). Resumo para decidir: --relatorio. Para aplicar: --aplicar --id <id>, depois do HITL.")
     return linhas
 
 
@@ -641,14 +716,18 @@ def _parser():
     parser = argparse.ArgumentParser(description="Plano, aplicar e desfazer da propagacao da base aos sistemas do mapa.json.")
     modo = parser.add_mutually_exclusive_group(required=True)
     modo.add_argument("--plano", action="store_true", help="Gera o plano (somente leitura).")
-    modo.add_argument("--aplicar", action="store_true", help="Aplica nos --id, numa branch sarak/..., sem commit.")
+    modo.add_argument("--relatorio", action="store_true", help="Relatorio objetivo para o HITL de selecao (somente leitura).")
+    modo.add_argument("--aplicar", action="store_true", help="Aplica nos --id, no branch corrente, sem commit.")
     modo.add_argument("--desfazer", action="store_true", help="Desfaz a aplicacao nos --id, pelo manifesto.")
     parser.add_argument("--id", action="append", default=[], help="Sistema do mapa (repetivel).")
     parser.add_argument("--json", action="store_true", help="Saida do plano em JSON.")
     parser.add_argument("--mapa", help="Outro mapa.json (teste). Padrao: o da raiz da base.")
     parser.add_argument("--incluir-divergentes", action="store_true", help="Aplica tambem os divergente (explicito, por execucao).")
     parser.add_argument("--incluir-adicionar?", dest="incluir_adicionar", action="store_true", help="Aplica tambem os adicionar? (nunca os bloqueado).")
-    parser.add_argument("--permitir-base-suja", action="store_true", help="So teste/desenvolvimento (--plano e --aplicar): a referencia vem do HEAD (worktree).")
+    parser.add_argument("--adotar", action="append", default=[], metavar="CAMINHO", help="Aplica so este divergente/conflito (repetivel).")
+    parser.add_argument("--manter", action="append", default=[], metavar="CAMINHO", help="Nao escreve este divergente/conflito; registra em `mantidos` no carimbo (exige --motivo).")
+    parser.add_argument("--motivo", action="append", default=[], help="Motivo do --manter correspondente (mesma ordem).")
+    parser.add_argument("--permitir-base-suja", action="store_true", help="So teste/desenvolvimento (--plano, --relatorio e --aplicar): a referencia vem do HEAD (worktree).")
     return parser
 
 
@@ -690,6 +769,10 @@ def main() -> int:
     args, raiz = _parser().parse_args(), raiz_da_base()
     if args.plano:
         return _plano(args, raiz)
+    if args.relatorio:
+        import relatorio  # so carregado quando pedido
+
+        return relatorio.executar(args, raiz)
     import aplicacao  # aplicar/desfazer: so carregado quando pedido
 
     return aplicacao.aplicar(args, raiz) if args.aplicar else aplicacao.desfazer(args, raiz)
@@ -799,10 +882,12 @@ CASOS = [
 
 
 def autoteste() -> int:
-    """Prova o nucleo do plano e o do aplicar/desfazer (`aplicacao.CASOS`) em memoria — sem git, sem disco."""
+    """Prova o nucleo do plano, o do aplicar/desfazer (`aplicacao.CASOS`) e o do relatorio (`relatorio.CASOS`)
+    em memoria — sem git, sem disco."""
     import aplicacao
+    import relatorio
 
-    casos = CASOS + aplicacao.CASOS
+    casos = CASOS + aplicacao.CASOS + relatorio.CASOS
     falhas = [nome for nome, caso in casos if not caso()]
     for nome in falhas:
         print(f"[FALHA] {nome}", file=sys.stderr)
