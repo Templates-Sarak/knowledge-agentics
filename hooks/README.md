@@ -168,6 +168,7 @@ O vocabulário difere de propósito entre os dois: o template nomeia **binding**
   `askOrDenyPreTool` nega no Codex.
 - **`PostToolUse` com `block` não desfaz a edição:** substitui o resultado da ferramenta pelo feedback, e o
   modelo segue a partir dele.
+- Hooks resolvem o projeto pelo `cwd` do payload; caminhos relativos do patch são resolvidos contra ele.
 
 ## Pré-requisitos (ferramentas externas)
 

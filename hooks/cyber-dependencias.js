@@ -16,7 +16,7 @@ const cwd = input.cwd || process.cwd();
 
 if (!/\bgit\s+push\b/.test(cmd)) allow();
 
-const cfg = loadConfig();
+const cfg = loadConfig(input.cwd);
 const dep = cfg.dependencias || {};
 const modo = dep.modo || "warn";
 if (modo === "off") allow();

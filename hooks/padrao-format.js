@@ -8,7 +8,7 @@
 const { readInput, allow, commandExists, editedFiles, loadConfig, langOf, run } = require("./_lib");
 
 const input = readInput();
-const cfg = loadConfig();
+const cfg = loadConfig(input.cwd);
 if (cfg.formatacao?.ativo === false) allow();
 
 for (const fp of editedFiles(input)) {

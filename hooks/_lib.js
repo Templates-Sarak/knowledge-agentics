@@ -3,6 +3,7 @@
 // Contrato dos hooks do Claude Code: payload JSON via stdin; decisão via JSON no stdout.
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
@@ -48,17 +49,24 @@ function askPreTool(reason) {
   });
 }
 
-/** Extrai arquivos afetados tanto do payload Claude quanto de um patch do Codex. */
+/**
+ * Extrai arquivos afetados tanto do payload Claude quanto de um patch do Codex, sempre ABSOLUTOS.
+ *
+ * O patch do Codex traz caminhos relativos ao `cwd` da sessão (`*** Add File: a.py`); o processo do
+ * hook pode nascer em outro diretório. Resolver contra `input.cwd` aqui, num lugar só, poupa cada hook
+ * de saber disso. Caminho já absoluto (o `file_path` do Claude) passa intacto pelo `path.resolve`.
+ */
 function editedFiles(input) {
+  const base = input?.cwd || process.cwd();
   const legacyPath = input?.tool_input?.file_path;
-  if (typeof legacyPath === "string" && legacyPath) return [legacyPath];
+  if (typeof legacyPath === "string" && legacyPath) return [path.resolve(base, legacyPath)];
 
   const patch = input?.tool_input?.command;
   if (typeof patch !== "string") return [];
 
   const files = new Set();
   for (const match of patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm)) {
-    files.add(match[1].trim());
+    files.add(path.resolve(base, match[1].trim()));
   }
   return [...files];
 }
@@ -111,13 +119,15 @@ function emit(obj) {
  * ela não tem esse arquivo, então a busca falha e o fallback assume.
  *
  * `CLAUDE_PROJECT_DIR` primeiro porque é o contrato do ambiente de hook do Claude Code e é
- * literalmente "o projeto em que o agente está" — o mesmo que `settings.template.json` já usa. `cwd`
- * depois, porque o wiring do plugin declara que os scripts operam sobre o projeto-alvo por `cwd`, e
- * porque o hook pode ser invocado à mão, sem a variável.
+ * literalmente "o projeto em que o agente está" — o mesmo que `settings.template.json` já usa. Depois
+ * o `cwd` do PAYLOAD (`cwdDoPayload`, opcional): no Codex não há `CLAUDE_PROJECT_DIR`, e o processo do
+ * hook não nasce necessariamente na sessão — o payload é quem diz onde ela está. `process.cwd()` por
+ * último, porque o hook pode ser invocado à mão, sem variável nem payload.
  */
-function projectRoot() {
+function projectRoot(cwdDoPayload) {
   const partidas = [];
   if (process.env.CLAUDE_PROJECT_DIR) partidas.push(process.env.CLAUDE_PROJECT_DIR);
+  if (cwdDoPayload) partidas.push(cwdDoPayload);
   partidas.push(process.cwd());
   for (const partida of partidas) {
     let atual = path.resolve(partida);
@@ -176,8 +186,11 @@ function politicaDoProjeto(raiz) {
  * pelo mesmo argumento com o sinal trocado: o gerador emite `no-console`/`no-empty`/`T20`/`E` sem ler
  * política nenhuma, então o campo nunca acrescentava cobertura — só escondia do agente um erro que o
  * lint acusava.
+ *
+ * `cwdDoPayload` (opcional) é repassado ao `projectRoot`: a política vem do mesmo projeto que o hook
+ * inspeciona, não de onde o processo nasceu.
  */
-function loadConfig() {
+function loadConfig(cwdDoPayload) {
   const defaults = {
     qualidade: {
       modo: "warn", // block | warn | off
@@ -200,12 +213,12 @@ function loadConfig() {
       java: { linter: "checkstyle", formatter: "google-java-format" },
     },
   };
-  return mesclar(defaults, lerPolitica());
+  return mesclar(defaults, lerPolitica(cwdDoPayload));
 }
 
 /** A política crua, do projeto quando houver, da base quando não. Nunca lança. */
-function lerPolitica() {
-  const raiz = projectRoot();
+function lerPolitica(cwdDoPayload) {
+  const raiz = projectRoot(cwdDoPayload);
   try {
     if (raiz !== null) return politicaDoProjeto(raiz);
     return JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
@@ -237,6 +250,41 @@ function langOf(file) {
   return null;
 }
 
+/** `editedFiles`: patch relativo resolvido contra o `cwd` do payload; absoluto e Claude intactos. */
+function autotesteEditedFiles(falhas) {
+  const proj = path.resolve("/proj");
+  const arquivosCodex = editedFiles({
+    cwd: proj,
+    tool_input: { command: "*** Update File: src/a.ts\n*** Add File: tests/a.test.ts\n" },
+  });
+  if (arquivosCodex.join(",") !== [path.resolve(proj, "src/a.ts"), path.resolve(proj, "tests/a.test.ts")].join(","))
+    falhas.push("editedFiles deveria resolver o patch do Codex contra o cwd do payload");
+  const absoluto = path.resolve("/outro/b.py");
+  if (editedFiles({ cwd: proj, tool_input: { command: `*** Add File: ${absoluto}\n` } }).join() !== absoluto)
+    falhas.push("editedFiles deveria deixar intacto um caminho absoluto no patch");
+  const doClaude = path.resolve("/proj/src/a.py");
+  if (editedFiles({ tool_input: { file_path: doClaude } }).join() !== doClaude)
+    falhas.push("editedFiles deveria preservar o file_path absoluto do Claude");
+}
+
+/** `projectRoot(cwd)`: acha a raiz partindo do `cwd` do payload, sem `CLAUDE_PROJECT_DIR` mascarando. */
+function autotesteProjectRoot(falhas) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sarak-raiz-"));
+  const salvo = process.env.CLAUDE_PROJECT_DIR;
+  delete process.env.CLAUDE_PROJECT_DIR;
+  try {
+    fs.mkdirSync(path.join(tmp, "config"));
+    fs.writeFileSync(path.join(tmp, "config", "verification.json"), "{}");
+    const sub = path.join(tmp, "src", "mod");
+    fs.mkdirSync(sub, { recursive: true });
+    if (projectRoot(sub) !== path.resolve(tmp))
+      falhas.push("projectRoot deveria achar a raiz partindo do cwd do payload");
+  } finally {
+    if (salvo !== undefined) process.env.CLAUDE_PROJECT_DIR = salvo;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 function autoteste() {
   const falhas = [];
   if (langOf("a.py") !== "python") falhas.push("langOf deveria reconhecer .py como python");
@@ -244,11 +292,8 @@ function autoteste() {
   if (langOf("A.TSX") !== "js") falhas.push("langOf deveria ser case-insensitive (.TSX)");
   if (langOf("a.go") !== "go") falhas.push("langOf deveria reconhecer .go como go");
   if (langOf("a.rb") !== null) falhas.push("langOf deveria devolver null para extensao sem area");
-  const arquivosCodex = editedFiles({ tool_input: { command: "*** Update File: src/a.ts\n*** Add File: tests/a.test.ts\n" } });
-  if (arquivosCodex.join(",") !== "src/a.ts,tests/a.test.ts")
-    falhas.push("editedFiles deveria extrair os arquivos de um patch do Codex");
-  if (editedFiles({ tool_input: { file_path: "src/a.py" } }).join() !== "src/a.py")
-    falhas.push("editedFiles deveria preservar o payload de arquivo do Claude");
+  autotesteEditedFiles(falhas);
+  autotesteProjectRoot(falhas);
 
   const defaults = {
     qualidade: { modo: "warn" },
@@ -272,7 +317,7 @@ function autoteste() {
     process.stdout.write(`autoteste (_lib.js): ${falhas.length} falha(s)\n`);
     return 1;
   }
-  process.stdout.write("autoteste (_lib.js): 8/8 ok\n");
+  process.stdout.write("autoteste (_lib.js): 12/12 ok\n");
   return 0;
 }
 

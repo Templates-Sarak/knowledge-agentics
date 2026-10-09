@@ -17,7 +17,7 @@ const cwd = input.cwd || process.cwd();
 
 if (!/\bgit\s+push\b/.test(cmd)) allow();
 
-const cfg = loadConfig();
+const cfg = loadConfig(input.cwd);
 const cob = cfg.cobertura || {};
 const modo = cob.modo || "ask";
 if (modo === "off") allow();

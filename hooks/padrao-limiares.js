@@ -149,6 +149,55 @@ function violaPadrao(saida, marcas) {
   return Boolean(marcas) && marcas.length > 0 && new RegExp(marcas.join("|")).test(saida);
 }
 
+/** `fp` está dentro de `raiz` (ou é ela)? Falso quando não há raiz ou quando o relativo escapa dela. */
+function dentroDe(raiz, fp) {
+  if (!raiz) return false;
+  const rel = path.relative(raiz, fp);
+  return !rel.startsWith("..") && !path.isAbsolute(rel);
+}
+
+/**
+ * Núcleo: o diretório cuja config de linter vale para `fp`, ou `null`. Sobe a partir de
+ * `path.dirname(fp)` até o primeiro diretório com um dos `CONFIGS_DE_LINTER[lang]` — a mesma descoberta
+ * hierárquica que o próprio linter faz. Projeto sem `config/verification.json` não tem raiz reconhecida
+ * por `projectRoot`, e a config do linter pode estar acima do `cwd` da sessão.
+ *
+ * A subida tem teto, senão uma config solta em `~` seria adotada. Para no primeiro destes, sempre
+ * DEPOIS de checar a config no diretório: um `.git` (a raiz do repo conta), a `raiz` quando `fp` está
+ * dentro dela, ou 8 níveis (o mesmo teto do `projectRoot`). Pura: o disco entra por `existe`.
+ */
+function dirDaConfig(lang, fp, raiz, existe = fs.existsSync) {
+  const nomes = CONFIGS_DE_LINTER[lang] ?? [];
+  const limite = dentroDe(raiz, fp) ? path.resolve(raiz) : null;
+  let atual = path.dirname(path.resolve(fp));
+  for (let nivel = 0; nivel < 8; nivel += 1) {
+    if (nomes.some((nome) => existe(path.join(atual, nome)))) return atual;
+    if (existe(path.join(atual, ".git")) || atual === limite) return null;
+    const pai = path.dirname(atual);
+    if (pai === atual) return null;
+    atual = pai;
+  }
+  return null;
+}
+
+/** `dirDaConfig` com disco em memória: os limites da subida são o que impede adotar config alheia. */
+function autotesteDirDaConfig(falhas) {
+  const r = (...partes) => path.resolve("/r", ...partes);
+  const disco = (...caminhos) => (p) => caminhos.includes(path.resolve(p));
+  const fundo = (n) => r(...Array.from({ length: n }, (_, i) => String(i + 1)), "a.py");
+  const casos = [
+    ["achou no proprio diretorio", ["python", r("proj", "a.py"), r("proj"), disco(r("proj", "pyproject.toml"))], r("proj")],
+    ["achou dois niveis acima", ["python", r("proj", "src", "mod", "a.py"), null, disco(r("proj", "pyproject.toml"))], r("proj")],
+    ["parou no .git sem adotar a config de fora", ["python", r("repo", "src", "a.py"), null, disco(r("repo", ".git"), r("pyproject.toml"))], null],
+    ["parou na raiz sem adotar a config acima dela", ["python", r("proj", "src", "a.py"), r("proj"), disco(r("pyproject.toml"))], null],
+    ["parou no teto de 8 niveis", ["python", fundo(8), null, disco(r("pyproject.toml"))], null],
+    ["controle do teto: 7 niveis abaixo ainda acha", ["python", fundo(7), null, disco(r("pyproject.toml"))], r()],
+  ];
+  for (const [nome, args, esperado] of casos) {
+    if (dirDaConfig(...args) !== esperado) falhas.push(`dirDaConfig: ${nome}`);
+  }
+}
+
 function autoteste() {
   const falhas = [];
   if (acaoDoModo("off") !== "allow") falhas.push("acaoDoModo('off') deveria devolver 'allow'");
@@ -164,26 +213,30 @@ function autoteste() {
     falhas.push("violaPadrao NAO deveria casar saida limpa do linter");
   if (violaPadrao("qualquer coisa", marcadores("linguagem-inexistente")))
     falhas.push("violaPadrao deveria devolver false quando marcadores(lang) e null");
+  autotesteDirDaConfig(falhas);
 
   for (const falha of falhas) process.stdout.write(`  falha  ${falha}\n`);
   if (falhas.length > 0) {
     process.stdout.write(`autoteste (padrao-limiares.js): ${falhas.length} falha(s)\n`);
     return 1;
   }
-  process.stdout.write("autoteste (padrao-limiares.js): 7/7 ok\n");
+  process.stdout.write("autoteste (padrao-limiares.js): 13/13 ok\n");
   return 0;
 }
 
 if (process.argv.includes("--autoteste")) process.exit(autoteste());
 
 const input = readInput();
-const cfg = loadConfig();
+const cfg = loadConfig(input.cwd);
 const q = cfg.qualidade;
 const acao = acaoDoModo(q.modo);
 if (acao === "allow") allow();
 
 const sinaliza = acao === "block" ? blockPostTool : warnPostTool;
-const raiz = projectRoot() ?? process.cwd();
+// So uma raiz RECONHECIDA limita a subida do dirDaConfig; o cwd usado como fallback, nao (senao a
+// subida pararia no proprio cwd e nunca acharia a config de um nivel acima).
+const raizDoProjeto = projectRoot(input.cwd) ?? process.env.CLAUDE_PROJECT_DIR ?? null;
+const raiz = raizDoProjeto ?? input.cwd ?? process.cwd();
 const achados = [];
 
 for (const fp of editedFiles(input)) {
@@ -196,16 +249,16 @@ for (const fp of editedFiles(input)) {
     achados.push(`${linter} não instalado — verificação de padrão de escrita (modo "${q.modo}"). Instale ${linter} para validar ${lang}.`);
     continue;
   }
-  const temConfig = (CONFIGS_DE_LINTER[lang] ?? []).some((nome) => fs.existsSync(path.join(raiz, nome)));
-  if (!temConfig) {
+  const dirConfig = dirDaConfig(lang, fp, raizDoProjeto);
+  if (dirConfig === null) {
     achados.push(`Sem config de ${linter} na raiz de ${raiz} — os limiares vivem nessa config (modo "${q.modo}"). ${comoGerarAConfig(raiz)}`);
     continue;
   }
   const marcas = marcadores(lang);
-  const res = marcas ? invocar(lang, exe, raiz, fp) : null;
+  const res = marcas ? invocar(lang, exe, dirConfig, fp) : null;
   const out = `${res?.stdout || ""}${res?.stderr || ""}`.trim();
   if (violaPadrao(out, marcas)) {
-    achados.push(`Padrão de escrita violado em ${fp} pela config de ${linter}:\n${out.slice(0, 1500)}\nCorrija conforme a skill padrao-escrita.`);
+    achados.push(`Padrão de escrita violado em ${path.relative(dirConfig, fp) || fp} pela config de ${linter}:\n${out.slice(0, 1500)}\nCorrija conforme a skill padrao-escrita.`);
   }
 }
 
