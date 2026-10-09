@@ -7,6 +7,7 @@
 
 | # | Arquivo | O que é |
 |---|---|---|
+| 0 | `panorama/00-resumo.md` | **Para o humano:** o estado do projeto de relance (gerado). O agente começa pelo `00-contexto`. |
 | 1 | **`00-contexto.md`** | O que este repositório é, regras inegociáveis e o mapa "que spec eu leio para esta tarefa?" |
 | 2 | **`00-knowledge.md`** | Roteador de capacidades: situação → skill/command/agent/hook. Universal. |
 | 3 | **`00-indice.md`** | Fila de execução das plans, com dependências e status. |
@@ -24,8 +25,9 @@
   se a plan está na fila (🔴 🟡 🟠 🔵 ⛔) ou aprovada aguardando a autorização de síntese (🟢). **A plan é
   temporária** — no ato da síntese o revisor a remove junto com a linha do índice, e o rastro passa a viver
   no histórico do Git.
-- 📁 **`panorama/`**: o planejamento — hoje, o **catálogo de famílias** (`00-planejamento.md` §1), fonte
-  única do `FF` que numera specs (`FF.NN-<slug>.md`) e plans (`plan-FF.NN-<slug>.md`).
+- 📁 **`panorama/`**: o planejamento e o panorama. `00-planejamento.md` traz o **catálogo de famílias** (§1),
+  fonte única do `FF` que numera specs (`FF.NN-<slug>.md`) e plans (`plan-FF.NN-<slug>.md`), e o
+  **horizonte** de itens (§2); `00-resumo.md` é o estado de relance, **gerado** pela skill `spec-panorama`.
 - 📁 **`_templates/`**: moldes (`template-spec`, `template-arquitetura`, `template-adr`, `template-plan`).
 
 ## O ciclo em uma linha

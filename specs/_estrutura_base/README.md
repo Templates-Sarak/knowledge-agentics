@@ -25,7 +25,8 @@ limpeza). A via direta encurta a papelada — nunca a verificação.
 | `00-prompt-revisor.md` | Prompt que forma o agente revisor numa conversa nova | **Universal** |
 | `00-prompt-executor.md` | Prompt que forma o agente executor (a cada execução) | **Universal** |
 | `00-backlog.md` | Achados registrados e **não agendados** — sem status, sem fila | **Por projeto** — mantido pelo revisor |
-| `panorama/00-planejamento.md` | Catálogo de **famílias** — a fonte única do `FF` de specs e plans | **Por projeto** — mantido pelo revisor; família nova só com aprovação do usuário |
+| `panorama/00-planejamento.md` | Catálogo de **famílias** (§1) e **horizonte** de itens (§2) | **Por projeto** — mantido pelo revisor; família e item novos só com aprovação do usuário |
+| `panorama/00-resumo.md` | O **estado de relance**: progresso por item, plans em curso, bloqueios | **Gerado** pela skill `spec-panorama` — nunca editado à mão |
 
 > As specs **universais** são idênticas em todos os repositórios — é por isso que dependem de `00-contexto` e
 > `00-indice` para conhecer a regra de negócio e a arquitetura locais.

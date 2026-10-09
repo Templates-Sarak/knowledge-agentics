@@ -105,7 +105,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ **53** skills por área (§7) |
+| `skills/` | ✅ **54** skills por área (§7) |
 | `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
 | `hooks/` | ✅ **5** hooks · **4** garantias (segredo no git, padrão de escrita, dependências, cobertura — `hooks/README.md`) |
@@ -302,6 +302,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `test-` | `test-unitario` … `test-carga` (6) | `test-cobertura` | ⬜ | ⬜ |
 | `deploy-` | `deploy-vercel`, `deploy-docker` | — | ✅ `/deploy-vercel`, `/deploy-docker` | — |
 | `site-` | `site-organizacao`, `site-seo`, `site-criacao` | — | ✅ `/site-organizar`, `/site-seo` | — |
+| `spec-` | `spec-write`, `spec-fundacao`, `spec-site-fundacao`, `spec-revisao`, `spec-panorama` | — | — | — |
 | `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base`, `meta-fluxos` | — | ✅ `/meta-criar-skill` | — |
 | `padrao-` | `padrao-escrita`, `padrao-python`, `padrao-typescript` | `padrao-limiares`, `padrao-format` | ⬜ (subsumido pelo `code-`) | ⬜ |
 
@@ -312,13 +313,13 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 ## 7. Inventário atual
 
-### Skills (53, por área)
+### Skills (54, por área)
 
 | Prefixo | Skills |
 |---|---|
 | `padrao-` (3) | `padrao-escrita`, `padrao-python`, `padrao-typescript` |
 | `code-` (10) | `code-adequacao`, `code-assinatura`, `code-auditoria-padrao`, `code-diagnostico`, `code-documentacao`, `code-entrega`, `code-generalizacao-modulo`, `code-licenca`, `code-limpeza-projeto`, `code-modulo` |
-| `spec-` (4) | `spec-fundacao`, `spec-revisao`, `spec-site-fundacao`, `spec-write` |
+| `spec-` (5) | `spec-fundacao`, `spec-panorama`, `spec-revisao`, `spec-site-fundacao`, `spec-write` |
 | `test-` (6) | `test-api-contrato`, `test-carga`, `test-e2e`, `test-integracao-api`, `test-unitario`, `test-ws-realtime` |
 | `db-` (1) | `db-migrations` |
 | `deploy-` (2) | `deploy-docker`, `deploy-vercel` |

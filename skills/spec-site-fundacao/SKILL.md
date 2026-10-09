@@ -43,7 +43,7 @@ estrutura `_estrutura_base_site` no projeto-alvo.
      |---|---|---|
      | `00-contexto.md`, `00-indice.md`, `00-knowledge.md`, `00-prompt-revisor.md`, `00-prompt-executor.md` | `specs/00-*.md` | **Specs de processo — obrigatórias.** É por elas que qualquer agente se contextualiza |
      | `README.md`, `INDEX.md` | `specs/` | Manual e bússola do diretório |
-     | `panorama/00-planejamento.md` | `specs/panorama/` | **Catálogo de famílias** — fonte única do `FF` de specs e plans; já vem com as famílias do site |
+     | `panorama/00-planejamento.md`, `panorama/00-resumo.md` | `specs/panorama/` | **Catálogo de famílias** e horizonte (`00-planejamento`, já com as famílias do site) + o panorama de relance (`00-resumo`, gerado pela `spec-panorama`) |
      | `arquitetura/01.01`…`02.03` | `specs/arquitetura/` | Stack, identidade visual, tom de voz, SEO/NAP, a11y/performance, estrutura de código |
      | `specs/03.01`…`03.05` | **`specs/specs/`** | Layout global, Home, páginas internas, formulários, páginas legais |
      | `_templates/*.md` | `specs/_templates/` | Moldes, incluindo `template-plan.md` |

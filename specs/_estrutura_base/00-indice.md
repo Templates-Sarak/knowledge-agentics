@@ -33,7 +33,7 @@ que cresce é índice quebrado.
 **Quem escreve/atualiza:** exclusivamente o **agente revisor** ([[00-prompt-revisor]]).
 **Quando atualizar:** ao criar uma plan (nova linha + o contador da família em `proximo_numero_plan` sobe), a cada mudança de status,
 e ao **sintetizar** (linha removida junto com o arquivo da plan). **Status vive aqui e na própria plan — os
-dois, sempre, na mesma ação.**
+dois, sempre, na mesma ação.** O `panorama/00-resumo.md` é regenerado na mesma ação (skill `spec-panorama`).
 
 ---
 

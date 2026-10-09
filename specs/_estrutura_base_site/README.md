@@ -28,7 +28,8 @@ quebrado, imagem sem otimizar). A via direta encurta a papelada — nunca a veri
 | `00-prompt-revisor.md` | Prompt que forma o agente revisor numa conversa nova | **Universal** |
 | `00-prompt-executor.md` | Prompt que forma o agente executor (a cada execução) | **Universal** |
 | `00-backlog.md` | Achados registrados e **não agendados** — sem status, sem fila | **Por projeto** — mantido pelo revisor |
-| `panorama/00-planejamento.md` | Catálogo de **famílias** — a fonte única do `FF` de specs e plans | **Por projeto** — já vem com as famílias do site; família nova só com aprovação do usuário |
+| `panorama/00-planejamento.md` | Catálogo de **famílias** (§1) e **horizonte** de itens (§2) | **Por projeto** — já vem com as famílias do site; família e item novos só com aprovação do usuário |
+| `panorama/00-resumo.md` | O **estado de relance**: progresso por item, plans em curso, bloqueios | **Gerado** pela skill `spec-panorama` — nunca editado à mão |
 
 ### 1.2 Specs de conteúdo (a verdade do site)
 

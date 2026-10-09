@@ -54,7 +54,7 @@ travar trabalho → vira demanda. Não → [[00-backlog]].
 
 | Você PODE | Você NUNCA |
 |---|---|
-| Criar/editar `plan/plan-FF.NN-*.md`, `00-contexto`, `00-indice`, `00-backlog`; propor família nova ao usuário | **Tocar código, teste, config ou dependência** — nem uma linha, nem para testar hipótese |
+| Criar/editar `plan/plan-FF.NN-*.md`, `00-contexto`, `00-indice`, `00-backlog`; propor família nova ao usuário; editar o horizonte do `panorama/00-planejamento.md` (por decisão do usuário) e regenerar o `00-resumo` (§7.5) | **Tocar código, teste, config ou dependência** — nem uma linha, nem para testar hipótese |
 | **Triar** a demanda e resolvê-la por prompt direto (§4, §6) | **Commitar** — é ato do usuário (exceção: pedido expresso dele naquela conversa, **sem `Co-Authored-By`**) |
 | **Sintetizar e remover** a plan aprovada, depois de autorizado (§7.4) | **Aprovar sem verificar** o worktree (§7.1) |
 | Descer achado para o `00-backlog` e podar o que lá não vale mais (§8) | **Remover plan por abandono** — `⛔` que não vai acontecer vira caso do usuário, e a remoção é **manual** dele |
@@ -105,6 +105,8 @@ o diff mostrar que mexia em verdade documentada, **suba para plan antes de aprov
   mesma ação.
 - **Spec fixa** que nascer na síntese (§7.4) segue a mesma escolha de família: `FF.NN-<slug>.md` em `specs/`
   ou `arquitetura/`, com o próximo `NN` livre da família **somando as duas pastas**.
+- **`item`** (opcional) — o ID do horizonte que a plan avança (`item: "R02.3"`, [[00-planejamento]] §2). É a
+  **primeira** plan desse item? Marque-o `🔷` no horizonte, na mesma ação.
 
 Molde: `_templates/template-plan.md`.
 
@@ -350,8 +352,10 @@ nenhum status descreve.
    que você decidiu NÃO transportar, com o motivo**. A segunda é obrigatória e é o que torna a régua do
    passo 4 auditável — sem ela, não escrever vira omissão silenciosa em vez de decisão. O bloco existe para
    aparecer no diff do commit de remoção, que é onde o rastro passa a viver.
-2. `git rm` da plan **e** remoção da linha do `00-indice`.
-3. Diga ao usuário que o commit agora sai inteiro: código, spec fixa e a remoção da plan na mesma unidade.
+2. `git rm` da plan **e** remoção da linha do `00-indice`. Era a **última** plan de um item (`item:`)? Marque-o
+   `✅` no horizonte ([[00-planejamento]] §2), na mesma ação.
+3. Regere o panorama — skill `spec-panorama` (§7.5).
+4. Diga ao usuário que o commit agora sai inteiro: código, spec fixa e a remoção da plan na mesma unidade.
 
 **Outra plan depende desta?** Antes de sintetizar, confirme que **o que a dependente precisa está na spec
 fixa**. Se estiver, remova normalmente: a dependente passa a ler a spec fixa, e a dependência deixa de ser
@@ -359,6 +363,13 @@ fixa**. Se estiver, remova normalmente: a dependente passa a ler a spec fixa, e 
 
 Plan sintetizada **não fica em disco por dependência**: guardar a plan seria admitir que a spec fixa não
 carrega a verdade, que é exatamente o que a síntese promete. **Sintetizou, saiu** — sem exceção.
+
+## 7.5 Panorama — na mesma ação
+
+O `panorama/00-resumo.md` é **gerado**, nunca editado à mão. Rode a skill `spec-panorama` depois de **toda**
+ação que o altera: criar plan, mudar status, sintetizar, editar o horizonte. Ela também confere famílias e
+itens (`--checar`): problema acusado se corrige na origem — plan, spec ou horizonte —, nunca no resumo. Os
+estados dos itens são seus: `🔷` na primeira plan de um item (§5), `✅` na síntese da última (§7.4).
 
 ---
 

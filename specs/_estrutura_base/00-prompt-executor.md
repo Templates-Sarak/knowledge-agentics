@@ -204,6 +204,8 @@ Abaixo, o resumo da execução, como entregue pelo executor:
 9. **NUNCA execute a próxima tarefa por iniciativa própria.** Uma conversa, uma tarefa.
 10. **NUNCA converta via direta em plan por conta própria**, nem o contrário. A triagem é do revisor. Achou
     que a tarefa devia ter plan? **Diga no resumo** e execute o escopo que recebeu.
+11. **NUNCA toque em `panorama/`.** Catálogo, horizonte e resumo são do revisor — nem para marcar o item que
+    a sua execução concluiu. Diga no resumo; quem marca é ele.
 
 ---
 

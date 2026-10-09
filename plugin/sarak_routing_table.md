@@ -64,6 +64,7 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **site-organizacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/site-organizacao/SKILL.md`
 - **site-seo**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/site-seo/SKILL.md`
 - **spec-fundacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/spec-fundacao/SKILL.md`
+- **spec-panorama**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/spec-panorama/SKILL.md`
 - **spec-revisao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/spec-revisao/SKILL.md`
 - **spec-site-fundacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/spec-site-fundacao/SKILL.md`
 - **spec-write**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/spec-write/SKILL.md`

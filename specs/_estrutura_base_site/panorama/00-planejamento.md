@@ -1,6 +1,6 @@
 ---
 tipo: "processo"
-titulo: "Planejamento — Catálogo de Famílias"
+titulo: "Planejamento — Famílias e Horizonte"
 dominio: "Governança de Specs (SDD)"
 status: "🟢 Vigente"
 tags: ["processo", "planejamento", "familias", "sdd"]
@@ -10,7 +10,8 @@ relacionados: ["[[00-contexto]]", "[[00-indice]]", "[[00-prompt-revisor]]"]
 # 0. O que é este arquivo
 
 O **catálogo de famílias** do projeto: a **fonte única** dos grupos de assunto que numeram as specs fixas
-(`specs/`, `arquitetura/`) e as plans. Nenhum outro arquivo lista as famílias — todos apontam para cá.
+(`specs/`, `arquitetura/`) e as plans. Nenhum outro arquivo lista as famílias — todos apontam para cá. Na §2,
+o **horizonte**: a evolução de longo prazo, em itens por família — a base do progresso do `00-resumo.md`.
 
 **Quem escreve/atualiza:** o **agente revisor** ([[00-prompt-revisor]]), e cada família nova só depois da
 **aprovação do usuário**.
@@ -47,4 +48,30 @@ O **catálogo de famílias** do projeto: a **fonte única** dos grupos de assunt
 | 02 | Engenharia | stack tecnológica, estrutura de código, acessibilidade e performance |
 | 03 | Páginas | layout global e navegação, Home, páginas internas e hubs, formulários, páginas legais |
 
-<!-- §2 em diante: tarefa seguinte -->
+---
+
+# 2. Horizonte
+
+> **Como escrever:** o **longo prazo**, em tópicos por família — o que ainda vai virar plan ou spec. A unidade
+> de progresso é o **item**, não a plan: a plan some na síntese, o item fica.
+>
+> - **Um título por família**, com o número e o nome do catálogo: `## 02 · Base de dados`.
+> - **Um item por linha**, neste formato fixo, que a skill `spec-panorama` lê:
+>   `- ⬜ **R02.3** Índices de busca — uma frase opcional`. Concluído pode levar a data no fim: `(✅ AAAA-MM-DD)`.
+> - **ID** `R<FF>.<n>`: `FF` é a família do catálogo; `n` é sequencial dentro da família, sem zero à esquerda,
+>   e **nunca** reaproveitado.
+> - **Estado:** `⬜` planejado · `🔷` em andamento (ao menos uma plan aberta com `item:` apontando para ele) ·
+>   `✅` concluído (a última plan dele foi sintetizada).
+> - **Ligação:** a plan aponta para o item pelo campo opcional `item: "R02.3"` do frontmatter. Plan sem item
+>   (bug, conformidade) é normal e não entra na % de progresso.
+> - **Quem mexe:** só o revisor. Primeira plan de um item → `🔷`; síntese da última plan do item → `✅`, **na
+>   mesma ação** em que a plan é removida. O **usuário** decide o que entra no horizonte; o revisor escreve.
+> - **Não é backlog:** o [[00-backlog]] guarda *achados* (problemas notados); este horizonte guarda *evolução
+>   pretendida*. Um achado que o usuário promove a evolução de longo prazo pode virar item.
+
+<!-- Exemplo (comentado: não conta como item real)
+## 02 · Base de dados
+- ✅ **R02.1** Schema inicial — tabelas do domínio de pedidos (✅ 2026-10-09)
+- 🔷 **R02.2** Índices de busca — há uma plan aberta com item: "R02.2"
+- ⬜ **R02.3** Particionamento por mês
+-->

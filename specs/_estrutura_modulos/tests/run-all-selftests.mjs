@@ -160,6 +160,7 @@ const REGISTRO = [
   { caminho: 'hooks/_lib.js', runtime: 'node' },
   { caminho: 'hooks/padrao-limiares.js', runtime: 'node' },
   { caminho: 'hooks/padrao-format.js', runtime: 'node' },
+  { caminho: 'skills/spec-panorama/scripts/gerar_resumo.py', runtime: 'python' },
   { caminho: 'plugin/sync_ide.py', runtime: 'python' },
 ];
 

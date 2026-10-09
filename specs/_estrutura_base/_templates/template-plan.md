@@ -1,6 +1,7 @@
 ---
 tipo: "plan"
 familia: "FF" # Família do catálogo (panorama/00-planejamento.md §1). O nome do arquivo começa por ela.
+item: "" # Opcional: ID do item do horizonte que esta plan avança (ex.: R02.3 — panorama/00-planejamento.md §2). Sem item (bug, conformidade) é normal.
 titulo: "Título curto no infinitivo (Ex: Extrair validação de CPF para o domínio)"
 dominio: "Nome do Módulo (Ex: Autenticação)"
 status: "🔴 A executar" # 🔴 A executar · 🟡 Em execução · 🟠 Em revisão · 🔵 Em correção · 🟢 Aprovada · ⛔ Bloqueada
