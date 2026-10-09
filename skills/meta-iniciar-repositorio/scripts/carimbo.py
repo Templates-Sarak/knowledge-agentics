@@ -1,6 +1,6 @@
 """carimbo.py — o carimbo `.sarak/base.json` de um sistema e o registro dele no `mapa.json` da base.
 
-    python carimbo.py --target <dir> --tipo app|site [--binding typescript|javascript|python] [--modular]
+    python carimbo.py --target <dir> --tipo app|site [--binding <b> ...] [--modular]
                       [--registrar --id <id> --nome <nome>] [--mapa <arquivo>]
     python carimbo.py --autoteste      prova o nucleo com fixtures em memoria (sem disco)
 
@@ -45,15 +45,34 @@ NOME_DO_MAPA = "mapa.json"
 def _validar_sistema(info: dict) -> None:
     if info["tipo"] not in TIPOS:
         raise ValueError(f"tipo '{info['tipo']}' invalido — use {' | '.join(TIPOS)}")
-    if info["binding"] is not None and info["binding"] not in BINDINGS:
-        raise ValueError(
-            f"binding '{info['binding']}' invalido — use {' | '.join(BINDINGS)} ou nenhum"
-        )
+    bindings = info["bindings"]
+    invalidos = [b for b in bindings if b not in BINDINGS]
+    if invalidos:
+        raise ValueError(f"binding {invalidos} invalido — use {' | '.join(BINDINGS)}")
+    if len(set(bindings)) != len(bindings):
+        raise ValueError(f"bindings {bindings} com valor repetido")
+
+
+def bindings_de(entrada: dict) -> list:
+    """Nucleo: a lista `bindings` de uma entrada — converte o campo antigo `binding` (escalar ou
+    `None`) em vez de quebrar. E a compatibilidade do registro idempotente com mapa antigo."""
+    if "bindings" in entrada:
+        return list(entrada["bindings"])
+    antigo = entrada.get("binding")
+    return [antigo] if antigo else []
+
+
+def _sem_binding_antigo(entrada: dict) -> dict:
+    """A entrada com `binding` trocado por `bindings`, na mesma posicao da chave."""
+    if "binding" not in entrada:
+        return entrada
+    lista = bindings_de(entrada)
+    return {("bindings" if k == "binding" else k): (lista if k == "binding" else v) for k, v in entrada.items() if k != "bindings"}
 
 
 def montar_carimbo(base: dict, info: dict, data: str) -> dict:
     """Nucleo: o conteudo do `.sarak/base.json`. `base` = {repo, commit, sujo}; `info` = {tipo, modular,
-    binding}; `data` = AAAA-MM-DD. Os pacotes dizem o que o sistema recebeu da base."""
+    bindings}; `data` = AAAA-MM-DD. Os pacotes dizem o que o sistema recebeu da base."""
     _validar_sistema(info)
     pacotes = [PACOTE_SDD[info["tipo"]]] + ([PACOTE_MODULAR] if info["modular"] else [])
     return {
@@ -63,7 +82,7 @@ def montar_carimbo(base: dict, info: dict, data: str) -> dict:
         "data": data,
         "tipo": info["tipo"],
         "modular": info["modular"],
-        "binding": info["binding"],
+        "bindings": list(info["bindings"]),
         "pacotes": pacotes,
     }
 
@@ -94,7 +113,7 @@ def entrada_do_mapa(ident: str, nome: str, locais: dict, info: dict) -> dict:
         "raiz_git": locais["raiz_git"],
         "tipo": info["tipo"],
         "modular": info["modular"],
-        "binding": info["binding"],
+        "bindings": list(info["bindings"]),
         "situacao": "ativo",
     }
 
@@ -103,7 +122,8 @@ def registrar_no_mapa(mapa: dict, sistema: dict) -> dict:
     """Nucleo: o mapa com `sistema` registrado — idempotente. Mesmo `caminho` atualiza a entrada (no
     lugar, preservando campos que o sistema nao traz); `id` ja usado por outro caminho e erro."""
     novo = copy.deepcopy(mapa)
-    sistemas = novo.setdefault("sistemas", [])
+    novo["sistemas"] = [_sem_binding_antigo(e) for e in novo.get("sistemas", [])]
+    sistemas = novo["sistemas"]
     for existente in sistemas:
         if (
             existente.get("id") == sistema["id"]
@@ -197,9 +217,9 @@ def _locais(target: Path, raiz: Path) -> dict:
 
 def registrar(target: Path, raiz: Path, cadastro: dict, mapa: Path | None = None) -> dict:
     """Casca: registra o sistema no `mapa.json` (o da base, ou `mapa` — usado em teste).
-    `cadastro` = {id, nome, tipo, modular, binding}."""
+    `cadastro` = {id, nome, tipo, modular, bindings}."""
     ident, nome = cadastro["id"], cadastro["nome"]
-    info = {chave: cadastro[chave] for chave in ("tipo", "modular", "binding")}
+    info = {chave: cadastro[chave] for chave in ("tipo", "modular", "bindings")}
     destino = mapa or raiz / NOME_DO_MAPA
     atual = (
         json.loads(destino.read_text(encoding="utf-8"))
@@ -219,7 +239,8 @@ def _parser():
     parser.add_argument("--target", required=True, help="Pasta do sistema.")
     parser.add_argument("--tipo", required=True, choices=TIPOS)
     parser.add_argument(
-        "--binding", choices=BINDINGS, help="Omitido quando nao se aplica."
+        "--binding", dest="bindings", action="append", default=[], choices=BINDINGS,
+        help="Repetivel (--binding typescript --binding python). Omitido quando nao se aplica.",
     )
     parser.add_argument(
         "--modular", action="store_true", help="O sistema adota o template de modulos."
@@ -246,7 +267,7 @@ def main() -> int:
     if args.registrar and not args.id:
         print("[ERRO] --registrar exige --id", file=sys.stderr)
         return 2
-    info = {"tipo": args.tipo, "modular": args.modular, "binding": args.binding}
+    info = {"tipo": args.tipo, "modular": args.modular, "bindings": args.bindings}
     target, raiz = Path(args.target).resolve(), raiz_da_base()
     try:
         carimbar(target, raiz, info)
@@ -262,8 +283,8 @@ def main() -> int:
 # ------------------------------------------------------------------ autoteste
 
 BASE = {"repo": "https://exemplo/base.git", "commit": "abc123", "sujo": False}
-APP_MODULAR = {"tipo": "app", "modular": True, "binding": "typescript"}
-SITE = {"tipo": "site", "modular": False, "binding": None}
+APP_MODULAR = {"tipo": "app", "modular": True, "bindings": ["typescript"]}
+SITE = {"tipo": "site", "modular": False, "bindings": []}
 LOCAIS = {
     "caminho": "../Earendel/ERP",
     "repo": "https://exemplo/erp.git",
@@ -313,8 +334,8 @@ CASOS = [
         lambda: _erro(lambda: montar_carimbo(BASE, {**SITE, "tipo": "lib"}, "d")),
     ),
     (
-        "binding invalido e erro",
-        lambda: _erro(lambda: montar_carimbo(BASE, {**SITE, "binding": "go"}, "d")),
+        "binding invalido na lista e erro",
+        lambda: _erro(lambda: montar_carimbo(BASE, {**SITE, "bindings": ["typescript", "go"]}, "d")),
     ),
     ("id fora de kebab-case e erro", lambda: _erro(lambda: _entrada("ERP_Earendel"))),
     (
@@ -392,6 +413,18 @@ CASOS = [
         "serializa com 2 espacos, acento e \\n final",
         lambda: serializar({"nome": "Fundação"}) == '{\n  "nome": "Fundação"\n}\n',
     ),
+    (
+        "carimbo poliglota: lista com dois bindings",
+        lambda: montar_carimbo(BASE, {**APP_MODULAR, "bindings": ["typescript", "python"]}, "d")["bindings"] == ["typescript", "python"],
+    ),
+    ("lista vazia: nao se aplica", lambda: montar_carimbo(BASE, SITE, "d")["bindings"] == []),
+    ("binding repetido na lista e erro", lambda: _erro(lambda: montar_carimbo(BASE, {**SITE, "bindings": ["python", "python"]}, "d"))),
+    (
+        "entrada antiga com binding escalar vira lista ao registrar",
+        lambda: registrar_no_mapa({"sistemas": [{**{k: v for k, v in _entrada().items() if k != "bindings"}, "binding": "typescript"}]}, _entrada())["sistemas"][0]["bindings"] == ["typescript"]
+        and "binding" not in registrar_no_mapa({"sistemas": [{**_entrada(), "binding": "python"}]}, _entrada())["sistemas"][0],
+    ),
+    ("binding antigo nulo vira lista vazia", lambda: bindings_de({"binding": None}) == [] and bindings_de({"binding": "python"}) == ["python"]),
 ]
 
 

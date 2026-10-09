@@ -57,7 +57,8 @@ estrutura `_estrutura_base_site` no projeto-alvo.
    - **Ferramenta:** terminal.
    - **Ação (HITL):** pergunte ao usuário se o site entra no `mapa.json` da base, e com que `id`
      (kebab-case, único) e nome. Depois rode `meta-iniciar-repositorio/scripts/carimbo.py --target
-     <projeto> --tipo site [--binding typescript|javascript|python]`, acrescentando `--registrar --id <id>
+     <projeto> --tipo site [--binding <b> ...]` (repetível: um `--binding` por linguagem do site — `typescript`,
+     `javascript` ou `python`; nenhum, se não se aplica), acrescentando `--registrar --id <id>
      --nome "<nome>"` só se ele aceitou.
    - **Critério:** `.sarak/base.json` escrito no projeto (o commit da base de onde ele veio); com aceite,
      a entrada no `mapa.json` da base — rodar de novo não duplica. Recusa de registro é dita na entrega.

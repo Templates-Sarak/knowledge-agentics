@@ -29,7 +29,7 @@ arquitetura de módulos instalada, o fluxo SDD montado, os primeiros módulos cr
 6. .agents/ + hooks de git      gate de segredos + auto-índice (script), COMPOSTO com o
                                 pre-commit/pre-push do template de módulos (§1 do gate) — nunca um
                                 substituindo o outro
-                                + carimbo .sarak/base.json (sempre) e a entrada no mapa.json
+                                + carimbo .sarak/base.json (sempre; bindings = [o --binding]) e a entrada no mapa.json
                                 da base (só com --registrar, depois do HITL)
 7. gate --all                   não encerra vermelho
 ```

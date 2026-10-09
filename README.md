@@ -426,8 +426,8 @@ Duas fontes, uma para cada coisa — é o que a **propagação** de atualizaçõ
 
 | Arquivo | Onde | O quê | Quem escreve |
 |---|---|---|---|
-| `mapa.json` | raiz desta base (versionado) | **quais** sistemas adotam a base: caminho e `raiz_git` relativos a esta raiz, `repo`, `tipo` (`app`\|`site`), `modular`, `binding`, `situacao` (`ativo`\|`adocao-posterior`). **Não guarda versão.** | `meta-iniciar-repositorio/scripts/carimbo.py --registrar`, com HITL — pelo `init_repo.py` e pela `spec-site-fundacao` |
-| `.sarak/base.json` | dentro de cada sistema | o **carimbo**: `base_repo`, `base_commit` (e se a base tinha alteração local), `data`, `tipo`, `modular`, `binding` e os **pacotes** recebidos. É a fonte da versão. | o mesmo script, **sempre**, ao criar o sistema |
+| `mapa.json` | raiz desta base (versionado) | **quais** sistemas adotam a base: caminho e `raiz_git` relativos a esta raiz, `repo`, `tipo` (`app`\|`site`), `modular`, `bindings` (lista — projeto modular pode ser poliglota; `[]` = não se aplica), `situacao` (`ativo`\|`adocao-posterior`). **Não guarda versão.** | `meta-iniciar-repositorio/scripts/carimbo.py --registrar`, com HITL — pelo `init_repo.py` e pela `spec-site-fundacao` |
+| `.sarak/base.json` | dentro de cada sistema | o **carimbo**: `base_repo`, `base_commit` (e se a base tinha alteração local), `data`, `tipo`, `modular`, `bindings` (lista) e os **pacotes** recebidos. É a fonte da versão. | o mesmo script, **sempre**, ao criar o sistema |
 
 **Pacotes:** `specs-sdd-app` ou `specs-sdd-site` (os moldes do fluxo SDD) e, em sistema modular,
 `template-modulos`. O schema do `mapa.json` é cobrado pelo `audit_base.py` (categoria `mapa`); que os caminhos

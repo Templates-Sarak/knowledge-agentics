@@ -687,7 +687,7 @@ def instalar_conteudo(target: Path, xskills_root: Path, args: argparse.Namespace
 
 def carimbar_e_registrar(target: Path, xskills_root: Path, args: argparse.Namespace, modular: bool) -> bool:
     """Passo 6d: o carimbo `.sarak/base.json` sempre; o `mapa.json` da base so com `--registrar`."""
-    info = {"tipo": "app", "modular": modular, "binding": args.binding}
+    info = {"tipo": "app", "modular": modular, "bindings": [args.binding] if args.binding else []}
     try:
         carimbo.carimbar(target, xskills_root, info)
         if args.registrar:

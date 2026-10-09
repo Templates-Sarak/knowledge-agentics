@@ -88,12 +88,16 @@ def _autoteste_mapa():
     """Schema do mapa.json: valido nao acusa; id duplicado, tipo invalido e caminho absoluto acusam."""
     sistema = {
         "id": "earendel-erp", "nome": "ERP", "caminho": "../Earendel/ERP", "repo": None,
-        "raiz_git": "../Earendel/ERP", "tipo": "app", "modular": True, "binding": "typescript",
+        "raiz_git": "../Earendel/ERP", "tipo": "app", "modular": True, "bindings": ["typescript"],
         "situacao": "ativo",
     }
-    outro = {**sistema, "id": "outro", "caminho": "../Outro"}
+    outro = {**sistema, "id": "outro", "caminho": "../Outro", "bindings": ["typescript", "python"]}
     casos = [
-        ("mapa valido nao acusa", [sistema, outro], lambda r: r == []),
+        ("mapa valido (lista com dois bindings) nao acusa", [sistema, outro], lambda r: r == []),
+        ("lista vazia de bindings nao acusa", [{**sistema, "bindings": []}], lambda r: r == []),
+        ("binding invalido na lista acusa", [{**sistema, "bindings": ["go"]}], lambda r: len(r) == 1 and "fora de" in r[0]),
+        ("binding repetido acusa", [{**sistema, "bindings": ["python", "python"]}], lambda r: len(r) == 1 and "repetido" in r[0]),
+        ("campo antigo binding acusa", [{**sistema, "binding": "typescript"}], lambda r: len(r) == 1 and "campo antigo" in r[0]),
         ("id duplicado acusa", [sistema, {**outro, "id": "earendel-erp"}], lambda r: len(r) == 1 and "id 'earendel-erp' repetido" in r[0]),
         ("tipo invalido acusa", [{**sistema, "tipo": "lib"}], lambda r: len(r) == 1 and "'tipo'" in r[0]),
         ("caminho absoluto acusa", [{**sistema, "caminho": "C:/Code/Earendel/ERP"}], lambda r: len(r) == 1 and "'caminho'" in r[0]),
@@ -352,7 +356,7 @@ def autoteste():
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 47/47 ok")
+    print("autoteste (audit_base): 51/51 ok")
     return 0
 
 

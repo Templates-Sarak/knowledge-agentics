@@ -19,7 +19,8 @@ import re
 
 ARQUIVO = "mapa.json"
 
-# Campo -> tipos aceitos (`None` = o campo pode ser nulo: sistema ainda sem remoto, sem git, sem binding).
+# Campo -> tipos aceitos (`None` = o campo pode ser nulo: sistema ainda sem remoto ou sem git).
+# `bindings` e lista (projeto modular pode ser poliglota); `[]` = nao se aplica ou nao da para saber.
 CAMPOS = {
     "id": (str,),
     "nome": (str,),
@@ -28,14 +29,14 @@ CAMPOS = {
     "raiz_git": (str, type(None)),
     "tipo": (str,),
     "modular": (bool,),
-    "binding": (str, type(None)),
+    "bindings": (list,),
     "situacao": (str,),
 }
 VALORES = {
     "tipo": ("app", "site"),
     "situacao": ("ativo", "adocao-posterior"),
-    "binding": ("typescript", "javascript", "python", None),
 }
+BINDINGS = ("typescript", "javascript", "python")
 ID_KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 DRIVE = re.compile(r"^[A-Za-z]:")
 
@@ -53,6 +54,21 @@ def _checar_campos(rotulo: str, sistema: dict) -> list:
             achados.append(
                 f"{rotulo}: '{campo}' com tipo {type(sistema[campo]).__name__}"
             )
+    return achados
+
+
+def _checar_bindings(rotulo: str, sistema: dict) -> list:
+    achados = []
+    if "binding" in sistema:
+        achados.append(f"{rotulo}: campo antigo 'binding'; use 'bindings' (lista)")
+    bindings = sistema.get("bindings")
+    if not isinstance(bindings, list):
+        return achados
+    fora = [b for b in bindings if b not in BINDINGS]
+    if fora:
+        achados.append(f"{rotulo}: bindings {fora} fora de {BINDINGS}")
+    if len(set(map(str, bindings))) != len(bindings):
+        achados.append(f"{rotulo}: bindings {bindings} com valor repetido")
     return achados
 
 
@@ -85,7 +101,7 @@ def _repetidos(sistemas: list, campo: str) -> list:
     return achados
 
 
-def divergencias(mapa) -> list:
+def divergencias(mapa: dict) -> list:
     """Nucleo: os problemas de schema do mapa ja lido (`dict`)."""
     if not isinstance(mapa, dict) or not isinstance(mapa.get("sistemas"), list):
         return [f"{ARQUIVO}: falta a lista 'sistemas'"]
@@ -96,7 +112,11 @@ def divergencias(mapa) -> list:
             achados.append(f"{rotulo}: nao e um objeto")
             continue
         rotulo += f" ({sistema.get('id', '?')})"
-        achados += _checar_campos(rotulo, sistema) + _checar_valores(rotulo, sistema)
+        achados += (
+            _checar_campos(rotulo, sistema)
+            + _checar_valores(rotulo, sistema)
+            + _checar_bindings(rotulo, sistema)
+        )
     return (
         achados
         + _repetidos(mapa["sistemas"], "id")
@@ -104,7 +124,7 @@ def divergencias(mapa) -> list:
     )
 
 
-def auditar_mapa(base_dir) -> list:
+def auditar_mapa(base_dir: str) -> list:
     """Casca: le o `mapa.json` da raiz da base e devolve os achados de `divergencias`."""
     caminho = os.path.join(base_dir, ARQUIVO)
     if not os.path.isfile(caminho):
