@@ -35,8 +35,11 @@ Esta skill orquestra a distribuição de novas features, correções ou ajustes 
 
 3. **Codex**
    - **Ferramenta:** Texto (instrução ao usuário — HITL; o agente não opera o app)
-   - **Ação:** O Codex **não** é alcançado pelo `sync_ide.py`: ele lê o plugin `sarak` **instalado pelo app**.
-     Instrua o usuário a atualizar o plugin no app e abrir uma conversa nova.
+   - **Ação:** O `--target all` (ou `codex`) do passo 2 espelha a base no cache **local** do plugin `sarak`
+     já instalado pelo app — **provisório**: a próxima atualização pelo app o substitui pela versão do
+     remoto; sem instalação, o script avisa com `[ERRO]` e não cria nada. O **definitivo** continua sendo
+     push + atualizar o plugin no app. Instrua o usuário a abrir uma conversa nova (e, para o definitivo, a
+     atualizar o plugin no app).
    - **Critério:** Se a instalação vem de um repositório remoto, a mudança precisa estar **no remoto antes**
      da atualização — senão o app reinstala a versão antiga. Se `hooks/hooks.json` mudou, a instrução inclui
      **confiar nos hooks de novo** no app: sem isso, nenhum hook roda. O passo termina na instrução ao usuário.

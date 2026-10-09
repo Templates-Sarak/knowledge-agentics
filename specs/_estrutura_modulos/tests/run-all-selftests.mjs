@@ -83,13 +83,16 @@ function arquivosSob(pasta, extensoes) {
  * `skills/<skill>/scripts/`, e a varredura recursiva chega lá sem precisar saber o nome de cada
  * skill) e `hooks/` (a única "garantia determinística" do README — sem varredura aqui, um
  * `--autoteste` novo em hook ficava órfão do mesmo jeito que os de `skills/` ficavam antes desta
- * pasta entrar no REGISTRO). NÃO desce em `_template/**`: é conteúdo de MÓDULO gerado, o gate já cobre. */
+ * pasta entrar no REGISTRO), e `plugin/` (o `sync_ide.py` ganhou `--autoteste` — registrado sem
+ * varredura aqui, apareceria como "não achado" em vez de cobrado). NÃO desce em `_template/**`:
+ * é conteúdo de MÓDULO gerado, o gate já cobre. */
 function raizesDeVarredura() {
   const raizes = [
     join(RAIZ_TEMPLATE, 'tools'),
     join(RAIZ_TEMPLATE, 'tests'),
     join(RAIZ_BASE, 'skills'),
     join(RAIZ_BASE, 'hooks'),
+    join(RAIZ_BASE, 'plugin'),
   ];
   for (const binding of BINDINGS) raizes.push(join(RAIZ_TEMPLATE, 'bindings', binding, 'root'));
   return raizes;
@@ -156,6 +159,7 @@ const REGISTRO = [
   { caminho: 'skills/padrao-typescript/scripts/validate.mjs', runtime: 'node' },
   { caminho: 'hooks/_lib.js', runtime: 'node' },
   { caminho: 'hooks/padrao-limiares.js', runtime: 'node' },
+  { caminho: 'plugin/sync_ide.py', runtime: 'python' },
 ];
 
 /**
@@ -173,7 +177,7 @@ const REGISTRO = [
  * `otimizacao-nivel-1/scripts/auditar_assets.py`, `site-seo/scripts/auditar_seo.py` — erram para
  * MENOS gravidade (relatório incompleto), nunca para aprovação falsa, e por isso ficam de fora de
  * propósito nesta rodada. (`meta-verificacao-base/scripts/{limiares,ponteiros,nomenclatura,
- * proatividade,secoes,contagens,paridade}.py` NÃO entram nesta lista: são módulos importados por
+ * proatividade,secoes,contagens,paridade,manifestos}.py` NÃO entram nesta lista: são módulos importados por
  * `audit_base.py`, provados pelo `--autoteste` DELE, não scripts standalone.)
  *
  * 4 hooks sem `--autoteste`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —

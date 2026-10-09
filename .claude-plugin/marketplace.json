@@ -5,7 +5,7 @@
     {
       "name": "sarak",
       "source": "./",
-      "description": "Ecossistema de Inteligência Sarak (X-Skills) — skills, commands, agents e hooks."
+      "description": "Ecossistema de Inteligência Sarak — skills, commands, agents e hooks sob um padrão único."
     }
   ]
 }

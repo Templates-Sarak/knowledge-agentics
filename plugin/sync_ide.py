@@ -20,27 +20,67 @@ def get_args():
     )
     parser.add_argument(
         "--target",
-        choices=["antigravity", "claude", "all"],
+        choices=["antigravity", "claude", "codex", "all"],
         required=True,
-        help="Provedor de IA alvo para instalação do Sarak",
+        help="Provedor de IA alvo para instalação do Sarak (all = Claude + Codex + Antigravity)",
     )
     return parser.parse_args()
 
 
+# As subpastas da base que viajam para todo destino de plugin (Claude, Codex, Antigravity).
+SUBPASTAS_DO_PLUGIN = ["skills", "agents", "commands", "hooks", "specs"]
+
+
+def _sufixado(dest, sufixo):
+    """O irmão de `dest` com `sufixo` no nome (`skills` -> `skills.sync-tmp`)."""
+    return dest.with_name(dest.name + sufixo)
+
+
+def _trocar(tmp, dest):
+    """Põe `tmp` no lugar de `dest` por renomeação: o antigo vira `.sync-old` e só é apagado DEPOIS
+    que o novo está no lugar — se a segunda renomeação falhar, o antigo volta. Lança `OSError`."""
+    antigo = _sufixado(dest, ".sync-old")
+    shutil.rmtree(antigo, ignore_errors=True)
+    if dest.exists():
+        dest.rename(antigo)
+    try:
+        tmp.rename(dest)
+    except OSError:
+        if antigo.exists():
+            antigo.rename(dest)
+        raise
+    shutil.rmtree(antigo, ignore_errors=True)
+
+
+def _espelhar_pasta(source, dest):
+    """Copia `source` para o irmão temporário `<dest>.sync-tmp` e só então troca pelo `dest`. Falha
+    na cópia (ou na troca) apaga o temporário e deixa o `dest` anterior intacto. Devolve se espelhou."""
+    tmp = _sufixado(dest, ".sync-tmp")
+    try:
+        shutil.rmtree(tmp, ignore_errors=True)
+        shutil.copytree(source, tmp)
+        _trocar(tmp, dest)
+    except (OSError, shutil.Error) as e:
+        shutil.rmtree(tmp, ignore_errors=True)
+        print(f"[ERRO] Falha ao espelhar {source.name}/ em {dest}: {e} — mantida a versão anterior.")
+        return False
+    print(f"[OK] {source.name}/ espelhado em {dest}")
+    return True
+
+
 def copy_subdirs(xskills_root, dest_root, subdirs):
-    """Espelha cada subpasta da base para dest_root (rmtree + copytree). I/O claro."""
+    """Espelha cada subpasta da base para dest_root, sem janela destrutiva (`_espelhar_pasta`).
+    Devolve True só se todas as subpastas existentes na base foram espelhadas."""
+    tudo_ok = True
     for name in subdirs:
         source = xskills_root / name
         if not source.exists():
             continue
-        dest = dest_root / name
-        if dest.exists():
-            shutil.rmtree(dest)
-        try:
-            shutil.copytree(source, dest)
-            print(f"[OK] {name}/ espelhado em {dest}")
-        except Exception as e:
-            print(f"[ERRO] Falha ao copiar {name}/ para {dest_root}: {e}")
+        tudo_ok = _espelhar_pasta(source, dest_root / name) and tudo_ok
+    return tudo_ok
+
+
+INCOMPLETO = "[ERRO] Espelho incompleto — o destino manteve a versão anterior das pastas que falharam."
 
 
 def read_plugin_meta(xskills_root):
@@ -54,6 +94,61 @@ def read_plugin_meta(xskills_root):
     return marketplace["name"], plugin["name"], plugin["version"]
 
 
+def read_plugin_identity(xskills_root):
+    """Lê `name` e `description` do plugin da fonte da identidade, `.claude-plugin/plugin.json`."""
+    with open(xskills_root / ".claude-plugin" / "plugin.json", "r", encoding="utf-8") as f:
+        plugin = json.load(f)
+    return {"name": plugin["name"], "description": plugin["description"]}
+
+
+def cache_codex(env, home, meta):
+    """Pura: o diretório da versão instalada do plugin no cache do Codex.
+
+    Raiz = `CODEX_HOME` quando definida (e não vazia), senão `<home>/.codex`; o cache tem a mesma
+    forma do Claude — `<raiz>/plugins/cache/<marketplace>/<plugin>/<versão>`. `meta` é a tupla de
+    `read_plugin_meta`."""
+    raiz = Path(env["CODEX_HOME"]) if env.get("CODEX_HOME") else Path(home) / ".codex"
+    marketplace_name, plugin_name, version = meta
+    return raiz / "plugins" / "cache" / marketplace_name / plugin_name / version
+
+
+def espelhar_plugin(xskills_root, destino_de, preparar):
+    """Comum aos alvos de cache (Claude e Codex): lê a meta, monta o destino com `destino_de(meta)`,
+    deixa `preparar(destino)` decidir se segue (criar ou exigir o diretório) e espelha as subpastas.
+    Devolve a meta quando espelhou TUDO, `None` quando parou ou ficou incompleto (motivo já impresso) —
+    e aí o alvo não imprime o `[OK]` final nem as notas."""
+    try:
+        meta = read_plugin_meta(xskills_root)
+    except Exception as e:
+        print(f"[ERRO] Falha ao ler manifestos do plugin (.claude-plugin/): {e}")
+        return None
+    dest_root = destino_de(meta)
+    if not preparar(dest_root):
+        return None
+    if not copy_subdirs(xskills_root, dest_root, SUBPASTAS_DO_PLUGIN):
+        print(INCOMPLETO)
+        return None
+    return meta
+
+
+def _criar_diretorio(dest_root):
+    """Claude: o cache da versão pode nascer aqui."""
+    dest_root.mkdir(parents=True, exist_ok=True)
+    return True
+
+
+def _exigir_instalacao_codex(dest_root):
+    """Codex: NUNCA cria a instalação — sem o `.git/` e o `.codex-marketplace-install.json` que o
+    app grava, um cache criado do nada não seria reconhecido por ele."""
+    if dest_root.is_dir():
+        return True
+    print(
+        f"[ERRO] Plugin não instalado no cache do Codex nesta versão: {dest_root}. Instale (ou "
+        "atualize para esta versão) o plugin pelo app do Codex — o sync não cria a instalação."
+    )
+    return False
+
+
 def sync_claude(xskills_root):
     print("\n--- Sincronizando Cache do Plugin Claude ---")
     home = Path.home()
@@ -63,21 +158,39 @@ def sync_claude(xskills_root):
         print(f"[ERRO] Cache de plugins do Claude não encontrado: {plugins_cache}")
         return
 
-    try:
-        marketplace_name, plugin_name, version = read_plugin_meta(xskills_root)
-    except Exception as e:
-        print(f"[ERRO] Falha ao ler manifestos do plugin (.claude-plugin/): {e}")
-        return
-
-    dest_root = plugins_cache / marketplace_name / plugin_name / version
-    dest_root.mkdir(parents=True, exist_ok=True)
-
-    copy_subdirs(
-        xskills_root, dest_root, ["skills", "agents", "commands", "hooks", "specs"]
+    meta = espelhar_plugin(
+        xskills_root, lambda m: plugins_cache.joinpath(*m), _criar_diretorio
     )
+    if meta is None:
+        return
+    _, plugin_name, version = meta
     print(f"[OK] Plugin '{plugin_name}' v{version} espelhado no cache do Claude.")
     print(
         "[NOTA] Reinicie a sessão do Claude para o catálogo recarregar as skills novas."
+    )
+
+
+def sync_codex(xskills_root):
+    """Espelha a base no cache do plugin já instalado pelo app do Codex. PROVISÓRIO: o cache é do
+    app, e a próxima atualização por ele o substitui pela versão do remoto. Não toca em `.git/`,
+    em `.codex-marketplace-install.json` nem nos manifestos da raiz — só nas SUBPASTAS_DO_PLUGIN."""
+    print("\n--- Sincronizando Cache do Plugin Codex ---")
+    meta = espelhar_plugin(
+        xskills_root,
+        lambda m: cache_codex(os.environ, Path.home(), m),
+        _exigir_instalacao_codex,
+    )
+    if meta is None:
+        return
+    _, plugin_name, version = meta
+    print(f"[OK] Plugin '{plugin_name}' v{version} espelhado no cache do Codex.")
+    print("[NOTA] Abra uma conversa nova no Codex para o catálogo recarregar.")
+    print(
+        "[NOTA] Se hooks/hooks.json mudou, confie nos hooks de novo no app do Codex — sem isso, nenhum roda."
+    )
+    print(
+        "[AVISO] Espelho PROVISÓRIO: a próxima atualização do plugin pelo app substitui este cache "
+        "pela versão do remoto. Faça push para tornar a mudança definitiva."
     )
 
 
@@ -92,22 +205,21 @@ def sync_antigravity(xskills_root):
         )
         return
 
-    sarak_plugin_dir = plugins_dir / "sarak"
+    # A identidade vem da fonte (.claude-plugin/plugin.json): nome da pasta e manifesto do plugin
+    try:
+        manifest = read_plugin_identity(xskills_root)
+    except (OSError, KeyError, json.JSONDecodeError) as e:
+        print(f"[ERRO] Falha ao ler a identidade do plugin (.claude-plugin/plugin.json): {e}")
+        return
+
+    sarak_plugin_dir = plugins_dir / manifest["name"]
     sarak_plugin_dir.mkdir(parents=True, exist_ok=True)
 
-    # Cria o manifesto do plugin
-    manifest = {
-        "name": "sarak",
-        "description": "Ecossistema de Inteligência Sarak (X-Skills)",
-    }
     with open(sarak_plugin_dir / "plugin.json", "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
-    copy_subdirs(
-        xskills_root,
-        sarak_plugin_dir,
-        ["skills", "agents", "commands", "hooks", "specs"],
-    )
+    if not copy_subdirs(xskills_root, sarak_plugin_dir, SUBPASTAS_DO_PLUGIN):
+        print(INCOMPLETO)
 
 
 def generate_routing_table(xskills_root):
@@ -192,7 +304,33 @@ def generate_routing_table(xskills_root):
     print("-" * 70)
 
 
+def autoteste():
+    """`--autoteste`: prova `cache_codex` com fixtures em memória — não chama `setup_env`, não
+    escreve em disco, não exige `--target`."""
+    meta = ("knowledge-agentics", "sarak", "1.0.0")
+    home = Path("/home/fixture")
+    sufixo = Path("plugins") / "cache" / "knowledge-agentics" / "sarak" / "1.0.0"
+    casos = [
+        ("com CODEX_HOME -> raiz e a variavel",
+         cache_codex({"CODEX_HOME": "/outro/codex"}, home, meta) == Path("/outro/codex") / sufixo),
+        ("sem CODEX_HOME -> raiz e <home>/.codex",
+         cache_codex({}, home, meta) == home / ".codex" / sufixo),
+        ("CODEX_HOME vazio conta como nao definido",
+         cache_codex({"CODEX_HOME": ""}, home, meta) == home / ".codex" / sufixo),
+        ("montagem: <raiz>/plugins/cache/<marketplace>/<plugin>/<versao>, nessa ordem",
+         cache_codex({}, home, ("mkt", "plg", "9.9.9")).parts[-5:] == ("plugins", "cache", "mkt", "plg", "9.9.9")),
+    ]
+    falhas = 0
+    for nome, ok in casos:
+        print(f"  {'ok   ' if ok else 'FALHA'} {nome}")
+        falhas += 0 if ok else 1
+    print(f"\nautoteste (sync_ide.py): {len(casos) - falhas}/{len(casos)} ok")
+    return 0 if falhas == 0 else 1
+
+
 def main():
+    if "--autoteste" in sys.argv[1:]:
+        sys.exit(autoteste())
     args = get_args()
 
     xskills_root = Path(__file__).parent.parent.resolve()
@@ -210,7 +348,10 @@ def main():
     if args.target in ["claude", "all"]:
         sync_claude(xskills_root)
 
-    # A tabela é gerada de forma unificada para ambas as IDEs
+    if args.target in ["codex", "all"]:
+        sync_codex(xskills_root)
+
+    # A tabela é gerada de forma unificada (Antigravity e qualquer IDE sem plugin nativo)
     generate_routing_table(xskills_root)
 
     print("\nSincronização global concluída com sucesso!")

@@ -27,6 +27,11 @@ from nomenclatura import (  # noqa: E402
     raiz_do_prefixo,
 )
 from paridade import auditar_paridade, divergencias as divergencias_de_paridade  # noqa: E402
+from manifestos import (
+    FONTE as FONTE_DE_MANIFESTO,
+    auditar_manifestos,
+    divergencias as divergencias_de_manifesto,
+)
 from proatividade import (  # noqa: E402
     PROATIVAS,
     auditar_proatividade,
@@ -37,14 +42,45 @@ from secoes import SECOES_OBRIGATORIAS, auditar_secoes, secoes_faltando  # noqa:
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Auditoria Sarak X-Skills Base")
-    parser.add_argument("--raiz", help="Caminho raiz do repositório X-Skills")
+    parser = argparse.ArgumentParser(description="Auditoria Sarak knowledge-agentics Base")
+    parser.add_argument("--raiz", help="Caminho raiz do repositório knowledge-agentics")
     parser.add_argument(
         "--autoteste",
         action="store_true",
         help="Roda a suite interna, nao toca disco fora do repo",
     )
     return parser.parse_args()
+
+
+def _autoteste_manifestos():
+    """Manifestos do plugin: identidade igual nao acusa; `version` divergente, `description`
+    divergente no marketplace e manifesto ausente acusam, nomeando o arquivo; excecao declarada
+    isenta o ausente."""
+    falhas = []
+    codex, raiz, mkt = ".codex-plugin/plugin.json", "plugin.json", ".claude-plugin/marketplace.json"
+    fonte = {"name": "sarak", "version": "1.0.0", "description": "d", "author": {"name": "a"}}
+    iguais = {
+        FONTE_DE_MANIFESTO: fonte,
+        codex: dict(fonte),
+        raiz: dict(fonte),
+        mkt: {"plugins": [{"name": "sarak", "description": "d"}]},
+    }
+    casos = [
+        ("identidade igual nao acusa", iguais, {}, lambda r: r == []),
+        ("version divergente acusa o espelho", {**iguais, codex: {**fonte, "version": "2.0.0"}}, {},
+         lambda r: len(r) == 1 and "version" in r[0] and codex in r[0]),
+        ("description divergente no marketplace acusa", {**iguais, mkt: {"plugins": [{"name": "sarak", "description": "x"}]}}, {},
+         lambda r: len(r) == 1 and "description" in r[0] and mkt in r[0]),
+        ("manifesto ausente acusa", {k: v for k, v in iguais.items() if k != raiz}, {},
+         lambda r: len(r) == 1 and raiz in r[0] and "ausente" in r[0]),
+        ("excecao declarada isenta o ausente", {k: v for k, v in iguais.items() if k != raiz}, {raiz: "motivo"},
+         lambda r: r == []),
+    ]
+    for nome, manifestos, excecoes, esperado in casos:
+        achados = divergencias_de_manifesto(manifestos, excecoes=excecoes)
+        if not esperado(achados):
+            falhas.append(f"divergencias (manifestos): {nome} (achou {achados!r})")
+    return falhas
 
 
 def autoteste():
@@ -285,12 +321,14 @@ def autoteste():
             f"divergencias (paridade) deveria acusar par nao-.md divergente (achou {par_nao_md_diverge!r})"
         )
 
+    falhas += _autoteste_manifestos()
+
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
         print(f"autoteste (audit_base): {len(falhas)} falha(s)")
         return 1
-    print("autoteste (audit_base): 38/38 ok")
+    print("autoteste (audit_base): 43/43 ok")
     return 0
 
 
@@ -308,6 +346,7 @@ def audit_base(base_dir):
         "proatividade": [],
         "secoes": [],
         "paridade": [],
+        "manifestos": [],
     }
 
     # 1. Agents
@@ -405,6 +444,10 @@ def audit_base(base_dir):
     # SDD — todo .md presente nas duas arvores tem de ser identico, exceto a divergencia
     # declarada em paridade.EXCECOES (ver paridade.py)
     report["paridade"] = auditar_paridade(base_dir)
+
+    # 5g. Manifestos: a identidade do plugin (name/version/description/author) vive em
+    # .claude-plugin/plugin.json; os outros manifestos a repetem (ver manifestos.py)
+    report["manifestos"] = auditar_manifestos(base_dir)
 
     # 6. Vazamentos
     patterns = {

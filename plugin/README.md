@@ -6,7 +6,7 @@
 
 | Arquivo | O que é |
 |---|---|
-| `sync_ide.py` | espelha a base para o cache do Claude e para o Antigravity, e **gera** a tabela de rotas |
+| `sync_ide.py` | espelha a base para o cache do Claude, para o cache do Codex (provisório, §3) e para o Antigravity, e **gera** a tabela de rotas |
 | `sarak_routing_table.md` | a tabela de rotas — **gerada** por `sync_ide.py`, e versionada de propósito (§1) |
 | `setup_env.py` | preparo de ambiente |
 
@@ -45,10 +45,18 @@ Regras Globais de cada IDE continua apontando para o endereço antigo, e nada de
 
 ```bash
 cd plugin
-python sync_ide.py --target all          # Claude + Antigravity
+python sync_ide.py --target all          # Claude + Codex + Antigravity
+python sync_ide.py --target codex        # só o cache do Codex (provisório)
 python sync_ide.py --target antigravity  # só o Antigravity
 ```
 
-O `.git/hooks/pre-commit` local já roda `--target all` a cada commit. Esse hook vive em `.git/hooks/`,
+**Codex — espelho provisório.** O `--target codex` só atualiza um plugin **já instalado** pelo app, em
+`<CODEX_HOME ou ~/.codex>/plugins/cache/<marketplace>/<plugin>/<versão>/`; sem essa instalação, para com
+`[ERRO]` e não cria nada. Substitui só as subpastas da base — `.git/` e `.codex-marketplace-install.json`
+são do app e ficam intactos — e a próxima atualização pelo app troca tudo pela versão do remoto. Serve para
+teste local; o definitivo é push + atualizar o plugin no app.
+
+O `.git/hooks/pre-commit` local já roda `--target all` a cada commit — e, com o `all` atual, passa a
+espelhar também o Codex. Esse hook vive em `.git/hooks/`,
 que **não é versionado**: clone novo, outra máquina ou runner de CI não o têm, e ali o cache fica
 parado até alguém rodar o script à mão.

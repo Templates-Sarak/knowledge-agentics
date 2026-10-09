@@ -3,7 +3,7 @@ name: meta-verificacao-base
 description: Verifica a integridade estrutural da base de agentes/skills (agents, commands, hooks, skills). Caça armadilhas YAML, falhas de contrato JSON e ponteiros órfãos. Use APENAS quando pedirem verificação da base. NÃO acione proativamente.
 ---
 
-# Skill: Verificação de Integridade da Base (X-Skills)
+# Skill: Verificação de Integridade da Base (knowledge-agentics)
 
 > **Dependência:** Esta skill aplica as regras definidas em `padrao-escrita`. Consulte-as antes de iniciar.
 
@@ -22,7 +22,7 @@ estão sendo cumpridas.
 ## Workflow
 Trate **a base inteira** como um único bloco.
 
-1. **Varrer a base** — rode `python scripts/audit_base.py --raiz <caminho_base>`. O script requer o argumento `--raiz` (ex: `.` se estiver na raiz do X-Skills) e varrerá os 4 pilares em busca de:
+1. **Varrer a base** — rode `python scripts/audit_base.py --raiz <caminho_base>`. O script requer o argumento `--raiz` (ex: `.` se estiver na raiz do knowledge-agentics) e varrerá os 4 pilares em busca de:
    - **Armadilhas YAML:** Dois pontos (`: `) indevidos em descrições.
    - **Contratos:** Subagentes sem obrigatoriedade JSON.
    - **Ponteiros/Órfãos:** Inconsistências de nomenclatura.
@@ -63,3 +63,7 @@ Trate **a base inteira** como um único bloco.
   conteúdo do repositório). Arquivo que só existe numa das árvores é o desenho (specs próprias do
   site), não achado. Fim de linha (CRLF/LF) é
   normalizado antes de comparar, nunca contado como divergência de conteúdo.
+- `scripts/manifestos.py` — chamada pelo `audit_base.py` (categoria `manifestos`): cobra que
+  `.codex-plugin/plugin.json`, `plugin.json` e o `plugins[0]` de `.claude-plugin/marketplace.json`
+  repitam a identidade (`name`/`version`/`description`/`author`) da fonte `.claude-plugin/plugin.json`.
+  Manifesto ausente é achado, salvo exceção nominal com motivo em `manifestos.EXCECOES`.

@@ -394,7 +394,7 @@ Provedores sem marketplace consomem via `plugin/` — detalhe, decisões e limit
 
 ```bash
 cd plugin
-python sync_ide.py --target all          # Claude + Antigravity
+python sync_ide.py --target all          # Claude + Codex + Antigravity
 python sync_ide.py --target antigravity  # só o Antigravity
 ```
 
@@ -407,10 +407,16 @@ o catálogo de skills e os hooks serem carregados. O Codex reconhece o marketpla
 `.claude-plugin/marketplace.json`, preservando a distribuição já usada pelo Claude.
 
 **Cache.** Como no Claude, o Codex lê a cópia **instalada** do plugin, não o repositório. Uma mudança no
-repo só chega lá depois de atualizar o plugin no app e abrir uma conversa nova.
+repo só chega lá depois de atualizar o plugin no app e abrir uma conversa nova. Para teste local,
+`python plugin/sync_ide.py --target codex` atualiza o cache do plugin já instalado — **provisório**: a
+próxima atualização pelo app o substitui pela versão do remoto.
 
 **Confiança nos hooks.** Sem revisar e confiar nos hooks no app, nenhum deles roda. Toda mudança no
 `hooks/hooks.json` exige confiar de novo.
+
+**Identidade do plugin.** `name`, `version`, `description` e `author` vivem em `.claude-plugin/plugin.json`;
+`.codex-plugin/plugin.json`, `plugin.json` e `.claude-plugin/marketplace.json` os repetem, e a paridade é
+cobrada pelo `audit_base.py` (categoria `manifestos`).
 
 ### Iniciar um projeto a partir do template
 
