@@ -40,7 +40,8 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **cyber-infra**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-infra/SKILL.md`
 - **cyber-segredos**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/cyber-segredos/SKILL.md`
 - **db-migrations**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/db-migrations/SKILL.md`
-- **deploy-docker**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/deploy-docker/SKILL.md`
+- **deploy-docker-microsservico**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/deploy-docker-microsservico/SKILL.md`
+- **deploy-docker-monolito**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/deploy-docker-monolito/SKILL.md`
 - **deploy-vercel**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/deploy-vercel/SKILL.md`
 - **git-commit-inicial**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/git-commit-inicial/SKILL.md`
 - **git-especialista-repositorio**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/git-especialista-repositorio/SKILL.md`
