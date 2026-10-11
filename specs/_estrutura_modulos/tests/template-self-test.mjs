@@ -3,7 +3,7 @@
  * template-self-test.mjs — prova que o TEMPLATE gera projeto que passa na própria cadeia que ele
  * prescreve.
  *
- *   node template-self-test.mjs [--binding typescript] [--keep] [--autoteste]
+ *   node template-self-test.mjs [--binding typescript] [--fast] [--keep] [--autoteste]
  *
  * Fora de `tools/` DE PROPÓSITO: este script é consumido por quem MANTÉM o template, nunca por um
  * projeto gerado — `create-project.mjs` copia `tools/` inteiro para o destino, e um script de teste
@@ -595,14 +595,28 @@ function imprimirBinding(resultado) {
 // CLI
 // ================================================================================================
 
+const FLAGS_BOOLEANAS = { '--fast': 'rapido', '--keep': 'manter', '--autoteste': 'autoteste' };
+const ARGUMENTOS_ACEITOS = ['--binding <nome>', ...Object.keys(FLAGS_BOOLEANAS)];
+
+/**
+ * argv → `{ opcoes }` ou `{ erro }`. Puro. Argumento desconhecido REPROVA em vez de ser ignorado:
+ * o `--rapido` que o `package.json` passava depois que a flag virou `--fast` (ADR-020) caía em
+ * silêncio e o "rápido" rodava TUDO — verde indistinguível de "não fez o que pedi" (lei 10).
+ */
 function lerOpcoes(argv) {
-  const indiceBinding = argv.indexOf('--binding');
-  return {
-    binding: indiceBinding === -1 ? null : argv[indiceBinding + 1],
-    manter: argv.includes('--keep'),
-    autoteste: argv.includes('--autoteste'),
-    rapido: argv.includes('--fast'),
-  };
+  const opcoes = { binding: null, manter: false, autoteste: false, rapido: false };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (Object.hasOwn(FLAGS_BOOLEANAS, arg)) {
+      opcoes[FLAGS_BOOLEANAS[arg]] = true;
+      continue;
+    }
+    if (arg !== '--binding') return { erro: `argumento desconhecido "${arg}" — aceitos: ${ARGUMENTOS_ACEITOS.join(', ')}` };
+    if (i + 1 >= argv.length) return { erro: '--binding exige um valor' };
+    opcoes.binding = argv[i + 1];
+    i += 1;
+  }
+  return { opcoes };
 }
 
 /**
@@ -619,7 +633,11 @@ function bindingsAlvo(opcoes) {
 }
 
 function principal() {
-  const opcoes = lerOpcoes(process.argv.slice(2));
+  const { opcoes, erro } = lerOpcoes(process.argv.slice(2));
+  if (erro !== undefined) {
+    process.stderr.write(`erro: ${erro}\n`);
+    return 1;
+  }
   if (opcoes.autoteste) return rodarAutoteste();
 
   if (opcoes.binding !== null && !BINDINGS.includes(opcoes.binding)) {
@@ -647,6 +665,24 @@ function principal() {
 // ================================================================================================
 // AUTOTESTE — o núcleo puro contra casos em memória. Rápido, sem processo, sem disco.
 // ================================================================================================
+
+/** A decisão pura da CLI: um caso aceito, um desconhecido (`--rapido`) e um misto. */
+function casosDeLerOpcoes() {
+  return [
+    { nome: 'lerOpcoes: flags aceitas viram opcoes (--binding consome o valor seguinte)', fn: () => {
+      const { opcoes, erro } = lerOpcoes(['--binding', 'python', '--keep', '--fast']);
+      return erro === undefined && opcoes.binding === 'python' && opcoes.manter && opcoes.rapido && !opcoes.autoteste;
+    } },
+    { nome: 'lerOpcoes: --rapido (desconhecido) -> erro que nomeia o argumento e lista os aceitos', fn: () => {
+      const { opcoes, erro } = lerOpcoes(['--rapido']);
+      return opcoes === undefined && erro.includes('"--rapido"') && ARGUMENTOS_ACEITOS.every((a) => erro.includes(a));
+    } },
+    { nome: 'lerOpcoes: misto (aceito + desconhecido) -> erro, nunca opcoes parciais', fn: () => {
+      const { opcoes, erro } = lerOpcoes(['--fast', '--rapido', '--keep']);
+      return opcoes === undefined && erro.includes('"--rapido"');
+    } },
+  ];
+}
 
 function casosDeAutoteste() {
   return [
@@ -770,6 +806,7 @@ function casosDeAutoteste() {
     { nome: 'classificarPasso: status null (matado por sinal) -> nao ok', fn: () => classificarPasso({ error: undefined, status: null }).ok === false },
     { nome: 'classificarPasso: status !== 0 -> nao ok', fn: () => classificarPasso({ error: undefined, status: 1 }).ok === false },
     { nome: 'classificarPasso: resultado ausente (nao rodou) -> nao ok, nunca ok por omissao', fn: () => classificarPasso(undefined).ok === false },
+    ...casosDeLerOpcoes(),
     { nome: 'primeiroFalho: lista toda ok -> null', fn: () => primeiroFalho([{ ok: true }, { ok: true }]) === null },
     { nome: 'primeiroFalho: para no PRIMEIRO que falha, ignora os depois', fn: () => {
       const r = primeiroFalho([{ ok: true }, { ok: false, motivo: 'x' }, { ok: false, motivo: 'y' }]);

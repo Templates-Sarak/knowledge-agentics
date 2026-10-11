@@ -7,7 +7,7 @@
     "//autoteste:template": "Prova que o template gera projeto que passa na propria cadeia que ele prescreve. Gera projeto + modulo em pasta temporaria, para CADA binding (custa minutos — o python sozinho mede ~2m40s). Fora de tools/ de proposito (D3): nao viaja para projeto gerado.",
     "autoteste:template": "node specs/_estrutura_modulos/tests/template-self-test.mjs",
     "//autoteste:template:rapido": "So os bindings Node (typescript, javascript) — cabe em pre-commit. O python roda so na agenda (workflow), nunca aqui.",
-    "autoteste:template:rapido": "node specs/_estrutura_modulos/tests/template-self-test.mjs --rapido",
+    "autoteste:template:rapido": "node specs/_estrutura_modulos/tests/template-self-test.mjs --fast",
     "//typecheck:tools": "tools/** nao tem tipo estatico, lint (ADR-009 dec. 4 isenta) nem garantia de execucao. checkJs sem strict pega simbolo inexistente em qualquer ramo, inclusive o nao percorrido por nenhum --autoteste.",
     "typecheck:tools": "tsc --project tsconfig.tools-check.json",
     "//autoteste:tudo": "Um --autoteste que nada invoca e indistinguivel de nao ter. Descobre por varredura (nao lista a mao) todo arquivo com --autoteste em tools/, tests/ e bindings/*/root/, reprova ORFAO (achado sem entrada no registro) antes de rodar, e exige 0 falhas nos registrados.",

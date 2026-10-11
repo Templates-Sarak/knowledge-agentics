@@ -6,7 +6,7 @@ name: Autoteste do template
 # ja usou o template (o template e copia, nao dependencia — ADR-005).
 #
 # Agenda + manual PARA OS DOIS JOBS DE BAIXO (autoteste-template, verificar-migrations, via o `if`
-# de cada um): o `--rapido` (so typescript/javascript) e quem cabe em pre-commit; o binding python
+# de cada um): o `--fast` (so typescript/javascript) e quem cabe em pre-commit; o binding python
 # sozinho mede ~2m40s e por isso so roda aqui, nao no pre-commit da base. O `on: push`/`pull_request`
 # abaixo existe só para o job `guarda-base` — ver o comentário dele para o porquê da separação.
 
