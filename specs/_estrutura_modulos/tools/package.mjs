@@ -13,6 +13,19 @@
  * 03-operacao.md §9). Nao ha "build vazio" aqui: o que nao emite, o script DIZ que nao emite, e
  * segue — nunca finge um passo que nao faz nada (lei 10 do catalogo, mesma raiz do defeito).
  *
+ * O ARTEFATO, por binding: TypeScript empacota o `dist/` emitido; JavaScript copia o que o processo
+ * le em runtime (`src/` da raiz de composicao, `adapters/`, `packages/` e, por modulo, `module.json`,
+ * `config/`, `api/`, `core/`) — o fonte E o artefato. Python NAO tem passo de empacotamento
+ * (03-operacao.md §9.1): este script recusa o binding Python com mensagem, nunca finge empacotar.
+ *
+ * DEPENDENCIA DE ADAPTER VIAJA COM O ADAPTER E SO ENTRA SE ELE E ESCOLHIDO: `adapters/<provedor>/
+ * package.json` declara o driver (`pg`), e o artefato so o carrega se algum modulo escolhe aquele
+ * provedor em `config/ports.json`. Projeto que fica em `memory` nao paga o driver.
+ *
+ * LOCKFILE: o artefato sai com `package-lock.json` gerado do lock da RAIZ
+ * (`npm install --package-lock-only`, que reaproveita as versoes ja travadas) — a instalacao de
+ * producao (`npm ci --omit=dev`) fica reprodutivel, inclusive nas dependencias transitivas.
+ *
  * ZERO SHELL, mesma tecnica de `verify-commit.mjs` (ver o cabecalho de la para o porque —
  * `shell: true` concatena args numa string sem citacao, e um id de modulo vindo de pasta vira
  * injecao). `tsc`/`vite` sao resolvidos pelo campo `bin` do `package.json` deles e rodados com
@@ -76,6 +89,16 @@ function entrypointDoPacote(raizNode, pastaPacote, chaveBin = pastaPacote) {
   } catch {
     return null;
   }
+}
+
+/** O entrypoint JS do `npm`, ao lado do `node` atual — nunca pelo `PATH` (mesma tecnica de `create-module.mjs`). */
+function entrypointDoNpm() {
+  const raizNode = dirname(NODE);
+  for (const candidato of [raizNode, join(raizNode, '..', 'lib')]) {
+    const alvo = entrypointDoPacote(candidato, 'npm');
+    if (alvo !== null) return alvo;
+  }
+  return null;
 }
 
 function rodar(rotulo, executavel, args, cwd) {
@@ -200,16 +223,101 @@ function validarDestino(raizProjeto, destino) {
   }
 }
 
+/**
+ * PURA — os provedores que ALGUM modulo escolhe: a uniao dos valores string de cada `config/ports.json`.
+ * E o que decide quais `adapters/<provedor>/` contribuem com `dependencies` ao artefato (o nome da
+ * pasta do adapter e o nome do provedor — a convencao de `create-adapter.mjs`).
+ */
+export function provedoresEscolhidos(listaDePortas) {
+  const escolhidos = new Set();
+  for (const portas of listaDePortas) {
+    for (const provedor of Object.values(portas ?? {})) {
+      if (typeof provedor === 'string') escolhidos.add(provedor);
+    }
+  }
+  return escolhidos;
+}
+
+/** PURA — qual forma de artefato o projeto tem: `ts` (dist/ emitido), `js` (fonte e artefato) ou `null`. */
+export function formaDoArtefato({ temDistNaRaiz, temComposicaoJs }) {
+  if (temDistNaRaiz) return 'ts';
+  if (temComposicaoJs) return 'js';
+  return null;
+}
+
+/** `adapters/*` com `package.json` cujo nome de pasta (= provedor) algum modulo escolheu. */
+function adaptersEmUso(raizProjeto, modulos) {
+  const portas = modulos.map((m) => lerJsonSeExiste(join(m, 'config', 'ports.json')));
+  const escolhidos = provedoresEscolhidos(portas);
+  return listarAdapters(raizProjeto).filter((pasta) => escolhidos.has(basename(pasta)));
+}
+
+/** Copia a arvore de runtime do JS: raiz de composicao, adapters (sem o molde `_*`) e packages. */
+function copiarFonteJs(raizProjeto, destino) {
+  cpSync(join(raizProjeto, 'src'), join(destino, 'src'), { recursive: true });
+  cpSync(join(raizProjeto, 'packages'), join(destino, 'packages'), { recursive: true });
+  cpSync(join(raizProjeto, 'adapters'), join(destino, 'adapters'), {
+    recursive: true,
+    filter: (origem) => !basename(origem).startsWith('_'),
+  });
+}
+
+/** Copia a raiz do artefato e devolve o comando de `start` dele. */
+function copiarRaizDoArtefato(raizProjeto, destino) {
+  const forma = formaDoArtefato({
+    temDistNaRaiz: existsSync(join(raizProjeto, 'dist')),
+    temComposicaoJs: existsSync(join(raizProjeto, 'src', 'composition.js')),
+  });
+  if (forma === null) {
+    throw new Error('este binding nao tem passo de empacotamento (Python roda o fonte e se instala por `pip install`'
+      + ' — 03-operacao.md §9.1); nao ha dist/ nem src/composition.js para empacotar');
+  }
+  if (forma === 'ts') {
+    cpSync(join(raizProjeto, 'dist'), join(destino, 'dist'), { recursive: true });
+    return 'node dist/src/composition.js';
+  }
+  copiarFonteJs(raizProjeto, destino);
+  return 'node src/composition.js';
+}
+
+/**
+ * `config/runtime.json` da RAIZ — o unico arquivo de `config/` da raiz que o processo le em runtime
+ * (o teto do desligamento gracioso; `verification.json`/`compliance.json` sao politica de CI, nao
+ * runtime). Nome fixo pelo mesmo motivo de `module.json`: e o contrato da raiz de composicao.
+ */
+function copiarConfigDeRuntimeDaRaiz(raizProjeto, destino) {
+  const origem = join(raizProjeto, 'config', 'runtime.json');
+  if (!existsSync(origem)) {
+    throw new Error('config/runtime.json da raiz ausente — o processo composto o exige no boot (teto de desligamento)');
+  }
+  mkdirSync(join(destino, 'config'), { recursive: true });
+  cpSync(origem, join(destino, 'config', 'runtime.json'));
+}
+
+/**
+ * Gera o `package-lock.json` do artefato a partir do lock da raiz: copia-o e deixa o npm podar para o
+ * `package.json` novo, reaproveitando as versoes ja travadas. Sem lock na raiz, falha: artefato sem
+ * lock nao e reprodutivel.
+ */
+function gerarLockDoArtefato(raizProjeto, destino) {
+  const lockRaiz = join(raizProjeto, 'package-lock.json');
+  if (!existsSync(lockRaiz)) {
+    throw new Error('package-lock.json da raiz ausente — rode "npm install" na raiz antes de empacotar (artefato sem lock nao e reprodutivel)');
+  }
+  cpSync(lockRaiz, join(destino, 'package-lock.json'));
+  const npm = entrypointDoNpm();
+  if (npm === null) throw new Error('npm ausente ao lado do node atual — nao foi possivel gerar o lock do artefato');
+  rodar('lock do artefato (npm install --package-lock-only)', NODE,
+    [npm, 'install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'], destino);
+}
+
 function empacotarBackend(raizProjeto, destino) {
   validarDestino(raizProjeto, destino);
   rmSync(destino, { recursive: true, force: true });
   mkdirSync(destino, { recursive: true });
 
-  const distRaiz = join(raizProjeto, 'dist');
-  if (!existsSync(distRaiz)) {
-    throw new Error('dist/ da raiz ausente — este binding nao tem backend emitido para empacotar (JS/Python nao usam este passo)');
-  }
-  cpSync(distRaiz, join(destino, 'dist'), { recursive: true });
+  const comandoDeStart = copiarRaizDoArtefato(raizProjeto, destino);
+  copiarConfigDeRuntimeDaRaiz(raizProjeto, destino);
 
   const modulos = listarModulosReais(raizProjeto);
   const destinoModulos = join(destino, 'modules');
@@ -218,17 +326,18 @@ function empacotarBackend(raizProjeto, destino) {
   const fontesDeDependencies = [
     lerJsonSeExiste(join(raizProjeto, 'package.json'))?.dependencies,
     ...modulos.map((m) => lerJsonSeExiste(join(m, 'package.json'))?.dependencies),
-    ...listarAdapters(raizProjeto).map((a) => lerJsonSeExiste(join(a, 'package.json'))?.dependencies),
+    ...adaptersEmUso(raizProjeto, modulos).map((a) => lerJsonSeExiste(join(a, 'package.json'))?.dependencies),
   ];
   const pacote = {
     name: 'artefato-backend',
     version: '0.0.0',
     private: true,
     type: 'module',
-    scripts: { start: 'node dist/src/composition.js' },
+    scripts: { start: comandoDeStart },
     dependencies: mesclarDependencias(fontesDeDependencies),
   };
   writeFileSync(join(destino, 'package.json'), `${JSON.stringify(pacote, null, 2)}\n`, 'utf8');
+  gerarLockDoArtefato(raizProjeto, destino);
 
   // `.env.example` DOCUMENTA as chaves; o `.env` REAL nunca e copiado — segredo e por ambiente de
   // implantacao, nao um artefato de build (specs/arquitetura/00-arquitetura.md §5).
@@ -236,7 +345,7 @@ function empacotarBackend(raizProjeto, destino) {
   if (existsSync(exemplo)) cpSync(exemplo, join(destino, '.env.example'));
 
   process.stdout.write(`\nartefato empacotado em ${destino}\n`);
-  process.stdout.write('  falta: preencher .env (nao copiado — segredo e por ambiente) e "npm install"\n');
+  process.stdout.write('  falta: preencher .env (nao copiado — segredo e por ambiente) e "npm ci --omit=dev"\n');
 }
 
 // ================================================================================================
@@ -258,9 +367,35 @@ function casosDeMesclaDeDependencias() {
   ];
 }
 
+function casosDeProvedoresEForma() {
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  return [
+    { nome: 'provedoresEscolhidos: uniao dos valores de varios ports.json', fn: () => igual(
+      [...provedoresEscolhidos([{ repository: 'postgres', clock: 'system' }, { repository: 'memory' }])].sort(),
+      ['memory', 'postgres', 'system'],
+    ) },
+    { nome: 'provedoresEscolhidos: null/undefined e valor nao-string sao ignorados', fn: () => igual(
+      [...provedoresEscolhidos([null, undefined, { a: 1, b: 'memory' }])], ['memory'],
+    ) },
+    { nome: 'provedoresEscolhidos: tudo em memory -> postgres NAO entra', fn: () => (
+      provedoresEscolhidos([{ repository: 'memory', audit: 'memory' }]).has('postgres') === false
+    ) },
+    { nome: 'formaDoArtefato: dist -> ts; so composition.js -> js; nada -> null (Python)', fn: () => (
+      formaDoArtefato({ temDistNaRaiz: true, temComposicaoJs: false }) === 'ts'
+      && formaDoArtefato({ temDistNaRaiz: false, temComposicaoJs: true }) === 'js'
+      && formaDoArtefato({ temDistNaRaiz: false, temComposicaoJs: false }) === null
+    ) },
+  ];
+}
+
 function rodarAutoteste() {
   let falhas = 0;
   const casos = casosDeMesclaDeDependencias();
+  for (const caso of casosDeProvedoresEForma()) {
+    const ok = caso.fn() === true;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
+    if (!ok) falhas += 1;
+  }
 
   for (const caso of casos) {
     const obtido = mesclarDependencias(caso.entradas);
@@ -273,7 +408,8 @@ function rodarAutoteste() {
     }
   }
 
-  process.stdout.write(`\nautoteste: ${casos.length - falhas}/${casos.length} ok\n`);
+  const total = casos.length + casosDeProvedoresEForma().length;
+  process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
   return falhas === 0 ? 0 : 1;
 }
 

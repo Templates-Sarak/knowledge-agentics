@@ -240,8 +240,10 @@ function passosRotasETests() {
       },
     },
     {
-      nome: 'ferramentas de manutencao — exatamente 5 arquivos em tests/',
-      fn: () => compararValor('arquivos .mjs em tests/', readdirSync(AQUI).filter((n) => n.endsWith('.mjs')).length, 5),
+      // 6: os cinco de antes + `supervisionar.mjs` (casca de processo do autoteste do template — teto e
+      // encerramento da arvore). `prova-desligamento.py` e `.json` nao entram: so `.mjs` e contado.
+      nome: 'ferramentas de manutencao — exatamente 6 arquivos .mjs em tests/',
+      fn: () => compararValor('arquivos .mjs em tests/', readdirSync(AQUI).filter((n) => n.endsWith('.mjs')).length, 6),
     },
   ];
 }

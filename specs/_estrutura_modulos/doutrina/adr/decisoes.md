@@ -1564,3 +1564,92 @@ do escopo) — fica registrado para quem reabrir `meta-iniciar-repositorio` coor
 3. **A dívida do item 5 é declarada, não escondida** — em particular a quebra funcional de
    `init_repo.py:301`, que precisa de coordenação (não conserto silencioso) no dia em que
    `meta-iniciar-repositorio` for revisitada.
+
+## ADR-021 — O projeto gerado sobe e se empacota de verdade: as decisões do lote 2 da fase 2a
+
+**Status:** 🟢 Aceito
+
+**Contexto.** A skill `deploy-docker-monolito` provou, com build real, que um projeto gerado sobe em
+container — mas precisou de contornos para defeitos do template. Este ADR registra o que mudou no template
+para os contornos deixarem de existir, e **cada decisão que o prompt deixou aberta**. Tudo está coberto pela
+rede de `tests/template-self-test.mjs` (passos `boot`, `artefato`, `composition-autoteste`, `desligamento`).
+
+### 1. `pytest` travava de forma intermitente (Windows, Python 3.14)
+
+**Causa, com evidência.** `faulthandler` apontou `socket.py:_fallback_socketpair → accept()`, chamado por
+`asyncio` ao criar um event loop (`ProactorEventLoop._make_self_pipe`). No Windows `socket.socketpair()` é um
+fallback em Python: `listen` + `connect` não bloqueante + `accept` **sem timeout**. Um laço de
+`socketpair()` puro, sem pytest, trava em dezenas a centenas de chamadas nesta máquina; um `connect` de
+loopback medido com `select` leva 1, 3, 7, 15 ou 21 s para completar (retransmissão de SYN) e às vezes
+nunca completa. É perda de SYN no loopback do host + o `accept` sem timeout do CPython 3.14.0 — não é defeito
+do template, mas o template **multiplicava a exposição**: `TestClient` sem `with` abre um portal do anyio
+(logo um event loop e um `socketpair`) **por requisição**.
+
+**Decisão.** Os testes de contrato falam com o app por `httpx.AsyncClient` + `ASGITransport`, num único
+event loop de escopo de sessão (`asyncio_default_*_loop_scope = "session"`). Medido: `socketpair()` por
+execução de pytest de **11 para 1** (módulo `sondapad`, 21 testes). Não é timeout, retry nem `skip`; o
+`socketpair` residual (o do próprio asyncio) é inevitável no Windows. Efeito colateral: o aviso de
+depreciação `httpx` + `starlette.testclient` some. Nenhuma dependência foi trocada ou fixada de novo.
+
+### 2. `base` do Vite vem do `webPath`
+
+`web/vite.config.*` lê `module.json:webPath` para o `base` (`/` se nulo). Build confere
+`/<webPath>/assets/...`; o dev server serve sob `/<webPath>/`. O molde não tem proxy de `/api` (é
+deliberadamente mínimo, §4.4 da arquitetura), então não havia proxy a preservar. Frase de roteador em
+`00-arquitetura.md` §4.4.
+
+### 3. Artefato de backend
+
+- **JS:** `package.mjs` copia o fonte de runtime (§9.1). **C3 — lock:** o lock do artefato é gerado do lock
+  da raiz com `npm install --package-lock-only`. Alternativas descartadas: copiar o lock da raiz cru (carrega
+  entradas de workspace que não existem no artefato) e não ter lock (instalação de produção resolve
+  transitivas de novo a cada build). **C4 — Python:** a doutrina declara que **não há** empacotamento
+  (§9.1); instalar é `pip install`, e o equivalente de lock fica fora — as versões diretas são exatas e
+  um lock transitivo Python exigiria `pip-tools`/`uv`, dependência nova sem consumidor hoje.
+- **`react`/`react-dom`** vão para `devDependencies` do módulo (TS e JS); o `vite build` segue verde.
+
+### 4. Driver do adapter `postgres` (D)
+
+Quem usa o driver é o adapter, então a dependência viaja com ele: `adapters/postgres/package.json`
+(workspace) declara `pg`; no Python, o extra `postgres`. O artefato só a leva **se algum módulo escolhe o
+provedor** em `config/ports.json` (a pasta do adapter tem o nome do provedor). `pg` saiu do
+`devDependencies` da raiz — uma versão só, num lugar só. Alternativa descartada: deixar `pg` em
+`dependencies` da raiz, que faz todo projeto pagar pelo driver. O `import` do driver já era lazy.
+
+### 5. Host de escuta (E)
+
+`ROOT_API_HOST`, chave da raiz, **sem default**: `fallback-raiz` proíbe default embutido, e a falta de
+config tem de derrubar o boot. Aplicada nos **três** bindings para ter simetria (o Express escutava em todas
+as interfaces). Consequência declarada: projeto existente precisa acrescentar `ROOT_API_HOST` ao `.env`
+(`sync-env.mjs` a inclui; o valor é por ambiente).
+
+### 6. Desligamento gracioso (F)
+
+`config/runtime.json:shutdown.drainTimeoutMs` (versionado, na raiz) + `ROOT_API_HOST` (§9.4 da operação).
+Prova com **processo real** em `tests/prova-desligamento.py`, nos três bindings, no Windows (CTRL_BREAK →
+SIGBREAK no Node, SIGBREAK no uvicorn) e, por construção, no SIGTERM dos demais sistemas: uma requisição
+lenta em voo, sinal, e dois cenários — drena (sai 0) e estoura (sai ≠ 0), ambos com log `resultado`.
+Descoberta: o `capture_signals` do uvicorn reemite o sinal e mata o processo por sinal; foi substituído.
+
+### 7. `create-project` e `create-module` (G)
+
+- **Lock:** `create-project` passa a gerar `package-lock.json` (`--package-lock-only`) nos bindings Node,
+  antes de qualquer módulo. Medido antes: o lock só aparecia como efeito do `npm install` do primeiro
+  `create-module`. Falha em gerar **reprova** o comando.
+- **Binding:** `project.json` ganha `binding` (enum, opcional); `create-module` o usa como padrão, `--binding`
+  é a sobrescrita, aceita só entre os bindings que o projeto declara (ou tem molde próprio
+  `modules/_template-<binding>`), com erro claro. O campo entrou com cobrança: o enum no
+  `project.schema.json` (forma) e o uso por `create-module`; projeto legado sem o campo cai em
+  `typescript`, como antes.
+
+### 8. Gate limpo num módulo recém-criado (H)
+
+Medido: o aviso `[config-morta] texts.json: "title"` só aparecia com `--no-web` (TS e JS) — `title` é lido
+só por `web/`. O leitor está certo; o defeito era a **poda**: `TEXTOS_SO_DA_TELA` não listava `title`.
+Corrigido ali — só para TS/JS: em Python `title` é o título do app FastAPI e o backend o lê (podar derrubou o boot; o passo `boot` do autoteste pegou). O "gate apontou pendências" em JS/Python era o item 7 (molde TypeScript num projeto JS).
+`criar-modulo` do autoteste agora reprova com qualquer `N aviso(s)` > 0 e roda **sem** `--binding`.
+
+### 9. Consequências
+
+Contornos da skill `deploy-docker-monolito` tornam-se desnecessários (listados no relatório do lote); a
+skill **não** foi tocada — a fase 2b a atualiza.

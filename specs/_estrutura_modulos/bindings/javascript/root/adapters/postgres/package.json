@@ -1,0 +1,10 @@
+{
+  "name": "@<escopo>/adapter-postgres",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Adapter Postgres (portas repository e audit). O driver `pg` mora AQUI, com o adapter que o usa: `tools/package.mjs` so o leva ao artefato quando algum modulo escolhe o provedor `postgres` em config/ports.json.",
+  "dependencies": {
+    "pg": "8.23.0"
+  }
+}

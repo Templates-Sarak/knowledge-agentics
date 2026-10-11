@@ -39,7 +39,7 @@
     "start": "node src/composition.js",
     "//start:selftest": "Prova a UNICA decisao pura do entrypoint (verificarRotasUnicas) sem subir processo nem tocar disco.",
     "start:selftest": "node src/composition.js --autoteste",
-    "//migrations": "Aplica/reverte database/migrations/*.sql de UM modulo contra Postgres (03-operacao.md §9.3) — `<MODULE>_DB_URL` no .env da raiz. NAO mora em tools/ (zero dependencia, lei 3): usa `pg`, devDependency de PROJETO. `-- up|down|ciclo <module>`: o `--` repassa o argumento ao script (sem ele, npm interpreta como flag do proprio npm).",
+    "//migrations": "Aplica/reverte database/migrations/*.sql de UM modulo contra Postgres (03-operacao.md §9.3) — `<MODULE>_DB_URL` no .env da raiz. NAO mora em tools/ (zero dependencia, lei 3): usa `pg`, dependencia do workspace `adapters/postgres` (o driver viaja com o adapter). `-- up|down|ciclo <module>`: o `--` repassa o argumento ao script (sem ele, npm interpreta como flag do proprio npm).",
     "migrations": "node scripts/migrations.mjs"
   },
   "dependencies": {
@@ -49,7 +49,6 @@
     "@types/express": "4.17.25",
     "@types/node": "22.20.1",
     "eslint": "9.39.5",
-    "pg": "8.23.0",
     "prettier": "3.9.6",
     "typescript": "5.9.3",
     "vitest": "4.1.10"

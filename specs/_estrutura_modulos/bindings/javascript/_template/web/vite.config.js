@@ -10,11 +10,23 @@
 // Zero hardcoded vale AQUI TAMBEM (specs/arquitetura/01-modulo.md §4.4): nao acrescente porta, alvo de
 // proxy nem endereco literal. Se precisar, a chave vai para .env e e declarada em
 // module.json:requiredEnv — senao o gate reprova (regra `env-declarado`).
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+// `base` vem do `webPath` do PROPRIO manifesto (module.json), nunca de um literal repetido aqui: o
+// front e publicado sob `<webPath>/`, e sem `base` o index.html pediria `/assets/...` na raiz do
+// host e quebraria. `webPath` nulo (modulo sem front publicado) cai em `/`. Um roteador de cliente
+// adicionado depois precisa de `basename` igual a este `webPath` (specs/arquitetura/00-arquitetura.md §4.4).
+const raiz = import.meta.dirname;
+const { webPath } = JSON.parse(readFileSync(join(raiz, '..', 'module.json'), 'utf8').replace(/^﻿/, ''));
+const base = typeof webPath === 'string' && webPath !== '' ? `${webPath.replace(/\/+$/, '')}/` : '/';
+
 export default defineConfig({
-  root: import.meta.dirname,
+  root: raiz,
+  base,
   plugins: [react()],
   build: { outDir: 'dist', emptyOutDir: true },
 });

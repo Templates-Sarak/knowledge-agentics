@@ -144,6 +144,11 @@ API (um processo, uma porta), nunca o build estático de `web/`. Quem publica o 
 API é decisão de **deploy** (reverse proxy, host estático na frente, CDN com regra de rota), e deploy não é
 assunto desta doutrina (§5: *"modularidade não é topologia de deploy"*).
 
+O front é publicado sob o **`webPath`** do próprio `module.json` (`/<webPath>/`), e o `web/vite.config.*`
+lê esse valor para o `base` do build — nunca um literal repetido. Sem `base`, o `index.html` pediria
+`/assets/...` na raiz do host e quebraria sob o subcaminho. O molde não usa roteador no cliente; um roteador
+adicionado precisa de `basename` igual ao `webPath`.
+
 Quando um módulo precisa de dado de outro, o acesso vive em `core/gateways/`, fala **exclusivamente HTTP**, e
 a dependência é declarada em `module.json:consumes`. A pasta separada não é cosmética: *"falo com meu banco"* e
 *"falo com outro módulo"* são riscos diferentes, e precisam ser distinguíveis por `grep`.

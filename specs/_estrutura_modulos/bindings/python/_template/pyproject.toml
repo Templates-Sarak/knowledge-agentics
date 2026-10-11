@@ -30,6 +30,11 @@ packages = ["core", "api"]
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# UM event loop por execucao de pytest, nao um por teste/requisicao: no Windows cada loop novo custa um
+# `socket.socketpair()` (fallback em Python com `accept` sem timeout) que pode travar para sempre
+# quando um SYN de loopback se perde. Ver o cabecalho de tests/contract/test_contract.py.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 # NAO ha `[tool.ruff]` aqui, e a ausencia e DELIBERADA — ela e o que mantem a cobranca LIGADA.
 #

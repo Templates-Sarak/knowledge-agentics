@@ -9,6 +9,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# O driver do adapter `postgres` viaja com o adapter, nao com todo projeto: quem escolhe o provedor
+# `postgres` em `config/ports.json` instala com `pip install ".[postgres]"` (producao); quem so usa
+# `memory` instala o minimo. A versao e a MESMA do `dev` abaixo (que a repete porque o runner de
+# migrations — `scripts/migrations.py` — tambem a usa em desenvolvimento). `[binary]` evita compilar
+# contra libpq. O nome do extra e o nome do provedor/da pasta `adapters/postgres` (convencao de
+# `tools/package.mjs`, no lado Node: dependencia de adapter so entra se o provedor e escolhido).
+postgres = [
+  "psycopg[binary]==3.3.4",
+]
 dev = [
   "pytest==9.1.1",
   "pytest-asyncio==1.4.0",

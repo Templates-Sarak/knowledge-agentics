@@ -335,10 +335,29 @@ composto lê em runtime — nada de `.ts`, nada de `tools/`, nada de `tests/`:
   são, e por isso ficam de fora do artefato (inchá-lo com o que ninguém lê rodando é o erro oposto);
 - `dist/` — o que `tsc` emitiu. A lista de arquivos `.ts` vira lista de ativos de graça: quem decide o
   que compila é o `include` de `tsconfig.build.json`, nunca este script;
-- um `package.json` mínimo, com `dependencies` MESCLADAS (raiz + cada módulo + cada `adapters/*`) —
-  união mecânica de campos já declarados, não uma lista escrita à mão que envelhece;
+- um `package.json` mínimo, com `dependencies` MESCLADAS (raiz + cada módulo + cada `adapters/<provedor>/`
+  **que algum módulo escolhe** em `config/ports.json`) — união mecânica de campos já declarados, não uma
+  lista escrita à mão que envelhece. **A dependência de um adapter viaja com o adapter**
+  (`adapters/postgres/package.json` declara `pg`) **e só entra no artefato se o provedor é escolhido**:
+  projeto que fica em `memory` não paga o driver. `react`/`react-dom` são do front (o Vite os empacota no
+  build) e ficam em `devDependencies` do módulo — nunca no artefato do backend;
+- `package-lock.json`, gerado do lock da **raiz** (`npm install --package-lock-only`, que reaproveita as
+  versões já travadas): a instalação de produção (`npm ci --omit=dev`) é reprodutível, inclusive nas
+  dependências transitivas, que as versões exatas do topo não cobrem;
+- `config/runtime.json` da raiz — o único arquivo de `config/` da raiz lido em runtime (o teto do
+  desligamento gracioso, §9.4);
 - `.env.example` (documentação das chaves) — **nunca `.env`**: segredo é por ambiente de implantação,
   não um artefato de build que viaja para onde quer que o pacote seja publicado.
+
+**Por binding.** TypeScript empacota o `dist/` emitido. JavaScript **não emite**: o fonte é o artefato, e
+`package.mjs` copia o que o processo lê em runtime — `src/` (raiz de composição), `adapters/` (sem o molde
+`_template`), `packages/` e, por módulo, `module.json`, `config/`, `api/` e `core/` — pela mesma convenção
+mecânica, sem lista de nomes de arquivo. **Python não tem passo de empacotamento**, e isto é uma
+declaração, não uma lacuna: o processo roda o fonte (`python -m src.composition`) e se instala com `pip
+install` — `pip install .` para o mínimo, `pip install ".[postgres]"` quando algum módulo escolhe o provedor
+`postgres` (o extra tem o nome do provedor, a mesma convenção do lado Node). `package.mjs` recusa o
+binding Python com mensagem, nunca finge empacotar. As versões do `pyproject.toml` são exatas, e o
+equivalente do lock não existe aqui (decisão do ADR-021).
 
 **`importApi` (raiz de composição) resolve por convenção de caminho, não por variável nem
 tentativa**: prefere `modules/<id>/dist/api/src/index.js` quando ele existe, e cai para
@@ -369,9 +388,9 @@ node scripts/migrations.mjs ciclo <module>    # up -> down -> up — prova que o
 ```
 
 **Não mora em `tools/`.** Falar com Postgres exige driver, e `tools/**` é zero
-dependência externa (§3 do catálogo). O runner é devDependency de **projeto** — `pg` (Node) /
-`psycopg[binary]` (Python), mesmo precedente de `tsx`/`@vitest/coverage-v8`/`pytest-cov` — e por
-isso viaja com o projeto (`scripts/`), não com a base. `adapters/` continua sendo só para o
+dependência externa (§3 do catálogo). O runner usa o driver do adapter — `pg` (Node, declarado em `adapters/postgres/package.json`, workspace) /
+`psycopg[binary]` (Python, extra `postgres` e também `dev`) — e por isso viaja com o projeto
+(`scripts/`), não com a base. `adapters/` continua sendo só para o
 processo composto trocar de provedor em **runtime**; migration é ferramenta de **operação**, nunca
 importada por `composition.*` — mudar `adapters/memory` não afeta o caminho de migrations, e
 `tools/affected.mjs` não precisa mudar por isso (medido: o runner não importa `adapters/`
@@ -386,3 +405,19 @@ conectar.
 molde cria `<schema>.<prefix>migrations` — `up` aplica só as pendentes, `down` reverte só a
 última. Continua **não** sendo um framework de migração completo (sem *dry-run*, sem migração de
 dado automática, sem *lock* multi-processo) — os limites que restam estão em 04-regras.md §7.2.
+
+## 9.4 Escuta e desligamento do processo composto
+
+**Host.** O processo escuta no `ROOT_API_HOST` (chave da raiz, em `project.json:requiredEnv`, lida pelo
+`composition.*` nos três bindings): loopback em dev, `0.0.0.0` em container. Sem default embutido — a falta
+derruba o boot nomeando a chave (`fallback-raiz`). A simetria é deliberada: sem a chave, o Express escutaria
+em todas as interfaces (expondo o dev na rede local) e o uvicorn só em loopback (inalcançável em container).
+
+**Desligamento gracioso.** Ao receber SIGTERM ou SIGINT (SIGBREAK no Windows, onde o sinal gracioso que
+alcança um processo é o CTRL_BREAK do console — `process.kill` o derruba na hora), o processo para de
+aceitar conexões, drena as requisições em voo até `config/runtime.json:shutdown.drainTimeoutMs` (tunable
+não-secreto, versionado, na raiz) e **sai 0** se drenou. Estourado o teto, loga e **sai ≠ 0**. Os dois
+desfechos saem em log estruturado (`resultado: drained | timeout`). O teto fica abaixo do
+`stop_grace_period` do orquestrador (10 s por padrão no Docker). No Python o `capture_signals` do uvicorn é
+substituído de propósito: o original reemite o sinal depois de desligar e o processo morreria **por sinal**
+(143), nunca com `exit 0`.

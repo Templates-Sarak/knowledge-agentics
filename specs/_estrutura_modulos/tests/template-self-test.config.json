@@ -1,0 +1,26 @@
+{
+  "//": "Tunables de TEMPO do template-self-test.mjs (o unico lugar; nenhum teto/intervalo e literal no codigo). Segundos por CLASSE de passo — a classe de cada tipo vive em CLASSE_DO_TIPO no .mjs. Calibrado sobre rodada completa medida (maquina de dev, Windows 11, Node 24, Python 3.14), passo mais lento por classe: leve 2.8 s (clone-simulado); geracao 26.4 s (criar-modulo, 1o modulo — inclui npm install do workspace); instalacao 57.6 s (pip install -e .[dev]; npm install 35 s); verificacao 72.5 s (npm run verify TS; build 20 s); boot 5.9 s. Cada teto fica ~4-10x acima do mais lento da classe: nao reprova por maquina carregada e ainda pega um travamento em minutos, nao em horas.",
+  "tetoPorClasseS": {
+    "leve": 30,
+    "geracao": 120,
+    "instalacao": 300,
+    "verificacao": 360,
+    "boot": 60,
+    "desligamento": 90
+  },
+  "//margemDoSupervisorS": "Folga entre o teto do passo e o teto do spawnSync que cerca o supervisor: rede de seguranca de ultimo caso (o supervisor estoura primeiro).",
+  "margemDoSupervisorS": 15,
+  "//boot": "intervaloMs: pausa entre sondas do health. linhasCauda: quantas ultimas linhas do processo entram na mensagem de falha. valorInocuo: valor das chaves de ambiente que o manifesto exige e nao sao porta.",
+  "boot": {
+    "intervaloMs": 250,
+    "linhasCauda": 25,
+    "valorInocuo": "inocuo-autoteste",
+    "hostDeLoopback": "127.0.0.1"
+  },
+  "//desligamento": "lentoDrenaMs: duracao da requisicao em voo no cenario \"drena\" (tem de caber no teto do projeto). fatorDeEstouro: no cenario \"estoura\" a requisicao dura drainTimeoutMs * fator (> 1, estoura o teto). esperaDoBootMs: quanto o harness espera o health antes de iniciar o cenario.",
+  "desligamento": {
+    "lentoDrenaMs": 2000,
+    "fatorDeEstouro": 3,
+    "esperaDoBootMs": 30000
+  }
+}

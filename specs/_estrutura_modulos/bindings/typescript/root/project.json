@@ -1,3 +1,4 @@
 {
-  "requiredEnv": ["ROOT_API_PORT"]
+  "binding": "typescript",
+  "requiredEnv": ["ROOT_API_HOST", "ROOT_API_PORT"]
 }

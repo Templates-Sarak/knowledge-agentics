@@ -13,6 +13,7 @@
  * Regra escrita em dois lugares e o defeito que este template existe para evitar — inclusive
  * entre a doutrina e o fluxo SDD que governa as specs.
  */
+import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -165,6 +166,47 @@ function colisoesDeRaiz(destino, binding) {
     .filter((nome) => existsSync(join(destino, nome)));
 }
 
+/**
+ * O entrypoint JS do `npm` pelo campo `bin` de `node_modules/npm/package.json`, ao lado do `node`
+ * atual — nunca pelo `PATH`. Copiado de `create-module.mjs:entrypointDoNpm` (mesma tecnica de
+ * `ci-dependencies.mjs`), nao importado: cada ferramenta de `tools/` roda isolada.
+ */
+function entrypointDoNpm() {
+  const raizNode = dirname(process.execPath);
+  for (const candidato of [raizNode, join(raizNode, '..', 'lib')]) {
+    const pasta = join(candidato, 'node_modules', 'npm');
+    if (!existsSync(join(pasta, 'package.json'))) continue;
+    const { bin } = JSON.parse(readFileSync(join(pasta, 'package.json'), 'utf8'));
+    const relativo = typeof bin === 'string' ? bin : bin?.npm;
+    const alvo = relativo && join(pasta, relativo);
+    if (alvo && existsSync(alvo)) return alvo;
+  }
+  return null;
+}
+
+/**
+ * O projeto Node nasce COM `package-lock.json` — antes de qualquer modulo. Medido: sem isto o lock so
+ * aparecia como efeito colateral do `npm install` do primeiro `create-module`, e um projeto recem-criado
+ * (que o Dockerfile constroi com `npm ci`) saia sem ele. `--package-lock-only` resolve a arvore e grava
+ * o lock sem baixar nem instalar nada (`--ignore-scripts`: nenhum script de terceiro roda aqui).
+ * Python nao tem lock: as versoes sao exatas no `pyproject.toml` (ver 03-operacao.md §9.1).
+ * Falhar (sem rede, registro fora) REPROVA — projeto sem lock nao e o que esta ferramenta promete.
+ */
+function gerarLockfile(destino, binding) {
+  if (binding === 'python') return;
+  const entrada = entrypointDoNpm();
+  if (entrada === null) abortar('npm nao encontrado ao lado do node atual — nao foi possivel gerar o package-lock.json');
+  try {
+    execFileSync(process.execPath, [entrada, 'install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'], {
+      cwd: destino,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (causa) {
+    abortar(`projeto criado em ${destino}, mas o package-lock.json nao foi gerado: ${String(causa.stderr ?? causa.message).trim()}`);
+  }
+}
+
 /** O `.gitignore` do esqueleto sobrescreve o do destino na cópia — este é o valor de antes. */
 function lerGitignore(destino) {
   const alvo = join(destino, '.gitignore');
@@ -240,6 +282,7 @@ function principal() {
   copiarTemplate(destino, opcoes.binding);
   mesclarGitignore(destino, gitignoreAnterior);
   aplicarEscopo(arquivosComMarcadorEscopo(destino), escopo);
+  gerarLockfile(destino, opcoes.binding);
 
   imprimirProximosPassos(destino, opcoes, escopo, colisoes);
 }

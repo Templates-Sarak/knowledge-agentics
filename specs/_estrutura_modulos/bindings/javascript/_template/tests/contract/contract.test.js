@@ -1,7 +1,11 @@
 // Testes de contrato do modulo <module> — cada rota do contract/openapi.yaml.
 // Cobre o que a lei exige (specs/arquitetura/03-operacao.md §5): rota declarada, auth NEGADA por padrao,
-// e payload malformado rejeitado. Roda sobre HTTP real, com dubles de porta em memoria.
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+// e payload malformado rejeitado. Roda sobre o app REAL (Express) com adapters de memoria, SEM socket:
+// `light-my-request` entrega a requisicao ao app em processo. Antes cada teste abria uma conexao TCP de
+// loopback (`app.listen(0)` + `fetch`) — num host que perde SYN de loopback (medido: `connect ETIMEDOUT
+// 127.0.0.1`, 1 em cada 3 rodadas completas do autoteste) o teste reprovava por rede, nao por contrato.
+import inject from 'light-my-request';
+import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../../api/src/index.js';
 import { createAuth, createDependencies, recordExample } from '../fixtures/index.js';
@@ -9,29 +13,19 @@ import { createAuth, createDependencies, recordExample } from '../fixtures/index
 const ROTA_BASE = '/api/v1/<module>';
 const CREDENCIAL_DE_TESTE = 'token-de-teste';
 
-let servidor;
-let base;
-
-beforeAll(async () => {
-  const app = createApp({
-    deps: createDependencies([recordExample()]),
-    auth: createAuth(['<module>:ler', '<module>:escrever'], CREDENCIAL_DE_TESTE),
-  });
-  servidor = await new Promise((resolve) => {
-    const criado = app.listen(0, () => resolve(criado));
-  });
-  base = `http://127.0.0.1:${servidor.address().port}${ROTA_BASE}`;
+const app = createApp({
+  deps: createDependencies([recordExample()]),
+  auth: createAuth(['<module>:ler', '<module>:escrever'], CREDENCIAL_DE_TESTE),
 });
 
-afterAll(async () => {
-  await new Promise((resolve) => servidor.close(resolve));
-});
-
-function request(caminho, opcoes = {}) {
-  return fetch(`${base}${caminho}`, {
-    ...opcoes,
+async function request(caminho, opcoes = {}) {
+  const resposta = await inject(app, {
+    method: opcoes.method ?? 'GET',
+    url: `${ROTA_BASE}${caminho}`,
     headers: { 'content-type': 'application/json', ...(opcoes.headers ?? {}) },
+    payload: opcoes.body,
   });
+  return { status: resposta.statusCode, json: async () => resposta.json() };
 }
 
 function authenticated(caminho, opcoes = {}) {

@@ -19,12 +19,15 @@ Uso, sempre da RAIZ do projeto (ROOT_API_PORT no ambiente ou no `.env` da raiz):
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import json
 import os
+import signal
 import sys
+import threading
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 from adapters.memory import (
     DenyingTokenVerifier,
@@ -260,19 +263,102 @@ def _env_required_root(chave: str) -> str:
     return valor
 
 
-def start_system(raiz: Path) -> None:
-    """Sobe o processo: um app ASGI, uma porta (specs/arquitetura/00-arquitetura.md §5). A porta
-    vem do ambiente — nenhum literal aqui — e a falta dela DERRUBA o boot, nomeando a chave."""
-    # Lazy DE PROPOSITO: uvicorn e servidor ASGI, so preciso para SUBIR o processo de verdade.
-    # `--autoteste` (composition.py) e os testes importam este modulo sem nunca chamar
-    # start_system — import no topo pagaria o custo desse import em todo caminho que so quer
-    # build_system()/verify_routes_unique(), nunca boot real.
+def _log_composition(nivel: str, mensagem: str, **campos: Any) -> None:
+    """Log ESTRUTURADO da raiz de composicao — uma linha JSON, a mesma forma `{nivel, modulo,
+    mensagem}` dos modulos."""
+    _write(json.dumps({"nivel": nivel, "modulo": "composition", "mensagem": mensagem, **campos}) + "\n")
+
+
+def parse_runtime_config(texto: str) -> int:
+    """PURA — valida o TEXTO de `config/runtime.json` e devolve `shutdown.drainTimeoutMs` (ms).
+    Tunable ausente ou invalido DERRUBA o boot, nomeando a chave: nunca um default embutido (mesma lei
+    de `ROOT_API_PORT`)."""
+    try:
+        bruto = json.loads(texto.removeprefix("﻿"))
+    except json.JSONDecodeError as causa:
+        raise RuntimeError(f"[composition] config/runtime.json nao e JSON valido: {causa}") from causa
+    teto = bruto.get("shutdown", {}).get("drainTimeoutMs") if isinstance(bruto, dict) else None
+    if isinstance(teto, bool) or not isinstance(teto, int) or teto <= 0:
+        raise RuntimeError(
+            "[composition] config/runtime.json: shutdown.drainTimeoutMs deve ser um inteiro > 0 (ms)"
+        )
+    return teto
+
+
+def _load_runtime_config(raiz: Path) -> int:
+    caminho = raiz / "config" / "runtime.json"
+    if not caminho.exists():
+        raise RuntimeError(f"[composition] {caminho} ausente — a raiz declara aqui o teto de desligamento")
+    return parse_runtime_config(caminho.read_text(encoding="utf-8"))
+
+
+def shutdown_exit_code(resultado: str) -> int:
+    """PURA — o codigo de saida do desligamento: so "drained" (drenou dentro do teto) sai 0."""
+    return 0 if resultado == "drained" else 1
+
+
+@contextlib.contextmanager
+def _capture_signals_without_reraise(servidor: Any) -> Iterator[None]:
+    """Substitui o `capture_signals` do uvicorn: o original, depois de desligar gracioso, REEMITE o
+    sinal capturado com o handler original — o processo morre POR SINAL (143 no Linux, 0xC000013A no
+    Windows), nunca com `exit 0`, e o orquestrador nao distingue "drenou" de "foi morto". Aqui o
+    desligamento que drenou sai 0 de verdade. Depende do `uvicorn.Server` fixado (`==` no pyproject)."""
+    from uvicorn.server import HANDLED_SIGNALS  # noqa: PLC0415
+
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    originais = {sig: signal.signal(sig, servidor.handle_exit) for sig in HANDLED_SIGNALS}
+    try:
+        yield
+    finally:
+        for sig, handler in originais.items():
+            signal.signal(sig, handler)
+
+
+def _drain_timeout_exit() -> None:
+    codigo = shutdown_exit_code("timeout")
+    _log_composition("error", "desligamento concluido", resultado="timeout", codigo=codigo)
+    os._exit(codigo)
+
+
+def _build_server(app: Any, host: str, porta: int, drain_ms: int) -> Any:
+    """O servidor uvicorn com o teto de drenagem. Ao 1o SIGTERM/SIGINT (SIGBREAK no Windows) ele para
+    de aceitar conexoes e drena; um relogio de `drain_ms` derruba o processo com codigo != 0 se a
+    drenagem nao terminar (ver `_capture_signals_without_reraise` para o motivo da substituicao)."""
     import uvicorn  # noqa: PLC0415
 
+    class ServidorComTeto(uvicorn.Server):
+        def handle_exit(self, sig: int, frame: Any) -> None:
+            if not self.should_exit:
+                _log_composition("info", "desligamento iniciado", sinal=int(sig), drainTimeoutMs=drain_ms)
+                relogio = threading.Timer(drain_ms / 1000, _drain_timeout_exit)
+                relogio.daemon = True
+                relogio.start()
+            super().handle_exit(sig, frame)
+
+        def capture_signals(self) -> Any:
+            return _capture_signals_without_reraise(self)
+
+    return ServidorComTeto(uvicorn.Config(app, host=host, port=porta, log_level="info"))
+
+
+def start_system(raiz: Path) -> None:
+    """Sobe o processo: um app ASGI, uma porta (specs/arquitetura/00-arquitetura.md §5). Porta e host
+    vem do ambiente — nenhum literal aqui — e a falta de qualquer um DERRUBA o boot, nomeando a
+    chave. SIGTERM/SIGINT desligam gracioso, dentro do teto de `config/runtime.json`."""
     _load_env_root(raiz)
     porta = int(_env_required_root("ROOT_API_PORT"))
+    host = _env_required_root("ROOT_API_HOST")
+    drain_ms = _load_runtime_config(raiz)
     app = build_system(raiz)
-    uvicorn.run(app, port=porta)
+    _log_composition("info", f"sistema subindo na porta {porta}", host=host, porta=porta)
+    # Lazy DE PROPOSITO (em `_build_server`): uvicorn so e preciso para SUBIR o processo de verdade;
+    # `--autoteste` e os testes importam este modulo sem nunca chamar `start_system`.
+    servidor = _build_server(app, host, porta, drain_ms)
+    servidor.run()
+    codigo = shutdown_exit_code("drained")
+    _log_composition("info", "desligamento concluido", resultado="drained", codigo=codigo)
 
 
 # ================================================================================================
@@ -325,6 +411,40 @@ def _route_choice_cases() -> list[dict[str, Any]]:
 
 def _write(texto: str) -> None:
     sys.stdout.write(texto)
+    sys.stdout.flush()
+
+
+TETO_DE_TESTE = 5000
+
+
+def _runtime_cases() -> list[tuple[str, bool]]:
+    def lanca(texto: str) -> bool:
+        try:
+            parse_runtime_config(texto)
+        except RuntimeError:
+            return True
+        return False
+
+    invalidos = ("0", "-5", "1.5", '"10"', "true")
+    valido = '{"shutdown":{"drainTimeoutMs":' + str(TETO_DE_TESTE) + "}}"
+    return [
+        (
+            "parse_runtime_config: aceita o teto inteiro > 0",
+            parse_runtime_config(valido) == TETO_DE_TESTE,
+        ),
+        ("parse_runtime_config: chave ausente derruba", lanca("{}")),
+        (
+            "parse_runtime_config: zero, negativo, fracionario, texto e bool derrubam",
+            all(lanca('{"shutdown":{"drainTimeoutMs":' + v + "}}") for v in invalidos),
+        ),
+        ("parse_runtime_config: JSON quebrado derruba", lanca("{")),
+        (
+            "shutdown_exit_code: so drained sai 0",
+            shutdown_exit_code("drained") == 0
+            and shutdown_exit_code("timeout") != 0
+            and shutdown_exit_code("error") != 0,
+        ),
+    ]
 
 
 def _run_selftest() -> int:
@@ -337,19 +457,25 @@ def _run_selftest() -> int:
         except RuntimeError:
             lancou = True
         ok = lancou == caso["espera_erro"]
-        _write(f"  {'ok   ' if ok else 'FALHA'} verify_routes_unique: {caso['nome']}\n")
+        _write(f"  {'ok   ' if ok else 'FALHA'} verify_routes_unique: {caso['name']}\n")
         if not ok:
             falhas += 1
 
     for caso in _route_choice_cases():
         obtido = choose_base_route(caso["rotas"], caso["caminho"])
         ok = obtido == caso["esperado"]
-        _write(f"  {'ok   ' if ok else 'FALHA'} choose_base_route: {caso['nome']}\n")
+        _write(f"  {'ok   ' if ok else 'FALHA'} choose_base_route: {caso['name']}\n")
         if not ok:
             falhas += 1
             _write(f"       esperado: {caso['esperado']!r} obtido: {obtido!r}\n")
 
-    total = len(_unique_routes_cases()) + len(_route_choice_cases())
+    runtime = _runtime_cases()
+    for nome, ok in runtime:
+        _write(f"  {'ok   ' if ok else 'FALHA'} {nome}\n")
+        if not ok:
+            falhas += 1
+
+    total = len(_unique_routes_cases()) + len(_route_choice_cases()) + len(runtime)
     _write(f"\nautoteste: {total - falhas}/{total} ok\n")
     return 0 if falhas == 0 else 1
 

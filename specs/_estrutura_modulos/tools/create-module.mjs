@@ -5,6 +5,12 @@
  *   node tools/create-module.mjs <id> --role domain|gateway|connector
  *                                     [--binding typescript] [--scope acme]
  *                                     [--no-artifact] [--no-web]
+ *   node tools/create-module.mjs --autoteste
+ *
+ * `--binding` e a SOBRESCRITA explicita: sem ela, o binding e o que o `project.json` da raiz declara
+ * (`binding`) — o projeto sabe de que linguagem e, e adivinhar `typescript` num projeto JS gerava um
+ * modulo que o gate reprovava ("tsconfig.json ausente"). Valor que o projeto nao declara (nem tem
+ * molde `modules/_template-<binding>` para ele) reprova, nomeando o que o projeto aceita.
  *
  * `--role` e OBRIGATORIO e usa o vocabulario do manifesto (ingles), o mesmo de `init_repo.py`.
  *
@@ -30,6 +36,8 @@ const BINDINGS = ['typescript', 'javascript', 'python'];
 // manifesto. Quem aprendia uma errava na outra. A forma PT e recusada com a correta na mensagem.
 const PAPEIS = ['domain', 'gateway', 'connector'];
 const PAPEL_LEGADO_PT = { dominio: 'domain', conector: 'connector' };
+/** Binding assumido quando nem a CLI nem o `project.json` declaram um (projeto legado, sem o campo). */
+const BINDING_PADRAO = 'typescript';
 
 function abortar(mensagem) {
   process.stderr.write(`erro: ${mensagem}\n`);
@@ -55,7 +63,7 @@ function lerOpcoes() {
   };
   return {
     id: brutos.find((a) => !a.startsWith('--') && brutos[brutos.indexOf(a) - 1]?.startsWith('--') !== true) ?? brutos[0],
-    binding: valorDe('binding', 'typescript'),
+    binding: valorDe('binding', null),
     role: valorDe('role', undefined),
     escopo: valorDe('scope', null),
     semArtefato: brutos.includes('--no-artifact'),
@@ -86,6 +94,41 @@ function acharMolde(raizProjeto, binding) {
     join(RAIZ_FERRAMENTA, 'bindings', binding, '_template'),
   ];
   return candidatos.find((caminho) => existsSync(join(caminho, 'module.json'))) ?? null;
+}
+
+/** O `binding` que o `project.json` da raiz declara, ou `null` (projeto legado sem o campo). */
+function lerBindingDoProjeto(raizProjeto) {
+  const caminho = join(raizProjeto, 'project.json');
+  if (!existsSync(caminho)) return null;
+  try {
+    return JSON.parse(lerTexto(caminho)).binding ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Bindings que o projeto tem molde proprio para (`modules/_template-<binding>`) — projeto multi-binding. */
+function bindingsComMoldeProprio(raizProjeto) {
+  return BINDINGS.filter((b) => existsSync(join(raizProjeto, 'modules', `_template-${b}`, 'module.json')));
+}
+
+/**
+ * PURA — qual binding o modulo novo usa. Explicito vence, mas so entre os que o projeto aceita: o
+ * declarado no `project.json` mais os que tem molde proprio. Sem declaracao no projeto, qualquer
+ * binding do vocabulario e aceito (projeto legado) e o padrao e `BINDING_PADRAO`.
+ * Devolve `{ binding }` ou `{ erro }`.
+ */
+export function resolverBinding({ explicito, declarado, comMolde }) {
+  if (explicito !== null && !BINDINGS.includes(explicito)) {
+    return { erro: `binding "${explicito}" invalido — use ${BINDINGS.join(', ')}` };
+  }
+  const aceitos = [...new Set([declarado, ...comMolde].filter((b) => b !== null && b !== undefined))];
+  if (explicito === null) return { binding: declarado ?? BINDING_PADRAO };
+  if (aceitos.length > 0 && !aceitos.includes(explicito)) {
+    return { erro: `binding "${explicito}" nao e declarado por este projeto (project.json declara: ${aceitos.join(', ')}) — `
+      + 'o modulo nasceria com o molde de outra linguagem e o gate o reprovaria' };
+  }
+  return { binding: explicito };
 }
 
 /** Escopo dos packages: flag, senão o nome do package da raiz, senão o nome da pasta. */
@@ -155,10 +198,18 @@ function ajustarManifesto(destino, opcoes) {
 /** Config de texto que so a tela usa. Sem `web/`, ela viraria config morta — e o gate avisa. */
 const TEXTOS_SO_DA_TELA = ['loading', 'emptyList', 'genericError'];
 
-function podarTextosDeTela(destino) {
+/**
+ * `title` e lido so por `web/` em TS/JS — config morta sem ele (o gate avisa) — mas em PYTHON e o
+ * `title` do app FastAPI (`api/src/__init__.py`), lido pelo backend mesmo sem tela: podar quebra o boot.
+ */
+function textosSoDaTela(binding) {
+  return binding === 'python' ? TEXTOS_SO_DA_TELA : ['title', ...TEXTOS_SO_DA_TELA];
+}
+
+function podarTextosDeTela(destino, binding) {
   const caminho = join(destino, 'config', 'texts.json');
   const textos = JSON.parse(lerTexto(caminho));
-  for (const chave of TEXTOS_SO_DA_TELA) delete textos[chave];
+  for (const chave of textosSoDaTela(binding)) delete textos[chave];
   writeFileSync(caminho, `${JSON.stringify(textos, null, 2)}\n`, 'utf8');
 }
 
@@ -287,7 +338,6 @@ function instalarDependencias(raizProjeto, binding) {
 function validarOpcoes(opcoes) {
   if (opcoes.id === undefined) abortar('uso: create-module.mjs <id> --role domain|gateway|connector [--binding b] [--no-artifact] [--no-web]');
   if (!/^[a-z][a-z0-9-]*$/.test(opcoes.id)) abortar(`id "${opcoes.id}" invalido — use kebab-case minusculo`);
-  if (!BINDINGS.includes(opcoes.binding)) abortar(`binding "${opcoes.binding}" invalido — use ${BINDINGS.join(', ')}`);
   // Sem default: papel adivinhado e escolha feita por quem nao estava la. `init_repo.py` ja recusa
   // o id sem sufixo de papel pelo mesmo motivo — as duas portas cobram a mesma declaracao.
   if (opcoes.role === undefined) {
@@ -307,6 +357,13 @@ function principal() {
   validarOpcoes(opcoes);
 
   const raizProjeto = acharRaizProjeto();
+  const decisao = resolverBinding({
+    explicito: opcoes.binding,
+    declarado: lerBindingDoProjeto(raizProjeto),
+    comMolde: bindingsComMoldeProprio(raizProjeto),
+  });
+  if (decisao.erro !== undefined) abortar(decisao.erro);
+  opcoes.binding = decisao.binding;
   const molde = acharMolde(raizProjeto, opcoes.binding);
   if (molde === null) abortar(`molde do binding "${opcoes.binding}" nao encontrado`);
 
@@ -327,7 +384,7 @@ function principal() {
 
   aplicarMarcadores(destino, opcoes.id, resolverEscopo(raizProjeto, opcoes.escopo));
   ajustarManifesto(destino, opcoes);
-  if (opcoes.semWeb) podarTextosDeTela(destino);
+  if (opcoes.semWeb) podarTextosDeTela(destino, opcoes.binding);
   criarEnvLocal(destino, opcoes.id);
 
   process.stdout.write(`modulo "${opcoes.id}" criado em modules/${opcoes.id}\n`);
@@ -355,4 +412,30 @@ function finalizar(opcoes, raizProjeto) {
   process.stdout.write('\nproximo passo: contract/openapi.yaml, depois core/domain e api/src/routes.\n');
 }
 
-principal();
+function rodarAutoteste() {
+  const molde = ['python'];
+  const casos = [
+    { nome: 'sem flag, projeto declara javascript -> javascript', entrada: { explicito: null, declarado: 'javascript', comMolde: [] }, esperado: 'javascript' },
+    { nome: 'sem flag e sem declaracao (legado) -> typescript', entrada: { explicito: null, declarado: null, comMolde: [] }, esperado: 'typescript' },
+    { nome: 'flag igual ao declarado -> aceito', entrada: { explicito: 'python', declarado: 'python', comMolde: [] }, esperado: 'python' },
+    { nome: 'flag diverge do declarado -> erro', entrada: { explicito: 'typescript', declarado: 'javascript', comMolde: [] }, esperado: null },
+    { nome: 'flag de binding com molde proprio -> aceito', entrada: { explicito: 'python', declarado: 'javascript', comMolde: molde }, esperado: 'python' },
+    { nome: 'flag fora do vocabulario -> erro', entrada: { explicito: 'ruby', declarado: 'javascript', comMolde: [] }, esperado: null },
+    { nome: 'flag com projeto legado (sem declaracao) -> aceito', entrada: { explicito: 'python', declarado: null, comMolde: [] }, esperado: 'python' },
+  ];
+  let falhas = 0;
+  for (const caso of casos) {
+    const r = resolverBinding(caso.entrada);
+    const ok = caso.esperado === null ? r.erro !== undefined : r.binding === caso.esperado;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} resolverBinding: ${caso.nome}
+`);
+    if (!ok) falhas += 1;
+  }
+  process.stdout.write(`
+autoteste: ${casos.length - falhas}/${casos.length} ok
+`);
+  return falhas === 0 ? 0 : 1;
+}
+
+if (process.argv.includes('--autoteste')) process.exit(rodarAutoteste());
+else principal();

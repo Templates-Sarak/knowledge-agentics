@@ -1,3 +1,4 @@
 {
-  "requiredEnv": ["ROOT_API_PORT"]
+  "binding": "javascript",
+  "requiredEnv": ["ROOT_API_HOST", "ROOT_API_PORT"]
 }

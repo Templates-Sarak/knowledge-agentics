@@ -1,0 +1,7 @@
+{
+  "_doc": "Tunables NAO-secretos do processo composto da raiz (src/composition.*). Lidos no boot: chave ausente ou invalida DERRUBA o processo (nenhum default embutido). Valores por ambiente (host, porta) vivem no .env, nunca aqui.",
+  "shutdown": {
+    "_doc": "Ao receber SIGTERM/SIGINT o processo para de aceitar conexoes e drena as requisicoes em voo ate este teto, em milissegundos. Drenou: sai 0. Estourou: loga, derruba o que sobrou e sai 1. Mantenha abaixo do `stop_grace_period`/`terminationGracePeriodSeconds` do orquestrador (10 s por padrao no Docker).",
+    "drainTimeoutMs": 8000
+  }
+}

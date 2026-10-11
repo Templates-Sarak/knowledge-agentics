@@ -211,18 +211,111 @@ function envRequiredRoot(chave: string): string {
   return valor;
 }
 
+/** Log ESTRUTURADO da raiz de composicao — uma linha JSON, a mesma forma `{ nivel, modulo, mensagem }` dos modulos. */
+function logComposition(nivel: 'info' | 'error', mensagem: string, campos: Record<string, unknown> = {}): void {
+  process.stdout.write(`${JSON.stringify({ nivel, modulo: 'composition', mensagem, ...campos })}\n`);
+}
+
+/** Tunables nao-secretos do processo composto (`config/runtime.json`, versionado, na raiz). */
+export interface RuntimeConfig {
+  shutdown: { drainTimeoutMs: number };
+}
+
 /**
- * Sobe o processo: um Express, uma porta (specs/arquitetura/00-arquitetura.md §5). A porta vem do
- * ambiente — nenhum literal aqui — e a falta dela DERRUBA o boot, nomeando a chave.
+ * PURA — valida o TEXTO de `config/runtime.json`. Falha nomeando a chave: tunable ausente ou invalido
+ * DERRUBA o boot, nunca vira um default embutido (mesma lei de `ROOT_API_PORT`).
+ */
+export function parseRuntimeConfig(texto: string): RuntimeConfig {
+  let bruto: { shutdown?: { drainTimeoutMs?: unknown } };
+  try {
+    bruto = JSON.parse(texto.replace(/^\uFEFF/, '')) as typeof bruto;
+  } catch (causa) {
+    throw new Error(`[composition] config/runtime.json nao e JSON valido: ${String(causa)}`);
+  }
+  const teto = bruto?.shutdown?.drainTimeoutMs;
+  if (typeof teto !== 'number' || !Number.isInteger(teto) || teto <= 0) {
+    throw new Error('[composition] config/runtime.json: shutdown.drainTimeoutMs deve ser um inteiro > 0 (milissegundos)');
+  }
+  return { shutdown: { drainTimeoutMs: teto } };
+}
+
+function loadRuntimeConfig(raiz: string): RuntimeConfig {
+  const caminho = join(raiz, 'config', 'runtime.json');
+  if (!existsSync(caminho)) {
+    throw new Error(`[composition] ${caminho} ausente — a raiz declara aqui o teto do desligamento gracioso`);
+  }
+  return parseRuntimeConfig(readFileSync(caminho, 'utf8'));
+}
+
+export type ShutdownOutcome = 'drained' | 'timeout' | 'error';
+
+/** PURA — o codigo de saida do desligamento: so "drenou dentro do teto" sai 0. */
+export function shutdownExitCode(resultado: ShutdownOutcome): number {
+  return resultado === 'drained' ? 0 : 1;
+}
+
+/**
+ * Para de aceitar conexoes e espera as requisicoes em voo ate `drainTimeoutMs`. Conexao ociosa
+ * (keep-alive) e fechada na hora — nao ha requisicao a drenar nela. Resolve `timeout` se o teto
+ * estourar (as conexoes restantes sao derrubadas) e `error` se o `close` falhar.
+ */
+export function drainServer(servidor: Server, drainTimeoutMs: number): Promise<ShutdownOutcome> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      servidor.closeAllConnections();
+      resolve('timeout');
+    }, drainTimeoutMs);
+    servidor.close((erro) => {
+      clearTimeout(timer);
+      resolve(erro === undefined ? 'drained' : 'error');
+    });
+    servidor.closeIdleConnections();
+  });
+}
+
+/**
+ * PURA — os sinais que disparam o desligamento. SIGTERM (orquestrador) e SIGINT (Ctrl+C). No Windows
+ * nao ha SIGTERM entregavel a um processo Node (`process.kill` o derruba na hora), e o sinal gracioso
+ * que chega de verdade e o CTRL_BREAK do console, que o Node expoe como SIGBREAK.
+ */
+export function shutdownSignals(plataforma: string): NodeJS.Signals[] {
+  return plataforma === 'win32' ? ['SIGTERM', 'SIGINT', 'SIGBREAK'] : ['SIGTERM', 'SIGINT'];
+}
+
+/** SIGTERM e SIGINT: desliga gracioso, loga o resultado e sai com `shutdownExitCode`. Um 2o sinal e ignorado. */
+function installShutdown(servidor: Server, drainTimeoutMs: number): void {
+  let encerrando = false;
+  const encerrar = (sinal: string): void => {
+    if (encerrando) return;
+    encerrando = true;
+    logComposition('info', 'desligamento iniciado', { sinal, drainTimeoutMs });
+    void drainServer(servidor, drainTimeoutMs).then((resultado) => {
+      const nivel = resultado === 'drained' ? 'info' : 'error';
+      logComposition(nivel, 'desligamento concluido', { resultado, codigo: shutdownExitCode(resultado) });
+      process.exit(shutdownExitCode(resultado));
+    });
+  };
+  for (const sinal of shutdownSignals(process.platform)) process.on(sinal, () => encerrar(sinal));
+}
+
+/**
+ * Sobe o processo: um Express, uma porta (specs/arquitetura/00-arquitetura.md §5). Porta e host vem
+ * do ambiente — nenhum literal aqui — e a falta de qualquer um DERRUBA o boot, nomeando a chave.
+ * O host e `ROOT_API_HOST` (dev = loopback, container = 0.0.0.0): sem ele o Express escutaria em
+ * TODAS as interfaces, o que em dev expoe o servico na rede local sem ninguem ter pedido.
+ * Depois de no ar, SIGTERM/SIGINT desligam gracioso, dentro do teto de `config/runtime.json`.
  */
 export async function startSystem(raiz: string): Promise<Server> {
   loadEnvRoot(raiz);
   const porta = Number(envRequiredRoot('ROOT_API_PORT'));
+  const host = envRequiredRoot('ROOT_API_HOST');
+  const runtime = loadRuntimeConfig(raiz);
   const app = await buildSystem(raiz);
 
   return new Promise((resolve) => {
-    const servidor = app.listen(porta, () => {
-      process.stdout.write(`[composition] sistema no ar na porta ${porta}\n`);
+    const servidor = app.listen(porta, host, () => {
+      logComposition('info', `sistema no ar na porta ${porta}`, { host, porta });
+      installShutdown(servidor, runtime.shutdown.drainTimeoutMs);
       resolve(servidor);
     });
   });
@@ -285,6 +378,32 @@ function entrypointCases(): Array<{
   ];
 }
 
+function runtimeCases(): Array<{ nome: string; ok: () => boolean }> {
+  const lanca = (texto: string): boolean => {
+    try {
+      parseRuntimeConfig(texto);
+      return false;
+    } catch {
+      return true;
+    }
+  };
+  return [
+    { nome: 'parseRuntimeConfig: aceita o teto inteiro > 0', ok: () => parseRuntimeConfig('{"shutdown":{"drainTimeoutMs":5000}}').shutdown.drainTimeoutMs === 5000 },
+    { nome: 'parseRuntimeConfig: BOM e tolerado', ok: () => parseRuntimeConfig('\uFEFF{"shutdown":{"drainTimeoutMs":1}}').shutdown.drainTimeoutMs === 1 },
+    { nome: 'parseRuntimeConfig: chave ausente derruba', ok: () => lanca('{}') },
+    { nome: 'parseRuntimeConfig: zero, negativo, fracionario e texto derrubam', ok: () => (
+      ['0', '-5', '1.5', '"10"'].every((v) => lanca(`{"shutdown":{"drainTimeoutMs":${v}}}`))
+    ) },
+    { nome: 'parseRuntimeConfig: JSON quebrado derruba', ok: () => lanca('{') },
+    { nome: 'shutdownSignals: SIGTERM+SIGINT em todo lugar; SIGBREAK so no Windows', ok: () => (
+      shutdownSignals('linux').join() === 'SIGTERM,SIGINT' && shutdownSignals('win32').includes('SIGBREAK')
+    ) },
+    { nome: 'shutdownExitCode: so drained sai 0', ok: () => (
+      shutdownExitCode('drained') === 0 && shutdownExitCode('timeout') !== 0 && shutdownExitCode('error') !== 0
+    ) },
+  ];
+}
+
 function runSelftest(): number {
   let falhas = 0;
   const casos = uniqueRoutesCases();
@@ -312,7 +431,14 @@ function runSelftest(): number {
     }
   }
 
-  const total = casos.length + casosEntrypoint.length;
+
+  const runtime = runtimeCases();
+  for (const caso of runtime) {
+    const ok = caso.ok();
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
+    if (!ok) falhas += 1;
+  }
+  const total = casos.length + casosEntrypoint.length + runtime.length;
   process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
   return falhas === 0 ? 0 : 1;
 }
