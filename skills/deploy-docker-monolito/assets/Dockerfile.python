@@ -1,0 +1,69 @@
+# syntax=docker/dockerfile:1
+# Backend do monólito modular composto — binding Python. UMA imagem para todos os módulos.
+# Copie para a raiz do projeto como `Dockerfile`. Contexto de build: a RAIZ do projeto.
+#
+# Python não emite: o processo roda o fonte por natureza (03-operacao §9), e não existe
+# `package.mjs` para este binding. O artefato é montado aqui por convenção de pasta (§9.1).
+#
+# Marcador: <PROJECT> (prefixo do projeto, maiúsculas). Mesma versão de base nos três FROM.
+
+# ── build ───────────────────────────────────────────────────────────────────
+FROM python:3.12.8-slim-bookworm AS build
+WORKDIR /repo
+COPY . .
+# assemble — raiz de composição, adapters, packages e, por módulo, module.json + config/ + api/ + core/.
+RUN set -eu; mkdir -p /out/backend; \
+    cp -r src adapters packages /out/backend/; \
+    for dir in modules/[a-z]*/; do \
+      id=$(basename "$dir"); \
+      mkdir -p "/out/backend/modules/$id"; \
+      cp "$dir/module.json" "/out/backend/modules/$id/module.json"; \
+      for sub in config api core; do \
+        if [ -d "$dir/$sub" ]; then cp -r "$dir/$sub" "/out/backend/modules/$id/$sub"; fi; \
+      done; \
+    done
+# Dependências de produção: união MECÂNICA de [project].dependencies da raiz e de cada módulo
+# (nunca uma lista escrita à mão que envelhece). Extras de dev ficam de fora.
+RUN python -c "import glob,tomllib;f=['pyproject.toml',*sorted(glob.glob('modules/[a-z]*/pyproject.toml'))];d=sorted({x for p in f for x in tomllib.load(open(p,'rb')).get('project',{}).get('dependencies',[])});print('\n'.join(d))" > /tmp/requirements.txt
+
+# ── dependências de produção ────────────────────────────────────────────────
+# Estágio separado, mesma base e libc do runtime: o venv criado aqui roda lá.
+FROM python:3.12.8-slim-bookworm AS production-dependencies
+COPY --from=build /tmp/requirements.txt /tmp/requirements.txt
+RUN python -m venv /opt/venv \
+ && /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
+# Dependência NATIVA sem wheel para esta base? O toolchain entra e SAI na mesma camada:
+# RUN apt-get update \
+#  && apt-get install -y --no-install-recommends build-essential \
+#  && /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
+#  && apt-get purge -y --auto-remove build-essential \
+#  && rm -rf /var/lib/apt/lists/*
+# Adapter postgres escolhido em algum config/ports.json? O psycopg é extra de dev da raiz e NÃO
+# entra em [project].dependencies (pendência registrada na skill) — instale-o aqui, fixado:
+# RUN /opt/venv/bin/pip install --no-cache-dir "psycopg[binary]==<PSYCOPG_VERSION>"
+
+# ── runtime ─────────────────────────────────────────────────────────────────
+FROM python:3.12.8-slim-bookworm AS runtime
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH=/opt/venv/bin:$PATH \
+    APP_BIND_HOST=0.0.0.0
+
+ARG <PROJECT>_VERSION=""
+LABEL org.opencontainers.image.revision=$<PROJECT>_VERSION
+
+RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin app
+WORKDIR /app
+COPY --from=production-dependencies /opt/venv /opt/venv
+COPY --from=build --chown=app:app /out/backend/ ./
+USER app
+
+# A porta vem de ROOT_API_PORT (env_file, runtime). A rota de health é <basePath>/health do
+# primeiro module.json empacotado.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD ["python", "-c", "import glob,json,os,sys,urllib.request as u;f=sorted(glob.glob('modules/[a-z]*/module.json'))[0];b=json.load(open(f))['basePath'];sys.exit(0 if u.urlopen('http://127.0.0.1:'+os.environ['ROOT_API_PORT']+b+'/health',timeout=4).status==200 else 1)"]
+
+# O composition.py sobe o uvicorn em 127.0.0.1 (sem host configurável): dentro do container o
+# front não alcançaria o processo. Por isso o CMD monta o sistema pela função pública
+# build_system e passa o host do ambiente (pendência da fase 2: composition aceitar o host).
+CMD ["python", "-c", "import os,pathlib,uvicorn;from src.composition import build_system;uvicorn.run(build_system(pathlib.Path.cwd()),host=os.environ['APP_BIND_HOST'],port=int(os.environ['ROOT_API_PORT']))"]

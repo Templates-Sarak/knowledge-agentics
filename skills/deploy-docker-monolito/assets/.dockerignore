@@ -1,0 +1,51 @@
+# Contexto de build enxuto — e nenhum segredo entra na imagem. Fica na RAIZ do projeto (o contexto).
+# As duas imagens (backend e front) usam o MESMO contexto: por isso `modules/*/web` NÃO é cortado
+# aqui — o front.Dockerfile precisa dele.
+
+# Segredos e ambiente — NUNCA na imagem (só o exemplo, que carrega apenas as chaves).
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Dependências e saída de build — reconstruídas dentro da imagem, na plataforma-alvo.
+node_modules
+**/node_modules
+dist
+**/dist
+build
+coverage
+**/coverage
+relatorios
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+.ruff_cache
+.mypy_cache
+.pytest_cache
+
+# Testes e especificações — não fazem parte do artefato de produção.
+tests
+**/tests
+specs
+**/_template
+
+# Controle de versão, ferramentas de agente e editor.
+.git
+.gitignore
+.githooks
+.sarak
+.claude
+.agents
+.vscode
+.idea
+
+# O próprio empacotamento (o deploy usa o contexto, não precisa ler isto de dentro).
+Dockerfile*
+*.Dockerfile
+compose*.yml
+*.log

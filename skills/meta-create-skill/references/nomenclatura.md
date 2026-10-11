@@ -17,7 +17,7 @@
 | `spec-` | Especificações e fluxo SDD | `spec-write`, `spec-fundacao`, `spec-site-fundacao` |
 | `test-` | Testes (inclui contract testing de API) | `test-unitario`, `test-e2e`, `test-api-contrato` |
 | `db-` | Banco de dados | `db-migrations` |
-| `deploy-` | Publicação/entrega | `deploy-vercel`, `deploy-docker` |
+| `deploy-` | Publicação/entrega | `deploy-vercel`, `deploy-docker-monolito`, `deploy-docker-microsservico` |
 | `otimizacao-` | Performance (back+front) | `otimizacao-nivel-1`, `otimizacao-nivel-2`, `otimizacao-nivel-3` |
 | `obs-` | Observabilidade | `obs-logs`, `obs-monitoramento` |
 | `site-` | Construção de site (web) | `site-organizacao`, `site-seo`, `site-criacao` |

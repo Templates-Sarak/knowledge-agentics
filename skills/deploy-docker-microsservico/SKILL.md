@@ -1,9 +1,12 @@
 ---
-name: deploy-docker
-description: Containeriza um app/módulo (qualquer stack) para a arquitetura microservice-ready — Dockerfile multi-stage, usuário não-root, .dockerignore, healthcheck e docker-compose por módulo, sem segredo na imagem, com HITL. Use quando pedirem para conteinerizar, escrever Dockerfile/compose ou preparar imagem. NÃO acione proativamente.
+name: deploy-docker-microsservico
+description: Containeriza um módulo extraído ou microsserviço (1 módulo = 1 imagem, qualquer stack) — Dockerfile multi-stage, usuário não-root, .dockerignore, healthcheck e docker-compose, sem segredo na imagem, com HITL. Use ao conteinerizar um módulo isolado, escrever Dockerfile/compose dele ou preparar a imagem. NÃO acione proativamente.
 ---
 
-# Skill: Deploy Docker
+# Skill: Deploy Docker — módulo extraído / microsserviço
+
+> **Monólito modular composto** (projeto com `project.json` + `modules/*/module.json`, um processo para
+> vários módulos) → use **`deploy-docker-monolito`**. Esta skill é para **1 módulo = 1 imagem**.
 
 > **Dependência:** Esta skill aplica as regras definidas em `padrao-escrita`. Consulte-as antes de iniciar.
 

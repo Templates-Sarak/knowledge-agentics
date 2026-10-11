@@ -50,12 +50,12 @@ export interface DiscoveredManifest {
  * por-modulo nao teria como sabe-lo.
  */
 const FABRICAS: Record<string, Record<string, (modulo: DiscoveredManifest) => unknown>> = {
-  repository: { memoria: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
-  audit: { memoria: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
+  repository: { memory: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
+  audit: { memory: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
   clock: { system: () => createClock() },
   idGenerator: { default: () => createIdGenerator() },
-  storage: { memoria: () => createInMemoryStorage() },
-  notifier: { memoria: () => createInMemoryNotifier() },
+  storage: { memory: () => createInMemoryStorage() },
+  notifier: { memory: () => createInMemoryNotifier() },
 };
 
 /** Le todos os manifestos. E a DESCOBERTA: o sistema conhece os modulos por declaracao, nao por import. */

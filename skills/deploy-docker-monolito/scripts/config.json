@@ -1,0 +1,93 @@
+{
+  "_source": "Tunables do validar_monolito.py (zero hardcoded). Cada projeto pode ajustar nomes e listas.",
+  "backend_dockerfile_globs": [
+    "Dockerfile",
+    "Dockerfile.*"
+  ],
+  "front_dockerfile_globs": [
+    "front.Dockerfile",
+    "*.front.Dockerfile",
+    "Dockerfile.front"
+  ],
+  "compose_globs": [
+    "compose.yml",
+    "compose.yaml",
+    "compose.*.yml",
+    "compose.*.yaml",
+    "docker-compose.yml",
+    "docker-compose.*.yml"
+  ],
+  "production_compose_markers": [
+    "production",
+    "prod"
+  ],
+  "dockerignore_name": ".dockerignore",
+  "manifest_name": "module.json",
+  "manifest_dirs": [
+    "modules"
+  ],
+  "ignore_dirs": [
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "target",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "_template"
+  ],
+  "forbidden_runtime_tokens": [
+    "tsx",
+    "ts-node",
+    "--experimental-transform-types",
+    "--experimental-strip-types"
+  ],
+  "revision_label": "org.opencontainers.image.revision",
+  "front_base_marker": "nginx-unprivileged",
+  "front_forbidden_destinations": [
+    "/usr/share/nginx/html"
+  ],
+  "loopback_hosts": [
+    "127.0.0.1",
+    "[::1]",
+    "localhost"
+  ],
+  "infra_variable_markers": [
+    "PORT",
+    "HOST",
+    "URL",
+    "PASSWORD",
+    "USER",
+    "NAME",
+    "DIGEST",
+    "REGISTRY",
+    "TOKEN",
+    "SECRET",
+    "KEY"
+  ],
+  "allowed_default_suffixes": [
+    "_VERSION"
+  ],
+  "required_cap_drop": "ALL",
+  "required_security_opt": "no-new-privileges:true",
+  "dockerignore_required": [
+    ".git",
+    "node_modules",
+    "dist",
+    "tests",
+    "specs"
+  ],
+  "dockerignore_env_patterns": [
+    ".env*",
+    ".env.*",
+    ".env",
+    "**/.env*",
+    "**/.env.*",
+    "**/.env"
+  ],
+  "dockerignore_env_exception_patterns": [
+    "!.env.example",
+    "!**/.env.example"
+  ]
+}

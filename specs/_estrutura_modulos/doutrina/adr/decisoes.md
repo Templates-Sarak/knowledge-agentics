@@ -369,7 +369,7 @@ porque antes do CD existe uma pergunta que ele não pode responder no lugar de n
 se entrega — o repositório inteiro, ou cada módulo?** As duas respostas são legítimas e levam a pipelines
 incompatíveis. Um monólito modular entrega o repositório; um módulo extraído para infraestrutura própria
 (ADR-001) entrega a si mesmo. Como o template existe justamente para permitir os dois, fixar um seria
-escolher pelo projeto. Quem publica são as skills `deploy-vercel` e `deploy-docker`.
+escolher pelo projeto. Quem publica são as skills `deploy-vercel`, `deploy-docker-monolito` e `deploy-docker-microsservico`.
 
 **Consequências.** O template entrega o **contrato de acoplamento** (exit code e relatório legível por
 máquina, ADR-005) e para aí. Quando o projeto decidir a unidade de release, a decisão entra como ADR **dele**,

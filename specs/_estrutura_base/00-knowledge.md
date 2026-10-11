@@ -177,7 +177,8 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 |---|---|---|
 | `db-migrations` | `db-` | Schema conforme o padrão; migrations versionadas, reversíveis, expand-contract. |
 | `deploy-vercel` | `deploy-` | Preparar e publicar na Vercel (preview → produção), env por CLI. |
-| `deploy-docker` | `deploy-` | Dockerfile multi-stage, non-root, healthcheck, compose, sem segredo na imagem. |
+| `deploy-docker-monolito` | `deploy-` | Monólito modular composto: imagem do backend + imagem do front (origem única), compose local e molde de produção. |
+| `deploy-docker-microsservico` | `deploy-` | Módulo extraído: 1 módulo = 1 imagem — Dockerfile multi-stage, non-root, healthcheck, compose, sem segredo na imagem. |
 | `otimizacao-nivel-1` | `otimizacao-` | Performance de **custo zero** (Core Web Vitals; índices, N+1, cache em memória). |
 | `otimizacao-nivel-2` | `otimizacao-` | Performance por **concessão** (troca fidelidade/consistência por velocidade). HITL decisivo. |
 | `otimizacao-nivel-3` | `otimizacao-` | Performance por **infra paga** (CDN/edge/ISR, replicas, filas). HITL de faturamento. |

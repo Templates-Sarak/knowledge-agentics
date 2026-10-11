@@ -174,7 +174,7 @@ function registrarFabricaTs(conteudo, { porta, provedor, nomeSimbolo, caminhoImp
   if (linhaDaPorta.test(comImport)) {
     // Chave CITADA: `provedor` é kebab-case (validarOpcoes aceita hífen, e a mensagem de erro da
     // ferramenta recomenda o formato), e chave de objeto sem aspas com `-` é erro de sintaxe —
-    // `storage: { memoria: ..., disco-frio: ... }` nunca parseava. Citar um identificador que já
+    // `storage: { memory: ..., disco-frio: ... }` nunca parseava. Citar um identificador que já
     // era válido continua legal em JS/TS, então provedores sem hífen não regridem.
     return comImport.replace(linhaDaPorta, `$1, '${provedor}': () => ${nomeSimbolo}()$2`);
   }
@@ -304,7 +304,7 @@ const FIXTURE_TS_MOLDE_REAL = [
   "import { createPostgresRepository } from '../adapters/postgres/index.js';",
   '',
   'const FABRICAS: Record<string, Record<string, (modulo: DiscoveredManifest) => unknown>> = {',
-  '  repository: { memoria: () => createRepository() },',
+  '  repository: { memory: () => createRepository() },',
   '};',
   '',
 ].join('\n');
@@ -315,7 +315,7 @@ const FIXTURE_JS_MOLDE_REAL = [
   "} from '../adapters/memory/index.js';",
   '',
   'const FABRICAS = {',
-  '  repository: { memoria: () => createRepository() },',
+  '  repository: { memory: () => createRepository() },',
   '};',
   '',
 ].join('\n');
@@ -378,7 +378,7 @@ function casosRegistroTs() {
       fn: () => {
         const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repository', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
         return r !== null
-          && r.includes("repository: { memoria: () => createRepository(), 'dynamo': () => criarDynamo() },")
+          && r.includes("repository: { memory: () => createRepository(), 'dynamo': () => criarDynamo() },")
           && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
       },
     },
@@ -397,7 +397,7 @@ function casosRegistroTs() {
       nome: 'registrarFabricaTs: provedor com hifen -> chave CITADA (bug 3 consertado — ver cabecalho)',
       fn: () => {
         const r = registrarFabricaTs(FIXTURE_TS_MOLDE_REAL, paramsFabrica('repository', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
-        return r !== null && r.includes("repository: { memoria: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
+        return r !== null && r.includes("repository: { memory: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
       },
     },
   ];
@@ -410,7 +410,7 @@ function casosRegistroJs() {
       fn: () => {
         const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repository', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
         return r !== null
-          && r.includes("repository: { memoria: () => createRepository(), 'dynamo': () => criarDynamo() },")
+          && r.includes("repository: { memory: () => createRepository(), 'dynamo': () => criarDynamo() },")
           && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
       },
     },
@@ -425,7 +425,7 @@ function casosRegistroJs() {
       nome: 'registrarFabricaJs: provedor com hifen -> chave CITADA (bug 3 consertado — ver cabecalho)',
       fn: () => {
         const r = registrarFabricaJs(FIXTURE_JS_MOLDE_REAL, paramsFabrica('repository', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
-        return r !== null && r.includes("repository: { memoria: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
+        return r !== null && r.includes("repository: { memory: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
       },
     },
   ];

@@ -1,0 +1,57 @@
+# Compose de PRODUÇÃO do monólito modular — molde (references/producao.md). Vai ao servidor
+# sozinho, ao lado do `.env`; as imagens vêm do registry, nunca de build local.
+#
+# Copie para <INFRA_DIR>/compose.production.yml. Marcador: <project> (nome do projeto, minúsculas).
+#
+# - Imagens por DIGEST (@sha256:...), nunca por tag móvel: o digest que já esteve no ar não se
+#   move, então "reverter" volta ao bit exato. Os digests são registrados no passo de publicação.
+# - NENHUMA porta publicada no host: a entrada (túnel, Caddy ou Traefik — escolhida no HITL) é um
+#   serviço a mais nesta mesma rede, e fala com `front` pelo nome. Também por digest.
+# - A rede é dedicada ao projeto, SEM `internal: true` — esse flag corta a saída para a internet
+#   e o backend precisa chegar ao banco gerenciado e a APIs externas.
+# - Dois arquivos no servidor, ao lado deste: `.env` (o que o app lê — vira ambiente do processo) e
+#   `.env.deploy` (as DEPLOY_*: registry, digests, grace period — só o compose lê). Subida:
+#     docker compose -f compose.production.yml --env-file .env --env-file .env.deploy up -d
+#   Ambos fora do versionamento. Racional em references/producao.md.
+
+name: <project>-production
+
+services:
+  app:
+    image: "${DEPLOY_REGISTRY:?defina DEPLOY_REGISTRY no .env.deploy}/<project>-app@${DEPLOY_APP_DIGEST:?defina DEPLOY_APP_DIGEST no .env.deploy — o sha256 registrado na publicação}"
+    env_file:
+      - .env
+    restart: unless-stopped
+    # >= teto de desligamento do projeto + folga. O template não define esse teto hoje
+    # (composition não trata SIGTERM — pendência da skill): meça o pior pedido em voo.
+    stop_grace_period: ${DEPLOY_STOP_GRACE_PERIOD:?defina DEPLOY_STOP_GRACE_PERIOD no .env.deploy, por exemplo 30s}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - backbone
+
+  front:
+    image: "${DEPLOY_REGISTRY:?defina DEPLOY_REGISTRY no .env.deploy}/<project>-front@${DEPLOY_FRONT_DIGEST:?defina DEPLOY_FRONT_DIGEST no .env.deploy — o MESMO commit do app}"
+    environment:
+      APP_UPSTREAM_PORT: ${ROOT_API_PORT:?defina ROOT_API_PORT no .env}
+      NGINX_ENVSUBST_FILTER: ^APP_
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - backbone
+
+  # <ENTRY> — a entrada (cloudflared, Caddy ou Traefik) é escolhida no HITL do deploy e entra
+  # aqui, na rede `backbone`, com imagem por digest, cap_drop ALL e no-new-privileges. Sem ela,
+  # nada de fora alcança o `front` (e é de propósito: nenhuma porta é publicada no host).
+
+networks:
+  backbone:
+    name: <project>-production

@@ -24,7 +24,7 @@ constrói uma prateleira de módulos reutilizáveis a partir de trabalho que já
 
 > **Não é esta skill:** módulo novo sem origem para destilar → `code-modulo`; adequar um legado **no
 > lugar** → `meta-adequacao-modular`; adequar Nível 0 → `/code1-auditar` → `/code3-adequar`;
-> empacotar para produção → `deploy-docker`.
+> empacotar para produção → `deploy-docker-microsservico`.
 
 ## Quando usar
 - Sob demanda, quando o usuário quer transformar um módulo existente em módulo reutilizável de prateleira.
@@ -143,7 +143,7 @@ gate acusou; quais termos a denylist pegou; se a origem estava estável no passo
 - **NÃO** comece a escrever código antes do portão do mapa de capacidade — sem ele, "genérico" é opinião.
 - **NÃO** generalize módulo de origem instável (gate ou testes vermelhos): alvo móvel, retrabalho certo.
 - **NÃO** commite nem crie remoto por conta própria → `git-commit-inicial`.
-- **NÃO** saia do escopo: empacotar para produção é `deploy-docker`; segurança por domínio é `cyber-*`;
+- **NÃO** saia do escopo: empacotar para produção é `deploy-docker-microsservico`; segurança por domínio é `cyber-*`;
   performance é `otimizacao-*`.
 
 ## Checklist "pronta"

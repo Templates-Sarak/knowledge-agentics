@@ -163,6 +163,7 @@ const REGISTRO = [
   { caminho: 'hooks/padrao-limiares.js', runtime: 'node' },
   { caminho: 'hooks/padrao-format.js', runtime: 'node' },
   { caminho: 'skills/spec-panorama/scripts/gerar_resumo.py', runtime: 'python' },
+  { caminho: 'skills/deploy-docker-monolito/scripts/validar_monolito.py', runtime: 'python' },
   { caminho: 'plugin/sync_ide.py', runtime: 'python' },
 ];
 
@@ -175,7 +176,7 @@ const REGISTRO = [
  * decomposição de `code-entrega` — endereço atualizado, nenhum ganhou `--autoteste`),
  * `code-limpeza-projeto/scripts/detectar_lixo.py`, `cyber-codigo/scripts/sast_scan.py`,
  * `cyber-config/scripts/check_headers.py`, `cyber-dependencias/scripts/parse_audit.py`,
- * `deploy-docker/scripts/validar_docker.py`, `deploy-vercel/scripts/validar_predeploy.py`,
+ * `deploy-docker-microsservico/scripts/validar_docker.py`, `deploy-vercel/scripts/validar_predeploy.py`,
  * `git-especialista-repositorio/scripts/scan_historico.py`,
  * `git-revisao-diff/scripts/revisar_diff.py`, `meta-create-skill/scripts/scaffold_skill.py`,
  * `otimizacao-nivel-1/scripts/auditar_assets.py`, `site-seo/scripts/auditar_seo.py` — erram para

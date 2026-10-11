@@ -141,7 +141,7 @@ Ausente ou incompleto → degraus 4 e 5 voltam `NAO EXECUTADO`, e isso **reprova
 ## §6 — `docker-compose.verificacao.yml` (ambiente efêmero)
 
 ```yaml
-# Ambiente EFÊMERO de verificação — não é empacotamento de produção (isso é deploy-docker).
+# Ambiente EFÊMERO de verificação — não é empacotamento de produção (isso é deploy-docker-microsservico).
 # Sobe banco + a API do módulo, é usado pelos degraus 4 e 5, e cai com `down -v` ao fim.
 services:
   banco:
@@ -170,7 +170,7 @@ services:
 ```
 
 Senha de ambiente efêmero não é segredo (o ambiente nasce e morre no comando), mas **nada aqui vai
-para produção** — empacotar é `deploy-docker`.
+para produção** — empacotar é `deploy-docker-microsservico`.
 
 ---
 

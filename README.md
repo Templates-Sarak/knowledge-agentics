@@ -105,7 +105,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ **55** skills por área (§7) |
+| `skills/` | ✅ **56** skills por área (§7) |
 | `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
 | `hooks/` | ✅ **5** hooks · **4** garantias (segredo no git, padrão de escrita, dependências, cobertura — `hooks/README.md`) |
@@ -301,7 +301,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `cyber-` | `cyber-segredos` … `cyber-infra` (9) | `cyber-git-seguro`, `cyber-dependencias` | ✅ `/cyber1-auditar`, `/cyber2-adequar` | ✅ `cyber-auditor` |
 | `git-` | `git-especialista-repositorio`, `git-verificacao-commit`, `git-revisao-diff` | _(pre-commit)_ | ✅ `/git1-auditar`, `/git2-adequar` | ✅ `git-auditor` |
 | `test-` | `test-unitario` … `test-carga` (6) | `test-cobertura` | ⬜ | ⬜ |
-| `deploy-` | `deploy-vercel`, `deploy-docker` | — | ✅ `/deploy-vercel`, `/deploy-docker` | — |
+| `deploy-` | `deploy-vercel`, `deploy-docker-monolito`, `deploy-docker-microsservico` | — | ✅ `/deploy-vercel`, `/deploy-docker` | — |
 | `site-` | `site-organizacao`, `site-seo`, `site-criacao` | — | ✅ `/site-organizar`, `/site-seo` | — |
 | `spec-` | `spec-write`, `spec-fundacao`, `spec-site-fundacao`, `spec-revisao`, `spec-panorama` | — | — | — |
 | `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base`, `meta-fluxos`, `meta-propagar-base` | — | ✅ `/meta-criar-skill` | — |
@@ -314,7 +314,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 ## 7. Inventário atual
 
-### Skills (55, por área)
+### Skills (56, por área)
 
 | Prefixo | Skills |
 |---|---|
@@ -323,7 +323,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `spec-` (5) | `spec-fundacao`, `spec-panorama`, `spec-revisao`, `spec-site-fundacao`, `spec-write` |
 | `test-` (6) | `test-api-contrato`, `test-carga`, `test-e2e`, `test-integracao-api`, `test-unitario`, `test-ws-realtime` |
 | `db-` (1) | `db-migrations` |
-| `deploy-` (2) | `deploy-docker`, `deploy-vercel` |
+| `deploy-` (3) | `deploy-docker-microsservico`, `deploy-docker-monolito`, `deploy-vercel` |
 | `otimizacao-` (3) | `otimizacao-nivel-1`, `otimizacao-nivel-2`, `otimizacao-nivel-3` |
 | `obs-` (2) | `obs-logs`, `obs-monitoramento` |
 | `site-` (3) | `site-criacao`, `site-organizacao`, `site-seo` |
