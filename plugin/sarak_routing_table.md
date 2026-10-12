@@ -1,9 +1,9 @@
 # Sarak Global Routing Table
 
-> **Atenção IAs:** Este arquivo é o mapa central do ecossistema Sarak. Ele lista os comandos imperativos (Iniciados com `/`), as Skills Orgânicas, os Subagentes e Templates.
+> **Attention AIs:** This file is the central map of the Sarak ecosystem. It lists the imperative commands (starting with `/`), the Organic Skills, the Subagents and the Templates.
 
-## 1. Comandos (Slash Commands)
-Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo correspondente antes de agir.
+## 1. Commands (Slash Commands)
+When the user sends any command listed below, read the corresponding file before acting.
 - **/code-entregar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code-entregar.md`
 - **/code1-auditar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code1-auditar.md`
 - **/code2-caracterizar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/code2-caracterizar.md`
@@ -18,8 +18,8 @@ Quando o usuário enviar qualquer comando listado abaixo, leia o arquivo corresp
 - **/site-organizar**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-organizar.md`
 - **/site-seo**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/commands/site-seo.md`
 
-## 2. Skills Orgânicas
-Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessário pelo contexto), leia o arquivo SKILL.md correspondente para carregar o seu workflow.
+## 2. Organic Skills
+When the user asks for one of these skills (or you judge it necessary from the context), read the corresponding SKILL.md file to load its workflow.
 - **code-adequacao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-adequacao/SKILL.md`
 - **code-assinatura**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-assinatura/SKILL.md`
 - **code-auditoria-padrao**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/code-auditoria-padrao/SKILL.md`
@@ -77,27 +77,27 @@ Quando o usuário solicitar o uso de uma destas skills (ou você julgar necessá
 - **test-unitario**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-unitario/SKILL.md`
 - **test-ws-realtime**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/skills/test-ws-realtime/SKILL.md`
 
-## 3. Subagentes Especializados
-Agentes que podem ser acionados via ferramentas/tasks (ex: code-auditor). Leia o manifesto para descobrir as regras e os papéis.
+## 3. Specialized Subagents
+Agents that can be triggered through tools/tasks (e.g. code-auditor). Read the manifest to learn the rules and roles.
 - **code-adequador**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/code-adequador.md`
 - **code-auditor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/code-auditor.md`
 - **code-revisor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/code-revisor.md`
 - **cyber-auditor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/cyber-auditor.md`
 - **git-auditor**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/agents/git-auditor.md`
 
-## 4. Templates de Documentação
-Modelos oficiais que devem ser usados como molde ao gerar documentação (Specs, ADRs, Arquitetura).
+## 4. Documentation Templates
+Official models to be used as a mold when generating documentation (Specs, ADRs, Architecture).
 - **template-adr**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-adr.md`
 - **template-arquitetura**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-arquitetura.md`
 - **template-plan**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-plan.md`
 - **template-spec**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/specs/_estrutura_base/_templates/template-spec.md`
 
-## 5. Variáveis de Ambiente Globais (Agent Context)
-Sempre que uma skill pedir para você rodar ferramentas como Python, Pytest, Eslint, etc., NÃO use os instaladores locais do repositório. Em vez disso, use EXATAMENTE os caminhos absolutos abaixo:
+## 5. Global Environment Variables (Agent Context)
+Whenever a skill asks you to run tools such as Python, Pytest, Eslint, etc., do NOT use the repository's local installers. Instead, use EXACTLY the absolute paths below:
 - **SARAK_PYTHON_VENV**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/.venv/Scripts/python.exe`
 - **SARAK_NODE_BIN**: `C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/node_modules/.bin`
 
-> **Exemplos Práticos de Ferramentas Globais**:
+> **Practical Examples of Global Tools**:
 > - **Pytest**: `"C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/.venv/Scripts/python.exe" -m pytest .`
 > - **Playwright**: `"C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/node_modules/.bin/playwright" test`
 > - **Artillery**: `"C:/Users/Igor/Desktop/Sarak/X - Trabalho/Code/knowledge-agentics/node_modules/.bin/artillery" run test.yml`
