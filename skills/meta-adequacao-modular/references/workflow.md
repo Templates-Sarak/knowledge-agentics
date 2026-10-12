@@ -157,8 +157,8 @@ alvo** —, `compliance.json` já próprio. O relatório dirá `faltando: ["gate
 lei** — exatamente o que a campanha existe para desfazer.
 
 Medido num legado real (ERP, 2026-08): gate próprio de 544 linhas implementando ~20 regras **mais estritas**
-que o catálogo canônico (`saida-sensivel`, `rls`, `auditoria`, `determinismo`, `config-morta`,
-`fallback-silencioso`). As duas saídas erradas são simétricas: instalar o canônico ao lado duplica a lei;
+que o catálogo canônico (`sensitive-output`, `rls`, `auditoria`, `determinism`, `dead-config`,
+`silent-fallback`). As duas saídas erradas são simétricas: instalar o canônico ao lado duplica a lei;
 substituir o próprio pelo canônico **perde regra em nome de conformidade**.
 
 A saída certa, e o que o Passo 3 manda fazer:
@@ -245,7 +245,7 @@ campanha — cada módulo migrado apaga as suas próprias, nunca as de outro mó
 
 Estas três ferramentas **não têm** mecanismo de dívida: os limiares são lei
 (`tools/gate/thresholds.mjs`), a config é **gerada** a partir deles e não se edita à mão
-(`lint-derivado` reprova qualquer edição manual, byte a byte). Um legado de milhares de linhas produz
+(`derived-lint` reprova qualquer edição manual, byte a byte). Um legado de milhares de linhas produz
 milhares de violações no dia 1, e não há "exceção nominal" para isso.
 
 A saída não é inventar uma — é usar o que o template **já** oferece:
@@ -299,8 +299,8 @@ Ordem fixa, e as duas campanhas (Nível 1 desta skill, Nível 0 de `code-`) só 
 1. **Caracterizar primeiro** (`/code2-caracterizar`, skill `code-adequacao`) — sem rede de testes capturando
    o comportamento atual, "ficou igual" não tem verificador.
 2. **Mover para a árvore fechada.** Pastas típicas de legado (`utils/`, `helpers/`, `services/`, `types/`)
-   não são entrada válida da árvore do módulo (`estrutura-estrita`, lista normativa em
-   `tools/gate/rules/structure.mjs:ENTRADAS_PERMITIDAS`). Mapeie cada uma para o destino certo antes de
+   não são entrada válida da árvore do módulo (`strict-structure`, lista normativa em
+   `tools/gate/rules/structure.mjs:ALLOWED_ENTRIES`). Mapeie cada uma para o destino certo antes de
    mover — não crie uma pasta nova só para "guardar por enquanto":
 
    | Pasta legada típica | Destino no template |

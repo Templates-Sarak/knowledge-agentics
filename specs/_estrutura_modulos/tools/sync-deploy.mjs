@@ -72,19 +72,19 @@ function validateDeployConfig(config, withFront) {
   const problems = [];
   const { front, shutdown, database } = config ?? {};
   if (withFront && !BODY_SIZE_PATTERN.test(String(front?.maxBodySize ?? ''))) {
-    problems.push('front.maxBodySize deve ser um tamanho do nginx (ex.: "5m")');
+    problems.push('front.maxBodySize must be an nginx size (for example, \"5m\")');
   }
   if (withFront && (!Number.isInteger(front?.proxyReadTimeoutSeconds) || front.proxyReadTimeoutSeconds <= 0)) {
-    problems.push('front.proxyReadTimeoutSeconds deve ser um inteiro positivo');
+    problems.push('front.proxyReadTimeoutSeconds must be a positive integer');
   }
   if (!Number.isInteger(shutdown?.graceMarginMs) || shutdown.graceMarginMs < 0) {
-    problems.push('shutdown.graceMarginMs deve ser um inteiro >= 0');
+    problems.push('shutdown.graceMarginMs must be an integer greater than or equal to 0');
   }
   if (!SERVICE_NAME_PATTERN.test(String(database?.service ?? ''))) {
-    problems.push('database.service deve ser o nome do serviço do banco no compose (ex.: "db")');
+    problems.push('database.service must name the database service in compose (for example, \"db\")');
   }
   if (!Number.isInteger(database?.port) || database.port < 1 || database.port > 65535) {
-    problems.push('database.port deve ser uma porta TCP');
+    problems.push('database.port must be a TCP port');
   }
   return problems;
 }
@@ -92,15 +92,15 @@ function validateDeployConfig(config, withFront) {
 function readInputs(root) {
   const deployPath = join(root, 'config', 'deploy.json');
   const runtimePath = join(root, 'config', 'runtime.json');
-  if (!existsSync(deployPath)) throw new Error('config/deploy.json ausente — são os tunables do deploy (corpo máximo, timeout, folga de desligamento)');
-  if (!existsSync(runtimePath)) throw new Error('config/runtime.json ausente — o teto de desligamento (shutdown.drainTimeoutMs) vem dele');
+  if (!existsSync(deployPath)) throw new Error('config/deploy.json is missing; it contains deployment tunables (body limit, timeout, shutdown margin)');
+  if (!existsSync(runtimePath)) throw new Error('config/runtime.json is missing; the shutdown timeout (shutdown.drainTimeoutMs) is defined there');
   const deploy = readJson(deployPath);
   const withFront = existsSync(join(root, FRONT_MARKER));
   const problems = validateDeployConfig(deploy, withFront);
-  if (problems.length > 0) throw new Error(`config/deploy.json inválido: ${problems.join('; ')}`);
+  if (problems.length > 0) throw new Error(`config/deploy.json is invalid: ${problems.join('; ')}`);
   const drainTimeoutMs = readJson(runtimePath).shutdown?.drainTimeoutMs;
   if (!Number.isInteger(drainTimeoutMs) || drainTimeoutMs <= 0) {
-    throw new Error('config/runtime.json sem shutdown.drainTimeoutMs inteiro positivo');
+    throw new Error('config/runtime.json must define a positive integer shutdown.drainTimeoutMs');
   }
   return { deploy, drainTimeoutMs, withFront, modules: listModules(root) };
 }
@@ -111,7 +111,7 @@ function webPathsOf(modules) {
     const webPath = manifest.webPath;
     if (webPath === null || webPath === undefined) continue;
     if (typeof webPath !== 'string' || !WEB_PATH_PATTERN.test(webPath)) {
-      throw new Error(`modules/${dir}/module.json: webPath "${webPath}" fora de ${WEB_PATH_PATTERN} — não vira location do nginx`);
+      throw new Error(`modules/${dir}/module.json: webPath "${webPath}" does not match ${WEB_PATH_PATTERN}; it cannot become an nginx location`);
     }
     paths.push(webPath);
   }
@@ -155,15 +155,14 @@ const DATABASE_URL_KEYS = ['DEPLOY_DB_USER', 'DEPLOY_DB_PASSWORD', 'DEPLOY_DB_NA
 
 /** `${CHAVE:?mensagem}` do compose: exigida, nunca com valor padrão embutido (zero hardcoded). */
 function required(name) {
-  return '${' + name + ':?defina ' + name + ' no deploy/.env}';
+  return '${' + name + ':?required}';
 }
 
 /**
  * A linha da URL do banco de UM `<MODULE>_DB_URL`, apontando para o serviço do compose.
  *
- * A mensagem do `:?` carrega espaços de propósito: sem eles, `${A:?}:${B:?}@host` é lido pelo gate de
- * segredos do commit como uma string de conexão com credencial — e o projeto gerado não nasceria
- * commitável. A URL é montada por partes (nada de `senha: '…'` nem `scheme://usuario:senha@` literais).
+ * O scanner reconhece essa forma como segura quando usuário e senha vêm ambos de variáveis de ambiente.
+ * O compose exige as chaves sem valor padrão. A URL é montada por partes, sem credenciais literais.
  */
 function databaseUrlLine(key, database) {
   const [user, secret, name] = DATABASE_URL_KEYS.map(required);
@@ -212,22 +211,22 @@ function run(check) {
   const stale = files.filter(({ path, content }) => currentContent(path) !== content);
   if (check) {
     if (stale.length === 0) {
-      process.stdout.write('deploy em dia com os manifestos.\n');
+      process.stdout.write('Deployment files match the manifests.\n');
       return 0;
     }
-    process.stdout.write(`deploy divergente dos manifestos:\n${stale.map(({ rel }) => `  ${rel}`).join('\n')}\n`);
-    process.stdout.write('corrija com: node tools/sync-deploy.mjs\n');
+    process.stdout.write(`Deployment files differ from the manifests:\n${stale.map(({ rel }) => `  ${rel}`).join('\n')}\n`);
+    process.stdout.write('Regenerate with: node tools/sync-deploy.mjs\n');
     return 1;
   }
   for (const { path, rel, content } of stale) {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content, 'utf8');
-    process.stdout.write(`atualizado: ${rel}\n`);
+    process.stdout.write(`Updated: ${rel}\n`);
   }
   return 0;
 }
 
-/** Os casos do `--autoteste`: o núcleo puro (`buildNginx`, `buildCompose`, a validação) sem disco. */
+/** Os casos do `--selftest`: o núcleo puro (`buildNginx`, `buildCompose`, a validação) sem disco. */
 function selfTestCases() {
   const deploy = {
     front: { maxBodySize: '5m', proxyReadTimeoutSeconds: 65 },
@@ -242,19 +241,20 @@ function selfTestCases() {
   const compose = buildCompose({ deploy, drainTimeoutMs: 8000, modules });
   /** @type {Array<[string, () => boolean]>} */
   const cases = [
-    ['nginx: location para o webPath, nenhuma para o módulo sem tela', () => (
+    ['nginx: generates a location for webPath and none for a module without a page', () => (
       nginx.includes('location /a/ {') && !nginx.includes('/b/') && nginx.includes('location = /a {'))],
-    ['nginx: os tunables de config/deploy.json entram no arquivo', () => (
+    ['nginx: deployment tunables from config/deploy.json are included', () => (
       nginx.includes('client_max_body_size 5m;') && nginx.includes('proxy_read_timeout 65s;'))],
-    ['compose: stop_grace_period = teto + folga, em segundos, arredondado para cima', () => (
+    ['compose: stop_grace_period equals timeout plus margin, rounded up to seconds', () => (
       compose.includes('stop_grace_period: 10s')
       && buildCompose({ deploy, drainTimeoutMs: 8001, modules }).includes('stop_grace_period: 11s'))],
-    ['compose: uma URL por chave *_DB_URL, para o serviço do banco, sem valor padrão', () => (
+    ['compose: one URL per *_DB_URL key for the database service, with no default', () => (
       compose.includes('A_DB_URL: "postgres://${DEPLOY_DB_USER:?') && compose.includes('@db:5432/')
+      && compose.includes('${DEPLOY_DB_USER:?required}:${DEPLOY_DB_PASSWORD:?required}@')
       && !compose.includes('B_API_PORT') && !compose.includes(':-'))],
-    ['compose: sem chave *_DB_URL, sem bloco environment', () => (
+    ['compose: without a *_DB_URL key there is no environment block', () => (
       !buildCompose({ deploy, drainTimeoutMs: 8000, modules: [modules[1]] }).includes('environment:'))],
-    ['webPath fora do padrão não vira location (lança)', () => {
+    ['webPath must match its pattern to become an nginx location (throws)', () => {
       try {
         buildNginx({ deploy, modules: [{ dir: 'x', manifest: { webPath: '/x; return 200' } }] });
         return false;
@@ -262,7 +262,7 @@ function selfTestCases() {
         return true;
       }
     }],
-    ['config: tamanho e inteiros inválidos reprovam; sem front, a chave front não é exigida', () => (
+    ['config: invalid sizes and integers fail; front settings are optional without a frontend', () => (
       validateDeployConfig({ ...deploy, front: { maxBodySize: 'x', proxyReadTimeoutSeconds: 0 } }, true).length === 2
       && validateDeployConfig({ shutdown: deploy.shutdown, database: deploy.database }, false).length === 0)],
   ];
@@ -275,23 +275,23 @@ function runSelfTest() {
   for (const [name, check] of cases) {
     const ok = check() === true;
     if (!ok) failures += 1;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${name}\n`);
+      process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${name}\n`);
   }
-  process.stdout.write(`\nautoteste: ${cases.length - failures}/${cases.length} ok\n`);
+  process.stdout.write(`\nself-test: ${cases.length - failures}/${cases.length} passed\n`);
   return failures === 0 ? 0 : 1;
 }
 
 function main() {
-  if (process.argv.includes('--autoteste')) return runSelfTest();
+  if (process.argv.includes('--selftest')) return runSelfTest();
   const unknown = process.argv.slice(2).filter((arg) => arg !== '--check');
   if (unknown.length > 0) {
-    process.stderr.write(`erro: argumento desconhecido "${unknown[0]}" — uso: sync-deploy.mjs [--check|--autoteste]\n`);
+    process.stderr.write(`Error: unknown argument "${unknown[0]}" — usage: sync-deploy.mjs [--check|--selftest]\n`);
     return 2;
   }
   try {
     return run(process.argv.includes('--check'));
   } catch (cause) {
-    process.stderr.write(`erro: ${cause.message}\n`);
+    process.stderr.write(`Error: ${cause.message}\n`);
     return 1;
   }
 }

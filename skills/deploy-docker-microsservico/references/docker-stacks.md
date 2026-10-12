@@ -31,7 +31,7 @@ Tabela de partida por stack. Sempre **multi-stage**, **versão fixada** (nunca `
   `Dockerfile` do seu módulo.
 - **Rede compartilhada** — os módulos se falam pela rede do compose, por **HTTP**, num gateway em
   `core/gateways/<provider>` declarado em `module.json:consumes` — nunca o banco direto de outro módulo. As
-  regras estão no `04-regras.md` §4.2 (`gateway-http`, `gateway-declarado`, `tabela-alheia`).
+  regras estão no `04-regras.md` §4.2 (`gateway-http`, `gateway-declared`, `foreign-table`).
 - **`env_file: .env`** — nunca valores inline no `docker-compose.yml`. O `.env` fica no `.gitignore`; o
   `.env.example` é versionado.
 - **Volumes só para dev** — bind-mount de código é conveniência local; a imagem de produção é

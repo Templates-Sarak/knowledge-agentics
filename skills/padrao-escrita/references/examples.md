@@ -6,6 +6,10 @@ extraível; o ruim mostra os acoplamentos que impedem a futura separação.
 > A anatomia completa é do Nível 1 (`PADRAO-ORGANIZACAO.md` → `04-regras.md`). Aqui o foco é o **contraste**:
 > que cara tem uma violação, e o que exatamente ela custa.
 
+> **Idioma dos exemplos:** os identificadores abaixo (`catalogo`, `criarItem`, `ErroValidacao`) ainda estão
+> em português por herança — são ilustração, **não** o padrão. A regra é código em inglês (`SKILL.md`,
+> "Idioma"); o exemplo é reescrito junto das ondas do `ADR-023`.
+
 ---
 
 ## Exemplo bom — módulo `catalogo` autossuficiente
@@ -111,17 +115,17 @@ Rota: `POST /api/criarItem` → `{ "user_id": "...", "order_items": [...] }`
 
 | Violação | Impacto | Regra |
 |---|---|---|
-| `import ../../financeiro/core/…` | acopla ao **interno** de outro módulo; extração vira refactor | `import-lateral` |
-| `import { Pool } from 'pg'` | o módulo conhece o fornecedor; trocar de banco vira caçada | `sdk-fornecedor` |
-| `?? 'postgres://localhost…'` | sobe apontando para o lugar errado em vez de falhar | `fallback-silencioso` |
-| `JOIN financeiro_aliquotas` | banco vira acoplamento escondido; impossível separar | `tabela-alheia` |
-| tabela `clientes` sem prefixo | não se sabe quem é dono; extração ambígua | `tabela-prefixo` |
+| `import ../../financeiro/core/…` | acopla ao **interno** de outro módulo; extração vira refactor | `lateral-import` |
+| `import { Pool } from 'pg'` | o módulo conhece o fornecedor; trocar de banco vira caçada | `vendor-sdk` |
+| `?? 'postgres://localhost…'` | sobe apontando para o lugar errado em vez de falhar | `silent-fallback` |
+| `JOIN financeiro_aliquotas` | banco vira acoplamento escondido; impossível separar | `foreign-table` |
+| tabela `clientes` sem prefixo | não se sabe quem é dono; extração ambígua | `table-prefix` |
 | `criarItemENotificarELogar` | viola SRP — o "E" no nome denuncia 3 responsabilidades | Nível 0 |
-| 6 parâmetros · aninhamento 4 · `100` mágico | ilegível e não configurável | `limiar-parametros`, `limiar-aninhamento`, `hardcode-numero` |
-| `catch (e) {}` | falha some; o bug aparece longe da causa | `excecao-engolida` |
-| `console.log(..., usuario.cpf)` | PII em log, burlando a redação automática | `log`, `sensivel-em-saida` |
-| `res.json(linhas[0])` | publica coluna nova e PII por omissão | `saida-crua` |
-| `POST /api/criarItem`, corpo `snake_case` | verbo no path, sem versão, casing do contrato errado | `contrato-sincronizado`, `payload-camelcase` |
+| 6 parâmetros · aninhamento 4 · `100` mágico | ilegível e não configurável | `parameters-threshold`, `nesting-threshold`, `hardcode-number` |
+| `catch (e) {}` | falha some; o bug aparece longe da causa | `swallowed-exception` |
+| `console.log(..., usuario.cpf)` | PII em log, burlando a redação automática | `log`, `sensitive-in-output` |
+| `res.json(linhas[0])` | publica coluna nova e PII por omissão | `raw-output` |
+| `POST /api/criarItem`, corpo `snake_case` | verbo no path, sem versão, casing do contrato errado | `synchronized-contract`, `payload-camelcase` |
 
 **Consequência:** o módulo não pode ser extraído sem reescrever quem o consome — exatamente o que o padrão
 microservice-ready existe para evitar. **E nada disso depende de alguém lembrar:** cada linha da tabela tem

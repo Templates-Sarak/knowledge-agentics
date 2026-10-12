@@ -4,7 +4,7 @@
  *
  * Vive fora de `rules/` pelo mesmo argumento que `spec.mjs`, e aqui ele é mais forte: CINCO das
  * seis famílias precisam dela. Enquanto morava em `rules/isolation.mjs`, a última a chegar —
- * `operation.mjs`, que já é importada por `isolation.mjs` (`SQL_FONTE`) — fechou um CICLO entre duas
+ * `operation.mjs`, que já é importada por `isolation.mjs` (`SQL_SOURCE`) — fechou um CICLO entre duas
  * famílias de regra. O ciclo funcionava por acidente (o `function` é içado, o `const` é usado só
  * dentro de `verificar`), e "funciona por acidente" não é acoplamento que se deixa escrito.
  *
@@ -20,14 +20,14 @@
  *
  * Uma implementação, e ela existe porque o mesmo defeito apareceu em oito lugares: oito cópias de
  * `.map((l) => l.texto).join('\n')` divergiriam no primeiro ajuste. Quem julga texto que NÃO é
- * código — `migrations` procurando `-- rollback`, `lerParesEnv` sobre `.env.example`, os leitores de
- * `openapi.yaml`, `juntarSql` — continua em `conteudo`, de propósito: ali o comentário é o dado.
+ * código — `migrations` procurando `-- rollback`, `readEnvPairs` sobre `.env.example`, os leitores de
+ * `openapi.yaml`, `joinSql` — continua em `conteudo`, de propósito: ali o comentário é o dado.
  *
  * A junção por `\n` preserva os padrões ancorados por linha (`^`). Ela **não** preserva numeração:
  * as linhas de comentário são descartadas, então índice no texto juntado NÃO é número de linha do
  * arquivo. Quem relata posição ao autor percorre `arquivo.linhasCodigo` e usa o `numero` de cada
  * linha, que é o original — é o que toda regra faz hoje, e o que a próxima deve fazer.
  */
-export function textoDeCodigo(arquivo) {
-  return arquivo.linhasCodigo.map((linha) => linha.texto).join('\n');
+export function codeText(file) {
+  return file.codeLines.map((line) => line.text).join('\n');
 }

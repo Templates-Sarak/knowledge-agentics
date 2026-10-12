@@ -17,7 +17,7 @@ import { defineConfig } from 'vitest/config';
 /**
  * `coverage.minimum` vem de `config/verification.json` da RAIZ do projeto (dois níveis acima do
  * módulo) — a MESMA política que `hooks/test-cobertura.js` lê para o push, uma fonte só. Sem o
- * arquivo (módulo solto, fora de projeto), o vitest não aplica piso nenhum: o gate (`verificacao-declarada`)
+ * arquivo (módulo solto, fora de projeto), o vitest não aplica piso nenhum: o gate (`verification-declared`)
  * é quem cobra a ausência da política, não a cobertura.
  */
 function minimumCoverage() {

@@ -11,7 +11,7 @@
  * `adapters/`, `src/`, `packages/`). O `.env.example` da raiz é a união das duas.
  *
  * Sem a raiz declarar, o segredo dela nasce órfão: `JWT_SECRET`, `DATABASE_URL`, chave
- * de provedor — todos fora do `.env.example`, todos invisíveis a `env-declarado` e `env-exemplo`,
+ * de provedor — todos fora do `.env.example`, todos invisíveis a `env-declared` e `env-example`,
  * que são regras por módulo. O mais sensível do sistema fica o único que ninguém documenta.
  *
  * O `.env.example` nunca guarda valor real — regravá-lo por inteiro a cada chamada é seguro, e é
@@ -25,10 +25,10 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from '
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** `.env.example` — SEM valor, sempre. Regravado por inteiro; "nao edite a mao" e verdade aqui. */
-const CABECALHO_ENV_EXEMPLO = [
+const EXAMPLE_ENV_HEADER = [
   '# .env.example da RAIZ — fonte UNICA de segredo do projeto (ADR-004).',
   '# GERADO por `node tools/sync-env.mjs` a partir de project.json:requiredEnv (as',
   '# chaves da propria raiz) e de module.json:requiredEnv de cada modulo. NAO edite a mao:',
@@ -42,7 +42,7 @@ const CABECALHO_ENV_EXEMPLO = [
  * nunca virar texto versionado. O script NUNCA sobrescreve valor ja preenchido, e NUNCA apaga chave
  * em silencio: chave que nenhum manifesto exige mais vai para a secao ORFAS, comentada, no fim.
  */
-const CABECALHO_ENV_REAL = [
+const REAL_ENV_HEADER = [
   '# .env da RAIZ — fonte UNICA de segredo do projeto (ADR-004). NAO versionado (.gitignore).',
   '# As CHAVES sao geradas/mescladas por `node tools/sync-env.mjs`, a partir de',
   '# project.json:requiredEnv e de module.json:requiredEnv de cada modulo — rode o script sempre',
@@ -53,116 +53,116 @@ const CABECALHO_ENV_REAL = [
 ];
 
 /** Cabecalho da secao da raiz. As chaves dela sao `ROOT_*`; as de modulo, `<MODULE>_*`. */
-const SECAO_DA_RAIZ = '# --- ROOT: a fiacao (adapters/, src/, packages/) — project.json ---';
+const ROOT_SECTION = '# --- ROOT: a fiacao (adapters/, src/, packages/) — project.json ---';
 
 /** Cabecalho da secao de chaves que nenhum manifesto exige mais. */
-const SECAO_ORFAS = '# --- ORFAS: nenhum manifesto exige mais. Comentadas, valor preservado — apague a mao se tiver certeza ---';
+const ORPHAN_SECTION = '# --- ORFAS: nenhum manifesto exige mais. Comentadas, valor preservado — apague a mao se tiver certeza ---';
 
-function acharRaizProjeto() {
-  let atual = process.cwd();
-  for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'modules'))) return atual;
-    const pai = dirname(atual);
-    if (pai === atual) break;
-    atual = pai;
+function findProjectRoot() {
+  let current = process.cwd();
+  for (let level = 0; level < 8; level += 1) {
+    if (existsSync(join(current, 'modules'))) return current;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
   }
-  return join(AQUI, '..');
+  return join(HERE, '..');
 }
 
 /** Le removendo o BOM: editor e shell do Windows gravam por padrao, e `JSON.parse` rejeita. */
-function lerTexto(caminho) {
-  return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
+function readText(path) {
+  return readFileSync(path, 'utf8').replace(/^﻿/, '');
 }
 
-function montarEntrada(pasta, nome) {
+function buildEntry(dir, name) {
   return {
-    nome,
-    eMolde: nome.startsWith('_'),
-    pasta,
-    manifesto: JSON.parse(lerTexto(join(pasta, 'module.json'))),
+    name,
+    isTemplate: name.startsWith('_'),
+    dir,
+    manifest: JSON.parse(readText(join(dir, 'module.json'))),
   };
 }
 
 /** Módulos com manifesto. Moldes (`_*`) entram — o `.env.example` deles também fica em dia. */
-function listarModulos(raizProjeto) {
-  const base = join(raizProjeto, 'modules');
+function listModules(projectRoot) {
+  const base = join(projectRoot, 'modules');
   if (!existsSync(base)) return [];
   return readdirSync(base)
-    .filter((nome) => statSync(join(base, nome)).isDirectory())
-    .filter((nome) => existsSync(join(base, nome, 'module.json')))
-    .map((nome) => montarEntrada(join(base, nome), nome));
+    .filter((name) => statSync(join(base, name)).isDirectory())
+    .filter((name) => existsSync(join(base, name, 'module.json')))
+    .map((name) => buildEntry(join(base, name), name));
 }
 
 /**
  * Moldes dos bindings, quando rodando dentro do repositório do template.
  * Sem isto, o `.env.example` do molde seria o único editado à mão — e o único a divergir (ADR-006).
  */
-function listarMoldesDeBinding(raizProjeto) {
-  const base = join(raizProjeto, 'bindings');
+function listBindingTemplates(projectRoot) {
+  const base = join(projectRoot, 'bindings');
   if (!existsSync(base)) return [];
   return readdirSync(base)
     .map((binding) => join(base, binding, '_template'))
-    .filter((pasta) => existsSync(join(pasta, 'module.json')))
-    .map((pasta) => montarEntrada(pasta, '_template'));
+    .filter((dir) => existsSync(join(dir, 'module.json')))
+    .map((dir) => buildEntry(dir, '_template'));
 }
 
-function conteudoDoModulo({ manifesto }) {
+function moduleContent({ manifest }) {
   return [
-    `# Chaves do modulo ${manifesto.id} — GERADO por tools/sync-env.mjs.`,
+    `# Chaves do modulo ${manifest.id} — GERADO por tools/sync-env.mjs.`,
     '# O .env REAL e unico, na RAIZ do projeto (ADR-004); este arquivo so DOCUMENTA.',
     '# Sem segredo real aqui. Para acrescentar uma chave: declare em module.json:requiredEnv.',
     '',
-    ...(manifesto.requiredEnv ?? []).map((chave) => `${chave}=`),
+    ...(manifest.requiredEnv ?? []).map((key) => `${key}=`),
     '',
   ].join('\n');
 }
 
 /**
  * O manifesto da RAIZ. Ausente devolve `null` — projeto anterior ao template, e quem reprova isso é
- * a regra `manifesto-raiz` do gate, não este script. JSON quebrado ESTOURA, como o `module.json`
+ * a regra `root-manifest` do gate, não este script. JSON quebrado ESTOURA, como o `module.json`
  * quebrado já estourava: gerar em cima de fonte ilegível daria um `.env.example` silenciosamente
  * incompleto, que é pior que a parada.
  */
-function lerManifestoDaRaiz(raizProjeto) {
-  const caminho = join(raizProjeto, 'project.json');
-  return existsSync(caminho) ? JSON.parse(lerTexto(caminho)) : null;
+function readRootManifest(projectRoot) {
+  const path = join(projectRoot, 'project.json');
+  return existsSync(path) ? JSON.parse(readText(path)) : null;
 }
 
 /** Chaves desejadas da raiz, na MESMA order/secao nos dois arquivos (.env.example e .env real). */
-function chavesDaRaizPorSecao(lista, envDaRaiz) {
-  const secoes = [];
-  if (envDaRaiz !== null) secoes.push({ titulo: SECAO_DA_RAIZ, chaves: envDaRaiz });
-  for (const { manifesto } of lista) {
-    secoes.push({ titulo: `# --- ${manifesto.name} (${manifesto.basePath}) ---`, chaves: manifesto.requiredEnv ?? [] });
+function rootKeysBySection(list, rootEnv) {
+  const sections = [];
+  if (rootEnv !== null) sections.push({ titulo: ROOT_SECTION, keys: rootEnv });
+  for (const { manifest } of list) {
+    sections.push({ titulo: `# --- ${manifest.name} (${manifest.basePath}) ---`, keys: manifest.requiredEnv ?? [] });
   }
-  return secoes;
+  return sections;
 }
 
-function conteudoDaRaizExemplo(lista, envDaRaiz) {
-  const linhas = [...CABECALHO_ENV_EXEMPLO, ''];
+function exampleRootContent(list, rootEnv) {
+  const lines = [...EXAMPLE_ENV_HEADER, ''];
   // A secao da raiz vem PRIMEIRO, e aparece mesmo vazia quando ha `project.json`: "a raiz nao exige
   // nada" e uma afirmacao, e o operador precisa distingui-la de "ninguem perguntou".
-  for (const { titulo, chaves } of chavesDaRaizPorSecao(lista, envDaRaiz)) {
-    linhas.push(titulo, ...chaves.map((chave) => `${chave}=`), '');
+  for (const { titulo: title, keys } of rootKeysBySection(list, rootEnv)) {
+    lines.push(title, ...keys.map((key) => `${key}=`), '');
   }
-  linhas.push('# --- Exposto ao browser: NUNCA chave, segredo ou token aqui ---');
-  linhas.push('');
-  return linhas.join('\n');
+  lines.push('# --- Exposto ao browser: NUNCA chave, segredo ou token aqui ---');
+  lines.push('');
+  return lines.join('\n');
 }
 
 /**
  * Pares chave=valor de um `.env` REAL existente, para PRESERVAR ao mesclar. Ignora comentario e
  * linha vazia; `Map` guarda a ORDEM de aparicao no arquivo — e o que da a ordem estavel das ORFAS.
  */
-function lerParesDoEnvReal(conteudo) {
-  const pares = new Map();
-  for (const linhaBruta of conteudo.split(/\r?\n/)) {
-    const linha = linhaBruta.trim();
-    if (linha === '' || linha.startsWith('#') || !linha.includes('=')) continue;
-    const igual = linha.indexOf('=');
-    pares.set(linha.slice(0, igual).trim(), linha.slice(igual + 1).trim());
+function readEnvRealPairs(content) {
+  const pairs = new Map();
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (line === '' || line.startsWith('#') || !line.includes('=')) continue;
+    const equal = line.indexOf('=');
+    pairs.set(line.slice(0, equal).trim(), line.slice(equal + 1).trim());
   }
-  return pares;
+  return pairs;
 }
 
 /**
@@ -170,42 +170,42 @@ function lerParesDoEnvReal(conteudo) {
  * (nunca `${chave}=`, e sim `${chave}=${valorExistente}`), e as chaves que existiam no arquivo mas
  * nenhum manifesto exige mais viram uma secao ORFAS, comentada — nunca somem em silencio.
  */
-function conteudoDoEnvReal(lista, envDaRaiz, existente) {
-  const secoes = chavesDaRaizPorSecao(lista, envDaRaiz);
-  const desejadas = new Set(secoes.flatMap((secao) => secao.chaves));
+function envRealContent(list, rootEnv, existing) {
+  const sections = rootKeysBySection(list, rootEnv);
+  const desired = new Set(sections.flatMap((section) => section.keys));
 
-  const linhas = [...CABECALHO_ENV_REAL, ''];
-  for (const { titulo, chaves } of secoes) {
-    linhas.push(titulo, ...chaves.map((chave) => `${chave}=${existente.get(chave) ?? ''}`), '');
+  const lines = [...REAL_ENV_HEADER, ''];
+  for (const { titulo: title, keys } of sections) {
+    lines.push(title, ...keys.map((key) => `${key}=${existing.get(key) ?? ''}`), '');
   }
-  linhas.push('# --- Exposto ao browser: NUNCA chave, segredo ou token aqui ---');
-  linhas.push('');
+  lines.push('# --- Exposto ao browser: NUNCA chave, segredo ou token aqui ---');
+  lines.push('');
 
-  const orfas = [...existente.keys()].filter((chave) => !desejadas.has(chave));
-  if (orfas.length > 0) {
-    linhas.push(SECAO_ORFAS);
-    linhas.push(...orfas.map((chave) => `# ${chave}=${existente.get(chave)}`));
-    linhas.push('');
+  const orphans = [...existing.keys()].filter((key) => !desired.has(key));
+  if (orphans.length > 0) {
+    lines.push(ORPHAN_SECTION);
+    lines.push(...orphans.map((key) => `# ${key}=${existing.get(key)}`));
+    lines.push('');
   }
-  return linhas.join('\n');
+  return lines.join('\n');
 }
 
-function montarAlvos(raizProjeto, lista) {
-  const doModulo = lista.map((modulo) => ({
-    caminho: join(modulo.pasta, '.env.example'),
-    conteudo: conteudoDoModulo(modulo),
+function buildTargets(projectRoot, list) {
+  const moduleEntries = list.map((module) => ({
+    caminho: join(module.dir, '.env.example'),
+    content: moduleContent(module),
   }));
 
   // O `.env.example` da raiz é a união dos módulos REAIS com as chaves da própria raiz. Um
   // repositório que só tem moldes E cuja raiz não exige nada (o do próprio template, e o projeto
   // recém-criado antes do primeiro módulo) não ganha arquivo de raiz — não haveria chave nenhuma
   // nele. Basta a raiz declarar UMA chave para o arquivo passar a existir.
-  const reais = lista.filter((m) => !m.eMolde);
-  const envDaRaiz = lerManifestoDaRaiz(raizProjeto)?.requiredEnv ?? null;
-  if (reais.length === 0 && (envDaRaiz === null || envDaRaiz.length === 0)) return doModulo;
+  const real = list.filter((m) => !m.isTemplate);
+  const rootEnv = readRootManifest(projectRoot)?.requiredEnv ?? null;
+  if (real.length === 0 && (rootEnv === null || rootEnv.length === 0)) return moduleEntries;
   return [
-    ...doModulo,
-    { caminho: join(raizProjeto, '.env.example'), conteudo: conteudoDaRaizExemplo(reais, envDaRaiz) },
+    ...moduleEntries,
+    { caminho: join(projectRoot, '.env.example'), content: exampleRootContent(real, rootEnv) },
   ];
 }
 
@@ -215,61 +215,61 @@ function montarAlvos(raizProjeto, lista) {
  * ambiente, e comparar por igualdade byte a byte reprovaria todo projeto com valor preenchido —
  * o oposto do que essa mescla existe para permitir.
  */
-function montarAlvoEnvReal(raizProjeto, lista) {
-  const reais = lista.filter((m) => !m.eMolde);
-  const envDaRaiz = lerManifestoDaRaiz(raizProjeto)?.requiredEnv ?? null;
-  if (reais.length === 0 && (envDaRaiz === null || envDaRaiz.length === 0)) return null;
+function buildRealEnvTarget(projectRoot, list) {
+  const real = list.filter((m) => !m.isTemplate);
+  const rootEnv = readRootManifest(projectRoot)?.requiredEnv ?? null;
+  if (real.length === 0 && (rootEnv === null || rootEnv.length === 0)) return null;
 
-  const caminho = join(raizProjeto, '.env');
-  const existente = existsSync(caminho) ? lerParesDoEnvReal(lerTexto(caminho)) : new Map();
-  return { caminho, conteudo: conteudoDoEnvReal(reais, envDaRaiz, existente) };
+  const path = join(projectRoot, '.env');
+  const existing = existsSync(path) ? readEnvRealPairs(readText(path)) : new Map();
+  return { caminho: path, content: envRealContent(real, rootEnv, existing) };
 }
 
-function principal() {
-  const conferir = process.argv.includes('--check');
-  const raizProjeto = acharRaizProjeto();
-  const lista = [...listarModulos(raizProjeto), ...listarMoldesDeBinding(raizProjeto)];
-  const divergentes = [];
+function main() {
+  const check = process.argv.includes('--check');
+  const projectRoot = findProjectRoot();
+  const list = [...listModules(projectRoot), ...listBindingTemplates(projectRoot)];
+  const divergent = [];
 
-  if (lista.length === 0) {
-    process.stdout.write('nenhum modulo com manifesto encontrado — nada a sincronizar.\n');
+  if (list.length === 0) {
+    process.stdout.write('No modules with a manifest were found; nothing to synchronize.\n');
     return 0;
   }
 
-  for (const { caminho, conteudo } of montarAlvos(raizProjeto, lista)) {
-    const atual = existsSync(caminho) ? readFileSync(caminho, 'utf8') : '';
-    if (atual.replace(/\r\n/g, '\n') === conteudo) continue;
-    if (conferir) {
-      divergentes.push(caminho);
+  for (const { caminho: path, content } of buildTargets(projectRoot, list)) {
+    const current = existsSync(path) ? readFileSync(path, 'utf8') : '';
+    if (current.replace(/\r\n/g, '\n') === content) continue;
+    if (check) {
+      divergent.push(path);
       continue;
     }
-    writeFileSync(caminho, conteudo, 'utf8');
-    process.stdout.write(`atualizado: ${caminho.replace(raizProjeto, '.')}\n`);
+    writeFileSync(path, content, 'utf8');
+    process.stdout.write(`Updated: ${path.replace(projectRoot, '.')}\n`);
   }
 
-  if (conferir && divergentes.length > 0) {
-    process.stdout.write(`.env.example divergente do manifesto:\n${divergentes.map((c) => `  ${c}`).join('\n')}\n`);
-    process.stdout.write('corrija com: node tools/sync-env.mjs\n');
+  if (check && divergent.length > 0) {
+    process.stdout.write(`.env.example differs from the manifests:\n${divergent.map((c) => `  ${c}`).join('\n')}\n`);
+    process.stdout.write('Fix it with: node tools/sync-env.mjs\n');
     return 1;
   }
-  if (conferir) {
-    process.stdout.write('.env.example em dia com os manifestos.\n');
+  if (check) {
+    process.stdout.write('.env.example matches the manifests.\n');
     return 0;
   }
 
-  // MESCLA o `.env` real — só no modo escrita (o porquê está em `montarAlvoEnvReal`). Idempotente:
+  // MESCLA o `.env` real — só no modo escrita (o porquê está em `buildRealEnvTarget`). Idempotente:
   // sem chave nova nem manifesto mudado, o conteudo mesclado bate com o atual e nada e regravado.
-  const alvoEnvReal = montarAlvoEnvReal(raizProjeto, lista);
-  if (alvoEnvReal !== null) {
-    const existiaAntes = existsSync(alvoEnvReal.caminho);
-    const atual = existiaAntes ? readFileSync(alvoEnvReal.caminho, 'utf8') : '';
-    if (atual.replace(/\r\n/g, '\n') !== alvoEnvReal.conteudo) {
-      writeFileSync(alvoEnvReal.caminho, alvoEnvReal.conteudo, 'utf8');
-      const motivo = existiaAntes ? 'chaves mescladas, valores preservados' : 'criado, preencha os valores reais';
-      process.stdout.write(`atualizado: ${alvoEnvReal.caminho.replace(raizProjeto, '.')} (${motivo})\n`);
+  const realEnvTarget = buildRealEnvTarget(projectRoot, list);
+  if (realEnvTarget !== null) {
+    const existedBefore = existsSync(realEnvTarget.caminho);
+    const current = existedBefore ? readFileSync(realEnvTarget.caminho, 'utf8') : '';
+    if (current.replace(/\r\n/g, '\n') !== realEnvTarget.content) {
+      writeFileSync(realEnvTarget.caminho, realEnvTarget.content, 'utf8');
+      const reason = existedBefore ? 'keys merged; values preserved' : 'created; fill in real values';
+      process.stdout.write(`Updated: ${realEnvTarget.caminho.replace(projectRoot, '.')} (${reason})\n`);
     }
   }
   return 0;
 }
 
-process.exit(principal());
+process.exit(main());

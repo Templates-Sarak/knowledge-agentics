@@ -1,7 +1,7 @@
 """inventariar_origem.py — inventario READ-ONLY do modulo de origem, antes de generalizar.
 
     python inventariar_origem.py --modulo <caminho-do-modulo> [--json] [--vocabulario <arquivo>]
-    python inventariar_origem.py --autoteste
+    python inventariar_origem.py --selftest
 
 Responde, sem julgamento nenhum, o que a skill "code-generalizacao-modulo" precisa ANTES de abrir a
 boca no portao do mapa de capacidade: qual e a superficie declarada do modulo (manifesto + contrato),
@@ -330,7 +330,7 @@ def _parser() -> argparse.ArgumentParser:
         "--vocabulario", help="Arquivo com termos genericos extras, um por linha."
     )
     parser.add_argument(
-        "--autoteste",
+        "--selftest",
         action="store_true",
         help="Prova o nucleo com fixtures em memoria.",
     )
@@ -341,10 +341,10 @@ def main() -> int:
     parser = _parser()
     args = parser.parse_args()
 
-    if args.autoteste:
+    if args.selftest:
         return autoteste()
     if not args.modulo:
-        parser.error("--modulo e obrigatorio (ou use --autoteste)")
+        parser.error("--modulo e obrigatorio (ou use --selftest)")
 
     raiz = Path(args.modulo).resolve()
     if not (raiz / "module.json").is_file():

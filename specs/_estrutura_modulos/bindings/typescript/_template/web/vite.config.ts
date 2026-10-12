@@ -9,7 +9,7 @@
 //
 // Zero hardcoded vale AQUI TAMBEM (specs/arquitetura/01-modulo.md §4.4): nao acrescente porta, alvo de
 // proxy nem endereco literal neste arquivo. Se precisar, a chave vai para .env e e declarada
-// em module.json:requiredEnv — senao o gate reprova (regra `env-declarado`).
+// em module.json:requiredEnv — senao o gate reprova (regra `env-declared`).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 

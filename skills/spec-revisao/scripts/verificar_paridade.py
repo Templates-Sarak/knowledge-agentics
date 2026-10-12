@@ -1,7 +1,7 @@
 """verificar_paridade.py — a camada MECANICA da contraprova specs x realidade.
 
     python verificar_paridade.py --raiz <repo> [--specs <dir>] [--json]
-    python verificar_paridade.py --autoteste
+    python verificar_paridade.py --selftest
 
 Cobre so o que e deterministico (mesma entrada -> mesma saida) na skill `spec-revisao`:
 
@@ -24,7 +24,7 @@ como ponteiro produziria ruido justamente nas specs que ensinam a rodar alguma c
 
 Nucleo x casca: `citacoes_de_texto`, `wikilinks_de_texto`, `plans_do_indice`,
 `status_do_frontmatter`, `divergencias_de_plan` e `plan_fora_do_formato` sao PURAS (recebem texto, nunca tocam `fs`) — sao
-o que o `--autoteste` prova com fixtures em memoria. `auditar_*` sao a casca fina que le o disco.
+o que o `--selftest` prova com fixtures em memoria. `auditar_*` sao a casca fina que le o disco.
 
 Read-only por construcao: abre arquivo em modo leitura e nunca escreve. Exit 0 sem achado, 1 com
 achado, 2 em erro de uso.
@@ -339,7 +339,7 @@ def _imprimir_humano(specs_dir, achados):
 # Diretorio desta skill (pai de `scripts/`): ancora real, e somente leitura, para os casos de pasta.
 _DIR_DA_SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Fixtures do `--autoteste`: `(rotulo, predicado)` por invariante de nucleo. Constante de
+# Fixtures do `--selftest`: `(rotulo, predicado)` por invariante de nucleo. Constante de
 # modulo, e nao corpo de funcao, para a prova crescer sem estourar o limiar de 40 linhas.
 CASOS = [
     (
@@ -450,7 +450,7 @@ def autoteste() -> int:
     for nome in falhas:
         print("[FALHA] %s" % nome, file=sys.stderr)
     print(
-        "verificar_paridade --autoteste: %d/%d caso(s) verde"
+        "verificar_paridade --selftest: %d/%d caso(s) verde"
         % (len(CASOS) - len(falhas), len(CASOS))
     )
     return 1 if falhas else 0
@@ -466,7 +466,7 @@ def _parser():
         "--json", action="store_true", help="Imprime os achados como JSON."
     )
     parser.add_argument(
-        "--autoteste", action="store_true", help="Prova o nucleo com fixtures."
+        "--selftest", action="store_true", help="Prova o nucleo com fixtures."
     )
     return parser
 
@@ -476,10 +476,10 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = _parser()
     args = parser.parse_args()
-    if args.autoteste:
+    if args.selftest:
         return autoteste()
     if not args.raiz:
-        parser.error("--raiz e obrigatorio (ou use --autoteste)")
+        parser.error("--raiz e obrigatorio (ou use --selftest)")
 
     raiz = os.path.abspath(args.raiz)
     specs_dir = (

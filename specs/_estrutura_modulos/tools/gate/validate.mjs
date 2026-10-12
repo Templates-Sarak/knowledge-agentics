@@ -17,45 +17,45 @@ import { existsSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acharRaizProjeto, carregarContexto, carregarExcecoes, carregarProjeto, listarModulos } from './context.mjs';
-import { ALVO_RAIZ, analisar } from './engine.mjs';
+import { findProjectRoot, loadContext, loadExceptions, loadProject, listModules } from './context.mjs';
+import { ROOT_TARGET, analyze, serializeFinding } from './engine.mjs';
 
-function aplicarExcecoes(achados, excecoes) {
-  const perdoada = (a) => excecoes.validas.some((e) => e.module === a.modulo && e.rule === a.regra);
-  return achados.filter((a) => !perdoada(a));
+function applyExceptions(findings, exceptions) {
+  const waived = (a) => exceptions.valid.some((e) => e.module === a.modulo && e.rule === a.regra);
+  return findings.filter((a) => !waived(a));
 }
 
-function imprimirHumano(achados, alvos, excecoesInvalidas) {
-  for (const invalida of excecoesInvalidas) {
-    process.stdout.write(`  ! excecao invalida (${invalida.module}/${invalida.rule}): ${invalida.porqueInvalida}\n`);
+function printHuman(findings, targets, invalidExceptions) {
+  for (const invalid of invalidExceptions) {
+    process.stdout.write(`  ! Invalid exception (${invalid.module}/${invalid.rule}): ${invalid.invalidBecause}\n`);
   }
-  for (const alvo of alvos) {
-    const meus = achados.filter((a) => a.modulo === alvo);
-    const erros = meus.filter((a) => a.nivel === 'erro');
-    const avisos = meus.filter((a) => a.nivel === 'aviso');
-    process.stdout.write(`\n${alvo}: ${erros.length} erro(s), ${avisos.length} aviso(s)\n`);
-    for (const item of [...erros, ...avisos]) {
-      const marca = item.nivel === 'erro' ? 'x' : '!';
-      process.stdout.write(`  ${marca} [${item.regra}] ${item.mensagem}\n`);
+  for (const target of targets) {
+    const own = findings.filter((a) => a.modulo === target);
+    const errors = own.filter((a) => a.nivel === 'erro');
+    const warnings = own.filter((a) => a.nivel === 'aviso');
+    process.stdout.write(`\n${target}: ${errors.length} error(s), ${warnings.length} warning(s)\n`);
+    for (const item of [...errors, ...warnings]) {
+      const mark = item.nivel === 'erro' ? 'x' : '!';
+      process.stdout.write(`  ${mark} [${item.regra}] ${item.mensagem}\n`);
     }
   }
 }
 
-function resolverAlvo(argumento, raizPadrao) {
-  const bruto = isAbsolute(argumento) ? argumento : resolve(process.cwd(), argumento);
-  if (existsSync(join(bruto, 'module.json'))) return bruto;
-  const porNome = join(raizPadrao, 'modules', argumento);
-  if (existsSync(join(porNome, 'module.json'))) return porNome;
+function resolveTarget(argument, defaultRoot) {
+  const raw = isAbsolute(argument) ? argument : resolve(process.cwd(), argument);
+  if (existsSync(join(raw, 'module.json'))) return raw;
+  const byName = join(defaultRoot, 'modules', argument);
+  if (existsSync(join(byName, 'module.json'))) return byName;
   return null;
 }
 
-function lerArgumentos() {
-  const brutos = process.argv.slice(2);
+function readArguments() {
+  const rawArgs = process.argv.slice(2);
   return {
-    todos: brutos.includes('--all'),
-    json: brutos.includes('--json'),
-    extracao: brutos.includes('--extraction'),
-    caminho: brutos.find((a) => !a.startsWith('--')) ?? null,
+    all: rawArgs.includes('--all'),
+    json: rawArgs.includes('--json'),
+    extraction: rawArgs.includes('--extraction'),
+    caminho: rawArgs.find((a) => !a.startsWith('--')) ?? null,
   };
 }
 
@@ -65,64 +65,67 @@ function lerArgumentos() {
  * foi analisada", que é a confusão que este gate existe para impedir. Sem `modules/` não há raiz de
  * projeto a analisar (módulo solto), e aí o bloco não aparece porque não haveria o que afirmar.
  *
- * Em `--extraction` ele também não aparece: ali `analisar` filtra para `REGRAS_DE_EXTRACAO`, nenhuma
+ * Em `--extraction` ele também não aparece: ali `analisar` filtra para `EXTRACTION_RULES`, nenhuma
  * regra de raiz sobrevive ao filtro, e um bloco vazio afirmaria uma verificação que não houve. A
  * pergunta da extração é sobre o MÓDULO, não sobre a raiz que ele vai deixar para trás.
  */
-function alvosDaSaida(opcoes, selecionados, raizProjeto) {
-  const modulos = selecionados.map((c) => c.idPasta);
-  const temRaiz = opcoes.extracao !== true && carregarProjeto(raizProjeto).ehProjeto;
-  return temRaiz ? [ALVO_RAIZ, ...modulos] : modulos;
+function outputTargets(options, selected, projectRoot) {
+  const modules = selected.map((c) => c.dirId);
+  const hasRoot = options.extraction !== true && loadProject(projectRoot).isProject;
+  return hasRoot ? [ROOT_TARGET, ...modules] : modules;
 }
 
-function reportar(opcoes, contextos, selecionados, raizProjeto) {
-  const excecoes = carregarExcecoes(raizProjeto);
-  const achados = aplicarExcecoes(analisar(contextos, selecionados, opcoes), excecoes);
-  const erros = achados.filter((a) => a.nivel === 'erro');
+function report(options, contexts, selected, projectRoot) {
+  const exceptions = loadExceptions(projectRoot);
+  const findings = applyExceptions(analyze(contexts, selected, options), exceptions);
+  const errors = findings.filter((a) => a.nivel === 'erro');
 
-  if (opcoes.json) {
-    process.stdout.write(`${JSON.stringify({ achados, erros: erros.length }, null, 2)}\n`);
-    return erros.length > 0 ? 1 : 0;
+  if (options.json) {
+    process.stdout.write(JSON.stringify({
+      findings: findings.map(serializeFinding),
+      errorCount: errors.length,
+    }, null, 2) + '\n');
+    return errors.length > 0 ? 1 : 0;
   }
 
-  const alvos = alvosDaSaida(opcoes, selecionados, raizProjeto);
-  imprimirHumano(achados, alvos, excecoes.invalidas);
-  const rotulo = opcoes.extracao ? 'extracao' : 'conformidade';
-  const unidades = alvos.length > selecionados.length
-    ? `${selecionados.length} modulo(s) + a raiz`
-    : `${selecionados.length} modulo(s)`;
+  const targets = outputTargets(options, selected, projectRoot);
+  printHuman(findings, targets, exceptions.invalid);
+  const label = options.extraction ? 'extraction' : 'conformance';
+  const units = targets.length > selected.length
+    ? `${selected.length} module(s) + the root`
+    : `${selected.length} module(s)`;
   process.stdout.write(
-    erros.length === 0
-      ? `\n${rotulo}: OK — ${unidades}, 0 erro(s)\n`
-      : `\n${rotulo}: REPROVADO — ${erros.length} erro(s)\n`,
+    errors.length === 0
+      ? `\n${label}: OK — ${units}, 0 error(s)\n`
+      : `\n${label}: FAILED — ${errors.length} error(s)\n`,
   );
-  return erros.length > 0 ? 1 : 0;
+  return errors.length > 0 ? 1 : 0;
 }
 
-function principal() {
-  const opcoes = lerArgumentos();
-  const aqui = dirname(fileURLToPath(import.meta.url));
-  const partida = opcoes.caminho !== null ? resolve(process.cwd(), opcoes.caminho) : join(aqui, '..', '..');
-  const raizProjeto = acharRaizProjeto(partida);
+function main() {
+  const options = readArguments();
+  const here = dirname(fileURLToPath(import.meta.url));
+  const start = options.caminho !== null ? resolve(process.cwd(), options.caminho) : join(here, '..', '..');
+  const projectRoot = findProjectRoot(start);
 
-  const alvo = opcoes.todos ? null : resolverAlvo(opcoes.caminho ?? '', raizProjeto);
-  if (!opcoes.todos && alvo === null) {
-    process.stderr.write('uso: validate.mjs <caminho-do-modulo> | --all | --extraction <caminho>\n');
+  const target = options.all ? null : resolveTarget(options.caminho ?? '', projectRoot);
+  if (!options.all && target === null) {
+    process.stderr.write('Usage: validate.mjs <module-path> | --all | --extraction <module-path>\n');
     return 1;
   }
 
   // O alvo entra mesmo se estiver fora de `modules/` — e o que permite validar o molde de um
   // binding dentro do proprio repositorio do template (ADR-006).
-  const pastas = listarModulos(raizProjeto);
-  if (alvo !== null && !pastas.includes(alvo)) pastas.push(alvo);
-  if (pastas.length === 0) {
-    process.stderr.write(`erro: nenhum modulo encontrado em ${join(raizProjeto, 'modulos')}\n`);
+  const dirs = listModules(projectRoot);
+  if (target !== null && !dirs.includes(target)) dirs.push(target);
+  if (dirs.length === 0) {
+    process.stderr.write(`Error: no modules found in ${join(projectRoot, 'modules')}\n`);
     return 1;
   }
 
-  const contextos = pastas.map((pasta) => carregarContexto(pasta, raizProjeto));
-  const selecionados = opcoes.todos ? contextos : contextos.filter((c) => c.raiz === alvo);
-  return reportar(opcoes, contextos, selecionados, raizProjeto);
+  const contexts = dirs.map((dir) => loadContext(dir, projectRoot));
+  const selected = options.all ? contexts : contexts.filter((c) => c.raiz === target);
+  return report(options, contexts, selected, projectRoot);
 }
 
-process.exit(principal());
+process.exit(main());

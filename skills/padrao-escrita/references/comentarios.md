@@ -10,13 +10,13 @@ do arquivo vizinho; este documento é a primeira vez que ela fica escrita.
 
 **Nenhuma parte desta norma tem verificador hoje.** `validate.py`/`validate.mjs` (`padrao-python`/
 `padrao-typescript`) não mencionam docstring nem comentário; o catálogo do template só cita
-comentário para **excluí-lo** da contagem de linhas (`04-regras.md`, regra `limiar-funcao`: *"função
+comentário para **excluí-lo** da contagem de linhas (`04-regras.md`, regra `function-threshold`: *"função
 com no máximo 40 linhas de código (sem brancos, comentários e docstrings)"*) e para que os
 extratores de código não confundam um exemplo documentado com uma violação real (`04-regras.md`
 §7, "Leitura de código: comentário não é código"). Pela lei do próprio repo (`04-regras.md` §1,
 lei 2): **regra sem verificação não se cobra em revisão — é recomendação, não regra dura.** Esta
 norma inteira está nessa categoria. Não é lacuna escondida: é **pendência declarada**, no mesmo
-sentido que `run-all-selftests.mjs` declara os scripts sem `--autoteste`. Não se implementa
+sentido que `run-all-selftests.mjs` declara os scripts sem `--selftest`. Não se implementa
 verificador nesta rodada.
 
 ## Cabeçalho de arquivo — quando é obrigatório
@@ -30,7 +30,7 @@ O cabeçalho de um script declara, nesta ordem:
 2. **Lei dona** — a norma que ele aplica ou verifica, se houver uma (`verify-catalog.mjs`: *"Lei
    dona: nenhuma — ferramenta de manutenção do TEMPLATE"*; `audit_base.py` não declara porque não
    aplica nenhuma lei específica — é o próprio verificador).
-3. **Como se roda** — a linha de comando, com as flags que importam (`--autoteste`, argumentos
+3. **Como se roda** — a linha de comando, com as flags que importam (`--selftest`, argumentos
    posicionais).
 
 ## O porquê, não o quê
@@ -59,7 +59,7 @@ auto-exclusão achando que é um bug.)
 O que a unidade **não** cobre, escrito no próprio arquivo — nunca prometido implicitamente. Padrão
 observado em `verify-catalog.mjs` (*"Limite declarado, não escondido: a checagem de contagem só
 varre `tools/**`, nunca `.md`"*) e em `run-all-selftests.mjs` (bloco `PENDÊNCIA DECLARADA`, que
-nomeia os scripts sem `--autoteste` em vez de deixar a ausência implícita). A alternativa —
+nomeia os scripts sem `--selftest` em vez de deixar a ausência implícita). A alternativa —
 silêncio sobre a lacuna — é o defeito que este próprio arquivo existe para não repetir.
 
 ## Docstring por linguagem
@@ -115,7 +115,7 @@ nem por quê.
 
 ## Idioma
 
-Conteúdo de comentário é **português** — mesma régua do `04-regras.md` §3.1 ("Idioma"): a **árvore**
-de arquivos (pastas, nomes de arquivo, chaves de manifesto) é inglês; o **conteúdo** — e comentário
-é conteúdo — é português. Esta seção **referencia** aquela regra, não a copia; o texto normativo
-completo (as exceções deliberadas, os símbolos vendorizados) mora só lá.
+Comentário é **português**: é um dos três lugares onde o português mora (os outros dois são o texto
+mostrado ao usuário final no front e a documentação). Todo o **código** ao redor é inglês — a regra de
+idioma está no Nível 0 (`SKILL.md`, "Idioma") e, no template, no `04-regras.md` §3.1 ("Idioma") e no
+`ADR-023`. Esta seção **referencia** essa regra, não a copia.

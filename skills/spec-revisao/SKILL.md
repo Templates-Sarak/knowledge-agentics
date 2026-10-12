@@ -122,5 +122,5 @@ desinformado, sem induzi-lo ao erro.
 ## Referências (Camada 3 — leia sob demanda)
 
 - `scripts/verificar_paridade.py` — a camada mecânica das seis checagens determinísticas (ponteiro
-  morto, wikilink órfão, `00-indice` × `plan/`, status divergente, módulo sem spec). `--autoteste`
+  morto, wikilink órfão, `00-indice` × `plan/`, status divergente, módulo sem spec). `--selftest`
   prova os núcleos puros; `--json` é o contrato de máquina do passo 3.

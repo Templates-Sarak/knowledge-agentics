@@ -253,7 +253,7 @@ class Visitante(ast.NodeVisitor):
 
 def validar_texto(caminho_str: str, texto: str, config: dict) -> list:
     """Núcleo: valida um TEXTO Python já lido contra `config`. Puro — não toca `fs`. É o que o
-    `--autoteste` prova com fixtures em memória."""
+    `--selftest` prova com fixtures em memória."""
     try:
         arvore = ast.parse(texto)
     except SyntaxError as erro:
@@ -358,7 +358,7 @@ def autoteste() -> int:
 
     # Concatenado, nao literal: o texto de ORIGEM deste arquivo nao pode conter um segredo-
     # formato contiguo, senao o proprio scan de vazamentos do audit_base.py acha "vazamento"
-    # que e so dado de teste (o mesmo cuidado do fixture em scan_segredos.py --autoteste).
+    # que e so dado de teste (o mesmo cuidado do fixture em scan_segredos.py --selftest).
     valor_secreto = "valor-bem" + "-secreto"
     segredo = f"token = '{valor_secreto}'\n"
     if not _tem(validar_texto("f.py", segredo, cfg), "segredos"):
@@ -422,14 +422,14 @@ def main() -> None:
         help="Caminho do config.json (padrão: ao lado do script)",
     )
     parser.add_argument(
-        "--autoteste", action="store_true", help="Roda a suite interna, nao toca disco"
+        "--selftest", action="store_true", help="Roda a suite interna, nao toca disco"
     )
     args = parser.parse_args()
 
-    if args.autoteste:
+    if args.selftest:
         sys.exit(autoteste())
     if not args.alvo:
-        parser.error("o argumento 'alvo' e obrigatorio fora do --autoteste")
+        parser.error("o argumento 'alvo' e obrigatorio fora do --selftest")
 
     # Saída sempre em UTF-8, independe da codepage do console (ex.: cp1252 no Windows).
     if hasattr(sys.stdout, "reconfigure"):

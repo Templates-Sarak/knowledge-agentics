@@ -4,7 +4,7 @@
  * Lei dona: specs/arquitetura/02-contrato-e-dados.md §5 ("v1 é estável... consulte o grafo antes").
  *
  *   node tools/contract-compatible.mjs [--since <ref>] [<module>] [--json]
- *   node tools/contract-compatible.mjs --autoteste
+ *   node tools/contract-compatible.mjs --selftest
  *
  * O QUE ISTO NÃO É: não é regra de gate. O gate compara UM estado (04-regras.md); isto compara DOIS —
  * precisa de baseline git, e por isso é FERRAMENTA, não regra: "o gate não roda git de propósito, é o
@@ -14,7 +14,7 @@
  * ============================================================================================
  * A LEI, E O QUE DELA ESTE ARQUIVO COBRE — 02-contrato-e-dados.md §5, cláusula por cláusula:
  *
- *   COBERTO (provado por --autoteste):
+ *   COBERTO (provado por --selftest):
  *     - "rota nova é compatível"                          → rota em depois e não em antes: nada
  *     - "remover... campo [rota] não é [compatível]"       → rota em antes e não em depois: BREAKING
  *     - método de uma rota que continua, removido          → BREAKING (mesma cláusula, granularidade menor)
@@ -32,7 +32,7 @@
  *
  * Por quê parar aqui: os quatro primeiros exigem um leitor CIENTE DE TIPO — o que `spec.mjs` tem hoje
  * é um leitor de NOME (property existe? está em `required`?), não de FORMA. Estender para tipo/validação
- * é redesenho do extrator (a mesma fronteira que `spec.mjs` já documenta para `projecao-contrato`: "o
+ * é redesenho do extrator (a mesma fronteira que `spec.mjs` já documenta para `contract-projection`: "o
  * conserto não é uma guarda, é a região passar a ser... redesenho do extrator"). Prefiro cinco cláusulas
  * provadas e quatro limites escritos a nove cláusulas alegadas — é a lei 1 deste prompt (falso positivo
  * não se aceita) aplicada ao MEU PRÓPRIO relatório: dizer "cubro a lei inteira" sem provar seria a mesma
@@ -42,17 +42,17 @@
  * NÚCLEO × CASCA — o precedente é `affected.mjs` (grafo) e `gate/spec.mjs` (leitura), os dois já
  * fixaram esta forma duas vezes:
  *
- *   `compararContratos(yamlAntes, yamlDepois)` é o núcleo: recebe TEXTO, devolve DADO, nunca toca
- *   `fs` nem `child_process`. É o que permite `--autoteste` provar cada cláusula com fixture em
+ *   `compareContracts(yamlAntes, yamlDepois)` é o núcleo: recebe TEXTO, devolve DADO, nunca toca
+ *   `fs` nem `child_process`. É o que permite `--selftest` provar cada cláusula com fixture em
  *   memória, sem escrever projeto em disco nem precisar de repositório git.
  *
- *   A casca (`principal`, `git`, `lerNoRef`, `lerAtual`, `caminhosMudados`) é quem toca disco e git.
- *   `git()` é o ÚNICO ponto que roda `git` de verdade — mesmo isolamento de `caminhosAlteradosDesde`
+ *   A casca (`principal`, `git`, `readInRef`, `readCurrent`, `caminhosMudados`) é quem toca disco e git.
+ *   `git()` é o ÚNICO ponto que roda `git` de verdade — mesmo isolamento de `changedPathsSince`
  *   em `affected.mjs`. `execFileSync` sempre com ARRAY de argumentos, nunca `shell: true`: a etapa
  *   anterior deste plano foi reprovada por shell concatenando argumento hostil em comando — aqui o
  *   argumento hostil é a PRÓPRIA ref (`--since`), e ela nunca toca um interpretador de shell.
  *
- * CEGUEIRA ≠ COMPATIBILIDADE — a armadilha central. Se `leiturasFalhas` (gate/spec.mjs) disser que
+ * CEGUEIRA ≠ COMPATIBILIDADE — a armadilha central. Se `failedReads` (gate/spec.mjs) disser que
  * `paths:` ou `servers:` de QUALQUER um dos dois lados não pôde ser lido, a resposta NUNCA é
  * "compatível": é "não consegui comparar", com exit 1 e a seção nomeada. Dizer "sem breaking change"
  * sobre uma spec que não se leu é a pior saída possível — libera um deploy que quebra consumidor
@@ -64,126 +64,126 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  leiturasFalhas, obrigatoriosDaRequisicao, operacoesDaSpec, propriedadesDaResposta,
-  servidorDaSpec, statusDaOperacao,
+  failedReads, requestRequired, specOperations, responseProperties,
+  specServer, operationStatus,
 } from './gate/spec.mjs';
-import { montarGrafo } from './affected.mjs';
+import { buildGraph } from './affected.mjs';
 
 // ================================================================================================
 // NÚCLEO — puro. Nenhuma linha daqui embaixo toca `fs`, `child_process` ou `process.env`.
 // ================================================================================================
 
 /** Rota removida é BREAKING; rota nova não é reportada (compatível, lei explícita). */
-function compararRotas(antes, depois) {
-  const achados = [];
-  for (const [rota, metodos] of operacoesDaSpec(antes)) {
-    const metodosDepois = operacoesDaSpec(depois).get(rota);
-    if (metodosDepois === undefined) {
-      achados.push({ tipo: 'rota-removida', mensagem: `rota "${rota}" existia e foi removida — quebra quem consome` });
+function compareRoutes(before, after) {
+  const findings = [];
+  for (const [route, methods] of specOperations(before)) {
+    const methodsAfter = specOperations(after).get(route);
+    if (methodsAfter === undefined) {
+      findings.push({ tipo: 'removed-route', mensagem: `route "${route}" existed and was removed — this breaks consumers` });
       continue;
     }
-    for (const metodo of metodos) {
-      if (!metodosDepois.has(metodo)) {
-        achados.push({ tipo: 'metodo-removido', mensagem: `${metodo} "${rota}": existia e foi removido — quebra quem consome` });
+    for (const method of methods) {
+      if (!methodsAfter.has(method)) {
+        findings.push({ tipo: 'removed-method', mensagem: `${method} "${route}" existed and was removed — this breaks consumers` });
       }
     }
   }
-  return achados;
+  return findings;
 }
 
 /** `servers[0].url` é o prefixo do módulo — mudar quebra todo consumidor. Só compara quando os dois lados leem. */
-function compararServidor(antes, depois) {
-  const urlAntes = servidorDaSpec(antes);
-  const urlDepois = servidorDaSpec(depois);
-  if (urlAntes === null || urlDepois === null || urlAntes === urlDepois) return [];
-  return [{ tipo: 'servidor-alterado', mensagem: `servers[0].url mudou de "${urlAntes}" para "${urlDepois}" — o prefixo do modulo mudou, todo consumidor quebra` }];
+function compareServer(before, after) {
+  const urlBefore = specServer(before);
+  const urlAfter = specServer(after);
+  if (urlBefore === null || urlAfter === null || urlBefore === urlAfter) return [];
+  return [{ tipo: 'changed-server', mensagem: `servers[0].url changed from "${urlBefore}" to "${urlAfter}" — the module prefix changed and breaks every consumer` }];
 }
 
 /**
  * Campo de RESPOSTA removido é BREAKING; campo novo não é reportado. Só compara rota+método+status
- * presentes nos DOIS lados — rota/método removidos já viraram achado em `compararRotas`, e status
+ * presentes nos DOIS lados — rota/método removidos já viraram achado em `compareRoutes`, e status
  * code que desapareceu é uma pergunta diferente desta cláusula (não coberta, ver cabeçalho do arquivo).
  */
-/** O laco de `status` isolado do de `compararRespostas` — so por isso o aninhamento de UM cai
- * dentro do limiar (04-regras.md §4.7): a mesma tecnica que separa `compararCamposDaResposta`.
+/** O laco de `status` isolado do de `compareResponses` — so por isso o aninhamento de UM cai
+ * dentro do limiar (04-regras.md §4.7): a mesma tecnica que separa `compareResponseFields`.
  * `{ antes, depois }` e `{ rota, metodo }` agrupados: os dois pares sempre viajam juntos, e sem
  * agrupar a extracao trocaria um limiar (aninhamento) por outro (parametros). */
-function achadosDeStatusNaResposta(specs, operacao, statusAntes, statusDepois) {
-  const achados = [];
-  for (const status of statusAntes) {
-    if (!statusDepois.has(status)) continue;
-    achados.push(...compararCamposDaResposta(specs.antes, specs.depois, { ...operacao, status }));
+function statusFindingsInResponse(specs, operation, statusBefore, statusAfter) {
+  const findings = [];
+  for (const status of statusBefore) {
+    if (!statusAfter.has(status)) continue;
+    findings.push(...compareResponseFields(specs.before, specs.after, { ...operation, status }));
   }
-  return achados;
+  return findings;
 }
 
-function compararRespostas(antes, depois) {
-  const achados = [];
-  for (const [rota, metodos] of operacoesDaSpec(antes)) {
-    const metodosDepois = operacoesDaSpec(depois).get(rota);
-    if (metodosDepois === undefined) continue;
-    for (const metodo of metodos) {
-      if (!metodosDepois.has(metodo)) continue;
-      const statusAntes = statusDaOperacao(antes, rota, metodo) ?? new Set();
-      const statusDepois = statusDaOperacao(depois, rota, metodo) ?? new Set();
-      achados.push(...achadosDeStatusNaResposta({ antes, depois }, { rota, metodo }, statusAntes, statusDepois));
+function compareResponses(before, after) {
+  const findings = [];
+  for (const [route, methods] of specOperations(before)) {
+    const methodsAfter = specOperations(after).get(route);
+    if (methodsAfter === undefined) continue;
+    for (const method of methods) {
+      if (!methodsAfter.has(method)) continue;
+      const statusBefore = operationStatus(before, route, method) ?? new Set();
+      const statusAfter = operationStatus(after, route, method) ?? new Set();
+      findings.push(...statusFindingsInResponse({ before, after }, { route, method }, statusBefore, statusAfter));
     }
   }
-  return achados;
+  return findings;
 }
 
 /** `{ rota, metodo, status }` em vez de tres parametros soltos — o limiar de 4 parametros
  * (04-regras.md §4.7) que este arquivo tambem cobra do codigo do usuario. */
-function compararCamposDaResposta(antes, depois, operacao) {
-  const { rota, metodo, status } = operacao;
-  const propsAntes = propriedadesDaResposta(antes, rota, metodo, status) ?? new Set();
-  const propsDepois = propriedadesDaResposta(depois, rota, metodo, status) ?? new Set();
-  const achados = [];
-  for (const campo of propsAntes) {
-    if (!propsDepois.has(campo)) {
-      achados.push({
-        tipo: 'campo-resposta-removido',
-        mensagem: `${metodo} "${rota}" ${status}: campo "${campo}" existia na resposta e foi removido — quebra quem consome`,
+function compareResponseFields(before, after, operation) {
+  const { route, method, status } = operation;
+  const propsBefore = responseProperties(before, route, method, status) ?? new Set();
+  const propsAfter = responseProperties(after, route, method, status) ?? new Set();
+  const findings = [];
+  for (const field of propsBefore) {
+    if (!propsAfter.has(field)) {
+      findings.push({
+        tipo: 'removed-response-field',
+        mensagem: `${method} "${route}" ${status}: response field "${field}" existed and was removed — this breaks consumers`,
       });
     }
   }
-  return achados;
+  return findings;
 }
 
 /**
  * Campo que PASSA A SER obrigatório na requisição é BREAKING (quem não manda o campo novo passa a
  * ser rejeitado); deixar de ser obrigatório não é reportado — a direção é o INVERSO da resposta, e é
  * a própria lei que a inverte (acrescentar é compatível na resposta, mas obrigar é que quebra na
- * requisição). Mesma guarda de rota/método presentes nos dois lados que `compararRespostas`.
+ * requisição). Mesma guarda de rota/método presentes nos dois lados que `compareResponses`.
  */
-/** O laco de `campo` isolado do de `compararRequisicoes` — mesma tecnica de
- * `achadosDeStatusNaResposta`, para o aninhamento caber no limiar (04-regras.md §4.7). */
-function achadosDeCampoNaRequisicao(rota, metodo, antesObrig, depoisObrig) {
-  const achados = [];
-  for (const campo of depoisObrig) {
-    if (!antesObrig.has(campo)) {
-      achados.push({
-        tipo: 'campo-obrigatorio-acrescentado',
-        mensagem: `${metodo} "${rota}": campo "${campo}" passou a ser OBRIGATORIO na requisicao — quem consome sem enviar esse campo passa a ser rejeitado`,
+/** O laco de `campo` isolado do de `compareRequests` — mesma tecnica de
+ * `statusFindingsInResponse`, para o aninhamento caber no limiar (04-regras.md §4.7). */
+function fieldFindingsInRequest(route, method, beforeRequired, afterRequired) {
+  const findings = [];
+  for (const field of afterRequired) {
+    if (!beforeRequired.has(field)) {
+      findings.push({
+        tipo: 'required-request-field-added',
+        mensagem: `${method} "${route}": request field "${field}" is now required — consumers that omit it will be rejected`,
       });
     }
   }
-  return achados;
+  return findings;
 }
 
-function compararRequisicoes(antes, depois) {
-  const achados = [];
-  for (const [rota, metodos] of operacoesDaSpec(antes)) {
-    const metodosDepois = operacoesDaSpec(depois).get(rota);
-    if (metodosDepois === undefined) continue;
-    for (const metodo of metodos) {
-      if (!metodosDepois.has(metodo)) continue;
-      const antesObrig = obrigatoriosDaRequisicao(antes, rota, metodo) ?? new Set();
-      const depoisObrig = obrigatoriosDaRequisicao(depois, rota, metodo) ?? new Set();
-      achados.push(...achadosDeCampoNaRequisicao(rota, metodo, antesObrig, depoisObrig));
+function compareRequests(before, after) {
+  const findings = [];
+  for (const [route, methods] of specOperations(before)) {
+    const methodsAfter = specOperations(after).get(route);
+    if (methodsAfter === undefined) continue;
+    for (const method of methods) {
+      if (!methodsAfter.has(method)) continue;
+      const beforeRequired = requestRequired(before, route, method) ?? new Set();
+      const afterRequired = requestRequired(after, route, method) ?? new Set();
+      findings.push(...fieldFindingsInRequest(route, method, beforeRequired, afterRequired));
     }
   }
-  return achados;
+  return findings;
 }
 
 /**
@@ -195,69 +195,69 @@ function compararRequisicoes(antes, depois) {
  *   2. só `antes` é `null` — spec NOVA. Não é breaking, é CRIAÇÃO: não há consumidor antigo para quebrar.
  *   3. só `depois` é `null` — spec REMOVIDA (o módulo pode ou não ter sumido junto; a casca decide a
  *      frase exata, o núcleo só sabe que sumiu). SEMPRE breaking: quem consumia perdeu o contrato.
- *   4. qualquer um dos dois é ILEGÍVEL (`leiturasFalhas` não-vazio) — CEGUEIRA, nunca "compatível".
+ *   4. qualquer um dos dois é ILEGÍVEL (`failedReads` não-vazio) — CEGUEIRA, nunca "compatível".
  */
-export function compararContratos(yamlAntes, yamlDepois) {
-  if (yamlAntes === null && yamlDepois === null) {
-    return { status: 'sem-baseline', compativel: true, achados: [] };
+export function compareContracts(yamlBefore, yamlAfter) {
+  if (yamlBefore === null && yamlAfter === null) {
+    return { status: 'new-contract', compativel: true, achados: [] };
   }
-  if (yamlAntes === null) {
-    return { status: 'sem-baseline', compativel: true, achados: [] };
+  if (yamlBefore === null) {
+    return { status: 'new-contract', compativel: true, achados: [] };
   }
-  if (yamlDepois === null) {
+  if (yamlAfter === null) {
     return {
-      status: 'removido',
+      status: 'removed',
       compativel: false,
-      achados: [{ tipo: 'spec-removida', mensagem: 'contract/openapi.yaml existia no baseline e foi removido — quem consome perdeu o contrato' }],
+      achados: [{ tipo: 'removed-spec', mensagem: 'contract/openapi.yaml existed in the baseline and was removed — consumers lost the contract' }],
     };
   }
 
-  const falhasAntes = leiturasFalhas(yamlAntes);
-  const falhasDepois = leiturasFalhas(yamlDepois);
-  if (falhasAntes.length > 0 || falhasDepois.length > 0) {
+  const failuresBefore = failedReads(yamlBefore);
+  const failuresAfter = failedReads(yamlAfter);
+  if (failuresBefore.length > 0 || failuresAfter.length > 0) {
     return {
-      status: 'ilegivel',
+      status: 'unreadable',
       compativel: false,
       achados: [
-        ...falhasAntes.map((secao) => ({ tipo: 'ilegivel', mensagem: `baseline: secao "${secao}:" nao pode ser lida — nao da para afirmar compatibilidade` })),
-        ...falhasDepois.map((secao) => ({ tipo: 'ilegivel', mensagem: `atual: secao "${secao}:" nao pode ser lida — nao da para afirmar compatibilidade` })),
+        ...failuresBefore.map((section) => ({ tipo: 'unreadable', mensagem: `baseline: section "${section}:" cannot be read — compatibility cannot be determined` })),
+        ...failuresAfter.map((section) => ({ tipo: 'unreadable', mensagem: `current: section "${section}:" cannot be read — compatibility cannot be determined` })),
       ],
     };
   }
 
-  const achados = [
-    ...compararRotas(yamlAntes, yamlDepois),
-    ...compararServidor(yamlAntes, yamlDepois),
-    ...compararRespostas(yamlAntes, yamlDepois),
-    ...compararRequisicoes(yamlAntes, yamlDepois),
+  const findings = [
+    ...compareRoutes(yamlBefore, yamlAfter),
+    ...compareServer(yamlBefore, yamlAfter),
+    ...compareResponses(yamlBefore, yamlAfter),
+    ...compareRequests(yamlBefore, yamlAfter),
   ];
-  return { status: 'comparado', compativel: achados.length === 0, achados };
+  return { status: 'comparado', compativel: findings.length === 0, achados: findings };
 }
 
 // ================================================================================================
 // CASCA — toca disco e git. `git()` é o ÚNICO ponto que roda `git` de verdade.
 // ================================================================================================
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url));
 
-/** Mesmo raciocínio de `gate/context.mjs:acharRaizProjeto` — não importado: só `spec.mjs` e
+/** Mesmo raciocínio de `gate/context.mjs:findRootProjeto` — não importado: só `spec.mjs` e
  * `affected.mjs` estão liberados para import neste escopo, `context.mjs` não. */
-function acharRaiz(partida) {
-  let atual = partida;
-  for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'modules'))) return atual;
-    const pai = join(atual, '..');
-    if (relative(pai, atual) === '') break;
-    atual = pai;
+function findRoot(start) {
+  let current = start;
+  for (let level = 0; level < 8; level += 1) {
+    if (existsSync(join(current, 'modules'))) return current;
+    const parent = join(current, '..');
+    if (relative(parent, current) === '') break;
+    current = parent;
   }
-  return partida;
+  return start;
 }
 
-const RAIZ = acharRaiz(AQUI);
+const ROOT = findRoot(HERE);
 
 /** ÚNICO ponto que roda `git` de verdade — array de argumentos, NUNCA `shell: true` (lição da etapa anterior). */
 function git(args) {
-  return execFileSync('git', args, { cwd: RAIZ, encoding: 'utf8' });
+  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
 }
 
 /**
@@ -265,12 +265,12 @@ function git(args) {
  * por commit nenhum. Comparar contra ela faz todo `contract/openapi.yaml` existente contar como
  * "novo, sem baseline" — nunca "não verificado" (mesmo raciocínio de `ci-security.mjs`).
  */
-const ARVORE_VAZIA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
 /** A ref existe? Verificado ANTES de qualquer comparação — ref hostil/inválida REPROVA, nunca vira
  * "nada mudou". A árvore vazia é a única exceção: não é commit, e é sempre válida por definição. */
-function refValida(ref) {
-  if (ref === ARVORE_VAZIA) return true;
+function validRef(ref) {
+  if (ref === EMPTY_TREE) return true;
   try {
     git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
     return true;
@@ -284,107 +284,107 @@ function refValida(ref) {
  * Sarak nasceria vermelho aqui. `--since` explícito nunca é substituído em silêncio: só o DEFAULT cai
  * para a árvore vazia quando não resolve.
  */
-function refEfetiva(desde) {
-  if (desde !== null) return desde;
-  return refValida(REF_PADRAO) ? REF_PADRAO : ARVORE_VAZIA;
+function effectiveRef(since) {
+  if (since !== null) return since;
+  return validRef(DEFAULT_REF) ? DEFAULT_REF : EMPTY_TREE;
 }
 
 /** Conteúdo de um arquivo NAQUELE ref — `null` se não existir ali (git falha por design, não exceção nossa). */
-function lerNoRef(ref, caminhoRelativo) {
-  const alvo = caminhoRelativo.split('\\').join('/');
+function readInRef(ref, relativePath) {
+  const target = relativePath.split('\\').join('/');
   try {
-    return git(['show', `${ref}:${alvo}`]);
+    return git(['show', `${ref}:${target}`]);
   } catch {
     return null;
   }
 }
 
-function lerAtual(id) {
-  const caminho = join(RAIZ, 'modules', id, 'contract', 'openapi.yaml');
-  return existsSync(caminho) ? readFileSync(caminho, 'utf8') : null;
+function readCurrent(id) {
+  const path = join(ROOT, 'modules', id, 'contract', 'openapi.yaml');
+  return existsSync(path) ? readFileSync(path, 'utf8') : null;
 }
 
 /** Os ids de módulo cujo `contract/openapi.yaml` mudou (criado, editado ou apagado) desde a ref. */
-function modulosComContratoMudado(ref) {
-  const padrao = /^modules\/([^/]+)\/contract\/openapi\.yaml$/;
-  const mudados = git(['diff', '--name-only', '--no-renames', ref])
+function modulesWithChangedContract(ref) {
+  const pattern = /^modules\/([^/]+)\/contract\/openapi\.yaml$/;
+  const changed = git(['diff', '--name-only', '--no-renames', ref])
     .split(/\r?\n/)
-    .map((linha) => linha.match(padrao))
+    .map((line) => line.match(pattern))
     .filter((m) => m !== null)
     .map((m) => m[1]);
-  return [...new Set(mudados)];
+  return [...new Set(changed)];
 }
 
 /** Quem DECLARA `consumes` apontando para `id`, no grafo ATUAL — inclusive se `id` não existe mais
  * (a declaração continua no manifesto de quem consome, ainda que o dono tenha sumido). Mesma
- * pergunta que `consome-contrato` faz no gate ("reportado no consumidor"), UM salto só — não
- * transitivo como `affected.mjs:calcularAfetados` (que responde "o que precisa reverificar", uma
+ * pergunta que `consumes-contract` faz no gate ("reportado no consumidor"), UM salto só — não
+ * transitivo como `affected.mjs:computeAffected` (que responde "o que precisa reverificar", uma
  * pergunta mais ampla que "quem depende DIRETO deste contrato"). */
-function consumidoresDiretos(grafo, id) {
-  const consumidores = [];
-  for (const [outroId, { consome }] of grafo.modulos) {
-    if (consome.includes(id)) consumidores.push(outroId);
+function directConsumers(graph, id) {
+  const consumers = [];
+  for (const [otherId, { consumes }] of graph.modulos) {
+    if (consumes.includes(id)) consumers.push(otherId);
   }
-  return consumidores.sort();
+  return consumers.sort();
 }
 
-function compararModulo(ref, grafo, id) {
-  const antes = lerNoRef(ref, join('modules', id, 'contract', 'openapi.yaml'));
-  const depois = lerAtual(id);
-  const resultado = compararContratos(antes, depois);
-  const consumidores = resultado.compativel ? [] : consumidoresDiretos(grafo, id);
-  const moduloExisteAinda = existsSync(join(RAIZ, 'modules', id));
-  return { modulo: id, moduloExisteAinda, consumidores, ...resultado };
+function compareModule(ref, graph, id) {
+  const before = readInRef(ref, join('modules', id, 'contract', 'openapi.yaml'));
+  const after = readCurrent(id);
+  const result = compareContracts(before, after);
+  const consumers = result.compativel ? [] : directConsumers(graph, id);
+  const moduleStillExists = existsSync(join(ROOT, 'modules', id));
+  return { modulo: id, moduloExisteAinda: moduleStillExists, consumidores: consumers, ...result };
 }
 
 // ================================================================================================
 // SAÍDA
 // ================================================================================================
 
-function imprimirHumano(ref, resultados) {
-  const rotuloRef = ref === ARVORE_VAZIA ? `${ref} (arvore vazia — sem HEAD~1, repositorio novo)` : ref;
-  process.stdout.write(`contrato-compativel: comparando com --since ${rotuloRef}\n`);
-  if (resultados.length === 0) {
-    process.stdout.write('  nenhum contract/openapi.yaml mudou nesta area\n');
+function printHuman(ref, results) {
+  const refLabel = ref === EMPTY_TREE ? `${ref} (empty tree — no HEAD~1, new repository)` : ref;
+  process.stdout.write(`contract-compatible: comparing with --since ${refLabel}\n`);
+  if (results.length === 0) {
+    process.stdout.write('  no contract/openapi.yaml changed in this area\n');
     return;
   }
-  for (const r of resultados) {
-    if (r.status === 'sem-baseline') {
-      process.stdout.write(`  ${r.modulo}: contrato novo (sem baseline) — criacao, nao ha o que quebrar\n`);
+  for (const r of results) {
+    if (r.status === 'new-contract') {
+      process.stdout.write(`  ${r.modulo}: new contract (no baseline) — there is nothing to break\n`);
       continue;
     }
-    const marca = r.compativel ? 'ok   ' : 'FALHA';
-    const qualificador = r.status === 'removido'
-      ? (r.moduloExisteAinda ? ' (modulo continua, so o contrato sumiu)' : ' (modulo inteiro removido)')
+    const mark = r.compativel ? 'ok   ' : 'FAIL ';
+    const qualifier = r.status === 'removed'
+      ? (r.moduloExisteAinda ? ' (module remains; its contract is gone)' : ' (module was removed)')
       : '';
-    process.stdout.write(`  ${marca} ${r.modulo}${qualificador}\n`);
-    for (const achado of r.achados) process.stdout.write(`        [${achado.tipo}] ${achado.mensagem}\n`);
+    process.stdout.write(`  ${mark} ${r.modulo}${qualifier}\n`);
+    for (const finding of r.achados) process.stdout.write(`        [${finding.tipo}] ${finding.mensagem}\n`);
     if (r.consumidores.length > 0) {
-      process.stdout.write(`        consumidores afetados: ${r.consumidores.join(', ')}\n`);
+      process.stdout.write(`        affected consumers: ${r.consumidores.join(', ')}\n`);
     } else if (!r.compativel) {
-      process.stdout.write('        consumidores afetados: nenhum modulo atual declara "consumes" para este\n');
+      process.stdout.write('        affected consumers: no current module declares "consumes" for this contract\n');
     }
   }
 }
 
-function imprimirJson(ref, resultados) {
-  const erros = resultados.filter((r) => !r.compativel).length;
-  process.stdout.write(`${JSON.stringify({ desde: ref, modulos: resultados, erros }, null, 2)}\n`);
+function printJson(ref, results) {
+  const errors = results.filter((r) => !r.compativel).length;
+  process.stdout.write(`${JSON.stringify({ desde: ref, modulos: results, erros: errors }, null, 2)}\n`);
 }
 
 // ================================================================================================
 // CLI
 // ================================================================================================
 
-function lerOpcoes(argv) {
-  const opcoes = { desde: null, modulo: null, json: false, autoteste: false };
+function readOptions(argv) {
+  const options = { desde: null, modulo: null, json: false, selfTest: false };
   for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === '--autoteste') { opcoes.autoteste = true; continue; }
-    if (argv[i] === '--json') { opcoes.json = true; continue; }
-    if (argv[i] === '--since') { opcoes.desde = argv[i + 1] ?? null; i += 1; continue; }
-    if (!argv[i].startsWith('--')) { opcoes.module = argv[i]; continue; }
+    if (argv[i] === '--selftest') { options.selfTest = true; continue; }
+    if (argv[i] === '--json') { options.json = true; continue; }
+    if (argv[i] === '--since') { options.desde = argv[i + 1] ?? null; i += 1; continue; }
+    if (!argv[i].startsWith('--')) { options.module = argv[i]; continue; }
   }
-  return opcoes;
+  return options;
 }
 
 /**
@@ -395,30 +395,30 @@ function lerOpcoes(argv) {
  * nem de branch remota — é o "compare com o commit anterior" que faz sentido tanto em squash-merge
  * (1 commit por PR) quanto rodando localmente por curiosidade.
  */
-const REF_PADRAO = 'HEAD~1';
+const DEFAULT_REF = 'HEAD~1';
 
-function principal() {
-  const opcoes = lerOpcoes(process.argv.slice(2));
-  if (opcoes.autoteste) return rodarAutoteste();
+function main() {
+  const options = readOptions(process.argv.slice(2));
+  if (options.selfTest) return runSelfTest();
 
-  const ref = refEfetiva(opcoes.desde);
-  if (!refValida(ref)) {
-    process.stderr.write(`erro: ref invalida ou inexistente: "${ref}" — nao da para afirmar compatibilidade sem baseline\n`);
+  const ref = effectiveRef(options.desde);
+  if (!validRef(ref)) {
+    process.stderr.write(`Error: invalid or missing ref "${ref}" — compatibility cannot be determined without a baseline\n`);
     return 1;
   }
 
-  const grafo = montarGrafo(RAIZ);
-  const ids = opcoes.module !== null ? [opcoes.module] : modulosComContratoMudado(ref);
-  const resultados = ids.map((id) => compararModulo(ref, grafo, id));
+  const graph = buildGraph(ROOT);
+  const ids = options.module !== null ? [options.module] : modulesWithChangedContract(ref);
+  const results = ids.map((id) => compareModule(ref, graph, id));
 
-  if (opcoes.json) imprimirJson(ref, resultados);
-  else imprimirHumano(ref, resultados);
+  if (options.json) printJson(ref, results);
+  else printHuman(ref, results);
 
-  const reprovado = resultados.some((r) => !r.compativel);
-  if (!opcoes.json) {
-    process.stdout.write(`\ncontrato-compativel: ${reprovado ? 'REPROVADO' : 'OK'}\n`);
+  const failed = results.some((r) => !r.compativel);
+  if (!options.json) {
+    process.stdout.write(`\ncontract-compatible: ${failed ? 'FAILED' : 'OK'}\n`);
   }
-  return reprovado ? 1 : 0;
+  return failed ? 1 : 0;
 }
 
 // ================================================================================================
@@ -473,110 +473,110 @@ components:
         titulo: { type: string }
 `;
 
-/** Fixture ILEGÍVEL de propósito — `paths:` em *flow style*, que `spec.mjs:operacoesDaSpec` não alcança. */
-const ILEGIVEL = 'openapi: 3.1.0\npaths: {"/x": {"get": {}}}\n';
+/** Fixture ILEGÍVEL de propósito — `paths:` em *flow style*, que `spec.mjs:specOperations` não alcança. */
+const UNREADABLE = 'openapi: 3.1.0\npaths: {"/x": {"get": {}}}\n';
 
-function casosDeAutoteste() {
+function selfTestCases() {
   return [
     {
-      nome: 'rota removida: BREAKING',
-      antes: BASE,
-      depois: BASE.replace(/ {2}\/registros\/\{hash\}:[\s\S]*?(?=\ncomponents:)/, ''),
-      esperado: { compativel: false, tipo: 'rota-removida' },
+      name: 'removed route: BREAKING',
+      before: BASE,
+      after: BASE.replace(/ {2}\/registros\/\{hash\}:[\s\S]*?(?=\ncomponents:)/, ''),
+      expected: { compativel: false, tipo: 'removed-route' },
     },
     {
-      nome: 'rota acrescentada: compativel',
-      antes: BASE,
-      depois: `${BASE.replace('components:', '  /saude:\n    get:\n      responses:\n        \'200\':\n          content: {}\ncomponents:')}`,
-      esperado: { compativel: true },
+      name: 'added route: compatible',
+      before: BASE,
+      after: `${BASE.replace('components:', '  /saude:\n    get:\n      responses:\n        \'200\':\n          content: {}\ncomponents:')}`,
+      expected: { compativel: true },
     },
     {
-      nome: 'metodo removido de rota que continua: BREAKING',
-      antes: BASE,
-      depois: BASE.replace(/ {4}post:[\s\S]*?(?=\n {2}\/registros\/)/, ''),
-      esperado: { compativel: false, tipo: 'metodo-removido' },
+      name: 'method removed from a retained route: BREAKING',
+      before: BASE,
+      after: BASE.replace(/ {4}post:[\s\S]*?(?=\n {2}\/registros\/)/, ''),
+      expected: { compativel: false, tipo: 'removed-method' },
     },
     {
-      nome: 'campo de resposta removido: BREAKING',
-      antes: BASE,
-      depois: BASE.replace('                  total: { type: integer }\n', ''),
-      esperado: { compativel: false, tipo: 'campo-resposta-removido' },
+      name: 'response field removed: BREAKING',
+      before: BASE,
+      after: BASE.replace('                  total: { type: integer }\n', ''),
+      expected: { compativel: false, tipo: 'removed-response-field' },
     },
     {
-      nome: 'campo de resposta acrescentado: compativel',
-      antes: BASE,
-      depois: BASE.replace('                  total: { type: integer }', '                  total: { type: integer }\n                  pagina: { type: integer }'),
-      esperado: { compativel: true },
+      name: 'response field added: compatible',
+      before: BASE,
+      after: BASE.replace('                  total: { type: integer }', '                  total: { type: integer }\n                  pagina: { type: integer }'),
+      expected: { compativel: true },
     },
     {
-      nome: 'campo obrigatorio acrescentado na requisicao: BREAKING',
-      antes: BASE,
-      depois: BASE.replace('required: [titulo]', 'required: [titulo, status]'),
-      esperado: { compativel: false, tipo: 'campo-obrigatorio-acrescentado' },
+      name: 'required request field added: BREAKING',
+      before: BASE,
+      after: BASE.replace('required: [titulo]', 'required: [titulo, status]'),
+      expected: { compativel: false, tipo: 'required-request-field-added' },
     },
     {
-      nome: 'campo obrigatorio removido da requisicao: compativel',
-      antes: BASE.replace('required: [titulo]', 'required: [titulo, status]'),
-      depois: BASE,
-      esperado: { compativel: true },
+      name: 'required request field removed: compatible',
+      before: BASE.replace('required: [titulo]', 'required: [titulo, status]'),
+      after: BASE,
+      expected: { compativel: true },
     },
     {
-      nome: 'servers[0].url alterado: BREAKING',
-      antes: BASE,
-      depois: BASE.replace('/api/v1/pedidos', '/api/v1/pedidos-v2'),
-      esperado: { compativel: false, tipo: 'servidor-alterado' },
+      name: 'servers[0].url changed: BREAKING',
+      before: BASE,
+      after: BASE.replace('/api/v1/pedidos', '/api/v1/pedidos-v2'),
+      expected: { compativel: false, tipo: 'changed-server' },
     },
     {
-      nome: 'spec ilegivel no ANTES: reprova e nomeia a secao, nunca "compativel"',
-      antes: ILEGIVEL,
-      depois: BASE,
-      esperado: { compativel: false, status: 'ilegivel' },
+      name: 'unreadable before spec: fails and names the section, never "compatible"',
+      before: UNREADABLE,
+      after: BASE,
+      expected: { compativel: false, status: 'unreadable' },
     },
     {
-      nome: 'spec ilegivel no DEPOIS: reprova e nomeia a secao, nunca "compativel"',
-      antes: BASE,
-      depois: ILEGIVEL,
-      esperado: { compativel: false, status: 'ilegivel' },
+      name: 'unreadable after spec: fails and names the section, never "compatible"',
+      before: BASE,
+      after: UNREADABLE,
+      expected: { compativel: false, status: 'unreadable' },
     },
     {
-      nome: 'spec nova sem baseline: NAO reprova (criacao, nao breaking)',
-      antes: null,
-      depois: BASE,
-      esperado: { compativel: true, status: 'sem-baseline' },
+      name: 'new spec without a baseline does NOT fail (creation, not breaking)',
+      before: null,
+      after: BASE,
+      expected: { compativel: true, status: 'new-contract' },
     },
     {
-      nome: 'spec removida: BREAKING',
-      antes: BASE,
-      depois: null,
-      esperado: { compativel: false, status: 'removido' },
+      name: 'removed spec: BREAKING',
+      before: BASE,
+      after: null,
+      expected: { compativel: false, status: 'removed' },
     },
   ];
 }
 
-function resultadoBate(resultado, esperado) {
-  if (resultado.compativel !== esperado.compativel) return false;
-  if (esperado.status !== undefined && resultado.status !== esperado.status) return false;
-  if (esperado.tipo !== undefined && !resultado.achados.some((a) => a.tipo === esperado.tipo)) return false;
+function resultMatches(result, expected) {
+  if (result.compativel !== expected.compativel) return false;
+  if (expected.status !== undefined && result.status !== expected.status) return false;
+  if (expected.tipo !== undefined && !result.achados.some((a) => a.tipo === expected.tipo)) return false;
   return true;
 }
 
-function rodarAutoteste() {
-  let falhas = 0;
-  for (const caso of casosDeAutoteste()) {
-    const resultado = compararContratos(caso.antes, caso.depois);
-    const ok = resultadoBate(resultado, caso.esperado);
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
+function runSelfTest() {
+  let failures = 0;
+  for (const testCase of selfTestCases()) {
+    const result = compareContracts(testCase.before, testCase.after);
+    const ok = resultMatches(result, testCase.expected);
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${testCase.name}\n`);
     if (!ok) {
-      falhas += 1;
-      process.stdout.write(`       esperado: ${JSON.stringify(caso.esperado)}\n`);
-      process.stdout.write(`       obtido:   compativel=${resultado.compativel} status=${resultado.status} achados=${JSON.stringify(resultado.achados)}\n`);
+      failures += 1;
+      process.stdout.write(`       expected: ${JSON.stringify(testCase.expected)}\n`);
+      process.stdout.write(`       received: compatible=${result.compativel} status=${result.status} findings=${JSON.stringify(result.achados)}\n`);
     }
   }
-  const total = casosDeAutoteste().length;
-  process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  const total = selfTestCases().length;
+  process.stdout.write(`\nself-test: ${total - failures}/${total} passed\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(principal());
+  process.exit(main());
 }

@@ -13,7 +13,7 @@ FROM node:22.12.0-bookworm-slim AS build
 WORKDIR /repo
 COPY . .
 RUN npm ci
-RUN node tools/package.mjs /out/backend
+RUN node tools/package.mjs --backend-only /out/backend
 
 # ── dependências de produção ────────────────────────────────────────────────
 # Estágio separado, na MESMA base e libc do runtime: o que for compilado aqui roda lá. O lock do

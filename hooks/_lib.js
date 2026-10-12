@@ -350,7 +350,7 @@ function autoteste() {
   return 0;
 }
 
-if (require.main === module && process.argv.includes("--autoteste")) process.exit(autoteste());
+if (require.main === module && process.argv.includes("--selftest")) process.exit(autoteste());
 
 module.exports = {
   readInput,

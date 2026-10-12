@@ -3,7 +3,7 @@ Lei dona: specs/arquitetura/01-modulo.md §2 (so existe se generatesArtifact = t
 
 Deterministico significa: mesma entrada, saida byte a byte identica. Por isso o instante e o
 identificador chegam prontos, de fora — `datetime.now()` e `random` sao proibidos aqui e o gate
-reprova (regra `determinismo`). E o que torna o motor testavel sem congelar relogio.
+reprova (regra `determinism`). E o que torna o motor testavel sem congelar relogio.
 """
 
 from __future__ import annotations

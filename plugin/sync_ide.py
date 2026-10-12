@@ -305,7 +305,7 @@ def generate_routing_table(xskills_root):
 
 
 def autoteste():
-    """`--autoteste`: prova `cache_codex` com fixtures em memória — não chama `setup_env`, não
+    """`--selftest`: prova `cache_codex` com fixtures em memória — não chama `setup_env`, não
     escreve em disco, não exige `--target`."""
     meta = ("knowledge-agentics", "sarak", "1.0.0")
     home = Path("/home/fixture")
@@ -329,7 +329,7 @@ def autoteste():
 
 
 def main():
-    if "--autoteste" in sys.argv[1:]:
+    if "--selftest" in sys.argv[1:]:
         sys.exit(autoteste())
     args = get_args()
 

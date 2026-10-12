@@ -1,7 +1,7 @@
 """comparar_arvore.py — diferenca duas arvores de arquivos.
 
     python comparar_arvore.py <arvore-a> <arvore-b> [--ignorar <glob> ...]
-    python comparar_arvore.py --autoteste
+    python comparar_arvore.py --selftest
 
 Pensado para a pergunta: a arvore que a skill produz (com a entrevista do code-modulo no
 meio) diverge da que o script produz sozinho (init_repo.py rodando os dois modulos de uma vez)? A
@@ -10,7 +10,7 @@ conteudo diferente", e o item do plano manda classificar cada uma: prosa desatua
 a skill faz e o script nao sabe fazer.
 
 `comparar` e PURA: opera em dict {caminho-relativo: conteudo}, nunca toca disco — e o que o
-`--autoteste` prova com fixtures em memoria. `ler_arvore` e a unica funcao que le disco, e so ela.
+`--selftest` prova com fixtures em memoria. `ler_arvore` e a unica funcao que le disco, e so ela.
 """
 import argparse
 import fnmatch
@@ -111,7 +111,7 @@ def get_args():
     parser.add_argument("arvore_a", nargs="?", help="Caminho da arvore A")
     parser.add_argument("arvore_b", nargs="?", help="Caminho da arvore B")
     parser.add_argument("--ignorar", nargs="*", default=(), help="Padroes glob extras a ignorar")
-    parser.add_argument("--autoteste", action="store_true")
+    parser.add_argument("--selftest", action="store_true")
     return parser.parse_args()
 
 
@@ -125,7 +125,7 @@ def imprimir_resultado(resultado: dict) -> None:
 
 def main() -> int:
     args = get_args()
-    if args.autoteste:
+    if args.selftest:
         return rodar_autoteste()
     if not args.arvore_a or not args.arvore_b:
         print("uso: comparar_arvore.py <arvore-a> <arvore-b> [--ignorar <glob> ...]", file=sys.stderr)

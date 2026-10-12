@@ -4,7 +4,7 @@
  * `config/verification.json:dependencies.minimumSeverity` (já no schema — nenhuma chave nova).
  *
  *   node tools/ci-dependencies.mjs [--json]
- *   node tools/ci-dependencies.mjs --autoteste
+ *   node tools/ci-dependencies.mjs --selftest
  *
  * NÃO é regra de gate — audita ESTADO EXTERNO (registro npm/PyPI), não o código do módulo. Ferramenta,
  * como `contract-compatible.mjs`/`ci-security.mjs`. Sem id, fora do catálogo.
@@ -17,11 +17,11 @@
  * já exige) E DATADA (`expires`, novo aqui) em `config/compliance.json:exceptionsCve`.
  *
  * NÚCLEO × CASCA, mesmo precedente de `affected.mjs`/`contract-compatible.mjs`/`ci-security.mjs`:
- * `normalizarNpm`/`normalizarPip`/`statusDaExcecao`/`avaliar` recebem DADO (o JSON já parseado, e
+ * `normalizeNpm`/`normalizePip`/`exceptionStatus`/`avaliar` recebem DADO (o JSON já parseado, e
  * "hoje" como STRING `YYYY-MM-DD`), nunca tocam `fs`/`child_process`/relógio. A casca resolve os
- * binários SEM shell (mesma técnica de `verify-commit.mjs:entrypointDoNpm` — não importada de lá
+ * binários SEM shell (mesma técnica de `verify-commit.mjs:npmEntrypoint` — não importada de lá
  * porque não é exportada; copiada, com a origem citada, o mesmo precedente que `ci-security.mjs` já
- * seguiu para `acharRaiz`) e lê o relógio UMA vez, na borda.
+ * seguiu para `findRoot`) e lê o relógio UMA vez, na borda.
  *
  * MEDIDO ANTES DE ESCREVER O PARSER (os dois formatos reais, colados no relatório desta tarefa):
  *   - `npm audit --json` (npm 11.x): `{ auditReportVersion, vulnerabilities: { <pacote>: { severity,
@@ -48,12 +48,12 @@ import { fileURLToPath } from 'node:url';
 // NÚCLEO — puro. Nenhuma linha daqui embaixo toca `fs`, `child_process`, `process.env` ou o relógio.
 // ================================================================================================
 
-export const ORDEM_SEVERIDADE = ['low', 'moderate', 'high', 'critical'];
+export const SEVERITY_ORDER = ['low', 'moderate', 'high', 'critical'];
 
 /** Extrai o id GHSA/CVE de uma URL de advisory — `null` se a forma não for reconhecida. */
-function idDaUrl(url) {
-  const casado = typeof url === 'string' ? url.match(/GHSA-[\w-]+$/) : null;
-  return casado !== null ? casado[0] : null;
+function urlId(url) {
+  const matched = typeof url === 'string' ? url.match(/GHSA-[\w-]+$/) : null;
+  return matched !== null ? matched[0] : null;
 }
 
 /**
@@ -62,74 +62,74 @@ function idDaUrl(url) {
  * entrada em `vulnerabilities` com o advisory real, então ignorar as strings não perde achado, evita
  * duplicar o mesmo advisory sob dois nomes de pacote.
  */
-export function normalizarNpm(auditJson) {
+export function normalizeNpm(auditJson) {
   if (auditJson === null || typeof auditJson !== 'object') return null;
   if (auditJson.error !== undefined) return null; // "nao consegui auditar" — nunca vira lista vazia
-  const vulnerabilidades = auditJson.vulnerabilities ?? {};
-  const achados = [];
-  for (const [pacote, entrada] of Object.entries(vulnerabilidades)) {
-    for (const via of entrada.via ?? []) {
+  const vulnerabilities = auditJson.vulnerabilities ?? {};
+  const findings = [];
+  for (const [pkg, entry] of Object.entries(vulnerabilities)) {
+    for (const via of entry.via ?? []) {
       if (typeof via === 'string') continue;
-      achados.push({
+      findings.push({
         ecossistema: 'npm',
-        pacote,
-        severidade: via.severity ?? entrada.severity ?? null,
-        id: idDaUrl(via.url) ?? `npm:${pacote}:${via.source ?? 'sem-id'}`,
-        titulo: via.title ?? `${pacote}: vulnerabilidade sem titulo`,
+        pacote: pkg,
+        severidade: via.severity ?? entry.severity ?? null,
+        id: urlId(via.url) ?? `npm:${pkg}:${via.source ?? 'missing-id'}`,
+        titulo: via.title ?? `${pkg}: vulnerability title is unavailable`,
         url: via.url ?? null,
       });
     }
   }
-  return achados;
+  return findings;
 }
 
 /** `pip-audit --format=json` → achados uniformes. SEM severidade (medido — não existe no formato). */
-export function normalizarPip(auditJson) {
+export function normalizePip(auditJson) {
   if (auditJson === null || typeof auditJson !== 'object' || !Array.isArray(auditJson.dependencies)) return null;
-  const achados = [];
+  const findings = [];
   for (const dep of auditJson.dependencies) {
     for (const vuln of dep.vulns ?? []) {
-      achados.push({
+      findings.push({
         ecossistema: 'pip',
         pacote: dep.name,
         severidade: null,
-        id: vuln.id ?? (vuln.aliases ?? [])[0] ?? `pip:${dep.name}:sem-id`,
-        titulo: (vuln.description ?? '').slice(0, 120) || `${dep.name}: vulnerabilidade sem descricao`,
+        id: vuln.id ?? (vuln.aliases ?? [])[0] ?? `pip:${dep.name}:missing-id`,
+        titulo: (vuln.description ?? '').slice(0, 120) || `${dep.name}: vulnerability description is unavailable`,
         url: null,
       });
     }
   }
-  return achados;
+  return findings;
 }
 
 /** `null` (pip, sem severidade) sempre conta — não há como filtrar o que a ferramenta não relata. */
-export function acimaDoPiso(severidade, minima) {
-  if (severidade === null) return true;
-  const indiceAchado = ORDEM_SEVERIDADE.indexOf(severidade);
-  const indiceMinimo = ORDEM_SEVERIDADE.indexOf(minima);
-  if (indiceAchado === -1 || indiceMinimo === -1) return true; // severidade fora do vocabulario: erra para mais
-  return indiceAchado >= indiceMinimo;
+export function floorAbove(severity, min) {
+  if (severity === null) return true;
+  const findingIndex = SEVERITY_ORDER.indexOf(severity);
+  const minIndex = SEVERITY_ORDER.indexOf(min);
+  if (findingIndex === -1 || minIndex === -1) return true; // severidade fora do vocabulario: erra para mais
+  return findingIndex >= minIndex;
 }
 
-const FORMATO_DATA = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Calendário de verdade — rejeita "2026-02-30" que `new Date` rolaria em silêncio para março. */
-function dataRealISO(texto) {
-  if (typeof texto !== 'string' || !FORMATO_DATA.test(texto)) return false;
-  const [ano, mes, dia] = texto.split('-').map(Number);
-  const data = new Date(Date.UTC(ano, mes - 1, dia));
-  return data.getUTCFullYear() === ano && data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia;
+function dataRealISO(text) {
+  if (typeof text !== 'string' || !DATE_FORMAT.test(text)) return false;
+  const [year, month, day] = text.split('-').map(Number);
+  const data = new Date(Date.UTC(year, month - 1, day));
+  return data.getUTCFullYear() === year && data.getUTCMonth() === month - 1 && data.getUTCDate() === day;
 }
 
 /**
- * `hojeISO` é STRING `YYYY-MM-DD`, passada pela casca — nunca lida daqui (é o que faz o `--autoteste`
+ * `todayIso` é STRING `YYYY-MM-DD`, passada pela casca — nunca lida daqui (é o que faz o `--selftest`
  * determinístico: sem isso, o caso "expirada" passa hoje e falha em janeiro). Comparação lexicográfica
  * de datas ISO é comparação cronológica — não precisa de objeto `Date` para isso.
  */
-export function statusDaExcecao(excecao, hojeISO) {
-  if (!excecao || typeof excecao !== 'object' || !excecao.decision) return 'sem-decisao';
-  if (!dataRealISO(excecao.expires)) return 'expira-malformada';
-  return excecao.expires < hojeISO ? 'expirada' : 'valida';
+export function exceptionStatus(exception, todayIso) {
+  if (!exception || typeof exception !== 'object' || !exception.decision) return 'missing-decision';
+  if (!dataRealISO(exception.expires)) return 'malformed-expiry';
+  return exception.expires < todayIso ? 'expired' : 'valid';
 }
 
 /**
@@ -137,35 +137,35 @@ export function statusDaExcecao(excecao, hojeISO) {
  * resolvido), e devolve o veredito. Exceção com QUALQUER status que não seja `'valida'` continua
  * REPROVANDO o achado — e some como AVISO próprio, nunca como silêncio (lei 10 aplicada à exceção).
  */
-export function avaliar({ npm, pip, minima, excecoes, hojeISO }) {
+export function evaluate({ npm, pip, min, exceptions, todayIso }) {
   if (npm === null && pip === null) {
-    return { status: 'nao-auditado', compativel: false, achados: [], excecoesProblematicas: [] };
+    return { status: 'unaudited', compativel: false, achados: [], excecoesProblematicas: [] };
   }
-  const brutos = [...(npm ?? []), ...(pip ?? [])].filter((a) => acimaDoPiso(a.severidade, minima));
+  const rawArgs = [...(npm ?? []), ...(pip ?? [])].filter((a) => floorAbove(a.severidade, min));
 
-  const excecoesProblematicas = [];
-  const achados = [];
-  for (const achado of brutos) {
-    const excecao = (excecoes ?? []).find((e) => e.id === achado.id);
-    if (excecao === undefined) {
-      achados.push({ ...achado, perdoado: false });
+  const problematicExceptions = [];
+  const findings = [];
+  for (const finding of rawArgs) {
+    const exception = (exceptions ?? []).find((e) => e.id === finding.id);
+    if (exception === undefined) {
+      findings.push({ ...finding, perdoado: false });
       continue;
     }
-    const status = statusDaExcecao(excecao, hojeISO);
-    if (status === 'valida') {
-      achados.push({ ...achado, perdoado: true });
+    const status = exceptionStatus(exception, todayIso);
+    if (status === 'valid') {
+      findings.push({ ...finding, perdoado: true });
       continue;
     }
-    excecoesProblematicas.push({ id: achado.id, status });
-    achados.push({ ...achado, perdoado: false });
+    problematicExceptions.push({ id: finding.id, status });
+    findings.push({ ...finding, perdoado: false });
   }
 
-  const reprovadores = achados.filter((a) => !a.perdoado);
+  const failers = findings.filter((a) => !a.perdoado);
   return {
-    status: 'auditado',
-    compativel: reprovadores.length === 0,
-    achados,
-    excecoesProblematicas,
+    status: 'audited',
+    compativel: failers.length === 0,
+    achados: findings,
+    excecoesProblematicas: problematicExceptions,
   };
 }
 
@@ -173,102 +173,102 @@ export function avaliar({ npm, pip, minima, excecoes, hojeISO }) {
 // CASCA — toca disco, `child_process` e o relógio. Cada acesso externo isolado num ponto nomeado.
 // ================================================================================================
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url));
 const NODE = process.execPath;
 
-/** Mesmo raciocínio de `gate/context.mjs:acharRaizProjeto` — cópia, não import (fora de escopo). */
-function acharRaiz(partida) {
-  let atual = partida;
-  for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'modules'))) return atual;
-    const pai = join(atual, '..');
-    if (relative(pai, atual) === '') break;
-    atual = pai;
+/** Mesmo raciocínio de `gate/context.mjs:findRootProjeto` — cópia, não import (fora de escopo). */
+function findRoot(start) {
+  let current = start;
+  for (let level = 0; level < 8; level += 1) {
+    if (existsSync(join(current, 'modules'))) return current;
+    const parent = join(current, '..');
+    if (relative(parent, current) === '') break;
+    current = parent;
   }
-  return partida;
+  return start;
 }
 
-const RAIZ = acharRaiz(AQUI);
+const ROOT = findRoot(HERE);
 
 /** `hoje`, lido UMA vez, na borda — o núcleo inteiro recebe a string, nunca chama o relógio. */
-function hojeISO() {
+function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
 function binding() {
-  if (existsSync(join(RAIZ, 'package.json'))) return 'node';
-  if (existsSync(join(RAIZ, 'pyproject.toml'))) return 'python';
+  if (existsSync(join(ROOT, 'package.json'))) return 'node';
+  if (existsSync(join(ROOT, 'pyproject.toml'))) return 'python';
   return null;
 }
 
 /**
  * O entrypoint JS de um pacote de `node_modules/<pacote>` pelo campo `bin` — mesma técnica de
- * `verify-commit.mjs:entrypointDoPacote` (que por sua vez cita `hooks/padrao-limiares.js`). Copiada
+ * `verify-commit.mjs:packageEntrypoint` (que por sua vez cita `hooks/padrao-limiares.js`). Copiada
  * aqui porque `verify-commit.mjs` não exporta a função (é FORA de escopo, não editável), e
  * `tools/**` não pode depender de `hooks/` (não viaja para o projeto gerado).
  */
-function entrypointDoPacote(raizNode, pastaPacote, chaveBin = pastaPacote) {
-  const pasta = join(raizNode, 'node_modules', pastaPacote);
+function packageEntrypoint(nodeRoot, packageDir, binKey = packageDir) {
+  const dir = join(nodeRoot, 'node_modules', packageDir);
   try {
-    const { bin } = JSON.parse(readFileSync(join(pasta, 'package.json'), 'utf8'));
-    const relativo = typeof bin === 'string' ? bin : bin?.[chaveBin];
-    if (!relativo) return null;
-    const alvo = join(pasta, relativo);
-    return existsSync(alvo) ? alvo : null;
+    const { bin } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+    const relPath = typeof bin === 'string' ? bin : bin?.[binKey];
+    if (!relPath) return null;
+    const target = join(dir, relPath);
+    return existsSync(target) ? target : null;
   } catch {
     return null;
   }
 }
 
 /** `npm` vem empacotado ao lado do `node`, não é dependência do projeto — mesmos dois layouts
- * candidatos (Windows/POSIX) de `verify-commit.mjs:entrypointDoNpm`. */
-function entrypointDoNpm() {
-  const raizNode = dirname(NODE);
-  for (const candidato of [raizNode, join(raizNode, '..', 'lib')]) {
-    const achado = entrypointDoPacote(candidato, 'npm');
-    if (achado !== null) return achado;
+ * candidatos (Windows/POSIX) de `verify-commit.mjs:npmEntrypoint`. */
+function npmEntrypoint() {
+  const nodeRoot = dirname(NODE);
+  for (const candidate of [nodeRoot, join(nodeRoot, '..', 'lib')]) {
+    const finding = packageEntrypoint(candidate, 'npm');
+    if (finding !== null) return finding;
   }
   return null;
 }
 
-let pythonResolvido;
-function resolverPython() {
-  if (pythonResolvido !== undefined) return pythonResolvido;
-  const candidatos = [process.env.SARAK_PYTHON, 'python', 'python3'].filter((c) => Boolean(c));
-  pythonResolvido = candidatos.find((c) => spawnSync(c, ['--version'], { shell: false }).status === 0) ?? null;
-  return pythonResolvido;
+let resolvedPython;
+function resolvePython() {
+  if (resolvedPython !== undefined) return resolvedPython;
+  const candidates = [process.env.SARAK_PYTHON, 'python', 'python3'].filter((c) => Boolean(c));
+  resolvedPython = candidates.find((c) => spawnSync(c, ['--version'], { shell: false }).status === 0) ?? null;
+  return resolvedPython;
 }
 
 /** JSON de um comando, com stdout/stderr SEPARADOS (medido: `pip-audit` grava aviso em stderr — juntar
  * os dois fluxos quebra o parse). `null` quando o executável não resolve ou a saída não é JSON. */
-function jsonDeComando(executavel, args, cwd) {
-  if (executavel === null) return null;
-  const resultado = spawnSync(executavel, args, { cwd, encoding: 'utf8', shell: false, stdio: ['ignore', 'pipe', 'pipe'] });
-  if (resultado.error !== undefined) return null;
+function commandJson(executable, args, cwd) {
+  if (executable === null) return null;
+  const result = spawnSync(executable, args, { cwd, encoding: 'utf8', shell: false, stdio: ['ignore', 'pipe', 'pipe'] });
+  if (result.error !== undefined) return null;
   try {
-    return JSON.parse(resultado.stdout);
+    return JSON.parse(result.stdout);
   } catch {
     return null;
   }
 }
 
-function auditarNpm() {
-  const entrada = entrypointDoNpm();
-  if (entrada === null) return null; // ferramenta ausente — REPROVA (lei 7), nunca "zero vulnerabilidade"
-  return jsonDeComando(NODE, [entrada, 'audit', '--json'], RAIZ);
+function auditNpm() {
+  const entry = npmEntrypoint();
+  if (entry === null) return null; // ferramenta ausente — REPROVA (lei 7), nunca "zero vulnerabilidade"
+  return commandJson(NODE, [entry, 'audit', '--json'], ROOT);
 }
 
-function auditarPip() {
-  const python = resolverPython();
+function auditPip() {
+  const python = resolvePython();
   if (python === null) return null;
-  return jsonDeComando(python, ['-m', 'pip_audit', '--format=json'], RAIZ);
+  return commandJson(python, ['-m', 'pip_audit', '--format=json'], ROOT);
 }
 
-function severidadeMinima() {
-  const caminho = join(RAIZ, 'config', 'verification.json');
-  if (!existsSync(caminho)) return 'high'; // mesmo default de `hooks/test-cobertura.js`/config.json da base
+function minSeverity() {
+  const path = join(ROOT, 'config', 'verification.json');
+  if (!existsSync(path)) return 'high'; // mesmo default de `hooks/test-cobertura.js`/config.json da base
   try {
-    return JSON.parse(readFileSync(caminho, 'utf8')).dependencies?.minimumSeverity ?? 'high';
+    return JSON.parse(readFileSync(path, 'utf8')).dependencies?.minimumSeverity ?? 'high';
   } catch {
     return 'high';
   }
@@ -277,11 +277,11 @@ function severidadeMinima() {
 /** `config/compliance.json:exceptionsCve` — MESMO arquivo das exceções de regra do gate, chave nova.
  * Decisão (não um arquivo próprio): a disciplina "sem decisao não vale" já mora e é testada ali;
  * duplicar em outro arquivo repetiria o mecanismo sem nenhum ganho, só mais uma entrada na árvore. */
-function excecoesCve() {
-  const caminho = join(RAIZ, 'config', 'compliance.json');
-  if (!existsSync(caminho)) return [];
+function cveExceptions() {
+  const path = join(ROOT, 'config', 'compliance.json');
+  if (!existsSync(path)) return [];
   try {
-    return JSON.parse(readFileSync(caminho, 'utf8')).exceptionsCve ?? [];
+    return JSON.parse(readFileSync(path, 'utf8')).exceptionsCve ?? [];
   } catch {
     return [];
   }
@@ -291,25 +291,25 @@ function excecoesCve() {
 // SAÍDA
 // ================================================================================================
 
-function imprimirHumano(r, bind) {
-  if (r.status === 'nao-auditado') {
-    process.stdout.write(`  x ferramenta de auditoria ausente ou saida ilegivel (binding: ${bind ?? 'desconhecido'}) — FAIL-CLOSED: nao verificado nunca vira "ok"\n`);
+function printHuman(r, bind) {
+  if (r.status === 'unaudited') {
+    process.stdout.write(`  x audit tool is missing or returned unreadable output (binding: ${bind ?? 'unknown'}) — FAIL-CLOSED: unchecked never means "ok"\n`);
     return;
   }
   if (r.achados.length === 0) {
-    process.stdout.write('  ok   nenhuma vulnerabilidade no piso configurado\n');
+    process.stdout.write('  ok   no vulnerabilities at the configured severity floor\n');
   }
   for (const a of r.achados) {
-    const marca = a.perdoado ? '!' : 'x';
-    const rotulo = a.perdoado ? 'PERDOADA (excecao valida)' : 'REPROVA';
-    process.stdout.write(`  ${marca} [${a.ecossistema}] ${a.pacote} (${a.severidade ?? 'sem severidade'}) ${a.id}: ${a.titulo} — ${rotulo}\n`);
+    const mark = a.perdoado ? '!' : 'x';
+    const label = a.perdoado ? 'WAIVED (valid exception)' : 'FAILS';
+    process.stdout.write(`  ${mark} [${a.ecossistema}] ${a.pacote} (${a.severidade ?? 'no severity'}) ${a.id}: ${a.titulo} — ${label}\n`);
   }
   for (const p of r.excecoesProblematicas) {
-    process.stdout.write(`  !    excecao para "${p.id}" nao vale (${p.status}) — achado continua reprovando\n`);
+    process.stdout.write(`  !    exception for "${p.id}" is invalid (${p.status}) — the finding still fails\n`);
   }
 }
 
-function imprimirJson(r) {
+function printJson(r) {
   process.stdout.write(`${JSON.stringify(r, null, 2)}\n`);
 }
 
@@ -317,48 +317,48 @@ function imprimirJson(r) {
 // CLI
 // ================================================================================================
 
-function lerOpcoes(argv) {
-  const opcoes = { json: false, autoteste: false };
+function readOptions(argv) {
+  const options = { json: false, selfTest: false };
   for (const arg of argv) {
-    if (arg === '--json') opcoes.json = true;
-    if (arg === '--autoteste') opcoes.autoteste = true;
+    if (arg === '--json') options.json = true;
+    if (arg === '--selftest') options.selfTest = true;
   }
-  return opcoes;
+  return options;
 }
 
-function principal() {
-  const opcoes = lerOpcoes(process.argv.slice(2));
-  if (opcoes.autoteste) return rodarAutoteste();
+function main() {
+  const options = readOptions(process.argv.slice(2));
+  if (options.selfTest) return runSelfTest();
 
   const bind = binding();
-  const npm = bind === 'node' ? auditarNpm() : null;
-  const npmNormalizado = npm === null ? null : normalizarNpm(npm);
-  const pip = bind === 'python' ? auditarPip() : null;
-  const pipNormalizado = pip === null ? null : normalizarPip(pip);
+  const npm = bind === 'node' ? auditNpm() : null;
+  const normalizedNpm = npm === null ? null : normalizeNpm(npm);
+  const pip = bind === 'python' ? auditPip() : null;
+  const normalizedPip = pip === null ? null : normalizePip(pip);
 
   // Ferramenta ausente/saida ilegivel E o binding exigia aquela ferramenta: nao-auditado.
-  const semAuditoria = (bind === 'node' && npmNormalizado === null) || (bind === 'python' && pipNormalizado === null) || bind === null;
+  const withoutAudit = (bind === 'node' && normalizedNpm === null) || (bind === 'python' && normalizedPip === null) || bind === null;
 
-  const resultado = semAuditoria
-    ? { status: 'nao-auditado', compativel: false, achados: [], excecoesProblematicas: [] }
-    : avaliar({ npm: npmNormalizado, pip: pipNormalizado, minima: severidadeMinima(), excecoes: excecoesCve(), hojeISO: hojeISO() });
+  const result = withoutAudit
+    ? { status: 'unaudited', compativel: false, achados: [], excecoesProblematicas: [] }
+    : evaluate({ npm: normalizedNpm, pip: normalizedPip, min: minSeverity(), exceptions: cveExceptions(), todayIso: todayIso() });
 
-  if (opcoes.json) imprimirJson(resultado);
+  if (options.json) printJson(result);
   else {
-    process.stdout.write(`ci-dependencias: binding ${bind ?? 'desconhecido'}, piso ${severidadeMinima()}\n`);
-    imprimirHumano(resultado, bind);
-    process.stdout.write(`\nci-dependencias: ${resultado.compativel ? 'OK' : 'REPROVADO'}\n`);
+    process.stdout.write(`ci-dependencies: binding ${bind ?? 'unknown'}, severity floor ${minSeverity()}\n`);
+    printHuman(result, bind);
+    process.stdout.write(`\nci-dependencies: ${result.compativel ? 'OK' : 'FAILED'}\n`);
   }
-  return resultado.compativel ? 0 : 1;
+  return result.compativel ? 0 : 1;
 }
 
 // ================================================================================================
 // AUTOTESTE — o núcleo puro contra fixtures em memória (JSON real medido, colado como fixture).
 // ================================================================================================
 
-const NPM_COM_LOCKFILE_QUEBRADO = { error: { code: 'ENOLOCK', summary: 'This command requires an existing lockfile.' } };
+const NPM_WITH_BROKEN_LOCKFILE = { error: { code: 'ENOLOCK', summary: 'This command requires an existing lockfile.' } };
 
-const NPM_UMA_VULN = {
+const NPM_ONE_VULN = {
   auditReportVersion: 2,
   vulnerabilities: {
     vite: {
@@ -371,72 +371,72 @@ const NPM_UMA_VULN = {
   metadata: { vulnerabilities: { critical: 0, high: 1, moderate: 1, low: 0, info: 0, total: 2 } },
 };
 
-const PIP_UMA_VULN = {
+const PIP_ONE_VULN = {
   dependencies: [
     { name: 'pip', version: '25.2', vulns: [{ id: 'PYSEC-2026-196', fix_versions: ['26.1.2'], aliases: ['GHSA-wf93-45jw-7689', 'CVE-2026-8643'], description: 'path traversal' }] },
     { name: 'anyio', version: '4.14.2', vulns: [] },
   ],
 };
 
-function casosDeAutoteste() {
+function selfTestCases() {
   return [
-    { nome: 'npm com lockfile quebrado (error): normalizarNpm devolve null, nunca []', fn: () => normalizarNpm(NPM_COM_LOCKFILE_QUEBRADO) === null },
-    { nome: 'npm real: extrai 1 achado de "via" objeto, ignora "via" string duplicada', fn: () => normalizarNpm(NPM_UMA_VULN).length === 1 },
-    { nome: 'npm real: id extraido da URL do GHSA', fn: () => normalizarNpm(NPM_UMA_VULN)[0].id === 'GHSA-4w7w-66w2-5vf9' },
-    { nome: 'pip real: 1 achado, severidade SEMPRE null (medido — pip-audit nao reporta)', fn: () => { const a = normalizarPip(PIP_UMA_VULN); return a.length === 1 && a[0].severidade === null; } },
-    { nome: 'pip com 0 vulns em tudo: lista vazia, NAO null (auditou, achou nada)', fn: () => { const r = normalizarPip({ dependencies: [{ name: 'x', version: '1', vulns: [] }] }); return Array.isArray(r) && r.length === 0; } },
-    { nome: 'pip com shape invalido (nao e {dependencies}): null, nao lista vazia', fn: () => normalizarPip({ oops: true }) === null },
-    { nome: 'acimaDoPiso: severidade null (pip) sempre conta', fn: () => acimaDoPiso(null, 'critical') === true },
-    { nome: 'acimaDoPiso: moderate < high nao conta com piso high', fn: () => acimaDoPiso('moderate', 'high') === false },
-    { nome: 'acimaDoPiso: high >= high conta', fn: () => acimaDoPiso('high', 'high') === true },
-    { nome: 'excecao sem decisao: sem-decisao (nunca valida)', fn: () => statusDaExcecao({ expires: '2099-01-01' }, '2026-01-01') === 'sem-decisao' },
-    { nome: 'excecao com decisao, expira no FUTURO: valida', fn: () => statusDaExcecao({ decision: 'ADR-01', expires: '2099-01-01' }, '2026-01-01') === 'valida' },
-    { nome: 'excecao com decisao, expira no PASSADO: expirada', fn: () => statusDaExcecao({ decision: 'ADR-01', expires: '2020-01-01' }, '2026-01-01') === 'expirada' },
-    { nome: 'excecao com data MALFORMADA (2026-02-30): expira-malformada, nunca "valida para sempre"', fn: () => statusDaExcecao({ decision: 'ADR-01', expires: '2026-02-30' }, '2026-01-01') === 'expira-malformada' },
-    { nome: 'excecao com expira ausente: expira-malformada', fn: () => statusDaExcecao({ decision: 'ADR-01' }, '2026-01-01') === 'expira-malformada' },
-    { nome: 'excecao com expira em formato errado ("30/02/2026"): expira-malformada', fn: () => statusDaExcecao({ decision: 'ADR-01', expires: '30/02/2026' }, '2026-01-01') === 'expira-malformada' },
+    { name: 'npm with a broken lockfile returns null, never an empty list', fn: () => normalizeNpm(NPM_WITH_BROKEN_LOCKFILE) === null },
+    { name: 'real npm output: reads one finding from an object via entry and ignores the duplicate string entry', fn: () => normalizeNpm(NPM_ONE_VULN).length === 1 },
+    { name: 'real npm output: extracts the id from the GHSA URL', fn: () => normalizeNpm(NPM_ONE_VULN)[0].id === 'GHSA-4w7w-66w2-5vf9' },
+    { name: 'real pip output: severity is always null because pip-audit does not report it', fn: () => { const a = normalizePip(PIP_ONE_VULN); return a.length === 1 && a[0].severidade === null; } },
+    { name: 'pip with no vulnerabilities returns an empty list, not null', fn: () => { const r = normalizePip({ dependencies: [{ name: 'x', version: '1', vulns: [] }] }); return Array.isArray(r) && r.length === 0; } },
+    { name: 'pip with an invalid shape returns null, not an empty list', fn: () => normalizePip({ oops: true }) === null },
+    { name: 'floorAbove: null severity from pip always counts', fn: () => floorAbove(null, 'critical') === true },
+    { name: 'floorAbove: moderate does not meet a high severity floor', fn: () => floorAbove('moderate', 'high') === false },
+    { name: 'floorAbove: high meets a high severity floor', fn: () => floorAbove('high', 'high') === true },
+    { name: 'exception without a decision is never valid', fn: () => exceptionStatus({ expires: '2099-01-01' }, '2026-01-01') === 'missing-decision' },
+    { name: 'exception with a decision and a future expiry is valid', fn: () => exceptionStatus({ decision: 'ADR-01', expires: '2099-01-01' }, '2026-01-01') === 'valid' },
+    { name: 'exception with a decision and a past expiry is expired', fn: () => exceptionStatus({ decision: 'ADR-01', expires: '2020-01-01' }, '2026-01-01') === 'expired' },
+    { name: 'exception with an invalid date is malformed, never valid forever', fn: () => exceptionStatus({ decision: 'ADR-01', expires: '2026-02-30' }, '2026-01-01') === 'malformed-expiry' },
+    { name: 'exception without an expiry is malformed', fn: () => exceptionStatus({ decision: 'ADR-01' }, '2026-01-01') === 'malformed-expiry' },
+    { name: 'exception with an invalid date format is malformed', fn: () => exceptionStatus({ decision: 'ADR-01', expires: '30/02/2026' }, '2026-01-01') === 'malformed-expiry' },
     {
-      nome: 'avaliar: excecao valida PERDOA o achado (compativel=true)',
+      name: 'evaluate: a valid exception forgives the finding',
       fn: () => {
-        const r = avaliar({ npm: normalizarNpm(NPM_UMA_VULN), pip: [], minima: 'low', excecoes: [{ id: 'GHSA-4w7w-66w2-5vf9', decision: 'ADR-9', expires: '2099-01-01' }], hojeISO: '2026-01-01' });
+        const r = evaluate({ npm: normalizeNpm(NPM_ONE_VULN), pip: [], min: 'low', exceptions: [{ id: 'GHSA-4w7w-66w2-5vf9', decision: 'ADR-9', expires: '2099-01-01' }], todayIso: '2026-01-01' });
         return r.compativel === true && r.achados.some((a) => a.perdoado);
       },
     },
     {
-      nome: 'avaliar: excecao EXPIRADA nao perdoa — continua reprovando E aparece como excecaoProblematica',
+      name: 'evaluate: an expired exception does not forgive the finding and remains problematic',
       fn: () => {
-        const r = avaliar({ npm: normalizarNpm(NPM_UMA_VULN), pip: [], minima: 'low', excecoes: [{ id: 'GHSA-4w7w-66w2-5vf9', decision: 'ADR-9', expires: '2020-01-01' }], hojeISO: '2026-01-01' });
-        return r.compativel === false && r.excecoesProblematicas.some((p) => p.status === 'expirada');
+        const r = evaluate({ npm: normalizeNpm(NPM_ONE_VULN), pip: [], min: 'low', exceptions: [{ id: 'GHSA-4w7w-66w2-5vf9', decision: 'ADR-9', expires: '2020-01-01' }], todayIso: '2026-01-01' });
+        return r.compativel === false && r.excecoesProblematicas.some((p) => p.status === 'expired');
       },
     },
     {
-      nome: 'avaliar: nem npm nem pip auditados (null,null) — nao-auditado, nunca "compativel"',
-      fn: () => avaliar({ npm: null, pip: null, minima: 'low', excecoes: [], hojeISO: '2026-01-01' }).status === 'nao-auditado',
+      name: 'evaluate: when neither npm nor pip was audited, the result is unaudited, never compatible',
+      fn: () => evaluate({ npm: null, pip: null, min: 'low', exceptions: [], todayIso: '2026-01-01' }).status === 'unaudited',
     },
     {
-      nome: 'ADVERSARIAL: id de excecao com "; echo INJETADO" so casa por IGUALDADE de string — nunca executa',
-      fn: () => statusDaExcecao({ id: '; echo INJETADO', decision: 'ADR-1', expires: '2099-01-01' }, '2026-01-01') === 'valida',
+      name: 'ADVERSARIAL: an exception id containing shell syntax is compared as a string and never executed',
+      fn: () => exceptionStatus({ id: '; echo INJECTED', decision: 'ADR-1', expires: '2099-01-01' }, '2026-01-01') === 'valid',
     },
   ];
 }
 
-function rodarAutoteste() {
-  let falhas = 0;
-  for (const caso of casosDeAutoteste()) {
+function runSelfTest() {
+  let failures = 0;
+  for (const testCase of selfTestCases()) {
     let ok;
     try {
-      ok = caso.fn() === true;
-    } catch (erro) {
+      ok = testCase.fn() === true;
+    } catch (error) {
       ok = false;
     }
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
-  const total = casosDeAutoteste().length;
-  process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  const total = selfTestCases().length;
+  process.stdout.write(`\nself-test: ${total - failures}/${total} passed\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(principal());
+  process.exit(main());
 }

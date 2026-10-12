@@ -174,7 +174,7 @@ invariante novo tem exatamente um dono:
 - vale para TODO módulo, ou é sobre a RELAÇÃO entre módulos → **regra de gate** — nenhum teste enxerga
   o vizinho, é a única forma que faz isso;
 - é sobre um ARQUIVO DERIVADO de outra fonte → **`--check` do gerador**, o idioma que o template já
-  usa (`sync-env --check`, `generate-port-schemas --check`, `lint-derivado`).
+  usa (`sync-env --check`, `generate-port-schemas --check`, `derived-lint`).
 
 O resultado vira a linha `Gate:` na §7 da plan (`template-plan.md`) — declarada sempre, `nenhum` incluso.
 

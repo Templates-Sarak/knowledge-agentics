@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * supervisionar.mjs — roda UM comando sob teto de tempo e, em qualquer desfecho, encerra a ÁRVORE
+ * supervise.mjs — roda UM comando sob teto de tempo e, em qualquer desfecho, encerra a ÁRVORE
  * inteira de processos dele. É a casca de processo do `template-self-test.mjs`.
  *
- *   node supervisionar.mjs --teto-ms N -- <comando> [args...]
- *   node supervisionar.mjs --teto-ms N --ate-url URL --intervalo-ms M --linhas-cauda K -- <comando> [args...]
- *   node supervisionar.mjs --porta-livre
- *   node supervisionar.mjs --autoteste
+ *   node supervise.mjs --timeout-ms N -- <comando> [args...]
+ *   node supervise.mjs --timeout-ms N --until-url URL --interval-ms M --tail-lines K -- <comando> [args...]
+ *   node supervise.mjs --free-port
+ *   node supervise.mjs --selftest
  *
  * POR QUE EXISTE: `spawnSync` com `timeout` mata só o filho DIRETO. O `pytest` órfão que pendurou
  * uma rodada por 57 minutos era neto (`npm run` -> `sh` -> `pytest`), e no Windows matar o PID do
@@ -15,17 +15,17 @@
  *
  * DOIS MODOS, UM CONCEITO ("supervisionar um processo"):
  *   - espera a SAÍDA: o código de saída do filho é o do supervisor; estourar o teto sai 124.
- *   - `--ate-url`: o filho é um SERVIDOR. Sonda a URL até 200, então encerra a árvore e sai 0. Sai
+ *   - `--until-url`: o filho é um SERVIDOR. Sonda a URL até 200, então encerra a árvore e sai 0. Sai
  *     não-zero (mensagem + cauda do stdout/stderr do filho em stderr) se o filho sai antes, a URL
  *     responde diferente de 200, ou o teto estoura.
  *
  * Fora de `tools/` DE PROPÓSITO, ao lado do autoteste do template: é ferramenta de quem MANTÉM o
  * template; `create-project.mjs` copia `tools/` inteiro e isto viajaria como peso morto.
  *
- * `--porta-livre`: imprime uma porta TCP livre em loopback (escolhida pelo SO, nunca um número fixo).
+ * `--free-port`: imprime uma porta TCP livre em loopback (escolhida pelo SO, nunca um número fixo).
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { createServer as criarServidorTcp } from 'node:net';
+import { createServer as createTcpServer } from 'node:net';
 import { platform } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -34,64 +34,64 @@ import { fileURLToPath } from 'node:url';
 // ================================================================================================
 
 /** Convenção do `timeout(1)` do GNU: o supervisor matou o filho por estouro do teto. */
-export const SAIDA_TETO = 124;
+export const EXIT_CAP = 124;
 
 const STATUS_OK = 200;
-const STATUS_NAO_ENCONTRADO = 404;
-/** Últimas linhas do processo que entram na mensagem de falha, se `--linhas-cauda` não vier. */
-const LINHAS_DE_CAUDA_PADRAO = 20;
+const STATUS_NOT_FOUND = 404;
+/** Últimas linhas do processo que entram na mensagem de falha, se `--tail-lines` não vier. */
+const DEFAULT_TAIL_LINES = 20;
 /** Pausa entre verificações do filho no modo "espera a saída". */
-const PASSO_DE_ESPERA_MS = 50;
+const WAIT_STEP_MS = 50;
 /** Teto do `spawnSync` que cerca o supervisor DENTRO do autoteste: cada caso real dura segundos. */
-const TETO_DO_CASO_DE_TESTE_MS = 30000;
+const TEST_CASE_CAP_MS = 30000;
 /** Teto dado ao supervisor nos casos reais do autoteste que esperam o estouro. */
-const TETO_CURTO_DE_TESTE_MS = 1500;
-const TETO_DE_SONDA_DE_TESTE_MS = 10000;
-const INTERVALO_DE_TESTE_MS = 100;
-const ESPERA_DA_MORTE_DE_TESTE_MS = 5000;
+const TEST_SHORT_CAP_MS = 1500;
+const TEST_PROBE_CAP_MS = 10000;
+const TEST_INTERVAL_MS = 100;
+const TEST_DEATH_WAIT_MS = 5000;
 
-const OPCOES_COM_VALOR = {
-  '--teto-ms': 'tetoMs',
-  '--ate-url': 'ateUrl',
-  '--intervalo-ms': 'intervaloMs',
-  '--linhas-cauda': 'linhasCauda',
+const OPTIONS_WITH_VALUE = {
+  '--timeout-ms': 'capMs',
+  '--until-url': 'untilUrl',
+  '--interval-ms': 'intervalMs',
+  '--tail-lines': 'tailLines',
 };
-const OPCOES_NUMERICAS = new Set(['tetoMs', 'intervaloMs', 'linhasCauda']);
+const NUMERIC_OPTIONS = new Set(['capMs', 'intervalMs', 'tailLines']);
 
 /** Lê o valor numérico/texto de UMA opção nomeada. `{ erro }` se faltar valor ou não for inteiro > 0. */
-function lerValor(nome, chave, bruto) {
-  if (bruto === undefined) return { erro: `${nome} exige um valor` };
-  if (!OPCOES_NUMERICAS.has(chave)) return { valor: bruto };
-  const numero = Number(bruto);
-  if (!Number.isInteger(numero) || numero <= 0) return { erro: `${nome} exige um inteiro > 0 (veio "${bruto}")` };
-  return { valor: numero };
+function readValue(name, key, raw) {
+  if (raw === undefined) return { error: `${name} requires a value` };
+  if (!NUMERIC_OPTIONS.has(key)) return { value: raw };
+  const number = Number(raw);
+  if (!Number.isInteger(number) || number <= 0) return { error: `${name} requires an integer > 0 (received "${raw}")` };
+  return { value: number };
 }
 
 /** Confere o que a CLI exige depois de lidas as opções. */
-function validarOpcoes(opcoes) {
-  if (opcoes.tetoMs === null) return { erro: '--teto-ms e obrigatorio' };
-  if (opcoes.comando.length === 0) return { erro: 'faltou o comando depois de "--"' };
-  if (opcoes.ateUrl !== null && opcoes.intervaloMs === null) return { erro: '--ate-url exige --intervalo-ms' };
-  return { opcoes };
+function validateOptions(options) {
+  if (options.capMs === null) return { error: '--timeout-ms is required' };
+  if (options.command.length === 0) return { error: 'missing command after "--"' };
+  if (options.untilUrl !== null && options.intervalMs === null) return { error: '--until-url requires --interval-ms' };
+  return { options };
 }
 
 /** argv -> `{ opcoes }` ou `{ erro }`. Argumento desconhecido REPROVA (nunca é ignorado). */
-export function lerArgumentos(argv) {
-  const opcoes = { tetoMs: null, ateUrl: null, intervaloMs: null, linhasCauda: LINHAS_DE_CAUDA_PADRAO, comando: [] };
+export function readArguments(argv) {
+  const options = { capMs: null, untilUrl: null, intervalMs: null, tailLines: DEFAULT_TAIL_LINES, command: [] };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--') {
-      opcoes.comando = argv.slice(i + 1);
+      options.command = argv.slice(i + 1);
       break;
     }
-    const chave = OPCOES_COM_VALOR[arg];
-    if (chave === undefined) return { erro: `argumento desconhecido "${arg}"` };
-    const { valor, erro } = lerValor(arg, chave, argv[i + 1]);
-    if (erro !== undefined) return { erro };
-    opcoes[chave] = valor;
+    const key = OPTIONS_WITH_VALUE[arg];
+    if (key === undefined) return { error: `unknown argument "${arg}"` };
+    const { value, error } = readValue(arg, key, argv[i + 1]);
+    if (error !== undefined) return { error };
+    options[key] = value;
     i += 1;
   }
-  return validarOpcoes(opcoes);
+  return validateOptions(options);
 }
 
 /**
@@ -99,21 +99,21 @@ export function lerArgumentos(argv) {
  * servidor pode responder e cair logo depois) e "teto" (resposta na última volta ainda vale).
  * `status === null` = a conexão não abriu ainda (recusada/timeout) — segue sondando.
  */
-export function decidirSondagem({ status, saiu, estourou }) {
-  if (status === STATUS_OK) return { fim: true, ok: true, motivo: null };
+export function decideProbing({ status, exited, overflowed }) {
+  if (status === STATUS_OK) return { end: true, ok: true, motivo: null };
   if (status !== null && status !== undefined) {
-    return { fim: true, ok: false, motivo: `health respondeu ${status} (esperado 200)` };
+    return { end: true, ok: false, motivo: `health returned ${status} (expected 200)` };
   }
-  if (saiu !== null && saiu !== undefined) {
-    return { fim: true, ok: false, motivo: `processo saiu antes do health responder (${saiu})` };
+  if (exited !== null && exited !== undefined) {
+    return { end: true, ok: false, motivo: `process exited before health responded (${exited})` };
   }
-  if (estourou) return { fim: true, ok: false, motivo: 'teto estourado antes do health responder', teto: true };
-  return { fim: false, ok: false, motivo: null };
+  if (overflowed) return { end: true, ok: false, motivo: 'timeout expired before health responded', cap: true };
+  return { end: false, ok: false, motivo: null };
 }
 
 /** As últimas `n` linhas não vazias de `texto`. */
-export function caudaDe(texto, n) {
-  return texto.split(/\r?\n/).filter((linha) => linha.trim() !== '').slice(-n);
+export function tailOf(text, n) {
+  return text.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-n);
 }
 
 // ================================================================================================
@@ -121,126 +121,126 @@ export function caudaDe(texto, n) {
 // ================================================================================================
 
 /** Encerra o filho E os descendentes dele. Só é chamado com o filho ainda vivo (PID não reciclado). */
-function encerrarArvore(pid) {
+function endTree(pid) {
   if (pid === undefined) return;
   if (platform() === 'win32') {
     spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true });
     return;
   }
-  matarPosix(-pid) || matarPosix(pid);
+  killPosix(-pid) || killPosix(pid);
 }
 
 /** `kill -9` num PID/grupo. `true` se alcançou o alvo; `false` se ele não existe mais (ESRCH). */
-function matarPosix(alvo) {
+function killPosix(target) {
   try {
-    process.kill(alvo, 'SIGKILL');
+    process.kill(target, 'SIGKILL');
     return true;
-  } catch (causa) {
-    if (causa.code !== 'ESRCH') process.stderr.write(`[supervisionar] kill ${alvo}: ${causa.message}
+  } catch (cause) {
+    if (cause.code !== 'ESRCH') process.stderr.write(`[supervise] kill ${target}: ${cause.message}
 `);
     return false;
   }
 }
 
-function aguardar(ms) {
+function waitFor(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** O filho, com o estado de saída observável por `estado.saiu`. */
-function iniciarFilho(comando, sondando, estado) {
-  const [executavel, ...args] = comando;
-  const filho = spawn(executavel, args, {
-    stdio: sondando ? ['ignore', 'pipe', 'pipe'] : 'inherit',
+function startChild(command, probing, state) {
+  const [executable, ...args] = command;
+  const child = spawn(executable, args, {
+    stdio: probing ? ['ignore', 'pipe', 'pipe'] : 'inherit',
     detached: platform() !== 'win32',
     windowsHide: true,
     shell: false,
   });
-  filho.on('error', (causa) => {
-    process.stderr.write(`[supervisionar] erro ao executar: ${causa.message}
+  child.on('error', (cause) => {
+    process.stderr.write(`[supervise] execution failed: ${cause.message}
 `);
-    estado.saiu = `erro ao executar: ${causa.message}`;
-    estado.codigo = 1;
+    state.exited = `execution failed: ${cause.message}`;
+    state.code = 1;
   });
-  filho.on('exit', (codigo, sinal) => {
-    estado.saiu = sinal === null ? `codigo ${codigo}` : `sinal ${sinal}`;
-    estado.codigo = codigo ?? 1;
+  child.on('exit', (code, signal) => {
+    state.exited = signal === null ? `exit code ${code}` : `signal ${signal}`;
+    state.code = code ?? 1;
   });
-  return filho;
+  return child;
 }
 
-function acumularCauda(filho, estado) {
-  const guardar = (pedaco) => {
-    estado.saida += pedaco.toString('utf8');
+function accumulateTail(child, state) {
+  const store = (chunk) => {
+    state.saida += chunk.toString('utf8');
   };
-  filho.stdout?.on('data', guardar);
-  filho.stderr?.on('data', guardar);
+  child.stdout?.on('data', store);
+  child.stderr?.on('data', store);
 }
 
 /** Modo "espera a saída": devolve o código de saída do supervisor. */
-async function aguardarSaida(estado, limite) {
-  while (estado.saiu === null) {
-    if (Date.now() >= limite) return SAIDA_TETO;
-    await aguardar(PASSO_DE_ESPERA_MS);
+async function waitForOutput(state, limit) {
+  while (state.exited === null) {
+    if (Date.now() >= limit) return EXIT_CAP;
+    await waitFor(WAIT_STEP_MS);
   }
-  return estado.codigo;
+  return state.code;
 }
 
 /** UMA sonda HTTP: o status, ou `null` se a conexão não abriu. */
-async function sondarUmaVez(url, intervaloMs) {
+async function probeOnce(url, intervalMs) {
   try {
-    const resposta = await fetch(url, { signal: AbortSignal.timeout(intervaloMs) });
-    return resposta.status;
+    const response = await fetch(url, { signal: AbortSignal.timeout(intervalMs) });
+    return response.status;
   } catch {
     return null;
   }
 }
 
-/** Modo `--ate-url`: devolve `{ codigo, motivo }`. */
-async function aguardarHealth(estado, limite, opcoes) {
+/** Modo `--until-url`: devolve `{ codigo, motivo }`. */
+async function waitForHealth(state, limit, options) {
   for (;;) {
-    const status = await sondarUmaVez(opcoes.ateUrl, opcoes.intervaloMs);
-    const decisao = decidirSondagem({ status, saiu: estado.saiu, estourou: Date.now() >= limite });
-    if (decisao.fim) return { codigo: decisao.ok ? 0 : 1, motivo: decisao.motivo, estourou: decisao.teto === true };
-    await aguardar(opcoes.intervaloMs);
+    const status = await probeOnce(options.untilUrl, options.intervalMs);
+    const decision = decideProbing({ status, exited: state.exited, overflowed: Date.now() >= limit });
+    if (decision.end) return { code: decision.ok ? 0 : 1, motivo: decision.motivo, overflowed: decision.cap === true };
+    await waitFor(options.intervalMs);
   }
 }
 
-function relatarFalha(motivo, estado, opcoes) {
-  const linhas = caudaDe(estado.saida, opcoes.linhasCauda);
-  process.stderr.write(`[supervisionar] ${motivo}\n`);
-  if (linhas.length > 0) process.stderr.write(`[supervisionar] ultimas linhas do processo:\n${linhas.map((l) => `  | ${l}`).join('\n')}\n`);
+function reportFailure(reason, state, options) {
+  const lines = tailOf(state.saida, options.tailLines);
+  process.stderr.write(`[supervise] ${reason}\n`);
+  if (lines.length > 0) process.stderr.write(`[supervise] last process lines:\n${lines.map((l) => `  | ${l}`).join('\n')}\n`);
 }
 
-async function supervisionar(opcoes) {
-  const estado = { saiu: null, codigo: null, saida: '' };
-  const sondando = opcoes.ateUrl !== null;
-  const filho = iniciarFilho(opcoes.comando, sondando, estado);
-  if (sondando) acumularCauda(filho, estado);
-  const limite = Date.now() + opcoes.tetoMs;
+async function supervise(options) {
+  const state = { exited: null, code: null, saida: '' };
+  const probing = options.untilUrl !== null;
+  const child = startChild(options.command, probing, state);
+  if (probing) accumulateTail(child, state);
+  const limit = Date.now() + options.capMs;
 
   try {
-    if (!sondando) {
-      const codigo = await aguardarSaida(estado, limite);
-      if (codigo === SAIDA_TETO) process.stderr.write(`[supervisionar] estourou o teto de ${opcoes.tetoMs / 1000} s\n`);
-      return codigo;
+    if (!probing) {
+      const code = await waitForOutput(state, limit);
+      if (code === EXIT_CAP) process.stderr.write(`[supervise] timeout expired after ${options.capMs / 1000} s\n`);
+      return code;
     }
-    const { codigo, motivo, estourou } = await aguardarHealth(estado, limite, opcoes);
-    if (codigo === 0) return 0;
-    relatarFalha(motivo, estado, opcoes);
-    return estourou ? SAIDA_TETO : codigo;
+    const { code, motivo: reason, overflowed } = await waitForHealth(state, limit, options);
+    if (code === 0) return 0;
+    reportFailure(reason, state, options);
+    return overflowed ? EXIT_CAP : code;
   } finally {
-    if (estado.saiu === null) encerrarArvore(filho.pid);
+    if (state.exited === null) endTree(child.pid);
   }
 }
 
 /** Uma porta TCP livre em loopback: o SO escolhe, o servidor temporário fecha logo em seguida. */
-function descobrirPortaLivre() {
+function discoverFreePort() {
   return new Promise((resolve, reject) => {
-    const servidor = criarServidorTcp();
-    servidor.once('error', reject);
-    servidor.listen(0, '127.0.0.1', () => {
-      const { port } = servidor.address();
-      servidor.close(() => resolve(port));
+    const server = createTcpServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
     });
   });
 }
@@ -250,14 +250,14 @@ function descobrirPortaLivre() {
 // uma propriedade de processo e não se prova em memória.
 // ================================================================================================
 
-const ESTE_ARQUIVO = fileURLToPath(import.meta.url);
+const THIS_FILE = fileURLToPath(import.meta.url);
 
 /** Roda o supervisor como o `template-self-test.mjs` o roda: `spawnSync`, captura tudo. */
-function rodarSupervisor(args) {
-  return spawnSync(process.execPath, [ESTE_ARQUIVO, ...args], { encoding: 'utf8', shell: false, timeout: TETO_DO_CASO_DE_TESTE_MS });
+function runSupervisor(args) {
+  return spawnSync(process.execPath, [THIS_FILE, ...args], { encoding: 'utf8', shell: false, timeout: TEST_CASE_CAP_MS });
 }
 
-function processoVivo(pid) {
+function liveProcess(pid) {
   try {
     process.kill(pid, 0);
     return true;
@@ -266,172 +266,172 @@ function processoVivo(pid) {
   }
 }
 
-async function morreuEm(pid, esperaMs) {
-  const limite = Date.now() + esperaMs;
-  while (Date.now() < limite) {
-    if (!processoVivo(pid)) return true;
-    await aguardar(100);
+async function diedIn(pid, waitMs) {
+  const limit = Date.now() + waitMs;
+  while (Date.now() < limit) {
+    if (!liveProcess(pid)) return true;
+    await waitFor(100);
   }
-  return !processoVivo(pid);
+  return !liveProcess(pid);
 }
 
-const NETO_PARADO = "setInterval(() => {}, 1000)";
+const STOPPED_GRANDCHILD = "setInterval(() => {}, 1000)";
 /** Filho que cria um NETO e imprime o PID dele — o formato exato do `pytest` órfão. */
-const FILHO_COM_NETO = `
+const CHILD_WITH_GRANDCHILD = `
 const { spawn } = require('node:child_process');
-const neto = spawn(process.execPath, ['-e', ${JSON.stringify(NETO_PARADO)}], { stdio: 'ignore' });
+const neto = spawn(process.execPath, ['-e', ${JSON.stringify(STOPPED_GRANDCHILD)}], { stdio: 'ignore' });
 console.log(neto.pid);
-${NETO_PARADO};`;
+${STOPPED_GRANDCHILD};`;
 
-function servidorEm(porta, status) {
-  return `require('node:http').createServer((q, r) => { r.statusCode = ${status}; r.end('x'); }).listen(${porta}, '127.0.0.1');`;
+function serverIn(port, status) {
+  return `require('node:http').createServer((q, r) => { r.statusCode = ${status}; r.end('x'); }).listen(${port}, '127.0.0.1');`;
 }
 
-function casosPuros() {
+function pureCases() {
   return [
-    { nome: 'decidirSondagem: 200 -> fim ok', fn: () => {
-      const d = decidirSondagem({ status: STATUS_OK, saiu: null, estourou: false });
-      return d.fim && d.ok;
+    { name: 'decideProbing: 200 -> fim ok', fn: () => {
+      const d = decideProbing({ status: STATUS_OK, exited: null, overflowed: false });
+      return d.end && d.ok;
     } },
-    { nome: 'decidirSondagem: 404 -> fim reprovado nomeando o status', fn: () => {
-      const d = decidirSondagem({ status: STATUS_NAO_ENCONTRADO, saiu: null, estourou: false });
-      return d.fim && !d.ok && d.motivo.includes(String(STATUS_NAO_ENCONTRADO));
+    { name: 'decideProbing: 404 ends with failure naming the status', fn: () => {
+      const d = decideProbing({ status: STATUS_NOT_FOUND, exited: null, overflowed: false });
+      return d.end && !d.ok && d.motivo.includes(String(STATUS_NOT_FOUND));
     } },
-    { nome: 'decidirSondagem: sem resposta e processo saiu -> fim reprovado', fn: () => {
-      const d = decidirSondagem({ status: null, saiu: 'codigo 1', estourou: false });
-      return d.fim && !d.ok && d.motivo.includes('saiu');
+    { name: 'decideProbing: no response and exited process ends with failure', fn: () => {
+      const d = decideProbing({ status: null, exited: 'exit code 1', overflowed: false });
+      return d.end && !d.ok && d.motivo.includes('exited');
     } },
-    { nome: 'decidirSondagem: sem resposta e teto estourado -> fim reprovado', fn: () => {
-      const d = decidirSondagem({ status: null, saiu: null, estourou: true });
-      return d.fim && !d.ok && d.motivo.includes('teto');
+    { name: 'decideProbing: no response and expired timeout ends with failure', fn: () => {
+      const d = decideProbing({ status: null, exited: null, overflowed: true });
+      return d.end && !d.ok && d.motivo.includes('timeout');
     } },
-    { nome: 'decidirSondagem: sem resposta, vivo, dentro do teto -> segue sondando', fn: () => (
-      decidirSondagem({ status: null, saiu: null, estourou: false }).fim === false
+    { name: 'decideProbing: no response while alive and within the limit keeps probing', fn: () => (
+      decideProbing({ status: null, exited: null, overflowed: false }).end === false
     ) },
-    { nome: 'decidirSondagem: resposta 200 na ultima volta vence o teto', fn: () => (
-      decidirSondagem({ status: STATUS_OK, saiu: null, estourou: true }).ok === true
+    { name: 'decideProbing: a 200 response on the last attempt takes precedence over the limit', fn: () => (
+      decideProbing({ status: STATUS_OK, exited: null, overflowed: true }).ok === true
     ) },
-    { nome: 'caudaDe: ultimas n linhas nao vazias', fn: () => (
-      JSON.stringify(caudaDe('a\n\nb\r\nc\n', 2)) === JSON.stringify(['b', 'c'])
+    { name: 'tailOf: last n nonempty lines', fn: () => (
+      JSON.stringify(tailOf('a\n\nb\r\nc\n', 2)) === JSON.stringify(['b', 'c'])
     ) },
-    { nome: 'lerArgumentos: forma completa', fn: () => {
-      const { opcoes } = lerArgumentos(['--teto-ms', '1000', '--ate-url', 'http://x/', '--intervalo-ms', '50', '--', 'node', '-v']);
-      return opcoes.tetoMs === 1000 && opcoes.ateUrl === 'http://x/' && opcoes.comando.join(' ') === 'node -v';
+    { name: 'readArguments: full option set', fn: () => {
+      const { options } = readArguments(['--timeout-ms', '1000', '--until-url', 'http://x/', '--interval-ms', '50', '--', 'node', '-v']);
+      return options.capMs === 1000 && options.untilUrl === 'http://x/' && options.command.join(' ') === 'node -v';
     } },
-    { nome: 'lerArgumentos: desconhecido, teto ausente, comando ausente, valor invalido -> erro', fn: () => (
-      ['--rapido', '--', 'x'].map((a) => lerArgumentos([a])).every((r) => r.erro !== undefined)
-      && lerArgumentos(['--', 'node']).erro !== undefined
-      && lerArgumentos(['--teto-ms', '5']).erro !== undefined
-      && lerArgumentos(['--teto-ms', 'abc', '--', 'node']).erro !== undefined
+    { name: 'readArguments: unknown flag, missing timeout, missing command, and invalid value return errors', fn: () => (
+      ['--quick', '--', 'x'].map((a) => readArguments([a])).every((r) => r.error !== undefined)
+      && readArguments(['--', 'node']).error !== undefined
+      && readArguments(['--timeout-ms', '5']).error !== undefined
+      && readArguments(['--timeout-ms', 'abc', '--', 'node']).error !== undefined
     ) },
   ];
 }
 
-async function casoTetoMataArvore() {
-  const r = rodarSupervisor(['--teto-ms', String(TETO_CURTO_DE_TESTE_MS), '--', process.execPath, '-e', FILHO_COM_NETO]);
-  const pidNeto = Number(r.stdout.trim().split(/\s+/)[0]);
-  if (r.status !== SAIDA_TETO || !r.stderr.includes(`estourou o teto de ${TETO_CURTO_DE_TESTE_MS / 1000} s`) || !Number.isInteger(pidNeto)) return false;
-  return morreuEm(pidNeto, ESPERA_DA_MORTE_DE_TESTE_MS);
+async function capKillsTreeCase() {
+  const r = runSupervisor(['--timeout-ms', String(TEST_SHORT_CAP_MS), '--', process.execPath, '-e', CHILD_WITH_GRANDCHILD]);
+  const pidGrandchild = Number(r.stdout.trim().split(/\s+/)[0]);
+  if (r.status !== EXIT_CAP || !r.stderr.includes(`timeout expired after ${TEST_SHORT_CAP_MS / 1000} s`) || !Number.isInteger(pidGrandchild)) return false;
+  return diedIn(pidGrandchild, TEST_DEATH_WAIT_MS);
 }
 
-async function casoSondaOkEncerraServidor() {
-  const porta = await descobrirPortaLivre();
-  const r = rodarSupervisor([
-    '--teto-ms', String(TETO_DE_SONDA_DE_TESTE_MS), '--ate-url', `http://127.0.0.1:${porta}/`, '--intervalo-ms', String(INTERVALO_DE_TESTE_MS),
-    '--', process.execPath, '-e', servidorEm(porta, STATUS_OK),
+async function probeOkEndsServerCase() {
+  const port = await discoverFreePort();
+  const r = runSupervisor([
+    '--timeout-ms', String(TEST_PROBE_CAP_MS), '--until-url', `http://127.0.0.1:${port}/`, '--interval-ms', String(TEST_INTERVAL_MS),
+    '--', process.execPath, '-e', serverIn(port, STATUS_OK),
   ]);
   if (r.status !== 0) return false;
-  await aguardar(INTERVALO_DE_TESTE_MS * 3);
-  return (await sondarUmaVez(`http://127.0.0.1:${porta}/`, INTERVALO_DE_TESTE_MS * 3)) === null;
+  await waitFor(TEST_INTERVAL_MS * 3);
+  return (await probeOnce(`http://127.0.0.1:${port}/`, TEST_INTERVAL_MS * 3)) === null;
 }
 
-async function casoSondaStatusErrado() {
-  const porta = await descobrirPortaLivre();
-  const r = rodarSupervisor([
-    '--teto-ms', String(TETO_DE_SONDA_DE_TESTE_MS), '--ate-url', `http://127.0.0.1:${porta}/`, '--intervalo-ms', String(INTERVALO_DE_TESTE_MS),
-    '--', process.execPath, '-e', servidorEm(porta, STATUS_NAO_ENCONTRADO),
+async function probeWrongStatusCase() {
+  const port = await discoverFreePort();
+  const r = runSupervisor([
+    '--timeout-ms', String(TEST_PROBE_CAP_MS), '--until-url', `http://127.0.0.1:${port}/`, '--interval-ms', String(TEST_INTERVAL_MS),
+    '--', process.execPath, '-e', serverIn(port, STATUS_NOT_FOUND),
   ]);
-  return r.status === 1 && r.stderr.includes(String(STATUS_NAO_ENCONTRADO));
+  return r.status === 1 && r.stderr.includes(String(STATUS_NOT_FOUND));
 }
 
-async function casoSondaProcessoSaiu() {
-  const r = rodarSupervisor([
-    '--teto-ms', String(TETO_DE_SONDA_DE_TESTE_MS), '--ate-url', 'http://127.0.0.1:9/', '--intervalo-ms', String(INTERVALO_DE_TESTE_MS),
-    '--', process.execPath, '-e', "console.error('boom: sem fabrica registrada'); process.exit(3)",
+async function probeProcessExitedCase() {
+  const r = runSupervisor([
+    '--timeout-ms', String(TEST_PROBE_CAP_MS), '--until-url', 'http://127.0.0.1:9/', '--interval-ms', String(TEST_INTERVAL_MS),
+    '--', process.execPath, '-e', "console.error('boom: factory not registered'); process.exit(3)",
   ]);
-  return r.status === 1 && r.stderr.includes('saiu antes do health') && r.stderr.includes('sem fabrica registrada');
+  return r.status === 1 && r.stderr.includes('exited before health') && r.stderr.includes('factory not registered');
 }
 
-async function casoSondaTeto() {
-  const r = rodarSupervisor([
-    '--teto-ms', String(TETO_CURTO_DE_TESTE_MS), '--ate-url', 'http://127.0.0.1:9/', '--intervalo-ms', String(INTERVALO_DE_TESTE_MS),
-    '--', process.execPath, '-e', NETO_PARADO,
+async function probeCapCase() {
+  const r = runSupervisor([
+    '--timeout-ms', String(TEST_SHORT_CAP_MS), '--until-url', 'http://127.0.0.1:9/', '--interval-ms', String(TEST_INTERVAL_MS),
+    '--', process.execPath, '-e', STOPPED_GRANDCHILD,
   ]);
-  return r.status === SAIDA_TETO && r.stderr.includes('teto');
+  return r.status === EXIT_CAP && r.stderr.includes('timeout expired');
 }
 
-async function casoAutotesteDoComandoNaoESeu() {
+async function notOwnCommandSelfTestCase() {
   const script = "console.log(process.argv.slice(1).join(' '))";
-  const r = rodarSupervisor(['--teto-ms', String(ESPERA_DA_MORTE_DE_TESTE_MS), '--', process.execPath, '-e', script, '--', '--autoteste']);
-  return r.status === 0 && r.stdout.trim() === '--autoteste' && !r.stdout.includes('autoteste (supervisionar)');
+  const r = runSupervisor(['--timeout-ms', String(TEST_DEATH_WAIT_MS), '--', process.execPath, '-e', script, '--', '--selftest']);
+  return r.status === 0 && r.stdout.trim() === '--selftest' && !r.stdout.includes('autoteste (supervise)');
 }
 
-async function casoSaidaDoFilho() {
-  const r = rodarSupervisor(['--teto-ms', String(ESPERA_DA_MORTE_DE_TESTE_MS), '--', process.execPath, '-e', 'process.exit(7)']);
+async function childOutputCase() {
+  const r = runSupervisor(['--timeout-ms', String(TEST_DEATH_WAIT_MS), '--', process.execPath, '-e', 'process.exit(7)']);
   return r.status === 7;
 }
 
-function casosDeProcesso() {
+function processCases() {
   return [
-    { nome: 'processo real: estouro do teto sai 124 e o NETO morre junto', fn: casoTetoMataArvore },
-    { nome: 'processo real: o codigo de saida do filho e o do supervisor', fn: casoSaidaDoFilho },
-    { nome: 'processo real: `--autoteste` DEPOIS do `--` e do comando, nao do supervisor', fn: casoAutotesteDoComandoNaoESeu },
-    { nome: 'processo real: --ate-url 200 -> sai 0 e o servidor e encerrado', fn: casoSondaOkEncerraServidor },
-    { nome: 'processo real: --ate-url 404 -> reprova nomeando o status', fn: casoSondaStatusErrado },
-    { nome: 'processo real: --ate-url, filho sai antes -> reprova com a cauda do processo', fn: casoSondaProcessoSaiu },
-    { nome: 'processo real: --ate-url, nada responde -> teto 124', fn: casoSondaTeto },
+    { name: 'real process: timeout exits 124 and the grandchild is killed too', fn: capKillsTreeCase },
+    { name: 'real process: child exit code is returned by the supervisor', fn: childOutputCase },
+    { name: 'real process: `--selftest` after `--` belongs to the child, not the supervisor', fn: notOwnCommandSelfTestCase },
+    { name: 'real process: --until-url 200 exits 0 and stops the server', fn: probeOkEndsServerCase },
+    { name: 'real process: --until-url 404 fails and reports the status', fn: probeWrongStatusCase },
+    { name: 'real process: --until-url fails when the child exits and prints its tail', fn: probeProcessExitedCase },
+    { name: 'real process: --until-url times out when nothing responds', fn: probeCapCase },
   ];
 }
 
-async function rodarAutoteste() {
-  const casos = [...casosPuros(), ...casosDeProcesso()];
-  let falhas = 0;
-  for (const caso of casos) {
+async function runSelfTest() {
+  const cases = [...pureCases(), ...processCases()];
+  let failures = 0;
+  for (const testCase of cases) {
     let ok;
     try {
-      ok = (await caso.fn()) === true;
+      ok = (await testCase.fn()) === true;
     } catch {
       ok = false;
     }
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
-  process.stdout.write(`\nautoteste (supervisionar): ${casos.length - falhas}/${casos.length} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  process.stdout.write(`\nself-test (supervise): ${cases.length - failures}/${cases.length} passed\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 // ================================================================================================
 // CLI
 // ================================================================================================
 
-async function principal(argv) {
-  // So as flags ANTES do `--`: depois dele e o comando supervisionado, e `--autoteste` ali (o do
+async function main(argv) {
+  // So as flags ANTES do `--`: depois dele e o comando supervisionado, e `--selftest` ali (o do
   // `composition.*` do projeto gerado) e dele, nao do supervisor — antes, este `includes` engolia o
-  // `--autoteste` do comando e rodava o autoteste do supervisor no lugar.
-  const antesDoComando = argv.includes('--') ? argv.slice(0, argv.indexOf('--')) : argv;
-  if (antesDoComando.includes('--autoteste')) return rodarAutoteste();
-  if (antesDoComando.includes('--porta-livre')) {
-    process.stdout.write(`${await descobrirPortaLivre()}\n`);
+  // `--selftest` do comando e rodava o autoteste do supervisor no lugar.
+  const beforeCommand = argv.includes('--') ? argv.slice(0, argv.indexOf('--')) : argv;
+  if (beforeCommand.includes('--selftest')) return runSelfTest();
+  if (beforeCommand.includes('--free-port')) {
+    process.stdout.write(`${await discoverFreePort()}\n`);
     return 0;
   }
-  const { opcoes, erro } = lerArgumentos(argv);
-  if (erro !== undefined) {
-    process.stderr.write(`[supervisionar] erro: ${erro}\n`);
+  const { options, error } = readArguments(argv);
+  if (error !== undefined) {
+    process.stderr.write(`[supervise] Error: ${error}\n`);
     return 2;
   }
-  return supervisionar(opcoes);
+  return supervise(options);
 }
 
-if (process.argv[1] !== undefined && process.argv[1] === ESTE_ARQUIVO) {
-  principal(process.argv.slice(2)).then((codigo) => process.exit(codigo));
+if (process.argv[1] !== undefined && process.argv[1] === THIS_FILE) {
+  main(process.argv.slice(2)).then((code) => process.exit(code));
 }

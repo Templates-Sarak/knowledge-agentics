@@ -5,12 +5,12 @@
  *   (a) o `.env` real está VERSIONADO?      — exige `git ls-files`
  *   (b) o que mudou introduziu um SEGREDO?  — exige ler o delta contra um baseline git
  *
- * `04-regras.md` §7.2, linha de `gitignore-segredo`: *"Não afirma que o .env está versionado — isso
+ * `04-regras.md` §7.2, linha de `gitignore-secret`: *"Não afirma que o .env está versionado — isso
  * exigiria git ls-files, e o gate não roda git de propósito... O .env que já foi commitado é do passo
  * de CI, fail-closed, e do hook cyber-git-seguro na fronteira do git."* Este arquivo é esse passo.
  *
  *   node tools/ci-security.mjs [--since <ref>] [--json]
- *   node tools/ci-security.mjs --autoteste
+ *   node tools/ci-security.mjs --selftest
  *
  * NÃO é regra de gate: compara ESTADO DO GIT (rastreados, delta), o gate não roda git de propósito.
  * Não tem id, não conta para o catálogo — ferramenta, como `contract-compatible.mjs`.
@@ -18,12 +18,12 @@
  * ============================================================================================
  * NÚCLEO × CASCA, o mesmo precedente de `affected.mjs`/`contract-compatible.mjs`: núcleo recebe DADO
  * (lista de caminhos rastreados, pares {caminho, conteúdo} do delta), nunca toca `fs`/`child_process`.
- * A casca (`git`, `arquivosRastreados`, `arquivosMudados`, `lerConteudoAtual`) isola TODO acesso a
+ * A casca (`git`, `trackedFiles`, `changedFiles`, `readCurrentContent`) isola TODO acesso a
  * disco/git em pontos nomeados — `execFileSync` sempre com ARRAY de argumentos, nunca `shell: true`
  * (nome de pasta virando comando é o mesmo risco que `verify-commit.mjs` documenta).
  *
  * O DELTA REUSADO, NÃO INVENTADO: mesma forma de `contract-compatible.mjs` — `git diff --name-only
- * <ref>` —, que por sua vez já é a mesma pergunta de `affected.mjs:caminhosAlteradosDesde` (privada,
+ * <ref>` —, que por sua vez já é a mesma pergunta de `affected.mjs:changedPathsSince` (privada,
  * não exportada; `contract-compatible.mjs` resolve isso escrevendo a MESMA chamada em vez
  * de reimplementar o grafo — o precedente é literal, não análogo). Não é staged: este passo é CI, e
  * staged é conceito de working tree local (é o que `verify-commit.mjs:pre-commit` usa, porque ali
@@ -34,47 +34,46 @@
  * entropia carrega (hash de teste, UUID de fixture, base64 de imagem inline). Vocabulário fechado
  * pega MENOS; o que ele não pega está declarado em `04-regras.md` §7.2, não escondido.
  *
- *   (1) NOME de chave — `PADRAO_CREDENCIAL`, importado de `rules/operation.mjs` (já exportado, já
- *       fechado, já base de `gateway-credencial`/`segredo-em-publico`). Uma lista, não duas: aqui ele
+ *   (1) NOME de chave — `CREDENTIAL_PATTERN`, importado de `rules/operation.mjs` (já exportado, já
+ *       fechado, já base de `gateway-credential`/`secret-in-public`). Uma lista, não duas: aqui ele
  *       vira "identificador com esse sufixo, ATRIBUÍDO a um literal" — o mesmo vocabulário, uma
  *       pergunta a mais (atribuição, não só nome).
  *   (2) VALOR de token — vocabulário NOVO, cópia (não import: skills não viajam para o projeto
  *       gerado) do catálogo canônico em `skills/cyber-segredos/scripts/config.json`. Só as formas
  *       com PREFIXO INEQUÍVOCO de fornecedor e o cabeçalho de chave privada — nenhuma delas requer
- *       entropia. Deliberadamente FORA (declarado, não esquecido): "Bearer Token" (`bearer\s+...`,
- *       genérico, sem prefixo de fornecedor), "Segredo atribuído" (`key\s*[:=]\s*'...'`, é
- *       exatamente o vocabulário (1) com sinal pior) e "String de conexão" (`<esquema>://<usuario>:<senha>@`,
- *       comum em EXEMPLO de documentação com credencial fake). Medido contra os três moldes
- *       conformes: zero achado nos nove padrões vendor-specific (varredura colada no relatório).
+ *       entropia. Deliberadamente FORA: "Bearer Token" (`bearer\s+...`, genérico, sem prefixo de
+ *       fornecedor) e "Segredo atribuído" (`key\s*[:=]\s*'...'`, já coberto pelo vocabulário (1)).
+ *       "String de conexão" também é conferida, mas só é ignorada quando usuário E senha são
+ *       interpolação de ambiente — assim URLs configuráveis passam sem liberar credenciais literais.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PADRAO_CREDENCIAL } from './gate/rules/operation.mjs';
+import { CREDENTIAL_PATTERN } from './gate/rules/operation.mjs';
 
 // ================================================================================================
 // NÚCLEO — puro. Nenhuma linha daqui embaixo toca `fs`, `child_process` ou `process.env`.
 // ================================================================================================
 
-/** `.env` da raiz OU `modules/<qualquer>/.env` — a mesma pergunta que `gitignore-segredo` faz sobre o
+/** `.env` da raiz OU `modules/<qualquer>/.env` — a mesma pergunta que `gitignore-secret` faz sobre o
  * arquivo de ignore, aqui sobre o que JÁ está no índice. */
-export function ehEnvReal(caminhoRastreado) {
-  return caminhoRastreado === '.env' || /^modules\/[^/]+\/\.env$/.test(caminhoRastreado);
+export function isEnvReal(trackedPath) {
+  return trackedPath === '.env' || /^modules\/[^/]+\/\.env$/.test(trackedPath);
 }
 
-export function envVersionados(rastreados) {
-  return rastreados.filter(ehEnvReal);
+export function versionedEnv(tracked) {
+  return tracked.filter(isEnvReal);
 }
 
-/** O sufixo de `PADRAO_CREDENCIAL` sem a âncora `$` — reusado, nunca reescrito. */
-const SUFIXO_CREDENCIAL = PADRAO_CREDENCIAL.source.slice(0, -1);
+/** O sufixo de `CREDENTIAL_PATTERN` sem a âncora `$` — reusado, nunca reescrito. */
+const CREDENTIAL_SUFFIX = CREDENTIAL_PATTERN.source.slice(0, -1);
 
 /** Identificador terminado no sufixo fechado, ATRIBUÍDO a um literal — nunca uma leitura (`process.env.X`,
  * `os.environ["X"]`), porque essas não têm `[:=]` seguido de aspas logo depois do nome. */
-export const CHAVE_CREDENCIAL_ATRIBUIDA = new RegExp(
-  `[A-Za-z_][A-Za-z0-9_]*${SUFIXO_CREDENCIAL}\\s*[:=]\\s*['"\`][^'"\`\\s]{4,}['"\`]`,
+export const ASSIGNED_CREDENTIAL_KEY = new RegExp(
+  `[A-Za-z_][A-Za-z0-9_]*${CREDENTIAL_SUFFIX}\\s*[:=]\\s*['"\`][^'"\`\\s]{4,}['"\`]`,
 );
 
 /**
@@ -83,7 +82,7 @@ export const CHAVE_CREDENCIAL_ATRIBUIDA = new RegExp(
  * com prefixo fechado; a origem e o corte estão no cabeçalho do arquivo.
  */
 /** @type {[string, RegExp][]} */
-export const VOCABULARIO_VALOR = [
+export const VALUE_VOCABULARY = [
   ['AWS Access Key', /AKIA[0-9A-Z]{16}/],
   ['GitHub Token', /gh[pousr]_[A-Za-z0-9]{36,}/],
   ['GitHub PAT fine-grained', /github_pat_[A-Za-z0-9_]{60,}/],
@@ -93,12 +92,13 @@ export const VOCABULARIO_VALOR = [
   ['npm Token', /npm_[A-Za-z0-9]{36}/],
   ['JWT', /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{6,}/],
   ['Private Key', /-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----/],
+  ['Connection string', /(postgres|postgresql|mysql|mongodb)(\+srv)?:\/\/(?!(?:\$\{[A-Za-z_][A-Za-z0-9_]*(?::\?[^}]*)?\}|\$[A-Za-z_][A-Za-z0-9_]*):(?:\$\{[A-Za-z_][A-Za-z0-9_]*(?::\?[^}]*)?\}|\$[A-Za-z_][A-Za-z0-9_]*)@)[^\s'"]+:[^\s'"]+@/i],
 ];
 
 /** `****` para trecho curto; senão os 4 primeiros + `...` + os 2 últimos — nunca o segredo inteiro. */
-export function mascarar(trecho) {
-  const limpo = trecho.trim();
-  return limpo.length <= 8 ? '****' : `${limpo.slice(0, 4)}...${limpo.slice(-2)}`;
+export function mask(snippet) {
+  const clean = snippet.trim();
+  return clean.length <= 8 ? '****' : `${clean.slice(0, 4)}...${clean.slice(-2)}`;
 }
 
 /**
@@ -106,53 +106,53 @@ export function mascarar(trecho) {
  * vocabulários. Um achado por LINHA (a primeira forma que casar) — várias mensagens para a mesma
  * linha não acrescentam conserto, só ruído (lei 2).
  */
-export function varrerSegredos(arquivos) {
-  const achados = [];
-  for (const { caminho, conteudo } of arquivos) {
-    conteudo.split(/\r?\n/).forEach((linha, indice) => {
-      const numero = indice + 1;
-      const porValor = VOCABULARIO_VALOR.find(([, padrao]) => padrao.test(linha));
-      if (porValor !== undefined) {
-        achados.push({ caminho, linha: numero, tipo: porValor[0], trecho: mascarar(linha.match(porValor[1])[0]) });
+export function scanSecrets(files) {
+  const findings = [];
+  for (const { caminho: path, content } of files) {
+    content.split(/\r?\n/).forEach((line, index) => {
+      const number = index + 1;
+      const byValue = VALUE_VOCABULARY.find(([, pattern]) => pattern.test(line));
+      if (byValue !== undefined) {
+        findings.push({ caminho: path, linha: number, tipo: byValue[0], trecho: mask(line.match(byValue[1])[0]) });
         return;
       }
-      const casadoPorChave = linha.match(CHAVE_CREDENCIAL_ATRIBUIDA);
-      if (casadoPorChave !== null) {
-        achados.push({ caminho, linha: numero, tipo: 'chave de credencial atribuída', trecho: mascarar(casadoPorChave[0]) });
+      const matchedByKey = line.match(ASSIGNED_CREDENTIAL_KEY);
+      if (matchedByKey !== null) {
+        findings.push({ caminho: path, linha: number, tipo: 'assigned credential key', trecho: mask(matchedByKey[0]) });
       }
     });
   }
-  return achados;
+  return findings;
 }
 
 // ================================================================================================
 // CASCA — toca disco e git. `git()` é o ÚNICO ponto que roda `git` de verdade.
 // ================================================================================================
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url));
 
-/** Mesmo raciocínio de `gate/context.mjs:acharRaizProjeto` — cópia, não import: fora de escopo. */
-function acharRaiz(partida) {
-  let atual = partida;
-  for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'modules'))) return atual;
-    const pai = join(atual, '..');
-    if (relative(pai, atual) === '') break;
-    atual = pai;
+/** Mesmo raciocínio de `gate/context.mjs:findRootProjeto` — cópia, não import: fora de escopo. */
+function findRoot(start) {
+  let current = start;
+  for (let level = 0; level < 8; level += 1) {
+    if (existsSync(join(current, 'modules'))) return current;
+    const parent = join(current, '..');
+    if (relative(parent, current) === '') break;
+    current = parent;
   }
-  return partida;
+  return start;
 }
 
-const RAIZ = acharRaiz(AQUI);
-const TAMANHO_MAX_BYTES = 2_000_000;
+const ROOT = findRoot(HERE);
+const MAX_SIZE_BYTES = 2_000_000;
 
 /** ÚNICO ponto que roda `git` de verdade. Array de argumentos — nunca `shell: true`. */
 function git(args) {
-  return execFileSync('git', args, { cwd: RAIZ, encoding: 'utf8' });
+  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
 }
 
 /** `null` quando o git não responde (fora de repositório, índice corrompido) — a casca decide reprovar. */
-function arquivosRastreados() {
+function trackedFiles() {
   try {
     return git(['ls-files']).split(/\r?\n/).filter((l) => l.trim() !== '');
   } catch {
@@ -166,12 +166,12 @@ function arquivosRastreados() {
  * arquivo rastreado contar como delta — é "tudo", não "nada": mais verificação nunca fere o
  * fail-closed, menos verificação sim.
  */
-const ARVORE_VAZIA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
 /** A árvore vazia não é um commit — `^{commit}` reprovaria uma constante que é sempre válida por
  * definição, então ela nunca passa pela verificação normal. */
-function refValida(ref) {
-  if (ref === ARVORE_VAZIA) return true;
+function validRef(ref) {
+  if (ref === EMPTY_TREE) return true;
   try {
     git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
     return true;
@@ -186,13 +186,13 @@ function refValida(ref) {
  * NUNCA é substituído em silêncio: só o DEFAULT cai para a árvore vazia quando não resolve — uma ref
  * que o usuário escolheu errada continua reprovando, para não esconder o erro dele.
  */
-function refEfetiva(desde) {
-  if (desde !== null) return desde;
-  return refValida(REF_PADRAO) ? REF_PADRAO : ARVORE_VAZIA;
+function effectiveRef(since) {
+  if (since !== null) return since;
+  return validRef(DEFAULT_REF) ? DEFAULT_REF : EMPTY_TREE;
 }
 
 /** `null` quando a ref não resolve. Mesma forma de `contract-compatible.mjs` — não um terceiro mecanismo. */
-function arquivosMudados(ref) {
+function changedFiles(ref) {
   try {
     return git(['diff', '--name-only', '--no-renames', ref]).split(/\r?\n/).filter((l) => l.trim() !== '');
   } catch {
@@ -202,19 +202,19 @@ function arquivosMudados(ref) {
 
 /** Conteúdo ATUAL do caminho (a árvore de trabalho, não o blob do delta) — `null` se sumiu, é
  * binário demais para valer a pena, ou maior que o teto. Erro de leitura nunca vira exceção aqui. */
-function lerConteudoAtual(caminhoRelativo) {
-  const alvo = join(RAIZ, caminhoRelativo);
+function readCurrentContent(relativePath) {
+  const target = join(ROOT, relativePath);
   try {
-    if (!existsSync(alvo) || statSync(alvo).size > TAMANHO_MAX_BYTES) return null;
-    return readFileSync(alvo, 'utf8');
+    if (!existsSync(target) || statSync(target).size > MAX_SIZE_BYTES) return null;
+    return readFileSync(target, 'utf8');
   } catch {
     return null;
   }
 }
 
-function gitleaksDisponivel() {
+function availableGitleaks() {
   try {
-    execFileSync('gitleaks', ['version'], { cwd: RAIZ, encoding: 'utf8' });
+    execFileSync('gitleaks', ['version'], { cwd: ROOT, encoding: 'utf8' });
     return true;
   } catch {
     return false;
@@ -223,90 +223,90 @@ function gitleaksDisponivel() {
 
 /** Segunda opinião, nunca a primeira: mesmo comando de `hooks/cyber-git-seguro.js` para o push
  * (`detect --log-opts <ref>..HEAD`) — precedente já testado nesta base, não uma invenção nova. */
-function rodarGitleaks(ref) {
+function runGitleaks(ref) {
   try {
     execFileSync('gitleaks', ['detect', '--log-opts', `${ref}..HEAD`, '--redact', '--no-banner'], {
-      cwd: RAIZ, encoding: 'utf8',
+      cwd: ROOT, encoding: 'utf8',
     });
     return { rodou: true, achados: false, saida: '' };
-  } catch (erro) {
+  } catch (error) {
     // gitleaks sai != 0 tanto por ACHADO quanto por erro de uso — a saída é quem distingue.
-    const saida = `${erro.stdout ?? ''}${erro.stderr ?? ''}`;
-    return { rodou: true, achados: true, saida: saida.slice(0, 1500) };
+    const output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
+    return { rodou: true, achados: true, saida: output.slice(0, 1500) };
   }
 }
 
-function coletarDelta(ref) {
-  const caminhos = arquivosMudados(ref);
-  if (caminhos === null) return null;
-  return caminhos
-    .map((caminho) => ({ caminho, conteudo: lerConteudoAtual(caminho) }))
-    .filter((a) => a.conteudo !== null);
+function collectDelta(ref) {
+  const paths = changedFiles(ref);
+  if (paths === null) return null;
+  return paths
+    .map((path) => ({ caminho: path, content: readCurrentContent(path) }))
+    .filter((a) => a.content !== null);
 }
 
 // ================================================================================================
 // SAÍDA — as três situações do fail-closed nunca podem ser a mesma linha (lei 10).
 // ================================================================================================
 
-function analisar(ref) {
-  const rastreados = arquivosRastreados();
-  if (rastreados === null) {
-    return { situacao: 'git-mudo', ref, compativel: false, envs: [], segredos: [], gitleaks: null };
+function analyze(ref) {
+  const tracked = trackedFiles();
+  if (tracked === null) {
+    return { situacao: 'git-unavailable', ref, compativel: false, envs: [], segredos: [], gitleaks: null };
   }
-  if (!refValida(ref)) {
-    return { situacao: 'ref-invalida', ref, compativel: false, envs: [], segredos: [], gitleaks: null };
+  if (!validRef(ref)) {
+    return { situacao: 'invalid-ref', ref, compativel: false, envs: [], segredos: [], gitleaks: null };
   }
 
-  const envs = envVersionados(rastreados);
-  const delta = coletarDelta(ref);
-  const deltaVazio = delta !== null && delta.length === 0;
-  const segredos = delta === null ? [] : varrerSegredos(delta);
-  const gitleaks = gitleaksDisponivel() ? rodarGitleaks(ref) : { rodou: false };
+  const envs = versionedEnv(tracked);
+  const delta = collectDelta(ref);
+  const emptyDelta = delta !== null && delta.length === 0;
+  const secrets = delta === null ? [] : scanSecrets(delta);
+  const gitleaks = availableGitleaks() ? runGitleaks(ref) : { rodou: false };
 
   return {
-    situacao: deltaVazio ? 'delta-vazio' : 'comparado',
+    situacao: emptyDelta ? 'empty-delta' : 'compared',
     ref,
-    compativel: envs.length === 0 && segredos.length === 0 && !(gitleaks.rodou && gitleaks.achados),
+    compativel: envs.length === 0 && secrets.length === 0 && !(gitleaks.rodou && gitleaks.achados),
     envs,
-    segredos,
+    segredos: secrets,
     gitleaks,
   };
 }
 
-function imprimirHumano(r) {
-  if (r.situacao === 'git-mudo') {
-    process.stdout.write('  x git nao respondeu (fora de repositorio, ou indice corrompido) — FAIL-CLOSED: nao da para provar ausencia de segredo\n');
+function printHuman(r) {
+  if (r.situacao === 'git-unavailable') {
+    process.stdout.write('  x Git did not respond (outside a repository or index is corrupted) — FAIL-CLOSED: secret absence cannot be proven\n');
     return;
   }
-  if (r.situacao === 'ref-invalida') {
-    process.stdout.write(`  x ref invalida ou inexistente: "${r.ref}" — FAIL-CLOSED: sem baseline nao ha o que comparar\n`);
+  if (r.situacao === 'invalid-ref') {
+    process.stdout.write(`  x invalid or missing ref: "${r.ref}" — FAIL-CLOSED: there is no baseline to compare\n`);
     return;
   }
-  const rotuloRef = r.ref === ARVORE_VAZIA ? `${r.ref} (arvore vazia — sem HEAD~1, repositorio novo)` : r.ref;
-  process.stdout.write(`ci-seguranca: comparando com --since ${rotuloRef}\n`);
-  if (r.situacao === 'delta-vazio') {
-    process.stdout.write('  delta vazio — nada mudou nesta execucao (diferente de "nao verifiquei": o git respondeu, e a resposta foi "nada")\n');
+  const refLabel = r.ref === EMPTY_TREE ? `${r.ref} (empty tree — no HEAD~1, new repository)` : r.ref;
+  process.stdout.write(`ci-security: comparing with --since ${refLabel}\n`);
+  if (r.situacao === 'empty-delta') {
+    process.stdout.write('  empty delta — nothing changed in this run (Git responded; this differs from "not checked")\n');
   }
   if (r.envs.length > 0) {
-    for (const e of r.envs) process.stdout.write(`  x .env VERSIONADO: ${e} — segredo real rastreado pelo git\n`);
+    for (const e of r.envs) process.stdout.write(`  x tracked .env: ${e} — a real secret is tracked by Git\n`);
   } else {
-    process.stdout.write('  ok   nenhum .env versionado\n');
+    process.stdout.write('  ok   no tracked .env files\n');
   }
   if (r.segredos.length > 0) {
     for (const s of r.segredos) process.stdout.write(`  x ${s.caminho}:${s.linha}: ${s.tipo} — ${s.trecho}\n`);
   } else {
-    process.stdout.write('  ok   nenhum segredo reconhecido no delta\n');
+    process.stdout.write('  ok   no recognized secrets in the delta\n');
   }
   if (!r.gitleaks.rodou) {
-    process.stdout.write('  !    gitleaks nao encontrado — segunda opiniao pulada (bonus, nao reprova por ausencia)\n');
+    process.stdout.write('  !    gitleaks not found — optional second opinion skipped (absence does not fail)\n');
   } else if (r.gitleaks.achados) {
-    process.stdout.write(`  x gitleaks (segunda opiniao) achou algo:\n${r.gitleaks.saida}\n`);
+    process.stdout.write(`  x gitleaks (second opinion) found a secret:\n${r.gitleaks.saida}\n`);
   } else {
-    process.stdout.write('  ok   gitleaks (segunda opiniao): nada\n');
+    process.stdout.write('  ok   gitleaks (second opinion): no findings\n');
   }
 }
 
-function imprimirJson(r) {
+function printJson(r) {
   process.stdout.write(`${JSON.stringify(r, null, 2)}\n`);
 }
 
@@ -314,41 +314,41 @@ function imprimirJson(r) {
 // CLI
 // ================================================================================================
 
-const REF_PADRAO = 'HEAD~1';
+const DEFAULT_REF = 'HEAD~1';
 
-function lerOpcoes(argv) {
-  const opcoes = { desde: null, json: false, autoteste: false };
+function readOptions(argv) {
+  const options = { desde: null, json: false, selfTest: false };
   for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === '--autoteste') { opcoes.autoteste = true; continue; }
-    if (argv[i] === '--json') { opcoes.json = true; continue; }
-    if (argv[i] === '--since') { opcoes.desde = argv[i + 1] ?? null; i += 1; continue; }
+    if (argv[i] === '--selftest') { options.selfTest = true; continue; }
+    if (argv[i] === '--json') { options.json = true; continue; }
+    if (argv[i] === '--since') { options.desde = argv[i + 1] ?? null; i += 1; continue; }
   }
-  return opcoes;
+  return options;
 }
 
-function principal() {
-  const opcoes = lerOpcoes(process.argv.slice(2));
-  if (opcoes.autoteste) return rodarAutoteste();
+function main() {
+  const options = readOptions(process.argv.slice(2));
+  if (options.selfTest) return runSelfTest();
 
-  const resultado = analisar(refEfetiva(opcoes.desde));
-  if (opcoes.json) imprimirJson(resultado);
+  const result = analyze(effectiveRef(options.desde));
+  if (options.json) printJson(result);
   else {
-    imprimirHumano(resultado);
-    process.stdout.write(`\nci-seguranca: ${resultado.compativel ? 'OK' : 'REPROVADO'}\n`);
+    printHuman(result);
+    process.stdout.write(`\nci-security: ${result.compativel ? 'OK' : 'FAILED'}\n`);
   }
-  return resultado.compativel ? 0 : 1;
+  return result.compativel ? 0 : 1;
 }
 
 // ================================================================================================
 // AUTOTESTE — o núcleo puro contra fixtures em memória, mais entrada adversarial (lei 8).
 // ================================================================================================
 
-function casosDeAutoteste() {
+function selfTestCases() {
   return [
-    { nome: 'raiz .env rastreado: achado', rastreados: ['.env', 'src/x.ts'], esperado: ['.env'] },
-    { nome: 'modules/x/.env rastreado: achado', rastreados: ['modules/pedidos/.env'], esperado: ['modules/pedidos/.env'] },
-    { nome: '.env.example NAO e .env real', rastreados: ['.env.example', 'modules/x/.env.example'], esperado: [] },
-    { nome: 'nada rastreado de sensivel: vazio', rastreados: ['src/x.ts', 'README.md'], esperado: [] },
+    { name: 'tracked root .env is reported', tracked: ['.env', 'src/x.ts'], expected: ['.env'] },
+    { name: 'tracked module .env is reported', tracked: ['modules/pedidos/.env'], expected: ['modules/pedidos/.env'] },
+    { name: '.env.example is not a real .env file', tracked: ['.env.example', 'modules/x/.env.example'], expected: [] },
+    { name: 'no sensitive files are tracked returns an empty list', tracked: ['src/x.ts', 'README.md'], expected: [] },
   ];
 }
 
@@ -361,91 +361,120 @@ function casosDeAutoteste() {
  * mesmo motivo de um scanner de vírus não guardar a própria assinatura em texto puro dentro do
  * binário. O valor RESULTANTE, que os testes exercitam, é sempre o literal esperado.
  */
-function montar(...partes) {
-  return partes.join('');
+function build(...parts) {
+  return parts.join('');
 }
 
-const AWS_KEY_DE_TESTE = montar('AKIA', 'IOSFODNN7', 'EXAMPLE');
-const CHAVE_DE_TESTE = montar('STRIPE_API', '_KEY');
+const TEST_AWS_KEY = build('AKIA', 'IOSFODNN7', 'EXAMPLE');
+const TEST_KEY = build('STRIPE_API', '_KEY');
 
-function casosDeVarredura() {
+function databaseUrlCases({ databaseUrl, interpolatedUsername, environmentCredential, literalCredential }) {
   return [
     {
-      nome: 'AWS Access Key: achado',
-      arquivos: [{ caminho: 'a.ts', conteudo: `const k = "${AWS_KEY_DE_TESTE}";` }],
-      esperadoTipo: 'AWS Access Key',
+      name: 'connection URL: both credentials use environment interpolation -> ignored',
+      files: [{ caminho: 'compose.yml', content: databaseUrl(interpolatedUsername, environmentCredential) }],
+      expectedType: null,
     },
     {
-      nome: 'chave de credencial atribuida (via PADRAO_CREDENCIAL): achado',
-      arquivos: [{ caminho: 'a.ts', conteudo: `const ${CHAVE_DE_TESTE} = "valor-real-aqui";` }],
-      esperadoTipo: 'chave de credencial atribuída',
+      name: 'connection URL: shell environment credentials -> ignored',
+      files: [{ caminho: 'compose.yml', content: databaseUrl('$DB_USER', '$DB_PASSWORD') }],
+      expectedType: null,
     },
     {
-      nome: 'leitura de env (nao atribuicao): nao acusa',
-      arquivos: [{ caminho: 'a.ts', conteudo: 'const x = process.env.MODULO_API_KEY;' }],
-      esperadoTipo: null,
+      name: 'connection URL: literal password -> detected',
+      files: [{ caminho: 'compose.yml', content: databaseUrl('app', literalCredential) }],
+      expectedType: 'Connection string',
     },
     {
-      nome: '.env.example com chave vazia: nao acusa',
-      arquivos: [{ caminho: '.env.example', conteudo: 'MODULO_API_KEY=\n' }],
-      esperadoTipo: null,
+      name: 'connection URL: environment username and literal password -> detected',
+      files: [{ caminho: 'compose.yml', content: databaseUrl(interpolatedUsername, literalCredential) }],
+      expectedType: 'Connection string',
     },
     {
-      nome: 'entrada ADVERSARIAL: "; echo INJETADO" como conteudo — nunca executa, so texto',
-      arquivos: [{ caminho: 'a.ts', conteudo: 'const cmd = "; echo INJETADO";' }],
-      esperadoTipo: null,
-    },
-    {
-      nome: 'entrada ADVERSARIAL: "$(echo INJETADO)" como conteudo — nunca executa, so texto',
-      arquivos: [{ caminho: 'a.ts', conteudo: 'const cmd = "$(echo INJETADO)";' }],
-      esperadoTipo: null,
-    },
-    {
-      nome: 'entrada ADVERSARIAL: "& echo INJETADO" como conteudo — nunca executa, so texto',
-      arquivos: [{ caminho: 'a.ts', conteudo: 'const cmd = "& echo INJETADO";' }],
-      esperadoTipo: null,
+      name: 'connection URL: literal username and environment password -> detected',
+      files: [{ caminho: 'compose.yml', content: databaseUrl('app', environmentCredential) }],
+      expectedType: 'Connection string',
     },
   ];
 }
 
-function rodarAutoteste() {
-  let falhas = 0;
-  const registrar = (nome, ok, detalhe) => {
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${nome}\n`);
+function adversarialInputCases() {
+  return [
+    { name: 'semicolon injection input is treated as text, never executed', files: [{ caminho: 'a.ts', content: 'const cmd = "; echo INJECTED";' }], expectedType: null },
+    { name: 'command substitution input is treated as text, never executed', files: [{ caminho: 'a.ts', content: 'const cmd = "$(echo INJECTED)";' }], expectedType: null },
+    { name: 'shell operator input is treated as text, never executed', files: [{ caminho: 'a.ts', content: 'const cmd = "& echo INJECTED";' }], expectedType: null },
+  ];
+}
+
+function scanCases() {
+  const databaseUrl = (username, password) => `DATABASE_URL="postgres://${username}:${password}@db:5432/app"`;
+  const interpolatedUsername = '${DEPLOY_DB_USER:?required}';
+  const environmentCredential = '${DEPLOY_DB_PASSWORD:?required}';
+  const literalCredential = ['literal', 'password'].join('-');
+  return [
+    {
+      name: 'AWS Access Key: finding',
+      files: [{ caminho: 'a.ts', content: `const k = "${TEST_AWS_KEY}";` }],
+      expectedType: 'AWS Access Key',
+    },
+    {
+      name: 'assigned credential key is reported through CREDENTIAL_PATTERN',
+      files: [{ caminho: 'a.ts', content: `const ${TEST_KEY} = "real-value-here";` }],
+      expectedType: 'assigned credential key',
+    },
+    {
+      name: 'reading an environment variable without assigning it is not reported',
+      files: [{ caminho: 'a.ts', content: 'const x = process.env.MODULE_API_KEY;' }],
+      expectedType: null,
+    },
+    {
+      name: '.env.example with an empty key is not reported',
+      files: [{ caminho: '.env.example', content: 'MODULE_API_KEY=\n' }],
+      expectedType: null,
+    },
+    ...databaseUrlCases({ databaseUrl, interpolatedUsername, environmentCredential, literalCredential }),
+    ...adversarialInputCases(),
+  ];
+}
+
+function runSelfTest() {
+  let failures = 0;
+  const register = (name, ok, detail) => {
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${name}\n`);
     if (!ok) {
-      falhas += 1;
-      if (detalhe !== undefined) process.stdout.write(`       ${detalhe}\n`);
+      failures += 1;
+      if (detail !== undefined) process.stdout.write(`       ${detail}\n`);
     }
   };
 
-  for (const caso of casosDeAutoteste()) {
-    const obtido = envVersionados(caso.rastreados);
-    const ok = JSON.stringify(obtido) === JSON.stringify(caso.esperado);
-    registrar(caso.nome, ok, `esperado: ${JSON.stringify(caso.esperado)} obtido: ${JSON.stringify(obtido)}`);
+  for (const testCase of selfTestCases()) {
+    const obtained = versionedEnv(testCase.tracked);
+    const ok = JSON.stringify(obtained) === JSON.stringify(testCase.expected);
+    register(testCase.name, ok, `expected: ${JSON.stringify(testCase.expected)}; received: ${JSON.stringify(obtained)}`);
   }
 
-  for (const caso of casosDeVarredura()) {
-    const achados = varrerSegredos(caso.arquivos);
-    const ok = caso.esperadoTipo === null ? achados.length === 0 : achados.some((a) => a.tipo === caso.esperadoTipo);
-    registrar(caso.nome, ok, `achados: ${JSON.stringify(achados)}`);
+  for (const testCase of scanCases()) {
+    const findings = scanSecrets(testCase.files);
+    const ok = testCase.expectedType === null ? findings.length === 0 : findings.some((a) => a.tipo === testCase.expectedType);
+    register(testCase.name, ok, `findings: ${JSON.stringify(findings)}`);
   }
 
   // Nenhum achado, em nenhum vocabulário, pode expor o segredo INTEIRO — só o mascarado. Verificado
   // por PROPRIEDADE (mais curto, tem "...", nunca contém o segredo inteiro), não comparando com um
-  // segundo literal igual ao de `AWS_KEY_DE_TESTE` — reintroduziria o mesmo problema que este
+  // segundo literal igual ao de `TEST_AWS_KEY` — reintroduziria o mesmo problema que este
   // conserto existe para resolver.
-  const mascaradoDeVerdade = mascarar(AWS_KEY_DE_TESTE);
-  const mascaramentoOk = mascaradoDeVerdade.includes('...')
-    && mascaradoDeVerdade.length < AWS_KEY_DE_TESTE.length
-    && !mascaradoDeVerdade.includes(AWS_KEY_DE_TESTE)
-    && mascarar('curto') === '****';
-  registrar('mascarar() nunca expoe o segredo inteiro', mascaramentoOk);
+  const trulyMasked = mask(TEST_AWS_KEY);
+  const okMasking = trulyMasked.includes('...')
+    && trulyMasked.length < TEST_AWS_KEY.length
+    && !trulyMasked.includes(TEST_AWS_KEY)
+    && mask('curto') === '****';
+  register('mask() never exposes the full secret', okMasking);
 
-  const total = casosDeAutoteste().length + casosDeVarredura().length + 1;
-  process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  const total = selfTestCases().length + scanCases().length + 1;
+  process.stdout.write(`\nself-test: ${total - failures}/${total} passed\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(principal());
+  process.exit(main());
 }

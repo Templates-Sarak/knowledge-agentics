@@ -115,7 +115,7 @@ def _modules() -> list[Path]:
 def _minimum_coverage() -> int | None:
     """`coverage.minimum` de `config/verification.json` — a MESMA politica que `hooks/test-cobertura.js`
     le para o push, uma fonte so. Ausente ou ilegivel: sem piso (o gate, nao este comando, cobra a
-    ausencia da politica via `verificacao-declarada`)."""
+    ausencia da politica via `verification-declared`)."""
     caminho = RAIZ / "config" / "verification.json"
     if not caminho.exists():
         return None

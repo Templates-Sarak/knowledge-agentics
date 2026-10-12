@@ -17,11 +17,11 @@
  * Assim o linter e o gate não podem divergir por edição de um só lado — que é o defeito que a
  * precedência do §7.2 ("onde o gate e o linter discordarem, o linter tem razão") tornaria invisível.
  */
-export const LIMIARES = {
+export const THRESHOLDS = {
   /** Linhas de corpo de função. */
-  linhasFuncao: 40,
+  functionLines: 40,
   /** Profundidade de blocos de CONTROLE aninhados. */
-  aninhamento: 3,
+  nesting: 3,
   /** Parâmetros por função. */
-  parametros: 4,
+  params: 4,
 };

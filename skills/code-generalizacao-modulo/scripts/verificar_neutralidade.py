@@ -2,7 +2,7 @@
 
     python verificar_neutralidade.py --raiz <repo-ou-modulo> --denylist <arquivo> [--json]
     python verificar_neutralidade.py --raiz <caminho> --termo loja --termo "Minha Loja" [--json]
-    python verificar_neutralidade.py --autoteste
+    python verificar_neutralidade.py --selftest
 
 Varre TODO texto do entregavel — codigo, teste, fixture, seed, migration, contrato, README, ADR,
 `.env.example`, JSON de config — atras dos termos da denylist, e devolve exit 1 na primeira ocorrencia.
@@ -241,7 +241,7 @@ def _parser() -> argparse.ArgumentParser:
         "--json", action="store_true", help="Imprime os achados como JSON."
     )
     parser.add_argument(
-        "--autoteste",
+        "--selftest",
         action="store_true",
         help="Prova o nucleo com fixtures em memoria.",
     )
@@ -265,10 +265,10 @@ def main() -> int:
     parser = _parser()
     args = parser.parse_args()
 
-    if args.autoteste:
+    if args.selftest:
         return autoteste()
     if not args.raiz:
-        parser.error("--raiz e obrigatorio (ou use --autoteste)")
+        parser.error("--raiz e obrigatorio (ou use --selftest)")
 
     raiz = Path(args.raiz).resolve()
     if not raiz.is_dir():

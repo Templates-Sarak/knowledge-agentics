@@ -170,8 +170,9 @@ instalado). O `--plano` e o `--relatorio` só o **leem**; o `--aplicar` e o `--d
 ## Referências (Camada 3 — leia sob demanda)
 - `references/prompt-atualizacao.md` — o molde do prompt de atualização direta para o executor.
 - `references/plans-de-adequacao.md` — um molde de plan por tipo de proposta (formato do `template-plan`).
+- `references/campanha-idioma.md` — insumo da propagação das ondas da campanha de idioma (`ADR-023` a `025`): exceções por id de cada sistema, riscos do `tools/` vendorizado e inventário detalhado da base. Não viaja para projeto.
 - `scripts/propagar.py` — o plano e a CLI. `REGRAS` (categorias), `FONTES`/`SEM_FONTE_DIRETA` (adoção), com as
-  fontes citadas; `separar_mantidos`/`aplicar_mantidos` (a ação `mantido`); `--autoteste` prova o núcleo do plano, do aplicar/desfazer e do relatório em memória.
+  fontes citadas; `separar_mantidos`/`aplicar_mantidos` (a ação `mantido`); `--selftest` prova o núcleo do plano, do aplicar/desfazer e do relatório em memória.
 - `scripts/relatorio.py` — o `--relatorio`: `PLANS` (lacuna/ação → plan proposta: título, destino, ordem e
   `depende_de`),
   `propostas`, `atualizacao_direta`, `montar_relatorio`.

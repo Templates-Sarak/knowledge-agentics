@@ -10,7 +10,7 @@ prefixo, a checagem inteira reprova — nunca passa em silêncio como se o vocab
 vazio (mesmo defeito de fail-open que `limiares.py`/Tarefa 1 evita para `thresholds.mjs`).
 
 Núcleo × casca: `prefixos_do_texto`/`raiz_do_prefixo`/`fora_do_vocabulario` são puros (recebem
-texto/lista já lidos, nunca tocam `fs`) — é o que o `--autoteste` de `audit_base.py` prova com
+texto/lista já lidos, nunca tocam `fs`) — é o que o `--selftest` de `audit_base.py` prova com
 fixtures em memória. `auditar_nomenclatura` é a casca fina que lê `fs` e delega.
 """
 

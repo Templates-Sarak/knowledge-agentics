@@ -451,7 +451,7 @@ const ehExecucaoDireta =
   process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
 
 if (ehExecucaoDireta) {
-  if (process.argv.includes('--autoteste')) {
+  if (process.argv.includes('--selftest')) {
     process.exit(runSelftest());
   } else {
     startSystem(process.cwd()).catch((causa: unknown) => {

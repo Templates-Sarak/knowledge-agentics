@@ -17,7 +17,7 @@ Cada regra do ecossistema tem **um** dono. Ninguém copia ninguém; quem não é
 
 | Nível | Assunto | Dono | Onde |
 |---|---|---|---|
-| **0** | escrita: SRP, limiares, zero hardcoded, segredos, erro, log, teste, nomes | **esta skill** (§ abaixo) | aqui |
+| **0** | escrita: SRP, limiares, zero hardcoded, segredos, erro, log, teste, nomes, idioma | **esta skill** (§ abaixo) | aqui |
 | **1** | arquitetura de módulos: anatomia, manifesto, contrato, dados, isolamento | **catálogo de regras do template** | `specs/_estrutura_modulos/doutrina/04-regras.md` (vira `specs/arquitetura/04-regras.md` no projeto) |
 | **2** | idiomas e linter de cada linguagem | `padrao-typescript` · `padrao-python` | skills irmãs |
 
@@ -63,6 +63,14 @@ não aparece na assinatura, impede imutabilidade e torna a unidade intestável s
 Corolário: **sem estado global mutável** — dado compartilhado que muda é dependência que ninguém declarou.
 
 **Nomes** — descritivos e sem abreviação obscura; o nome revela a intenção.
+
+**Idioma** — **o código é em inglês, sem exceção estrutural**: identificadores de qualquer escopo (inclusive
+variável local e parâmetro), nomes de módulo, rotas, tabelas, colunas, schemas, chaves de config e de
+manifesto, ids de regra, mensagens e saídas de ferramentas. **O português mora em três lugares**: o texto
+mostrado ao usuário final no front (o *valor* em `config/texts.json` — a chave é inglês), os **comentários**
+e a **documentação** (`specs/`, `doutrina/`, skills, commands, agents, READMEs). Vale com ou sem template.
+Convenção de leitura humana: nenhum verificador a cobra ainda. O detalhe do template e o plano de migração
+do que ainda está em português são do `ADR-023` (`specs/_estrutura_modulos/doutrina/adr/decisoes.md`).
 
 **Testes** — toda nova funcionalidade vem com testes **na mesma entrega**; **caminhos críticos obrigatórios**. Testes ficam em `tests/` do módulo. Legado entra via testes de caracterização (skill `code-adequacao`).
 - **Cobertura ~80% é alvo de equipe, e explicitamente NÃO é regra.** Medi-la exige **executar** os testes, e um gate estático não executa nada. Cobre-se em revisão e no comando `verificar` do projeto. Cobertura também não é meta em si: teste que existe só para subir número é peso morto.
@@ -139,7 +147,7 @@ que reprovam no gate e que o gate não conserta sozinho. A porta é a skill **`c
 
 **Nível 1 — a verificação por máquina.** Não confira de cabeça o que o gate cobra melhor:
 - [ ] `node tools/gate/validate.mjs <caminho-do-modulo>` verde?
-- [ ] `node tools/gate/validate.mjs --all` verde (inclui `import-lateral` e `consome-ciclo`)?
+- [ ] `node tools/gate/validate.mjs --all` verde (inclui `lateral-import` e `consumes-cycle`)?
 - [ ] Projeto **sem** o template de módulos? Então o Nível 1 não se aplica — só a lista acima vale.
 
 **Nível 2 — o idioma da linguagem:** `padrao-typescript` · `padrao-python`. São as duas com idioma documentado

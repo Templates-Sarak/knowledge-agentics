@@ -16,13 +16,13 @@ export default [
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     rules: {
-      // gate: limiar-funcao
+      // gate: function-threshold
       'max-lines-per-function': ['error', { max: 40, skipBlankLines: true, skipComments: true }],
-      // gate: limiar-aninhamento
+      // gate: nesting-threshold
       'max-depth': ['error', 3],
-      // gate: limiar-parametros
+      // gate: parameters-threshold
       'max-params': ['error', 4],
-      // gate: excecao-engolida
+      // gate: swallowed-exception
       'no-empty': ['error', { allowEmptyCatch: false }],
       // gate: log
       'no-console': 'error',
@@ -30,7 +30,7 @@ export default [
   },
   {
     // Teste tem outra economia: fixture longa e `console` de diagnostico sao legitimos ali,
-    // e o gate ja isenta arquivo de teste nas mesmas regras (`eTeste`).
+    // e o gate ja isenta arquivo de teste nas mesmas regras (`isTest`).
     files: ['**/tests/**', '**/*.test.*', '**/*.spec.*'],
     rules: { 'max-lines-per-function': 'off', 'no-console': 'off' },
   },

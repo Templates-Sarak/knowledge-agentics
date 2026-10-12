@@ -5,8 +5,9 @@
  * Lei dona: specs/arquitetura/03-operacao.md §9 (build por binding).
  *
  *   node tools/package.mjs                compila backend + front, em arvore (npm run build)
+ *   node tools/package.mjs --backend-only [<destino>] compila backend sem construir o front
  *   node tools/package.mjs <destino>       idem, MAIS empacota o artefato backend em <destino>
- *   node tools/package.mjs --autoteste     prova interna (mesclarDependencias)
+ *   node tools/package.mjs --selftest     prova interna (mergeDependencies)
  *
  * SO TYPESCRIPT EMITE. Um module/root sem `tsconfig.build.json` e pulado em silencio informativo —
  * JavaScript ja E o artefato (o fonte roda direto), Python roda o fonte por natureza (specs/arquitetura/
@@ -30,7 +31,7 @@
  * `shell: true` concatena args numa string sem citacao, e um id de modulo vindo de pasta vira
  * injecao). `tsc`/`vite` sao resolvidos pelo campo `bin` do `package.json` deles e rodados com
  * `process.execPath` direto no `.js`, sem passar pelo shim `.cmd`/`.sh` nenhuma vez. Copiada aqui,
- * nao importada: `entrypointDoPacote` já existe em `verify-commit.mjs`, mas essa ferramenta está
+ * nao importada: `packageEntrypoint` já existe em `verify-commit.mjs`, mas essa ferramenta está
  * fora do escopo deste bloco (aprovada, não se reabre) — duas cópias pequenas divergem menos do
  * que uma dependência entre ferramentas que não precisavam se conhecer.
  *
@@ -50,77 +51,77 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, write
 import { basename, dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url));
 const NODE = process.execPath;
 
-function acharRaizProjeto(partida) {
-  let atual = partida;
-  for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'modules'))) return atual;
-    const pai = dirname(atual);
-    if (pai === atual) break;
-    atual = pai;
+function findProjectRoot(start) {
+  let current = start;
+  for (let level = 0; level < 8; level += 1) {
+    if (existsSync(join(current, 'modules'))) return current;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
   }
-  return join(AQUI, '..');
+  return join(HERE, '..');
 }
 
 /** Le removendo o BOM: editor e shell do Windows gravam por padrao, e `JSON.parse` rejeita. */
-function lerTexto(caminho) {
-  return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
+function readText(path) {
+  return readFileSync(path, 'utf8').replace(/^﻿/, '');
 }
 
-function lerJsonSeExiste(caminho) {
-  return existsSync(caminho) ? JSON.parse(lerTexto(caminho)) : null;
+function readJsonIfExists(path) {
+  return existsSync(path) ? JSON.parse(readText(path)) : null;
 }
 
 /**
  * O entrypoint JS de um pacote instalado em `<raizNode>/node_modules/<pastaPacote>`, pelo campo
  * `bin` do manifesto dele. Mesma tecnica de `hooks/padrao-limiares.js:entrypointDoProjeto` e de
- * `verify-commit.mjs:entrypointDoPacote` — nao importada de nenhum dos dois (ver cabecalho).
+ * `verify-commit.mjs:packageEntrypoint` — nao importada de nenhum dos dois (ver cabecalho).
  */
-function entrypointDoPacote(raizNode, pastaPacote, chaveBin = pastaPacote) {
-  const pasta = join(raizNode, 'node_modules', pastaPacote);
+function packageEntrypoint(nodeRoot, packageDir, binKey = packageDir) {
+  const dir = join(nodeRoot, 'node_modules', packageDir);
   try {
-    const { bin } = JSON.parse(lerTexto(join(pasta, 'package.json')));
-    const relativo = typeof bin === 'string' ? bin : bin?.[chaveBin];
-    if (!relativo) return null;
-    const alvo = join(pasta, relativo);
-    return existsSync(alvo) ? alvo : null;
+    const { bin } = JSON.parse(readText(join(dir, 'package.json')));
+    const relPath = typeof bin === 'string' ? bin : bin?.[binKey];
+    if (!relPath) return null;
+    const target = join(dir, relPath);
+    return existsSync(target) ? target : null;
   } catch {
     return null;
   }
 }
 
 /** O entrypoint JS do `npm`, ao lado do `node` atual — nunca pelo `PATH` (mesma tecnica de `create-module.mjs`). */
-function entrypointDoNpm() {
-  const raizNode = dirname(NODE);
-  for (const candidato of [raizNode, join(raizNode, '..', 'lib')]) {
-    const alvo = entrypointDoPacote(candidato, 'npm');
-    if (alvo !== null) return alvo;
+function npmEntrypoint() {
+  const nodeRoot = dirname(NODE);
+  for (const candidate of [nodeRoot, join(nodeRoot, '..', 'lib')]) {
+    const target = packageEntrypoint(candidate, 'npm');
+    if (target !== null) return target;
   }
   return null;
 }
 
-function rodar(rotulo, executavel, args, cwd) {
-  process.stdout.write(`  construindo: ${rotulo}\n`);
-  execFileSync(executavel, args, { cwd, stdio: 'inherit' });
+function run(label, executable, args, cwd) {
+  process.stdout.write(`  Building: ${label}\n`);
+  execFileSync(executable, args, { cwd, stdio: 'inherit' });
 }
 
-function listarModulosReais(raizProjeto) {
-  const base = join(raizProjeto, 'modules');
+function listRealModules(projectRoot) {
+  const base = join(projectRoot, 'modules');
   if (!existsSync(base)) return [];
   return readdirSync(base)
-    .filter((nome) => !nome.startsWith('_'))
-    .filter((nome) => existsSync(join(base, nome, 'module.json')))
-    .map((nome) => join(base, nome));
+    .filter((name) => !name.startsWith('_'))
+    .filter((name) => existsSync(join(base, name, 'module.json')))
+    .map((name) => join(base, name));
 }
 
-function listarAdapters(raizProjeto) {
-  const base = join(raizProjeto, 'adapters');
+function listAdapters(projectRoot) {
+  const base = join(projectRoot, 'adapters');
   if (!existsSync(base)) return [];
   return readdirSync(base)
-    .map((nome) => join(base, nome))
-    .filter((pasta) => existsSync(join(pasta, 'package.json')));
+    .map((name) => join(base, name))
+    .filter((dir) => existsSync(join(dir, 'package.json')));
 }
 
 // ================================================================================================
@@ -128,39 +129,39 @@ function listarAdapters(raizProjeto) {
 // emito" (JS/Python), e o script informa e segue.
 // ================================================================================================
 
-function compilarBackendRaiz(raizProjeto) {
-  const configBuild = join(raizProjeto, 'tsconfig.build.json');
+function compileBackendRoot(projectRoot) {
+  const configBuild = join(projectRoot, 'tsconfig.build.json');
   if (!existsSync(configBuild)) {
-    process.stdout.write('backend da raiz: sem tsconfig.build.json — este binding nao emite (JS ja e o artefato; Python roda o fonte)\n');
+    process.stdout.write('Root backend has no tsconfig.build.json; this binding does not emit (JavaScript is already the artifact; Python runs from source).\n');
     return;
   }
-  const tsc = entrypointDoPacote(raizProjeto, 'typescript', 'tsc');
-  if (tsc === null) throw new Error('typescript ausente em node_modules — rode "npm install" antes de compilar');
-  rodar('backend da raiz (tsc -p tsconfig.build.json)', NODE, [tsc, '-p', 'tsconfig.build.json'], raizProjeto);
+  const tsc = packageEntrypoint(projectRoot, 'typescript', 'tsc');
+  if (tsc === null) throw new Error('typescript is missing from node_modules — run "npm install" before compiling');
+  run('root backend (tsc -p tsconfig.build.json)', NODE, [tsc, '-p', 'tsconfig.build.json'], projectRoot);
 }
 
-function compilarBackendDoModulo(raizProjeto, pastaModulo) {
-  const configBuild = join(pastaModulo, 'tsconfig.build.json');
+function compileModuleBackend(projectRoot, moduleDir) {
+  const configBuild = join(moduleDir, 'tsconfig.build.json');
   if (!existsSync(configBuild)) {
-    process.stdout.write(`backend de ${basename(pastaModulo)}: sem tsconfig.build.json — nada a emitir\n`);
+    process.stdout.write(`Backend for ${basename(moduleDir)} has no tsconfig.build.json; nothing to emit.\n`);
     return;
   }
-  const tsc = entrypointDoPacote(raizProjeto, 'typescript', 'tsc');
-  if (tsc === null) throw new Error('typescript ausente em node_modules — rode "npm install" antes de compilar');
-  rodar(`backend de ${basename(pastaModulo)} (tsc -p tsconfig.build.json)`, NODE, [tsc, '-p', 'tsconfig.build.json'], pastaModulo);
+  const tsc = packageEntrypoint(projectRoot, 'typescript', 'tsc');
+  if (tsc === null) throw new Error('typescript is missing from node_modules — run "npm install" before compiling');
+  run(`backend for ${basename(moduleDir)} (tsc -p tsconfig.build.json)`, NODE, [tsc, '-p', 'tsconfig.build.json'], moduleDir);
 }
 
-function construirWebDoModulo(raizProjeto, pastaModulo) {
+function buildModuleWeb(projectRoot, moduleDir) {
   const configVite = ['vite.config.ts', 'vite.config.js']
-    .map((nome) => join(pastaModulo, 'web', nome))
-    .find((caminho) => existsSync(caminho));
+    .map((name) => join(moduleDir, 'web', name))
+    .find((path) => existsSync(path));
   if (configVite === undefined) {
-    process.stdout.write(`web de ${basename(pastaModulo)}: sem web/ — nada a construir (o passo nao falha por isso)\n`);
+    process.stdout.write(`Web for ${basename(moduleDir)} has no web/ directory; nothing to build.\n`);
     return;
   }
-  const vite = entrypointDoPacote(raizProjeto, 'vite');
-  if (vite === null) throw new Error('vite ausente em node_modules — rode "npm install" antes de construir o front');
-  rodar(`web de ${basename(pastaModulo)} (vite build)`, NODE, [vite, 'build', '--config', configVite], pastaModulo);
+  const vite = packageEntrypoint(projectRoot, 'vite');
+  if (vite === null) throw new Error('vite is missing from node_modules — run "npm install" before building the frontend');
+  run(`frontend for ${basename(moduleDir)} (vite build)`, NODE, [vite, 'build', '--config', configVite], moduleDir);
 }
 
 // ================================================================================================
@@ -169,30 +170,30 @@ function construirWebDoModulo(raizProjeto, pastaModulo) {
 // ================================================================================================
 
 /** Copia so os `.json` de uma pasta — mecanico, nunca por nome. */
-function copiarJsonDe(origem, destino) {
-  if (!existsSync(origem)) return;
-  mkdirSync(destino, { recursive: true });
-  for (const nome of readdirSync(origem)) {
-    if (nome.endsWith('.json')) cpSync(join(origem, nome), join(destino, nome));
+function copyJsonOf(origin, destination) {
+  if (!existsSync(origin)) return;
+  mkdirSync(destination, { recursive: true });
+  for (const name of readdirSync(origin)) {
+    if (name.endsWith('.json')) cpSync(join(origin, name), join(destination, name));
   }
 }
 
-function empacotarModulo(pastaModulo, destinoModulos) {
-  const id = basename(pastaModulo);
-  const destino = join(destinoModulos, id);
-  mkdirSync(destino, { recursive: true });
-  cpSync(join(pastaModulo, 'module.json'), join(destino, 'module.json'));
-  copiarJsonDe(join(pastaModulo, 'config'), join(destino, 'config'));
+function packModule(moduleDir, modulesDestination) {
+  const id = basename(moduleDir);
+  const destination = join(modulesDestination, id);
+  mkdirSync(destination, { recursive: true });
+  cpSync(join(moduleDir, 'module.json'), join(destination, 'module.json'));
+  copyJsonOf(join(moduleDir, 'config'), join(destination, 'config'));
 
-  const dist = join(pastaModulo, 'dist');
+  const dist = join(moduleDir, 'dist');
   if (existsSync(dist)) {
     // TypeScript: o artefato E o `dist/` compilado — nenhuma fonte `.ts` viaja.
-    cpSync(dist, join(destino, 'dist'), { recursive: true });
+    cpSync(dist, join(destination, 'dist'), { recursive: true });
     return;
   }
   // JavaScript: ja e o proprio artefato — `api/` e `core/` SAO o codigo que roda, sem etapa nenhuma.
-  for (const pasta of ['api', 'core']) {
-    if (existsSync(join(pastaModulo, pasta))) cpSync(join(pastaModulo, pasta), join(destino, pasta), { recursive: true });
+  for (const dir of ['api', 'core']) {
+    if (existsSync(join(moduleDir, dir))) cpSync(join(moduleDir, dir), join(destination, dir), { recursive: true });
   }
 }
 
@@ -202,24 +203,24 @@ function empacotarModulo(pastaModulo, destinoModulos) {
  * entra sozinha porque a fonte e sempre o campo `dependencies` de quem a declara — nunca uma lista
  * escrita a mao neste arquivo.
  */
-export function mesclarDependencias(listaDeDependencies) {
-  const resultado = {};
-  for (const dependencies of listaDeDependencies) {
-    for (const [nome, versao] of Object.entries(dependencies ?? {})) {
-      resultado[nome] = versao;
+export function mergeDependencies(dependencyList) {
+  const result = {};
+  for (const dependencies of dependencyList) {
+    for (const [name, version] of Object.entries(dependencies ?? {})) {
+      result[name] = version;
     }
   }
-  return resultado;
+  return result;
 }
 
 /** Recusa um destino perigoso ANTES do `rmSync` — nunca apaga a propria raiz nem uma ancestral dela. */
-function validarDestino(raizProjeto, destino) {
-  if (destino === raizProjeto || raizProjeto.startsWith(destino + sep)) {
-    throw new Error(`destino "${destino}" contem a raiz do projeto — recusado`);
+function validateDestination(projectRoot, destination) {
+  if (destination === projectRoot || projectRoot.startsWith(destination + sep)) {
+    throw new Error(`destination "${destination}" contains the project root — rejected`);
   }
-  const segmentos = destino.split(/[\\/]/).filter(Boolean);
-  if (segmentos.length < 2) {
-    throw new Error(`destino "${destino}" parece raiz de disco — recusado por seguranca`);
+  const segments = destination.split(/[\\/]/).filter(Boolean);
+  if (segments.length < 2) {
+    throw new Error(`destination "${destination}" looks like a disk root — rejected for safety`);
   }
 }
 
@@ -228,55 +229,55 @@ function validarDestino(raizProjeto, destino) {
  * E o que decide quais `adapters/<provedor>/` contribuem com `dependencies` ao artefato (o nome da
  * pasta do adapter e o nome do provedor — a convencao de `create-adapter.mjs`).
  */
-export function provedoresEscolhidos(listaDePortas) {
-  const escolhidos = new Set();
-  for (const portas of listaDePortas) {
-    for (const provedor of Object.values(portas ?? {})) {
-      if (typeof provedor === 'string') escolhidos.add(provedor);
+export function chosenProviders(portList) {
+  const chosen = new Set();
+  for (const ports of portList) {
+    for (const provider of Object.values(ports ?? {})) {
+      if (typeof provider === 'string') chosen.add(provider);
     }
   }
-  return escolhidos;
+  return chosen;
 }
 
 /** PURA — qual forma de artefato o projeto tem: `ts` (dist/ emitido), `js` (fonte e artefato) ou `null`. */
-export function formaDoArtefato({ temDistNaRaiz, temComposicaoJs }) {
-  if (temDistNaRaiz) return 'ts';
-  if (temComposicaoJs) return 'js';
+export function artifactShape({ hasDistInRoot, hasCompositionJs }) {
+  if (hasDistInRoot) return 'ts';
+  if (hasCompositionJs) return 'js';
   return null;
 }
 
 /** `adapters/*` com `package.json` cujo nome de pasta (= provedor) algum modulo escolheu. */
-function adaptersEmUso(raizProjeto, modulos) {
-  const portas = modulos.map((m) => lerJsonSeExiste(join(m, 'config', 'ports.json')));
-  const escolhidos = provedoresEscolhidos(portas);
-  return listarAdapters(raizProjeto).filter((pasta) => escolhidos.has(basename(pasta)));
+function adaptersInUsage(projectRoot, modules) {
+  const ports = modules.map((m) => readJsonIfExists(join(m, 'config', 'ports.json')));
+  const chosen = chosenProviders(ports);
+  return listAdapters(projectRoot).filter((dir) => chosen.has(basename(dir)));
 }
 
 /** Copia a arvore de runtime do JS: raiz de composicao, adapters (sem o molde `_*`) e packages. */
-function copiarFonteJs(raizProjeto, destino) {
-  cpSync(join(raizProjeto, 'src'), join(destino, 'src'), { recursive: true });
-  cpSync(join(raizProjeto, 'packages'), join(destino, 'packages'), { recursive: true });
-  cpSync(join(raizProjeto, 'adapters'), join(destino, 'adapters'), {
+function copySourceJs(projectRoot, destination) {
+  cpSync(join(projectRoot, 'src'), join(destination, 'src'), { recursive: true });
+  cpSync(join(projectRoot, 'packages'), join(destination, 'packages'), { recursive: true });
+  cpSync(join(projectRoot, 'adapters'), join(destination, 'adapters'), {
     recursive: true,
-    filter: (origem) => !basename(origem).startsWith('_'),
+    filter: (origin) => !basename(origin).startsWith('_'),
   });
 }
 
 /** Copia a raiz do artefato e devolve o comando de `start` dele. */
-function copiarRaizDoArtefato(raizProjeto, destino) {
-  const forma = formaDoArtefato({
-    temDistNaRaiz: existsSync(join(raizProjeto, 'dist')),
-    temComposicaoJs: existsSync(join(raizProjeto, 'src', 'composition.js')),
+function copyArtifactRoot(projectRoot, destination) {
+  const shape = artifactShape({
+    hasDistInRoot: existsSync(join(projectRoot, 'dist')),
+    hasCompositionJs: existsSync(join(projectRoot, 'src', 'composition.js')),
   });
-  if (forma === null) {
-    throw new Error('este binding nao tem passo de empacotamento (Python roda o fonte e se instala por `pip install`'
-      + ' — 03-operacao.md §9.1); nao ha dist/ nem src/composition.js para empacotar');
+  if (shape === null) {
+    throw new Error('This binding has no packaging step (Python runs from source and installs with `pip install`'
+      + ' — 03-operacao.md §9.1); there is no dist/ or src/composition.js to package');
   }
-  if (forma === 'ts') {
-    cpSync(join(raizProjeto, 'dist'), join(destino, 'dist'), { recursive: true });
+  if (shape === 'ts') {
+    cpSync(join(projectRoot, 'dist'), join(destination, 'dist'), { recursive: true });
     return 'node dist/src/composition.js';
   }
-  copiarFonteJs(raizProjeto, destino);
+  copySourceJs(projectRoot, destination);
   return 'node src/composition.js';
 }
 
@@ -285,13 +286,13 @@ function copiarRaizDoArtefato(raizProjeto, destino) {
  * (o teto do desligamento gracioso; `verification.json`/`compliance.json` sao politica de CI, nao
  * runtime). Nome fixo pelo mesmo motivo de `module.json`: e o contrato da raiz de composicao.
  */
-function copiarConfigDeRuntimeDaRaiz(raizProjeto, destino) {
-  const origem = join(raizProjeto, 'config', 'runtime.json');
-  if (!existsSync(origem)) {
-    throw new Error('config/runtime.json da raiz ausente — o processo composto o exige no boot (teto de desligamento)');
+function copyRootRuntimeConfig(projectRoot, destination) {
+  const origin = join(projectRoot, 'config', 'runtime.json');
+  if (!existsSync(origin)) {
+    throw new Error('Root config/runtime.json is missing — the composed process requires it at startup (shutdown timeout)');
   }
-  mkdirSync(join(destino, 'config'), { recursive: true });
-  cpSync(origem, join(destino, 'config', 'runtime.json'));
+  mkdirSync(join(destination, 'config'), { recursive: true });
+  cpSync(origin, join(destination, 'config', 'runtime.json'));
 }
 
 /**
@@ -299,139 +300,141 @@ function copiarConfigDeRuntimeDaRaiz(raizProjeto, destino) {
  * `package.json` novo, reaproveitando as versoes ja travadas. Sem lock na raiz, falha: artefato sem
  * lock nao e reprodutivel.
  */
-function gerarLockDoArtefato(raizProjeto, destino) {
-  const lockRaiz = join(raizProjeto, 'package-lock.json');
-  if (!existsSync(lockRaiz)) {
-    throw new Error('package-lock.json da raiz ausente — rode "npm install" na raiz antes de empacotar (artefato sem lock nao e reprodutivel)');
+function generateArtifactLock(projectRoot, destination) {
+  const lockRoot = join(projectRoot, 'package-lock.json');
+  if (!existsSync(lockRoot)) {
+    throw new Error('Root package-lock.json is missing — run "npm install" at the root before packaging (an artifact without a lockfile is not reproducible)');
   }
-  cpSync(lockRaiz, join(destino, 'package-lock.json'));
-  const npm = entrypointDoNpm();
-  if (npm === null) throw new Error('npm ausente ao lado do node atual — nao foi possivel gerar o lock do artefato');
-  rodar('lock do artefato (npm install --package-lock-only)', NODE,
-    [npm, 'install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'], destino);
+  cpSync(lockRoot, join(destination, 'package-lock.json'));
+  const npm = npmEntrypoint();
+  if (npm === null) throw new Error('npm is missing next to the current Node.js executable — the artifact lockfile could not be generated');
+  run('artifact lockfile (npm install --package-lock-only)', NODE,
+    [npm, 'install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'], destination);
 }
 
-function empacotarBackend(raizProjeto, destino) {
-  validarDestino(raizProjeto, destino);
-  rmSync(destino, { recursive: true, force: true });
-  mkdirSync(destino, { recursive: true });
+function packBackend(projectRoot, destination) {
+  validateDestination(projectRoot, destination);
+  rmSync(destination, { recursive: true, force: true });
+  mkdirSync(destination, { recursive: true });
 
-  const comandoDeStart = copiarRaizDoArtefato(raizProjeto, destino);
-  copiarConfigDeRuntimeDaRaiz(raizProjeto, destino);
+  const startCommand = copyArtifactRoot(projectRoot, destination);
+  copyRootRuntimeConfig(projectRoot, destination);
 
-  const modulos = listarModulosReais(raizProjeto);
-  const destinoModulos = join(destino, 'modules');
-  for (const pastaModulo of modulos) empacotarModulo(pastaModulo, destinoModulos);
+  const modules = listRealModules(projectRoot);
+  const modulesDestination = join(destination, 'modules');
+  for (const moduleDir of modules) packModule(moduleDir, modulesDestination);
 
-  const fontesDeDependencies = [
-    lerJsonSeExiste(join(raizProjeto, 'package.json'))?.dependencies,
-    ...modulos.map((m) => lerJsonSeExiste(join(m, 'package.json'))?.dependencies),
-    ...adaptersEmUso(raizProjeto, modulos).map((a) => lerJsonSeExiste(join(a, 'package.json'))?.dependencies),
+  const dependencySources = [
+    readJsonIfExists(join(projectRoot, 'package.json'))?.dependencies,
+    ...modules.map((m) => readJsonIfExists(join(m, 'package.json'))?.dependencies),
+    ...adaptersInUsage(projectRoot, modules).map((a) => readJsonIfExists(join(a, 'package.json'))?.dependencies),
   ];
-  const pacote = {
+  const pkg = {
     name: 'artefato-backend',
     version: '0.0.0',
     private: true,
     type: 'module',
-    scripts: { start: comandoDeStart },
-    dependencies: mesclarDependencias(fontesDeDependencies),
+    scripts: { start: startCommand },
+    dependencies: mergeDependencies(dependencySources),
   };
-  writeFileSync(join(destino, 'package.json'), `${JSON.stringify(pacote, null, 2)}\n`, 'utf8');
-  gerarLockDoArtefato(raizProjeto, destino);
+  writeFileSync(join(destination, 'package.json'), `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
+  generateArtifactLock(projectRoot, destination);
 
   // `.env.example` DOCUMENTA as chaves; o `.env` REAL nunca e copiado — segredo e por ambiente de
   // implantacao, nao um artefato de build (specs/arquitetura/00-arquitetura.md §5).
-  const exemplo = join(raizProjeto, '.env.example');
-  if (existsSync(exemplo)) cpSync(exemplo, join(destino, '.env.example'));
+  const example = join(projectRoot, '.env.example');
+  if (existsSync(example)) cpSync(example, join(destination, '.env.example'));
 
-  process.stdout.write(`\nartefato empacotado em ${destino}\n`);
-  process.stdout.write('  falta: preencher .env (nao copiado — segredo e por ambiente) e "npm ci --omit=dev"\n');
+  process.stdout.write(`\nBackend artifact packaged at ${destination}\n`);
+  process.stdout.write('  Next: provide .env values (the file is not copied; secrets are environment-specific) and run "npm ci --omit=dev".\n');
 }
 
 // ================================================================================================
-// AUTOTESTE — so a decisao PURA (`mesclarDependencias`): compilar/empacotar sao I/O de verdade,
+// AUTOTESTE — so a decisao PURA (`mergeDependencies`): compilar/empacotar sao I/O de verdade,
 // provados pela empacotagem real (relatorio do bloco), nao por fixture em memoria.
 // ================================================================================================
 
-function casosDeMesclaDeDependencias() {
+function dependenciesMergeCases() {
   return [
-    { nome: 'lista vazia', entradas: [], esperado: {} },
-    { nome: 'uniao simples', entradas: [{ a: '1.0.0' }, { b: '2.0.0' }], esperado: { a: '1.0.0', b: '2.0.0' } },
-    { nome: 'undefined e null sao ignorados', entradas: [undefined, { a: '1.0.0' }, null], esperado: { a: '1.0.0' } },
-    { nome: 'conflito de versao: a ULTIMA entrada vence', entradas: [{ a: '1.0.0' }, { a: '2.0.0' }], esperado: { a: '2.0.0' } },
+    { name: 'empty list', inputs: [], expected: {} },
+    { name: 'simple union', inputs: [{ a: '1.0.0' }, { b: '2.0.0' }], expected: { a: '1.0.0', b: '2.0.0' } },
+    { name: 'undefined and null entries are ignored', inputs: [undefined, { a: '1.0.0' }, null], expected: { a: '1.0.0' } },
+    { name: 'version conflict: the last entry wins', inputs: [{ a: '1.0.0' }, { a: '2.0.0' }], expected: { a: '2.0.0' } },
     {
-      nome: 'tres fontes, sem conflito',
-      entradas: [{ express: '^4.19.2' }, { express: '^4.19.2', react: '^18.3.1' }, { pg: '^8.11.0' }],
-      esperado: { express: '^4.19.2', react: '^18.3.1', pg: '^8.11.0' },
+      name: 'three sources without a conflict',
+      inputs: [{ express: '^4.19.2' }, { express: '^4.19.2', react: '^18.3.1' }, { pg: '^8.11.0' }],
+      expected: { express: '^4.19.2', react: '^18.3.1', pg: '^8.11.0' },
     },
   ];
 }
 
-function casosDeProvedoresEForma() {
-  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+function providersAndShapeCases() {
+  const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   return [
-    { nome: 'provedoresEscolhidos: uniao dos valores de varios ports.json', fn: () => igual(
-      [...provedoresEscolhidos([{ repository: 'postgres', clock: 'system' }, { repository: 'memory' }])].sort(),
+    { name: 'chosenProviders: unions values from several ports.json files', fn: () => equal(
+      [...chosenProviders([{ repository: 'postgres', clock: 'system' }, { repository: 'memory' }])].sort(),
       ['memory', 'postgres', 'system'],
     ) },
-    { nome: 'provedoresEscolhidos: null/undefined e valor nao-string sao ignorados', fn: () => igual(
-      [...provedoresEscolhidos([null, undefined, { a: 1, b: 'memory' }])], ['memory'],
+    { name: 'chosenProviders: ignores null, undefined, and non-string values', fn: () => equal(
+      [...chosenProviders([null, undefined, { a: 1, b: 'memory' }])], ['memory'],
     ) },
-    { nome: 'provedoresEscolhidos: tudo em memory -> postgres NAO entra', fn: () => (
-      provedoresEscolhidos([{ repository: 'memory', audit: 'memory' }]).has('postgres') === false
+    { name: 'chosenProviders: Postgres is excluded when every provider is memory', fn: () => (
+      chosenProviders([{ repository: 'memory', audit: 'memory' }]).has('postgres') === false
     ) },
-    { nome: 'formaDoArtefato: dist -> ts; so composition.js -> js; nada -> null (Python)', fn: () => (
-      formaDoArtefato({ temDistNaRaiz: true, temComposicaoJs: false }) === 'ts'
-      && formaDoArtefato({ temDistNaRaiz: false, temComposicaoJs: true }) === 'js'
-      && formaDoArtefato({ temDistNaRaiz: false, temComposicaoJs: false }) === null
+    { name: 'artifactShape: dist means TypeScript; composition.js only means JavaScript; no files means Python', fn: () => (
+      artifactShape({ hasDistInRoot: true, hasCompositionJs: false }) === 'ts'
+      && artifactShape({ hasDistInRoot: false, hasCompositionJs: true }) === 'js'
+      && artifactShape({ hasDistInRoot: false, hasCompositionJs: false }) === null
     ) },
   ];
 }
 
-function rodarAutoteste() {
-  let falhas = 0;
-  const casos = casosDeMesclaDeDependencias();
-  for (const caso of casosDeProvedoresEForma()) {
-    const ok = caso.fn() === true;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+function runSelfTest() {
+  let failures = 0;
+  const cases = dependenciesMergeCases();
+  for (const testCase of providersAndShapeCases()) {
+    const ok = testCase.fn() === true;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
 
-  for (const caso of casos) {
-    const obtido = mesclarDependencias(caso.entradas);
-    const ok = JSON.stringify(obtido) === JSON.stringify(caso.esperado);
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} mesclarDependencias: ${caso.nome}\n`);
+  for (const testCase of cases) {
+    const obtained = mergeDependencies(testCase.inputs);
+    const ok = JSON.stringify(obtained) === JSON.stringify(testCase.expected);
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} mergeDependencies: ${testCase.name}\n`);
     if (!ok) {
-      falhas += 1;
-      process.stdout.write(`       esperado: ${JSON.stringify(caso.esperado)}\n`);
-      process.stdout.write(`       obtido:   ${JSON.stringify(obtido)}\n`);
+      failures += 1;
+      process.stdout.write(`       expected: ${JSON.stringify(testCase.expected)}\n`);
+      process.stdout.write(`       received: ${JSON.stringify(obtained)}\n`);
     }
   }
 
-  const total = casos.length + casosDeProvedoresEForma().length;
-  process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  const total = cases.length + providersAndShapeCases().length;
+  process.stdout.write(`\nself-test: ${total - failures}/${total} passed\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 // ================================================================================================
 // CLI
 // ================================================================================================
 
-function principal() {
-  if (process.argv.includes('--autoteste')) return rodarAutoteste();
+function main() {
+  if (process.argv.includes('--selftest')) return runSelfTest();
 
-  const raizProjeto = acharRaizProjeto(process.cwd());
-  const bruto = process.argv[2];
-  const destino = bruto !== undefined && !bruto.startsWith('--') ? resolve(process.cwd(), bruto) : null;
+  const projectRoot = findProjectRoot(process.cwd());
+  const rawArgs = process.argv.slice(2);
+  const backendOnly = rawArgs.includes('--backend-only');
+  const rawDestination = rawArgs.find((argument) => !argument.startsWith('--'));
+  const destination = rawDestination === undefined ? null : resolve(process.cwd(), rawDestination);
 
-  compilarBackendRaiz(raizProjeto);
-  for (const pastaModulo of listarModulosReais(raizProjeto)) {
-    compilarBackendDoModulo(raizProjeto, pastaModulo);
-    construirWebDoModulo(raizProjeto, pastaModulo);
+  compileBackendRoot(projectRoot);
+  for (const moduleDir of listRealModules(projectRoot)) {
+    compileModuleBackend(projectRoot, moduleDir);
+    if (!backendOnly) buildModuleWeb(projectRoot, moduleDir);
   }
 
-  if (destino !== null) empacotarBackend(raizProjeto, destino);
+  if (destination !== null) packBackend(projectRoot, destination);
   return 0;
 }
 
-process.exit(principal());
+process.exit(main());

@@ -6,7 +6,7 @@ varredura termina com a trava; proativa é exceção declarada").
 Separado de `audit_base.py` por SRP: aquele orquestra e imprime; este só compara.
 
 Núcleo × casca: `descricao_do_frontmatter`/`skills_sem_trava` são puros (recebem texto/lista já
-lidos, nunca tocam `fs`) — é o que o `--autoteste` de `audit_base.py` prova com fixtures em
+lidos, nunca tocam `fs`) — é o que o `--selftest` de `audit_base.py` prova com fixtures em
 memória. `auditar_proatividade` é a casca fina que lê `fs` e delega.
 """
 

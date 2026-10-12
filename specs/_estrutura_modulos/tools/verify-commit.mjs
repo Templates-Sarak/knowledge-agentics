@@ -9,7 +9,7 @@
  *                                                       formato + lint
  *   node tools/verify-commit.mjs pre-push     camada de DEZENAS DE SEGUNDOS: tipos e testes
  *                                                       dos módulos afetados desde o upstream
- *   node tools/verify-commit.mjs --autoteste  a prova por máquina deste arquivo (§ZERO SHELL)
+ *   node tools/verify-commit.mjs --selftest  a prova por máquina deste arquivo (§ZERO SHELL)
  *
  * ============================================================================================
  * UMA IMPLEMENTAÇÃO PARA OS TRÊS BINDINGS, DE PROPÓSITO.
@@ -25,7 +25,7 @@
  * ZERO SHELL, DE PROPÓSITO — a tentação óbvia é `spawnSync(comando, args, { shell: true })`, porque
  * sem shell `npm` no Windows dá `ENOENT` (resolve para `.cmd`, que `spawnSync` sem shell não
  * encontra). Mas `shell: true` concatena `args` numa STRING ÚNICA sem citação, e o id do módulo —
- * nome de PASTA, vindo de `readdirSync` via `listarModulos`, nunca validado antes de virar
+ * nome de PASTA, vindo de `readdirSync` via `listModules`, nunca validado antes de virar
  * argumento — entraria ali inteiro. Uma pasta `modules/x&echo INJETADO/` bastaria para rodar `echo
  * INJETADO` como comando separado, E o resultado ainda sairia "ok" — porque com shell o `status` é
  * do ÚLTIMO comando da cadeia (`echo`, que sempre sai 0), não do `validate.mjs` que já teria
@@ -66,97 +66,97 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { acharRaizProjeto, listarModulos } from './gate/context.mjs';
-import { calcularAfetados, montarGrafo, normalizarCaminho } from './affected.mjs';
+import { findProjectRoot, listModules } from './gate/context.mjs';
+import { computeAffected, buildGraph, normalizePath } from './affected.mjs';
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
-const RAIZ = acharRaizProjeto(AQUI);
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = findProjectRoot(HERE);
 /** O MESMO Node que roda este script — nunca a string `'node'` resolvida de novo por PATH. */
 const NODE = process.execPath;
 
-function escrever(texto) {
-  process.stdout.write(texto);
+function writeOut(text) {
+  process.stdout.write(text);
 }
 
 /** Comando de git que não pode derrubar o hook por si só — falha vira lista vazia, nunca exceção. */
 function git(args) {
   try {
-    return execFileSync('git', args, { cwd: RAIZ, encoding: 'utf8' });
+    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
   } catch {
     return '';
   }
 }
 
-function linhas(texto) {
-  return texto.split(/\r?\n/).filter((linha) => linha.trim() !== '');
+function lines(text) {
+  return text.split(/\r?\n/).filter((line) => line.trim() !== '');
 }
 
-function caminhosStaged() {
-  return linhas(git(['diff', '--cached', '--name-only']));
+function stagedPaths() {
+  return lines(git(['diff', '--cached', '--name-only']));
 }
 
 /** `null` quando não há upstream (primeiro push do branch) — o chamador então verifica TUDO. */
-function refDoUpstream() {
+function upstreamRef() {
   try {
-    execFileSync('git', ['rev-parse', '--abbrev-ref', '@{u}'], { cwd: RAIZ, encoding: 'utf8' });
+    execFileSync('git', ['rev-parse', '--abbrev-ref', '@{u}'], { cwd: ROOT, encoding: 'utf8' });
     return '@{u}';
   } catch {
     return null;
   }
 }
 
-function calcularAfetadosDe(caminhosBrutos) {
-  const grafo = montarGrafo(RAIZ);
-  const normalizados = caminhosBrutos.map((bruto) => normalizarCaminho(bruto, RAIZ));
-  return calcularAfetados(grafo, normalizados);
+function computeAffectedOf(rawPaths) {
+  const graph = buildGraph(ROOT);
+  const normalized = rawPaths.map((raw) => normalizePath(raw, ROOT));
+  return computeAffected(graph, normalized);
 }
 
 /** Binding do projeto pelo manifesto de pacote presente na raiz — a mesma pergunta de `verify.py`. */
 function binding() {
-  if (existsSync(join(RAIZ, 'package.json'))) return 'node';
-  if (existsSync(join(RAIZ, 'pyproject.toml'))) return 'python';
+  if (existsSync(join(ROOT, 'package.json'))) return 'node';
+  if (existsSync(join(ROOT, 'pyproject.toml'))) return 'python';
   return null;
 }
 
 // ================================================================================================
-// EXECUÇÃO — o único ponto que toca `spawnSync`, sempre sem shell. `--autoteste` exercita ESTE ponto
+// EXECUÇÃO — o único ponto que toca `spawnSync`, sempre sem shell. `--selftest` exercita ESTE ponto
 // (não uma cópia), então uma regressão para `shell: true` aqui derruba produção E o autoteste juntos.
 // ================================================================================================
 
-function executar(executavel, args, opcoesExtra = {}) {
-  return spawnSync(executavel, args, { cwd: RAIZ, stdio: 'inherit', shell: false, ...opcoesExtra });
+function execute(executable, args, extraOptions = {}) {
+  return spawnSync(executable, args, { cwd: ROOT, stdio: 'inherit', shell: false, ...extraOptions });
 }
 
 /**
  * PURA: decide se um resultado de `spawnSync` conta como "ok". Separada de `executar`/`rodar` para o
- * `--autoteste` provar as três formas de "não rodou" com fixtures sintéticas — sem matar processo de
+ * `--selftest` provar as três formas de "não rodou" com fixtures sintéticas — sem matar processo de
  * verdade nem depender de SO (o mesmo raciocínio de `affected.mjs`: metade que toca processo, metade
  * pura que o autoteste alcança sem I/O). Lei 7 do gate: ferramenta ausente REPROVA, nunca "ok".
  */
-function avaliarResultado(resultado) {
-  if (resultado.error !== undefined) {
-    return { ok: false, motivo: `ferramenta ausente ou não executável — ${resultado.error.code ?? resultado.error.message}` };
+function evaluateResult(result) {
+  if (result.error !== undefined) {
+    return { ok: false, motivo: `tool is missing or not executable — ${result.error.code ?? result.error.message}` };
   }
-  if (resultado.status === null) {
-    return { ok: false, motivo: `processo encerrado pelo sinal ${resultado.signal ?? '?'} — nunca terminou` };
+  if (result.status === null) {
+    return { ok: false, motivo: `process terminated by signal ${result.signal ?? '?'} — it did not finish` };
   }
-  return { ok: resultado.status === 0, motivo: resultado.status === 0 ? null : `saiu com código ${resultado.status}` };
+  return { ok: result.status === 0, motivo: result.status === 0 ? null : `exited with code ${result.status}` };
 }
 
-function reportar(rotulo, ok, motivo) {
-  if (!ok && motivo !== null) escrever(`  ! ${rotulo}: ${motivo}\n`);
-  escrever(`${ok ? '  ok   ' : '  FALHA'} ${rotulo}\n`);
+function report(label, ok, reason) {
+  if (!ok && reason !== null) writeOut(`  ! ${label}: ${reason}\n`);
+  writeOut(`${ok ? '  ok   ' : '  FAIL'} ${label}\n`);
   return ok;
 }
 
 /** Roda um passo já resolvido para um executável real (nunca um nome que precise de PATH+shell). */
-function rodar(rotulo, executavel, args, cwd = RAIZ) {
-  const { ok, motivo } = avaliarResultado(executar(executavel, args, { cwd }));
-  return reportar(rotulo, ok, motivo);
+function run(label, executable, args, cwd = ROOT) {
+  const { ok, motivo: reason } = evaluateResult(execute(executable, args, { cwd }));
+  return report(label, ok, reason);
 }
 
-function ferramentaAusente(rotulo, oQueFalta) {
-  return reportar(rotulo, false, `ferramenta ausente — ${oQueFalta}`);
+function missingTool(label, missing) {
+  return report(label, false, `tool is missing — ${missing}`);
 }
 
 // ================================================================================================
@@ -170,14 +170,14 @@ function ferramentaAusente(rotulo, oQueFalta) {
  * arquivo explica por que a função é copiada, não importada). `chaveBin` existe porque `bin` é um MAPA
  * por comando, e a chave pode divergir do nome da pasta (`typescript` publica o comando `tsc`).
  */
-function entrypointDoPacote(raizNode, pastaPacote, chaveBin = pastaPacote) {
-  const pasta = join(raizNode, 'node_modules', pastaPacote);
+function packageEntrypoint(nodeRoot, packageDir, binKey = packageDir) {
+  const dir = join(nodeRoot, 'node_modules', packageDir);
   try {
-    const { bin } = JSON.parse(readFileSync(join(pasta, 'package.json'), 'utf8'));
-    const relativo = typeof bin === 'string' ? bin : bin?.[chaveBin];
-    if (!relativo) return null;
-    const alvo = join(pasta, relativo);
-    return existsSync(alvo) ? alvo : null;
+    const { bin } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+    const relPath = typeof bin === 'string' ? bin : bin?.[binKey];
+    if (!relPath) return null;
+    const target = join(dir, relPath);
+    return existsSync(target) ? target : null;
   } catch {
     return null;
   }
@@ -188,25 +188,25 @@ function entrypointDoPacote(raizNode, pastaPacote, chaveBin = pastaPacote) {
  * Dois layouts candidatos: Windows (irmão do `node.exe`) e POSIX (`lib/node_modules`, um nível acima
  * do `bin/`). O primeiro que existir vence; nenhum shell nem `.cmd` envolvido.
  */
-function entrypointDoNpm(pacote) {
-  const raizNode = dirname(NODE);
-  for (const candidato of [raizNode, join(raizNode, '..', 'lib')]) {
-    const achado = entrypointDoPacote(candidato, pacote);
-    if (achado !== null) return achado;
+function npmEntrypoint(pkg) {
+  const nodeRoot = dirname(NODE);
+  for (const candidate of [nodeRoot, join(nodeRoot, '..', 'lib')]) {
+    const finding = packageEntrypoint(candidate, pkg);
+    if (finding !== null) return finding;
   }
   return null;
 }
 
-function rodarNpm(rotulo, args, cwd = RAIZ) {
-  const entrada = entrypointDoNpm('npm');
-  if (entrada === null) return ferramentaAusente(rotulo, 'npm (node_modules/npm do próprio Node.js — instalação corrompida?)');
-  return rodar(rotulo, NODE, [entrada, ...args], cwd);
+function runNpm(label, args, cwd = ROOT) {
+  const entry = npmEntrypoint('npm');
+  if (entry === null) return missingTool(label, 'npm (Node.js bundled node_modules/npm — corrupted installation?)');
+  return run(label, NODE, [entry, ...args], cwd);
 }
 
-function rodarTsc(rotulo, args, cwd = RAIZ) {
-  const entrada = entrypointDoPacote(RAIZ, 'typescript', 'tsc');
-  if (entrada === null) return ferramentaAusente(rotulo, 'typescript (node_modules/typescript ausente — "npm install"?)');
-  return rodar(rotulo, NODE, [entrada, ...args], cwd);
+function runTsc(label, args, cwd = ROOT) {
+  const entry = packageEntrypoint(ROOT, 'typescript', 'tsc');
+  if (entry === null) return missingTool(label, 'typescript (node_modules/typescript is missing — run "npm install"?)');
+  return run(label, NODE, [entry, ...args], cwd);
 }
 
 /**
@@ -214,129 +214,129 @@ function rodarTsc(rotulo, args, cwd = RAIZ) {
  * `SARAK_NODE` em `verify.py`); senão tenta `python` e `python3`, na ordem — sem shell, então um
  * nome que não exista devolve `ENOENT`/status≠0 aqui, nunca dispara um resolvedor de PATH de shell.
  */
-let pythonResolvido;
-function resolverPython() {
-  if (pythonResolvido !== undefined) return pythonResolvido;
-  const candidatos = [process.env.SARAK_PYTHON, 'python', 'python3'].filter((c) => Boolean(c));
-  pythonResolvido = candidatos.find((c) => executar(c, ['--version'], { stdio: 'ignore' }).status === 0) ?? null;
-  return pythonResolvido;
+let resolvedPython;
+function resolvePython() {
+  if (resolvedPython !== undefined) return resolvedPython;
+  const candidates = [process.env.SARAK_PYTHON, 'python', 'python3'].filter((c) => Boolean(c));
+  resolvedPython = candidates.find((c) => execute(c, ['--version'], { stdio: 'ignore' }).status === 0) ?? null;
+  return resolvedPython;
 }
 
-function rodarPython(rotulo, modulo, args, cwd = RAIZ) {
-  const python = resolverPython();
-  if (python === null) return ferramentaAusente(rotulo, 'python (nem "python" nem "python3" no PATH; ou defina SARAK_PYTHON)');
-  return rodar(rotulo, python, ['-m', modulo, ...args], cwd);
+function runPython(label, module, args, cwd = ROOT) {
+  const python = resolvePython();
+  if (python === null) return missingTool(label, 'python (neither "python" nor "python3" is on PATH; or set SARAK_PYTHON)');
+  return run(label, python, ['-m', module, ...args], cwd);
 }
 
 // ================================================================================================
 // OS PASSOS
 // ================================================================================================
 
-function idDoPrimeiroModulo() {
-  const pastas = listarModulos(RAIZ);
-  return pastas.length > 0 ? basename(pastas[0]) : null;
+function firstModuleId() {
+  const dirs = listModules(ROOT);
+  return dirs.length > 0 ? basename(dirs[0]) : null;
 }
 
-function idsDosModulos() {
-  return listarModulos(RAIZ).map((pasta) => basename(pasta));
+function moduleIds() {
+  return listModules(ROOT).map((dir) => basename(dir));
 }
 
 /**
  * O gate propriamente dito, escopado pelo resultado de `affected.mjs`.
  *
- * `(tudo)` roda tudo e IMPRIME O MOTIVO — hook que fica lento em silêncio é hook que o time desativa
+ * `(all)` roda tudo e IMPRIME O MOTIVO — hook que fica lento em silêncio é hook que o time desativa
  * sem saber por quê. `(root)` sem módulo nenhum ainda precisa cobrar as regras de escopo raiz: elas
  * rodam em QUALQUER invocação de `validate.mjs` com ao menos um módulo no projeto
- * (`engine.mjs:rodarRegrasDeRaiz` usa `contextos[0].projeto`, não o alvo pedido) — por isso basta
+ * (`engine.mjs:runRootRules` usa `contextos[0].projeto`, não o alvo pedido) — por isso basta
  * passar UM módulo qualquer como referência, não `--all`.
  */
-function rodarGate(resultado) {
-  const validar = join('tools', 'gate', 'validate.mjs');
-  if (resultado.tudo) {
-    escrever(`  (tudo) — ${resultado.motivo}\n`);
-    return rodar('gate (--all)', NODE, [validar, '--all']);
+function runGate(result) {
+  const validate = join('tools', 'gate', 'validate.mjs');
+  if (result.tudo) {
+    writeOut(`  (all) — ${result.motivo}\n`);
+    return run('gate (--all)', NODE, [validate, '--all']);
   }
 
-  const alvos = [...resultado.modulos];
-  if (alvos.length === 0 && resultado.raiz) {
-    const referencia = idDoPrimeiroModulo();
-    if (referencia !== null) alvos.push(referencia);
-    else escrever('  (raiz) — projeto ainda sem nenhum modulo: regras de raiz ficam pendentes ate o primeiro\n');
+  const targets = [...result.modulos];
+  if (targets.length === 0 && result.raiz) {
+    const reference = firstModuleId();
+    if (reference !== null) targets.push(reference);
+    else writeOut('  (root) — project has no modules yet; root rules remain pending until the first module\n');
   }
-  if (alvos.length === 0) {
-    escrever('  gate: nada nesta area afeta modulo ou raiz\n');
+  if (targets.length === 0) {
+    writeOut('  gate: no module or root checks are affected in this area\n');
     return true;
   }
 
-  escrever(`  modulo(s) afetado(s): ${alvos.join(', ')}${resultado.raiz ? ' + (raiz)' : ''}\n`);
-  return alvos.every((id) => rodar(`gate: ${id}`, NODE, [validar, id]));
+  writeOut(`  affected module(s): ${targets.join(', ')}${result.raiz ? ' + (root)' : ''}\n`);
+  return targets.every((id) => run(`gate: ${id}`, NODE, [validate, id]));
 }
 
-function formatoELint() {
+function formatAndLint() {
   const bind = binding();
   if (bind === 'node') {
     return [
-      () => rodarNpm('formato (prettier --check)', ['run', 'format']),
-      () => rodarNpm('lint (eslint)', ['run', 'lint']),
+      () => runNpm('format (prettier --check)', ['run', 'format']),
+      () => runNpm('lint (eslint)', ['run', 'lint']),
     ];
   }
   if (bind === 'python') {
     return [
-      () => rodarPython('formato (ruff format --check)', 'ruff', ['format', '--check', '.']),
-      () => rodarPython('limiares (ruff check)', 'ruff', ['check', '.']),
+      () => runPython('format (ruff format --check)', 'ruff', ['format', '--check', '.']),
+      () => runPython('thresholds (ruff check)', 'ruff', ['check', '.']),
     ];
   }
-  return [() => { escrever('  ! nenhum package.json nem pyproject.toml na raiz — formato/lint pulados\n'); return true; }];
+  return [() => { writeOut('  ! no root package.json or pyproject.toml — format/lint skipped\n'); return true; }];
 }
 
 function preCommit() {
-  const resultado = calcularAfetadosDe(caminhosStaged());
-  escrever('[pre-commit] gate nos modulos afetados\n');
-  const passos = [() => rodarGate(resultado), () => rodarSincronizarEnv(), () => rodarSchemasDePortas()];
-  passos.push(...formatoELint());
-  return concluir(passos);
+  const result = computeAffectedOf(stagedPaths());
+  writeOut('[pre-commit] gate for affected modules\n');
+  const steps = [() => runGate(result), () => runEnvSync(), () => runPortSchemas()];
+  steps.push(...formatAndLint());
+  return conclude(steps);
 }
 
-/** `sync-env.mjs` é sempre Node, nos dois bindings — não passa por `formatoELint`. */
-function rodarSincronizarEnv() {
-  return rodar('env (.env.example)', NODE, [join('tools', 'sync-env.mjs'), '--check']);
+/** `sync-env.mjs` é sempre Node, nos dois bindings — não passa por `formatAndLint`. */
+function runEnvSync() {
+  return run('environment (.env.example)', NODE, [join('tools', 'sync-env.mjs'), '--check']);
 }
 
-/** `generate-port-schemas.mjs` é sempre Node, nos dois bindings — mesma forma de `rodarSincronizarEnv`,
- * não passa por `formatoELint`. */
-function rodarSchemasDePortas() {
-  return rodar('schemas de portas', NODE, [join('tools', 'generate-port-schemas.mjs'), '--check']);
+/** `generate-port-schemas.mjs` é sempre Node, nos dois bindings — mesma forma de `runEnvSync`,
+ * não passa por `formatAndLint`. */
+function runPortSchemas() {
+  return run('port schemas', NODE, [join('tools', 'generate-port-schemas.mjs'), '--check']);
 }
 
 /** Tipos e testes de UM módulo Node, escopados pelo workspace — nunca o repositório inteiro. */
-function tiposETestesDoModuloNode(id) {
-  const alvo = `--workspace=modules/${id}`;
+function nodeModuleTypesAndTests(id) {
+  const target = `--workspace=modules/${id}`;
   return [
-    () => rodarNpm(`tipos: ${id}`, ['run', 'typecheck', alvo, '--if-present']),
-    () => rodarNpm(`testes: ${id}`, ['test', alvo, '--if-present']),
+    () => runNpm(`types: ${id}`, ['run', 'typecheck', target, '--if-present']),
+    () => runNpm(`tests: ${id}`, ['test', target, '--if-present']),
   ];
 }
 
 /** Tipos e testes de UM módulo Python — de dentro da pasta dele, a mesma condição de `verify.py`. */
-function tiposETestesDoModuloPython(id) {
-  const pasta = join(RAIZ, 'modules', id);
+function pythonModuleTypesAndTests(id) {
+  const dir = join(ROOT, 'modules', id);
   return [
-    () => rodarPython(`tipos: ${id}`, 'mypy', ['.'], pasta),
-    () => rodarPython(`testes: ${id}`, 'pytest', ['-q'], pasta),
+    () => runPython(`types: ${id}`, 'mypy', ['.'], dir),
+    () => runPython(`tests: ${id}`, 'pytest', ['-q'], dir),
   ];
 }
 
 function prePush() {
-  const ref = refDoUpstream();
-  const resultado = ref === null
-    ? { tudo: true, motivo: 'sem upstream (@{u}) — primeiro push do branch, verifica tudo' }
-    : calcularAfetadosDe(linhas(git(['diff', '--name-only', '--no-renames', ref])));
+  const ref = upstreamRef();
+  const result = ref === null
+    ? { tudo: true, motivo: 'no upstream (@{u}) — first push of this branch; checking all modules' }
+    : computeAffectedOf(lines(git(['diff', '--name-only', '--no-renames', ref])));
 
-  escrever('[pre-push] tipos e testes nos modulos afetados\n');
+  writeOut('[pre-push] types and tests for affected modules\n');
   const bind = binding();
   if (bind === null) {
-    escrever('  ! nenhum package.json nem pyproject.toml na raiz — tipos/tests pulados\n');
-    return concluir([]);
+    writeOut('  ! no root package.json or pyproject.toml — types/tests skipped\n');
+    return conclude([]);
   }
 
   // `_template` fica de fora: não é workspace npm ("workspaces": ["modules/[a-z]*", ...] — o
@@ -344,45 +344,45 @@ function prePush() {
   // `npm run typecheck --workspace=modules/_template` sempre falha com "No workspaces found", mesmo
   // sem nada errado no molde. `create-module.mjs`/`create-project.mjs` já tratam `_template` como não
   // sendo um pacote publicável pelo mesmo motivo — aqui é a mesma exclusão, não uma nova regra.
-  const semMolde = (id) => !id.startsWith('_');
-  const alvos = (resultado.tudo ? idsDosModulos() : [...resultado.modulos]).filter(semMolde);
-  const cobreRaiz = resultado.tudo || resultado.raiz;
-  if (resultado.tudo) escrever(`  (tudo) — ${resultado.motivo}\n`);
-  else escrever(`  modulo(s) afetado(s): ${alvos.join(', ') || '(nenhum)'}${cobreRaiz ? ' + (raiz)' : ''}\n`);
+  const withoutTemplate = (id) => !id.startsWith('_');
+  const targets = (result.tudo ? moduleIds() : [...result.modulos]).filter(withoutTemplate);
+  const coversRoot = result.tudo || result.raiz;
+  if (result.tudo) writeOut(`  (all) — ${result.motivo}\n`);
+  else writeOut(`  affected module(s): ${targets.join(', ') || '(none)'}${coversRoot ? ' + (root)' : ''}\n`);
 
-  const passos = [];
-  if (cobreRaiz) {
-    passos.push(bind === 'node'
-      ? () => rodarTsc('tipos: raiz', ['--noEmit'])
-      : () => rodarPython('tipos: raiz', 'mypy', ['.']));
+  const steps = [];
+  if (coversRoot) {
+    steps.push(bind === 'node'
+      ? () => runTsc('types: root', ['--noEmit'])
+      : () => runPython('types: root', 'mypy', ['.']));
   }
-  for (const id of alvos) {
-    passos.push(...(bind === 'node' ? tiposETestesDoModuloNode(id) : tiposETestesDoModuloPython(id)));
+  for (const id of targets) {
+    steps.push(...(bind === 'node' ? nodeModuleTypesAndTests(id) : pythonModuleTypesAndTests(id)));
   }
-  if (passos.length === 0) escrever('  nada nesta area afeta modulo ou raiz\n');
-  return concluir(passos);
+  if (steps.length === 0) writeOut('  no module or root checks are affected in this area\n');
+  return conclude(steps);
 }
 
-function concluir(passos) {
-  const resultados = passos.map((passo) => passo());
-  const falhas = resultados.filter((ok) => !ok).length;
-  escrever(`\nverificar-commit: ${falhas === 0 ? 'OK' : `REPROVADO — ${falhas} passo(s)`}\n`);
-  return falhas === 0 ? 0 : 1;
+function conclude(steps) {
+  const results = steps.map((step) => step());
+  const failures = results.filter((ok) => !ok).length;
+  writeOut(`\nverify-commit: ${failures === 0 ? 'OK' : `FAILED — ${failures} step(s)`}\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 // ================================================================================================
 // AUTOTESTE — a prova por máquina de que NENHUM argumento passa por shell (lei 6: sem prova, não
-// entra). Não spawna o gate nem toca em módulo real: prova o PONTO ÚNICO (`executar`/`avaliarResultado`)
-// que produção usa, o mesmo raciocínio de `affected.mjs --autoteste` para a metade pura dele.
+// entra). Não spawna o gate nem toca em módulo real: prova o PONTO ÚNICO (`executar`/`evaluateResult`)
+// que produção usa, o mesmo raciocínio de `affected.mjs --selftest` para a metade pura dele.
 // ================================================================================================
 
 /** Fixtures sintéticas de `spawnSync` — nenhuma toca processo de verdade. Prova as 3 formas de "não rodou". */
-function casosDeAvaliarResultado() {
+function evaluateResultCases() {
   return [
-    { nome: 'status 0 conta como ok', resultado: { status: 0, error: undefined, signal: null }, esperado: true },
-    { nome: 'status != 0 REPROVA', resultado: { status: 1, error: undefined, signal: null }, esperado: false },
-    { nome: 'error de spawn (ENOENT) REPROVA, nunca "ok"', resultado: { status: null, error: { code: 'ENOENT' }, signal: null }, esperado: false },
-    { nome: 'status null sem error (morto por sinal) REPROVA', resultado: { status: null, error: undefined, signal: 'SIGKILL' }, esperado: false },
+    { name: 'status 0 is successful', result: { status: 0, error: undefined, signal: null }, expected: true },
+    { name: 'nonzero status fails', result: { status: 1, error: undefined, signal: null }, expected: false },
+    { name: 'spawn error (ENOENT) fails, never "ok"', result: { status: null, error: { code: 'ENOENT' }, signal: null }, expected: false },
+    { name: 'null status without error (killed by signal) fails', result: { status: null, error: undefined, signal: 'SIGKILL' }, expected: false },
   ];
 }
 
@@ -398,56 +398,56 @@ function casosDeAvaliarResultado() {
  * comando SEPARADO — a saída deixa de ser exatamente o payload original. Medido: revertendo `shell:
  * false` para `true` em `executar()`, este caso passa a FALHAR (ver relatório da correção).
  */
-function casoAlvoHostil() {
-  const hostil = 'x&echo INJETADO';
-  const resultado = executar(NODE, ['-e', 'process.stdout.write(process.argv[1] ?? "")', hostil], {
+function hostileTargetCase() {
+  const hostile = 'x&echo INJETADO';
+  const result = execute(NODE, ['-e', 'process.stdout.write(process.argv[1] ?? "")', hostile], {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',
   });
-  return String(resultado.stdout ?? '') === hostil;
+  return String(result.stdout ?? '') === hostile;
 }
 
 /** O caso sem má-fé nenhuma: nome de módulo com espaço não pode virar dois argumentos. */
-function casoNomeComEspaco() {
-  const nome = 'meu modulo';
-  const resultado = executar(NODE, ['-e', 'process.stdout.write(process.argv[1] ?? "")', nome], {
+function nameCaseWithSpace() {
+  const name = 'my module';
+  const result = execute(NODE, ['-e', 'process.stdout.write(process.argv[1] ?? "")', name], {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',
   });
-  return String(resultado.stdout ?? '') === nome;
+  return String(result.stdout ?? '') === name;
 }
 
-function rodarAutoteste() {
-  let falhas = 0;
-  const registrar = (nome, ok) => {
-    escrever(`  ${ok ? 'ok   ' : 'FALHA'} ${nome}\n`);
-    if (!ok) falhas += 1;
+function runSelfTest() {
+  let failures = 0;
+  const register = (name, ok) => {
+    writeOut(`  ${ok ? 'ok   ' : 'FAIL'} ${name}\n`);
+    if (!ok) failures += 1;
   };
 
-  for (const caso of casosDeAvaliarResultado()) {
-    registrar(caso.nome, avaliarResultado(caso.resultado).ok === caso.esperado);
+  for (const testCase of evaluateResultCases()) {
+    register(testCase.name, evaluateResult(testCase.result).ok === testCase.expected);
   }
-  registrar('alvo hostil ("x&echo INJETADO"): chega literal, nada injetado, zero shell', casoAlvoHostil());
-  registrar('nome com espaco ("meu modulo"): chega como UM argumento, nao dois', casoNomeComEspaco());
+  register('hostile target ("x&echo INJECTED"): passed literally, no injection, no shell', hostileTargetCase());
+  register('name with a space ("my module"): passed as ONE argument', nameCaseWithSpace());
 
-  const total = casosDeAvaliarResultado().length + 2;
-  escrever(`\nautoteste: ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  const total = evaluateResultCases().length + 2;
+  writeOut(`\nself-test: ${total - failures}/${total} passed\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 // ================================================================================================
 // CLI
 // ================================================================================================
 
-function principal() {
-  const modo = process.argv[2];
-  if (modo === '--autoteste') return rodarAutoteste();
-  if (modo === 'pre-commit') return preCommit();
-  if (modo === 'pre-push') return prePush();
-  process.stderr.write('uso: node tools/verify-commit.mjs pre-commit | pre-push | --autoteste\n');
+function main() {
+  const mode = process.argv[2];
+  if (mode === '--selftest') return runSelfTest();
+  if (mode === 'pre-commit') return preCommit();
+  if (mode === 'pre-push') return prePush();
+  process.stderr.write('Usage: node tools/verify-commit.mjs pre-commit | pre-push | --selftest\n');
   return 1;
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(principal());
+  process.exit(main());
 }

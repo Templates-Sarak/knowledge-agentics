@@ -7,7 +7,7 @@
  * PRÓPRIO mapa depois de instalado).
  *
  *   node tests/verify-map.mjs --check <pastaArquitetura>   confere um specs/arquitetura/ real
- *   node tests/verify-map.mjs --autoteste                     prova o núcleo com fixtures em memória
+ *   node tests/verify-map.mjs --selftest                     prova o núcleo com fixtures em memória
  *
  * A TRAVA É O PONTEIRO, NÃO O BYTE: não compara o mapa byte a byte com uma cópia de
  * referência — isso pegaria edição manual, que não é o risco. O risco é `§` citado que deixou de
@@ -15,8 +15,8 @@
  * e confere que a seção referida ainda está lá — precedente de `skills/meta-verificacao-base/scripts/
  * ponteiros.py`, mesma ideia, outro alvo (a doutrina do template, não a base inteira).
  *
- * NÚCLEO × CASCA, precedente de `affected.mjs`: `extrairCitacoes`/`extrairSecoes`/`pontosOrfaos` são
- * puras — nenhuma toca `fs`. `--autoteste` prova as três com fixtures em memória.
+ * NÚCLEO × CASCA, precedente de `affected.mjs`: `extractCitations`/`extractSections`/`orphanPoints` são
+ * puras — nenhuma toca `fs`. `--selftest` prova as três com fixtures em memória.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -26,8 +26,8 @@ import { fileURLToPath } from 'node:url';
 // NÚCLEO — puro. Nenhuma linha daqui embaixo toca `fs`.
 // ================================================================================================
 
-const RE_ARQUIVO = /`([\w.-]+\.md)`/g;
-const RE_SECAO = /§(\d+(?:\.\d+)?)/g;
+const RE_FILE = /`([\w.-]+\.md)`/g;
+const RE_SECTION = /§(\d+(?:\.\d+)?)/g;
 
 /**
  * `{arquivo, secao, linha}` de cada citação `` `arquivo.md` §N[.M] `` do texto — as duas marcas na
@@ -36,33 +36,33 @@ const RE_SECAO = /§(\d+(?:\.\d+)?)/g;
  * da esquerda para a direita associa naturalmente. Sem arquivo nenhum antes da seção na linha, a
  * citação é ignorada (não é uma citação cruzada — provavelmente é o número de uma lista).
  */
-export function extrairCitacoes(texto) {
-  const citacoes = [];
-  const linhas = texto.split('\n');
-  linhas.forEach((linha, indice) => {
-    const arquivos = [...linha.matchAll(RE_ARQUIVO)];
-    if (arquivos.length === 0) return;
-    for (const secaoMatch of linha.matchAll(RE_SECAO)) {
-      const precedentes = arquivos.filter((a) => a.index < secaoMatch.index);
-      if (precedentes.length === 0) continue;
-      const arquivo = precedentes.at(-1)[1];
-      citacoes.push({ arquivo, secao: secaoMatch[1], linha: indice + 1 });
+export function extractCitations(text) {
+  const citations = [];
+  const lines = text.split('\n');
+  lines.forEach((line, index) => {
+    const files = [...line.matchAll(RE_FILE)];
+    if (files.length === 0) return;
+    for (const sectionMatch of line.matchAll(RE_SECTION)) {
+      const preceding = files.filter((a) => a.index < sectionMatch.index);
+      if (preceding.length === 0) continue;
+      const file = preceding.at(-1)[1];
+      citations.push({ arquivo: file, section: sectionMatch[1], linha: index + 1 });
     }
   });
-  return citacoes;
+  return citations;
 }
 
 /** Cabeçalho `#+ N[.M][.] Título` -> o número da seção, como string (`"9"`, `"9.1"`). */
-const RE_TITULO = /^#{1,6}\s+(\d+(?:\.\d+)?)\.?\s+\S/;
+const RE_TITLE = /^#{1,6}\s+(\d+(?:\.\d+)?)\.?\s+\S/;
 
 /** O conjunto de números de seção que o arquivo REALMENTE declara em título — o que um `§` pode citar. */
-export function extrairSecoes(texto) {
-  const secoes = new Set();
-  for (const linha of texto.split('\n')) {
-    const casado = linha.match(RE_TITULO);
-    if (casado) secoes.add(casado[1]);
+export function extractSections(text) {
+  const sections = new Set();
+  for (const line of text.split('\n')) {
+    const matched = line.match(RE_TITLE);
+    if (matched) sections.add(matched[1]);
   }
-  return secoes;
+  return sections;
 }
 
 /**
@@ -70,10 +70,10 @@ export function extrairSecoes(texto) {
  * declara em título nenhum. `secoesPorArquivo` é `Map<nomeDoArquivo, Set<secao>>` — monta-se na casca,
  * lendo os arquivos de verdade; aqui é só comparação.
  */
-export function pontosOrfaos(citacoes, secoesPorArquivo) {
-  return citacoes.filter(({ arquivo, secao }) => {
-    const secoes = secoesPorArquivo.get(arquivo);
-    return secoes === undefined || !secoes.has(secao);
+export function orphanPoints(citations, sectionsByFile) {
+  return citations.filter(({ arquivo: file, section }) => {
+    const sections = sectionsByFile.get(file);
+    return sections === undefined || !sections.has(section);
   });
 }
 
@@ -81,36 +81,36 @@ export function pontosOrfaos(citacoes, secoesPorArquivo) {
 // CASCA — toca disco. Só as duas funções abaixo.
 // ================================================================================================
 
-function lerTexto(caminho) {
-  return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
+function readText(path) {
+  return readFileSync(path, 'utf8').replace(/^﻿/, '');
 }
 
 /** `Map<nomeDoArquivo, Set<secao>>` de todo `.md` da pasta de arquitetura — o universo que resolve as citações do mapa. */
-function montarSecoesPorArquivo(pastaArquitetura) {
-  const mapa = new Map();
-  for (const entrada of readdirSync(pastaArquitetura, { withFileTypes: true })) {
-    if (!entrada.isFile() || !entrada.name.endsWith('.md')) continue;
-    mapa.set(entrada.name, extrairSecoes(lerTexto(join(pastaArquitetura, entrada.name))));
+function buildSectionsByFile(architectureDir) {
+  const map = new Map();
+  for (const entry of readdirSync(architectureDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+    map.set(entry.name, extractSections(readText(join(architectureDir, entry.name))));
   }
-  return mapa;
+  return map;
 }
 
 /**
  * O veredito completo para uma pasta `specs/arquitetura/` real: mapa instalado? ponteiros resolvem?
  * `{ ok, motivo }` — `motivo` só quando `ok` é `false`, sempre com detalhe suficiente para localizar.
  */
-function conferir(pastaArquitetura) {
-  const caminhoMapa = join(pastaArquitetura, 'README.md');
-  if (!existsSync(caminhoMapa)) {
-    return { ok: false, motivo: `mapa nao instalado: ${caminhoMapa} nao existe` };
+function check(architectureDir) {
+  const mapPath = join(architectureDir, 'README.md');
+  if (!existsSync(mapPath)) {
+    return { ok: false, motivo: `architecture map not installed: ${mapPath} does not exist` };
   }
 
-  const citacoes = extrairCitacoes(lerTexto(caminhoMapa));
-  const secoesPorArquivo = montarSecoesPorArquivo(pastaArquitetura);
-  const orfaos = pontosOrfaos(citacoes, secoesPorArquivo);
-  if (orfaos.length > 0) {
-    const linhas = orfaos.map((o) => `  README.md:${o.linha} -> \`${o.arquivo}\` §${o.secao} nao existe`);
-    return { ok: false, motivo: `${orfaos.length} ponteiro(s) orfao(s):\n${linhas.join('\n')}` };
+  const citations = extractCitations(readText(mapPath));
+  const sectionsByFile = buildSectionsByFile(architectureDir);
+  const orphans = orphanPoints(citations, sectionsByFile);
+  if (orphans.length > 0) {
+    const lines = orphans.map((o) => `  README.md:${o.linha} -> \`${o.arquivo}\` §${o.section} does not exist`);
+    return { ok: false, motivo: `${orphans.length} orphan reference(s):\n${lines.join('\n')}` };
   }
   return { ok: true, motivo: null };
 }
@@ -119,109 +119,109 @@ function conferir(pastaArquitetura) {
 // AUTOTESTE — núcleo puro contra fixtures em memória, sem tocar disco.
 // ================================================================================================
 
-function casosDeAutoteste() {
+function selfTestCases() {
   return [
     {
-      nome: 'extrairCitacoes: arquivo e secao na mesma linha, tabela markdown',
+      name: 'extractCitations: file and section are on the same line in a Markdown table',
       fn: () => {
-        const c = extrairCitacoes('| … alterar campo | `01-modulo.md` §9.1 |');
-        return c.length === 1 && c[0].arquivo === '01-modulo.md' && c[0].secao === '9.1';
+        const c = extractCitations('| … alterar campo | `01-modulo.md` §9.1 |');
+        return c.length === 1 && c[0].arquivo === '01-modulo.md' && c[0].section === '9.1';
       },
     },
     {
-      nome: 'extrairCitacoes: duas secoes do mesmo arquivo, mesma linha',
+      name: 'extractCitations: two sections from the same file share a line',
       fn: () => {
-        const c = extrairCitacoes('ver `01-modulo.md` §8 e §9 para criar e alterar');
-        return c.length === 2 && c.every((x) => x.arquivo === '01-modulo.md') && c[0].secao === '8' && c[1].secao === '9';
+        const c = extractCitations('ver `01-modulo.md` §8 e §9 para criar e alterar');
+        return c.length === 2 && c.every((x) => x.arquivo === '01-modulo.md') && c[0].section === '8' && c[1].section === '9';
       },
     },
     {
-      nome: 'extrairCitacoes: secao antes de qualquer arquivo na linha e ignorada (nao e citacao)',
-      fn: () => extrairCitacoes('§9 nao aparece antes de nenhum arquivo aqui').length === 0,
+      name: 'extractCitations: section before any file on a line is ignored, not a citation',
+      fn: () => extractCitations('§9 nao aparece antes de nenhum arquivo aqui').length === 0,
     },
     {
-      nome: 'extrairCitacoes: linha sem arquivo nenhum nao produz citacao',
-      fn: () => extrairCitacoes('so prosa, nenhuma crase, nenhuma secao').length === 0,
+      name: 'extractCitations: a line without a file produces no citation',
+      fn: () => extractCitations('so prosa, nenhuma crase, nenhuma secao').length === 0,
     },
     {
-      nome: 'extrairSecoes: titulos de nivel 1 e 2, com e sem ponto final',
+      name: 'extractSections: level 1 and 2 headings, with and without a trailing period',
       fn: () => {
-        const s = extrairSecoes('# 8. Criar um modulo novo\n\n## 9.1 Campo novo no contrato\n');
+        const s = extractSections('# 8. Criar um modulo novo\n\n## 9.1 Campo novo no contrato\n');
         return s.has('8') && s.has('9.1') && !s.has('9');
       },
     },
     {
-      nome: 'extrairSecoes: linha de prosa com numero nao vira secao (precisa ser cabecalho)',
-      fn: () => extrairSecoes('Isto fala de 9.1 mas nao e um titulo').size === 0,
+      name: 'extractSections: numbered prose is not a section; it must be a heading',
+      fn: () => extractSections('Isto fala de 9.1 mas nao e um titulo').size === 0,
     },
     {
-      nome: 'pontosOrfaos: secao existe no arquivo citado -> nenhum orfao',
+      name: 'orphanPoints: a cited section still exists, so there is no orphan',
       fn: () => {
-        const citacoes = [{ arquivo: '01-modulo.md', secao: '9.1', linha: 1 }];
-        const mapa = new Map([['01-modulo.md', new Set(['8', '9', '9.1'])]]);
-        return pontosOrfaos(citacoes, mapa).length === 0;
+        const citations = [{ arquivo: '01-modulo.md', section: '9.1', linha: 1 }];
+        const map = new Map([['01-modulo.md', new Set(['8', '9', '9.1'])]]);
+        return orphanPoints(citations, map).length === 0;
       },
     },
     {
-      nome: 'pontosOrfaos: secao NAO existe mais no arquivo (renumerado) -> orfao',
+      name: 'orphanPoints: cited section no longer exists after renumbering, so it is an orphan',
       fn: () => {
-        const citacoes = [{ arquivo: '01-modulo.md', secao: '9.9', linha: 5 }];
-        const mapa = new Map([['01-modulo.md', new Set(['8', '9', '9.1'])]]);
-        const orfaos = pontosOrfaos(citacoes, mapa);
-        return orfaos.length === 1 && orfaos[0].secao === '9.9';
+        const citations = [{ arquivo: '01-modulo.md', section: '9.9', linha: 5 }];
+        const map = new Map([['01-modulo.md', new Set(['8', '9', '9.1'])]]);
+        const orphans = orphanPoints(citations, map);
+        return orphans.length === 1 && orphans[0].section === '9.9';
       },
     },
     {
-      nome: 'pontosOrfaos: arquivo citado nao esta no universo (renomeado/apagado) -> orfao',
+      name: 'orphanPoints: cited file is outside the map after rename or deletion, so it is an orphan',
       fn: () => {
-        const citacoes = [{ arquivo: '99-fantasma.md', secao: '1', linha: 2 }];
-        const mapa = new Map([['01-modulo.md', new Set(['1'])]]);
-        return pontosOrfaos(citacoes, mapa).length === 1;
+        const citations = [{ arquivo: '99-fantasma.md', section: '1', linha: 2 }];
+        const map = new Map([['01-modulo.md', new Set(['1'])]]);
+        return orphanPoints(citations, map).length === 1;
       },
     },
   ];
 }
 
-function rodarAutoteste() {
-  let falhas = 0;
-  for (const caso of casosDeAutoteste()) {
+function runSelfTest() {
+  let failures = 0;
+  for (const testCase of selfTestCases()) {
     let ok;
     try {
-      ok = caso.fn() === true;
+      ok = testCase.fn() === true;
     } catch {
       ok = false;
     }
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
-  const total = casosDeAutoteste().length;
-  process.stdout.write(`\nautoteste (verificar-mapa): ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  const total = selfTestCases().length;
+  process.stdout.write(`\nself-test (verify-map): ${total - failures}/${total} passed\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 // ================================================================================================
 // CLI
 // ================================================================================================
 
-function principal() {
+function main() {
   const argv = process.argv.slice(2);
-  if (argv.includes('--autoteste')) return rodarAutoteste();
+  if (argv.includes('--selftest')) return runSelfTest();
 
-  const indice = argv.indexOf('--check');
-  if (indice === -1 || argv[indice + 1] === undefined) {
-    process.stderr.write('uso: node tests/verify-map.mjs --check <pastaArquitetura>\n'
-      + '     node tests/verify-map.mjs --autoteste\n');
+  const index = argv.indexOf('--check');
+  if (index === -1 || argv[index + 1] === undefined) {
+    process.stderr.write('Usage: node tests/verify-map.mjs --check <architecture-directory>\n'
+      + '     node tests/verify-map.mjs --selftest\n');
     return 1;
   }
 
-  const pastaArquitetura = resolve(argv[indice + 1]);
-  const resultado = conferir(pastaArquitetura);
-  process.stdout.write(resultado.ok
-    ? `mapa: OK — ${pastaArquitetura}\n`
-    : `mapa: REPROVADO — ${resultado.motivo}\n`);
-  return resultado.ok ? 0 : 1;
+  const architectureDir = resolve(argv[index + 1]);
+  const result = check(architectureDir);
+  process.stdout.write(result.ok
+    ? `map: OK — ${architectureDir}\n`
+    : `map: FAILED — ${result.motivo}\n`);
+  return result.ok ? 0 : 1;
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(principal());
+  process.exit(main());
 }

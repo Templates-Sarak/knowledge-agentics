@@ -6,7 +6,7 @@ builda nada). Complementa — não repete — o validar_docker.py genérico da d
 
 Uso:
     python validar_monolito.py --raiz <projeto> [--config config.json]
-    python validar_monolito.py --autoteste
+    python validar_monolito.py --selftest
 
 Retorno:
     JSON {root, ok, blockers:[{rule, file, line, detail}], warnings:[...], files:{...}}.
@@ -745,14 +745,14 @@ def main() -> None:
     )
     parser.add_argument("--raiz", default=".")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
-    parser.add_argument("--autoteste", action="store_true")
+    parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
 
     try:
         config = json.loads(Path(args.config).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         sys.exit(f"Erro: config inválido em '{args.config}' ({error}).")
-    if args.autoteste:
+    if args.selftest:
         sys.exit(run_selftest(config))
     root = Path(args.raiz)
     if not root.is_dir():

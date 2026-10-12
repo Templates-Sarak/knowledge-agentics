@@ -110,7 +110,7 @@ O que muda com os módulos é **gerado** (`deploy/nginx.modules.conf`, `deploy/c
 **incluído** pelos arquivos estáticos, que o projeto ajusta sem perder o ajuste. O que o template **não**
 traz: compose de produção, registry, digests e entrada — são da skill `deploy-docker-monolito`, porque mudam
 por provedor (ADR-012, que continua valendo nessa parte). O gate cobra a presença
-(`container-presente`) e a declaração das variáveis do compose (`compose-variaveis-declaradas`).
+(`container-present`) e a declaração das variáveis do compose (`compose-variables-declared`).
 
 ## Bindings
 

@@ -7,7 +7,7 @@ Lei dona: specs/arquitetura/02-contrato-e-dados.md §6.3.
     python scripts/migrations.py down <module>     reverte so o ULTIMO aplicado (bloco "-- rollback")
     python scripts/migrations.py ciclo <module>    up -> down -> up — prova que o rollback fecha, de
                                                     qualquer estado inicial (vazio ou ja migrado)
-    python scripts/migrations.py --autoteste       prova interna (parser, ordem, pending/ultimo)
+    python scripts/migrations.py --selftest       prova interna (parser, ordem, pending/ultimo)
 
 NAO MORA em tools/ (zero dependencia externa, lei 3 da base) — precisa de driver de Postgres,
 e tools/ so usa node:*/stdlib. `psycopg` e optional-dependency do PROJETO (mesmo grupo `dev`
@@ -48,7 +48,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 MINIMO_DE_ARGUMENTOS = 2
 
 # ====================================================================================================
-# NUCLEO PURO — nunca toca disco nem rede. E a metade que --autoteste prova.
+# NUCLEO PURO — nunca toca disco nem rede. E a metade que --selftest prova.
 # ====================================================================================================
 
 # `<module>` valido — kebab-case minusculo, a MESMA forma que `create-module.mjs` exige ao nascer.
@@ -85,7 +85,7 @@ def _uncomment_rollback(linhas: list[str]) -> str:
     Linha comentada cujo conteudo comeca por um verbo de DDL/DML conhecido: descomentada (o "-- "
     sai, preservando a indentacao). Qualquer outra coisa — comentario de verdade, linha ja sem "--"
     — passa INALTERADA: e SQL valido de um jeito ou de outro. E o que faz o parser nunca quebrar,
-    provado por --autoteste com linha em branco, comentario que NAO e rollback, e indentacao."""
+    provado por --selftest com linha em branco, comentario que NAO e rollback, e indentacao."""
     resultado = []
     for linha in linhas:
         if linha.strip() == "":
@@ -208,7 +208,7 @@ def _required_url(id_do_modulo: str) -> str:
 
 def _connect(url: str) -> Any:
     # Lazy DE PROPOSITO (nao top-level): `psycopg` e optional-dependency `dev` (docstring do
-    # modulo, DECISAO). `--autoteste` prova so o nucleo puro e precisa rodar mesmo sem `[dev]`
+    # modulo, DECISAO). `--selftest` prova so o nucleo puro e precisa rodar mesmo sem `[dev]`
     # instalado — import no topo quebraria isso so por causa de uma funcao que autoteste nunca chama.
     import psycopg  # noqa: PLC0415
 
@@ -481,13 +481,13 @@ def _run_selftest() -> int:
 
 def main() -> int:
     argv = sys.argv[1:]
-    if "--autoteste" in argv:
+    if "--selftest" in argv:
         return _run_selftest()
 
     if len(argv) < MINIMO_DE_ARGUMENTOS or argv[0] not in ("up", "down", "ciclo"):
         sys.stderr.write(
             "uso: python scripts/migrations.py up|down|ciclo <module>\n"
-            "     python scripts/migrations.py --autoteste\n"
+            "     python scripts/migrations.py --selftest\n"
         )
         return 1
 

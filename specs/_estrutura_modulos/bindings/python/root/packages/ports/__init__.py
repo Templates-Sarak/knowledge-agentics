@@ -30,7 +30,7 @@ ERROR_CODES: dict[str, int] = {
 # Fonte NORMATIVA: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do gate
 # (`config-ports.schema.json`, `module.schema.json:ports.items.enum`) sao GERADOS dela. Esta
 # lista, aqui, e a metade que nao da para gerar (interface de linguagem, nao config mecanica) —
-# mantenha as duas iguais a mao (o SIMBOLO diverge de proposito: `PORTAS_CONHECIDAS` na fonte,
+# mantenha as duas iguais a mao (o SIMBOLO diverge de proposito: `KNOWN_PORTS` na fonte,
 # `KNOWN_PORTS` aqui — Onda 3 do ADR-013/ADR-016, esqueleto e ferramental traduzem por regras
 # diferentes; o CONTEUDO das duas listas e que precisa ser identico). `fila` NAO ESTA no
 # vocabulario: arrasta retry, dead-letter, idempotencia e ordem de entrega — desenho de topologia
@@ -102,7 +102,7 @@ class TokenVerifier(Protocol):
 class Storage(Protocol):
     """Guarda e recupera CONTEUDO por caminho — upload, o caso mais comum de quase todo projeto
     real. Superficie MINIMA e tipada por operacao, no precedente de
-    `Repository`: nada de `executar(comando: str)` — o desenho que sustenta `sql-no-modulo` do
+    `Repository`: nada de `executar(comando: str)` — o desenho que sustenta `sql-in-module` do
     lado do banco."""
 
     async def save(self, caminho: str, conteudo: bytes) -> None: ...

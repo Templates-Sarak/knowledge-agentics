@@ -2,7 +2,7 @@
 
     python diagnosticar_terreno.py --raiz <alvo> [--modulos <pasta> ...] [--json]
         (sem `--modulos`, os candidatos sao DESCOBERTOS varrendo a raiz de modulos)
-    python diagnosticar_terreno.py --autoteste
+    python diagnosticar_terreno.py --selftest
 
 Responde, sem julgamento nenhum, as perguntas que "meta-adequacao-modular" precisa antes de abrir a boca:
 em que FASE a campanha esta (A planejar / B conferir / EM_ANDAMENTO), qual dos dois CAMINHOS de entrada
@@ -62,7 +62,7 @@ conferir o que e de fato antes de instalar specs por cima de specs.
 Nucleo puro (nunca toca disco): `detectar_fase`, `detectar_caminho`, `avaliar_template_instalado`,
 `kebabizar`, `avaliar_id_modulo`, `detectar_geracao_antiga`, `detectar_colisao_raiz`,
 `detectar_workspaces_legado`, `detectar_hooks_legado`, `raizes_de_modulos`, `avaliar_branch`,
-`gerar_candidatos_equivalentes` — e o que o `--autoteste` prova com fixtures em memoria. A CASCA
+`gerar_candidatos_equivalentes` — e o que o `--selftest` prova com fixtures em memoria. A CASCA
 (`ler_marcadores_template`, `ler_status_plans_xx`, `ler_entradas_raiz`, `ler_package_json`,
 `ler_pastas_de_modulos`, `ler_branch_atual`, `ler_arvore_suja`, `ler_sinais_sdd`,
 `ler_equivalentes_suspeitos`, `main`) e a unica parte que le disco — ou, nas duas de branch/arvore, que
@@ -105,7 +105,7 @@ BRANCHES_PADRAO = ("main", "master")
 # `detectar_colisao_raiz` parar de acusar `package.json`/`.gitignore` mesmo que nada mais do template
 # estivesse ali. `molde_modulo` responde a mesma pergunta com marcador FORTE: todo projeto nascido do
 # template ganha `modules/_template` copiado do binding (`specs/_estrutura_modulos/tools/
-# create-project.mjs`, funcao `copiarTemplate`) — presenca que um legado nao replica por acidente.
+# create-project.mjs`, funcao `copyTemplate`) — presenca que um legado nao replica por acidente.
 # "scaffolder" fecha a lacuna irma: o script conferia que o gate existia mas nunca que
 # `create-module.mjs` existia — e um legado real terminou uma campanha com `pnpm criar-modulo <id>`
 # produzindo modulo que nao compila, sem nada acusar.
@@ -505,7 +505,7 @@ def get_args():
     parser.add_argument(
         "--json", action="store_true", help="Saida em JSON (padrao: legivel)"
     )
-    parser.add_argument("--autoteste", action="store_true")
+    parser.add_argument("--selftest", action="store_true")
     return parser.parse_args()
 
 
@@ -937,7 +937,7 @@ def _resolver_candidatos_modulo(raiz: Path, args, entradas_raiz: set):
 
 def main() -> int:
     args = get_args()
-    if args.autoteste:
+    if args.selftest:
         return rodar_autoteste()
 
     raiz = Path(args.raiz).resolve()

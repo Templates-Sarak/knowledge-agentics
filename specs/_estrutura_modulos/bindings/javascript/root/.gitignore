@@ -11,7 +11,7 @@ relatorios/
 *.log
 .DS_Store
 
-# generated/ e ESTRUTURA, nao saida: `generatesArtifact: true` DECLARA a pasta e `artefato-declarado` a
+# generated/ e ESTRUTURA, nao saida: `generatesArtifact: true` DECLARA a pasta e `artifact-declared` a
 # COBRA — clone limpo sem ela reprova o gate. So o CONTEUDO e saida de maquina. Por isso ignora-se
 # so o conteudo (`generated/*`) e desisenta-se o `.gitkeep` que faz a pasta VAZIA sobreviver ao git —
 # `generated/` sozinho excluiria o diretorio inteiro, e a negacao nunca seria avaliada (git nao desce
@@ -23,7 +23,7 @@ relatorios/
 **/generated/*
 !**/generated/.gitkeep
 
-# .coverage: `estrutura-estrita` ja tolera esta entrada nos TRES bindings (o Set e compartilhado);
+# .coverage: `strict-structure` ja tolera esta entrada nos TRES bindings (o Set e compartilhado);
 # aqui o motivo e que isto E saida de maquina de verdade (o banco SQLite do coverage.py), nao
 # estrutura.
 .coverage

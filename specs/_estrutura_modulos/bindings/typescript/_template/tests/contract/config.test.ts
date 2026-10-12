@@ -5,7 +5,7 @@
 // essa lacuna chamando a funcao com `NODE_ENV` DIFERENTE de "test", de proposito.
 //
 // Usa `<MODULE>_API_PORT` (ja declarada em module.json:requiredEnv pelo molde) em vez de inventar
-// uma chave nova: uma chave sintetica usada via `process.env[...]` seria acusada por `env-declarado`
+// uma chave nova: uma chave sintetica usada via `process.env[...]` seria acusada por `env-declared`
 // — "usada no codigo e ausente do manifesto" — por um vazamento que nao tem nada a ver com este teste.
 import { afterEach, describe, expect, it } from 'vitest';
 

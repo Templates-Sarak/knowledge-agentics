@@ -1,39 +1,38 @@
 /**
  * rules/contract.mjs — família "Contrato" do catálogo (specs/arquitetura/04-regras.md §4.5).
- * ids: contrato, rota-nomenclatura, contrato-sincronizado, projecao-contrato, payload-camelcase,
- *      saida-sensivel, sensivel-em-saida, mapeador-nomenclatura, resumo-exportado, saida-crua
+ * ids: contract, route-naming, synchronized-contract, contract-projection, payload-camelcase,
+ *      sensitive-output, sensitive-in-output, mapper-naming, exported-summary, raw-output
  *
  * O `contract/openapi.yaml` é a FONTE. Estas regras existem para que ele não seja ficção: o que
  * está na spec existe no código, o que está no código existe na spec, e nada sensível vaza.
  *
- * A leitura da spec mora em `../spec.mjs`, compartilhada com `consome-contrato` (Isolamento).
+ * A leitura da spec mora em `../spec.mjs`, compartilhada com `consumes-contract` (Isolamento).
  *
- * Os dois extratores que julgam CODIGO — `rotasDoCodigo` e `chavesDaProjecao` — leem
- * `textoDeCodigo`, nunca `arquivo.conteudo`. Sobre o texto cru, um comentario que DOCUMENTA a lei
+ * Os dois extratores que julgam CODIGO — `codeRoutes` e `projectionKeys` — leem
+ * `codeText`, nunca `arquivo.conteudo`. Sobre o texto cru, um comentario que DOCUMENTA a lei
  * ("`paraContrato` nunca deve projetar `{ cpf }`") vira a violacao que ele proibe, e uma rota
  * desativada citada em comentario vira rota fora do contrato. Quem le a SPEC continua em
  * `spec.conteudo`, de proposito: em YAML nao ha comentario a descontar do que importa aqui.
  */
 import {
-  leiturasFalhas, normalizar, propriedadesDaResposta, rotasDaSpec, servidorDaSpec, specDe,
+  failedReads, normalize, responseProperties, specRoutes, specServer, specOf,
 } from '../spec.mjs';
-import { textoDeCodigo } from '../text.mjs';
-import { CHAMADA_DE_LOG_VERBOS } from './operation.mjs';
+import { codeText } from '../text.mjs';
+import { LOG_CALL_VERBS } from './operation.mjs';
 
-const OBRIGATORIAS = ['/health', '/meta', '/resumo'];
+const REQUIRED = ['/health', '/meta', '/resumo'];
 
 /**
  * A forma que o leitor de bloco aceita, por seção. É o que falta numa mensagem que só diz
  * "não verifiquei": o autor precisa saber o que editar, e citar só *flow style* manda quem já
  * está em bloco refazer o que já fez.
  */
-const FORMA_ACEITA = {
-  paths: 'em "paths:", cada rota e uma chave de recuo EXATAMENTE 2 na propria linha '
-    + '("  /registros:") e cada metodo, uma chave de recuo EXATAMENTE 4 ("    get:") — recuo '
-    + 'diferente disso e bloco valido que o leitor nao alcanca',
-  servers: 'em "servers:", o PRIMEIRO item declara "url:" — na linha do traco '
-    + '("  - url: /api/v1/<module>") ou em qualquer outra linha do mesmo item; aspas simples ou '
-    + 'duplas sao aceitas',
+const ACCEPTED_SHAPE = {
+  paths: 'under "paths:", each route is a key indented EXACTLY 2 spaces on its own line '
+    + '("  /records:") and each method a key indented EXACTLY 4 spaces ("    get:"); the reader '
+    + 'does not recognize other valid YAML indentation',
+  servers: 'under "servers:", the FIRST item declares "url:" either on the dash line '
+    + '("  - url: /api/v1/<module>") or another line in the same item; single or double quotes are accepted',
 };
 
 /**
@@ -44,16 +43,15 @@ const FORMA_ACEITA = {
  * `paths:` indentado com 4 espaços é bloco válido e chega aqui pelo mesmo caminho, e o autor que
  * lesse "reescreva em bloco" ficaria sem saída, exatamente o que esta mensagem existe para evitar.
  */
-function mensagemIlegivel(falhas) {
-  return `contract/openapi.yaml presente mas ILEGIVEL para o gate: a leitura de "${falhas.join(':" e "')}:" `
-    + 'nao extraiu nada. O gate le YAML em BLOCO, sem dependencia externa — e o que permite ele viajar '
-    + 'com o modulo extraido e rodar sem instalar nada. A causa mais comum e flow style ({...} numa linha '
-    + `so), mas nao e a unica. O leitor aceita assim: ${falhas.map((f) => FORMA_ACEITA[f]).join('; ')}.`;
+function unreadableMessage(failures) {
+  return `contract/openapi.yaml is present but unreadable by the gate: parsing extracted nothing from "${failures.join('" and "')}". `
+    + 'The gate reads block-style YAML without external dependencies, so it can travel with an extracted module and run without installation. '
+    + `Flow style ({...} on one line) is common, but not the only cause. Accepted form: ${failures.map((f) => ACCEPTED_SHAPE[f]).join('; ')}.`;
 }
 
 /**
  * Verbos que não podem ser SEGMENTO de path — a ação é o método HTTP (02-contrato-e-dados §2).
- * Inline como `SDKS_FORNECEDOR`: é vocabulário NORMATIVO fechado, parte da regra, não tunable de
+ * Inline como `VENDOR_SDKS`: é vocabulário NORMATIVO fechado, parte da regra, não tunable de
  * projeto — mudá-lo é mudar a lei, e a lei não mora em config.
  *
  * Critério de inclusão: a palavra nomeia uma AÇÃO que o método HTTP já expressa. Substantivo de
@@ -61,7 +59,7 @@ function mensagemIlegivel(falhas) {
  * estão aqui, e `buscar`, `listar` estão. Os dois idiomas entram porque a doutrina manda rota em
  * português (§3.1 "Idioma") e a comparação é por segmento inteiro, nunca substring.
  */
-const VERBOS_PROIBIDOS = new Set([
+const FORBIDDEN_VERBS = new Set([
   // inglês
   'get', 'post', 'put', 'patch', 'delete', 'create', 'update', 'remove', 'list',
   'fetch', 'find', 'search', 'add', 'edit', 'new', 'save', 'send',
@@ -72,7 +70,7 @@ const VERBOS_PROIBIDOS = new Set([
 ]);
 
 /**
- * `saida-crua` — duas metades, duas âncoras. Inverter as DUAS ("qualquer identificador em
+ * `raw-output` — duas metades, duas âncoras. Inverter as DUAS ("qualquer identificador em
  * `return`, em qualquer lugar") falha o critério de reversão do bloco: medido contra o molde de
  * referência SEM MUTAÇÃO NENHUMA, produz 14 identificadores exigindo isenção — muito acima do teto
  * de ~6. A causa é a âncora, não o raio: `return <id>` sem escopo casa qualquer função que devolve
@@ -80,7 +78,7 @@ const VERBOS_PROIBIDOS = new Set([
  *
  * MAPEADOR — vocabulário fechado. Nunca teve queixa; não muda.
  */
-const PADRAO_MAPEADOR_RETURN = /return\s+(linha|linhas|row|rows)\s*$/;
+const RETURN_MAPPER_PATTERN = /return\s+(linha|linhas|row|rows)\s*$/;
 
 /**
  * BORDA, TS/JS — `.json(<identificador>)` acusa SEMPRE, sem lista de isentos. Seguro por
@@ -88,92 +86,92 @@ const PADRAO_MAPEADOR_RETURN = /return\s+(linha|linhas|row|rows)\s*$/;
  * identificador PURO — `res.json({ total })` (objeto literal) e `res.json(paraContrato(x))`
  * (chamada de projeção) não casam porque o próximo caractere não é `)`.
  */
-const PADRAO_BORDA_JSON = /\.json\(\s*([A-Za-z_]\w*)\s*\)/;
+const JSON_EDGE_PATTERN = /\.json\(\s*([A-Za-z_]\w*)\s*\)/;
 
 /** BORDA, Python — só dentro de handler decorado (`@router.<verbo>`). Python não tem `.json(...)`:
  * a borda É o `return` do handler, e só a indentação separa "dentro do handler" de "fora dele"
  * (`return router`, ao fim de `criar_rotas`, está no MESMO recuo do decorator — precisa calar). */
-const PADRAO_DECORATOR_ROUTER = /^(\s*)@router\.(get|post|put|patch|delete)\(/;
-const PADRAO_RETURN_IDENTIFICADOR = /^\s*return\s+([A-Za-z_][\w.]*)\s*$/;
+const ROUTER_DECORATOR_PATTERN = /^(\s*)@router\.(get|post|put|patch|delete)\(/;
+const IDENTIFIER_RETURN_PATTERN = /^\s*return\s+([A-Za-z_][\w.]*)\s*$/;
 
-function achadosDeBordaPython(arquivo) {
-  const linhas = arquivo.linhasCodigo;
-  const achados = [];
-  for (let i = 0; i < linhas.length; i += 1) {
-    const decorador = PADRAO_DECORATOR_ROUTER.exec(linhas[i].texto);
-    if (decorador === null) continue;
-    const recuoDecorador = decorador[1].length;
+function pythonEdgeFindings(file) {
+  const lines = file.codeLines;
+  const findings = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const decorator = ROUTER_DECORATOR_PATTERN.exec(lines[i].text);
+    if (decorator === null) continue;
+    const decoratorIndent = decorator[1].length;
     // a linha seguinte nao-branca e a assinatura (`async def ...:`), no MESMO recuo do decorator —
     // o corpo do handler so comeca depois dela.
-    let inicioCorpo = i + 1;
-    while (inicioCorpo < linhas.length && linhas[inicioCorpo].texto.trim() === '') inicioCorpo += 1;
-    inicioCorpo += 1;
-    for (let j = inicioCorpo; j < linhas.length; j += 1) {
-      const { numero, texto } = linhas[j];
-      if (texto.trim() === '') continue;
-      const recuo = texto.length - texto.trimStart().length;
-      if (recuo <= recuoDecorador) break; // dedent: saiu do corpo do handler
-      if (PADRAO_MAPEADOR_RETURN.test(texto)) continue; // ja contado pelo mapeador, nao duplicar
-      const retorno = PADRAO_RETURN_IDENTIFICADOR.exec(texto);
-      if (retorno === null) continue;
-      achados.push(`${arquivo.rel}:${numero}: devolve "${retorno[1]}" cru na resposta — monte a `
-        + 'saida no mapeador, por allowlist (objeto literal ou chamada de projecao)');
+    let bodyStart = i + 1;
+    while (bodyStart < lines.length && lines[bodyStart].text.trim() === '') bodyStart += 1;
+    bodyStart += 1;
+    for (let j = bodyStart; j < lines.length; j += 1) {
+      const { number, text } = lines[j];
+      if (text.trim() === '') continue;
+      const indent = text.length - text.trimStart().length;
+      if (indent <= decoratorIndent) break; // dedent: saiu do corpo do handler
+      if (RETURN_MAPPER_PATTERN.test(text)) continue; // ja contado pelo mapeador, nao duplicar
+      const returned = IDENTIFIER_RETURN_PATTERN.exec(text);
+      if (returned === null) continue;
+      findings.push(`${file.rel}:${number}: returns "${returned[1]}" raw in the response — build the output `
+        + 'in the mapper using an allowlist (object literal or projection call)');
     }
   }
-  return achados;
+  return findings;
 }
 
-function achadosSaidaCruaDoArquivo(arquivo) {
-  const achados = [];
-  for (const { numero, texto } of arquivo.linhasCodigo) {
-    const borda = PADRAO_BORDA_JSON.exec(texto);
-    if (borda !== null) {
-      achados.push(`${arquivo.rel}:${numero}: devolve "${borda[1]}" cru na resposta — monte a `
-        + 'saida no mapeador, por allowlist (objeto literal ou chamada de projecao)');
+function fileRawOutputFindings(file) {
+  const findings = [];
+  for (const { number, text } of file.codeLines) {
+    const edge = JSON_EDGE_PATTERN.exec(text);
+    if (edge !== null) {
+      findings.push(`${file.rel}:${number}: returns "${edge[1]}" raw in the response — build the output `
+        + 'in the mapper using an allowlist (object literal or projection call)');
       continue;
     }
-    if (PADRAO_MAPEADOR_RETURN.test(texto)) {
-      achados.push(`${arquivo.rel}:${numero}: devolve registro cru — monte a saida no mapeador, por allowlist`);
+    if (RETURN_MAPPER_PATTERN.test(text)) {
+      findings.push(`${file.rel}:${number}: returns a raw record — build the output in the mapper using an allowlist`);
     }
   }
-  if (arquivo.rel.endsWith('.py')) achados.push(...achadosDeBordaPython(arquivo));
-  return achados;
+  if (file.rel.endsWith('.py')) findings.push(...pythonEdgeFindings(file));
+  return findings;
 }
 
 /** Rotas registradas no código, em qualquer binding. Normaliza `:hash` e `{hash}` para `{}`. */
-function rotasDoCodigo(ctx) {
-  const padroes = [
+function codeRoutes(ctx) {
+  const patterns = [
     /\b(?:router|app)\.(get|post|put|patch|delete)\(\s*['"`]([^'"`]+)['"`]/g,
     /@\w*router\.(get|post|put|patch|delete)\(\s*['"]([^'"]+)['"]/g,
   ];
-  const rotas = new Set();
-  for (const arquivo of ctx.codigo) {
-    if (arquivo.eTeste || !/^api\//.test(arquivo.rel)) continue;
-    const texto = textoDeCodigo(arquivo);
-    for (const padrao of padroes) {
-      for (const achado of texto.matchAll(padrao)) rotas.add(normalizar(achado[2]));
+  const routes = new Set();
+  for (const file of ctx.code) {
+    if (file.isTest || !/^api\//.test(file.rel)) continue;
+    const text = codeText(file);
+    for (const pattern of patterns) {
+      for (const finding of text.matchAll(pattern)) routes.add(normalize(finding[2]));
     }
   }
-  return rotas;
+  return routes;
 }
 
 /** Recorta um bloco YAML por nome de chave, devolvendo o texto indentado sob ela. */
-function blocoDe(yaml, padraoChave) {
-  const trechos = [];
-  let dentro = false;
-  let recuoBase = 0;
+function blockOf(yaml, keyPattern) {
+  const snippets = [];
+  let inside = false;
+  let baseIndent = 0;
 
-  for (const linha of yaml.split(/\r?\n/)) {
-    const recuo = linha.length - linha.trimStart().length;
-    if (padraoChave.test(linha)) {
-      dentro = true;
-      recuoBase = recuo;
+  for (const line of yaml.split(/\r?\n/)) {
+    const indent = line.length - line.trimStart().length;
+    if (keyPattern.test(line)) {
+      inside = true;
+      baseIndent = indent;
       continue;
     }
-    if (dentro && linha.trim() !== '' && recuo <= recuoBase) dentro = false;
-    if (dentro) trechos.push(linha);
+    if (inside && line.trim() !== '' && indent <= baseIndent) inside = false;
+    if (inside) snippets.push(line);
   }
-  return trechos.join('\n');
+  return snippets.join('\n');
 }
 
 /**
@@ -181,56 +179,56 @@ function blocoDe(yaml, padraoChave) {
  * `$ref` de dentro de `responses:`. Sem seguir o `$ref`, um campo sensível descrito num schema
  * compartilhado passa despercebido, que é o caso mais comum num contrato bem escrito.
  */
-function trechosDeResposta(yaml) {
-  const direto = blocoDe(yaml, /^\s*responses:\s*$/);
-  const componentes = blocoDe(yaml, /^\s*schemas:\s*$/);
-  const referenciados = new Set(
-    [...direto.matchAll(/#\/components\/schemas\/(\w+)/g)].map((achado) => achado[1]),
+function responseSnippets(yaml) {
+  const direct = blockOf(yaml, /^\s*responses:\s*$/);
+  const components = blockOf(yaml, /^\s*schemas:\s*$/);
+  const referenced = new Set(
+    [...direct.matchAll(/#\/components\/schemas\/(\w+)/g)].map((finding) => finding[1]),
   );
 
-  const partes = [direto];
-  for (const nome of referenciados) {
-    partes.push(blocoDe(componentes, new RegExp(`^\\s*${nome}:\\s*$`)));
+  const parts = [direct];
+  for (const name of referenced) {
+    parts.push(blockOf(components, new RegExp(`^\\s*${name}:\\s*$`)));
   }
-  return partes.join('\n');
+  return parts.join('\n');
 }
 
 /**
  * Nomes de propriedade declarados em schema de RESPOSTA — as chaves filhas de cada `properties:`.
  *
- * Reusa `trechosDeResposta`, então schema de REQUISIÇÃO fica de fora de graça: `NovoRegistro` é
+ * Reusa `responseSnippets`, então schema de REQUISIÇÃO fica de fora de graça: `NovoRegistro` é
  * alcançado por `$ref` de dentro de `requestBody:`, nunca de `responses:`, e não entra no texto.
  *
  * A pilha de recuos existe para o aninhamento (`Erro.erro.codigo`): sem ela, entrar num
  * `properties:` interno perde o escopo externo, e propriedade legítima fica fora do conjunto —
  * vira falso positivo, a direção de erro que esta regra não pode ter.
  */
-function propriedadesDeResposta(yaml) {
-  const nomes = new Set();
-  const pilha = [];
+function allResponseProperties(yaml) {
+  const names = new Set();
+  const stack = [];
 
-  for (const linha of trechosDeResposta(yaml).split(/\r?\n/)) {
-    if (linha.trim() === '') continue;
-    const recuo = linha.length - linha.trimStart().length;
-    while (pilha.length > 0 && recuo <= pilha[pilha.length - 1]) pilha.pop();
-    const chave = linha.match(/^\s*([A-Za-z_]\w*)\s*:/);
-    if (chave !== null && pilha.length > 0 && recuo === pilha[pilha.length - 1] + 2) {
-      nomes.add(chave[1]);
+  for (const line of responseSnippets(yaml).split(/\r?\n/)) {
+    if (line.trim() === '') continue;
+    const indent = line.length - line.trimStart().length;
+    while (stack.length > 0 && indent <= stack[stack.length - 1]) stack.pop();
+    const key = line.match(/^\s*([A-Za-z_]\w*)\s*:/);
+    if (key !== null && stack.length > 0 && indent === stack[stack.length - 1] + 2) {
+      names.add(key[1]);
     }
-    if (/^\s*properties:\s*$/.test(linha)) pilha.push(recuo);
+    if (/^\s*properties:\s*$/.test(line)) stack.push(indent);
   }
-  return nomes;
+  return names;
 }
 
 /** `servers[0].url` da spec confere com o `basePath` do manifesto. */
-function conferirServidor(ctx, yaml) {
-  const esperado = ctx.manifesto?.basePath ?? null;
-  // Manifesto ausente ou sem rotaBase e do `manifesto`/`schema-manifesto` — nao acusamos duas vezes.
-  if (esperado === null) return [];
-  const declarado = servidorDaSpec(yaml);
-  if (declarado === null) return ['contract/openapi.yaml nao declara servers[0].url — o prefixo do modulo fica implicito'];
-  if (declarado !== esperado) {
-    return [`contract/openapi.yaml: servers[0].url "${declarado}" diverge do rotaBase "${esperado}" do manifesto`];
+function checkServer(ctx, yaml) {
+  const expected = ctx.manifest?.basePath ?? null;
+  // Manifesto ausente ou sem rotaBase e do `manifest`/`manifest-schema` — nao acusamos duas vezes.
+  if (expected === null) return [];
+  const declared = specServer(yaml);
+  if (declared === null) return ['contract/openapi.yaml does not declare servers[0].url — the module prefix is implicit'];
+  if (declared !== expected) {
+    return [`contract/openapi.yaml: servers[0].url "${declared}" does not match manifest basePath "${expected}"`];
   }
   return [];
 }
@@ -240,38 +238,38 @@ function conferirServidor(ctx, yaml) {
  * `criar-item` e `listar-registros` caem (a palavra `criar` é um token), e `postagens` e
  * `novidades` NÃO caem (`post` e `new` não são token nenhum ali). Substring pegaria os dois.
  */
-function verboNoSegmento(segmento) {
-  return segmento.toLowerCase().split('-').find((palavra) => VERBOS_PROIBIDOS.has(palavra)) ?? null;
+function verbInSegment(segment) {
+  return segment.toLowerCase().split('-').find((word) => FORBIDDEN_VERBS.has(word)) ?? null;
 }
 
 /** Cada segmento de um path: verbo proibido, kebab-case, e camelCase dentro de `{}`. */
-function conferirSegmentos(rota) {
-  const achados = [];
-  for (const segmento of rota.split('/').filter((s) => s !== '')) {
-    const parametro = segmento.match(/^\{(.*)\}$/);
-    const verbo = parametro === null ? verboNoSegmento(segmento) : null;
-    if (parametro !== null && !/^[a-z][A-Za-z0-9]*$/.test(parametro[1])) {
-      achados.push(`rota "${rota}": parametro "{${parametro[1]}}" nao e camelCase`);
-    } else if (verbo !== null) {
-      achados.push(`rota "${rota}": segmento "${segmento}" carrega o verbo "${verbo}" — a acao e o metodo HTTP, nao o path`);
-    } else if (parametro === null && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(segmento)) {
-      achados.push(`rota "${rota}": segmento "${segmento}" nao e kebab-case minusculo`);
+function checkSegments(route) {
+  const findings = [];
+  for (const segment of route.split('/').filter((s) => s !== '')) {
+    const param = segment.match(/^\{(.*)\}$/);
+    const verb = param === null ? verbInSegment(segment) : null;
+    if (param !== null && !/^[a-z][A-Za-z0-9]*$/.test(param[1])) {
+      findings.push(`route "${route}": parameter "{${param[1]}}" is not camelCase`);
+    } else if (verb !== null) {
+      findings.push(`route "${route}": segment "${segment}" contains the verb "${verb}" — the action belongs to the HTTP method, not the path`);
+    } else if (param === null && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(segment)) {
+      findings.push(`route "${route}": segment "${segment}" is not lowercase kebab-case`);
     }
   }
-  return achados;
+  return findings;
 }
 
 /**
  * Fim (exclusivo) do trecho que abre em `inicio`, contando profundidade de chaves.
  * `-1` quando o texto acaba sem fechar.
  */
-function fimBalanceado(texto, inicio) {
-  let profundidade = 0;
-  for (let i = inicio; i < texto.length; i += 1) {
-    if (texto[i] === '{') profundidade += 1;
-    else if (texto[i] === '}') {
-      profundidade -= 1;
-      if (profundidade === 0) return i + 1;
+function balancedEnd(text, start) {
+  let depth = 0;
+  for (let i = start; i < text.length; i += 1) {
+    if (text[i] === '{') depth += 1;
+    else if (text[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return i + 1;
     }
   }
   return -1;
@@ -280,10 +278,10 @@ function fimBalanceado(texto, inicio) {
 /**
  * Palavras que têm a FORMA de um sítio de definição sem definir nada — controle de fluxo (JS/PY) e
  * o próprio `return`. A exclusão mora aqui, dentro do reconhecedor único: o sítio nomeado nunca
- * busca controle de fluxo, porque nenhuma dessas palavras casa `PADRAO_NOME_PROJECAO`. Com os dois
+ * busca controle de fluxo, porque nenhuma dessas palavras casa `PROJECTION_NAME_PATTERN`. Com os dois
  * lados lendo a MESMA lista de candidatos, ela só precisa existir uma vez.
  */
-const PALAVRAS_DE_CONTROLE = new Set([
+const CONTROL_WORDS = new Set([
   'if', 'for', 'while', 'switch', 'case', 'default', 'catch', 'do', 'else', 'elif', 'try',
   'except', 'finally', 'with', 'return',
 ]);
@@ -309,45 +307,45 @@ const PALAVRAS_DE_CONTROLE = new Set([
  * de uma função de topo ANTES da classe atravessa a declaração inteira sem nada em recuo zero para
  * fechá-la.
  *
- * O guarda de RECUO (na chamadora, `proximaDefinicaoNoRecuo`) é o que torna a largura segura: uma
+ * O guarda de RECUO (na chamadora, `nextDefinitionInIndent`) é o que torna a largura segura: uma
  * chave de objeto devolvido em várias linhas (`hash: registro.hash,`) também casa a forma larga, mas
  * está SEMPRE mais indentada que o sítio que abriu a janela — nunca fecha nada.
  */
-const PADRAO_SITIO_DEFINICAO =
+const DEFINITION_SITE_PATTERN =
   /^([ \t]*)(?:(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|def|const|let|var|class)\s+)?([A-Za-z_]\w*)/gm;
 
 /** Todo candidato a sítio de definição do arquivo, na ordem em que aparece — a fonte única que
- * `sitiosDeDefinicao` (filtra por NOME) e `proximaDefinicaoNoRecuo` (filtra por RECUO) consomem. */
-function candidatosDeDefinicao(conteudo) {
-  const candidatos = [];
-  for (const m of conteudo.matchAll(PADRAO_SITIO_DEFINICAO)) {
-    const nome = m[2];
-    if (PALAVRAS_DE_CONTROLE.has(nome)) continue;
-    candidatos.push({ indice: m.index + m[1].length, recuo: m[1].length, nome });
+ * `definitionSites` (filtra por NOME) e `nextDefinitionInIndent` (filtra por RECUO) consomem. */
+function definitionCandidates(content) {
+  const candidates = [];
+  for (const m of content.matchAll(DEFINITION_SITE_PATTERN)) {
+    const name = m[2];
+    if (CONTROL_WORDS.has(name)) continue;
+    candidates.push({ index: m.index + m[1].length, indent: m[1].length, name });
   }
-  return candidatos;
+  return candidates;
 }
 
-/** Só os candidatos cujo NOME casa `padraoNome` (ex.: `PADRAO_NOME_PROJECAO`) — os sítios de
+/** Só os candidatos cujo NOME casa `padraoNome` (ex.: `PROJECTION_NAME_PATTERN`) — os sítios de
  * DEFINIÇÃO da projeção, nunca uma referência: `registros.map(paraContrato)` nunca é candidato,
  * porque o nome não está no início da linha lógica ali. */
-function sitiosDeDefinicao(conteudo, padraoNome) {
-  const casaNome = new RegExp(padraoNome.source);
-  return candidatosDeDefinicao(conteudo).filter((c) => casaNome.test(c.nome));
+function definitionSites(content, namePattern) {
+  const matchesName = new RegExp(namePattern.source);
+  return definitionCandidates(content).filter((c) => matchesName.test(c.name));
 }
 
 /** `return {`, `return ({` (TS/JS/Python), `=> ({` (arrow com retorno implícito de objeto) ou
  * `lambda ...: {` — o mesmo retorno implícito, forma Python. */
-const PADRAO_RETORNO_OBJETO = /\breturn\s*\(?\s*\{|=>\s*\(\s*\{|\blambda\b[^:{}]*:\s*\{/g;
+const OBJECT_RETURN_PATTERN = /\breturn\s*\(?\s*\{|=>\s*\(\s*\{|\blambda\b[^:{}]*:\s*\{/g;
 
 /** A próxima definição (qualquer nome) de recuo `<= recuoMaximo`, estritamente depois de
  * `apartirDe`, ou fim do arquivo. */
-function proximaDefinicaoNoRecuo(conteudo, apartirDe, recuoMaximo) {
-  for (const candidato of candidatosDeDefinicao(conteudo)) {
-    if (candidato.indice <= apartirDe) continue;
-    if (candidato.recuo <= recuoMaximo) return candidato.indice;
+function nextDefinitionInIndent(content, fromIndex, maxIndent) {
+  for (const candidate of definitionCandidates(content)) {
+    if (candidate.index <= fromIndex) continue;
+    if (candidate.indent <= maxIndent) return candidate.index;
   }
-  return conteudo.length;
+  return content.length;
 }
 
 /**
@@ -360,21 +358,21 @@ function proximaDefinicaoNoRecuo(conteudo, apartirDe, recuoMaximo) {
  * dois `return` (detalhe e resumo) rende DUAS regiões, de propósito.
  *
  * Mata de graça o falso positivo do objeto intermediário (`const interno = { … }` dentro da função):
- * não está em posição de `return` nem de `=>`, então nunca casa `PADRAO_RETORNO_OBJETO` — nenhuma
+ * não está em posição de `return` nem de `=>`, então nunca casa `OBJECT_RETURN_PATTERN` — nenhuma
  * guarda nova precisou ser escrita para isso.
  */
-function regioesDeProjecao(conteudo, padraoNome) {
-  const regioes = [];
-  for (const { indice: inicioJanela, recuo: recuoSitio } of sitiosDeDefinicao(conteudo, padraoNome)) {
-    const fimJanela = proximaDefinicaoNoRecuo(conteudo, inicioJanela, recuoSitio);
-    const janela = conteudo.slice(inicioJanela, fimJanela);
-    for (const ocorrencia of janela.matchAll(PADRAO_RETORNO_OBJETO)) {
-      const abertura = inicioJanela + ocorrencia.index + ocorrencia[0].length - 1;
-      const fim = fimBalanceado(conteudo, abertura);
-      if (fim !== -1) regioes.push(conteudo.slice(abertura, fim));
+function projectionRegions(content, namePattern) {
+  const regions = [];
+  for (const { index: windowStart, indent: siteIndent } of definitionSites(content, namePattern)) {
+    const windowEnd = nextDefinitionInIndent(content, windowStart, siteIndent);
+    const window = content.slice(windowStart, windowEnd);
+    for (const occurrence of window.matchAll(OBJECT_RETURN_PATTERN)) {
+      const opening = windowStart + occurrence.index + occurrence[0].length - 1;
+      const end = balancedEnd(content, opening);
+      if (end !== -1) regions.push(content.slice(opening, end));
     }
   }
-  return regioes;
+  return regions;
 }
 
 /**
@@ -386,23 +384,23 @@ function regioesDeProjecao(conteudo, padraoNome) {
  * segunda não dizia ao autor nada que a primeira já não dissesse: um defeito, uma mensagem. Um
  * mapeador com projeção de detalhe e de resumo publicando o mesmo campo é o caso ordinário disso.
  *
- * Aqui, e não em cada regra: `divergenciasDaProjecao` já tem o `vistos` dela; as outras duas
+ * Aqui, e não em cada regra: `projectionDivergences` já tem o `vistos` dela; as outras duas
  * teriam de ganhar cópias — três guardas para um dado que nasce duplicado num lugar só.
  */
-/** O laco de `achado` isolado do de `chavesDaProjecao` — so por isso o aninhamento cabe no limiar
+/** O laco de `achado` isolado do de `projectionKeys` — so por isso o aninhamento cabe no limiar
  * que esta propria regra cobra do codigo do usuario (04-regras.md §4.7). */
-function chavesDaRegiao(arquivo, regiao, vistos) {
-  const chaves = [];
+function regionKeys(file, region, seen) {
+  const keys = [];
   // Chave apos `{` ou `,` — nao apenas no inicio da linha. Objeto escrito numa linha so
   // (`{ hash: x, criado_em: y }`) escaparia inteiro se a extracao exigisse inicio de linha.
   // A regiao COMECA na `{`, entao a primeira chave tem o mesmo delimitador que as demais.
-  for (const achado of regiao.matchAll(/[{,]\s*["']?([A-Za-z_]\w*)["']?\s*:/g)) {
-    const par = `${arquivo.rel}|${achado[1]}`;
-    if (vistos.has(par)) continue;
-    vistos.add(par);
-    chaves.push({ chave: achado[1], arquivo: arquivo.rel });
+  for (const finding of region.matchAll(/[{,]\s*["']?([A-Za-z_]\w*)["']?\s*:/g)) {
+    const pair = `${file.rel}|${finding[1]}`;
+    if (seen.has(pair)) continue;
+    seen.add(pair);
+    keys.push({ key: finding[1], arquivo: file.rel });
   }
-  return chaves;
+  return keys;
 }
 
 /**
@@ -412,18 +410,18 @@ function chavesDaRegiao(arquivo, regiao, vistos) {
  * lista: `rowToDomain`/`domainToRow` têm "To"/"to" no MEIO do nome, nunca no início — `\b` garante
  * que o casador não pare no meio de um identificador maior.
  */
-const PADRAO_NOME_PROJECAO = /\bto[A-Z]\w*|\bto_\w+/g;
+const PROJECTION_NAME_PATTERN = /\bto[A-Z]\w*|\bto_\w+/g;
 
-function chavesDaProjecao(ctx) {
-  const vistos = new Set();
-  const chaves = [];
-  for (const arquivo of ctx.codigo) {
-    if (arquivo.eTeste || !/mapper/i.test(arquivo.rel)) continue;
-    for (const regiao of regioesDeProjecao(textoDeCodigo(arquivo), PADRAO_NOME_PROJECAO)) {
-      chaves.push(...chavesDaRegiao(arquivo, regiao, vistos));
+function projectionKeys(ctx) {
+  const seen = new Set();
+  const keys = [];
+  for (const file of ctx.code) {
+    if (file.isTest || !/mapper/i.test(file.rel)) continue;
+    for (const region of projectionRegions(codeText(file), PROJECTION_NAME_PATTERN)) {
+      keys.push(...regionKeys(file, region, seen));
     }
   }
-  return chaves;
+  return keys;
 }
 
 /**
@@ -433,42 +431,42 @@ function chavesDaProjecao(ctx) {
  * `/meta` e `/resumo` são montadas pela própria `api/`, e o schema `Erro` pelo tratador de erro —
  * nenhum deles passa pelo mapeador. Cobrá-la daria falso positivo garantido nos três moldes.
  */
-function divergenciasDaProjecao(projetadas, declaradas) {
-  const vistos = new Set();
-  const achados = [];
-  for (const { chave, arquivo } of projetadas) {
+function projectionDivergences(projected, declared) {
+  const seen = new Set();
+  const findings = [];
+  for (const { key, arquivo: file } of projected) {
     // Chave fora de camelCase e do `payload-camelcase`. Ela JAMAIS estara no contrato (que fala
     // camelCase por regra), entao acusa-la aqui daria dois erros para um defeito so — e o segundo
     // apontaria para o conserto errado ("declare no contrato" em vez de "renomeie o campo").
-    if (!/^[a-z][A-Za-z0-9]*$/.test(chave)) continue;
-    if (declaradas.has(chave) || vistos.has(chave)) continue;
-    vistos.add(chave);
-    achados.push(`${arquivo}: campo "${chave}" e projetado na saida e NAO esta declarado em nenhum schema de RESPOSTA do openapi.yaml`);
+    if (!/^[a-z][A-Za-z0-9]*$/.test(key)) continue;
+    if (declared.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    findings.push(`${file}: field "${key}" is projected in the output but is not declared in any openapi.yaml response schema`);
   }
-  return achados;
+  return findings;
 }
 
-/** O laco de `campo` isolado do de `sensivel-em-saida.verificar` — mesma tecnica de
- * `chavesDaRegiao`, para o aninhamento caber no limiar (04-regras.md §4.7). */
-function achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis) {
-  const achados = [];
-  for (const campo of sensiveis) {
-    if (new RegExp(`\\b${campo}\\b`).test(texto)) {
-      achados.push(`${arquivo.rel}:${numero}: campo sensivel "${campo}" citado em chamada de log`);
+/** O laco de `campo` isolado do de `sensitive-in-output.verificar` — mesma tecnica de
+ * `regionKeys`, para o aninhamento caber no limiar (04-regras.md §4.7). */
+function sensitiveFieldFindingsInLine(file, number, text, sensitive) {
+  const findings = [];
+  for (const field of sensitive) {
+    if (new RegExp(`\\b${field}\\b`).test(text)) {
+      findings.push(`${file.rel}:${number}: sensitive field "${field}" is referenced in a log call`);
     }
   }
-  return achados;
+  return findings;
 }
 
 /**
- * `mapeador-nomenclatura` — a convenção de nome do mapeador (§3, `to*`/
- * `*To*`) tem lei, mas nenhum outro verificador a cobra: `projecao-contrato`, `payload-camelcase` e
- * `sensivel-em-saida` só ENXERGAM função cujo nome já casa `PADRAO_NOME_PROJECAO` — uma função de
+ * `mapper-naming` — a convenção de nome do mapeador (§3, `to*`/
+ * `*To*`) tem lei, mas nenhum outro verificador a cobra: `contract-projection`, `payload-camelcase` e
+ * `sensitive-in-output` só ENXERGAM função cujo nome já casa `PROJECTION_NAME_PATTERN` — uma função de
  * saída chamada `buildResponse` ou `serialize` nunca é sítio de projeção para as três, e um campo
  * sensível publicado por ela escapa das três, inclusive da que existe para bloquear PII.
  *
  * Esta regra é a fronteira: julga só o NOME de toda função EXPORTADA de nível de módulo num
- * arquivo de mapeador — nunca o conteúdo da projeção (`projecao-contrato`) nem o caixa
+ * arquivo de mapeador — nunca o conteúdo da projeção (`contract-projection`) nem o caixa
  * (`payload-camelcase`). Por isso não tem heurística: nome bate um dos dois moldes, ou reprova.
  *
  * Método de classe e propriedade de objeto (`chaveDeCache` — casos "metodo de classe que NAO
@@ -477,20 +475,20 @@ function achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis) {
  * limite, já declarado, do extrator de projeção (§7.2): esta regra fecha a lacuna do NOME solto,
  * não a da forma sintática.
  */
-const PADRAO_EXPORT_FUNCTION = /^export\s+(?:async\s+)?function\s+([A-Za-z_]\w*)/gm;
-const PADRAO_EXPORT_CONST_ARROW = /^export\s+const\s+([A-Za-z_]\w*)\s*=\s*(?:async\s*)?\(/gm;
-const PADRAO_DEF_PYTHON = /^def\s+([A-Za-z_]\w*)\s*\(/gm;
+const FUNCTION_EXPORT_PATTERN = /^export\s+(?:async\s+)?function\s+([A-Za-z_]\w*)/gm;
+const ARROW_CONST_EXPORT_PATTERN = /^export\s+const\s+([A-Za-z_]\w*)\s*=\s*(?:async\s*)?\(/gm;
+const PYTHON_DEF_PATTERN = /^def\s+([A-Za-z_]\w*)\s*\(/gm;
 
-/** Nome de SAÍDA (`toContract`/`to_contract`) — mesma âncora de `PADRAO_NOME_PROJECAO`, sem o `\b`
+/** Nome de SAÍDA (`toContract`/`to_contract`) — mesma âncora de `PROJECTION_NAME_PATTERN`, sem o `\b`
  * global: aqui o nome inteiro já está isolado pela extração, não precisa casar dentro de texto. */
-function ehNomeDeSaida(nome) {
-  return /^to[A-Z]\w*$/.test(nome) || /^to_\w+$/.test(nome);
+function isOutputName(name) {
+  return /^to[A-Z]\w*$/.test(name) || /^to_\w+$/.test(name);
 }
 
 /** Nome de conversão de BANCO (`rowToDomain`/`row_to_domain`) — "To"/"_to_" no MEIO do nome, nunca
- * no início (isso já é `ehNomeDeSaida`). */
-function ehNomeDeConversaoBanco(nome) {
-  return /[a-z0-9]To[A-Z]\w*$/.test(nome) || (/_to_/.test(nome) && !nome.startsWith('to_'));
+ * no início (isso já é `isOutputName`). */
+function isDatabaseConversionName(name) {
+  return /[a-z0-9]To[A-Z]\w*$/.test(name) || (/_to_/.test(name) && !name.startsWith('to_'));
 }
 
 /** Toda função EXPORTADA de nível de módulo, num arquivo de mapeador — TS/JS: `export function` e
@@ -498,228 +496,227 @@ function ehNomeDeConversaoBanco(nome) {
  * "público" pela convenção do próprio código-base (prefixo `_` = privado, mesmo critério de
  * `scripts/migrations.py`). Método/propriedade dentro de classe ou objeto nunca casa `^` — a âncora
  * de início de linha já os exclui, porque vêm indentados. */
-function funcoesExportadasDoMapeador(arquivo) {
-  const texto = textoDeCodigo(arquivo);
-  const nomes = [];
-  if (arquivo.rel.endsWith('.py')) {
-    for (const m of texto.matchAll(PADRAO_DEF_PYTHON)) {
-      if (!m[1].startsWith('_')) nomes.push(m[1]);
+function mapperExportedFunctions(file) {
+  const text = codeText(file);
+  const names = [];
+  if (file.rel.endsWith('.py')) {
+    for (const m of text.matchAll(PYTHON_DEF_PATTERN)) {
+      if (!m[1].startsWith('_')) names.push(m[1]);
     }
-    return nomes;
+    return names;
   }
-  for (const m of texto.matchAll(PADRAO_EXPORT_FUNCTION)) nomes.push(m[1]);
-  for (const m of texto.matchAll(PADRAO_EXPORT_CONST_ARROW)) nomes.push(m[1]);
-  return nomes;
+  for (const m of text.matchAll(FUNCTION_EXPORT_PATTERN)) names.push(m[1]);
+  for (const m of text.matchAll(ARROW_CONST_EXPORT_PATTERN)) names.push(m[1]);
+  return names;
 }
 
 export default [
   {
-    id: 'contrato',
+    id: 'contract',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const spec = specDe(ctx);
-      if (spec === null) return ['contract/openapi.yaml ausente'];
+    check(ctx) {
+      const spec = specOf(ctx);
+      if (spec === null) return ['contract/openapi.yaml is missing'];
       // DONA de "spec ilegivel": esta regra ja e a dona de o contrato existir e servir de fonte.
       // Ilegivel e da mesma classe que ausente — o arquivo esta la e nao pode ser usado.
       // UMA mensagem mesmo quando as duas leituras falham: e um defeito so, com um conserto so.
-      const falhas = leiturasFalhas(spec.conteudo);
-      if (falhas.length > 0) return [mensagemIlegivel(falhas)];
-      return OBRIGATORIAS
-        .filter((rota) => !spec.conteudo.includes(`${rota}:`))
-        .map((rota) => `contract/openapi.yaml nao declara a rota obrigatoria "${rota}"`);
+      const failures = failedReads(spec.content);
+      if (failures.length > 0) return [unreadableMessage(failures)];
+      return REQUIRED
+        .filter((route) => !spec.content.includes(`${route}:`))
+        .map((route) => `contract/openapi.yaml does not declare the required route "${route}"`);
     },
   },
   {
-    id: 'rota-nomenclatura',
+    id: 'route-naming',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const spec = specDe(ctx);
+    check(ctx) {
+      const spec = specOf(ctx);
       // Spec ausente OU ilegivel e do `contract`; acusar aqui tambem so duplica o mesmo defeito.
       if (spec === null) return [];
 
       // Silencio SEPARADO por secao: `servers:` ilegivel nao cega a checagem de nome das rotas,
       // que so depende de `paths:`. Silenciar as duas juntas jogaria fora verificacao que da para
       // fazer — e o gate so deve deixar de verificar o que realmente nao conseguiu ler.
-      const falhas = leiturasFalhas(spec.conteudo);
-      const achados = falhas.includes('servers') ? [] : conferirServidor(ctx, spec.conteudo);
-      if (falhas.includes('paths')) return achados;
-      return achados.concat([...rotasDaSpec(spec.conteudo)].flatMap(conferirSegmentos));
+      const failures = failedReads(spec.content);
+      const findings = failures.includes('servers') ? [] : checkServer(ctx, spec.content);
+      if (failures.includes('paths')) return findings;
+      return findings.concat([...specRoutes(spec.content)].flatMap(checkSegments));
     },
   },
   {
-    id: 'contrato-sincronizado',
+    id: 'synchronized-contract',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const spec = specDe(ctx);
+    check(ctx) {
+      const spec = specOf(ctx);
       // Spec ausente OU com `paths:` ilegivel e do `contract`. Sem este silencio, uma spec que o
       // leitor nao alcanca faria esta regra AFIRMAR que toda rota do codigo falta no contrato —
       // falsidade, nao cegueira. So `paths:` importa aqui: `servers:` nao entra na comparacao.
-      if (spec === null || leiturasFalhas(spec.conteudo).includes('paths')) return [];
-      const naSpec = new Set([...rotasDaSpec(spec.conteudo)].map(normalizar));
-      const noCodigo = rotasDoCodigo(ctx);
+      if (spec === null || failedReads(spec.content).includes('paths')) return [];
+      const inSpec = new Set([...specRoutes(spec.content)].map(normalize));
+      const routesInCode = codeRoutes(ctx);
 
       // Nao achar rota nenhuma nao e conformidade — e cegueira. Dizer isso em voz alta e o que
       // impede a regra de "passar" num framework cujo registro de rota ela nao sabe ler.
-      if (noCodigo.size === 0) {
-        const temApi = ctx.codigo.some((a) => !a.eTeste && /^api\//.test(a.rel));
-        return temApi
-          ? ['nao foi possivel extrair rota do codigo — esta regra NAO verificou nada neste modulo']
+      if (routesInCode.size === 0) {
+        const hasApi = ctx.code.some((a) => !a.isTest && /^api\//.test(a.rel));
+        return hasApi
+          ? ['could not extract routes from the code — this rule did NOT verify anything in this module']
           : [];
       }
 
-      const achados = [];
-      for (const rota of noCodigo) {
-        if (!naSpec.has(rota)) achados.push(`rota "${rota}" existe no codigo e NAO no contract/openapi.yaml`);
+      const findings = [];
+      for (const route of routesInCode) {
+        if (!inSpec.has(route)) findings.push(`route "${route}" exists in the code but not in contract/openapi.yaml`);
       }
-      for (const rota of naSpec) {
-        if (!noCodigo.has(rota)) achados.push(`rota "${rota}" existe no contract/openapi.yaml e NAO no codigo`);
+      for (const route of inSpec) {
+        if (!routesInCode.has(route)) findings.push(`route "${route}" exists in contract/openapi.yaml but not in the code`);
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'projecao-contrato',
+    id: 'contract-projection',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const spec = specDe(ctx);
+    check(ctx) {
+      const spec = specOf(ctx);
       // Spec ausente OU com `paths:` ilegivel e do `contract`; acusar aqui so duplica o defeito.
       // Sem isto, spec que o leitor nao alcanca zera `declaradas` e a regra acusaria TODO campo
       // projetado. Os schemas de resposta vivem dentro de `paths:`; `servers:` nao afeta isto.
-      if (spec === null || leiturasFalhas(spec.conteudo).includes('paths')) return [];
+      if (spec === null || failedReads(spec.content).includes('paths')) return [];
 
-      const projetadas = chavesDaProjecao(ctx);
-      const temMapeador = ctx.codigo.some((a) => !a.eTeste && /mapper/i.test(a.rel));
-      if (projetadas.length === 0) {
-        return temMapeador
-          ? ['nao foi possivel extrair projecao do mapeador — esta regra NAO verificou nada neste modulo']
+      const projected = projectionKeys(ctx);
+      const hasMapper = ctx.code.some((a) => !a.isTest && /mapper/i.test(a.rel));
+      if (projected.length === 0) {
+        return hasMapper
+          ? ['could not extract a projection from the mapper — this rule did NOT verify anything in this module']
           : [];
       }
 
-      const declaradas = propriedadesDeResposta(spec.conteudo);
-      if (declaradas.size === 0) {
-        return ['nao foi possivel extrair propriedade de schema de RESPOSTA do openapi.yaml — esta regra NAO verificou nada neste modulo'];
+      const declared = allResponseProperties(spec.content);
+      if (declared.size === 0) {
+        return ['could not extract a response-schema property from openapi.yaml — this rule did NOT verify anything in this module'];
       }
-      return divergenciasDaProjecao(projetadas, declaradas);
+      return projectionDivergences(projected, declared);
     },
   },
   {
     id: 'payload-camelcase',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const { chave, arquivo } of chavesDaProjecao(ctx)) {
-        if (!/^[a-z][A-Za-z0-9]*$/.test(chave)) {
-          achados.push(`${arquivo}: campo "${chave}" na projecao nao e camelCase — o contrato fala camelCase`);
+    check(ctx) {
+      const findings = [];
+      for (const { key, arquivo: file } of projectionKeys(ctx)) {
+        if (!/^[a-z][A-Za-z0-9]*$/.test(key)) {
+          findings.push(`${file}: field "${key}" in the projection is not camelCase — the contract uses camelCase`);
         }
       }
-      const spec = specDe(ctx);
-      if (spec === null) return achados;
-      for (const achado of trechosDeResposta(spec.conteudo).matchAll(/^\s{6,}([a-z_][\w]*)\s*:\s*\{\s*type:/gm)) {
-        if (/_/.test(achado[1])) {
-          achados.push(`contract/openapi.yaml: propriedade de resposta "${achado[1]}" em snake_case — use camelCase`);
+      const spec = specOf(ctx);
+      if (spec === null) return findings;
+      for (const finding of responseSnippets(spec.content).matchAll(/^\s{6,}([a-z_][\w]*)\s*:\s*\{\s*type:/gm)) {
+        if (/_/.test(finding[1])) {
+          findings.push(`contract/openapi.yaml: response property "${finding[1]}" is snake_case — use camelCase`);
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'saida-sensivel',
+    id: 'sensitive-output',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const sensiveis = ctx.manifesto?.sensitiveFields ?? [];
-      const spec = specDe(ctx);
-      if (sensiveis.length === 0 || spec === null) return [];
-      const resposta = trechosDeResposta(spec.conteudo);
-      return sensiveis
-        .filter((campo) => new RegExp(`\\b${campo}\\b`).test(resposta))
-        .map((campo) => `campo sensivel "${campo}" aparece em schema de RESPOSTA do openapi.yaml`);
+    check(ctx) {
+      const sensitive = ctx.manifest?.sensitiveFields ?? [];
+      const spec = specOf(ctx);
+      if (sensitive.length === 0 || spec === null) return [];
+      const response = responseSnippets(spec.content);
+      return sensitive
+        .filter((field) => new RegExp(`\\b${field}\\b`).test(response))
+        .map((field) => `sensitive field "${field}" appears in an openapi.yaml response schema`);
     },
   },
   {
-    id: 'sensivel-em-saida',
+    id: 'sensitive-in-output',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const sensiveis = new Set(ctx.manifesto?.sensitiveFields ?? []);
-      if (sensiveis.size === 0) return [];
-      const achados = [];
+    check(ctx) {
+      const sensitive = new Set(ctx.manifest?.sensitiveFields ?? []);
+      if (sensitive.size === 0) return [];
+      const findings = [];
 
-      for (const { chave, arquivo } of chavesDaProjecao(ctx)) {
-        if (sensiveis.has(chave)) {
-          achados.push(`${arquivo}: campo sensivel "${chave}" na projecao de saida — mantenha fora, ou publique mascarado`);
+      for (const { key, arquivo: file } of projectionKeys(ctx)) {
+        if (sensitive.has(key)) {
+          findings.push(`${file}: sensitive field "${key}" appears in the output projection — omit it or publish a masked value`);
         }
       }
       // O logger REDIGE por nome; citar o campo direto numa chamada de log burla a redacao.
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          if (!CHAMADA_DE_LOG_VERBOS.test(texto)) continue;
-          achados.push(...achadosDeCampoSensivelNaLinha(arquivo, numero, texto, sensiveis));
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        for (const { number, text } of file.codeLines) {
+          if (!LOG_CALL_VERBS.test(text)) continue;
+          findings.push(...sensitiveFieldFindingsInLine(file, number, text, sensitive));
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'mapeador-nomenclatura',
+    id: 'mapper-naming',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste || !/mapper/i.test(arquivo.rel)) continue;
-        for (const nome of funcoesExportadasDoMapeador(arquivo)) {
-          if (ehNomeDeSaida(nome) || ehNomeDeConversaoBanco(nome)) continue;
-          achados.push(`${arquivo.rel}: funcao exportada "${nome}" nao segue a convencao do `
-            + 'mapeador (saida: to<Algo>/to_<algo>; banco: <algo>To<Algo>/<algo>_to_<algo>) — '
-            + 'renomeie, ou mova esta funcao para fora do mapeador');
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest || !/mapper/i.test(file.rel)) continue;
+        for (const name of mapperExportedFunctions(file)) {
+          if (isOutputName(name) || isDatabaseConversionName(name)) continue;
+          findings.push(`${file.rel}: exported function "${name}" does not follow the mapper naming convention `
+            + '(output: to<Something>/to_<something>; database: <something>To<Something>/<something>_to_<something>) — '
+            + 'rename it or move it out of the mapper');
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'resumo-exportado',
+    id: 'exported-summary',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      // UMA direcao so, como `projecao-contrato`: `false` nao proibe nada. O modulo que nao entra
+    check(ctx) {
+      // UMA direcao so, como `contract-projection`: `false` nao proibe nada. O modulo que nao entra
       // no dashboard pode ter `total` no `/resumo` dele sem que isso seja defeito de coisa alguma.
-      if (ctx.manifesto?.exportsSummary !== true) return [];
+      if (ctx.manifest?.exportsSummary !== true) return [];
 
-      const spec = specDe(ctx);
+      const spec = specOf(ctx);
       // Spec ausente OU com `paths:` ilegivel e do `contract`. Sem este silencio, "nao consegui ler"
       // viraria "nao declara" — afirmar ausencia do que nao se leu manda apagar o que esta certo.
-      if (spec === null || leiturasFalhas(spec.conteudo).includes('paths')) return [];
+      if (spec === null || failedReads(spec.content).includes('paths')) return [];
 
-      const declaradas = propriedadesDaResposta(spec.conteudo, '/resumo', 'get', '200');
+      const declared = responseProperties(spec.content, '/resumo', 'get', '200');
       // `/resumo` ausente da spec e do `contract`, que ja a cobra como rota obrigatoria.
-      if (declaradas === null || declaradas.has('total')) return [];
-      return ['exportsSummary: true mas o schema 200 de GET /resumo nao declara "total" — o agregador '
-        + 'cross-modulo compoe SEM lista fixa e so conhece a forma minima; sem ela, agregar exigiria '
-        + 'um caso por modulo dentro do conector. Declare "total" (inteiro) na resposta de /resumo, '
-        + 'ou exportsSummary: false'];
+      if (declared === null || declared.has('total')) return [];
+      return ['exportsSummary: true, but the GET /resumo 200 schema does not declare "total" — the cross-module aggregator '
+        + 'composes results without a fixed module list and only understands the minimum shape. Declare integer "total" '
+        + 'in the /resumo response, or set exportsSummary to false'];
     },
   },
   {
-    id: 'entrada-allowlist',
+    id: 'input-allowlist',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      // A simetrica da `saida-crua`, na direcao da ENTRADA (02-contrato-e-dados §3.2: "allowlist de
+    check(ctx) {
+      // A simetrica da `raw-output`, na direcao da ENTRADA (02-contrato-e-dados §3.2: "allowlist de
       // campos — payload com campo desconhecido e rejeitado, nao ignorado").
       //
       // NAO proibe o corpo de ser passado adiante: o molde faz `criar(req.body as unknown, ...)`, e
       // a funcao chamada e justamente quem aplica a allowlist. Proibir a passagem acusaria o codigo
       // CORRETO. O que se proibe e o corpo virar entidade sem passar por ninguem — as tres formas
       // em que isso acontece.
-      const padroes = [
+      const patterns = [
         // 1. Espalhar o corpo dentro de um objeto/entidade: `{ ...req.body }`, `{**corpo}`.
         /\{\s*\*{2}\s*(?:req(?:uest)?\.)?(?:body|corpo)\b|\.{3}\s*(?:req(?:uest)?\.)?(?:body|corpo)\b/,
         // 2. Corpo direto ao repositorio: `repositorio.inserir(req.body)`.
@@ -727,30 +724,30 @@ export default [
         // 3. Atribuicao em massa sobre uma entidade ja existente.
         /Object\.assign\([^,)]+,\s*(?:req(?:uest)?\.)?(?:body|corpo)\b/,
       ];
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          if (padroes.some((padrao) => padrao.test(texto))) {
-            achados.push(`${arquivo.rel}:${numero}: corpo da requisicao vira entidade sem allowlist`
-              + ' — monte a entrada campo a campo, e rejeite campo desconhecido em vez de ignora-lo');
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        for (const { number, text } of file.codeLines) {
+          if (patterns.some((pattern) => pattern.test(text))) {
+            findings.push(`${file.rel}:${number}: the request body becomes an entity without an allowlist`
+              + ' — build the input field by field and reject unknown fields instead of ignoring them');
           }
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'saida-crua',
+    id: 'raw-output',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        achados.push(...achadosSaidaCruaDoArquivo(arquivo));
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        findings.push(...fileRawOutputFindings(file));
       }
-      return achados;
+      return findings;
     },
   },
 ];

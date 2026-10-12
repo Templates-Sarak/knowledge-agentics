@@ -16,110 +16,110 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PASTA_SCHEMAS = join(dirname(fileURLToPath(import.meta.url)), 'schemas');
-const memoria = new Map();
+const SCHEMAS_DIR = join(dirname(fileURLToPath(import.meta.url)), 'schemas');
+const cache = new Map();
 
 /**
  * Carrega um schema por nome, uma vez só.
  * Schema é ASSET DO GATE, não dado do módulo — por isso ler daqui não fere a regra de que
  * regra nenhuma toca disco: o que não pode ser lido pela regra é o arquivo do módulo.
  */
-export function carregarEsquema(nome) {
-  if (memoria.has(nome)) return memoria.get(nome);
-  const bruto = readFileSync(join(PASTA_SCHEMAS, `${nome}.schema.json`), 'utf8').replace(/^﻿/, '');
-  const esquema = JSON.parse(bruto);
-  memoria.set(nome, esquema);
-  return esquema;
+export function loadSchema(name) {
+  if (cache.has(name)) return cache.get(name);
+  const raw = readFileSync(join(SCHEMAS_DIR, `${name}.schema.json`), 'utf8').replace(/^﻿/, '');
+  const schema = JSON.parse(raw);
+  cache.set(name, schema);
+  return schema;
 }
 
-const TIPOS = {
-  string: (valor) => typeof valor === 'string',
-  number: (valor) => typeof valor === 'number' && Number.isFinite(valor),
-  integer: (valor) => Number.isInteger(valor),
-  boolean: (valor) => typeof valor === 'boolean',
-  object: (valor) => typeof valor === 'object' && valor !== null && !Array.isArray(valor),
-  array: (valor) => Array.isArray(valor),
-  null: (valor) => valor === null,
+const TYPES = {
+  string: (value) => typeof value === 'string',
+  number: (value) => typeof value === 'number' && Number.isFinite(value),
+  integer: (value) => Number.isInteger(value),
+  boolean: (value) => typeof value === 'boolean',
+  object: (value) => typeof value === 'object' && value !== null && !Array.isArray(value),
+  array: (value) => Array.isArray(value),
+  null: (value) => value === null,
 };
 
-function tipoBate(valor, tipo) {
-  const aceitos = Array.isArray(tipo) ? tipo : [tipo];
-  return aceitos.some((nome) => TIPOS[nome]?.(valor) === true);
+function typeMatches(value, type) {
+  const accepted = Array.isArray(type) ? type : [type];
+  return accepted.some((name) => TYPES[name]?.(value) === true);
 }
 
-function validarEscalar(valor, esquema, caminho) {
-  const achados = [];
-  if (esquema.enum !== undefined && !esquema.enum.includes(valor)) {
-    achados.push(`${caminho}: "${valor}" fora do vocabulario [${esquema.enum.join(', ')}]`);
+function validateScalar(value, schema, path) {
+  const findings = [];
+  if (schema.enum !== undefined && !schema.enum.includes(value)) {
+    findings.push(`${path}: "${value}" is outside the allowed values [${schema.enum.join(', ')}]`);
   }
-  if (esquema.const !== undefined && valor !== esquema.const) {
-    achados.push(`${caminho}: deve ser exatamente "${esquema.const}"`);
+  if (schema.const !== undefined && value !== schema.const) {
+    findings.push(`${path}: must be exactly "${schema.const}"`);
   }
-  if (esquema.pattern !== undefined && typeof valor === 'string' && !new RegExp(esquema.pattern).test(valor)) {
-    achados.push(`${caminho}: "${valor}" nao casa o padrao ${esquema.pattern}`);
+  if (schema.pattern !== undefined && typeof value === 'string' && !new RegExp(schema.pattern).test(value)) {
+    findings.push(`${path}: "${value}" does not match the pattern ${schema.pattern}`);
   }
-  if (esquema.minLength !== undefined && typeof valor === 'string' && valor.length < esquema.minLength) {
-    achados.push(`${caminho}: tamanho minimo ${esquema.minLength}`);
+  if (schema.minLength !== undefined && typeof value === 'string' && value.length < schema.minLength) {
+    findings.push(`${path}: minimum length is ${schema.minLength}`);
   }
-  if (esquema.minimum !== undefined && typeof valor === 'number' && valor < esquema.minimum) {
-    achados.push(`${caminho}: minimo ${esquema.minimum}`);
+  if (schema.minimum !== undefined && typeof value === 'number' && value < schema.minimum) {
+    findings.push(`${path}: minimum is ${schema.minimum}`);
   }
-  if (esquema.maximum !== undefined && typeof valor === 'number' && valor > esquema.maximum) {
-    achados.push(`${caminho}: maximo ${esquema.maximum}`);
+  if (schema.maximum !== undefined && typeof value === 'number' && value > schema.maximum) {
+    findings.push(`${path}: maximum is ${schema.maximum}`);
   }
-  return achados;
+  return findings;
 }
 
-function validarObjeto(valor, esquema, caminho) {
-  const achados = [];
-  const propriedades = esquema.properties ?? {};
+function validateObject(value, schema, path) {
+  const findings = [];
+  const properties = schema.properties ?? {};
 
-  for (const exigida of esquema.required ?? []) {
-    if (valor[exigida] === undefined) achados.push(`${caminho}: campo obrigatorio ausente "${exigida}"`);
+  for (const required of schema.required ?? []) {
+    if (value[required] === undefined) findings.push(`${path}: required field "${required}" is missing`);
   }
-  if (esquema.additionalProperties === false) {
-    for (const chave of Object.keys(valor)) {
-      if (chave.startsWith('_')) continue;
-      if (propriedades[chave] === undefined) achados.push(`${caminho}: campo nao previsto "${chave}"`);
+  if (schema.additionalProperties === false) {
+    for (const key of Object.keys(value)) {
+      if (key.startsWith('_')) continue;
+      if (properties[key] === undefined) findings.push(`${path}: unexpected field "${key}"`);
     }
   }
-  for (const [chave, subEsquema] of Object.entries(propriedades)) {
-    if (valor[chave] === undefined) continue;
-    achados.push(...validar(valor[chave], subEsquema, `${caminho}.${chave}`));
+  for (const [key, subSchema] of Object.entries(properties)) {
+    if (value[key] === undefined) continue;
+    findings.push(...validate(value[key], subSchema, `${path}.${key}`));
   }
-  return achados;
+  return findings;
 }
 
-function validarArranjo(valor, esquema, caminho) {
-  const achados = [];
-  if (esquema.minItems !== undefined && valor.length < esquema.minItems) {
-    achados.push(`${caminho}: precisa de ao menos ${esquema.minItems} item(ns)`);
+function validateArray(value, schema, path) {
+  const findings = [];
+  if (schema.minItems !== undefined && value.length < schema.minItems) {
+    findings.push(`${path}: must contain at least ${schema.minItems} item(s)`);
   }
-  if (esquema.uniqueItems === true && new Set(valor.map((i) => JSON.stringify(i))).size !== valor.length) {
-    achados.push(`${caminho}: itens duplicados`);
+  if (schema.uniqueItems === true && new Set(value.map((i) => JSON.stringify(i))).size !== value.length) {
+    findings.push(`${path}: duplicate items are not allowed`);
   }
-  if (esquema.items !== undefined) {
-    valor.forEach((item, indice) => achados.push(...validar(item, esquema.items, `${caminho}[${indice}]`)));
+  if (schema.items !== undefined) {
+    value.forEach((item, index) => findings.push(...validate(item, schema.items, `${path}[${index}]`)));
   }
-  return achados;
+  return findings;
 }
 
 /** Valida um valor contra um esquema. Devolve a lista de achados (vazia = conforme). */
-export function validar(valor, esquema, caminho = '$') {
-  if (esquema === undefined || esquema === true) return [];
+export function validate(value, schema, path = '$') {
+  if (schema === undefined || schema === true) return [];
 
-  if (esquema.oneOf !== undefined) {
-    const conforme = esquema.oneOf.some((alternativa) => validar(valor, alternativa, caminho).length === 0);
-    return conforme ? [] : [`${caminho}: nao casa nenhuma das formas aceitas`];
+  if (schema.oneOf !== undefined) {
+    const conforms = schema.oneOf.some((alternative) => validate(value, alternative, path).length === 0);
+    return conforms ? [] : [`${path}: does not match any accepted form`];
   }
 
-  if (esquema.type !== undefined && !tipoBate(valor, esquema.type)) {
-    const esperado = Array.isArray(esquema.type) ? esquema.type.join('|') : esquema.type;
-    return [`${caminho}: esperado ${esperado}, veio ${valor === null ? 'null' : typeof valor}`];
+  if (schema.type !== undefined && !typeMatches(value, schema.type)) {
+    const expected = Array.isArray(schema.type) ? schema.type.join('|') : schema.type;
+    return [`${path}: expected ${expected}, received ${value === null ? 'null' : typeof value}`];
   }
 
-  const achados = validarEscalar(valor, esquema, caminho);
-  if (TIPOS.object(valor)) achados.push(...validarObjeto(valor, esquema, caminho));
-  if (TIPOS.array(valor)) achados.push(...validarArranjo(valor, esquema, caminho));
-  return achados;
+  const findings = validateScalar(value, schema, path);
+  if (TYPES.object(value)) findings.push(...validateObject(value, schema, path));
+  if (TYPES.array(value)) findings.push(...validateArray(value, schema, path));
+  return findings;
 }

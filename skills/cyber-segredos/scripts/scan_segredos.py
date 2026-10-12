@@ -53,7 +53,7 @@ def mascarar(trecho: str) -> str:
 
 def achados_do_texto(nome_arquivo: str, texto: str, padroes) -> list:
     """Núcleo: acha os `padroes` (lista de `(tipo, regex_compilado)`) no TEXTO já lido, linha
-    a linha. Puro — não toca `fs`. É o que o `--autoteste` prova com fixtures em memória."""
+    a linha. Puro — não toca `fs`. É o que o `--selftest` prova com fixtures em memória."""
     achados = []
     for num, linha in enumerate(texto.splitlines(), start=1):
         for tipo, regex in padroes:
@@ -116,12 +116,31 @@ def autoteste() -> int:
     if mascarar(chave_aws) != "AKIA...MN":
         falhas.append("mascarar deveria manter só prefixo/sufixo de trecho longo")
 
+    catalogo = carregar_config(Path(__file__).with_name("config.json"))
+    padrao_conexao = re.compile(catalogo["padroes"]["String de conexao"])
+    def database_url(user, password):
+        return f'DATABASE_URL="postgres://{user}:{password}@db:5432/app"'
+    conexao_interpolada = database_url(
+        "${DEPLOY_DB_USER:?required}", "${DEPLOY_DB_PASSWORD:?required}"
+    )
+    conexao_variavel = database_url("$DB_USER", "$DB_PASSWORD")
+    senha_literal = "-".join(("literal", "password"))
+    conexao_literal = database_url("app", senha_literal)
+    conexao_senha_variavel = database_url("app", "$DB_PASSWORD")
+    conexao_usuario_variavel = database_url("$DB_USER", senha_literal)
+    if padrao_conexao.search(conexao_interpolada) or padrao_conexao.search(conexao_variavel):
+        falhas.append("connection-string rule should ignore environment-variable interpolation")
+    if any(padrao_conexao.search(value) is None for value in (
+        conexao_literal, conexao_senha_variavel, conexao_usuario_variavel
+    )):
+        falhas.append("connection-string rule should detect a literal password")
+
     for falha in falhas:
         print(f"  falha  {falha}")
     if falhas:
-        print(f"autoteste (scan_segredos): {len(falhas)} falha(s)")
+        print(f"self-test (scan_segredos): {len(falhas)} failure(s)")
         return 1
-    print("autoteste (scan_segredos): 5/5 ok")
+    print("self-test (scan_segredos): 8/8 passed")
     return 0
 
 
@@ -138,11 +157,11 @@ def main() -> None:
     )
     parser.add_argument("--config", default=str(Path(__file__).parent / "config.json"))
     parser.add_argument(
-        "--autoteste", action="store_true", help="Roda a suite interna, nao toca disco"
+        "--selftest", action="store_true", help="Roda a suite interna, nao toca disco"
     )
     args = parser.parse_args()
 
-    if args.autoteste:
+    if args.selftest:
         sys.exit(autoteste())
 
     try:

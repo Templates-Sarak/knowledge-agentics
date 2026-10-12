@@ -143,8 +143,8 @@ node tools/gate/validate.mjs --extraction <caminho> pronto para virar serviço?
 node tools/gate/validate.mjs --json <caminho>       saída para máquina
 ```
 
-Só **duas** regras são genuinamente do repositório e precisam de visão global: `import-lateral` (nenhum módulo
-importa outro) e `consome-ciclo` (não há ciclo no grafo). Ambas rodam no `--all`.
+Só **duas** regras são genuinamente do repositório e precisam de visão global: `lateral-import` (nenhum módulo
+importa outro) e `consumes-cycle` (não há ciclo no grafo). Ambas rodam no `--all`.
 
 **O template não traz pipeline de CI/CD**, de propósito: config de CI é específica de provedor, e a regra não
 pode morar num lugar que se perde ao trocar de provedor. O gate é agnóstico e tem contrato estável (recebe
@@ -188,7 +188,7 @@ clone precisa rodar `git config core.hooksPath .githooks` para ativá-los (a con
 impede isso. **Quem cobra sem esse furo é o CI**, nunca o hook local: instalar o hook não substitui
 pipeline, antecipa feedback — a mesma frase, e o mesmo motivo, do `hooks/README.md` da base para os
 hooks do agente ("Quem protege o repositório independente de quem edita é o CI"). O catálogo cobra o
-lado que É verificável sem rodar git: `pre-commit-instalado` (04-regras.md §4.4) prova que o artefato
+lado que É verificável sem rodar git: `pre-commit-installed` (04-regras.md §4.4) prova que o artefato
 existe e referencia a cadeia; a regra 74. Ativação e furo ficam fora do que um verificador estático
 consegue afirmar (04-regras.md §7.2).
 
@@ -238,7 +238,7 @@ resta: um CVE novo sem correção disponível, que deixaria vermelho um build qu
 ninguém ter tocado em código.
 
 **Vocabulário fechado de segredo, sem entropia.** `ci-security.mjs` reconhece nome de chave
-(`PADRAO_CREDENCIAL`, já usado por `gateway-credencial`/`segredo-em-publico`) atribuído a um literal, e
+(`CREDENTIAL_PATTERN`, já usado por `gateway-credential`/`secret-in-public`) atribuído a um literal, e
 valor de token com prefixo de fornecedor inequívoco (AWS, GitHub, Google, Slack, Stripe, npm, JWT,
 cabeçalho de chave privada) — cópia comentada do catálogo canônico de `skills/cyber-segredos`, sem as
 formas genéricas (heurística de entropia, "Bearer" solto, "segredo atribuído" sem sufixo fechado, string
@@ -409,7 +409,7 @@ dado automática, sem *lock* multi-processo) — os limites que restam estão em
 
 **Host.** O processo escuta no `ROOT_API_HOST` (chave da raiz, em `project.json:requiredEnv`, lida pelo
 `composition.*` nos três bindings): loopback em dev, `0.0.0.0` em container. Sem default embutido — a falta
-derruba o boot nomeando a chave (`fallback-raiz`). A simetria é deliberada: sem a chave, o Express escutaria
+derruba o boot nomeando a chave (`root-fallback`). A simetria é deliberada: sem a chave, o Express escutaria
 em todas as interfaces (expondo o dev na rede local) e o uvicorn só em loopback (inalcançável em container).
 
 **Desligamento gracioso.** Ao receber SIGTERM ou SIGINT (SIGBREAK no Windows, onde o sinal gracioso que
@@ -442,7 +442,7 @@ continua possível e se publica pela skill `deploy-docker-microsservico`. Todo p
 
 **O ambiente que só o deploy lê mora em `deploy/.env`** (real, gitignored) **+ `deploy/.env.example`**
 (versionado) — nunca no `.env` da raiz, porque o `sync-env` é dono dele e move para a seção `ORFAS` toda chave
-que nenhum manifesto exige (ADR-004), e declarar `DEPLOY_*` em `project.json` faria `env-raiz-declarado`
+que nenhum manifesto exige (ADR-004), e declarar `DEPLOY_*` em `project.json` faria `root-env-declared`
 acusar "declarada e sem leitor". `tools/docker-up.mjs` passa os dois `--env-file` na ordem certa (o segundo
 vence).
 
@@ -457,7 +457,7 @@ regeneração. `--check` reprova se divergirem dos manifestos (mesmo modelo de `
 **`ROOT_API_HOST` no container.** O `.env` de dev guarda loopback, e com isso ninguém alcança o processo de
 dentro do container. O `compose.yml` o sobrescreve no `environment:` do serviço `app` (`0.0.0.0`): o host de
 escuta é **propriedade do container**, não do ambiente, e `environment:` vence `env_file:`. O processo
-continua **sem default embutido** (§9.4, `fallback-raiz`): se a linha sumir, o boot cai nomeando a chave. A
+continua **sem default embutido** (§9.4, `root-fallback`): se a linha sumir, o boot cai nomeando a chave. A
 alternativa descartada foi `ENV ROOT_API_HOST=0.0.0.0` no `Dockerfile`: o `env_file` do compose a vence, e o
 `.env` de dev voltaria a ser o que o container lê.
 
@@ -469,8 +469,8 @@ ao `deploy/.env.example` e a chave `front` ao `config/deploy.json`; a partir da�
 (o gatilho é a presença de `deploy/nginx.conf`) e o gate passa a exigir os arquivos de front. Nada disto
 muda a doutrina.
 
-**O que o gate cobra** (§4.6 de `04-regras.md`): `container-presente`, `compose-variaveis-declaradas` e
-`dockerignore-segredo` (o `.env` — inclusive `modules/<id>/.env` e `deploy/.env` — fica fora do contexto de
+**O que o gate cobra** (§4.6 de `04-regras.md`): `container-present`, `compose-variables-declared` e
+`dockerignore-secret` (o `.env` — inclusive `modules/<id>/.env` e `deploy/.env` — fica fora do contexto de
 build). Dockerfile **bom** — não-root, sem `:latest`, healthcheck, porta em loopback, digest — é da skill
 (`validar_monolito.py`, para o legado), não lei do template: depende de decisão por provedor.
 
@@ -478,3 +478,20 @@ build). Dockerfile **bom** — não-root, sem `:latest`, healthcheck, porta em l
 publicação — a skill `deploy-docker-monolito` os traz, porque mudam por provedor. O template também não modela
 ambientes (nada de staging/produção, nenhum segredo de produção) e não traz CD (ADR-012, que continua valendo
 nessa parte).
+
+## 9.6 Build do backend e configuração segura do container
+
+O `Dockerfile` do backend chama `tools/package.mjs --backend-only`: em uma imagem de backend, o script compila
+somente o backend e empacota seu artefato. `npm run build` mantém o comportamento completo — backend e build
+Vite dos módulos com `web/`; a imagem de front é dona desse build. Assim o build de front não roda dentro da
+imagem de backend e depois é descartado.
+
+O `create-project` executa `tools/sync-env.mjs` depois de copiar o template. O mesmo gerador usado por
+`create-module` deriva o `.env.example` da raiz dos manifestos, inclusive quando o projeto ainda não tem um
+módulo criado manualmente. O arquivo documenta os nomes das variáveis; valores reais continuam por ambiente.
+
+`deploy/compose.modules.yml` deriva URLs com `${DEPLOY_DB_USER:?required}` e
+`${DEPLOY_DB_PASSWORD:?required}`. A verificação de segredos só permite a URL quando usuário e senha são
+interpolados de variáveis de ambiente; credencial literal, inclusive quando apenas um dos dois campos é
+literal, continua sendo achado. `.gitleaks.toml` contém a mesma permissão restrita para que a varredura do
+staged e a verificação local usem o mesmo critério.

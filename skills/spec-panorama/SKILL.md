@@ -54,5 +54,5 @@ plan aberta apontando para item `⬜`/`✅`; e o `00-resumo.md` desatualizado em
 - [ ] Resumo regenerado com ≤ 70 linhas e `--checar` final com exit 0?
 
 ## Referências (Camada 3 — leia sob demanda)
-- `scripts/gerar_resumo.py` — gerador e verificador (só biblioteca padrão). `--autoteste` prova o núcleo
+- `scripts/gerar_resumo.py` — gerador e verificador (só biblioteca padrão). `--selftest` prova o núcleo
   com fixtures em memória, inclusive um projeto grande truncado dentro das 70 linhas.

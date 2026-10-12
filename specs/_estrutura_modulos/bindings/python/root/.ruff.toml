@@ -15,12 +15,12 @@ ignore = ["ANN401"]
 max-complexity = 10
 
 [lint.pylint]
-# gate: limiar-parametros
+# gate: parameters-threshold
 max-args = 4
-# gate: limiar-funcao — `max-statements` e o analogo mais proximo que o ruff oferece.
+# gate: function-threshold — `max-statements` e o analogo mais proximo que o ruff oferece.
 max-statements = 40
 
 [lint.per-file-ignores]
-# Teste tem outra economia — o gate ja o isenta das mesmas regras (`eTeste`). A lista acompanha
+# Teste tem outra economia — o gate ja o isenta das mesmas regras (`isTest`). A lista acompanha
 # a do pyproject.toml de cada modulo: raiz e modulo isentam o teste do MESMO conjunto.
 "**/tests/**" = ["ANN", "PLR0915", "PLR2004", "S101", "T20"]

@@ -35,11 +35,11 @@ reaparece como erro de gate em outro lugar, e o rastro se perde:
    `requirePermission("<antigo>:...")` do código.
 6. **Chaves de ambiente** — `<ANTIGO>_*` → `<ID>_*` (kebab→SCREAMING_SNAKE), no `.env`, no
    `.env.example` e em `module.json:requiredEnv`. **Decisão de HITL**: migrar todas as chaves agora, ou
-   declarar exceção temporária? Este item não tem meio-termo — `env-modulo` é estrito.
+   declarar exceção temporária? Este item não tem meio-termo — `env-module` é estrito.
 7. **Prefixo de tabela** — `data.prefix` = `<id>` em snake_case + `_`. **Migração com dado real: rotear para
    `db-migrations`** (expand-contract, backup, HITL) — nunca SQL de renomeação improvisado aqui.
    **Decisão de HITL, oferecida primeiro**: declarar exceção permanente em `compliance.json` com
-   `regra: "tabela-prefixo"` e um ADR justificando, **ou** renomear as tabelas de fato.
+   `regra: "table-prefix"` e um ADR justificando, **ou** renomear as tabelas de fato.
 ```
 
 ### Raio de alcance (medido antes do HITL) — cada item carrega o próprio número

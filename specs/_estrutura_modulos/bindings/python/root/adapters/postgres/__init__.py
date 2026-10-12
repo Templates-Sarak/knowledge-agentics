@@ -10,11 +10,11 @@ o proprio adapter (declarado, nao escondido — ver o rodape deste arquivo).
 
 `PostgresRepository`/`PostgresAudit` devolvem OBJETOS PROPRIOS (`_RegistroDoMolde`,
 `_PaginaDoMolde`), nunca `core.domain.Registro`/`core.ports.Pagina` do modulo chamador:
-`adapters/` nao pode importar de `modules/` (regra `adapter-isolado`), e um projeto pode ter varios
+`adapters/` nao pode importar de `modules/` (regra `isolated-adapter`), e um projeto pode ter varios
 modulos, cada um com o PROPRIO `core.domain`. As classes locais so precisam ter os MESMOS campos —
 Python resolve atributo por nome (duck typing), entao o mapeador do modulo nunca percebe a diferenca.
 
-SQL SEMPRE por parametro para VALOR (`%s`) — `sql-concatenado` (04-regras.md, escopo raiz) cobre
+SQL SEMPRE por parametro para VALOR (`%s`) — `concatenated-sql` (04-regras.md, escopo raiz) cobre
 este arquivo e reprova interpolacao (f-string, `.format(`, `%` seguido de espaco, concatenacao com
 `+`) numa linha que tambem tenha um verbo SQL. Identificador (schema/tabela) NUNCA aceita
 placeholder — so valor aceita —, e por isso cada consulta abaixo monta a CLAUSULA do verbo (sempre

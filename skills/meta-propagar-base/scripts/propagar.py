@@ -5,7 +5,7 @@
     python propagar.py --aplicar --id <id> [--id <id> ...] [--incluir-divergentes] [--incluir-adicionar?] [--mapa <arquivo>]
                        [--adotar <caminho> ...] [--manter <caminho> --motivo "<texto>" ...]
     python propagar.py --desfazer --id <id> [--id <id> ...] [--mapa <arquivo>]
-    python propagar.py --autoteste      prova o nucleo do plano, do aplicar/desfazer (`aplicacao.py`) e do relatorio
+    python propagar.py --selftest      prova o nucleo do plano, do aplicar/desfazer (`aplicacao.py`) e do relatorio
 
 O `--plano` e o `--relatorio` sao somente leitura (nem o `status` do mapa eles escrevem). O `--relatorio`
 (`relatorio.py`) e o resumo objetivo para o HITL de selecao: a atualizacao direta e as plans propostas. O
@@ -40,7 +40,7 @@ o `create-project.mjs` aplica o escopo, o escopo do sistema e trocado pelo MARCA
 
 Nucleo x casca: `classificar`, `decidir`, `planejar`, `fonte_direta`, `versao_igual`, `adotar`,
 `politica`, `travar`, `lacunas`, `marcador_de_escopo`, `escopo_do_pacote`, `sha1_comparavel`,
-`separar_mantidos` e `aplicar_mantidos` sao PUROS — o `--autoteste`
+`separar_mantidos` e `aplicar_mantidos` sao PUROS — o `--selftest`
 os prova. Git, temporarios e disco sao casca.
 """
 
@@ -64,9 +64,9 @@ BASE_DE_LINGUAGEM = "base-de-linguagem"  # universal SO se o binding esta na lis
 SO_APP = "so-app"  # universal em app; em site, projeto (o site nao recebe .agents/)
 
 # Primeira regra que casa vence. Cada uma cita de onde vem a posse — a classificacao nao e suposicao:
-#  [A] specs/_estrutura_modulos/tools/create-project.mjs — `instalarDoutrina` instala as cinco leis e o
+#  [A] specs/_estrutura_modulos/tools/create-project.mjs — `installDoctrine` instala as cinco leis e o
 #      README da doutrina em specs/arquitetura/ e as decisoes em specs/adr/000-decisoes-do-template.md;
-#      o comentario de PASTAS_COM_MARCADOR_ESCOPO: "`tools/` e vendorizado — ninguem edita".
+#      o comentario de DIRS_WITH_SCOPE_MARKER: "`tools/` e vendorizado — ninguem edita".
 #  [B] doutrina/adr/decisoes.md, ADR-009 linha 4: `tools/` e "ferramental vendorizado — o dono e outro
 #      repositorio".
 #  [C] specs/_estrutura_base/README.md §1.1: 00-knowledge e os dois prompts sao "Universal";
@@ -100,21 +100,21 @@ REGRAS_COMPILADAS = [(re.compile(padrao), categoria) for padrao, categoria in RE
 # Fonte de cada arquivo instalado — (instalado, fonte na base, tipos, instalador). A primeira que casa
 # vence; `{0}` e o grupo capturado. E o que a adocao por historico percorre.
 FONTES = [
-    (r"^tools/(.+)$", "specs/_estrutura_modulos/tools/{0}", ("app",), "create-project.mjs copiarTemplate (cpSync de tools/)"),
+    (r"^tools/(.+)$", "specs/_estrutura_modulos/tools/{0}", ("app",), "create-project.mjs copyTemplate (cpSync de tools/)"),
     (r"^\.agents/skills/meta-create-skill/(.+)$", "skills/meta-create-skill/{0}", ("app",), "init_repo.py instalar_estrutura_agents (copytree)"),
-    (r"^specs/arquitetura/(00-arquitetura|01-modulo|02-contrato-e-dados|03-operacao|04-regras)\.md$", "specs/_estrutura_modulos/doutrina/{0}.md", ("app",), "create-project.mjs instalarDoutrina (cpSync + aplicarEscopo)"),
-    (r"^specs/adr/000-decisoes-do-template\.md$", "specs/_estrutura_modulos/doutrina/adr/decisoes.md", ("app",), "create-project.mjs instalarDoutrina (renomeia + aplicarEscopo)"),
+    (r"^specs/arquitetura/(00-arquitetura|01-modulo|02-contrato-e-dados|03-operacao|04-regras)\.md$", "specs/_estrutura_modulos/doutrina/{0}.md", ("app",), "create-project.mjs installDoctrine (cpSync + applyScope)"),
+    (r"^specs/adr/000-decisoes-do-template\.md$", "specs/_estrutura_modulos/doutrina/adr/decisoes.md", ("app",), "create-project.mjs installDoctrine (renomeia + applyScope)"),
     (r"^specs/arquitetura/(00-base-[a-z]+\.md)$", "specs/_bases_arquiteturais/{0}", ("app", "site"), "init_repo.py instalar_base_de_linguagem (reescreve o titulo)"),
     (r"^specs/(.+)$", "specs/_estrutura_base/{0}", ("app",), "init_repo.py instalar_specs (copytree)"),
     (r"^specs/(.+)$", "specs/_estrutura_base_site/{0}", ("site",), "spec-site-fundacao (copia da arvore inteira)"),
 ]
-# Fonte onde o `create-project.mjs` aplica o escopo: `aplicarEscopo` percorre PASTAS_COM_MARCADOR_ESCOPO,
+# Fonte onde o `create-project.mjs` aplica o escopo: `applyScope` percorre DIRS_WITH_SCOPE_MARKER,
 # que inclui `specs/` — e, quando ele roda, so a doutrina esta em specs/ (o init_repo instala as specs depois).
 FONTE_COM_ESCOPO = "specs/_estrutura_modulos/doutrina/"
 CREATE_PROJECT = "specs/_estrutura_modulos/tools/create-project.mjs"
 # Arquivo TRANSFORMADO pelo instalador de um jeito que a comparacao nao normaliza: fica divergente.
 SEM_FONTE_DIRETA = [
-    (r"^specs/arquitetura/README\.md$", "comandos do binding (create-project.mjs aplicarComandosDoMapa)"),
+    (r"^specs/arquitetura/README\.md$", "comandos do binding (create-project.mjs applyMapCommands)"),
     (r"^\.agents/gerar_indice\.py$", "embutido no init_repo.py (GERADOR_INDICE)"),
 ]
 SO_H1 = ("specs/README.md", "specs/INDEX.md")
@@ -274,7 +274,7 @@ def fonte_direta(rel: str, tipo: str) -> tuple:
 
 
 def marcador_de_escopo(texto_create_project: str) -> str | None:
-    """Nucleo: o marcador que o `create-project.mjs` troca pelo escopo (`aplicarEscopo`), lido do proprio
+    """Nucleo: o marcador que o `create-project.mjs` troca pelo escopo (`applyScope`), lido do proprio
     arquivo — nunca escrito a mao aqui."""
     achado = MARCADOR_NO_CREATE_PROJECT.search(texto_create_project or "")
     return achado.group(1) if achado else None
@@ -764,7 +764,7 @@ def main() -> int:
     for fluxo in (sys.stdout, sys.stderr):
         if hasattr(fluxo, "reconfigure"):
             fluxo.reconfigure(encoding="utf-8", errors="replace")
-    if "--autoteste" in sys.argv[1:]:
+    if "--selftest" in sys.argv[1:]:
         return autoteste()
     args, raiz = _parser().parse_args(), raiz_da_base()
     if args.plano:
@@ -891,7 +891,7 @@ def autoteste() -> int:
     falhas = [nome for nome, caso in casos if not caso()]
     for nome in falhas:
         print(f"[FALHA] {nome}", file=sys.stderr)
-    print(f"propagar --autoteste: {len(casos) - len(falhas)}/{len(casos)} caso(s) verde")
+    print(f"propagar --selftest: {len(casos) - len(falhas)}/{len(casos)} caso(s) verde")
     return 1 if falhas else 0
 
 

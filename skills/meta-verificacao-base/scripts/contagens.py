@@ -12,7 +12,7 @@ contaria a lib como um sexto. A fonte de verdade de "o que é um hook" é `hooks
 está wireado lá é, por definição, o catálogo; nada além disso conta.
 
 Separado de `audit_base.py` por SRP. Núcleo × casca: `contagens_do_texto`/`divergencias` são puras
-(recebem texto/dicts, nunca tocam `fs`) — é o que o `--autoteste` prova com fixtures em memória.
+(recebem texto/dicts, nunca tocam `fs`) — é o que o `--selftest` prova com fixtures em memória.
 `contagens_reais`/`auditar_contagens` são a casca fina que lê `fs` e delega.
 """
 

@@ -18,13 +18,13 @@ Norma dona: `specs/arquitetura/04-regras.md` §4.5 (na base, `specs/_estrutura_m
 
 | Já é cobrado | Regra |
 |---|---|
-| `/health`, `/meta` e `/resumo` declarados | `contrato` |
-| a spec é legível pelo leitor de bloco do gate | `contrato` |
-| `servers[0].url` igual ao `basePath` do `module.json` | `rota-nomenclatura` |
-| nenhum segmento de path carrega verbo (PT ou EN) | `rota-nomenclatura` |
-| segmento em kebab-case; parâmetro de caminho em camelCase | `rota-nomenclatura` |
-| rotas do código e do `paths:` coincidem nos dois sentidos | `contrato-sincronizado` |
-| todo campo projetado pelo mapeador está num schema de resposta | `projecao-contrato` |
+| `/health`, `/meta` e `/resumo` declarados | `contract` |
+| a spec é legível pelo leitor de bloco do gate | `contract` |
+| `servers[0].url` igual ao `basePath` do `module.json` | `route-naming` |
+| nenhum segmento de path carrega verbo (PT ou EN) | `route-naming` |
+| segmento em kebab-case; parâmetro de caminho em camelCase | `route-naming` |
+| rotas do código e do `paths:` coincidem nos dois sentidos | `synchronized-contract` |
+| todo campo projetado pelo mapeador está num schema de resposta | `contract-projection` |
 | propriedade de resposta em camelCase | `payload-camelcase` |
 
 **Plural de recurso é convenção, não regra** (§3.1): escreva `/registros`, mas nenhum verificador o cobra —
@@ -42,7 +42,7 @@ paths:
   /registros/{hash}:
 ```
 
-Escrever `/api/v1/<module>/registros` dentro de `paths:` é erro — `rota-nomenclatura` compara
+Escrever `/api/v1/<module>/registros` dentro de `paths:` é erro — `route-naming` compara
 `servers[0].url` com o `basePath`, e o path sai relativo dali.
 
 **Bloco, nunca flow style.** O leitor do gate é linha a linha, sem dependência externa — é o que permite o
@@ -69,7 +69,7 @@ Nada disto o gate vê, e é onde a `test-api-contrato` trabalha:
 
 - **A resposta real bate com o schema?** O gate lê o texto da spec, não a saída do app.
 - **O schema mudou de forma?** Tipo alterado, campo que virou obrigatório, enum que perdeu valor, campo
-  removido — todos **breaking**, e `consome-contrato` não os enxerga (§7.2).
+  removido — todos **breaking**, e `consumes-contract` não os enxerga (§7.2).
 - **A descrição diz a verdade?** `summary` e `description` errados passam por qualquer verificador.
 
 ## Versão e evolução

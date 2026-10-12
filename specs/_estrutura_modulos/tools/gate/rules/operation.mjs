@@ -1,43 +1,43 @@
 /**
  * rules/operation.mjs — família "Operação" do catálogo (specs/arquitetura/04-regras.md §4.6).
- * ids: log, determinismo, gateway-credencial, random-inseguro, rota-publica-autenticada,
- *      cookie-seguro, token-em-armazenamento, permissao-literal, sql-concatenado, sql-no-modulo,
- *      segredo-em-log, container-presente, compose-variaveis-declaradas, dockerignore-segredo
+ * ids: log, determinism, gateway-credential, insecure-random, public-route-authenticated,
+ *      secure-cookie, token-in-storage, permission-literal, concatenated-sql, sql-in-module,
+ *      secret-in-log, container-present, compose-variables-declared, dockerignore-secret
  *
- * `sql-concatenado` e `segredo-em-log` são de escopo `root` e olham a fiação. Estão nesta família
- * porque é a de SEGURANÇA operacional — a mesma de `cookie-seguro` e `token-em-armazenamento` —, e
- * porque o vocabulário de credencial que `segredo-em-log` precisa já mora aqui. `sql-no-modulo` é a
- * gêmea de escopo `module` da primeira, e as duas dividem o discriminador (`ehSqlInjetado`).
+ * `concatenated-sql` e `secret-in-log` são de escopo `root` e olham a fiação. Estão nesta família
+ * porque é a de SEGURANÇA operacional — a mesma de `secure-cookie` e `token-in-storage` —, e
+ * porque o vocabulário de credencial que `secret-in-log` precisa já mora aqui. `sql-in-module` é a
+ * gêmea de escopo `module` da primeira, e as duas dividem o discriminador (`isInjectedSql`).
  *
  * Todas leem `arquivo.linhasCodigo`, nunca o conteúdo bruto: comentário e docstring não são
  * código, e a lei escrita num comentário não pode virar violação dela mesma. No molde isso não é
  * detalhe — o literal `"GET /health"` aparece três vezes em docstring explicando a cadeia de auth,
  * e sobre o conteúdo bruto ele viraria violação da própria regra que a docstring descreve.
  */
-import { ARQUIVOS_DE_CONTAINER, ARQUIVOS_DE_FRONT } from '../context.mjs';
-import { leiturasFalhas, normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
-import { textoDeCodigo } from '../text.mjs';
+import { CONTAINER_FILES, FRONT_FILES } from '../context.mjs';
+import { failedReads, normalize, specOperations, specOf } from '../spec.mjs';
+import { codeText } from '../text.mjs';
 
 /** `${VAR` do compose. O lookbehind descarta `$${VAR}`, o escape que entrega `${VAR}` ao container. */
-const INTERPOLACAO_DO_COMPOSE = /(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)/g;
+const COMPOSE_INTERPOLATION = /(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)/g;
 
 /**
  * Sufixo que denuncia CREDENCIAL numa chave de env. Vocabulário fechado, e o ÚNICO — exportado
- * porque `segredo-em-publico` (§4.4) faz a mesma pergunta sobre a mesma chave, por outro ângulo.
+ * porque `secret-in-public` (§4.4) faz a mesma pergunta sobre a mesma chave, por outro ângulo.
  * Uma segunda lista divergiria da primeira na primeira vez que alguém acrescentasse um sufixo.
  */
-export const PADRAO_CREDENCIAL = /_(API_KEY|SECRET|TOKEN|PASSWORD|SENHA|CLIENT_SECRET|PRIVATE_KEY)$/;
+export const CREDENTIAL_PATTERN = /_(API_KEY|SECRET|TOKEN|PASSWORD|SENHA|CLIENT_SECRET|PRIVATE_KEY)$/;
 
 /**
  * "Esta linha é uma instrução SQL." Vocabulário fechado, exportado como FONTE de regex porque duas
- * regras compõem a mesma lista com perguntas diferentes: `sql-concatenado` pergunta só isto, e o
+ * regras compõem a mesma lista com perguntas diferentes: `concatenated-sql` pergunta só isto, e o
  * `gateway-http` (§4.2) a compõe com o vocabulário de CONEXÃO (`createClient`, `new Pool`,
  * `.query(`) para perguntar "este gateway fala com banco?". Uma lista só — duas divergiriam no
  * primeiro verbo que alguém acrescentasse de um lado.
  */
-export const SQL_FONTE = 'select\\s+.*\\bfrom\\b|insert\\s+into|update\\s+\\w+\\s+set|delete\\s+from';
+export const SQL_SOURCE = 'select\\s+.*\\bfrom\\b|insert\\s+into|update\\s+\\w+\\s+set|delete\\s+from';
 
-const PADRAO_SQL = new RegExp(`\\b(?:${SQL_FONTE})`, 'i');
+const SQL_PATTERN = new RegExp(`\\b(?:${SQL_SOURCE})`, 'i');
 
 /**
  * O que transforma uma string SQL em INJEÇÃO: o valor entra na própria string, em vez de ir como
@@ -57,7 +57,7 @@ const PADRAO_SQL = new RegExp(`\\b(?:${SQL_FONTE})`, 'i');
  * Exigir o caractere de verdade fecha a porta ao retrocesso — é por isso que a forma correta não é
  * acusada.
  */
-const INTERPOLACAO_EM_SQL = [
+const INTERPOLATION_IN_SQL = [
   /\$\{/,
   /['"`]\s*\+\s*[^'"`\s]/,
   /\w\s*\+\s*['"`]/,
@@ -70,29 +70,29 @@ const INTERPOLACAO_EM_SQL = [
  * Onde um valor sai do processo e vai para o log. Duas peças, uma fonte cada, compostas de dois
  * jeitos diferentes por escopo:
  *
- *   - o LOGGER estruturado (`CHAMADA_DE_LOG_VERBOS_FONTE`), que é o certo em toda linguagem — os
+ *   - o LOGGER estruturado (`LOG_CALL_VERBOS_FONTE`), que é o certo em toda linguagem — os
  *     SETE verbos (`logger|log|logging` × `debug|info|warn|warning|error|critical|exception`) são
  *     a lista ÚNICA, exportada, e tanto a raiz quanto o módulo a usam sem cópia própria;
  *   - a SAÍDA DIRETA (`console.*`, `print(`), compartilhada com a regra `log` — que a proíbe no
  *     módulo, enquanto aqui (raiz) ela é apenas uma das formas de a credencial vazar.
  *
- * A RAIZ (`segredo-em-log`) compõe as duas: não há regra de módulo `log` cobrindo a raiz, então
- * `console`/`print` ali só seria pego aqui. O MÓDULO (`sensivel-em-saida`) usa só os verbos — a
+ * A RAIZ (`secret-in-log`) compõe as duas: não há regra de módulo `log` cobrindo a raiz, então
+ * `console`/`print` ali só seria pego aqui. O MÓDULO (`sensitive-in-output`) usa só os verbos — a
  * saída direta já tem dono (`log`), e compor as duas duplicaria a mensagem para o mesmo `console.log`.
  * A diferença agora é um FILTRO NOMEADO sobre a lista única, nunca uma segunda lista mantida à mão.
  */
-const CHAMADA_DE_LOG_VERBOS_FONTE = '\\b(?:logger|log|logging)\\.(?:debug|info|warn|warning|error|critical|exception)\\(';
-export const CHAMADA_DE_LOG_VERBOS = new RegExp(CHAMADA_DE_LOG_VERBOS_FONTE);
-const SAIDA_DIRETA_FONTE = '\\bconsole\\.\\w+\\(|(?:^|[^.\\w])print\\(';
-const SAIDA_DIRETA = new RegExp(SAIDA_DIRETA_FONTE);
-const CHAMADA_DE_LOG = new RegExp(`${CHAMADA_DE_LOG_VERBOS_FONTE}|${SAIDA_DIRETA_FONTE}`);
+const LOG_CALL_VERBS_SOURCE = '\\b(?:logger|log|logging)\\.(?:debug|info|warn|warning|error|critical|exception)\\(';
+export const LOG_CALL_VERBS = new RegExp(LOG_CALL_VERBS_SOURCE);
+const SOURCE_DIRECT_OUTPUT = '\\bconsole\\.\\w+\\(|(?:^|[^.\\w])print\\(';
+const DIRECT_OUTPUT = new RegExp(SOURCE_DIRECT_OUTPUT);
+const LOG_CALL = new RegExp(`${LOG_CALL_VERBS_SOURCE}|${SOURCE_DIRECT_OUTPUT}`);
 
 /**
  * Geradores NÃO-criptográficos. `Math.random` e o módulo `random` do Python são previsíveis por
  * construção: dada a semente, a sequência inteira sai. Para token, segredo ou id de sessão, isso é
  * o defeito — o certo é CSPRNG (`crypto.randomUUID`, `crypto.getRandomValues`, `secrets`).
  */
-const RNG_FRACO = /Math\.random\(|\brandom\.(?:random|randint|randrange|choice|choices|shuffle|sample|uniform)\(/;
+const WEAK_RNG = /Math\.random\(|\brandom\.(?:random|randint|randrange|choice|choices|shuffle|sample|uniform)\(/;
 
 /**
  * O que torna o RNG fraco um problema de SEGURANÇA, e não só de estilo: o valor gerado é usado
@@ -102,7 +102,7 @@ const RNG_FRACO = /Math\.random\(|\brandom\.(?:random|randint|randrange|choice|c
  * `hash` fica de FORA de propósito: aqui ele é o identificador público e universal do registro
  * (02-contrato-e-dados §4), não um segredo. Incluí-lo acusaria o gerador de id de todo adapter.
  */
-const PALAVRAS_SECRETAS = new Set([
+const SECRET_WORDS = new Set([
   'token', 'secret', 'segredo', 'senha', 'password', 'passwd', 'apikey',
   'nonce', 'salt', 'session', 'sessao', 'otp', 'csrf', 'jwt', 'credencial',
 ]);
@@ -115,19 +115,19 @@ const PALAVRAS_SECRETAS = new Set([
  * `novoToken` (não há fronteira entre `o` e `T`), e a substring solta faria `assalto` casar `salt`.
  * Desmontar o identificador resolve os dois de uma vez.
  */
-function palavrasDe(texto) {
-  return texto
+function wordsOf(text) {
+  return text
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .split(/[^A-Za-z0-9]+/)
-    .filter((parte) => parte !== '')
-    .map((parte) => parte.toLowerCase());
+    .filter((part) => part !== '')
+    .map((part) => part.toLowerCase());
 }
 
 /** Bigrama junto cobre `api_key` e `apiKey`, que desmontam em duas palavras genéricas. */
-function temContextoSecreto(texto) {
-  const palavras = palavrasDe(texto);
-  return palavras.some((palavra, indice) => (
-    PALAVRAS_SECRETAS.has(palavra) || PALAVRAS_SECRETAS.has(palavra + (palavras[indice + 1] ?? ''))
+function hasSecretContext(text) {
+  const words = wordsOf(text);
+  return words.some((word, index) => (
+    SECRET_WORDS.has(word) || SECRET_WORDS.has(word + (words[index + 1] ?? ''))
   ));
 }
 
@@ -149,7 +149,7 @@ function temContextoSecreto(texto) {
  * O formato de `publicRoutes` (`"MÉTODO /caminho"`, 01-modulo.md §3.1) escrito como LITERAL no
  * código. É a forma exata da lista de isenção hardcoded — a que desmente "a lista vem do manifesto".
  */
-const ROTA_LITERAL = /['"`](GET|POST|PUT|PATCH|DELETE)\s+\/[^'"`]*['"`]/;
+const LITERAL_ROUTE = /['"`](GET|POST|PUT|PATCH|DELETE)\s+\/[^'"`]*['"`]/;
 
 /**
  * Permissão escrita como LITERAL no argumento de `requirePermission`. É a forma exata da autorização
@@ -159,29 +159,29 @@ const ROTA_LITERAL = /['"`](GET|POST|PUT|PATCH|DELETE)\s+\/[^'"`]*['"`]/;
  * `[^)]*` cobre as duas assinaturas dos moldes — `requirePermission(ler)` em TS/JS e
  * `require_permission(request, permissao)` em Python, onde o literal seria o SEGUNDO argumento.
  */
-const PERMISSAO_LITERAL = /require_?[Pp]ermission\s*\([^)]*['"`]/;
+const LITERAL_PERMISSION = /require_?[Pp]ermission\s*\([^)]*['"`]/;
 
 /** Onde um cookie é definido, em Express/Fastify e em Python. */
 const DEFINE_COOKIE = /\bres(?:ponse)?\.cookie\(|set_cookie\(|['"`]Set-Cookie['"`]/i;
 
 /**
- * Cookie que carrega SESSÃO. Vocabulário próprio e estreito, e não o `PALAVRAS_SECRETAS` do
- * `random-inseguro`: aquele inclui `csrf`, e o cookie de CSRF no padrão double-submit **precisa**
+ * Cookie que carrega SESSÃO. Vocabulário próprio e estreito, e não o `SECRET_WORDS` do
+ * `insecure-random`: aquele inclui `csrf`, e o cookie de CSRF no padrão double-submit **precisa**
  * ser legível por JavaScript — exigir `HttpOnly` dele seria falso positivo sobre código correto.
  */
-const COOKIE_DE_SESSAO = /\b(session|sessao|sess|sid|token|auth|jwt|refresh)\b/i;
+const SESSION_COOKIE = /\b(session|sessao|sess|sid|token|auth|jwt|refresh)\b/i;
 
-const FLAGS_DE_COOKIE = [
-  { nome: 'HttpOnly', padrao: /httponly/i },
-  { nome: 'Secure', padrao: /\bsecure\b/i },
-  { nome: 'SameSite', padrao: /samesite|same_site/i },
+const COOKIE_FLAGS = [
+  { name: 'HttpOnly', pattern: /httponly/i },
+  { name: 'Secure', pattern: /\bsecure\b/i },
+  { name: 'SameSite', pattern: /samesite|same_site/i },
 ];
 
-const ARMAZENAMENTO_DO_NAVEGADOR = /\b(localStorage|sessionStorage)\b/;
+const BROWSER_STORAGE = /\b(localStorage|sessionStorage)\b/;
 
-function contextoSecretoPerto(texto, anterior) {
-  if (temContextoSecreto(texto)) return true;
-  return /^\s*return\b/.test(texto) && anterior !== undefined && temContextoSecreto(anterior);
+function nearSecretContext(text, previous) {
+  if (hasSecretContext(text)) return true;
+  return /^\s*return\b/.test(text) && previous !== undefined && hasSecretContext(previous);
 }
 
 /**
@@ -191,27 +191,27 @@ function contextoSecretoPerto(texto, anterior) {
  * de literal no codigo"): a `api/` lê `publicRoutes` do manifesto, e nenhum lugar dela escreve a
  * lista à mão. Uma lista hardcoded desmente o manifesto sem que o manifesto mude.
  */
-function conferirOrigemDaLista(daApi) {
-  const achados = [];
-  // `textoDeCodigo`, e nao `conteudo`: a clausula afirma que a `api/` LE o manifesto, e prosa nao le
+function checkListOrigin(apiFiles) {
+  const findings = [];
+  // `codeText`, e nao `conteudo`: a clausula afirma que a `api/` LE o manifesto, e prosa nao le
   // nada. Sobre o texto cru, a docstring que EXPLICA `publicRoutes` — o molde tem tres — satisfaria
   // a checagem, e um modulo que tivesse apagado a leitura de verdade passaria calado por causa do
   // comentario que a descreve. Falso negativo, e do tipo que aprova em silencio, que e o que o §7
   // inteiro existe para evitar. Nos tres moldes a leitura real esta em codigo (`manifesto.publicRoutes`,
   // `manifesto["publicRoutes"]`), entao fechar o buraco nao acusa nenhum deles.
-  if (!daApi.some((a) => textoDeCodigo(a).includes('publicRoutes'))) {
-    achados.push('api/ nunca le module.json:publicRoutes — a isencao de autenticacao nao pode vir'
-      + ' de outro lugar, senao o manifesto declara uma coisa e a cadeia aplica outra');
+  if (!apiFiles.some((a) => codeText(a).includes('publicRoutes'))) {
+    findings.push('api/ never reads module.json:publicRoutes — the authentication exemption cannot come'
+      + ' from another source, or the manifest declares one thing while the request chain applies another');
   }
-  for (const arquivo of daApi) {
-    for (const { numero, texto } of arquivo.linhasCodigo) {
-      if (ROTA_LITERAL.test(texto)) {
-        achados.push(`${arquivo.rel}:${numero}: rota no formato "METODO /caminho" literal no codigo`
-          + ' — a lista de rotas publicas vem de module.json:publicRoutes, nunca do codigo');
+  for (const file of apiFiles) {
+    for (const { number, text } of file.codeLines) {
+      if (LITERAL_ROUTE.test(text)) {
+        findings.push(`${file.rel}:${number}: a route in the form "METHOD /path" is hardcoded in the code`
+          + ' — public routes must come from module.json:publicRoutes');
       }
     }
   }
-  return achados;
+  return findings;
 }
 
 /**
@@ -222,46 +222,46 @@ function conferirOrigemDaLista(daApi) {
  * comparação porque a lei diz que ele faz parte da declaração — abrir a leitura nunca pode abrir a
  * escrita do mesmo caminho por descuido (03-operacao.md §2.1).
  */
-function conferirRotasPublicasReais(ctx) {
-  const declaradas = ctx.manifesto?.publicRoutes ?? [];
-  if (declaradas.length === 0) return [];
-  const spec = specDe(ctx);
+function checkRealPublicRoutes(ctx) {
+  const declared = ctx.manifest?.publicRoutes ?? [];
+  if (declared.length === 0) return [];
+  const spec = specOf(ctx);
   // Spec ausente ou com `paths:` ilegivel e do `contract` — acusar aqui viraria "nao consegui ler"
   // em "a rota nao existe", que e afirmar falsidade e mandar apagar o que esta certo.
-  if (spec === null || leiturasFalhas(spec.conteudo).includes('paths')) return [];
+  if (spec === null || failedReads(spec.content).includes('paths')) return [];
 
-  const operacoes = operacoesDaSpec(spec.conteudo);
-  const achados = [];
-  for (const entrada of declaradas) {
-    const [metodo, caminho] = entrada.split(/\s+/);
+  const operations = specOperations(spec.content);
+  const findings = [];
+  for (const entry of declared) {
+    const [method, path] = entry.split(/\s+/);
     // Forma garantida pelo JSON Schema (`^(GET|POST|PATCH|PUT|DELETE) /`); manifesto torto e do
-    // `schema-manifesto`, nao desta regra.
-    if (caminho === undefined) continue;
-    const rota = [...operacoes.keys()].find((r) => normalizar(r) === normalizar(caminho));
-    if (rota === undefined) {
-      achados.push(`publicRoutes declara "${entrada}" mas o contrato nao tem o caminho "${caminho}"`
-        + ' — a entrada nao isenta nada, e a rota que se queria publica segue exigindo token');
+    // `manifest-schema`, nao desta regra.
+    if (path === undefined) continue;
+    const route = [...operations.keys()].find((r) => normalize(r) === normalize(path));
+    if (route === undefined) {
+      findings.push(`publicRoutes declares "${entry}", but the contract has no path "${path}"`
+        + ' — this entry grants no exemption, so the intended public route still requires a token');
       continue;
     }
-    if (!operacoes.get(rota).has(metodo)) {
-      achados.push(`publicRoutes declara "${entrada}" mas o contrato nao declara ${metodo} em "${rota}"`
-        + ` (declara: ${[...operacoes.get(rota)].join(', ') || 'nenhum'})`);
+    if (!operations.get(route).has(method)) {
+      findings.push(`publicRoutes declares "${entry}", but the contract does not declare ${method} for "${route}"`
+        + ` (declared methods: ${[...operations.get(route)].join(', ') || 'none'})`);
     }
   }
-  return achados;
+  return findings;
 }
 
 /**
- * O discriminador de INJEÇÃO, e o único — `sql-concatenado` (raiz) e `sql-no-modulo` (módulo) fazem
+ * O discriminador de INJEÇÃO, e o único — `concatenated-sql` (raiz) e `sql-in-module` (módulo) fazem
  * a mesma pergunta em coleções diferentes, e uma segunda cópia divergiria da primeira no primeiro
  * padrão que alguém acrescentasse de um lado.
  *
  * Duas condições na MESMA linha: parece SQL, e o valor entra na string. É o recorte que deixa a
  * forma correta passar — `db.query('… where hash = $1', [hash])` não interpola nada.
  */
-function ehSqlInjetado(texto) {
-  if (!PADRAO_SQL.test(texto)) return false;
-  return INTERPOLACAO_EM_SQL.some((padrao) => padrao.test(texto));
+function isInjectedSql(text) {
+  if (!SQL_PATTERN.test(text)) return false;
+  return INTERPOLATION_IN_SQL.some((pattern) => pattern.test(text));
 }
 
 /**
@@ -269,18 +269,18 @@ function ehSqlInjetado(texto) {
  *
  * `padrao` aceita regex OU predicado: regra cuja decisão é de UMA forma passa o regex, e regra que
  * cruza duas condições na mesma linha passa a função. Sem isso, a segunda precisaria do próprio laço
- * — e um laço duplicado é onde `eTeste` deixa de ser pulado no dia em que alguém mexer só num deles.
+ * — e um laço duplicado é onde `isTest` deixa de ser pulado no dia em que alguém mexer só num deles.
  */
-function varrer(ctx, filtrar, padrao, mensagem) {
-  const casa = typeof padrao === 'function' ? padrao : (texto) => padrao.test(texto);
-  const achados = [];
-  for (const arquivo of ctx.codigo) {
-    if (arquivo.eTeste || !filtrar(arquivo)) continue;
-    for (const { numero, texto } of arquivo.linhasCodigo) {
-      if (casa(texto)) achados.push(`${arquivo.rel}:${numero}: ${mensagem}`);
+function scan(ctx, filter, pattern, message) {
+  const matches = typeof pattern === 'function' ? pattern : (text) => pattern.test(text);
+  const findings = [];
+  for (const file of ctx.code) {
+    if (file.isTest || !filter(file)) continue;
+    for (const { number, text } of file.codeLines) {
+      if (matches(text)) findings.push(`${file.rel}:${number}: ${message}`);
     }
   }
-  return achados;
+  return findings;
 }
 
 /**
@@ -293,16 +293,16 @@ function varrer(ctx, filtrar, padrao, mensagem) {
  * do que ela descreve. Exportado porque `configuration.mjs` tem duas regras de raiz e usa o mesmo
  * percurso — duas cópias de um laço divergiriam no primeiro filtro novo.
  */
-export function varrerRaiz(projeto, aplicar) {
-  const achados = [];
-  for (const arquivo of projeto.codigo) {
-    if (arquivo.eTeste) continue;
-    for (const { numero, texto } of arquivo.linhasCodigo) {
-      const mensagem = aplicar(texto);
-      if (mensagem !== null) achados.push(`${arquivo.rel}:${numero}: ${mensagem}`);
+export function scanRoot(project, apply) {
+  const findings = [];
+  for (const file of project.code) {
+    if (file.isTest) continue;
+    for (const { number, text } of file.codeLines) {
+      const message = apply(text);
+      if (message !== null) findings.push(`${file.rel}:${number}: ${message}`);
     }
   }
-  return achados;
+  return findings;
 }
 
 export default [
@@ -310,145 +310,144 @@ export default [
     id: 'log',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      return varrer(ctx, () => true, SAIDA_DIRETA, 'saida direta — use o logger estruturado');
+    check(ctx) {
+      return scan(ctx, () => true, DIRECT_OUTPUT, 'direct output — use the structured logger');
     },
   },
   {
-    id: 'determinismo',
+    id: 'determinism',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      return varrer(
+    check(ctx) {
+      return scan(
         ctx,
-        (arquivo) => arquivo.rel.startsWith('core/'),
+        (file) => file.rel.startsWith('core/'),
         /Math\.random\(|new Date\(\s*\)|Date\.now\(|datetime\.now\(|\brandom\.\w+\(/,
-        'nao-determinismo em core/ — use as portas clock e idGenerator',
+        'non-deterministic behavior in core/ — use the clock and idGenerator ports',
       );
     },
   },
   {
-    id: 'random-inseguro',
+    id: 'insecure-random',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        // FRONTEIRA com `determinismo`, e ela e explicita: dentro de `core/` quem cobra RNG fraco e
-        // o `determinismo`, por reprodutibilidade, e o conserto dele (receber a porta `idGenerator`)
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        // FRONTEIRA com `determinism`, e ela e explicita: dentro de `core/` quem cobra RNG fraco e
+        // o `determinism`, por reprodutibilidade, e o conserto dele (receber a porta `idGenerator`)
         // ja resolve o lado da seguranca. Acusar aqui tambem daria duas mensagens para um conserto
-        // so. Fora de `core/` o `determinismo` cala, e e exatamente ali que esta regra vive.
-        if (arquivo.eTeste || arquivo.rel.startsWith('core/')) continue;
-        arquivo.linhasCodigo.forEach(({ numero, texto }, indice) => {
-          if (RNG_FRACO.test(texto) && contextoSecretoPerto(texto, arquivo.linhasCodigo[indice - 1]?.texto)) {
-            achados.push(`${arquivo.rel}:${numero}: token/segredo gerado com RNG nao-criptografico`
-              + ' — use CSPRNG (crypto.randomUUID, crypto.getRandomValues, secrets)');
+        // so. Fora de `core/` o `determinism` cala, e e exatamente ali que esta regra vive.
+        if (file.isTest || file.rel.startsWith('core/')) continue;
+        file.codeLines.forEach(({ number, text }, index) => {
+          if (WEAK_RNG.test(text) && nearSecretContext(text, file.codeLines[index - 1]?.text)) {
+      findings.push(`${file.rel}:${number}: token or secret is generated with a non-cryptographic RNG`
+        + ' — use a CSPRNG (crypto.randomUUID, crypto.getRandomValues, secrets)');
           }
         });
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'rota-publica-autenticada',
+    id: 'public-route-authenticated',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const daApi = ctx.codigo.filter((a) => !a.eTeste && a.rel.startsWith('api/'));
-      // Sem `api/` nao ha cadeia de middleware para julgar — `estrutura` ja cobra a ausencia dela.
-      if (daApi.length === 0) return [];
-      return [...conferirOrigemDaLista(daApi), ...conferirRotasPublicasReais(ctx)];
+    check(ctx) {
+      const apiFiles = ctx.code.filter((a) => !a.isTest && a.rel.startsWith('api/'));
+      // Sem `api/` nao ha cadeia de middleware para julgar — `structure` ja cobra a ausencia dela.
+      if (apiFiles.length === 0) return [];
+      return [...checkListOrigin(apiFiles), ...checkRealPublicRoutes(ctx)];
     },
   },
   {
     /**
      * A permissão em vigor é a DECLARADA — e é o análogo exato da cláusula (b) do
-     * `rota-publica-autenticada`, com o molde já demonstrando o padrão: *"As permissoes vem do
+     * `public-route-authenticated`, com o molde já demonstrando o padrão: *"As permissoes vem do
      * manifesto, nunca de literal no codigo"*.
      *
      * Cobra UMA coisa, e o nome diz qual. A outra metade — "toda permissão declarada é exigida em
-     * alguma rota", o análogo do `config-morta` — foi DESCARTADA, e não por preguiça: ela é
+     * alguma rota", o análogo do `dead-config` — foi DESCARTADA, e não por preguiça: ela é
      * incompatível com esta. O molde consome as permissões por POSIÇÃO
      * (`const [ler, escrever] = config.manifesto.permissions`), então a string `<module>:ler` nunca
      * aparece no código — e não pode aparecer, porque é exatamente o que esta regra proíbe.
      * Procurá-la seria cobrar o oposto do que se cobra na linha de cima. Registrado no §7.1.
      */
-    id: 'permissao-literal',
+    id: 'permission-literal',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      return varrer(
+    check(ctx) {
+      return scan(
         ctx,
-        (arquivo) => arquivo.rel.startsWith('api/'),
-        PERMISSAO_LITERAL,
-        'permissao literal em exigirPermissao — a permissao em vigor vem de'
-        + ' module.json:permissions, nunca do codigo: com o literal aqui, o manifesto declara uma'
-        + ' coisa e a rota exige outra, e mudar o manifesto nao muda nada',
+        (file) => file.rel.startsWith('api/'),
+        LITERAL_PERMISSION,
+        'permission is hardcoded in requirePermission — the active permission comes from'
+        + ' module.json:permissions, not the code; a literal here makes the manifest and route disagree',
       );
     },
   },
   {
-    id: 'cookie-seguro',
+    id: 'secure-cookie',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        for (const { number, text } of file.codeLines) {
           // CONDICIONAL: so cobra onde o cookie de sessao EXISTE. Modulo sem cookie — o caso do
           // molde, cuja auth e `Authorization: Bearer` — nao tem o que declarar, e a regra cala.
-          if (!DEFINE_COOKIE.test(texto) || !COOKIE_DE_SESSAO.test(texto)) continue;
-          const faltando = FLAGS_DE_COOKIE.filter(({ padrao }) => !padrao.test(texto));
-          if (faltando.length === 0) continue;
-          achados.push(`${arquivo.rel}:${numero}: cookie de sessao sem ${faltando.map((f) => f.nome).join(', ')}`
-            + ' — sem HttpOnly qualquer XSS le o cookie, sem Secure ele viaja em claro, e sem'
-            + ' SameSite ele acompanha requisicao de outro site');
+          if (!DEFINE_COOKIE.test(text) || !SESSION_COOKIE.test(text)) continue;
+          const missing = COOKIE_FLAGS.filter(({ pattern }) => !pattern.test(text));
+          if (missing.length === 0) continue;
+          findings.push(`${file.rel}:${number}: session cookie is missing ${missing.map((f) => f.name).join(', ')}`
+            + ' — without HttpOnly, XSS can read it; without Secure, it travels in clear text; without'
+            + ' SameSite, it accompanies requests from other sites');
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'token-em-armazenamento',
+    id: 'token-in-storage',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          if (!ARMAZENAMENTO_DO_NAVEGADOR.test(texto)) continue;
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        for (const { number, text } of file.codeLines) {
+          if (!BROWSER_STORAGE.test(text)) continue;
           // O proprio `sessionStorage` carrega a palavra "session": sem tira-lo do texto antes de
           // procurar o contexto, guardar o TEMA em sessionStorage seria acusado como token.
-          const semOIdentificador = texto.replace(ARMAZENAMENTO_DO_NAVEGADOR, ' ');
-          if (!temContextoSecreto(semOIdentificador)) continue;
-          achados.push(`${arquivo.rel}:${numero}: token de autenticacao em localStorage/sessionStorage`
-            + ' — qualquer XSS na pagina o le. Use cookie HttpOnly, ou mantenha o token so em memoria');
+          const withoutIdentifier = text.replace(BROWSER_STORAGE, ' ');
+          if (!hasSecretContext(withoutIdentifier)) continue;
+          findings.push(`${file.rel}:${number}: authentication token is stored in localStorage/sessionStorage`
+            + ' — page XSS can read it. Use an HttpOnly cookie or keep the token in memory');
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
     /**
      * SQL parametrizado, nunca concatenado — na FIAÇÃO, que é onde a query nasce: o módulo não pode
-     * ter driver (`sdk-fornecedor`) nem importar adapter (`import-adapter`), então quem monta a query
+     * ter driver (`vendor-sdk`) nem importar adapter (`import-adapter`), então quem monta a query
      * é `adapters/`.
      *
-     * A gêmea de escopo `module` é `sql-no-modulo`, e as duas nunca acusam o mesmo arquivo: esta lê
+     * A gêmea de escopo `module` é `sql-in-module`, e as duas nunca acusam o mesmo arquivo: esta lê
      * `projeto.codigo` (`adapters/`, `src/`, `packages/`), aquela lê `ctx.codigo` (a pasta do módulo),
      * e `context.mjs` mantém as duas coleções disjuntas por construção.
      */
-    id: 'sql-concatenado',
+    id: 'concatenated-sql',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      return varrerRaiz(projeto, (texto) => (ehSqlInjetado(texto)
-        ? 'SQL montado por concatenacao ou interpolacao — o valor de fora entra na string e vira'
-          + ' COMANDO. Use placeholder ($1, ?, :nome, %s) e passe o valor como parametro: o driver'
-          + ' escapa, a string nunca'
+    check(project) {
+      if (!project.isProject) return [];
+      return scanRoot(project, (text) => (isInjectedSql(text)
+        ? 'SQL is built with concatenation or interpolation — an external value becomes part of the'
+          + ' COMMAND. Use a placeholder ($1, ?, :name, %s) and pass the value as a parameter: the driver'
+          + ' escapes the value, never the SQL string'
         : null));
     },
   },
@@ -456,30 +455,29 @@ export default [
     /**
      * O vetor que sobrava, e ele estava medido: SQL montado DENTRO do módulo.
      *
-     * O `sql-concatenado` foi para a raiz porque quem fala com banco é o adapter, e isso continua
+     * O `concatenated-sql` foi para a raiz porque quem fala com banco é o adapter, e isso continua
      * certo. Só que "o módulo não fala com banco" é doutrina sem verificador na única forma que
      * importa: a superfície canônica de `packages/ports/` é tipada por OPERAÇÃO — `listar`,
      * `buscarPorHash`, `inserir`, `contar`, e nenhuma porta aceita comando —, mas o `core/ports/` do
      * MÓDULO é escrito pelo autor do módulo e nada compara a forma dele com a canônica. Acrescentar
      * `executarConsulta(sql: string)` ali é legal aos olhos do gate, e a partir daí a concatenação
-     * mora no módulo e a execução na raiz: `sql-concatenado` vê o `.query(sql)` do adapter e NÃO vê
+     * mora no módulo e a execução na raiz: `concatenated-sql` vê o `.query(sql)` do adapter e NÃO vê
      * como a string nasceu. Medido — a mesma linha, acusada em `adapters/` e calada em `modules/`.
      *
-     * MESMO discriminador da gêmea, uma implementação só (`ehSqlInjetado`): parece SQL, e o valor
+     * MESMO discriminador da gêmea, uma implementação só (`isInjectedSql`): parece SQL, e o valor
      * entra na string. Divergir aqui faria uma das duas acusar o que a outra deixa passar.
      */
-    id: 'sql-no-modulo',
+    id: 'sql-in-module',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      return varrer(
+    check(ctx) {
+      return scan(
         ctx,
         () => true,
-        ehSqlInjetado,
-        'SQL montado no modulo — o modulo nao fala com banco: a query e do adapter, atras de uma porta'
-          + ' tipada por OPERACAO (buscarPorHash(hash)), nunca por COMANDO (executar(sql)). Nesta'
-          + ' fronteira o `sql-concatenado` da raiz nao ajuda: o adapter recebe a string ja montada e'
-          + ' nao ve como ela nasceu',
+        isInjectedSql,
+        'SQL is built inside the module — modules do not access databases; queries belong in adapters behind an operation-based'
+          + ' port (findByHash(hash)), never a command-based port (execute(sql)). The root `concatenated-sql` rule cannot see this boundary:'
+          + ' the adapter receives the completed string and cannot tell how it was built',
       );
     },
   },
@@ -487,41 +485,41 @@ export default [
     /**
      * Segredo não vai para log — e o sinal vem de onde já existe declaração, não de um campo novo.
      *
-     * O módulo cruza `sensitiveFields` com a projeção e o log (`sensivel-em-saida`), e a raiz não
+     * O módulo cruza `sensitiveFields` com a projeção e o log (`sensitive-in-output`), e a raiz não
      * tem esse campo: `project.json` declara `requiredEnv` e nada mais, com
      * `additionalProperties: false` fechando a porta de propósito. O sinal aqui é melhor, porque já
      * está declarado: as chaves `ROOT_*` do manifesto filtradas pelo MESMO vocabulário fechado de
-     * sufixo de credencial que `gateway-credencial` e `segredo-em-publico` usam. `ROOT_JWT_SECRET` é
+     * sufixo de credencial que `gateway-credential` e `secret-in-public` usam. `ROOT_JWT_SECRET` é
      * segredo; `ROOT_API_BASE_URL` não é, e não é acusada.
      */
-    id: 'segredo-em-log',
+    id: 'secret-in-log',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      const credenciais = (projeto.manifesto.valor?.requiredEnv ?? [])
-        .filter((chave) => PADRAO_CREDENCIAL.test(chave));
-      if (credenciais.length === 0) return [];
+    check(project) {
+      if (!project.isProject) return [];
+      const credentials = (project.manifest.value?.requiredEnv ?? [])
+        .filter((key) => CREDENTIAL_PATTERN.test(key));
+      if (credentials.length === 0) return [];
 
-      return varrerRaiz(projeto, (texto) => {
-        if (!CHAMADA_DE_LOG.test(texto)) return null;
-        const citada = credenciais.find((chave) => new RegExp(`\\b${chave}\\b`).test(texto));
-        if (citada === undefined) return null;
-        return `credencial "${citada}" citada em chamada de log — o valor dela vai para o arquivo de`
-          + ' log, para o agregador e para quem tiver acesso a eles, onde nenhuma rotacao de segredo'
-          + ' alcanca. Logue o FATO ("segredo ausente"), nunca o segredo';
+      return scanRoot(project, (text) => {
+        if (!LOG_CALL.test(text)) return null;
+        const cited = credentials.find((key) => new RegExp(`\\b${key}\\b`).test(text));
+        if (cited === undefined) return null;
+        return `credential "${cited}" is referenced in a log call — its value will reach log files,`
+          + ' aggregators, and anyone with access to them, beyond the reach of secret rotation.'
+          + ' Log the fact ("secret missing"), never the secret';
       });
     },
   },
   {
-    id: 'gateway-credencial',
+    id: 'gateway-credential',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      if (ctx.manifesto?.role === 'gateway') return [];
-      return (ctx.manifesto?.requiredEnv ?? [])
-        .filter((chave) => PADRAO_CREDENCIAL.test(chave))
-        .map((chave) => `env "${chave}" e credencial de servico externo — so modulo com papel "gateway" pode declarar`);
+    check(ctx) {
+      if (ctx.manifest?.role === 'gateway') return [];
+      return (ctx.manifest?.requiredEnv ?? [])
+        .filter((key) => CREDENTIAL_PATTERN.test(key))
+        .map((key) => `env "${key}" is an external-service credential — only a module with the "gateway" role may declare it`);
     },
   },
   {
@@ -533,56 +531,56 @@ export default [
      * do template afirma que os arquivos existem, não que sejam bons. A imagem de front só é exigida
      * quando algum módulo publica uma tela: o binding Python nasce sem `web/` e sem front.
      */
-    id: 'container-presente',
+    id: 'container-present',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
+    check(project) {
       // Módulo solto (extraído e ainda não religado a um projeto) não tem raiz a cobrar.
-      if (!projeto.ehProjeto) return [];
-      const { presentes, temFront } = projeto.container;
-      const exigidos = temFront ? [...ARQUIVOS_DE_CONTAINER, ...ARQUIVOS_DE_FRONT] : ARQUIVOS_DE_CONTAINER;
-      return exigidos
-        .filter((arquivo) => !presentes.includes(arquivo))
-        .map((arquivo) => `${arquivo} ausente na raiz do projeto — o projeto e dockerizado (03-operacao.md §9.5):`
-          + ' o template instala o arquivo pronto em bindings/<binding>/root/; copie-o e ajuste'
-          + (ARQUIVOS_DE_FRONT.includes(arquivo) ? ' (exigido porque algum modulo publica uma tela: webPath + web/)' : ''));
+      if (!project.isProject) return [];
+      const { present, hasFront } = project.container;
+      const required = hasFront ? [...CONTAINER_FILES, ...FRONT_FILES] : CONTAINER_FILES;
+      return required
+        .filter((file) => !present.includes(file))
+        .map((file) => `${file} is missing from the project root — projects include Docker support (03-operacao.md §9.5):`
+          + ' copy the ready-made file from bindings/<binding>/root/ and adjust it'
+          + (FRONT_FILES.includes(file) ? ' (required because a module publishes a screen: webPath + web/)' : ''));
     },
   },
   {
     /**
-     * O `.env` não entra na imagem — a mesma invariante de `gitignore-segredo`, na outra fronteira.
+     * O `.env` não entra na imagem — a mesma invariante de `gitignore-secret`, na outra fronteira.
      *
-     * `gitignore-segredo` protege o REPOSITÓRIO; esta protege o CONTEXTO DE BUILD. Os dois arquivos de
+     * `gitignore-secret` protege o REPOSITÓRIO; esta protege o CONTEXTO DE BUILD. Os dois arquivos de
      * ignore têm semânticas diferentes e por isso a regra não é uma cópia: no `.dockerignore` um padrão
      * sem o prefixo de globstar casa só na raiz do contexto — `.env` não alcança `modules/<id>/.env` nem
      * `deploy/.env`, e é a forma com globstar (`**` + `/.env`) quem os pega. Um `COPY . .` num estágio de build com o `.env` no contexto grava o
      * segredo numa camada (e no cache de build) — e é o primeiro "NUNCA" da skill de deploy.
      *
      * É a ÚNICA checagem fina do `validar_monolito.py` promovida a lei do template, e a razão é a
-     * mesma que torna `gitignore-segredo` lei: vale para todo projeto, sem depender de provedor. As
+     * mesma que torna `gitignore-secret` lei: vale para todo projeto, sem depender de provedor. As
      * outras (loopback, digest, rótulo, não-root) são decisão por provedor e ficam na skill (§7.2).
-     * `.dockerignore` ausente é do `container-presente` — um defeito, uma mensagem.
+     * `.dockerignore` ausente é do `container-present` — um defeito, uma mensagem.
      */
-    id: 'dockerignore-segredo',
+    id: 'dockerignore-secret',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      const texto = projeto.container.dockerignore;
-      if (texto === null) return [];
-      const padroes = texto.split('\n').map((linha) => linha.trim())
-        .filter((linha) => linha !== '' && !linha.startsWith('#') && !linha.startsWith('!'));
-      const cobre = (alvos) => padroes.some((padrao) => alvos.includes(padrao));
-      const achados = [];
-      if (!cobre(['.env', '.env*', '**/.env', '**/.env*'])) {
-        achados.push('.dockerignore nao ignora o .env da raiz — um `COPY . .` o grava numa camada da imagem'
-          + ' (e no cache de build). Acrescente `.env` (e `.env.*`, com `!.env.example` para manter o exemplo)');
+    check(project) {
+      if (!project.isProject) return [];
+      const text = project.container.dockerignore;
+      if (text === null) return [];
+      const patterns = text.split('\n').map((line) => line.trim())
+        .filter((line) => line !== '' && !line.startsWith('#') && !line.startsWith('!'));
+      const covers = (targets) => patterns.some((pattern) => targets.includes(pattern));
+      const findings = [];
+      if (!covers(['.env', '.env*', '**/.env', '**/.env*'])) {
+        findings.push('.dockerignore does not exclude the root .env — `COPY . .` would write it to an image layer'
+          + ' and the build cache. Add `.env` and `.env.*`, with `!.env.example` to keep the example');
       }
-      if (!cobre(['**/.env', '**/.env*'])) {
-        achados.push('.dockerignore nao ignora `**/.env` — no dockerignore `.env` casa so na raiz do contexto, e'
-          + ' `modules/<id>/.env` e `deploy/.env` entrariam na imagem. Acrescente `**/.env`');
+      if (!covers(['**/.env', '**/.env*'])) {
+        findings.push('.dockerignore does not exclude `**/.env` — `.env` alone matches only the context root, so'
+          + ' `modules/<id>/.env` and `deploy/.env` would enter the image. Add `**/.env`');
       }
-      return achados;
+      return findings;
     },
   },
   {
@@ -598,28 +596,28 @@ export default [
      * cobra a igualdade — e o fixture do gate (sem `.env.example` na raiz) mediria a ausência do
      * arquivo, não a da declaração. `$$VAR` (escape do compose) e comentário não contam.
      */
-    id: 'compose-variaveis-declaradas',
+    id: 'compose-variables-declared',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      // Manifesto da raiz ausente ou quebrado e do `manifesto-raiz`: sem ele toda `ROOT_*` pareceria
-      // nao declarada, e um defeito viraria uma mensagem por chave — a mesma guarda de `env-raiz-declarado`.
-      if (projeto.manifesto.valor === null) return [];
-      const { compose, composeModulos, chavesDeclaradas } = projeto.container;
-      const achados = [];
-      for (const [arquivo, texto] of [['compose.yml', compose], ['deploy/compose.modules.yml', composeModulos]]) {
-        if (texto === null) continue;
-        const semComentario = texto.split('\n').filter((linha) => !linha.trimStart().startsWith('#')).join('\n');
-        const usadas = new Set([...semComentario.matchAll(INTERPOLACAO_DO_COMPOSE)].map((m) => m[1]));
-        for (const variavel of usadas) {
-          if (chavesDeclaradas.includes(variavel)) continue;
-          achados.push(`${arquivo}: variavel "${variavel}" interpolada e nao declarada — se o processo a le, declare em`
-            + ' project.json/module.json:requiredEnv (o sync-env a leva ao .env.example); se so o compose a le,'
-            + ' declare em deploy/.env.example (ADR-022)');
+    check(project) {
+      if (!project.isProject) return [];
+      // Manifesto da raiz ausente ou quebrado e do `root-manifest`: sem ele toda `ROOT_*` pareceria
+      // nao declarada, e um defeito viraria uma mensagem por chave — a mesma guarda de `root-env-declared`.
+      if (project.manifest.value === null) return [];
+      const { compose, composeModules, declaredKeys } = project.container;
+      const findings = [];
+      for (const [file, text] of [['compose.yml', compose], ['deploy/compose.modules.yml', composeModules]]) {
+        if (text === null) continue;
+        const withoutComment = text.split('\n').filter((line) => !line.trimStart().startsWith('#')).join('\n');
+        const used = new Set([...withoutComment.matchAll(COMPOSE_INTERPOLATION)].map((m) => m[1]));
+        for (const variable of used) {
+          if (declaredKeys.includes(variable)) continue;
+          findings.push(`${file}: interpolated variable "${variable}" is not declared — if the process reads it, declare it in`
+            + ' project.json/module.json:requiredEnv (sync-env adds it to .env.example); if only Compose reads it,'
+            + ' declare it in deploy/.env.example (ADR-022)');
         }
       }
-      return achados;
+      return findings;
     },
   },
 ];

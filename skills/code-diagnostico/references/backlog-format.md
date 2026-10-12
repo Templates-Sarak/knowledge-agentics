@@ -37,6 +37,13 @@ Leia ao emitir o backlog ou quando precisar do critério detalhado de detecção
 Campos obrigatórios por violação: `linha`, `dimensao`, `severidade` (`alta|media|baixa`),
 `risco` (`baixo|medio|alto`), `descricao`, `regra` (o trecho do padrão violado).
 
+### Entrada do gate de módulos
+
+O gate fornece `{ "findings": [...], "errorCount": N }`. Cada finding contém `module`, `rule`,
+`severity` (`error|warning`) e `message`. Ao compor o backlog, use `rule` como o valor de `regra`
+e mantenha o contrato de backlog mostrado acima; as chaves persistidas do audit têm ciclo de
+migração próprio.
+
 Campo obrigatório por item/módulo: **`cobertura`** (`sem-testes | parcial | ok`) — módulo sem testes
 eleva o risco de qualquer refatoração e sinaliza à `code-adequacao` que precisará de caracterização.
 
@@ -51,7 +58,7 @@ eleva o risco de qualquer refatoração e sinaliza à `code-adequacao` que preci
 | **hardcoded** | Literais numéricos/strings de config (timeouts, limites, URLs, paths) e **segredos** (chaves, tokens) embutidos no código | alta (segredo) / média | **baixo** |
 | **limiares** | Função > 40 linhas; aninhamento > 3 níveis; > 4 parâmetros; `if` aninhado sem guard clause | média | médio |
 | **srp** | Arquivo/função fazendo várias coisas; nomes com "And"/"E"; arquivo muito grande | média | médio |
-| **acoplamento** | Um domínio alcança o **interno** de outro em vez do contrato: `import` de qualquer caminho interno da fatia alheia, ou caminho relativo saindo da própria. No template, o consumo legítimo é HTTP por `core/gateways/` declarado em `consumes` — regras `import-lateral`, `gateway-http`, `gateway-declarado` | alta | **alto** |
+| **acoplamento** | Um domínio alcança o **interno** de outro em vez do contrato: `import` de qualquer caminho interno da fatia alheia, ou caminho relativo saindo da própria. No template, o consumo legítimo é HTTP por `core/gateways/` declarado em `consumes` — regras `lateral-import`, `gateway-http`, `gateway-declared` | alta | **alto** |
 | **infra-acoplada** | SDK de fornecedor (`pg`, `mysql*`, `@supabase/*`, `aws-sdk`, `firebase*`, `mongodb`, `redis`, `openai`) importado dentro da regra de negócio, sem porta. É o que faz "trocar de fornecedor" virar projeto | alta | **alto** |
 | **dados** | Tabela sem prefixo de módulo; `JOIN`/`SELECT`/FK em tabela de outro módulo; schema `public` | alta | **alto** |
 | **api** | Rota sem `/api/v1/`, com verbo no path, fora do plural kebab-case; payload/query fora de camelCase | média | médio |

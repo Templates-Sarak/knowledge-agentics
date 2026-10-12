@@ -3,7 +3,7 @@ verificar_commit.py — Gate rápido: varre o que está STAGED por segredos e ar
 
 Uso (manual ou via pre-commit hook):
     python verificar_commit.py [--raiz .] [--config config.json]
-    python verificar_commit.py --autoteste
+    python verificar_commit.py --selftest
 
 Saída:
     JSON {bloqueado, achados_segredo, arquivos_sensiveis}. Segredos mascarados.
@@ -12,7 +12,7 @@ Saída:
 Regras (padrao-escrita): zero hardcoded (padrões/listas no config.json), segredos mascarados,
 responsabilidade única (só o commit atual/staged — histórico é da git-especialista-repositorio).
 
-`--autoteste` prova as duas camadas, na convenção núcleo puro + casca desta base: `varrer_segredos`,
+`--selftest` prova as duas camadas, na convenção núcleo puro + casca desta base: `varrer_segredos`,
 `varrer_arquivos` e `avaliar_bloqueio` são PURAS (fixtures em memória, sem git); o caminho fim a fim —
 "staged com segredo bloqueia de verdade", que a camada 3 (`template-self-test.mjs`, passo
 `primeiro-commit`) não cobria — só é alcançável rodando o próprio script contra um repositório git
@@ -103,10 +103,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Gate de segredos do commit staged.")
     parser.add_argument("--raiz", default=".")
     parser.add_argument("--config", default=str(Path(__file__).parent / "config.json"))
-    parser.add_argument("--autoteste", action="store_true")
+    parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
 
-    if args.autoteste:
+    if args.selftest:
         sys.exit(rodar_autoteste())
 
     try:
@@ -164,9 +164,11 @@ CHAVE_AWS_DE_EXEMPLO = "AKIA" + "IOSFODNN7EXAMPLE"
 
 
 def _padroes_de_teste() -> list:
+    config = carregar_config(Path(__file__).with_name("config.json"))
+    padroes_catalogo = config["padroes"]
     return [
-        (tipo, re.compile(rx))
-        for tipo, rx in {"AWS Access Key": r"AKIA[0-9A-Z]{16}"}.items()
+        (tipo, re.compile(padroes_catalogo[tipo]))
+        for tipo in ("AWS Access Key", "String de conexao")
     ]
 
 
@@ -176,6 +178,12 @@ def _casos_nucleo() -> list:
         f'+++ b/src/config.ts\n+const chave = "{CHAVE_AWS_DE_EXEMPLO}";\n'
     )
     padroes = _padroes_de_teste()
+    url = lambda username, password: (
+        f"+++ b/deploy/compose.yml\n+DATABASE_URL=postgres://{username}:{password}@db:5432/app\n"
+    )
+    usuario_ambiente = "${DEPLOY_DB_USER:?required}"
+    senha_ambiente = "${DEPLOY_DB_PASSWORD:?required}"
+    senha_literal = "-".join(("literal", "password"))
     return [
         {
             "nome": "varrer_segredos: diff limpo -> nenhum achado",
@@ -187,6 +195,32 @@ def _casos_nucleo() -> list:
                 len(achados := varrer_segredos(diff_com_segredo, padroes)) == 1
                 and achados[0]["tipo"] == "AWS Access Key"
                 and CHAVE_AWS_DE_EXEMPLO not in achados[0]["trecho_mascarado"]
+            ),
+        },
+        {
+            "nome": "varrer_segredos: both database credentials interpolated -> ignored",
+            "fn": lambda: varrer_segredos(
+                url(usuario_ambiente, senha_ambiente), padroes
+            ) == [],
+        },
+        {
+            "nome": "varrer_segredos: literal database password -> detected",
+            "fn": lambda: any(
+                a["tipo"] == "String de conexao"
+                for a in varrer_segredos(url("app", senha_literal), padroes)
+            ),
+        },
+        {
+            "nome": "varrer_segredos: one environment credential and one literal -> detected",
+            "fn": lambda: all(
+                any(
+                    a["tipo"] == "String de conexao"
+                    for a in varrer_segredos(url(username, password), padroes)
+                )
+                for username, password in (
+                    (usuario_ambiente, senha_literal),
+                    ("app", senha_ambiente),
+                )
             ),
         },
         {

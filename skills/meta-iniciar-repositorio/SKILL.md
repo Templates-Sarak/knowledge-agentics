@@ -88,7 +88,7 @@ O próprio script roda `validate.mjs --all` ao final. Rode também o comando com
 
 Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito — o passo 6 do script
 (`instalar_hooks_git`) já compõe sozinho via `compor_pre_commit` (núcleo puro, provado por
-`python init_repo.py --autoteste`), então isto é conferência, não ação manual:
+`python init_repo.py --selftest`), então isto é conferência, não ação manual:
 
 ```bash
 grep -c "^node tools/verify-commit.mjs" <alvo>/.githooks/pre-commit             # == 1: gate de conformidade do template

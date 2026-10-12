@@ -1,0 +1,11 @@
+title = "Sarak project secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Allow database URLs when both credentials come from environment interpolation"
+regexTarget = "line"
+regexes = [
+  '''(postgres|postgresql|mysql|mongodb(\+srv)?)://(\$\{[A-Za-z_][A-Za-z0-9_]*(:\?[^}]*)?\}|\$[A-Za-z_][A-Za-z0-9_]*):(\$\{[A-Za-z_][A-Za-z0-9_]*(:\?[^}]*)?\}|\$[A-Za-z_][A-Za-z0-9_]*)@''',
+]

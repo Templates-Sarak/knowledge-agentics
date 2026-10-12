@@ -1,10 +1,10 @@
 /**
  * rules/configuration.mjs — família "Configuração e ambiente" (specs/arquitetura/04-regras.md §4.4).
- * ids: config-valida, schema-config, config-morta, porta-declarada, hardcode-url, hardcode-numero,
- *      fallback-silencioso, cors-aberto, env-declarado, env-exemplo, env-modulo,
- *      env-fora-do-carregador, gitignore-segredo, segredo-em-publico,
- *      verificacao-declarada, lint-derivado, env-raiz-declarado,
- *      hardcode-url-raiz, fallback-raiz, pre-commit-instalado
+ * ids: valid-config, config-schema, dead-config, port-declared, hardcode-url, hardcode-number,
+ *      silent-fallback, open-cors, env-declared, env-example, env-module,
+ *      env-outside-loader, gitignore-secret, secret-in-public,
+ *      verification-declared, derived-lint, root-env-declared,
+ *      root-hardcode-url, root-fallback, pre-commit-installed
  *
  * As SETE últimas são sobre o PROJETO, não sobre o módulo, e por isso têm `escopo: 'root'`:
  * recebem `ctx.projeto` em vez de um contexto de módulo e rodam UMA vez por invocação. Com
@@ -13,52 +13,52 @@
  * Global nunca serviu: `analisar` descarta achado global cujo módulo não esteja entre os
  * selecionados, e a raiz não é módulo nenhum.
  */
-import { carregarEsquema, validar } from '../schema.mjs';
-// Vocabulário de credencial: UMA lista, a do `gateway-credencial`. As duas regras fazem a mesma
+import { loadSchema, validate } from '../schema.mjs';
+// Vocabulário de credencial: UMA lista, a do `gateway-credential`. As duas regras fazem a mesma
 // pergunta sobre a mesma chave por ângulos diferentes — duas listas divergiriam no primeiro sufixo
 // novo que alguém acrescentasse de um lado só.
-// `varrerRaiz` vem do mesmo lugar, e pelo mesmo argumento: e o percurso das linhas de codigo da
+// `scanRoot` vem do mesmo lugar, e pelo mesmo argumento: e o percurso das linhas de codigo da
 // FIACAO, usado por quatro regras de raiz espalhadas por duas familias. Duas copias de um laco
-// divergiriam no primeiro filtro novo (`eTeste` foi exatamente esse filtro).
-import { PADRAO_CREDENCIAL, varrerRaiz } from './operation.mjs';
-// `textoDeCodigo` remove comentario e docstring. Regra que julga CODIGO nao pode ler o texto cru:
+// divergiriam no primeiro filtro novo (`isTest` foi exatamente esse filtro).
+import { CREDENTIAL_PATTERN, scanRoot } from './operation.mjs';
+// `codeText` remove comentario e docstring. Regra que julga CODIGO nao pode ler o texto cru:
 // a chave citada num comentario ("nunca leia MODULO_SEGREDO aqui") vira uso de verdade.
-import { textoDeCodigo } from '../text.mjs';
+import { codeText } from '../text.mjs';
 // A MESMA função que o `--check` do gerador usa. Importar (e não reimplementar) é o que impede
 // a regra e o gerador de divergirem — o defeito que o gerador existe para eliminar, um nível acima.
-import { BINDINGS, saidaDe } from '../../generate-lint-config.mjs';
+import { BINDINGS, outputOf } from '../../generate-lint-config.mjs';
 
 const CONFIGS = ['api', 'domain', 'security', 'ports', 'texts'];
 
 /**
  * Chave de ambiente da RAIZ. `ROOT_` é prefixo RESERVADO, e é o que a distingue da chave de módulo
- * (`<MODULE>_*`, cobrada por `env-modulo`): sem convenção não há como uma regra dizer de quem é a
+ * (`<MODULE>_*`, cobrada por `env-module`): sem convenção não há como uma regra dizer de quem é a
  * chave. O vocabulário já chamava a raiz assim — o `.env` do módulo aponta para ela por `ENV_ROOT`.
  */
-const CHAVE_DE_RAIZ = /\bROOT_[A-Z0-9_]+\b/g;
+const ROOT_KEY = /\bROOT_[A-Z0-9_]+\b/g;
 
 /**
  * URL literal. UMA implementação, e as duas regras que a usam são o mesmo defeito em dois
- * territórios: `hardcode-url` no módulo e `hardcode-url-raiz` na fiação. Endereço de infraestrutura
+ * territórios: `hardcode-url` no módulo e `root-hardcode-url` na fiação. Endereço de infraestrutura
  * vem do ambiente nos dois lados — o que muda é só de onde ele é declarado.
  */
 const URL_LITERAL = /["'`]https?:\/\/[^"'`]+["'`]/;
 
 /**
  * Default silencioso de env, nas quatro formas em que ele aparece. UMA lista, compartilhada por
- * `fallback-silencioso` (módulo) e `fallback-raiz` (fiação): o defeito é literalmente o mesmo — a
+ * `silent-fallback` (módulo) e `root-fallback` (fiação): o defeito é literalmente o mesmo — a
  * ausência de configuração deixa de derrubar o boot e passa a virar um valor embutido.
  */
-const PADROES_DE_FALLBACK = [
+const FALLBACK_PATTERNS = [
   /process\.env\[[^\]]+\]\s*(\?\?|\|\|)\s*['"`]/,
   /process\.env\.\w+\s*(\?\?|\|\|)\s*['"`]/,
   /getenv\([^)]*,\s*['"]/,
   /environ\.get\([^)]*,\s*['"]/,
 ];
-const ARQUIVOS_CARREGADORES = ['api/src/config.ts', 'api/src/config.js', 'api/src/config.py'];
+const LOADER_FILES = ['api/src/config.ts', 'api/src/config.js', 'api/src/config.py'];
 
 /** Os dois caminhos que o `.gitignore` do projeto TEM de cobrir. `modules/*` vale por qualquer id. */
-const SEGREDOS_A_IGNORAR = ['.env', 'modules/qualquer-modulo/.env'];
+const SECRETS_TO_IGNORE = ['.env', 'modules/qualquer-modulo/.env'];
 
 /**
  * Prefixos que o bundler EXPÕE no bundle do front. Vocabulário fechado — quem decide o que é
@@ -68,22 +68,22 @@ const SEGREDOS_A_IGNORAR = ['.env', 'modules/qualquer-modulo/.env'];
  * o bundler simplesmente não a injeta, e ela chega `undefined`. O defeito é o contrário, e é este:
  * valor secreto numa variável de prefixo público, que por isso vira público de verdade.
  */
-const PREFIXOS_PUBLICOS = [
+const PUBLIC_PREFIXES = [
   'VITE_', 'NEXT_PUBLIC_', 'PUBLIC_', 'REACT_APP_', 'NUXT_PUBLIC_', 'EXPO_PUBLIC_', 'GATSBY_',
 ];
 
-const CHAVE_PUBLICA = new RegExp(`\\b(?:${PREFIXOS_PUBLICOS.join('|')})[A-Z0-9_]+\\b`, 'g');
+const PUBLIC_KEY = new RegExp(`\\b(?:${PUBLIC_PREFIXES.join('|')})[A-Z0-9_]+\\b`, 'g');
 
-function ehPublicaComCredencial(chave) {
-  return PREFIXOS_PUBLICOS.some((prefixo) => chave.startsWith(prefixo)) && PADRAO_CREDENCIAL.test(chave);
+function isPublicWithCredential(key) {
+  return PUBLIC_PREFIXES.some((prefix) => key.startsWith(prefix)) && CREDENTIAL_PATTERN.test(key);
 }
 
 /** Linhas efetivas de um `.gitignore`: sem comentário e sem branco, na ordem original. */
-function padroesDeIgnore(texto) {
-  return texto
+function ignorePatterns(text) {
+  return text
     .split(/\r?\n/)
-    .map((linha) => linha.trim())
-    .filter((linha) => linha !== '' && !linha.startsWith('#'));
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith('#'));
 }
 
 /**
@@ -93,17 +93,17 @@ function padroesDeIgnore(texto) {
  *
  * O casamento é EXATO, e é o que mantém `.env.example` versionável: `.env` não casa `.env.example`.
  */
-function casaIgnore(padrao, caminho) {
-  const limpo = padrao.replace(/\/$/, '');
-  const semAncora = limpo.startsWith('/') ? limpo.slice(1) : limpo;
-  const alvo = limpo.includes('/') ? caminho : caminho.split('/').pop();
+function matchesIgnore(pattern, path) {
+  const clean = pattern.replace(/\/$/, '');
+  const withoutAnchor = clean.startsWith('/') ? clean.slice(1) : clean;
+  const target = clean.includes('/') ? path : path.split('/').pop();
   // `**/` inicial vale ZERO ou mais diretorios, inclusive nenhum: `**/.env` cobre tanto o `.env` da
   // raiz quanto o de `modules/x/`. Traduzi-lo como `.*/` exigiria ao menos uma barra e faria a
   // regra acusar um `.gitignore` correto — falso positivo, a direcao que ela nao pode ter.
-  const expressao = semAncora.startsWith('**/')
-    ? `(?:.*/)?${comoRegex(semAncora.slice(3))}`
-    : comoRegex(semAncora);
-  return new RegExp(`^${expressao}$`).test(alvo);
+  const expression = withoutAnchor.startsWith('**/')
+    ? `(?:.*/)?${asRegex(withoutAnchor.slice(3))}`
+    : asRegex(withoutAnchor);
+  return new RegExp(`^${expression}$`).test(target);
 }
 
 /**
@@ -114,96 +114,114 @@ function casaIgnore(padrao, caminho) {
  * arquivo — que virou binário aos olhos do `grep`. Tradução sem estado escondido não tem como
  * deixar rastro.
  */
-function comoRegex(glob) {
-  let saida = '';
+function asRegex(glob) {
+  let output = '';
   for (let i = 0; i < glob.length; i += 1) {
     if (glob[i] === '*' && glob[i + 1] === '*') {
-      saida += '.*';
+      output += '.*';
       i += 1;
     } else if (glob[i] === '*') {
-      saida += '[^/]*';
+      output += '[^/]*';
     } else if (glob[i] === '?') {
-      saida += '[^/]';
+      output += '[^/]';
     } else {
-      saida += glob[i].replace(/[.+^${}()|[\]\\]/, '\\$&');
+      output += glob[i].replace(/[.+^${}()|[\]\\]/, '\\$&');
     }
   }
-  return saida;
+  return output;
 }
 
 /** O `.gitignore` ignora este caminho? Vence o ÚLTIMO padrão que casa, como no git. */
-function estaIgnorado(padroes, caminho) {
-  let ignorado = false;
-  for (const padrao of padroes) {
-    const negado = padrao.startsWith('!');
-    if (casaIgnore(negado ? padrao.slice(1) : padrao, caminho)) ignorado = !negado;
+function isIgnored(patterns, path) {
+  let ignored = false;
+  for (const pattern of patterns) {
+    const denied = pattern.startsWith('!');
+    if (matchesIgnore(denied ? pattern.slice(1) : pattern, path)) ignored = !denied;
   }
-  return ignorado;
+  return ignored;
 }
 
 /** Linhas de um `.env`, ignorando comentário e branco. Devolve [chave, valor]. */
-function lerParesEnv(conteudo) {
-  return conteudo
+function readEnvPairs(content) {
+  return content
     .split(/\r?\n/)
-    .map((linha) => linha.trim())
-    .filter((linha) => linha !== '' && !linha.startsWith('#'))
-    .map((linha) => {
-      const igual = linha.indexOf('=');
-      return igual === -1 ? [linha, ''] : [linha.slice(0, igual).trim(), linha.slice(igual + 1).trim()];
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith('#'))
+    .map((line) => {
+      const equal = line.indexOf('=');
+      return equal === -1 ? [line, ''] : [line.slice(0, equal).trim(), line.slice(equal + 1).trim()];
     });
 }
 
-function arquivoPorNome(ctx, rel) {
-  return ctx.arquivos.find((a) => a.rel === rel) ?? null;
+function fileByName(ctx, rel) {
+  return ctx.files.find((a) => a.rel === rel) ?? null;
 }
 
-function ehCarregador(rel) {
-  return ARQUIVOS_CARREGADORES.includes(rel) || /vite\.config|next\.config/.test(rel);
+function isLoader(rel) {
+  return LOADER_FILES.includes(rel) || /vite\.config|next\.config/.test(rel);
 }
 
-/** O laco de `chave` isolado do de `segredo-em-publico.verificar` — mesma tecnica das outras
+/** O laco de `chave` isolado do de `secret-in-public.verificar` — mesma tecnica das outras
  * regras desta familia, para o aninhamento caber no limiar (04-regras.md §4.7). */
-function achadosDeChavePublicaNaLinha(arquivo, numero, texto) {
-  const achados = [];
-  for (const chave of texto.match(CHAVE_PUBLICA) ?? []) {
-    if (!ehPublicaComCredencial(chave)) continue;
-    achados.push(`${arquivo.rel}:${numero}: "${chave}" tem prefixo PUBLICO e nome de`
-      + ' credencial — esse valor vai para o bundle do front');
+function publicKeyFindingsInLine(file, number, text) {
+  const findings = [];
+  for (const key of text.match(PUBLIC_KEY) ?? []) {
+    if (!isPublicWithCredential(key)) continue;
+    findings.push(`${file.rel}:${number}: "${key}" has a PUBLIC prefix and a credential`
+      + ' name — this value is included in the frontend bundle');
   }
-  return achados;
+  return findings;
+}
+
+/**
+ * Uma mensagem por exceção cujo `rule` não é id do catálogo. Id antigo (na tabela do ADR-024) ganha a
+ * dica exata do que trocar; id que nunca existiu é acusado sem dica — inventar uma seria pior que calar.
+ */
+function exceptionsWithUnknownId(value, renamed, catalogIds) {
+  if (!Array.isArray(value?.exceptions) || catalogIds === undefined) return [];
+  return value.exceptions.flatMap((exception, index) => {
+    const id = exception?.rule;
+    if (typeof id !== 'string' || catalogIds.has(id)) return [];
+    const where = `config/compliance.json: exceptions[${index}].rule "${id}"`;
+    const fresh = renamed?.[id];
+    if (fresh === undefined) {
+      return [`${where} is not a catalog rule id — this exception does not waive any finding (ids in specs/arquitetura/04-regras.md §4)`];
+    }
+    return [`${where} — rule \`${id}\` was renamed to \`${fresh}\` (ADR-024): update \`config/compliance.json\``];
+  });
 }
 
 export default [
   {
-    id: 'config-valida',
+    id: 'valid-config',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
+    check(ctx) {
       return CONFIGS
-        .filter((assunto) => ctx.configs[assunto].presente && ctx.configs[assunto].valor === null)
-        .map((assunto) => `config/${assunto}.json nao e JSON valido`);
+        .filter((topic) => ctx.configs[topic].present && ctx.configs[topic].value === null)
+        .map((topic) => `config/${topic}.json is not valid JSON`);
     },
   },
   {
-    id: 'schema-config',
+    id: 'config-schema',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const assunto of CONFIGS) {
-        const { presente, valor } = ctx.configs[assunto];
-        // Ausente ou JSON quebrado ja foi reportado por `estrutura`/`config-valida`.
-        if (!presente || valor === null) continue;
-        achados.push(...validar(valor, carregarEsquema(`config-${assunto}`), `config/${assunto}.json`));
+    check(ctx) {
+      const findings = [];
+      for (const topic of CONFIGS) {
+        const { present, value } = ctx.configs[topic];
+        // Ausente ou JSON quebrado ja foi reportado por `structure`/`valid-config`.
+        if (!present || value === null) continue;
+        findings.push(...validate(value, loadSchema(`config-${topic}`), `config/${topic}.json`));
       }
-      return achados;
+      return findings;
     },
   },
   {
     /**
      * As duas metades de UMA declaração: `module.json:ports` diz o que o módulo EXIGE,
      * `config/ports.json` diz QUEM preenche cada exigência. Coincidem nos dois sentidos, como
-     * `env-exemplo` faz entre `requiredEnv` e `.env.example`.
+     * `env-example` faz entre `requiredEnv` e `.env.example`.
      *
      * O schema não pode cobrar isto — schema nenhum enxerga o `module.json`. Com
      * `additionalProperties: false` e sem `required`, as DUAS brechas passam: configurar `storage`
@@ -214,304 +232,310 @@ export default [
      * configurada DERRUBA O BOOT — `resolverDependencias` não acha o provedor e lança; configurada
      * e não declarada é config morta, um provedor escolhido para uma porta que ninguém exige.
      */
-    id: 'porta-declarada',
+    id: 'port-declared',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const declaradas = ctx.manifesto?.ports;
-      const { presente, valor } = ctx.configs.ports;
-      // Manifesto torto e do `schema-manifesto`; arquivo ausente ou ilegivel e da `estrutura` e do
-      // `config-valida`. Aqui so entra declaracao legivel dos dois lados.
-      if (!Array.isArray(declaradas) || !presente || valor === null) return [];
+    check(ctx) {
+      const declared = ctx.manifest?.ports;
+      const { present, value } = ctx.configs.ports;
+      // Manifesto torto e do `manifest-schema`; arquivo ausente ou ilegivel e da `structure` e do
+      // `valid-config`. Aqui so entra declaracao legivel dos dois lados.
+      if (!Array.isArray(declared) || !present || value === null) return [];
 
       // Chave iniciada por `_` e comentario, pela mesma convencao do validador de schema.
-      const configuradas = Object.keys(valor).filter((chave) => !chave.startsWith('_'));
-      const achados = [];
-      for (const porta of declaradas) {
-        if (configuradas.includes(porta)) continue;
-        achados.push(`porta "${porta}" declarada em module.json:ports e ausente de`
-          + ' config/ports.json — a composicao nao acha o provedor e DERRUBA o boot');
+      const configured = Object.keys(value).filter((key) => !key.startsWith('_'));
+      const findings = [];
+      for (const port of declared) {
+        if (configured.includes(port)) continue;
+        findings.push(`port "${port}" is declared in module.json:ports but is missing from`
+          + ' config/ports.json — composition cannot find the provider and the application fails to start');
       }
-      for (const porta of configuradas) {
-        if (declaradas.includes(porta)) continue;
-        achados.push(`config/ports.json escolhe provedor para "${porta}", ausente de`
-          + ' module.json:ports — provedor para uma porta que o modulo nao exige e config morta');
+      for (const port of configured) {
+        if (declared.includes(port)) continue;
+        findings.push(`config/ports.json selects a provider for "${port}", but the port is missing from`
+          + ' module.json:ports — this provider serves an unused port and is dead configuration');
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'cors-aberto',
+    id: 'open-cors',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const cors = ctx.configs.security.valor?.cors;
+    check(ctx) {
+      const cors = ctx.configs.security.value?.cors;
       if (cors === undefined) return [];
       // `*` devolve o recurso para QUALQUER origem. Origem se declara, uma a uma.
       if ((cors.allowedOrigins ?? []).includes('*')) {
-        return ['config/security.json: cors.allowedOrigins contem "*" — origem e DECLARADA, nunca aberta'];
+        return ['config/security.json: cors.allowedOrigins contains "*" — origins must be EXPLICITLY listed, never open'];
       }
       return [];
     },
   },
   {
-    id: 'config-morta',
+    id: 'dead-config',
     nivel: 'aviso',
     escopo: 'module',
-    verificar(ctx) {
-      const codigo = ctx.codigo.filter((a) => !a.eTeste).map((a) => a.conteudo).join('\n');
-      const achados = [];
-      for (const assunto of CONFIGS) {
-        const valor = ctx.configs[assunto].valor;
-        if (valor === null || typeof valor !== 'object') continue;
-        for (const chave of Object.keys(valor)) {
-          if (chave.startsWith('_')) continue;
-          if (!codigo.includes(chave)) achados.push(`config/${assunto}.json: chave "${chave}" declarada e nunca lida`);
+    check(ctx) {
+      const code = ctx.code.filter((a) => !a.isTest).map((a) => a.content).join('\n');
+      const findings = [];
+      for (const topic of CONFIGS) {
+        const value = ctx.configs[topic].value;
+        if (value === null || typeof value !== 'object') continue;
+        for (const key of Object.keys(value)) {
+          if (key.startsWith('_')) continue;
+          if (!code.includes(key)) findings.push(`config/${topic}.json: key "${key}" is declared but never read`);
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
     id: 'hardcode-url',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          const casado = texto.match(URL_LITERAL);
-          if (casado !== null) {
-            achados.push(`${arquivo.rel}:${numero}: URL literal ${casado[0]} — vai para .env ou config/`);
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        for (const { number, text } of file.codeLines) {
+          const matched = text.match(URL_LITERAL);
+          if (matched !== null) {
+            findings.push(`${file.rel}:${number}: literal URL ${matched[0]} — move it to .env or config/`);
           }
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'hardcode-numero',
+    id: 'hardcode-number',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
+    check(ctx) {
       // Nome que denuncia valor de INFRAESTRUTURA. Numero de negocio (aliquota, prazo) tem nome
       // de negocio e mora em config/domain.json — nao entra neste padrao.
       // Fronteira SO no inicio da palavra: `timeoutMs` e `maxTentativas` casam, `importante` nao
       // (nao ha fronteira antes de "port" em "im|port"). Exigir `\b` no fim perdia todo nome
       // composto — que e justamente como esses valores costumam se chamar.
-      const nomes = /\b(porta|port|timeout|tempoLimite|limite|limit|max|minimo|intervalo|ttl|janela|retentativas|tentativas)/i;
-      const achados = [];
+      const names = /\b(porta|port|timeout|tempoLimite|limite|limit|max|minimo|intervalo|ttl|janela|retentativas|tentativas)/i;
+      const findings = [];
 
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste || arquivo.rel.startsWith('config/')) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
+      for (const file of ctx.code) {
+        if (file.isTest || file.rel.startsWith('config/')) continue;
+        for (const { number, text } of file.codeLines) {
           // Atribuicao de literal numerico (>1) a identificador de infraestrutura.
-          const casado = texto.match(/([A-Za-z_]\w*)\s*[:=]\s*(\d{2,})\b/);
-          if (casado === null || !nomes.test(casado[1])) continue;
+          const matched = text.match(/([A-Za-z_]\w*)\s*[:=]\s*(\d{2,})\b/);
+          if (matched === null || !names.test(matched[1])) continue;
           // SCREAMING_SNAKE e constante de vocabulario fechado (codigo HTTP, enum), nao tunable —
           // chave de config e camelCase por nomenclatura (§3.1). `LIMITE_EXCEDIDO: 429` fica fora.
-          if (casado[1] === casado[1].toUpperCase()) continue;
-          achados.push(`${arquivo.rel}:${numero}: literal ${casado[2]} em "${casado[1]}" — vai para config/ ou .env`);
+          if (matched[1] === matched[1].toUpperCase()) continue;
+          findings.push(`${file.rel}:${number}: literal ${matched[2]} in "${matched[1]}" — move it to config/ or .env`);
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'fallback-silencioso',
+    id: 'silent-fallback',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          if (PADROES_DE_FALLBACK.some((padrao) => padrao.test(texto))) {
-            achados.push(`${arquivo.rel}:${numero}: fallback de env — falta de config DERRUBA o boot`);
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        for (const { number, text } of file.codeLines) {
+          if (FALLBACK_PATTERNS.some((pattern) => pattern.test(text))) {
+            findings.push(`${file.rel}:${number}: environment fallback — missing configuration must stop startup`);
           }
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'env-declarado',
+    id: 'env-declared',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const id = ctx.manifesto?.id;
+    check(ctx) {
+      const id = ctx.manifest?.id;
       if (id === undefined) return [];
-      const prefixo = id.toUpperCase().replace(/-/g, '_');
-      const declaradas = new Set(ctx.manifesto.requiredEnv ?? []);
-      const usadas = new Set();
-      const padrao = new RegExp(`\\b(?:VITE_)?(${prefixo}_[A-Z0-9_]+)\\b`, 'g');
+      const prefix = id.toUpperCase().replace(/-/g, '_');
+      const declared = new Set(ctx.manifest.requiredEnv ?? []);
+      const used = new Set();
+      const pattern = new RegExp(`\\b(?:VITE_)?(${prefix}_[A-Z0-9_]+)\\b`, 'g');
 
-      for (const arquivo of ctx.codigo) {
-        for (const achado of textoDeCodigo(arquivo).matchAll(padrao)) usadas.add(achado[1]);
+      for (const file of ctx.code) {
+        for (const finding of codeText(file).matchAll(pattern)) used.add(finding[1]);
       }
-      return [...usadas]
-        .filter((chave) => !declaradas.has(chave))
-        .map((chave) => `env "${chave}" usada no codigo e ausente de module.json:requiredEnv`);
+      return [...used]
+        .filter((key) => !declared.has(key))
+        .map((key) => `environment variable "${key}" is used in code but missing from module.json:requiredEnv`);
     },
   },
   {
-    id: 'env-exemplo',
+    id: 'env-example',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const arquivo = arquivoPorNome(ctx, '.env.example');
-      if (arquivo === null) return ['.env.example ausente — gere com tools/sync-env.mjs'];
-      const declaradas = ctx.manifesto?.requiredEnv ?? [];
-      const documentadas = lerParesEnv(arquivo.conteudo).map(([chave]) => chave);
-      const achados = [];
-      for (const chave of declaradas) {
-        if (!documentadas.includes(chave)) achados.push(`.env.example nao documenta "${chave}"`);
+    check(ctx) {
+      const file = fileByName(ctx, '.env.example');
+      if (file === null) return ['.env.example is missing — generate it with tools/sync-env.mjs'];
+      const declared = ctx.manifest?.requiredEnv ?? [];
+      const documented = readEnvPairs(file.content).map(([key]) => key);
+      const findings = [];
+      for (const key of declared) {
+        if (!documented.includes(key)) findings.push(`.env.example does not document "${key}"`);
       }
-      for (const chave of documentadas) {
-        if (!declaradas.includes(chave)) achados.push(`.env.example documenta "${chave}", ausente do manifesto`);
+      for (const key of documented) {
+        if (!declared.includes(key)) findings.push(`.env.example documents "${key}", which is missing from the manifest`);
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'env-modulo',
+    id: 'env-module',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const arquivo = arquivoPorNome(ctx, '.env');
-      if (arquivo === null) return [];
-      const prefixo = (ctx.manifesto?.id ?? '').toUpperCase().replace(/-/g, '_');
-      return lerParesEnv(arquivo.conteudo)
-        .map(([chave]) => chave)
-        .filter((chave) => chave !== 'ENV_ROOT' && !chave.startsWith(prefixo) && !chave.startsWith(`VITE_${prefixo}`))
-        .map((chave) => `.env do modulo contem "${chave}" — so ENV_ROOT e chaves ${prefixo}_* sao aceitas`);
+    check(ctx) {
+      const file = fileByName(ctx, '.env');
+      if (file === null) return [];
+      const prefix = (ctx.manifest?.id ?? '').toUpperCase().replace(/-/g, '_');
+      return readEnvPairs(file.content)
+        .map(([key]) => key)
+        .filter((key) => key !== 'ENV_ROOT' && !key.startsWith(prefix) && !key.startsWith(`VITE_${prefix}`))
+        .map((key) => `.env in the module contains "${key}" — only ENV_ROOT and ${prefix}_* keys are allowed`);
     },
   },
   {
-    id: 'gitignore-segredo',
+    id: 'gitignore-secret',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
+    check(project) {
       // Mesma guarda das outras duas regras de projeto: modulo solto nao tem `.gitignore` de
       // projeto, e cobrar um dele seria falso positivo garantido.
-      if (!projeto.ehProjeto) return [];
-      if (projeto.gitignore === null) {
-        return ['.gitignore ausente na raiz do projeto — o .env real ficaria versionavel'];
+      if (!project.isProject) return [];
+      if (project.gitignore === null) {
+        return ['.gitignore is missing from the project root — the real .env could be committed'];
       }
-      const padroes = padroesDeIgnore(projeto.gitignore);
-      const descobertos = SEGREDOS_A_IGNORAR.filter((caminho) => !estaIgnorado(padroes, caminho));
-      if (descobertos.length === 0) return [];
+      const patterns = ignorePatterns(project.gitignore);
+      const discovered = SECRETS_TO_IGNORE.filter((path) => !isIgnored(patterns, path));
+      if (discovered.length === 0) return [];
       // NAO afirma que o arquivo esta versionado — isso exigiria `git ls-files`, e o gate nao roda
       // git de proposito. Aqui e so o arquivo de ignore; o que ja foi commitado e do passo de CI.
-      return [`.gitignore nao ignora ${descobertos.join(' nem ')} — o segredo real fica versionavel.`
-        + ' Acrescente as linhas ".env" e "modules/*/.env" (o .env.example continua versionado)'];
+      return [`.gitignore does not ignore ${discovered.join(' or ')} — a real secret could be committed.`
+        + ' Add ".env" and "modules/*/.env" (keep .env.example versioned)'];
     },
   },
   {
-    id: 'segredo-em-publico',
+    id: 'secret-in-public',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
+    check(ctx) {
+      const findings = [];
       // No MANIFESTO: e a declaracao, e onde o defeito nasce. Sem excecao por `role` — o
-      // `gateway-credencial` isenta o gateway porque credencial e o oficio dele, mas nem o gateway
+      // `gateway-credential` isenta o gateway porque credencial e o oficio dele, mas nem o gateway
       // pode publicar a credencial no bundle.
-      for (const chave of ctx.manifesto?.requiredEnv ?? []) {
-        if (ehPublicaComCredencial(chave)) {
-          achados.push(`env "${chave}" tem prefixo PUBLICO e nome de credencial — o bundler injeta`
-            + ' esse valor no bundle do front, onde qualquer visitante o le. Segredo fica no'
-            + ' servidor, sem prefixo publico');
+      for (const key of ctx.manifest?.requiredEnv ?? []) {
+        if (isPublicWithCredential(key)) {
+          findings.push(`environment variable "${key}" has a PUBLIC prefix and a credential name — the bundler includes`
+            + ' this value in the frontend bundle, where any visitor can read it. Secrets belong on the'
+            + ' server, without a public prefix');
         }
       }
       // No CODIGO: pega a chave usada e nao declarada, que o manifesto por definicao nao mostra.
-      // `env-fora-do-carregador` nao cobre isto — ele procura `process.env`, e o front le
+      // `env-outside-loader` nao cobre isto — ele procura `process.env`, e o front le
       // `import.meta.env`, que nao casa o padrao dele.
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          achados.push(...achadosDeChavePublicaNaLinha(arquivo, numero, texto));
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        for (const { number, text } of file.codeLines) {
+          findings.push(...publicKeyFindingsInLine(file, number, text));
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'verificacao-declarada',
+    id: 'verification-declared',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
+    check(project) {
       // Modulo solto (extraido e ainda nao religado a um esqueleto) ou fixture nao e projeto —
       // cobrar politica de projeto de quem nao tem `modules/` seria falso positivo garantido.
-      if (!projeto.ehProjeto) return [];
-      const { presente, valor } = projeto.verificacao;
+      if (!project.isProject) return [];
+      const { present, value } = project.check;
       // REPROVA quando ausente, e nao silencia: o arquivo nasce com todo projeto gerado, entao a
       // ausencia dele so acontece por apagamento ou por repositorio anterior ao template. Calar
       // tornaria "nenhuma politica declarada" indistinguivel de "politica conforme" — a confusao
       // que este gate inteiro existe para impedir.
-      if (!presente) {
-        return ['config/verification.json ausente na raiz do projeto — declare cobertura, severidade'
-          + ' de dependencia e ferramenta por linguagem (schema em tools/gate/schemas/)'];
+      if (!present) {
+        return ['config/verification.json is missing from the project root — declare dependency coverage, severity'
+          + ' and tool by language (schema in tools/gate/schemas/)'];
       }
-      if (valor === null) return ['config/verification.json nao e JSON valido'];
-      return validar(valor, carregarEsquema('verification'), 'config/verification.json');
+      if (value === null) return ['config/verification.json is not valid JSON'];
+      return validate(value, loadSchema('verification'), 'config/verification.json');
     },
   },
   {
-    id: 'conformidade-declarada',
+    id: 'compliance-declared',
     nivel: 'erro',
     escopo: 'root',
     // Ate esta regra, `config/compliance.json` era o unico config sem schema e sem dono: JSON
-    // malformado caia num catch silencioso de `carregarExcecoes` (exit 0, exececoes todas
+    // malformado caia num catch silencioso de `loadExceptions` (exit 0, exececoes todas
     // descartadas caladas) e chave em ingles (`module`/`rule`) so falhava calada tambem — a
     // excecao nao pegava, e nada dizia por que. `decisao` resolver a um ADR de verdade continua
     // sendo trabalho da regra §6 (`04-regras.md`, fora deste arquivo — e o fail-open medido em
-    // 2026-08-15); esta regra so cobra a FORMA, o mesmo par (existe + schema) de `verificacao-declarada`.
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      const { presente, valor } = projeto.conformidade;
-      if (!presente) {
-        return ['config/compliance.json ausente na raiz do projeto — a lista de excecoes comeca'
-          + ' vazia, e esse e o estado correto, mas o arquivo precisa existir (schema em tools/gate/schemas/)'];
+    // 2026-08-15); esta regra so cobra a FORMA, o mesmo par (existe + schema) de `verification-declared`.
+    // O 2º argumento (`catalogo.ids`) fecha o buraco que o ADR-024 abriria: o gate compara `rule` por
+    // igualdade, então exceção com id que não existe (renomeado ou nunca existiu) deixava de perdoar
+    // EM SILÊNCIO e o achado voltava como erro sem dizer por quê. Aqui ela é acusada pelo nome.
+    check(project, catalog) {
+      if (!project.isProject) return [];
+      const { present, value } = project.compliance;
+      if (!present) {
+        return ['config/compliance.json is missing from the project root — the exception list starts'
+          + ' empty, which is correct, but the file must exist (schema in tools/gate/schemas/)'];
       }
-      if (valor === null) return ['config/compliance.json nao e JSON valido'];
-      return validar(valor, carregarEsquema('compliance'), 'config/compliance.json');
+      if (value === null) return ['config/compliance.json is not valid JSON'];
+      return [
+        ...validate(value, loadSchema('compliance'), 'config/compliance.json'),
+        ...exceptionsWithUnknownId(value, project.renamedRules, catalog?.ids),
+      ];
     },
   },
   {
-    id: 'lint-derivado',
+    id: 'derived-lint',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
+    check(project) {
+      if (!project.isProject) return [];
 
       // A pergunta e "o que esta na raiz e ALGUMA saida do gerador?", e NAO "bate com o binding
       // deste modulo". A config de lint e do PROJETO, e o binding do modulo e outro fato: um modulo
       // escafoldado com o binding errado faria esta regra pedir `eslint.config.js` num projeto
       // Python — mandando consertar a config quando o defeito e o manifesto do modulo. Mensagem que
       // aponta o conserto errado e pior que mensagem nenhuma.
-      const derivadas = BINDINGS.map((binding) => saidaDe(binding));
-      const naRaiz = Object.entries(projeto.configsDeLint).filter(([, texto]) => texto !== null);
-      if (naRaiz.length === 0) {
-        const nomes = [...new Set(derivadas.map((d) => d.nome))].join(' ou ');
-        return [`nenhuma config de linter na raiz do projeto (${nomes}) — sem ela os limiares 40/3/4`
-          + ' so sao cobrados pelo gate. Gere com: node tools/generate-lint-config.mjs'];
+      const derived = BINDINGS.map((binding) => outputOf(binding));
+      const rootLintConfigs = Object.entries(project.lintConfigs).filter(([, text]) => text !== null);
+      if (rootLintConfigs.length === 0) {
+        const names = [...new Set(derived.map((d) => d.name))].join(' ou ');
+        return [`no linter configuration in the project root (${names}) — without it, the 40/3/4 thresholds`
+          + ' are enforced only by the gate. Generate it with: node tools/generate-lint-config.mjs'];
       }
 
-      const achados = [];
-      for (const [nome, texto] of naRaiz) {
-        const esperadas = derivadas.filter((d) => d.nome === nome).map((d) => d.conteudo);
-        if (esperadas.includes(texto)) continue;
-        achados.push(`${nome} diverge de tools/gate/thresholds.mjs — o linter e o gate passariam`
-          + ' a cobrar limiares diferentes, e o §7.2 manda o linter vencer, o que tornaria a'
-          + ' divergencia invisivel. Regere com: node tools/generate-lint-config.mjs');
+      const findings = [];
+      for (const [name, text] of rootLintConfigs) {
+        const expected = derived.filter((d) => d.name === name).map((d) => d.content);
+        if (expected.includes(text)) continue;
+        findings.push(`${name} differs from tools/gate/thresholds.mjs — the linter and gate would enforce`
+          + ' different thresholds, and §7.2 gives the linter precedence, making this'
+          + ' difference invisible. Regenerate with: node tools/generate-lint-config.mjs');
       }
-      return achados;
+      return findings;
     },
   },
   {
     /**
-     * O análogo de `env-declarado` para a FIAÇÃO, e nos DOIS sentidos.
+     * O análogo de `env-declared` para a FIAÇÃO, e nos DOIS sentidos.
      *
      * O sentido "usada e não declarada" é o buraco que motiva o manifesto de raiz: sem esta regra,
      * o `.env.example` da raiz é montado só com `module.json:requiredEnv`, então o `JWT_SECRET` do
@@ -527,30 +551,30 @@ export default [
      * os manifestos, e roda no `verificar` dos três bindings. Duplicar isso em regra daria duas
      * mensagens para um conserto só.
      */
-    id: 'env-raiz-declarado',
+    id: 'root-env-declared',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      const declaradas = projeto.manifesto.valor?.requiredEnv;
-      // Manifesto ausente, quebrado ou com `requiredEnv` de outro tipo ja e do `manifesto-raiz` —
+    check(project) {
+      if (!project.isProject) return [];
+      const declared = project.manifest.value?.requiredEnv;
+      // Manifesto ausente, quebrado ou com `requiredEnv` de outro tipo ja e do `root-manifest` —
       // empilhar aqui daria duas mensagens para um conserto so.
-      if (!Array.isArray(declaradas)) return [];
+      if (!Array.isArray(declared)) return [];
 
-      const usadas = new Set();
-      for (const arquivo of projeto.codigo) {
-        for (const achado of textoDeCodigo(arquivo).matchAll(CHAVE_DE_RAIZ)) usadas.add(achado[0]);
+      const used = new Set();
+      for (const file of project.code) {
+        for (const finding of codeText(file).matchAll(ROOT_KEY)) used.add(finding[0]);
       }
 
-      const achados = [...usadas]
-        .filter((chave) => !declaradas.includes(chave))
-        .map((chave) => `env "${chave}" usada no codigo da raiz e ausente de project.json:requiredEnv`);
-      for (const chave of declaradas) {
-        if (usadas.has(chave)) continue;
-        achados.push(`env "${chave}" declarada em project.json e nunca usada em adapters/, src/ nem`
-          + ' packages/ — ela entra no .env.example e passa a exigir um valor que nada le');
+      const findings = [...used]
+        .filter((key) => !declared.includes(key))
+        .map((key) => `environment variable "${key}" is used in root code but missing from project.json:requiredEnv`);
+      for (const key of declared) {
+        if (used.has(key)) continue;
+        findings.push(`environment variable "${key}" is declared in project.json but never used in adapters/, src/, or`
+          + ' packages/ — it appears in .env.example and requires a value that nothing reads');
       }
-      return achados;
+      return findings;
     },
   },
   {
@@ -562,41 +586,41 @@ export default [
      * mensagem aponta: no módulo, `.env` ou `config/`; aqui, `project.json:requiredEnv`, que é
      * onde a raiz declara o que exige do ambiente.
      */
-    id: 'hardcode-url-raiz',
+    id: 'root-hardcode-url',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      return varrerRaiz(projeto, (texto) => {
-        const casado = texto.match(URL_LITERAL);
-        if (casado === null) return null;
-        return `URL literal ${casado[0]} na fiacao — endereco de infraestrutura vem do ambiente:`
-          + ' declare a chave em project.json:requiredEnv e leia-a aqui';
+    check(project) {
+      if (!project.isProject) return [];
+      return scanRoot(project, (text) => {
+        const matched = text.match(URL_LITERAL);
+        if (matched === null) return null;
+        return `literal URL ${matched[0]} in root composition — infrastructure addresses come from the environment:`
+          + ' declare the key in project.json:requiredEnv and read it here';
       });
     },
   },
   {
     /**
-     * O gêmeo de `fallback-silencioso` na fiação — a MESMA `PADROES_DE_FALLBACK`.
+     * O gêmeo de `silent-fallback` na fiação — a MESMA `FALLBACK_PATTERNS`.
      *
      * O defeito é idêntico e a consequência é pior: o que a raiz lê do ambiente é o segredo do
      * sistema, e um default embutido não "ajuda no desenvolvimento" — ele VIRA o valor de produção
      * no dia em que a chave falta, calado, com o boot subindo normalmente.
      *
-     * Não briga com `env-raiz-declarado`: aquela cobra a chave USADA e não declarada, e não
+     * Não briga com `root-env-declared`: aquela cobra a chave USADA e não declarada, e não
      * proíbe a leitura. Ler `process.env` é o ofício de `src/composicao` — é o inverso do que
-     * `env-fora-do-carregador` cobra no módulo. O que esta regra proíbe é o DEFAULT, nunca a leitura.
+     * `env-outside-loader` cobra no módulo. O que esta regra proíbe é o DEFAULT, nunca a leitura.
      */
-    id: 'fallback-raiz',
+    id: 'root-fallback',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      return varrerRaiz(projeto, (texto) => {
-        if (!PADROES_DE_FALLBACK.some((padrao) => padrao.test(texto))) return null;
-        return 'fallback de env na fiacao — falta de config tem de DERRUBAR o boot. O que a raiz le'
-          + ' do ambiente e o segredo do sistema, e um default embutido vira o valor de producao no'
-          + ' dia em que a chave falta, sem ninguem perceber';
+    check(project) {
+      if (!project.isProject) return [];
+      return scanRoot(project, (text) => {
+        if (!FALLBACK_PATTERNS.some((pattern) => pattern.test(text))) return null;
+        return "environment fallback in root composition — missing configuration must stop startup. Root code reads"
+          + " the system's secrets from the environment; an embedded default becomes a production value on the"
+          + " day the key is missing, without anyone noticing";
       });
     },
   },
@@ -609,48 +633,48 @@ export default [
      * cobrava que o arquivo existisse: dois lugares documentavam um pre-commit
      * (`tools/gate/README.md`, o passo 6 de `meta-iniciar-repositorio`) e nenhum o entregava.
      *
-     * O QUE ELA NÃO AFIRMA, e o limite tem precedente literal em `gitignore-segredo`: `core.hooksPath`
+     * O QUE ELA NÃO AFIRMA, e o limite tem precedente literal em `gitignore-secret`: `core.hooksPath`
      * é config LOCAL do git, não arquivo — provar que ele aponta para `.githooks` exigiria rodar
      * `git config`, e o gate não roda git de propósito. Esta regra prova que o projeto não desmontou
      * a rede; não prova que a rede está LIGADA (§7.2). Também não exige `pre-push`: as três camadas
      * são desenho, e um projeto pode legitimamente só ter a primeira.
      */
-    id: 'pre-commit-instalado',
+    id: 'pre-commit-installed',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      // Mesma guarda de `verificacao-declarada`/`lint-derivado`: módulo solto (extraído e ainda não
+    check(project) {
+      // Mesma guarda de `verification-declared`/`derived-lint`: módulo solto (extraído e ainda não
       // religado a um esqueleto de projeto) não tem raiz de projeto a cobrar, e exigir o hook dele
       // seria falso positivo garantido.
-      if (!projeto.ehProjeto) return [];
-      if (projeto.githooksPreCommit === null) {
-        return ['.githooks/pre-commit ausente na raiz do projeto — sem ele, o gate só roda quando'
-          + ' alguém lembra de chamar a mão (03-operacao.md §7). O template instala o hook pronto em'
+      if (!project.isProject) return [];
+      if (project.githooksPreCommit === null) {
+        return ['.githooks/pre-commit is missing from the project root — without it, the gate only runs when'
+          + ' someone remembers to run it manually (03-operacao.md §7). The template installs the hook at'
           + ' bindings/<binding>/root/.githooks/pre-commit; ative com'
-          + ' "git config core.hooksPath .githooks"'];
+          + ' activate it with "git config core.hooksPath .githooks"'];
       }
       // "Invoca a cadeia" é TEXTUAL, não comportamental: a regra procura a referência ao gate ou ao
       // script comum dos hooks, nunca executa o arquivo. Duas formas aceitas — chamada direta ao
       // gate (o exemplo histórico do README) e a delegação ao script comum que o template instala.
-      const invocaACadeia = /tools[\\/](gate[\\/]validate\.mjs|verify-commit\.mjs)/
-        .test(projeto.githooksPreCommit);
-      if (!invocaACadeia) {
-        return ['.githooks/pre-commit existe mas não referencia tools/gate/validate.mjs nem'
-          + ' tools/verify-commit.mjs — um hook que não invoca a cadeia é pior que nenhum'
-          + ' hook: ele passa a impressão de que há uma rede, e não há'];
+      const invokesChain = /tools[\\/](gate[\\/]validate\.mjs|verify-commit\.mjs)/
+        .test(project.githooksPreCommit);
+      if (!invokesChain) {
+        return ['.githooks/pre-commit exists but references neither tools/gate/validate.mjs nor'
+          + ' tools/verify-commit.mjs — a hook that does not run the checks is worse than no'
+          + ' hook: it gives the impression of protection without providing it'];
       }
       return [];
     },
   },
   {
-    id: 'env-fora-do-carregador',
+    id: 'env-outside-loader',
     nivel: 'aviso',
     escopo: 'module',
-    verificar(ctx) {
-      return ctx.codigo
-        .filter((a) => !a.eTeste && !ehCarregador(a.rel))
-        .filter((a) => /process\.env|os\.environ|os\.getenv/.test(textoDeCodigo(a)))
-        .map((a) => `${a.rel}: le env fora do carregador — so api/src/config.* toca o ambiente`);
+    check(ctx) {
+      return ctx.code
+        .filter((a) => !a.isTest && !isLoader(a.rel))
+        .filter((a) => /process\.env|os\.environ|os\.getenv/.test(codeText(a)))
+        .map((a) => `${a.rel}: reads environment variables outside the loader — only api/src/config.* may access them`);
     },
   },
 ];

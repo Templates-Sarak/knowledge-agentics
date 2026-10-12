@@ -25,8 +25,10 @@ entre módulos é da thread principal (do command `/code1-auditar`) — não a f
 
 ## Workflow
 1. **Delimitar** — `Glob`/`Read` para listar os arquivos do módulo (código, `tests/`, config). Topologia
-   `template`: consuma o `--json` do gate que o orquestrador passou e **complemente só as lacunas** dele
-   (`04-regras.md` §7) — não reproduza achado que o gate já emitiu com id de regra.
+   `template`: consuma `findings[]`/`errorCount` do `--json` do gate que o orquestrador passou e
+   **complemente só as lacunas** dele (`04-regras.md` §7) — não reproduza achado que o gate já emitiu.
+   Cada finding usa `module`, `rule`, `severity` e `message`; ao gravar o backlog existente,
+   mapeie `rule` para o campo de saída `regra` sem alterar o formato persistido nesta onda.
 2. **Motor mecânico (verificação de padrões de código)** — rode o validador da linguagem nos arquivos e **consuma o JSON/saída**:
    - **Python** → `padrao-python/scripts/validate.py` (interno, via `ast`).
    - **TS/JS** → `padrao-typescript/scripts/validate.mjs` (via API do `tsc` do projeto).

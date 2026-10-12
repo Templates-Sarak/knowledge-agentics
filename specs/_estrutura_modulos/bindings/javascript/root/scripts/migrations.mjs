@@ -6,7 +6,7 @@
 //   node scripts/migrations.mjs down <module>     reverte so o ULTIMO aplicado (bloco "-- rollback")
 //   node scripts/migrations.mjs ciclo <module>    up -> down -> up — prova que o rollback fecha,
 //                                                  de qualquer estado inicial (vazio ou ja migrado)
-//   node scripts/migrations.mjs --autoteste       prova interna (parser, ordem, pending/ultimo)
+//   node scripts/migrations.mjs --selftest       prova interna (parser, ordem, pending/ultimo)
 //
 // NAO MORA em tools/ (zero dependencia externa, lei 3 da base) — precisa de driver de
 // Postgres, e tools/ so usa node:*. `pg` e devDependency do PROJETO (mesmo precedente de
@@ -39,8 +39,8 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 // `pg` e LAZY, de proposito — mesma forma do `psycopg` em migrations.py (importado dentro da funcao
 // que conecta, nunca no topo). O nucleo puro (splitUpDown, orderMigrations, environmentKey,
-// pending, lastApplied) e o que `--autoteste` prova, e ele nunca toca banco: um import de topo
-// faria um teste que nao usa banco nenhum exigir o driver instalado, e `--autoteste` deixaria de
+// pending, lastApplied) e o que `--selftest` prova, e ele nunca toca banco: um import de topo
+// faria um teste que nao usa banco nenhum exigir o driver instalado, e `--selftest` deixaria de
 // rodar "de qualquer lugar". Medido tambem (nao presumido) o formato do `await import('pg')`: o
 // pacote e CJS, mas expoe `Client` como export NOMEADO tambem (alem de `.default.Client`) —
 // desestruturar direto do resultado do import dinamico funciona, sem precisar de `.default`.
@@ -48,7 +48,7 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ = resolve(AQUI, '..');
 
 // ================================================================================================
-// NUCLEO PURO — nunca toca disco nem rede. E a metade que `--autoteste` prova.
+// NUCLEO PURO — nunca toca disco nem rede. E a metade que `--selftest` prova.
 // ================================================================================================
 
 /** `<module>` valido — kebab-case minusculo, a MESMA forma que `create-module.mjs` exige ao nascer.
@@ -80,7 +80,7 @@ export function splitUpDown(conteudo) {
  * preservando a indentacao). Qualquer outra coisa — comentario de verdade, linha ja sem "--" —
  * passa INALTERADA: e SQL valido de um jeito ou de outro (comentario sempre e; o resto so chega
  * aqui se ja nao estivesse comentado). E o que faz o parser nunca quebrar, provado por
- * `--autoteste` com linha em branco, comentario que NAO e rollback, e indentacao.
+ * `--selftest` com linha em branco, comentario que NAO e rollback, e indentacao.
  */
 function uncommentRollback(linhas) {
   return linhas
@@ -498,12 +498,12 @@ function runSelftest() {
 
 async function principal() {
   const [comando, alvo] = process.argv.slice(2);
-  if (comando === '--autoteste') return runSelftest();
+  if (comando === '--selftest') return runSelftest();
 
   if (!['up', 'down', 'ciclo'].includes(comando) || alvo === undefined) {
     process.stderr.write(
       'uso: node scripts/migrations.mjs up|down|ciclo <module>\n' +
-        '     node scripts/migrations.mjs --autoteste\n',
+        '     node scripts/migrations.mjs --selftest\n',
     );
     return 1;
   }

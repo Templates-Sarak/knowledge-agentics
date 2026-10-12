@@ -2,7 +2,7 @@
 
     python gerar_resumo.py [--specs <dir>]            escreve <dir>/panorama/00-resumo.md
     python gerar_resumo.py [--specs <dir>] --checar   nao escreve; exit 1 se houver problema
-    python gerar_resumo.py --autoteste                prova o nucleo com fixtures em memoria
+    python gerar_resumo.py --selftest                prova o nucleo com fixtures em memoria
 
 Le de <dir> (a pasta `specs/` do projeto): `panorama/00-planejamento.md` (catalogo §1, horizonte §2),
 `00-indice.md` (ordem `#` e motivo), `plan/plan-FF.NN-*.md` (status, titulo, familia, item),
@@ -13,7 +13,7 @@ Saida deterministica (sem data, ordem fixa) — e isso que deixa o `--checar` ac
 desatualizado. Teto de 70 linhas: cada lista mostra no maximo N entradas e depois `… +K`.
 
 Nucleo x casca: `montar_projeto`, `checagens` e `renderizar` (e o que chamam) sao PURAS — recebem
-texto, nunca tocam `fs`; sao o que o `--autoteste` prova. `ler_textos`/`main` sao a casca. So
+texto, nunca tocam `fs`; sao o que o `--selftest` prova. `ler_textos`/`main` sao a casca. So
 biblioteca padrao: o frontmatter e lido por um parser minimo dos campos usados, sem PyYAML.
 """
 
@@ -440,7 +440,7 @@ def _parser():
         "--checar", action="store_true", help="Nao escreve; exit 1 se houver problema."
     )
     parser.add_argument(
-        "--autoteste", action="store_true", help="Prova o nucleo com fixtures."
+        "--selftest", action="store_true", help="Prova o nucleo com fixtures."
     )
     return parser
 
@@ -449,7 +449,7 @@ def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     args = _parser().parse_args()
-    if args.autoteste:
+    if args.selftest:
         return autoteste()
     if not os.path.isfile(os.path.join(args.specs, "panorama", "00-planejamento.md")):
         print(
@@ -701,7 +701,7 @@ def autoteste() -> int:
     for nome in falhas:
         print(f"[FALHA] {nome}", file=sys.stderr)
     print(
-        f"gerar_resumo --autoteste: {len(CASOS) - len(falhas)}/{len(CASOS)} caso(s) verde"
+        f"gerar_resumo --selftest: {len(CASOS) - len(falhas)}/{len(CASOS)} caso(s) verde"
     )
     return 1 if falhas else 0
 

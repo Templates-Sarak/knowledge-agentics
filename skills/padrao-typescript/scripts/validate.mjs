@@ -88,7 +88,7 @@ function violacao(caminho, linha, dimensao, severidade, risco, descricao, regra,
 }
 
 /** Núcleo: valida um TEXTO TS/JS já lido contra `cfg`. Puro — não toca `fs`. É o que o
- * `--autoteste` prova com fixtures em memória (a única entrada externa é o compilador `ts`,
+ * `--selftest` prova com fixtures em memória (a única entrada externa é o compilador `ts`,
  * carregado uma vez, do mesmo jeito que o autoteste de `validate.py` usa o `ast` da stdlib). */
 function validarTexto(ts, caminho, texto, cfg) {
   const ext = extname(caminho);
@@ -204,7 +204,7 @@ function validarTexto(ts, caminho, texto, cfg) {
 
 /** Núcleo: valida um TEXTO já lido, e nunca deixa uma exceção do AST-walk escapar sem virar
  * violação — qualquer erro de parsing vira uma violação de dimensão "parse", a MESMA regra que
- * `main()` aplicava só para I/O. Extraído para o núcleo para o `--autoteste` provar o item sem
+ * `main()` aplicava só para I/O. Extraído para o núcleo para o `--selftest` provar o item sem
  * tocar disco: injeta um `ts` que sempre falha e confere que o resultado é fatal. */
 function validarComFallbackDeParse(ts, caminho, texto, cfg) {
   try {
@@ -269,7 +269,7 @@ function autoteste() {
 
   // Concatenado, nao literal: o texto de ORIGEM deste arquivo nao pode conter um segredo-
   // formato contiguo, senao o proprio scan de vazamentos do audit_base.py acha "vazamento"
-  // que e so dado de teste (mesmo cuidado do fixture em scan_segredos.py --autoteste).
+  // que e so dado de teste (mesmo cuidado do fixture em scan_segredos.py --selftest).
   const valorSecreto = "valor-bem" + "-secreto";
   const segredo = `const token = '${valorSecreto}';\n`;
   if (!tem(validarTexto(ts, "f.ts", segredo, cfg), "segredos"))
@@ -306,7 +306,7 @@ function autoteste() {
 }
 
 function main() {
-  if (process.argv.includes("--autoteste")) process.exit(autoteste());
+  if (process.argv.includes("--selftest")) process.exit(autoteste());
   const { alvo, config } = parseArgs(process.argv.slice(2));
   if (!alvo) {
     console.error("uso: node validate.mjs <arquivo-ou-pasta> [--config config.json]");

@@ -276,7 +276,7 @@ aqui para que a próxima fase não improvise.
 
 | modo | O que significa | O que o gate cobra |
 |---|---|---|
-| `own` | o módulo define suas primitivas em `web/src/components/` | proibido importar componente de **outro módulo** — é a regra `import-lateral`, que já cobra isto para o módulo inteiro; não há regra específica de `ui` neste modo |
+| `own` | o módulo define suas primitivas em `web/src/components/` | proibido importar componente de **outro módulo** — é a regra `lateral-import`, que já cobra isto para o módulo inteiro; não há regra específica de `ui` neste modo |
 | `kit` | a renderização vem de `packages/ui-kit` (nome canônico; `ui.pacote` declara outro) | `ui-kit` (erro): nenhum arquivo importa a biblioteca de UI bruta, e algo em `web/` importa o kit — kit declarado e nunca importado é declaração sem consequência. `ui-token` (aviso): zero literal de cor ou fonte em declaração de estilo |
 
 Módulo sem `web/` silencia nos dois modos: descartar a tela é permitido (§2).
@@ -302,7 +302,7 @@ quebram o gate e que o gate não consegue consertar sozinho.
 Depois do scaffold, a ordem de preenchimento é: `contract/openapi.yaml` → `core/domain` → `api/src/routes` →
 `api/src/mappers` → `database/` → `web/src/pages` → `tests/`. O contrato antes do código é deliberado: é a
 **fronteira que outros consomem** (`module.json:consumes`), o gate cobra rota do código × rota da spec **nos
-dois sentidos** (`contrato-sincronizado`), e `contract-compatible.mjs` compara o contrato contra o baseline
+dois sentidos** (`synchronized-contract`), e `contract-compatible.mjs` compara o contrato contra o baseline
 git. Escrever código primeiro faz a spec ser redigida **para descrever o código** — e aí a fonte de verdade
 inverte sem ninguém decidir isso.
 

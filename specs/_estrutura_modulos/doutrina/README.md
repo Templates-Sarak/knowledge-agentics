@@ -61,15 +61,15 @@ ao lado, na mesma pasta.
 
 | Erro comum | Regra |
 |---|---|
-| importar outro módulo em vez de declarar `consumes` (HTTP) | `import-lateral` |
+| importar outro módulo em vez de declarar `consumes` (HTTP) | `lateral-import` |
 | importar um adapter dentro do módulo — o adapter é injetado | `import-adapter` |
-| porta, permissão ou tabela usada e não declarada no manifesto | `porta-declarada` / `permissao-literal` / `tabela-declarada` |
-| rota no código sem contrato, ou no contrato sem código | `contrato-sincronizado` |
-| default silencioso de ambiente (`process.env.X ?? 3000`) | `fallback-silencioso` |
-| campo na resposta que nenhum schema do contrato declara | `projecao-contrato` |
-| SQL montado por concatenação ou interpolação | `sql-concatenado` |
+| porta, permissão ou tabela usada e não declarada no manifesto | `port-declared` / `permission-literal` / `table-declared` |
+| rota no código sem contrato, ou no contrato sem código | `synchronized-contract` |
+| default silencioso de ambiente (`process.env.X ?? 3000`) | `silent-fallback` |
+| campo na resposta que nenhum schema do contrato declara | `contract-projection` |
+| SQL montado por concatenação ou interpolação | `concatenated-sql` |
 | `console.log`/`print` no lugar do logger estruturado | `log` |
-| função acima de 40 linhas, aninhamento acima de 3, mais de 4 parâmetros | `limiar-funcao` / `limiar-aninhamento` / `limiar-parametros` |
+| função acima de 40 linhas, aninhamento acima de 3, mais de 4 parâmetros | `function-threshold` / `nesting-threshold` / `parameters-threshold` |
 
 O catálogo inteiro — todas as regras, nível e escopo de cada uma: `04-regras.md`.
 

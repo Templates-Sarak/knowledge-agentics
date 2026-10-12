@@ -1,33 +1,33 @@
 /**
  * rules/isolation.mjs — família "Isolamento" do catálogo (specs/arquitetura/04-regras.md §4.2).
- * ids: import-lateral, import-adapter, sdk-fornecedor, gateway-http, gateway-declarado,
- *      consome-ciclo, consome-contrato, ui-kit, ui-token,
- *      portas-pura, adapter-isolado, composicao-descoberta
+ * ids: lateral-import, import-adapter, vendor-sdk, gateway-http, gateway-declared,
+ *      consumes-cycle, consumes-contract, ui-kit, ui-token,
+ *      pure-ports, isolated-adapter, composition-discovery
  *
  * É a família que sustenta a extraibilidade. Se ela passa, o módulo sai da pasta sem refactor.
  *
  * As TRÊS últimas são de escopo `root` e olham a **fiação**, não o módulo. Estão nesta família
  * porque a pergunta é a mesma — quem pode depender de quem —, só que na direção complementar:
- * `import-lateral` e `import-adapter` cobram o módulo; estas três cobram a raiz.
+ * `lateral-import` e `import-adapter` cobram o módulo; estas três cobram a raiz.
  *
  * O `ui.mode` do manifesto tem duas cláusulas (01-modulo.md §7) e só UMA delas ganha regra própria:
- * a do modo `own` ("proibido importar componente de outro módulo") **é** a `import-lateral`
+ * a do modo `own` ("proibido importar componente de outro módulo") **é** a `lateral-import`
  * inteira — o import de `@<escopo>/<vizinho>` e o caminho relativo que sai da pasta. Escrever uma
  * segunda regra para ela daria duas mensagens e um conserto só.
  */
-import { leiturasFalhas, normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
-// `gatewaysDe` e a derivacao dos gateways REAIS pelo nome do arquivo, sem os barris. UMA
-// implementacao, compartilhada com `testes-gateway` (§4.1) — as duas pontas do mesmo triangulo.
-import { gatewaysDe, temArquivoEm } from './structure.mjs';
-// Vocabulario de SQL: UMA lista, a de `sql-concatenado`. Aqui ela e COMPOSTA com o vocabulario de
+import { failedReads, normalize, specOperations, specOf } from '../spec.mjs';
+// `gatewaysOf` e a derivacao dos gateways REAIS pelo nome do arquivo, sem os barris. UMA
+// implementacao, compartilhada com `gateway-tests` (§4.1) — as duas pontas do mesmo triangulo.
+import { gatewaysOf, hasFileIn } from './structure.mjs';
+// Vocabulario de SQL: UMA lista, a de `concatenated-sql`. Aqui ela e COMPOSTA com o vocabulario de
 // conexao — a pergunta e "este gateway fala com banco?", nao "esta linha e SQL?" —, e e essa
 // composicao que permite as duas regras compartilharem os verbos sem compartilharem o recorte.
-import { SQL_FONTE } from './operation.mjs';
+import { SQL_SOURCE } from './operation.mjs';
 // O texto sem comentario nem docstring. Mora em `../text.mjs` porque CINCO familias o usam, e
 // porque de dentro de `rules/` ele fechava um ciclo com `operation.mjs` (ver o cabecalho de la).
-import { textoDeCodigo } from '../text.mjs';
+import { codeText } from '../text.mjs';
 
-const SDKS_FORNECEDOR = [
+const VENDOR_SDKS = [
   '@supabase/', 'pg', 'mysql', 'mysql2', 'aws-sdk', '@aws-sdk/', 'firebase',
   'firebase-admin', 'oracledb', 'mongodb', 'mongoose', 'openai', 'redis', 'ioredis',
   'psycopg2', 'boto3', 'sqlalchemy', 'pymongo',
@@ -36,14 +36,14 @@ const SDKS_FORNECEDOR = [
 /**
  * Bibliotecas de UI BRUTAS — exatamente o que `packages/ui-kit` existe para envolver, sendo ele o
  * "ponto único de contato com a biblioteca de UI" (00-arquitetura.md §3.3). Inline como
- * `SDKS_FORNECEDOR`, e pelo mesmo argumento: é vocabulário NORMATIVO fechado, parte da regra e não
+ * `VENDOR_SDKS`, e pelo mesmo argumento: é vocabulário NORMATIVO fechado, parte da regra e não
  * tunable de projeto — mudá-lo é mudar a lei, e a lei não mora em config.
  *
  * Critério de inclusão: o pacote RENDERIZA componente ou ESTILIZA. `react`, `vue` e afins ficam de
  * fora de propósito — são o framework em que o próprio kit é escrito, não a biblioteca que ele
  * envolve, e proibi-los tornaria o modo `kit` impossível de cumprir.
  */
-const BIBLIOTECAS_DE_UI = [
+const UI_LIBRARIES = [
   '@mui/', '@material-ui/', 'antd', '@ant-design/', 'react-bootstrap', 'bootstrap',
   '@chakra-ui/', '@mantine/', 'primereact', 'primevue', 'semantic-ui-react', '@fluentui/',
   'vuetify', 'element-plus', 'quasar', '@radix-ui/', '@headlessui/',
@@ -55,11 +55,11 @@ const BIBLIOTECAS_DE_UI = [
  * diferente em cada uma: cor tem forma própria (`#hex`, `rgb(`, `hsl(`), fonte só se distingue de
  * um token por estar entre aspas (`fontFamily: 'Inter'` × `fontFamily: tokens.fonte`).
  */
-const PROPRIEDADES_DE_COR = [
+const COLOR_PROPERTIES = [
   'color', 'backgroundColor', 'background-color', 'background', 'borderColor', 'border-color',
   'border', 'outlineColor', 'outline-color', 'outline', 'boxShadow', 'box-shadow', 'fill', 'stroke',
 ];
-const PROPRIEDADES_DE_FONTE = ['fontFamily', 'font-family', 'font'];
+const SOURCE_PROPERTIES = ['fontFamily', 'font-family', 'font'];
 
 /**
  * O recorte que separa DECLARAÇÃO DE ESTILO de ATRIBUTO DE APRESENTAÇÃO, e é ele que elimina — não
@@ -72,11 +72,11 @@ const PROPRIEDADES_DE_FONTE = ['fontFamily', 'font-family', 'font'];
  * `border: '1px solid #ccc'` sem escapar da declaração e alcançar um atributo vizinho —
  * `style={{ color: tokens.a }} fill="#000"` para no `}`.
  */
-const COR_LITERAL = new RegExp(
-  `\\b(?:${PROPRIEDADES_DE_COR.join('|')})\\s*:[^;\\n{}]{0,40}?`
+const LITERAL_COLOR = new RegExp(
+  `\\b(?:${COLOR_PROPERTIES.join('|')})\\s*:[^;\\n{}]{0,40}?`
   + '(?:#[0-9a-fA-F]{3,8}\\b|(?:rgba?|hsla?)\\s*\\()',
 );
-const FONTE_LITERAL = new RegExp(`\\b(?:${PROPRIEDADES_DE_FONTE.join('|')})\\s*:\\s*['"\`]`);
+const LITERAL_SOURCE = new RegExp(`\\b(?:${SOURCE_PROPERTIES.join('|')})\\s*:\\s*['"\`]`);
 
 /**
  * Folha de estilo entra na varredura, e não é detalhe: em `ui.mode: "kit"` ela é o lugar MAIS
@@ -85,7 +85,7 @@ const FONTE_LITERAL = new RegExp(`\\b(?:${PROPRIEDADES_DE_FONTE.join('|')})\\s*:
  *
  * `.module.css` entra por `.css`: `ext` é a última extensão do nome.
  */
-const EXT_ESTILO = new Set(['.css', '.scss', '.sass', '.less']);
+const EXT_STYLE = new Set(['.css', '.scss', '.sass', '.less']);
 
 /**
  * A fonte em folha de estilo precisa de outro discriminador: CSS não usa aspas
@@ -93,15 +93,15 @@ const EXT_ESTILO = new Set(['.css', '.scss', '.sass', '.less']);
  * passar a forma mais comum de todas. O que ocupa o lugar do token ali é a VARIÁVEL (`var(--x)`)
  * e as palavras-chave da própria linguagem; qualquer outra coisa é a fonte escrita à mão.
  */
-const FONTE_LITERAL_EM_ESTILO = /\b(?:font|font-family)\s*:\s*(?!var\(|inherit|initial|unset|revert)\S/i;
+const LITERAL_SOURCE_IN_STYLE = /\b(?:font|font-family)\s*:\s*(?!var\(|inherit|initial|unset|revert)\S/i;
 
-function temLiteralVisual(texto, eEstilo) {
-  if (COR_LITERAL.test(texto)) return true;
-  return eEstilo ? FONTE_LITERAL_EM_ESTILO.test(texto) : FONTE_LITERAL.test(texto);
+function hasVisualLiteral(text, isStyle) {
+  if (LITERAL_COLOR.test(text)) return true;
+  return isStyle ? LITERAL_SOURCE_IN_STYLE.test(text) : LITERAL_SOURCE.test(text);
 }
 
 // Captura o alvo de `import ... from 'X'`, `require('X')`, `import('X')` e `from X import` (Python).
-const PADROES_IMPORT = [
+const IMPORT_PATTERNS = [
   /from\s+['"]([^'"]+)['"]/g,
   /require\(\s*['"]([^'"]+)['"]\s*\)/g,
   /import\(\s*['"]([^'"]+)['"]\s*\)/g,
@@ -111,14 +111,14 @@ const PADROES_IMPORT = [
 /**
  * Todos os alvos de import de um arquivo, sem duplicata.
  *
- * `linhasCodigo`, e NUNCA `conteudo` — o mesmo cuidado que `ui-token` e `sensivel-em-saida` já
+ * `linhasCodigo`, e NUNCA `conteudo` — o mesmo cuidado que `ui-token` e `sensitive-in-output` já
  * tomam, e pelo mesmo motivo: **a própria lei escrita num comentário viraria violação dela mesma**.
  * Sobre o texto cru, um bloco que só documenta o que não se pode fazer —
  *
  *     // Como NAO fazer:
  *     // import { X } from '@acme/fin';
  *
- * — produzia três acusações de uma vez (`import-lateral`, `import-adapter`, `sdk-fornecedor`) sobre
+ * — produzia três acusações de uma vez (`lateral-import`, `import-adapter`, `vendor-sdk`) sobre
  * código correto. Falso positivo é a direção de erro que o §7.2 declara que este gate não aceita.
  *
  * O recorte não é total, e o §7.2 registra o resto: `linhasCodigo` tira comentário e docstring, não
@@ -127,48 +127,48 @@ const PADROES_IMPORT = [
  *
  * A junção por `\n` preserva o `^` do padrão de import do Python, que é ancorado por linha.
  */
-export function importesDe(arquivo) {
-  const alvos = new Set();
-  for (const padrao of PADROES_IMPORT) {
-    for (const achado of textoDeCodigo(arquivo).matchAll(padrao)) alvos.add(achado[1]);
+export function importsOf(file) {
+  const targets = new Set();
+  for (const pattern of IMPORT_PATTERNS) {
+    for (const finding of codeText(file).matchAll(pattern)) targets.add(finding[1]);
   }
-  return [...alvos];
+  return [...targets];
 }
 
 /** Um import relativo que sobe acima da raiz do módulo saiu da fronteira. */
-function saiDoModulo(arquivoRel, alvo) {
-  if (!alvo.startsWith('.')) return false;
-  const partes = arquivoRel.split('/').slice(0, -1).concat(alvo.split('/'));
-  let profundidade = 0;
-  for (const parte of partes) {
-    if (parte === '..') profundidade -= 1;
-    else if (parte !== '.' && parte !== '') profundidade += 1;
-    if (profundidade < 0) return true;
+function leavesModule(relFile, target) {
+  if (!target.startsWith('.')) return false;
+  const parts = relFile.split('/').slice(0, -1).concat(target.split('/'));
+  let depth = 0;
+  for (const part of parts) {
+    if (part === '..') depth -= 1;
+    else if (part !== '.' && part !== '') depth += 1;
+    if (depth < 0) return true;
   }
   return false;
 }
 
-function ehPacoteDeModulo(alvo, idsVizinhos) {
-  const casado = alvo.match(/^@[^/]+\/([^/]+)/);
-  if (casado === null) return null;
-  const base = casado[1].replace(/-(api|web|core)$/, '');
-  return idsVizinhos.includes(base) ? base : null;
+function isModulePackage(target, neighborIds) {
+  const matched = target.match(/^@[^/]+\/([^/]+)/);
+  if (matched === null) return null;
+  const base = matched[1].replace(/-(api|web|core)$/, '');
+  return neighborIds.includes(base) ? base : null;
 }
 
-function raizDoPacote(alvo) {
-  if (alvo.startsWith('@')) return alvo.split('/').slice(0, 2).join('/');
-  return alvo.split('/')[0].split('.')[0];
+function packageRoot(target) {
+  if (target.startsWith('@')) return target.split('/').slice(0, 2).join('/');
+  return target.split('/')[0].split('.')[0];
 }
 
 /**
  * O SDK de fornecedor que este import traz, ou `undefined`. UMA implementação, usada por
- * `sdk-fornecedor` (que o proíbe no módulo) e por `portas-pura` (que o proíbe na interface
+ * `vendor-sdk` (que o proíbe no módulo) e por `pure-ports` (que o proíbe na interface
  * canônica) — duas leituras da mesma lista, que divergiriam no primeiro driver novo que alguém
  * acrescentasse de um lado só.
  */
-function sdkDe(alvo) {
-  const raiz = raizDoPacote(alvo);
-  return SDKS_FORNECEDOR.find((sdk) => raiz === sdk || alvo.startsWith(sdk));
+function sdkOf(target) {
+  const root = packageRoot(target);
+  return VENDOR_SDKS.find((sdk) => root === sdk || target.startsWith(sdk));
 }
 
 /**
@@ -176,25 +176,25 @@ function sdkDe(alvo) {
  * cai? `packages/ports/` é distinguido do resto de `packages/` porque é o vértice do diagrama —
  * `modules/ ──→ packages/ports/ ←── adapters/`.
  */
-const AREAS_DA_RAIZ = ['modules', 'adapters', 'src', 'packages'];
+const ROOT_AREAS = ['modules', 'adapters', 'src', 'packages'];
 
 /**
  * Resolve um import relativo contra o arquivo que o escreveu, devolvendo caminho a partir da raiz
  * do projeto. `null` quando o caminho SOBE acima da raiz: ali ele deixou o projeto, e nenhuma área
  * o descreve — afirmar área seria inventar.
  */
-function resolverRelativo(arquivoRel, alvo) {
-  const pilha = arquivoRel.split('/').slice(0, -1);
-  for (const parte of alvo.split('/')) {
-    if (parte === '.' || parte === '') continue;
-    if (parte !== '..') {
-      pilha.push(parte);
+function resolveRelative(relFile, target) {
+  const stack = relFile.split('/').slice(0, -1);
+  for (const part of target.split('/')) {
+    if (part === '.' || part === '') continue;
+    if (part !== '..') {
+      stack.push(part);
       continue;
     }
-    if (pilha.length === 0) return null;
-    pilha.pop();
+    if (stack.length === 0) return null;
+    stack.pop();
   }
-  return pilha.join('/');
+  return stack.join('/');
 }
 
 /**
@@ -202,19 +202,19 @@ function resolverRelativo(arquivoRel, alvo) {
  * por caminho ou por specifier — a troca de `.` por `/` iguala as duas antes de olhar segmento.
  *
  * Import relativo (`alvo` começa com `.`) sai intacto: o chamador decide o que fazer com ele —
- * `areaDoImport` resolve contra `arquivoRel`, `import-adapter` casa a forma com barra que já
+ * `importArea` resolve contra `arquivoRel`, `import-adapter` casa a forma com barra que já
  * cobria `./adapters/x`. Aplicar a troca ali também não muda nada (relativo já usa barra em JS, e
  * dotted-relativo de Python não alcança `adapters/`, que mora fora de qualquer pacote do módulo).
  */
-function formaDeCaminho(alvo) {
-  return alvo.startsWith('.') ? alvo : alvo.replaceAll('.', '/');
+function pathShape(target) {
+  return target.startsWith('.') ? target : target.replaceAll('.', '/');
 }
 
 /**
  * `import-adapter` casa `adapters/` em duas posições, e a posição MUDA com o tipo de import:
  *
  * NÃO relativo: só no PRIMEIRO segmento. É o que faz `adapters.memory` (Python, virando
- * `adapters/memory` via `formaDeCaminho`) apontar para a pasta de topo que `pythonpath=["."]`
+ * `adapters/memory` via `pathShape`) apontar para a pasta de topo que `pythonpath=["."]`
  * expõe — e é o que salva `opentelemetry.adapters.wsgi` (`opentelemetry/adapters/wsgi`, primeiro
  * segmento `opentelemetry`) de ser confundido com ela: pacote externo com SUBMÓDULO chamado
  * `adapters` é código correto, e casar em qualquer posição os igualava por acidente de nome.
@@ -223,9 +223,9 @@ function formaDeCaminho(alvo) {
  * há pacote externo para colidir —, e é assim que `../../adapters/memory/index.js` continua
  * casando não importa a que profundidade o `../` termine.
  */
-function importaAdapter(alvo) {
-  if (alvo.startsWith('.')) return /(^|\/)adapters?\//.test(alvo);
-  return /^adapters?(\/|$)/.test(formaDeCaminho(alvo));
+function adapterImports(target) {
+  if (target.startsWith('.')) return /(^|\/)adapters?\//.test(target);
+  return /^adapters?(\/|$)/.test(pathShape(target));
 }
 
 /**
@@ -234,33 +234,33 @@ function importaAdapter(alvo) {
  * `adapters/` por desenho.
  *
  * **A distinção que sustenta estas três regras: IMPORT é dependência; leitura de arquivo é
- * descoberta.** Só o que `importesDe` extrai chega aqui, e ele extrai forma de import — nunca
+ * descoberta.** Só o que `importsOf` extrai chega aqui, e ele extrai forma de import — nunca
  * `readdirSync(join(root, 'modules'))`. É por isso que `src/composition.*`, que alcança todos os
  * módulos lendo o `module.json` de cada pasta, passa limpo: import amarra em tempo de compilação e mata a
  * substituição; leitura de arquivo é o mecanismo que permite acrescentar módulo sem tocar na
  * composição. Uma regra que procurasse a string `modules` acusaria o próprio desenho que protege.
  */
-function areaDoImport(arquivoRel, alvo) {
-  const caminho = alvo.startsWith('.')
-    ? resolverRelativo(arquivoRel, alvo)
-    : formaDeCaminho(alvo);
-  if (caminho === null) return null;
-  const [primeiro, segundo] = caminho.split('/');
-  if (!AREAS_DA_RAIZ.includes(primeiro)) return null;
-  if (primeiro !== 'packages') return primeiro;
-  return segundo === 'ports' ? 'packages/ports' : 'packages';
+function importArea(relFile, target) {
+  const path = target.startsWith('.')
+    ? resolveRelative(relFile, target)
+    : pathShape(target);
+  if (path === null) return null;
+  const [first, second] = path.split('/');
+  if (!ROOT_AREAS.includes(first)) return null;
+  if (first !== 'packages') return first;
+  return second === 'ports' ? 'packages/ports' : 'packages';
 }
 
 /** Todos os imports dos arquivos de uma área da raiz, já com a área do alvo resolvida. */
-function importesDaArea(projeto, prefixo) {
-  const lista = [];
-  for (const arquivo of projeto.codigo) {
-    if (!arquivo.rel.startsWith(prefixo)) continue;
-    for (const alvo of importesDe(arquivo)) {
-      lista.push({ rel: arquivo.rel, alvo, area: areaDoImport(arquivo.rel, alvo) });
+function areaImports(project, prefix) {
+  const list = [];
+  for (const file of project.code) {
+    if (!file.rel.startsWith(prefix)) continue;
+    for (const target of importsOf(file)) {
+      list.push({ rel: file.rel, target, area: importArea(file.rel, target) });
     }
   }
-  return lista;
+  return list;
 }
 
 /**
@@ -268,14 +268,14 @@ function importesDaArea(projeto, prefixo) {
  * nome canônico da tabela de nomes (`@<escopo>/ui-kit`, 04-regras.md §3.1); com ele, o projeto que
  * batizou o kit de outro jeito diz qual é, e continua verificável.
  */
-function pacoteDoKit(ctx) {
-  return ctx.manifesto?.ui?.pacote ?? null;
+function kitPackage(ctx) {
+  return ctx.manifest?.ui?.pacote ?? null;
 }
 
-function ehImportDoKit(ctx, alvo) {
-  const pacote = pacoteDoKit(ctx);
-  if (pacote !== null) return alvo === pacote || alvo.startsWith(`${pacote}/`);
-  return /^@[^/]+\/ui-kit(\/|$)/.test(alvo);
+function isKitImport(ctx, target) {
+  const pkg = kitPackage(ctx);
+  if (pkg !== null) return target === pkg || target.startsWith(`${pkg}/`);
+  return /^@[^/]+\/ui-kit(\/|$)/.test(target);
 }
 
 /**
@@ -285,167 +285,167 @@ function ehImportDoKit(ctx, alvo) {
  * descartar a tela é permitido (01-modulo.md §2) e é o que o molde Python faz: cobrar tela de quem
  * decidiu não ter uma seria falso positivo garantido.
  */
-function modoKitSeAplica(ctx) {
-  return ctx.manifesto?.ui?.mode === 'kit' && temArquivoEm(ctx, 'web/');
+function kitModeApplies(ctx) {
+  return ctx.manifest?.ui?.mode === 'kit' && hasFileIn(ctx, 'web/');
 }
 
-/** O laco de `alvo` isolado do de `import-lateral.verificar` — mesma tecnica das outras familias,
+/** O laco de `alvo` isolado do de `lateral-import.verificar` — mesma tecnica das outras familias,
  * para o aninhamento caber no limiar que esta propria regra cobra do codigo do usuario (04-regras.md §4.7). */
-function achadosDeImportesDoArquivo(ctx, arquivo, ids) {
-  const achados = [];
-  for (const alvo of importesDe(arquivo)) {
-    const vizinho = ehPacoteDeModulo(alvo, ids.filter((id) => id !== ctx.idPasta));
-    if (vizinho !== null) {
-      achados.push({ modulo: ctx.idPasta, mensagem: `${arquivo.rel}: importa o modulo "${vizinho}" ("${alvo}")` });
+function fileImportFindings(ctx, file, ids) {
+  const findings = [];
+  for (const target of importsOf(file)) {
+    const neighbor = isModulePackage(target, ids.filter((id) => id !== ctx.dirId));
+    if (neighbor !== null) {
+      findings.push({ modulo: ctx.dirId, mensagem: `${file.rel}: imports module "${neighbor}" ("${target}")` });
     }
-    if (saiDoModulo(arquivo.rel, alvo)) {
-      achados.push({ modulo: ctx.idPasta, mensagem: `${arquivo.rel}: caminho relativo sai da pasta do modulo ("${alvo}")` });
+    if (leavesModule(file.rel, target)) {
+      findings.push({ modulo: ctx.dirId, mensagem: `${file.rel}: relative path leaves the module directory ("${target}")` });
     }
   }
-  return achados;
+  return findings;
 }
 
 export default [
   {
-    id: 'import-lateral',
+    id: 'lateral-import',
     nivel: 'erro',
     escopo: 'global',
-    verificar(contextos) {
-      const ids = contextos.map((c) => c.idPasta);
-      const achados = [];
-      for (const ctx of contextos) {
-        for (const arquivo of ctx.codigo) {
-          achados.push(...achadosDeImportesDoArquivo(ctx, arquivo, ids));
+    check(contexts) {
+      const ids = contexts.map((c) => c.dirId);
+      const findings = [];
+      for (const ctx of contexts) {
+        for (const file of ctx.code) {
+          findings.push(...fileImportFindings(ctx, file, ids));
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
     id: 'import-adapter',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
         // Teste é a raiz de composição dele mesmo: montar o adapter de memória ali é legítimo.
-        if (arquivo.eTeste) continue;
-        for (const alvo of importesDe(arquivo)) {
-          if (importaAdapter(alvo) || /^@[^/]+\/adapter-/.test(alvo)) {
-            achados.push(`${arquivo.rel}: importa adapter ("${alvo}") — o adapter e INJETADO, nunca importado`);
+        if (file.isTest) continue;
+        for (const target of importsOf(file)) {
+          if (adapterImports(target) || /^@[^/]+\/adapter-/.test(target)) {
+            findings.push(`${file.rel}: imports adapter ("${target}") — adapters are INJECTED, never imported`);
           }
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'sdk-fornecedor',
+    id: 'vendor-sdk',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        for (const alvo of importesDe(arquivo)) {
-          if (sdkDe(alvo) !== undefined) {
-            achados.push(`${arquivo.rel}: SDK de fornecedor "${alvo}" dentro do modulo — use uma porta`);
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        for (const target of importsOf(file)) {
+          if (sdkOf(target) !== undefined) {
+            findings.push(`${file.rel}: vendor SDK "${target}" is inside the module — use a port`);
           }
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
     id: 'gateway-http',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const proibidos = new RegExp(`\\b(${SQL_FONTE}|createClient|new\\s+Pool|\\.query\\()`, 'i');
-      return ctx.codigo
-        // `textoDeCodigo`, nao `conteudo`: o barril da pasta DOCUMENTA em comentario o que o
+    check(ctx) {
+      const forbidden = new RegExp(`\\b(${SQL_SOURCE}|createClient|new\\s+Pool|\\.query\\()`, 'i');
+      return ctx.code
+        // `codeText`, nao `conteudo`: o barril da pasta DOCUMENTA em comentario o que o
         // gateway nao pode fazer, e sobre o texto cru essa documentacao vira a violacao dela mesma.
-        .filter((a) => a.rel.startsWith('core/gateways/') && proibidos.test(textoDeCodigo(a)))
-        .map((a) => `${a.rel}: gateway fala com banco — gateway e HTTP sobre o contrato do outro modulo`);
+        .filter((a) => a.rel.startsWith('core/gateways/') && forbidden.test(codeText(a)))
+        .map((a) => `${a.rel}: gateway accesses a database — gateways use HTTP through another module's contract`);
     },
   },
   {
-    id: 'gateway-declarado',
+    id: 'gateway-declared',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const consumidos = (ctx.manifesto?.consumes ?? []).map((c) => c.module);
-      // A exclusao de barril mora em `gatewaysDe` — ver o import no topo.
-      const arquivos = gatewaysDe(ctx);
+    check(ctx) {
+      const consumed = (ctx.manifest?.consumes ?? []).map((c) => c.module);
+      // A exclusao de barril mora em `gatewaysOf` — ver o import no topo.
+      const files = gatewaysOf(ctx);
 
-      const achados = arquivos
-        .filter((nome) => !consumidos.includes(nome))
-        .map((nome) => `core/gateways/${nome}: sem entrada em module.json:consumes`);
+      const findings = files
+        .filter((name) => !consumed.includes(name))
+        .map((name) => `core/gateways/${name}: is missing from module.json:consumes`);
 
-      return achados.concat(
-        consumidos
-          .filter((modulo) => !arquivos.includes(modulo))
-          .map((modulo) => `consome declara "${modulo}" mas nao existe core/gateways/${modulo}`),
+      return findings.concat(
+        consumed
+          .filter((module) => !files.includes(module))
+          .map((module) => `consumes declares "${module}" but core/gateways/${module} does not exist`),
       );
     },
   },
   {
-    id: 'consome-contrato',
+    id: 'consumes-contract',
     nivel: 'erro',
     escopo: 'global',
-    verificar(contextos) {
-      const donos = new Map(contextos.map((c) => [c.idPasta, c]));
-      const achados = [];
-      for (const ctx of contextos) {
-        for (const entrada of ctx.manifesto?.consumes ?? []) {
-          const falha = conferirConsumo(donos.get(entrada.module) ?? null, entrada);
-          if (falha !== null) achados.push({ modulo: ctx.idPasta, mensagem: falha });
+    check(contexts) {
+      const owners = new Map(contexts.map((c) => [c.dirId, c]));
+      const findings = [];
+      for (const ctx of contexts) {
+        for (const entry of ctx.manifest?.consumes ?? []) {
+          const failure = checkConsumption(owners.get(entry.module) ?? null, entry);
+          if (failure !== null) findings.push({ modulo: ctx.dirId, mensagem: failure });
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'consome-ciclo',
+    id: 'consumes-cycle',
     nivel: 'erro',
     escopo: 'global',
-    verificar(contextos) {
-      const grafo = new Map(
-        contextos.map((c) => [c.idPasta, (c.manifesto?.consumes ?? []).map((x) => x.module)]),
+    check(contexts) {
+      const graph = new Map(
+        contexts.map((c) => [c.dirId, (c.manifest?.consumes ?? []).map((x) => x.module)]),
       );
-      const achados = [];
-      for (const inicio of grafo.keys()) {
-        const caminho = buscarCiclo(grafo, inicio);
-        if (caminho !== null) achados.push({ modulo: inicio, mensagem: `ciclo em consome: ${caminho.join(' -> ')}` });
+      const findings = [];
+      for (const start of graph.keys()) {
+        const path = findCycle(graph, start);
+        if (path !== null) findings.push({ modulo: start, mensagem: `dependency cycle: ${path.join(' -> ')}` });
       }
-      return achados;
+      return findings;
     },
   },
   {
     id: 'ui-kit',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      if (!modoKitSeAplica(ctx)) return [];
+    check(ctx) {
+      if (!kitModeApplies(ctx)) return [];
 
       // (a) Nenhum arquivo importa a biblioteca BRUTA — o kit e o unico ponto de contato com ela.
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        for (const alvo of importesDe(arquivo)) {
-          const raiz = raizDoPacote(alvo);
-          if (BIBLIOTECAS_DE_UI.some((lib) => raiz === lib || alvo.startsWith(lib))) {
-            achados.push(`${arquivo.rel}: importa a biblioteca de UI bruta "${alvo}" — em ui.mode "kit" o unico ponto de contato com ela e o pacote do kit`);
+      const findings = [];
+      for (const file of ctx.code) {
+        for (const target of importsOf(file)) {
+          const root = packageRoot(target);
+          if (UI_LIBRARIES.some((lib) => root === lib || target.startsWith(lib))) {
+            findings.push(`${file.rel}: imports raw UI library "${target}" — in ui.mode "kit", the kit package is the only allowed integration point`);
           }
         }
       }
 
-      // (b) Declaracao sem consequencia — a forma exata do `web-declarado`: o manifesto promete uma
+      // (b) Declaracao sem consequencia — a forma exata do `web-declared`: o manifesto promete uma
       // origem para os componentes visuais e nada em `web/` vai busca-la la.
-      const doWeb = ctx.codigo.filter((a) => a.rel.startsWith('web/') && !a.eTeste);
-      if (!doWeb.some((a) => importesDe(a).some((alvo) => ehImportDoKit(ctx, alvo)))) {
-        const esperado = pacoteDoKit(ctx) ?? '@<escopo>/ui-kit';
-        achados.push(`ui.mode "kit" declarado mas nenhum arquivo de web/ importa o kit ("${esperado}") — declaracao sem consequencia; importe o kit em web/, declare o nome dele em ui.pacote, ou volte a ui.mode "own"`);
+      const webFiles = ctx.code.filter((a) => a.rel.startsWith('web/') && !a.isTest);
+      if (!webFiles.some((a) => importsOf(a).some((target) => isKitImport(ctx, target)))) {
+        const expected = kitPackage(ctx) ?? '@<escopo>/ui-kit';
+        findings.push(`ui.mode "kit" is declared, but no web/ file imports the kit ("${expected}") — import it in web/, declare its name in ui.package, or switch ui.mode back to "own"`);
       }
-      return achados;
+      return findings;
     },
   },
   {
@@ -458,27 +458,27 @@ export default [
      * biblioteca-padrão acusaria um molde conforme. O que a regra proíbe são as DUAS dependências
      * que destroem a interface: as outras áreas do sistema, e o fornecedor.
      */
-    id: 'portas-pura',
+    id: 'pure-ports',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      const achados = [];
-      for (const { rel, alvo, area } of importesDaArea(projeto, 'packages/ports/')) {
+    check(project) {
+      if (!project.isProject) return [];
+      const findings = [];
+      for (const { rel, target, area } of areaImports(project, 'packages/ports/')) {
         if (area !== null && area !== 'packages' && area !== 'packages/ports') {
-          achados.push(`${rel}: importa de ${area}/ ("${alvo}") — a porta e a interface CANONICA:`
-            + ' quem implementa depende DELA, nunca o contrario. Inverta a dependencia');
+          findings.push(`${rel}: imports from ${area}/ ("${target}") — the port is the CANONICAL interface:`
+            + ' implementations depend on it, never the reverse. Invert the dependency');
         }
-        // O fornecedor na interface e o pior caso: `sdk-fornecedor` mantem o driver fora de CADA
+        // O fornecedor na interface e o pior caso: `vendor-sdk` mantem o driver fora de CADA
         // modulo, e um `pg` aqui o devolveria a TODOS de uma vez, pela porta que eles importam.
-        const sdk = sdkDe(alvo);
+        const sdk = sdkOf(target);
         if (sdk !== undefined) {
-          achados.push(`${rel}: SDK de fornecedor "${alvo}" na interface canonica — a porta existe`
-            + ' para o modulo NAO conhecer o fornecedor; com o driver aqui, todo modulo que importa'
-            + ' a porta passa a conhece-lo. O driver mora em adapters/');
+          findings.push(`${rel}: vendor SDK "${target}" is in the canonical interface — the port exists`
+            + ' so modules do not know the vendor; placing the driver here exposes it to every module importing'
+            + ' the port. The driver belongs in adapters/');
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
@@ -487,27 +487,27 @@ export default [
      * que permite ao módulo sair da pasta.
      *
      * Dependência EXTERNA aqui é legítima e não é acusada: `adapters/` é exatamente o lugar do
-     * `pg`, do `@supabase/*` e do `boto3`. `sdk-fornecedor` proíbe isso no módulo; aqui é o
+     * `pg`, do `@supabase/*` e do `boto3`. `vendor-sdk` proíbe isso no módulo; aqui é o
      * contrário, e proibir inverteria a arquitetura.
      */
-    id: 'adapter-isolado',
+    id: 'isolated-adapter',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      const achados = [];
-      for (const { rel, alvo, area } of importesDaArea(projeto, 'adapters/')) {
+    check(project) {
+      if (!project.isProject) return [];
+      const findings = [];
+      for (const { rel, target, area } of areaImports(project, 'adapters/')) {
         if (area === 'modules') {
-          achados.push(`${rel}: importa de modules/ ("${alvo}") — o adapter implementa a PORTA e nao`
-            + ' conhece dominio nenhum. No dia em que ele conhece um modulo, o adapter deixa de ser'
-            + ' substituivel e o modulo deixa de sair da pasta');
+          findings.push(`${rel}: imports from modules/ ("${target}") — the adapter implements the PORT and must not`
+            + ' depend on a domain. Once it depends on a module, the adapter is no longer'
+            + ' replaceable and that module can no longer be extracted independently');
         }
         if (area === 'src') {
-          achados.push(`${rel}: importa de src/ ("${alvo}") — a fiacao INSTANCIA o adapter; depender`
-            + ' dela inverte a direcao e o adapter deixa de viajar sozinho na extracao');
+          findings.push(`${rel}: imports from src/ ("${target}") — composition INSTANTIATES the adapter; depending`
+            + ' on composition reverses the dependency and prevents independent adapter extraction');
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
@@ -521,39 +521,39 @@ export default [
      * Importar `adapters/` daqui é o OFÍCIO da composição — ela instancia e injeta — e não é
      * acusado. Só `modules/` é.
      */
-    id: 'composicao-descoberta',
+    id: 'composition-discovery',
     nivel: 'erro',
     escopo: 'root',
-    verificar(projeto) {
-      if (!projeto.ehProjeto) return [];
-      return importesDaArea(projeto, 'src/')
+    check(project) {
+      if (!project.isProject) return [];
+      return areaImports(project, 'src/')
         .filter(({ area }) => area === 'modules')
-        .map(({ rel, alvo }) => `${rel}: importa de modules/ ("${alvo}") — a composicao DESCOBRE os`
-          + ' modulos lendo modules/*/module.json, nunca por import: o import fixa a lista em tempo'
-          + ' de compilacao, e acrescentar um modulo passaria a exigir editar este arquivo');
+        .map(({ rel, target }) => `${rel}: imports from modules/ ("${target}") — composition DISCOVERS modules by`
+          + ' reading modules/*/module.json, never by import: imports fix the list at compile time'
+          + ' and adding a module would require editing this file');
     },
   },
   {
     id: 'ui-token',
     nivel: 'aviso',
     escopo: 'module',
-    verificar(ctx) {
-      if (!modoKitSeAplica(ctx)) return [];
-      const achados = [];
-      const daTela = [...ctx.codigo, ...ctx.arquivos.filter((a) => EXT_ESTILO.has(a.ext))];
-      for (const arquivo of daTela) {
-        if (!arquivo.rel.startsWith('web/') || arquivo.eTeste) continue;
-        const eEstilo = EXT_ESTILO.has(arquivo.ext);
+    check(ctx) {
+      if (!kitModeApplies(ctx)) return [];
+      const findings = [];
+      const screenFiles = [...ctx.code, ...ctx.files.filter((a) => EXT_STYLE.has(a.ext))];
+      for (const file of screenFiles) {
+        if (!file.rel.startsWith('web/') || file.isTest) continue;
+        const isStyle = EXT_STYLE.has(file.ext);
         // `linhasCodigo`, nunca `conteudo`: a propria lei escrita num comentario ("nada de #fff
         // aqui") viraria violacao dela mesma. Vale igual em folha de estilo: o extrator descarta
         // `/* ... */`, de uma linha ou de varias, e a linha de continuacao iniciada por `*`.
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          if (temLiteralVisual(texto, eEstilo)) {
-            achados.push(`${arquivo.rel}:${numero}: literal de cor ou fonte em declaracao de estilo — em ui.mode "kit" cor e fonte vem de token do kit`);
+        for (const { number, text } of file.codeLines) {
+          if (hasVisualLiteral(text, isStyle)) {
+          findings.push(`${file.rel}:${number}: literal color or font in a style declaration — ui.mode "kit" gets colors and fonts from kit tokens`);
           }
         }
       }
-      return achados;
+      return findings;
     },
   },
 ];
@@ -564,44 +564,44 @@ export default [
  * Nunca aprova por omissão: dono inexistente e dono sem spec viram achado, e não silêncio. É o
  * §7 aplicado — a regra diz que não conseguiu verificar, em vez de deixar passar.
  */
-function conferirConsumo(dono, entrada) {
-  const alvo = `"${entrada.contract}" (modulo dono "${entrada.module}")`;
-  if (dono === null) return `consome ${alvo}: o modulo dono nao existe em modules/`;
+function checkConsumption(owner, entry) {
+  const target = `"${entry.contract}" (owning module "${entry.module}")`;
+  if (owner === null) return `consumes ${target}: the owning module does not exist in modules/`;
 
-  const spec = specDe(dono);
-  if (spec === null) return `consome ${alvo}: o dono nao tem contract/openapi.yaml — NAO foi possivel verificar`;
+  const spec = specOf(owner);
+  if (spec === null) return `consumes ${target}: the owner has no contract/openapi.yaml — verification was NOT possible`;
 
   // `paths:` do DONO ilegivel: o defeito e do dono, e o `contract` DELE ja o reporta (esta regra
   // e global, entao o dono esta sempre no conjunto analisado). Acusar aqui mandaria o autor do
   // CONSUMIDOR consertar um arquivo que nao e dele — o conserto errado, para a pessoa errada.
   // So `paths:` importa: o contrato consumido e a rota, e o `servers:` do dono nao entra nela.
-  if (leiturasFalhas(spec.conteudo).includes('paths')) return null;
+  if (failedReads(spec.content).includes('paths')) return null;
 
   // Forma garantida pelo schema (`^(GET|POST|PATCH|PUT|DELETE) /`); manifesto torto e do
-  // `schema-manifesto`, nao desta regra — nao acusamos duas vezes o mesmo defeito.
-  const [metodo, caminho] = entrada.contract.split(/\s+/);
-  if (caminho === undefined) return null;
+  // `manifest-schema`, nao desta regra — nao acusamos duas vezes o mesmo defeito.
+  const [method, path] = entry.contract.split(/\s+/);
+  if (path === undefined) return null;
 
-  const operacoes = operacoesDaSpec(spec.conteudo);
-  const rota = [...operacoes.keys()].find((r) => normalizar(r) === normalizar(caminho));
-  if (rota === undefined) return `consome ${alvo}: o contrato do dono nao declara o caminho "${caminho}"`;
+  const operations = specOperations(spec.content);
+  const route = [...operations.keys()].find((r) => normalize(r) === normalize(path));
+  if (route === undefined) return `consumes ${target}: the owner's contract does not declare path "${path}"`;
 
-  const metodos = operacoes.get(rota);
-  if (metodos.has(metodo)) return null;
-  return `consome ${alvo}: o dono declara "${rota}" mas nao o metodo ${metodo} (declara: ${[...metodos].join(', ') || 'nenhum'})`;
+  const methods = operations.get(route);
+  if (methods.has(method)) return null;
+  return `consumes ${target}: the owner declares "${route}" but not method ${method} (declared: ${[...methods].join(', ') || 'none'})`;
 }
 
 /** Busca em profundidade a partir de `inicio`, devolvendo o caminho do ciclo que volta a ele. */
-function buscarCiclo(grafo, inicio) {
-  const pilha = [[inicio, [inicio]]];
-  const vistos = new Set();
-  while (pilha.length > 0) {
-    const [atual, caminho] = pilha.pop();
-    for (const vizinho of grafo.get(atual) ?? []) {
-      if (vizinho === inicio) return [...caminho, inicio];
-      if (vistos.has(vizinho)) continue;
-      vistos.add(vizinho);
-      pilha.push([vizinho, [...caminho, vizinho]]);
+function findCycle(graph, start) {
+  const stack = [[start, [start]]];
+  const seen = new Set();
+  while (stack.length > 0) {
+    const [current, path] = stack.pop();
+    for (const neighbor of graph.get(current) ?? []) {
+      if (neighbor === start) return [...path, start];
+      if (seen.has(neighbor)) continue;
+      seen.add(neighbor);
+      stack.push([neighbor, [...path, neighbor]]);
     }
   }
   return null;

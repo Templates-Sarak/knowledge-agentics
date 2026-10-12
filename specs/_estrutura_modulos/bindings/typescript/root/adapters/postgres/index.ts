@@ -8,19 +8,19 @@
 // materializada sobre a tabela que o molde ja cria. Modulo que criar tabela com outra forma
 // escreve o proprio adapter (declarado, nao escondido — ver o rodape deste arquivo).
 //
-// SQL SEMPRE por parametro para VALOR ($1, $2, ...) — `sql-concatenado` (04-regras.md, escopo raiz)
+// SQL SEMPRE por parametro para VALOR ($1, $2, ...) — `concatenated-sql` (04-regras.md, escopo raiz)
 // cobre este arquivo e reprova interpolacao numa linha que tambem tenha um verbo SQL. Identificador
 // (schema/tabela) NUNCA aceita placeholder — so valor aceita —, e por isso cada consulta abaixo
 // monta a CLAUSULA do verbo (sempre estatica) separada da clausula que interpola o identificador
 // (sempre sem verbo na mesma linha), juntando as duas por ULTIMO, numa linha sem SQL nenhum. E o
 // mesmo raciocinio de `scripts/migrations.mjs`, aqui aplicado sob uma regra que migrations.mjs nao
-// sofre (ele mora fora de adapters/src/packages, o escopo que `sql-concatenado` varre).
+// sofre (ele mora fora de adapters/src/packages, o escopo que `concatenated-sql` varre).
 import type { Pool } from 'pg';
 
 import type { Audit, AuditEvent, Pagina, Repository } from '../../packages/ports/index.js';
 
 /** O suficiente do manifesto para o adapter se configurar — nunca o tipo inteiro de `src/composition.ts`:
- * `adapters/` não pode importar de `src/` (regra `adapter-isolado`), então este tipo é local e mínimo. */
+ * `adapters/` não pode importar de `src/` (regra `isolated-adapter`), então este tipo é local e mínimo. */
 export interface ModuleForAdapter {
   id: string;
   pasta: string;

@@ -1,7 +1,7 @@
 """verificar_entregavel.py — roda os SEIS degraus de verificacao do modulo generico e da o veredito.
 
     python verificar_entregavel.py --repo <repo> --modulo <id> --denylist <arquivo-fora-do-repo> [--json]
-    python verificar_entregavel.py --autoteste
+    python verificar_entregavel.py --selftest
 
 Os seis degraus, cada um afirmando uma coisa DIFERENTE (a tabela vive no SKILL.md):
 
@@ -274,7 +274,7 @@ def _parser() -> argparse.ArgumentParser:
         "--json", action="store_true", help="Imprime o resultado como JSON."
     )
     parser.add_argument(
-        "--autoteste",
+        "--selftest",
         action="store_true",
         help="Prova o nucleo com fixtures em memoria.",
     )
@@ -297,11 +297,11 @@ def main() -> int:
     parser = _parser()
     args = parser.parse_args()
 
-    if args.autoteste:
+    if args.selftest:
         return autoteste()
     if not (args.repo and args.modulo and args.denylist):
         parser.error(
-            "--repo, --modulo e --denylist sao obrigatorios (ou use --autoteste)"
+            "--repo, --modulo e --denylist sao obrigatorios (ou use --selftest)"
         )
 
     repo, denylist = Path(args.repo).resolve(), Path(args.denylist)

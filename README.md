@@ -47,7 +47,7 @@ para infraestrutura própria é copiar uma pasta e recortar as chaves `<MODULE>_
 reescrever import.
 
 **Ele se verifica sozinho**, em quatro camadas: o gate cobra o projeto · o gate se testa · o template
-prova que gera projeto que passa na própria cadeia · toda ferramenta com `--autoteste` é executada.
+prova que gera projeto que passa na própria cadeia · toda ferramenta com `--selftest` é executada.
 Verde significa que verificou — e **81 regras** são cobradas por máquina, não de memória.
 
 **O projeto nasce dockerizado** (ADR-022): `Dockerfile` (uma imagem de backend do monólito composto),
@@ -181,8 +181,8 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 - **Modelo de 3 camadas:** (1) `name`+`description` (sempre carregado) · (2) corpo do `SKILL.md` denso e auto-suficiente · (3) `references/`/`scripts/`/`assets/` lidos sob demanda via ponteiro.
 - **Seções do corpo:** o que é · quando usar · workflow acionável (ferramenta+ação+critério) · regras `NÃO/NUNCA` · checklist · ponteiros de Camada 3.
 - **Camada 3 com nome de propósito** (`contract-testing.md`, `estrategia.md`, `hardening.md`) — não o trio genérico do scaffold. Uma skill sem Camada 3 é normal: sete das nove `cyber-*` não têm nenhuma.
-- **Script de skill:** se tiver lógica pura, dê-lhe `--autoteste` e **registre** em
-  `specs/_estrutura_modulos/tests/run-all-selftests.mjs` — `--autoteste` que ninguém roda reprova como órfão.
+- **Script de skill:** se tiver lógica pura, dê-lhe `--selftest` e **registre** em
+  `specs/_estrutura_modulos/tests/run-all-selftests.mjs` — `--selftest` que ninguém roda reprova como órfão.
 
 ### 4.2 Criar um COMMAND — *o gatilho que você dispara*
 
@@ -357,10 +357,10 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 ### Verificar a integridade da base
 
 ```bash
-python skills/meta-verificacao-base/scripts/audit_base.py --raiz .   # YAML, contratos, ponteiros órfãos
-npm run autoteste:tudo                                              # todo --autoteste registrado
+python skills/meta-verificacao-base/scripts/audit_base.py --raiz .   # YAML, contratos, ponteiros órfãos, ids de regra citados, sistema em arquivo que viaja — exit 1 com qualquer achado
+npm run selftest:all                                              # todo --selftest registrado
 node specs/_estrutura_modulos/tests/verify-routine.mjs               # o template inteiro, ponta a ponta
-npm run autoteste:template:docker                                   # o projeto gerado SOBE em container (exige Docker)
+npm run selftest:template:docker                                   # o projeto gerado SOBE em container (exige Docker)
 ```
 
 ---

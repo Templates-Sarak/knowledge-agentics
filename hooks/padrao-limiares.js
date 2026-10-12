@@ -224,7 +224,7 @@ function autoteste() {
   return 0;
 }
 
-if (process.argv.includes("--autoteste")) process.exit(autoteste());
+if (process.argv.includes("--selftest")) process.exit(autoteste());
 
 const input = readInput();
 const cfg = loadConfig(input.cwd);

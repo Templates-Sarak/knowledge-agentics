@@ -3,7 +3,7 @@
     python init_repo.py --target <caminho> [--binding typescript] [--escopo acme]
                         [--modulos catalogo:domain hub:connector pagamentos:gateway]
                         [--name "Meu Sistema"] [--git-init] [--registrar --id meu-sistema]
-    python init_repo.py --autoteste   prova compor_pre_commit, validar_modulos e compor_claude_md
+    python init_repo.py --selftest   prova compor_pre_commit, validar_modulos e compor_claude_md
                                       com fixtures em memoria (sem --target)
 
 Cada item de --modulos e "<id>:<role>[:artefato]" — o sufixo de papel e OBRIGATORIO (role em
@@ -147,7 +147,7 @@ def _sem_exit0_final(texto: str) -> str:
 def compor_pre_commit(existente: str | None, nosso: str) -> str:
     """Compoe o `.githooks/pre-commit` do template (gate de conformidade) com o nosso (gate de
     segredos + auto-indice de `.agents/`) — nunca um sobrescrevendo o outro. PURA: nao toca disco,
-    o `--autoteste` prova os quatro estados sem escrever arquivo nenhum.
+    o `--selftest` prova os quatro estados sem escrever arquivo nenhum.
 
     Ordem: segredo primeiro (fail-closed, e o estagio 0), conformidade depois. Idempotente — se
     `existente` ja tem as duas marcas, devolve sem alterar (rodar duas vezes nao duplica linha).
@@ -209,7 +209,7 @@ def _casos_de_autoteste_pre_commit() -> list[dict]:
 
 
 def rodar_autoteste_pre_commit() -> int:
-    """`--autoteste`: prova `compor_pre_commit` com fixtures em memoria, sem tocar disco."""
+    """`--selftest`: prova `compor_pre_commit` com fixtures em memoria, sem tocar disco."""
     falhas = 0
     for caso in _casos_de_autoteste_pre_commit():
         resultado = compor_pre_commit(caso["existente"], HOOK_PRE_COMMIT)
@@ -479,9 +479,9 @@ def _casos_de_autoteste_modulos() -> list[dict]:
 
 
 def rodar_autoteste_modulos() -> int:
-    """`--autoteste`: prova `_parse_modulo_spec`/`validar_modulos`/a ordem de `criar_modulos` com
+    """`--selftest`: prova `_parse_modulo_spec`/`validar_modulos`/a ordem de `criar_modulos` com
     fixtures em memoria — a contraprova por reversao do defeito original fica registrada aqui, nao
-    só no relatorio do bloco, porque relatorio nao roda em CI e --autoteste roda."""
+    só no relatorio do bloco, porque relatorio nao roda em CI e --selftest roda."""
     falhas = 0
     casos = _casos_de_autoteste_modulos()
     for caso in casos:
@@ -550,7 +550,7 @@ def _casos_de_autoteste_claude_md() -> list[dict]:
 
 
 def rodar_autoteste_claude_md() -> int:
-    """`--autoteste`: prova `compor_claude_md` com fixtures em memoria, sem tocar disco."""
+    """`--selftest`: prova `compor_claude_md` com fixtures em memoria, sem tocar disco."""
     falhas = 0
     casos = _casos_de_autoteste_claude_md()
     for caso in casos:
@@ -699,7 +699,7 @@ def carimbar_e_registrar(target: Path, xskills_root: Path, args: argparse.Namesp
 
 
 def rodar_autotestes() -> int:
-    """`--autoteste`: roda todos os blocos em sequencia; reprova se qualquer um reprovar."""
+    """`--selftest`: roda todos os blocos em sequencia; reprova se qualquer um reprovar."""
     blocos = (rodar_autoteste_pre_commit, rodar_autoteste_modulos, rodar_autoteste_claude_md)
     resultados = []
     for indice, bloco in enumerate(blocos):
@@ -710,7 +710,7 @@ def rodar_autotestes() -> int:
 
 
 def main() -> int:
-    if "--autoteste" in sys.argv[1:]:
+    if "--selftest" in sys.argv[1:]:
         return rodar_autotestes()
 
     args = get_args()

@@ -1,33 +1,33 @@
 {
-  "//": "Tunables de TEMPO do template-self-test.mjs (o unico lugar; nenhum teto/intervalo e literal no codigo). Segundos por CLASSE de passo — a classe de cada tipo vive em CLASSE_DO_TIPO no .mjs. Calibrado sobre rodada completa medida (maquina de dev, Windows 11, Node 24, Python 3.14), passo mais lento por classe: leve 2.8 s (clone-simulado); geracao 26.4 s (criar-modulo, 1o modulo — inclui npm install do workspace); instalacao 57.6 s (pip install -e .[dev]; npm install 35 s); verificacao 72.5 s (npm run verify TS; build 20 s); boot 5.9 s. Cada teto fica ~4-10x acima do mais lento da classe: nao reprova por maquina carregada e ainda pega um travamento em minutos, nao em horas.",
-  "tetoPorClasseS": {
-    "leve": 30,
-    "geracao": 120,
-    "instalacao": 300,
-    "verificacao": 360,
+  "//": "Tunables de TEMPO do template-self-test.mjs (o unico lugar; nenhum teto/intervalo e literal no codigo). Segundos por CLASSE de passo — a classe de cada tipo vive em TYPE_CLASS no .mjs. Calibrado sobre rodada completa medida (maquina de dev, Windows 11, Node 24, Python 3.14), passo mais lento por classe: leve 2.8 s (clone-simulado); generation 26.4 s (criar-modulo, 1o modulo — inclui npm install do workspace); instalacao 57.6 s (pip install -e .[dev]; npm install 35 s); verificacao 72.5 s (npm run verify TS; build 20 s); boot 5.9 s. Cada teto fica ~4-10x acima do mais lento da classe: nao reprova por maquina carregada e ainda pega um travamento em minutos, nao em horas.",
+  "capSecondsByClass": {
+    "light": 30,
+    "generation": 120,
+    "installation": 300,
+    "verification": 360,
     "boot": 60,
-    "desligamento": 90,
+    "shutdown": 90,
     "docker": 1200
   },
   "//docker": "Classe do passo `docker` (so com --docker): build das DUAS imagens (npm ci + tsc + vite, dentro do Dockerfile) e subida com --wait. O teto cobre um build frio num runner carregado e ainda pega um travamento em minutos.",
-  "//sondaDocker": "Sonda das URLs do passo `docker`: so um ERRO DE CONEXAO (a porta publicada pelo Docker Desktop pode demorar a aceitar logo depois do --wait) repete — status diferente do esperado e definitivo e NUNCA repete. tentativas: total de tentativas por URL; intervaloMs: pausa entre elas.",
-  "sondaDocker": {
-    "tentativas": 5,
-    "intervaloMs": 2000
+  "//dockerProbe": "Sonda das URLs do passo `docker`: so um ERRO DE CONEXAO (a porta publicada pelo Docker Desktop pode demorar a aceitar logo depois do --wait) repete — status diferente do esperado e definitivo e NUNCA repete. tentativas: total de tentativas por URL; intervaloMs: pausa entre elas.",
+  "dockerProbe": {
+    "attempts": 5,
+    "intervalMs": 2000
   },
-  "//margemDoSupervisorS": "Folga entre o teto do passo e o teto do spawnSync que cerca o supervisor: rede de seguranca de ultimo caso (o supervisor estoura primeiro).",
-  "margemDoSupervisorS": 15,
-  "//boot": "intervaloMs: pausa entre sondas do health. linhasCauda: quantas ultimas linhas do processo entram na mensagem de falha. valorInocuo: valor das chaves de ambiente que o manifesto exige e nao sao porta.",
+  "//supervisorMarginSeconds": "Folga entre o teto do passo e o teto do spawnSync que cerca o supervisor: rede de seguranca de ultimo caso (o supervisor estoura primeiro).",
+  "supervisorMarginSeconds": 15,
+  "//boot": "intervalMs: pausa entre sondas do health. linhasCauda: quantas ultimas linhas do processo entram na mensagem de falha. valorInocuo: valor das chaves de ambiente que o manifesto exige e nao sao porta.",
   "boot": {
-    "intervaloMs": 250,
-    "linhasCauda": 25,
-    "valorInocuo": "inocuo-autoteste",
-    "hostDeLoopback": "127.0.0.1"
+    "intervalMs": 250,
+    "tailLines": 25,
+    "harmlessValue": "harmless-selftest",
+    "loopbackHost": "127.0.0.1"
   },
-  "//desligamento": "lentoDrenaMs: duracao da requisicao em voo no cenario \"drena\" (tem de caber no teto do projeto). fatorDeEstouro: no cenario \"estoura\" a requisicao dura drainTimeoutMs * fator (> 1, estoura o teto). esperaDoBootMs: quanto o harness espera o health antes de iniciar o cenario.",
-  "desligamento": {
-    "lentoDrenaMs": 2000,
-    "fatorDeEstouro": 3,
-    "esperaDoBootMs": 30000
+  "//shutdown": "lentoDrenaMs: duracao da requisicao em voo no cenario \"drena\" (tem de caber no teto do projeto). fatorDeEstouro: no cenario \"estoura\" a requisicao dura drainTimeoutMs * fator (> 1, estoura o teto). esperaDoBootMs: quanto o harness espera o health antes de iniciar o cenario.",
+  "shutdown": {
+    "slowDrainMs": 2000,
+    "overflowFactor": 3,
+    "bootWaitMs": 30000
   }
 }

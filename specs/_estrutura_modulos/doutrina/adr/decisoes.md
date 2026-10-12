@@ -202,7 +202,11 @@ critério de cadência deste ADR ("quando o autoteste acender", não "porque o r
 
 ## ADR-009 — O idioma do template: vocabulário técnico em inglês, vocabulário de domínio em português
 
-**Status:** 🟢 Aceito
+**Status:** 🔴 Substituída em parte pelo `ADR-023` — o **princípio** e as linhas 4, 6, 7 e 10 da tabela
+(símbolo de `tools/`, id de regra, mensagem do gate e erro de runtime, rota e banco em português).
+**Continua valendo:** as linhas 1, 3, 5, 8 e 9 (pasta, função do esqueleto, arquivo de `tools/`, chave de
+manifesto e variável de ambiente em inglês), a linha 2 (`doutrina/` em português — é documentação) e a 11
+(nome de skill).
 
 **Contexto.** Uma árvore que mistura os dois vocabulários sem critério deixa a fronteira implícita — e por
 isso arbitrária: `api/src/routes` e `api/src/mappers` lado a lado com pasta em português, na mesma árvore,
@@ -386,7 +390,8 @@ exemplo convida a versionar o real — o defeito exato que o ADR-004 fecha.
 
 ## ADR-013 — O idioma do template passa a ser cobrado: a implementação se alinha ao ADR-009
 
-**Status:** 🟢 Aceito
+**Status:** 🔴 Substituída em parte pelo `ADR-023` — a lista **"O que NÃO muda"** (a coluna português do
+`ADR-009`). **Continua valendo:** a tabela de renomeação, a fronteira chave × valor e as três ondas, já aplicadas.
 
 **Contexto.** O `ADR-009` decide o princípio — *"a árvore de arquivos é inglês; o conteúdo dela é
 português"* — e a régua final do `04-regras.md` §3 o repete. **A implementação inteira contradiz os dois, e
@@ -1178,7 +1183,9 @@ problema real de charset, não ornamento.
 
 ## ADR-018 — Os símbolos estruturais do esqueleto: o eixo que fecha a campanha de idioma
 
-**Status:** 🟢 Aceito
+**Status:** 🔴 Substituída em parte pelo `ADR-023` — a classificação das raízes de domínio (`Registro`,
+`Pagina`, `Colecao`, `Situacao`) como **"fica em português"** e a lista "O que fica de fora". **Continua
+valendo:** os 24 símbolos renomeados e o critério de tradução (o `ADR-024` o reaproveita).
 
 **Contexto.** `ADR-009` linha 3 manda todo símbolo do esqueleto (`bindings/**`) para o inglês; linha 4 isenta
 só o que mora **dentro de** `tools/`/`tests/`; linha 6 isenta ids de regra; linha 10 protege o domínio do
@@ -1333,7 +1340,9 @@ decisão. Registrado como decisão, para não reabrir a cada leitura futura.
 
 ## ADR-019 — O encerramento da campanha de idioma: o que fica em português, e por quê
 
-**Status:** 🟢 Aceito
+**Status:** 🔴 Substituída em parte pelo `ADR-023` — o **§3.1** (identificadores locais de `bindings/**`
+ficam em português) e a afirmação do §3.3 de que a campanha está encerrada. **Continua valendo:** o §3.2
+(decidido pelo `ADR-020`) e o fechamento de `DadosDoManifesto`/`ContextoDeTabela`.
 
 **Contexto.** Sete eixos aplicados (`ADR-013` a `018`), ~2.000 ocorrências, gate verde em todas as ondas.
 Ao varrer o fim da campanha apareceram dois conjuntos que **não** entraram em nenhum dos sete: os
@@ -1421,7 +1430,9 @@ decisão fingida nenhuma dos dois lados.
 
 ## ADR-020 — A superfície de CLI do template vai para o inglês: o §3.2 do ADR-019, decidido
 
-**Status:** 🟢 Aceito
+**Status:** 🔴 Substituída em parte pelo `ADR-023` — o **§3** (`--autoteste` fica em português; a premissa
+"convenção de skill, fora de escopo" cai). **Continua valendo:** os §1, §2 e §4, e o motivo **mecânico** do §3 —
+os dois lados da flag mudam no mesmo commit.
 
 **Contexto.** `ADR-019` §3.2 registrou as chaves de npm script como **aberto**, com os dois lados escritos
 e nenhuma decisão tomada. Este ADR é essa decisão — a última da campanha de idioma. Junto com ela, duas
@@ -1500,6 +1511,9 @@ flags **de terceiros** (`--if-present`, `--no-fund`, `--cov-fail-under`, `--name
 não entram — as últimas nem são nossas para renomear.
 
 ### 3. `--autoteste` — fica, e o motivo é mecânico, não estético
+
+> **Aplicado pela onda 2 (`ADR-025`):** a flag passou a `--selftest`, e as chaves de npm `autoteste:*` a
+> `selftest:*`, no mesmo commit, na base inteira. O texto abaixo é o registro da decisão original.
 
 `tests/run-all-selftests.mjs` **descobre** os arquivos verificáveis varrendo por essa flag literal. Dos 25
 que ele encontra hoje, quatro são scripts de **skill**, fora do template
@@ -1747,3 +1761,674 @@ mesmos arquivos de container, e a cada projeto o mesmo erro (imagem de front ser
 4. O `autoteste` do template ganha o passo `container-arquivos` (sempre) e `docker` (atrás de `--docker`:
    builda as duas imagens e sobe o profile `app`, sondando `/healthz` e `<basePath>/health` pela origem
    única; sem Docker no host, sai **pulado**, visível).
+
+---
+
+## ADR-023 — O código é em inglês: o português fica em três lugares
+
+**Status:** 🟢 Aceito — **substitui** o princípio do `ADR-009`, as exceções que o `04-regras.md` §3.1
+"Idioma" carregava e o `ADR-019` §3.1 (ver "O que substitui, e como cada ADR é marcado"). **Esta decisão não
+renomeia nada**: ela escreve a lei, mede o que ainda está em português, registra as decisões do dono e fixa o
+plano de ondas. As tabelas de renomeação são o `ADR-024` (onda 1) e o `ADR-025` (onda 2).
+
+**Contexto.** A campanha do `ADR-013` ao `ADR-020` aplicou, eixo a eixo, o princípio do `ADR-009` — *"a
+árvore de arquivos é inglês; o conteúdo dela é português"* — e fechou o conjunto com gate verde. O que
+ficou em português ficou **por enumeração**: ids das regras, mensagens do gate, símbolos de `tools/`,
+identificadores locais de `bindings/**`, rota/tabela/coluna do molde (`ADR-009` linhas 4, 6, 7 e 10;
+`ADR-019` §3.1). A enumeração tem um custo que o próprio `ADR-019` §3.3 nomeou: *"a aparência engana nos dois
+sentidos, só a enumeração do `ADR-009` decide"* — `modulo` como parâmetro parece técnico e fica; `criar-modulo`
+como chave de script parece prosa e vai. Cada onda reabria a pergunta, e a árvore de `tools/` ficou meio
+inglês, meio português **dentro do mesmo arquivo**: `create-module.mjs` com nome inglês e `abortar`,
+`lerOpcoes`, `acharRaizProjeto` por dentro.
+
+O dono decidiu trocar a enumeração por uma regra de uma frase, e a decidiu **para qualquer projeto**, não só
+para o template. Um sistema adotante real mostra o alvo: o domínio em inglês — por exemplo o módulo
+`orders`, o `basePath` `/api/v1/orders`, a tabela `orders_customers`, as colunas `primary_name`/`person_type` —,
+e o português só no nome de exibição (`"name": "Pedidos"`) e nos comentários, cobrado por uma regra de gate
+própria com vocabulário fechado. O que esse sistema ainda tem em português, e que a regra nova alcança, são
+os ids de regra e as mensagens do gate.
+
+**Decisão.**
+
+1. **Código em inglês, sem exceção estrutural.** Em inglês: identificadores de **qualquer escopo** (função,
+   tipo, constante, variável local, parâmetro, símbolo de `tools/` e de `bindings/`); nomes de módulo, de
+   pasta e de arquivo de código; rotas; tabelas, colunas e schemas de banco; chaves de config, de manifesto
+   e de ambiente; **ids de regra**; mensagens do gate e saídas de ferramentas ao desenvolvedor (inclusive
+   chaves de JSON de saída e flags de CLI); código de erro (a constante).
+2. **O português mora em três lugares, e só neles:**
+   1. o **texto mostrado ao usuário final no front** — o **valor** de `config/texts.json` e os rótulos de
+      tela;
+   2. **comentários** no código;
+   3. **documentação** — `specs/`, `doutrina/`, skills, commands, agents e READMEs.
+3. **A fronteira do texto ao usuário é chave × valor**, como já era (`ADR-013`): `emptyList` é código
+   (inglês); `"Nenhum registro ainda."` é o que a pessoa lê (português). A chave nunca é traduzida junto
+   com o valor, nem o valor junto com a chave.
+4. **Vale para o Nível 0 e para o template.** A skill `padrao-escrita` enuncia a regra para qualquer
+   projeto, com ou sem template; o `04-regras.md` §3.1 a repete para o template e aponta para este ADR. A
+   skill **referencia** a doutrina do template, não a duplica.
+5. **Nomes dentro da documentação seguem a documentação.** `doutrina/`, `specs/adr/`, `plan/` e o nome de
+   skill, command e agent são o **terceiro lugar** — português (decisão 4 da tabela abaixo).
+6. **A medição é por vocabulário fechado, nunca "parece português".** O inventário abaixo usa uma lista
+   fechada de termos, cada um com origem rastreável (as tabelas dos `ADR-013` a `018`, o vocabulário de um
+   sistema adotante que já cobra a regra, e um levantamento por tokenização dos identificadores, revisado),
+   com a lista de cognatos e termos técnicos que **não** entram (`data`, `status`, `base`, `hash`, `config`,
+   `id`, …). A regra de gate da onda 6 herda esse vocabulário, num arquivo único no template (decisão 7);
+   falso positivo não se aceita (`04-regras.md` §7.2).
+
+**O que substitui, e como cada ADR é marcado.** A convenção da doutrina é a do `ADR-012` pelo `ADR-022`:
+`🔴 Substituída em parte pelo ADR-NNN`, com o que **continua valendo** escrito na própria marca.
+
+| ADR | O que é substituído | O que continua valendo |
+|---|---|---|
+| `ADR-009` | o **princípio** ("árvore inglês, conteúdo português") e as linhas 4, 6, 7 e 10 da tabela: símbolo de `tools/`, id de regra, mensagem do gate e erro de runtime, rota e banco | linhas 1, 3, 5, 8 e 9 (já em inglês); linha 2 (`doutrina/` em português — é documentação) e a 11 (nome de skill) |
+| `ADR-013` | a lista **"O que NÃO muda"** (a coluna português do `ADR-009`) | a tabela de renomeação, a fronteira chave × valor, as três ondas (aplicadas) |
+| `ADR-018` | a classificação **"fica em português"** das raízes de domínio (`Registro`, `Pagina`, `Colecao`, `Situacao`) e a lista **"O que fica de fora"** | a tabela dos 24 símbolos (aplicada) e o critério de tradução |
+| `ADR-019` | **§3.1** (identificadores locais ficam em português) e a afirmação de que a campanha está encerrada (§3.3) | §3.2 (já decidido pelo `ADR-020`); a régua "corpo × superfície" **deixa de existir**: não há corpo isento |
+| `ADR-020` | **§3** (`--autoteste` fica em português) — a premissa "convenção de skill, fora de escopo" cai | o motivo **mecânico** continua: os dois lados da flag mudam no **mesmo** commit (ver decisão 5) |
+
+`ADR-010` já estava marcado; `ADR-011`, `ADR-014`, `ADR-015`, `ADR-016`, `ADR-017`, `ADR-021` e `ADR-022` não
+são tocados — todos moveram o código **para** o inglês.
+
+### As decisões do dono
+
+Cada decisão fecha uma pergunta que a medição deixou aberta, com a onda que a aplica. Nenhuma é reaberta por
+analogia: quem chegar depois lê a linha.
+
+| # | Decisão | Onda |
+|---|---|---|
+| 1 | O **código de erro** da API é constante em inglês (`NOT_FOUND`, `EXTERNAL_DEPENDENCY`…), e a **mensagem** da API também é em inglês. **O front traduz o código** para português pelo `config/texts.json`. A API não fala com o usuário final; o front fala | 4b |
+| 2 | `module.json:name` (nome de exibição) é **texto ao usuário**: português permitido | — (exceção nominal da regra de idioma, registrada na onda 6) |
+| 3 | Os **valores de domínio armazenados** (`rascunho`/`ativo`/`encerrado`) são **dado**: inglês (`draft`/`active`/`closed`). O rótulo em português vai para o `texts.json` | 4b |
+| 4 | Nomes de skill, command e agent e as pastas da documentação (`doutrina/`, `specs/adr/`, `plan/`) ficam em **português**: são documentação | — |
+| 5 | Os scripts npm de autoteste e a flag `--autoteste` vão para o inglês (`--selftest`), **no mesmo commit** da onda 2 — a varredura literal liga o código da base e o template | 2 + 5 |
+| 6 | As chaves JSON do `.sarak/` gravadas nos projetos vão para o inglês. Auditorias novas saem em inglês; **snapshots antigos ficam como estão** (são registros datados) | 5 |
+| 7 | O vocabulário da regra de idioma é **um arquivo único no template**; o sistema adotante que já tem o seu migra para ele pela propagação | 6 |
+| 8 | Critério de tradução dos ids: **B, ordem idiomática** (`tabela-alheia` → `foreign-table`); a tabela é o `ADR-024` | 1 |
+
+**Quem já adotou o template.** A regra vale para **código novo** e para o **template**. Sistema que já adotou
+adota **por plan**, pela propagação (`meta-propagar-base`, fase 4) — o template nunca empurra atualização
+para projeto criado (`ADR-008`, `ADR-022` Consequências 2). **Doutrina não força rename de tabela em
+produção**: o banco de um sistema vivo muda por migration que o dono do sistema decide, com expand-contract
+(`db-migrations`), nunca por consequência de um ADR do template. Dois efeitos medidos, para a propagação
+não os descobrir tarde:
+
+- **`tools/` é vendorizado.** Em sistema modular, `tools/` divergente é substituído pela pasta inteira.
+  Renomear símbolo e mensagem de `tools/` chega ao sistema por substituição — sem migração de dado.
+- **O id de regra é dado do projeto.** `config/compliance.json` guarda exceção nominal **por id**, e o gate
+  compara por igualdade: sem aviso, uma exceção com id antigo deixaria de perdoar **em silêncio** — o achado
+  reapareceria como erro sem dizer por quê. A onda 1 fecha isso por máquina: `compliance-declared` acusa
+  exceção cujo `rule` não é id do catálogo, e, para o id renomeado, diz qual é o novo
+  (`tools/gate/renamed-rules.json`, gerada do `ADR-024`).
+
+O levantamento por sistema e os riscos da propagação ficam na documentação da base, que não viaja com o
+projeto: `skills/meta-propagar-base/references/campanha-idioma.md`.
+
+### O inventário — o que ainda está em português e passa a ser inglês
+
+Resumo do que **o projeto recebe** (`tools/`, `tests/` do template, `bindings/`, `doutrina/`). Medido por
+árvore sintática real — API do TypeScript para `.mjs/.js/.ts`, módulo `ast` para `.py` —, com vocabulário
+fechado de **1.186 termos**. Declaração = nome único por (arquivo, nome, papel). **"Raio" é limite
+superior** por nome; o acoplamento **real** é por import. O detalhe, o método e como reproduzir a medição
+estão em `campanha-idioma.md` (acima).
+
+| # | Categoria | Total medido | Arquivos | Raio / quem quebra se o nome mudar |
+|---|---|---|---|---|
+| 1 | ids de regra | **81** ids (9 já são ingleses ou cognatos: `log`, `rls`, `ui-kit`, …) + o pseudo-id `extracao`; citações em `gate/rules` (297), `cases.mjs`/`run.mjs` (312), doutrina vigente (374), `tools/**` (65), `bindings/**` (57), `tests/**` (19); mais 32 no ADR histórico (imutável) | ~70 | string lida por máquina em `gate/rules` e `cases.mjs`/`run.mjs`; **dado do projeto** em `config/compliance.json` |
+| 2 | mensagens e saídas ao dev | **873** strings PT de 1.971 em `tools/**`; **329** de 728 em `tests/**` | 26 + 7 | texto lido por `cases.mjs`/`verify-*`; **chaves de JSON de saída do gate** (`achados`, `erros`, `regra`, `nivel`, `mensagem`, `modulo`, `escopo`), lidas por quem consome a saída (auditoria e backlog) |
+| 3 | símbolos de `tools/**` | **1.741** de 2.452 declarações (71%); 903 nomes distintos; top-level 510 de 611; 802 de 1.090 em `tests/**` do template (74%) | 29 + 7 | import real: 35 símbolos em 19 arquivos; o resto é intra-arquivo; **flag `--autoteste`** (descoberta por varredura literal); 2 arquivos com nome PT (`supervisionar.mjs`, `prova-desligamento.py`) |
+| 4a | identificadores de `bindings/**` | **869** de 1.172 locais+parâmetros (74%); **475** de 1.581 de superfície (30%); por binding: ts 292/383, js 268/354, py 309/435 | 75 | import real: 4 símbolos em 18 arquivos — risco ~zero de contrato; a prova é o autoteste dos três bindings |
+| 4b | domínio do molde | 3 tabelas (2 com sufixo PT: `<m>_metadados`, `<m>_auditoria`; `<m>_migrations` já é inglês), 6 colunas PT (`arquivo`, `aplicada_em`, `titulo`, `acao`, `sujeito`, `campos_alterados`), rotas `/resumo`, `/registros`, `/registros/{hash}`, schemas `Registro`/`NovoRegistro`/`Erro`, permissões `<m>:ler`/`<m>:escrever`, valores `rascunho`/`ativo`/`encerrado`; raiz `registro` 215 ocorrências/32 arquivos, `pagina` 107/27, `titulo` 99/27 | 3 bindings × (`_template`, `root/adapters`, migrations, openapi) | **contrato e dado do projeto gerado**: `/resumo` é exigido pela regra `contract` e lido pelo agregador (`exportsSummary`); coluna e tabela viram migration; permissão vira `module.json`; `domain.json` guarda os valores |
+| 5 | chaves de config/manifesto | **18** chaves PT (16 distintas) em 2 arquivos do template (`ui.pacote`; 17 em `template-self-test.config.json`) | 2 | leitor é o próprio script; `ui.pacote` é lido por `isolation.mjs` + schema |
+| 6 | código da própria base (`skills/*/scripts`, `hooks`, `plugin`) | medido à parte; **não viaja** com o projeto | — | a flag `--autoteste` e os scripts `autoteste:*` ligam a base e o template (decisão 5) |
+
+A contagem de ids é independente de qualquer script:
+`grep -h "^\s*id: '" tools/gate/rules/*.mjs | sort -u | wc -l` → 81.
+
+**O plano de ondas.** Ordem e dependências escritas; cada onda é um **eixo independente** (como no `ADR-013`)
+e entrega o autoteste verde antes da seguinte.
+
+| Onda | Escopo | Números do inventário | Depende de | Prova |
+|---|---|---|---|---|
+| **1** | os 81 ids de regra (+ o pseudo-id `extracao`); engine, `cases.mjs`, catálogo do `04-regras.md`, doutrina vigente, skills, comentários de bindings; **migração de `config/compliance.json` dos projetos** na propagação; o gate acusa exceção com id desconhecido (estende `compliance-declared`, com a tabela `tools/gate/renamed-rules.json`) | 81 ids; citações da linha 1 do inventário (ADR histórico fora) | `ADR-024` aceito (decisão 8) | `verify-catalog --check`, `--check-renames`, `tools/gate/tests/run.mjs` por binding, `autoteste:tudo`, `audit_base.py` |
+| **2** | símbolos, parâmetros e locais de `tools/**` e `tests/**` do template; nomes dos 2 arquivos PT; a flag `--autoteste` e os scripts `autoteste:*`, **no mesmo commit** (decisão 5) | 1.741 + 802 declarações; 62 símbolos na tabela | `ADR-025` | `autoteste:tudo`, `typecheck:tools`, `lint` |
+| **3** | mensagens do gate e saídas de ferramentas; chaves de JSON de saída (com a tabela própria da onda); descrições de caso | 873 + 329 strings; ~139 chaves de objeto PT em `tools/` | onda 1 (as mensagens citam ids) | `run.mjs` (casos comparam id, não texto — conferir os usos de `mensagem` em `run.mjs`), `verify-routine` |
+| **4a** | identificadores locais, parâmetros e superfície restante de `bindings/**` (3 bindings × `root`/`_template`); `ui.pacote` | 869 + 475 declarações; 18 chaves | nenhuma (eixo independente); recomendada **depois** da onda 3, para o autoteste já falar inglês quando falhar | autoteste do template, `--fast` e completo |
+| **4b** | domínio do molde: rotas, tabelas, colunas, schemas, permissões, **código de erro e mensagem da API em inglês** (decisão 1), **valores de domínio em inglês** (decisão 3), `openapi.yaml`, migrations, `domain.json`; os rótulos em português vão para o `texts.json` | números da linha 4b | onda 4a; decisões 1 e 3 | autoteste + gate; `contract`/`route-naming` reescritos junto |
+| **5** | código da base: `skills/*/scripts`, `hooks`, `plugin`; chaves de saída citadas em skills/commands; flags; nomes de script; chaves JSON do `.sarak/` (decisão 6) | medido à parte | decisões 5 e 6; a flag anda **junto com a onda 2** | `audit_base.py`, `meta-verificacao-base`, `autoteste:tudo` |
+| **6** | cobrança por máquina: regra de gate (id em inglês) com o vocabulário fechado num **arquivo único** do template (decisão 7); isenções (valor de `texts.json`, comentário, documentação, `module.json:name` — decisão 2); `verify-catalog` e `cases.mjs` ganham o caso | 1.186 termos; catálogo 81 → 82 | ondas 1–5 (senão o gate reprova o próprio repositório) | `run.mjs`, `verify-catalog`, o autoteste |
+
+**Consequências.**
+
+1. **A campanha de idioma volta a estar aberta**, agora com escopo medido e seis ondas — não com uma lista de
+   exceções. O que sobra em português fora dos três lugares é **dívida com número**, não "decisão antiga".
+2. **A régua fica de uma frase.** Quem chega depois decide por "é código? então é inglês", sem consultar uma
+   tabela de onze linhas.
+3. **Este ADR não muda gate nem catálogo**: quem troca os ids é o `ADR-024` (onda 1), e a regra de idioma só
+   entra na onda 6. O texto do `04-regras.md` afirma que o gate **não** cobra idioma, e isso continua
+   verdadeiro até a onda 6.
+4. **Custo declarado**: ~3.900 declarações no que o projeto recebe (1.741 em `tools/`, 802 em `tests/`,
+   1.344 em `bindings/`) e ~1.200 strings em português, as citações de id e a doutrina inteira com
+   exemplos em português (`catalogo`, `clienteApelido`) — fora o código da própria base. Os exemplos da
+   doutrina ficam até a onda 4b; a regra, não.
+
+**Alternativas descartadas.**
+
+- **Manter a enumeração do `ADR-009`.** Já medida: custa uma onda por eixo e nunca fecha, porque o critério
+  é a impressão de quem lê.
+- **Renomeação em bloco ("sed cego").** O inventário mostra por quê: ids são dado de projeto, `--autoteste` é
+  descoberto por string literal em dezenas de arquivos, chaves de saída são contrato com quem as consome, e
+  `/resumo` é exigido pelo gate. Cada eixo tem leitor próprio.
+- **Regra de gate já nesta onda.** Reprovaria o repositório inteiro no mesmo commit que a escreve, e o
+  `04-regras.md` §7 proíbe afirmar cobertura que não existe.
+- **Cobrar a regra de idioma só em código novo.** Sem baseline, o gate não separa "novo" de "herdado"; a
+  onda 6 vem **depois** das ondas 1 a 5 de propósito.
+
+---
+
+## ADR-024 — Os ids das 81 regras: a tabela que a onda 1 aplica
+
+**Status:** 🟢 Aceito — o dono escolheu a coluna **B** (decisão 8 do `ADR-023`): é a **tabela vigente**. A
+coluna **A** fica na seção, arquivada, para quem precisar lê-la; não foi apagada. **Aplicado** na onda 1.
+Este ADR é também a **tabela de tradução** de quem lê um ADR anterior: os `ADR-014` a `ADR-022` citam os
+ids antigos como história e não são editados.
+
+**Contexto.** O `ADR-023` põe o id de regra no inglês. O id é nome de artigo de lei (`ADR-009` linha 6), citado
+em prosa da doutrina, em mensagem do gate, em `cases.mjs`, em skills, em comentário de binding e — o que não
+é prosa — em `config/compliance.json` dos sistemas. **1.260 citações em 95 arquivos**, 32 delas no
+`decisoes.md`, que é imutável (ficam; os ADRs que as citam ganham a nota "ids renomeados pelo `ADR-024`" na
+marca de status da onda). Os 81 ids são os de `tools/gate/rules/*.mjs` (`grep` do `ADR-023`); `extracao`
+(`regra: 'extracao'`, 2 usos em `engine.mjs`) é pseudo-id emitido fora do catálogo e entra na tabela.
+
+**Os dois critérios de tradução.**
+
+- **A — posição das partes preservada** (o critério do `ADR-018` §1): `tabela-alheia` → `table-foreign`. Ganho:
+  as famílias por prefixo (`tabela-*`, `env-*`, `hardcode-*`, `testes-*`, `limiar-*`) continuam agrupando
+  por `grep`/ordenação, e a tradução é **mecânica** (sem decisão por id). Custo: o português põe o
+  adjetivo depois do núcleo, e o inglês resultante é agramatical em 34 dos 81 (`cors-open`, `config-dead`,
+  `exception-swallowed`, `random-insecure`) — o próprio `ADR-018` abriu exceção para "inglês quebrado".
+- **B — ordem idiomática inglesa**: modificador antes do núcleo; participial predicativo (`-declared`,
+  `-installed`) fica pós-posto. `tabela-alheia` → `foreign-table`. Ganho: o id é lido como inglês em
+  frase (`[foreign-table] …`), que é como é citado. Custo: 34 ids mudam de ordem e a família por prefixo se
+  parte (`testes-web` → `web-tests`).
+
+**Decisão: B** (era a recomendada). O argumento do `ADR-018` para A era visual — manter `ConfigApi` e `ConfigSecurity`
+lado a lado, símbolos irmãos, ambos já em inglês. O id de regra não tem irmão por prefixo no código: ele é
+citado por **leitura** (prosa, mensagem, tabela do catálogo), e o catálogo já os agrupa por seção
+(§4.1–§4.7), não por prefixo. Onde A produz inglês quebrado em 34 de 81, o `ADR-018` já mandava usar a ordem
+correta — B aplica essa exceção como regra e elimina a decisão caso a caso. O que B perde (agrupar por
+prefixo) é pouco: 7 famílias, todas dentro de uma seção do catálogo.
+
+**A tabela.** A coluna **B** é a vigente; **A** é o arquivo do critério descartado. `◄` marca onde A e B diferem. Citações = ocorrências/arquivos (medido; ids de uma palavra,
+como `log`, contam só delimitados por crase ou aspas — limite superior).
+
+| id atual | A — posição preservada | B — ordem idiomática | citações (ocorr./arq.) |
+|---|---|---|---|
+| **§4.1 Estrutura** | | | |
+| `manifesto` | `manifest` | `manifest` | 32/11 |
+| `schema-manifesto` | `schema-manifest` | `manifest-schema` ◄ | 30/11 |
+| `estrutura` | `structure` | `structure` | 20/7 |
+| `estrutura-estrita` | `structure-strict` | `strict-structure` ◄ | 16/9 |
+| `web-declarado` | `web-declared` | `web-declared` | 15/5 |
+| `navegacao-declarada` | `navigation-declared` | `navigation-declared` | 6/4 |
+| `artefato-declarado` | `artifact-declared` | `artifact-declared` | 16/5 |
+| `testes` | `tests` | `tests` | 7/4 |
+| `testes-web` | `tests-web` | `web-tests` ◄ | 10/4 |
+| `testes-gateway` | `tests-gateway` | `gateway-tests` ◄ | 12/4 |
+| `manifesto-raiz` | `manifest-root` | `root-manifest` ◄ | 15/7 |
+| **§4.2 Isolamento** | | | |
+| `import-lateral` | `import-lateral` | `lateral-import` ◄ | 27/16 |
+| `import-adapter` | `import-adapter` | `import-adapter` | 19/8 |
+| `sdk-fornecedor` | `sdk-vendor` | `vendor-sdk` ◄ | 24/8 |
+| `gateway-http` | `gateway-http` | `gateway-http` | 17/13 |
+| `gateway-declarado` | `gateway-declared` | `gateway-declared` | 20/13 |
+| `consome-ciclo` | `consumes-cycle` | `consumes-cycle` | 11/10 |
+| `ui-kit` | `ui-kit` | `ui-kit` | 27/8 |
+| `ui-token` | `ui-token` | `ui-token` | 9/4 |
+| `consome-contrato` | `consumes-contract` | `consumes-contract` | 22/14 |
+| `portas-pura` | `ports-pure` | `pure-ports` ◄ | 11/4 |
+| `adapter-isolado` | `adapter-isolated` | `isolated-adapter` ◄ | 12/5 |
+| `composicao-descoberta` | `composition-discovery` | `composition-discovery` | 9/4 |
+| **§4.3 Dados** | | | |
+| `schema-nao-public` | `schema-not-public` | `non-public-schema` ◄ | 5/4 |
+| `tabela-prefixo` | `table-prefix` | `table-prefix` | 14/9 |
+| `tabela-alheia` | `table-foreign` | `foreign-table` ◄ | 14/9 |
+| `migrations` | `migrations` | `migrations` | 30/12 |
+| `tabela-declarada` | `table-declared` | `table-declared` | 22/4 |
+| `rls` | `rls` | `rls` | 20/4 |
+| `tabela-nao-declarada` | `table-not-declared` | `table-undeclared` ◄ | 17/3 |
+| `schema-espelha-migrations` | `schema-mirrors-migrations` | `schema-mirrors-migrations` | 12/3 |
+| **§4.4 Configuração e ambiente** | | | |
+| `config-valida` | `config-valid` | `valid-config` ◄ | 8/4 |
+| `schema-config` | `schema-config` | `config-schema` ◄ | 9/5 |
+| `porta-declarada` | `port-declared` | `port-declared` | 10/7 |
+| `cors-aberto` | `cors-open` | `open-cors` ◄ | 9/6 |
+| `config-morta` | `config-dead` | `dead-config` ◄ | 16/7 |
+| `hardcode-url` | `hardcode-url` | `hardcode-url` | 16/6 |
+| `hardcode-numero` | `hardcode-number` | `hardcode-number` | 9/4 |
+| `fallback-silencioso` | `fallback-silent` | `silent-fallback` ◄ | 11/6 |
+| `env-declarado` | `env-declared` | `env-declared` | 16/8 |
+| `env-exemplo` | `env-example` | `env-example` | 12/5 |
+| `env-modulo` | `env-module` | `env-module` | 10/7 |
+| `env-fora-do-carregador` | `env-outside-loader` | `env-outside-loader` | 11/3 |
+| `env-raiz-declarado` | `env-root-declared` | `root-env-declared` ◄ | 24/9 |
+| `hardcode-url-raiz` | `hardcode-url-root` | `root-hardcode-url` ◄ | 7/3 |
+| `fallback-raiz` | `fallback-root` | `root-fallback` ◄ | 12/5 |
+| `gitignore-segredo` | `gitignore-secret` | `gitignore-secret` | 16/8 |
+| `segredo-em-publico` | `secret-in-public` | `secret-in-public` | 10/6 |
+| `verificacao-declarada` | `verification-declared` | `verification-declared` | 17/8 |
+| `conformidade-declarada` | `compliance-declared` | `compliance-declared` | 6/4 |
+| `lint-derivado` | `lint-derived` | `derived-lint` ◄ | 19/11 |
+| `pre-commit-instalado` | `pre-commit-installed` | `pre-commit-installed` | 11/7 |
+| **§4.5 Contrato** | | | |
+| `contrato` | `contract` | `contract` | 32/11 |
+| `rota-nomenclatura` | `route-naming` | `route-naming` | 17/5 |
+| `contrato-sincronizado` | `contract-synchronized` | `synchronized-contract` ◄ | 23/10 |
+| `projecao-contrato` | `projection-contract` | `contract-projection` ◄ | 47/8 |
+| `payload-camelcase` | `payload-camelcase` | `payload-camelcase` | 22/6 |
+| `saida-sensivel` | `output-sensitive` | `sensitive-output` ◄ | 7/4 |
+| `sensivel-em-saida` | `sensitive-in-output` | `sensitive-in-output` | 30/7 |
+| `mapeador-nomenclatura` | `mapper-naming` | `mapper-naming` | 20/3 |
+| `resumo-exportado` | `summary-exported` | `exported-summary` ◄ | 8/4 |
+| `entrada-allowlist` | `input-allowlist` | `input-allowlist` | 4/3 |
+| `saida-crua` | `output-raw` | `raw-output` ◄ | 22/8 |
+| **§4.6 Operação** | | | |
+| `log` | `log` | `log` | 35/11 |
+| `determinismo` | `determinism` | `determinism` | 14/6 |
+| `rota-publica-autenticada` | `route-public-authenticated` | `public-route-authenticated` ◄ | 11/3 |
+| `permissao-literal` | `permission-literal` | `permission-literal` | 8/4 |
+| `cookie-seguro` | `cookie-secure` | `secure-cookie` ◄ | 7/3 |
+| `token-em-armazenamento` | `token-in-storage` | `token-in-storage` | 7/3 |
+| `random-inseguro` | `random-insecure` | `insecure-random` ◄ | 11/3 |
+| `gateway-credencial` | `gateway-credential` | `gateway-credential` | 14/6 |
+| `sql-concatenado` | `sql-concatenated` | `concatenated-sql` ◄ | 18/7 |
+| `sql-no-modulo` | `sql-in-module` | `sql-in-module` | 14/6 |
+| `container-presente` | `container-present` | `container-present` | 16/9 |
+| `dockerignore-segredo` | `dockerignore-secret` | `dockerignore-secret` | 8/5 |
+| `compose-variaveis-declaradas` | `compose-variables-declared` | `compose-variables-declared` | 12/8 |
+| `segredo-em-log` | `secret-in-log` | `secret-in-log` | 11/3 |
+| **§4.7 Escrita — limiares dentro do arquivo** | | | |
+| `limiar-funcao` | `threshold-function` | `function-threshold` ◄ | 23/13 |
+| `limiar-aninhamento` | `threshold-nesting` | `nesting-threshold` ◄ | 14/10 |
+| `limiar-parametros` | `threshold-parameters` | `parameters-threshold` ◄ | 16/11 |
+| `excecao-engolida` | `exception-swallowed` | `swallowed-exception` ◄ | 9/8 |
+
+| pseudo-id | A | B |
+|---|---|---|
+| `extracao` | `extraction` | `extraction` |
+
+**Verificações:** 81 ids mapeados, **81 únicos em A e 81 únicos em B**, nenhuma colisão entre colunas; 70 de
+81 mudam em A (11 ficam: `gateway-http`, `hardcode-url`, `import-adapter`, `import-lateral`, `log`,
+`migrations`, `payload-camelcase`, `rls`, `schema-config`, `ui-kit`, `ui-token`); **em B mudam 72** de 81
+(ficam 9: `gateway-http`, `hardcode-url`, `import-adapter`, `log`, `migrations`, `payload-camelcase`,
+`rls`, `ui-kit`, `ui-token`) — `import-lateral` e `schema-config` mudam de ordem só em B; 34 diferem entre A e B.
+
+**Como a onda 1 aplicou (ordem que o `verify-catalog` impõe):** (1) `id:` em `tools/gate/rules/*.mjs` e
+`regra:` em `cases.mjs` — o `run.mjs` reprova a divergência; (2) a primeira coluna das tabelas do
+`04-regras.md` §4.1–§4.7 e as citações em prosa — `verify-catalog --check` compara o catálogo com o engine;
+(3) skills, comandos e comentários de binding; (4) **`config/compliance.json`** dos projetos, na
+propagação; (5) o gate **acusa** `exceptions[].rule` que não é id do catálogo — `compliance-declared`, que já
+valida o arquivo, foi estendida (sem id novo): id antigo reprova com a dica ``a regra `X` foi renomeada para
+`Y` (ADR-024)``, e id que nunca existiu reprova sem dica. A tabela da dica é `tools/gate/renamed-rules.json`,
+**gerada** da coluna B por `tests/verify-catalog.mjs --check-renames <decisoes.md> <renamed-rules.json>
+<engine.mjs> [--write]`, que também confere que todo id novo existe no catálogo. Os ADRs anteriores não são
+editados.
+
+**Consequências.** (1) Quem lê um relatório antigo (`.sarak/audit`, `.sarak/security`) vê ids que não existem
+mais — o relatório é histórico, e a propagação não o reescreve. (2) Id citado em documentação (skill,
+command, agent, `README.md` da base) passou a ser **conferido por máquina** contra o catálogo do gate
+(`audit_base.py`, categoria `ids_citados`): antes nenhum verificador olhava id, só caminho de arquivo, e a
+renomeação deixaria citações apontando para o vazio. (3) O `ADR-024` não toca em `ADR-014`..`ADR-022`: eles
+citam ids antigos como história, e **este ADR** é a tabela que os traduz — a marca de status deles não é
+editada.
+
+---
+
+## ADR-025 — Os símbolos de `tools/`: a tabela que a onda 2 aplica
+
+**Status:** 🟢 Aceito — aplicado na onda 2. O dicionário (B) é o contrato; a tabela (A) é a parte com
+mais ocorrências; a seção "Como a onda 2 aplicou", ao fim, registra o que foi decidido por ocorrência.
+
+**Contexto.** `ADR-009` linha 4 isentava os símbolos de `tools/` por serem "ferramental vendorizado — o dono é
+outro repositório". O `ADR-023` revoga a isenção. Medido: **510 declarações de topo** em `tools/**` (442 nomes distintos) têm termo
+português (1.741 declarações PT de 2.452 contando locais, parâmetros e chaves), em 29 arquivos; mais 802 de
+1.090 declarações em `tests/**` do template. Ao contrário dos ids, o raio é **majoritariamente
+intra-arquivo**: só 35 símbolos de topo PT são importados por outro arquivo (19 arquivos importadores). O que
+liga arquivos é a **flag** `--autoteste` (52 arquivos), que é onda 2 + onda 5 no mesmo commit.
+
+**Decisão — duas partes.**
+
+- **A. Os símbolos com 8 ou mais ocorrências do nome, ou importados por outro arquivo** — 62 símbolos, que
+  somam **867 ocorrências** do nome em `tools/` e `tests/` (47% das 1.862 ocorrências dos 442 nomes de topo
+  distintos medidos). Tabela completa abaixo. O limiar deixa de fora 380 nomes de topo com 995
+  ocorrências; eles são traduzidos pelo dicionário da parte B, sem tabela própria.
+- **B. O dicionário termo a termo** (246 termos; abaixo os 120 mais frequentes). Um símbolo composto por
+  termos do dicionário é traduzido **posicionalmente**, exceto onde há conector (`de`, `do`, `da`, `para`,
+  `em`): aí a ordem inglesa é a idiomática (`caminhoDoModulo` → `modulePath`, não `pathOfModule`) — mesma
+  exceção do `ADR-018` §1 ao inglês quebrado.
+
+**A. A tabela** (ocorrências do nome contam referências por nome, não por escopo — limite superior; os
+nomes declarados em mais de um arquivo — `lerTexto` em 6, `rodarAutoteste` em 14, `RAIZ` em 4 — são
+**declarações duplicadas**, não um símbolo compartilhado).
+
+| símbolo atual | alvo | ocorrências do nome (tools+tests) | declarado em (arq.) | importado por (arq.) |
+|---|---|---|---|---|
+| `escrever` | `writeOut` | 82 | 1 | 0 |
+| `linhas` | `lines` | 75 | 1 | 0 |
+| `lerTexto` | `readText` | 41 | 6 | 0 |
+| `RAIZ_TEMPLATE` | `TEMPLATE_ROOT` | 36 | 2 | 0 |
+| `RAIZ` | `ROOT` | 33 | 4 | 0 |
+| `casosDeAutoteste` | `selfTestCases` | 29 | 5 | 0 |
+| `rodarAutoteste` | `runSelfTest` | 28 | 8 | 0 |
+| `abortar` | `abort` | 27 | 3 | 0 |
+| `lerOpcoes` | `readOptions` | 26 | 8 | 0 |
+| `acharRaizProjeto` | `findProjectRoot` | 17 | 6 | 3 |
+| `rodar` | `run` | 17 | 3 | 0 |
+| `rodarPython` | `runPython` | 17 | 1 | 0 |
+| `substituir` | `substitute` | 17 | 1 | 0 |
+| `textoDeCodigo` | `codeText` | 16 | 1 | 5 |
+| `entrypointDoPacote` | `packageEntrypoint` | 14 | 3 | 0 |
+| `leiturasFalhas` | `failedReads` | 14 | 1 | 4 |
+| `normalizar` | `normalize` | 14 | 2 | 3 |
+| `operacoesDaSpec` | `specOperations` | 14 | 1 | 3 |
+| `validar` | `validate` | 14 | 1 | 2 |
+| `PORTAS_CONHECIDAS` | `KNOWN_PORTS` | 13 | 1 | 3 |
+| `entrypointDoNpm` | `npmEntrypoint` | 13 | 5 | 0 |
+| `grafoDeTeste` | `testGraph` | 13 | 1 | 0 |
+| `operacoes` | `operations` | 13 | 1 | 0 |
+| `specDe` | `specOf` | 13 | 1 | 3 |
+| `ARQUIVOS_DE_CONTAINER` | `CONTAINER_FILES` | 12 | 1 | 1 |
+| `LIMIARES` | `THRESHOLDS` | 11 | 1 | 2 |
+| `listarModulos` | `listModules` | 11 | 2 | 3 |
+| `paramsFabrica` | `factoryParams` | 11 | 1 | 0 |
+| `ARQUIVOS_DE_FRONT` | `FRONT_FILES` | 10 | 1 | 1 |
+| `hojeISO` | `todayIso` | 10 | 1 | 0 |
+| `percorrer` | `walk` | 10 | 3 | 0 |
+| `pythonResolvido` | `resolvedPython` | 10 | 2 | 0 |
+| `temArquivoEm` | `hasFileIn` | 10 | 1 | 1 |
+| `REGRAS` | `RULES` | 9 | 1 | 1 |
+| `lerArgumentos` | `readArguments` | 9 | 1 | 0 |
+| `memoria` | `cache` | 9 | 1 | 0 |
+| `rodarNpm` | `runNpm` | 9 | 1 | 0 |
+| `statusDaExcecao` | `exceptionStatus` | 9 | 1 | 0 |
+| `subBloco` | `subBlock` | 9 | 1 | 0 |
+| `ARVORE_VAZIA` | `EMPTY_TREE` | 8 | 2 | 0 |
+| `carregarEsquema` | `loadSchema` | 8 | 1 | 2 |
+| `imprimirHumano` | `printHuman` | 8 | 4 | 0 |
+| `PADRAO_CREDENCIAL` | `CREDENTIAL_PATTERN` | 7 | 1 | 2 |
+| `analisar` | `analyze` | 7 | 2 | 2 |
+| `servidorDaSpec` | `specServer` | 7 | 1 | 2 |
+| `montarGrafo` | `buildGraph` | 6 | 1 | 2 |
+| `propriedadesDaResposta` | `responseProperties` | 6 | 1 | 2 |
+| `saidaDe` | `outputOf` | 6 | 1 | 2 |
+| `varrerRaiz` | `scanRoot` | 6 | 1 | 1 |
+| `calcularAfetados` | `computeAffected` | 5 | 1 | 1 |
+| `carregarContexto` | `loadContext` | 5 | 1 | 2 |
+| `normalizarCaminho` | `normalizePath` | 5 | 1 | 1 |
+| `ALVO_RAIZ` | `ROOT_TARGET` | 4 | 1 | 1 |
+| `CASOS` | `CASES` | 4 | 1 | 1 |
+| `SQL_FONTE` | `SQL_SOURCE` | 4 | 1 | 1 |
+| `carregarProjeto` | `loadProject` | 4 | 1 | 1 |
+| `gatewaysDe` | `gatewaysOf` | 4 | 1 | 1 |
+| `obrigatoriosDaRequisicao` | `requestRequired` | 4 | 1 | 1 |
+| `rotasDaSpec` | `specRoutes` | 4 | 1 | 1 |
+| `statusDaOperacao` | `operationStatus` | 4 | 1 | 1 |
+| `CHAMADA_DE_LOG_VERBOS` | `LOG_CALL_VERBS` | 3 | 1 | 1 |
+| `carregarExcecoes` | `loadExceptions` | 3 | 1 | 1 |
+
+**B. O dicionário** (declarações = nomes únicos por arquivo, papel incluído; "nota" = ambiguidade que a
+onda resolve por ocorrência, nunca em lote).
+
+| termo PT | inglês | declarações | nota |
+|---|---|---|---|
+| `raiz` | `root` | 199 |  |
+| `caminho` | `path` | 184 |  |
+| `nome` | `name` | 165 |  |
+| `texto` | `text` | 109 |  |
+| `linha` | `line` | 105 |  |
+| `modulo` | `module` | 100 |  |
+| `pasta` | `dir` | 90 | `folder` onde for substantivo de domínio |
+| `arquivo` | `file` | 83 |  |
+| `chave` | `key` | 78 |  |
+| `ler` | `read` | 77 |  |
+| `achados` | `findings` | 72 |  |
+| `casos` | `cases` | 70 |  |
+| `autoteste` | `selftest` | 68 | coordenado: `--autoteste` e `autoteste:*` |
+| `manifesto` | `manifest` | 62 |  |
+| `conteudo` | `content` | 62 |  |
+| `caso` | `case` | 60 |  |
+| `alvo` | `target` | 58 |  |
+| `rodar` | `run` | 56 |  |
+| `projeto` | `project` | 55 |  |
+| `padrao` | `default` | 54 | **ambíguo**: `default` | `pattern` | `standard` — decidir por ocorrência |
+| `codigo` | `code` | 54 |  |
+| `titulo` | `title` | 52 |  |
+| `pagina` | `page` | 52 |  |
+| `falhas` | `failures` | 50 |  |
+| `opcoes` | `options` | 50 |  |
+| `tamanho` | `size` | 50 |  |
+| `resultado` | `result` | 49 |  |
+| `valor` | `value` | 49 |  |
+| `nomes` | `names` | 49 |  |
+| `modulos` | `modules` | 47 |  |
+| `indice` | `index` | 47 |  |
+| `registro` | `record` | 45 |  |
+| `erro` | `error` | 43 |  |
+| `nivel` | `level` | 42 |  |
+| `mensagem` | `message` | 41 |  |
+| `entrada` | `input` | 40 | **ambíguo**: `input` | `entry` |
+| `atual` | `current` | 39 |  |
+| `rota` | `route` | 38 |  |
+| `esperado` | `expected` | 36 |  |
+| `saida` | `output` | 35 |  |
+| `tipo` | `type` | 35 |  |
+| `porta` | `port` | 32 | ADR-016 já fixou: porta (hexagonal) = `port` |
+| `molde` | `template` | 32 | o módulo `_template`; domínio do molde é da onda 4b |
+| `destino` | `destination` | 32 |  |
+| `motivo` | `reason` | 31 |  |
+| `itens` | `items` | 30 |  |
+| `comando` | `command` | 29 |  |
+| `inicio` | `start` | 29 |  |
+| `corpo` | `body` | 29 |  |
+| `campos` | `fields` | 28 |  |
+| `passos` | `steps` | 28 |  |
+| `chaves` | `keys` | 28 |  |
+| `fonte` | `source` | 28 |  |
+| `teto` | `cap` | 28 | `limit` quando for limite de entrada |
+| `pastas` | `dirs` | 27 |  |
+| `escopo` | `scope` | 27 |  |
+| `mapa` | `map` | 26 |  |
+| `portas` | `ports` | 26 |  |
+| `teste` | `test` | 25 |  |
+| `padroes` | `patterns` | 25 | idem `padrao` |
+| `relativo` | `relative` | 24 |  |
+| `arvore` | `tree` | 24 |  |
+| `tabela` | `table` | 24 |  |
+| `criado` | `created` | 24 |  |
+| `achado` | `finding` | 23 |  |
+| `rotulo` | `label` | 23 |  |
+| `sistema` | `system` | 23 |  |
+| `marcador` | `marker` | 22 | ADR-017: `<module>` já é o marcador |
+| `carregar` | `load` | 22 |  |
+| `bruto` | `raw` | 21 |  |
+| `pacote` | `package` | 21 | `ui.pacote` → `ui.package` |
+| `auditar` | `audit` | 21 |  |
+| `causa` | `cause` | 21 |  |
+| `sensiveis` | `sensitive` | 21 |  |
+| `clausula` | `clause` | 21 |  |
+| `trecho` | `snippet` | 19 |  |
+| `campo` | `field` | 19 |  |
+| `artefato` | `artifact` | 19 |  |
+| `ignorar` | `ignore` | 19 |  |
+| `detalhe` | `detail` | 18 |  |
+| `validar` | `validate` | 18 |  |
+| `verificar` | `check` | 18 | `verify` quando for o verbo do `verify` |
+| `falha` | `failure` | 18 |  |
+| `faltando` | `missing` | 18 |  |
+| `limite` | `limit` | 18 |  |
+| `lista` | `list` | 17 |  |
+| `imprimir` | `print` | 17 |  |
+| `resposta` | `response` | 17 |  |
+| `textos` | `texts` | 17 |  |
+| `executar` | `run` | 17 | `execute` se `run` colidir |
+| `lei` | `law` | 17 | **ambíguo**: `law` | `rule` |
+| `excecoes` | `exceptions` | 16 |  |
+| `numero` | `number` | 16 |  |
+| `partes` | `parts` | 16 |  |
+| `marcadores` | `markers` | 16 |  |
+| `assunto` | `topic` | 16 | ADR-013: `<ASSUNTO>` em env = `<TOPIC>` |
+| `checar` | `check` | 16 |  |
+| `conferir` | `check` | 16 | duas entradas para `check`: `checar`/`conferir` |
+| `acao` | `action` | 16 |  |
+| `pai` | `parent` | 15 |  |
+| `parte` | `part` | 15 |  |
+| `origem` | `origin` | 15 | `source` quando for fonte de dado |
+| `igual` | `equal` | 15 |  |
+| `escrever` | `write` | 15 |  |
+| `acoes` | `actions` | 15 |  |
+| `montar` | `build` | 14 |  |
+| `caminhos` | `paths` | 14 |  |
+| `candidatos` | `candidates` | 14 |  |
+| `comparar` | `compare` | 14 |  |
+| `secao` | `section` | 14 |  |
+| `erros` | `errors` | 14 |  |
+| `contexto` | `context` | 14 |  |
+| `criar` | `create` | 14 |  |
+| `arquitetura` | `architecture` | 14 |  |
+| `regras` | `rules` | 14 |  |
+| `prefixo` | `prefix` | 14 |  |
+| `pares` | `pairs` | 14 |  |
+| `passo` | `step` | 14 |  |
+| `fora` | `outside` | 14 |  |
+| `estado` | `state` | 14 |  |
+
+**Verificações:** 62 alvos únicos; **nenhum alvo colide com nome já declarado no
+mesmo arquivo**; 11 alvos já existem como nome em **outro** arquivo (`lines`, `readText`, `selfTestCases`,
+`runSelfTest`, `findProjectRoot`, `run`, `validate`, `KNOWN_PORTS`, `listModules`, `walk`, `cache`). Um
+deles é o **mesmo conceito** de propósito — `KNOWN_PORTS` é o nome que o `ADR-016` já deu nos bindings; nos
+outros a onda 2 confere o escopo (um `run` novo num arquivo não pode sombrear um `run` importado).
+
+**Ambiguidades que não se resolvem em tabela:** `padrao` (**default** | **pattern** | **standard**, 54
+declarações), `entrada` (**input** | **entry**), `lei` (**law** | **rule**), `teto` (**cap** | **limit**) e
+`pasta` (**dir** | **folder**). A onda 2 resolve **lendo o uso**, e cada decisão vira linha na tabela da
+própria onda.
+
+**Consequências.** (1) `tools/` é vendorizado: o sistema recebe a pasta inteira (`substituir-politica`); não há
+migração de dado. (2) `typecheck:tools` (`checkJs`) é a rede para símbolo esquecido — roda sem `strict` e
+pega nome inexistente em qualquer ramo, inclusive os não percorridos pelo autoteste. (3) Os 2 nomes de
+arquivo em português (`tests/supervisionar.mjs` → `supervise.mjs`, `tests/prova-desligamento.py` →
+`shutdown-proof.py`) entram na onda 2; `0001-cria-metadados.sql` (nome de migration, `NNNN-verbo-objeto`) é
+**onda 4b**, porque o nome acompanha a tabela.
+
+### Como a onda 2 aplicou
+
+**Método.** Renomeação semântica, não textual: o `LanguageService` do TypeScript levantou cada declaração
+de `tools/**` e `tests/**` (função, constante, variável local, parâmetro, importação, classe) e todas as
+suas referências, escopo a escopo. Antes de gravar, cada alvo foi conferido contra os nomes **finais** de
+todo símbolo visível nas referências; colisão ou sombra nova reprova a aplicação inteira. Chaves de objeto
+foram renomeadas **por nome**, e só quando algum código as lê (acesso, desestruturação, atalho, método).
+
+**Resultado** (vocabulário de trabalho de ~640 formas, o mesmo antes e depois): declarações em português em
+`tools/**` 1.788 de 2.440 → 82 de 2.443; em `tests/**` 773 de 1.024 → 45 de 1.032. As sobras são as chaves
+listadas abaixo.
+
+**Ordem dos termos.** A mesma exceção do `ADR-018` §1 e o critério B do `ADR-024`: o português põe o
+modificador depois do núcleo, o inglês antes. `caminhoAbsoluto` → `absolutePath`, `raizProjeto` →
+`projectRoot`, `casosPuros` → `pureCases`; plural de modificador por genitivo vira singular
+(`idsDosModulos` → `moduleIds`); `eh`/`tem`/`sem`/`com` iniciais → `is`/`has`/`without`/`with`.
+
+**Ambiguidades, decididas por ocorrência.**
+
+| termo | decisão |
+|---|---|
+| `padrao` | `pattern` onde é expressão regular (`PADRAO_*`, `padraoChave`, `padraoNome`); `DEFAULT_*`/`default` onde é valor (`BINDING_PADRAO`, `REF_PADRAO`, `raizPadrao`, `LINHAS_DE_CAUDA_PADRAO`); `defaultValue` no parâmetro de `valorDe` (`flagValue`), porque `default` é reservada |
+| `entrada` | `entry` (item de diretório, de `consumes`, do registro); `entrypoint` (`entrypointDoNpm`); `input` no campo de caso de teste (`entrada`, `entradas`); `lerCaminhosDeEntrada` → `readInputPaths` |
+| `lei` | `law` — o catálogo normativo (`lawIds`, `lawSet`, `lawOnly`, `extractLawIds`, `duplicatesInLaw`); `rule` ficou para `regra` |
+| `teto` | `cap` em todo uso (teto de tempo; `SAIDA_TETO` → `EXIT_CAP`); nenhum era limite de entrada |
+| `pasta` | `dir` em todo uso; `folder` não ocorre |
+| `registro` | `REGISTRY`/`compareRegistry`/`registered` (registro de autotestes); `entry` para o item |
+| `caso`, `classe`, `novo`, `retorno`, `pacote` | reservadas ou quase: `testCase`, `cls`, `fresh`, `returned`, `pkg` isoladas; `case`, `class`, `new`, `return`, `package` em composto |
+| `argumentos` | `args` (`argv` em `template-self-test.mjs`, onde `args` já existia) — `arguments` é reservada |
+| `relativo`, `brutos`, `aguardar` | `relPath` (`relative` é import de `node:path`), `rawArgs`, `waitFor` (`await` é reservada) |
+| `executar` | `run`; em `verify-commit.mjs`, onde `rodar` já era `run`, `execute` |
+| `data` (data civil) | `FORMATO_DATA` → `DATE_FORMAT` |
+
+**Colisões conferidas.** Os 11 alvos que já existiam em outro arquivo (`lines`, `readText`,
+`selfTestCases`, `runSelfTest`, `findProjectRoot`, `run`, `validate`, `KNOWN_PORTS`, `listModules`, `walk`,
+`cache`) não criaram sombra nem mudaram o símbolo que um import resolve. Colisões reais que o conferidor
+achou e que ganharam nome próprio: `propriedadesDeResposta` (`allResponseProperties`, para não colidir com
+`propriedadesDaResposta`), `daRota` (`routeSection`), `executado`/`executados` (`executedStep`/
+`executedSteps`), `bruto`/`brutos`, `relativo`. Helpers duplicados (`lerTexto`, `rodarAutoteste`, `RAIZ`)
+receberam o mesmo nome inglês em todos os arquivos; **não** foram unificados, porque `tools/` é vendorizado e
+sem dependência entre arquivos de propósito.
+
+**Chaves de objeto que ficam em português**, porque são contrato com quem as lê (resolvidas na onda 3 ou
+na 4a): saída de JSON do gate e das ferramentas (`achados`, `erros`, `regra`, `nivel`, `mensagem`, `modulo`,
+`escopo`, `arquivo`, `linha`, `caminho`, `tipo`, `trecho`, `tudo`, `motivo`, `raiz`, `modulos`, `desde`,
+`compativel`, `consumidores`, `situacao`, `segredos`, `rodou`, `saida`, `ecossistema`, `pacote`,
+`severidade`, `titulo`, `perdoado`, `excecoesProblematicas`); config do autoteste do template
+(`tetoPorClasseS`, `sondaDocker`, `intervaloMs`, `linhasCauda`, …) e nomes de cenário (`drena`, `estoura`).
+Ficam também as chaves que nenhum código lê pelo nome (dado de fixture e papéis legados `dominio`/`conector`).
+Mensagens, ids de passo (`criar-modulo`) e flags próprias em português são da onda 3.
+
+**Nomes de arquivo.** `tests/supervisionar.mjs` → `tests/supervise.mjs`; `tests/prova-desligamento.py` →
+`tests/shutdown-proof.py` (com os identificadores internos; as flags e as chaves do JSON de saída dele
+ficam para a onda 3).
+
+**A flag e as chaves de npm.** `--autoteste` → `--selftest`, `autoteste:tudo` → `selftest:all`,
+`autoteste:template` → `selftest:template`, `autoteste:template:rapido` → `selftest:template:fast`,
+`autoteste:template:docker` → `selftest:template:docker`, no mesmo commit: `tools/`, `tests/`,
+`bindings/*/root`, `skills/*/scripts`, `hooks`, `plugin`, workflow, README e skills. O padrão de varredura do
+`run-all-selftests.mjs` e o `args.autoteste` do `argparse` acompanham, e a pasta temporária passou a
+`sarak-selftest-template-*`. A contagem de arquivos descobertos é a mesma antes e depois (38). Os ADRs
+anteriores citam `--autoteste` como história e não foram editados.
+
+**Fora de `tools/`, mas dependente do nome.** `eslint.config.mjs` (`THRESHOLDS.functionLines`/`nesting`/
+`params`), o parser de `thresholds.mjs` em `meta-verificacao-base/scripts/limiares.py` e `EXTRACTION_ID` em
+`ids_citados.py`/`audit_base.py` foram atualizados junto.
+
+**Correção associada.** `audit_base.py` passou a sair com código 1 quando qualquer categoria tem achado
+(antes saía 0 sempre, e o workflow nunca reprovava por ele), e o `--selftest` dele conta casos rodados e
+aprovados.
+
+---
+
+## ADR-026 — O contrato público do gate e o ferramental usam inglês
+
+**Status:** 🟢 Aceito — detalha a aplicação das ondas 2 e 3 do `ADR-023`.
+
+**Justificativa.** A mudança das chaves do `--json` altera um contrato público e exige atualizar leitores na
+mesma entrega; por isso o detalhamento fica em um ADR curto, separado do plano geral de ondas do ADR-023.
+
+**Decisão.** Mensagens de achado, resumos e saídas de desenvolvedor do gate são em inglês, com modificador
+antes do núcleo. A saída JSON pública de `tools/gate/validate.mjs` é
+`{ "findings": [{ "module", "rule", "severity", "message" }], "errorCount" }`; `severity` é `error` ou
+`warning`. Os objetos internos do motor podem conservar chaves em português, mas elas não atravessam essa
+fronteira. A dica de id antigo segue a forma `rule X was renamed to Y (ADR-024)`.
+
+Os consumidores ajustados ao contrato são `commands/code1-auditar.md`, `skills/code-diagnostico/SKILL.md`,
+`skills/code-diagnostico/references/backlog-format.md` e `agents/code-auditor.md`; a regra de backlog mapeia
+`rule` para `regra` ao compor o documento persistido, cuja migração pertence à onda 5. Os testes do gate
+verificam as chaves e as mensagens serializadas.
+
+Os ids de passo mudaram de `gerar-projeto`, `criar-modulo:<id>`, `criar-adapter:<porta>`, `formatar-adapters`,
+`clone-simulado`, `primeiro-commit`, `atualizar-pip`, `instalar`, `verificar`, `mapa`, `container-arquivos`,
+`ci-dependencias`, `artefato`, `composition-autoteste` e `desligamento` para `generate-project`,
+`create-module:<id>`, `create-adapter:<port>`, `format-adapters`, `simulated-clone`, `first-commit`,
+`upgrade-pip`, `install`, `verify`, `verify-map`, `container-files`, `ci-dependencies`, `artifact`,
+`composition-selftest` e `shutdown`. As chaves de `template-self-test.config.json` também foram renomeadas:
+`tetoPorClasseS`/`leve`/`geracao`/`instalacao`/`verificacao`/`desligamento` para
+`capSecondsByClass`/`light`/`generation`/`installation`/`verification`/`shutdown`; `sondaDocker` e suas
+chaves `tentativas`/`intervaloMs` para `dockerProbe`/`attempts`/`intervalMs`; `margemDoSupervisorS` para
+`supervisorMarginSeconds`; `boot.intervaloMs`/`linhasCauda`/`valorInocuo`/`hostDeLoopback` para
+`boot.intervalMs`/`tailLines`/`harmlessValue`/`loopbackHost`; e `desligamento.lentoDrenaMs`/
+`fatorDeEstouro`/`esperaDoBootMs` para `shutdown.slowDrainMs`/`overflowFactor`/`bootWaitMs`.
+
+As flags de `supervise.mjs` (`supervisionar.mjs`) mudaram de `--teto-ms`, `--ate-url`, `--intervalo-ms`,
+`--linhas-cauda`, `--porta-livre` e `--autoteste` para `--timeout-ms`, `--until-url`, `--interval-ms`,
+`--tail-lines`, `--free-port` e `--selftest`. `shutdown-proof.py` (`prova-desligamento.py`) renomeou
+`--porta`/`--caminho`/`--cenario`/`--teto-ms` para `--port`/`--path`/`--scenario`/`--timeout-ms`; mantém
+`--cwd`, `--url` e `--boot-ms`. Sua saída mudou de `cenario`/`motivo`/`codigo`/`decorrido_ms` para
+`scenario`/`reason`/`exitCode`/`elapsedMs` (mantém `ok`), com cenários `drain` e `overflow`.
+`tools/package.mjs --backend-only` é reservado para o build da imagem de backend; o `npm run build`
+padrão continua incluindo o Vite.
+

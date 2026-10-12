@@ -82,7 +82,7 @@ os serviços, inclusive os de um profile inativo (medido com `docker compose con
 O `node tools/sync-env.mjs` — que roda a cada `create-module` — regrava o `.env` da raiz a partir dos
 manifestos e **move para a seção `ORFAS`, comentada**, toda chave que nenhum manifesto exige. As `DEPLOY_*`
 não são lidas por código algum, então cairiam lá, e o `docker compose config` passaria a falhar. Também não
-dá para declará-las como `ROOT_*` em `project.json:requiredEnv`: a regra `env-raiz-declarado` as acusaria
+dá para declará-las como `ROOT_*` em `project.json:requiredEnv`: a regra `root-env-declared` as acusaria
 como "declarada e sem leitor" (só `adapters/`, `src/` e `packages/` leem `ROOT_*`). Por isso a doutrina
 manda o ambiente que só o deploy lê para `deploy/.env` + `deploy/.env.example`.
 

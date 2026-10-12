@@ -220,7 +220,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 | molde (prova de vida ADR-006 + comparação com o binding) e norma do alvo proibindo exceção | molde que não sobrevive é achado da Fase A; divergência sem ADR é achado; proibição é portão antes de plan que dependa disso |
 | lista de módulos e o nome de cada um | qual capacidade vira qual `id` — o portão central |
 | prefixo de tabela: renomear ou excetuar | por módulo; risco de migração é decisão de negócio |
-| chaves de ambiente: renomear ou excetuar | `env-modulo` é estrito, sem meio-termo |
+| chaves de ambiente: renomear ou excetuar | `env-module` é estrito, sem meio-termo |
 | a fronteira da área legada (fora de lint/tipos) | define o que fica sem cobertura, e por quanto tempo |
 | ordem de execução (o `nn` das plans) | trade-off risco × valor |
 | antes de qualquer migração SQL | backup — já é regra da `db-migrations` |
@@ -229,7 +229,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 | o plano completo, antes de escrever qualquer plan | o gate de "confirma?" que encerra a Fase A |
 
 **Onde HITL é desperdício** (a máquina decide e só reporta): gate verde ou não; quais regras violadas;
-`.env.example` × manifestos; árvore cabe em `ENTRADAS_PERMITIDAS`; spec citando caminho inexistente.
+`.env.example` × manifestos; árvore cabe em `ALLOWED_ENTRIES`; spec citando caminho inexistente.
 
 ## Regras e limites
 - **NUNCA** rode a Fase A e a Fase B na mesma conversa — destrói a independência do revisor da Fase B.
@@ -283,4 +283,4 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
   ponta a ponta, e o resultado do legado sintético usado para validar esta skill.
 - `scripts/diagnosticar_terreno.py` — diagnóstico mecânico: fase, caminho tri-estado (`sinais_sdd`),
   branch/árvore suja, aparato do template (oito peças, `equivalentes_suspeitos` sob outro nome), colisão
-  só quando é legado de verdade, geração do template e candidatos a módulo. `--autoteste` prova o núcleo.
+  só quando é legado de verdade, geração do template e candidatos a módulo. `--selftest` prova o núcleo.

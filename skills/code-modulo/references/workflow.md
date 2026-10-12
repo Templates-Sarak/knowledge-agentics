@@ -70,7 +70,7 @@ pago, e o `conector` **por último** — ele agrega os outros e precisa que exis
 ## A7: Verificar
 
 ```
-node tools/gate/validate.mjs --all            # inclui import-lateral e consome-ciclo
+node tools/gate/validate.mjs --all            # inclui lateral-import e consumes-cycle
 npm run verify                                # ou: python verify.py
 ```
 

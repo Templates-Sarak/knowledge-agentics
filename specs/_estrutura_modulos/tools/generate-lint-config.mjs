@@ -21,11 +21,11 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { LIMIARES } from './gate/thresholds.mjs';
+import { THRESHOLDS } from './gate/thresholds.mjs';
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url));
 
-/** Exportado para a regra `lint-derivado` poder perguntar "isto e alguma saida minha?". */
+/** Exportado para a regra `derived-lint` poder perguntar "isto e alguma saida minha?". */
 export const BINDINGS = ['typescript', 'javascript', 'python'];
 
 /**
@@ -35,7 +35,7 @@ export const BINDINGS = ['typescript', 'javascript', 'python'];
  * ferramental VENDORIZADO da base Sarak, cujo dono é outro repositório e cuja correção vive lá.
  * Um linter não julga código de terceiro que o projeto apenas carrega.
  */
-const IGNORADOS = [
+const IGNORED = [
   'node_modules', 'dist', 'build', 'coverage', 'generated',
   '.venv', '.agents', '.githooks', 'tools',
 ];
@@ -44,22 +44,22 @@ const IGNORADOS = [
  * As cinco regras do ESLint que se SOBREPÕEM ao gate, e a regra do catálogo que cada uma espelha.
  * As três primeiras saem dos limiares; as duas últimas são proibições, sem número a derivar.
  */
-function regrasEslint() {
+function eslintRules() {
   return [
-    `      // gate: limiar-funcao`,
-    `      'max-lines-per-function': ['error', { max: ${LIMIARES.linhasFuncao}, skipBlankLines: true, skipComments: true }],`,
-    `      // gate: limiar-aninhamento`,
-    `      'max-depth': ['error', ${LIMIARES.aninhamento}],`,
-    `      // gate: limiar-parametros`,
-    `      'max-params': ['error', ${LIMIARES.parametros}],`,
-    `      // gate: excecao-engolida`,
+    `      // gate: function-threshold`,
+    `      'max-lines-per-function': ['error', { max: ${THRESHOLDS.functionLines}, skipBlankLines: true, skipComments: true }],`,
+    `      // gate: nesting-threshold`,
+    `      'max-depth': ['error', ${THRESHOLDS.nesting}],`,
+    `      // gate: parameters-threshold`,
+    `      'max-params': ['error', ${THRESHOLDS.params}],`,
+    `      // gate: swallowed-exception`,
     `      'no-empty': ['error', { allowEmptyCatch: false }],`,
     `      // gate: log`,
     `      'no-console': 'error',`,
   ].join('\n');
 }
 
-const CABECALHO = [
+const HEADER = [
   '// GERADO por tools/generate-lint-config.mjs — NAO edite a mao.',
   '// A fonte dos limiares e tools/gate/thresholds.mjs (LEI: specs/arquitetura/04-regras.md §4.7).',
   '// Para mudar um limiar, mude a lei e rode o gerador de novo. Editar aqui cria a divergencia que',
@@ -72,40 +72,40 @@ function eslintConfig(binding) {
   // `modules/*/web/dist/**`. Medido: `npm run build` gera bundle minificado em
   // `modules/*/web/dist/`, e sem o prefixo o eslint linta esse bundle — 419 problemas, 1 real.
   // `.prettierignore` usa semantica gitignore (casa em qualquer nivel); sem o prefixo, so o eslint teria o furo.
-  const ignores = IGNORADOS.map((p) => `'**/${p}/**'`).join(', ');
-  const partes = [CABECALHO, ''];
+  const ignores = IGNORED.map((p) => `'**/${p}/**'`).join(', ');
+  const parts = [HEADER, ''];
 
   if (binding === 'typescript') {
-    partes.push("import parserTs from '@typescript-eslint/parser';", '');
+    parts.push("import parserTs from '@typescript-eslint/parser';", '');
   }
-  partes.push('export default [');
-  partes.push(`  { ignores: [${ignores}] },`);
-  partes.push('  {');
-  partes.push(binding === 'typescript'
+  parts.push('export default [');
+  parts.push(`  { ignores: [${ignores}] },`);
+  parts.push('  {');
+  parts.push(binding === 'typescript'
     ? "    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'],"
     : "    files: ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'],");
-  partes.push('    languageOptions: {');
-  if (binding === 'typescript') partes.push('      parser: parserTs,');
+  parts.push('    languageOptions: {');
+  if (binding === 'typescript') parts.push('      parser: parserTs,');
   // 'latest', nao um ano fixo: o molde JS usa `import ... with { type: 'json' }` (atributos de
   // import) em web/src/pages/*.jsx e tests/web/*.test.jsx — medido: `ecmaVersion: 2023`
   // faz o espree (parser default, sem @typescript-eslint) rejeitar essa sintaxe com "Unexpected
   // token with". O binding TypeScript nao pega o mesmo erro porque usa outro parser.
-  partes.push("      ecmaVersion: 'latest',");
-  partes.push("      sourceType: 'module',");
-  partes.push('      parserOptions: { ecmaFeatures: { jsx: true } },');
-  partes.push('    },');
-  partes.push('    rules: {');
-  partes.push(regrasEslint());
-  partes.push('    },');
-  partes.push('  },');
-  partes.push('  {');
-  partes.push("    // Teste tem outra economia: fixture longa e `console` de diagnostico sao legitimos ali,");
-  partes.push('    // e o gate ja isenta arquivo de teste nas mesmas regras (`eTeste`).');
-  partes.push("    files: ['**/tests/**', '**/*.test.*', '**/*.spec.*'],");
-  partes.push("    rules: { 'max-lines-per-function': 'off', 'no-console': 'off' },");
-  partes.push('  },');
-  partes.push('];');
-  return `${partes.join('\n')}\n`;
+  parts.push("      ecmaVersion: 'latest',");
+  parts.push("      sourceType: 'module',");
+  parts.push('      parserOptions: { ecmaFeatures: { jsx: true } },');
+  parts.push('    },');
+  parts.push('    rules: {');
+  parts.push(eslintRules());
+  parts.push('    },');
+  parts.push('  },');
+  parts.push('  {');
+  parts.push("    // Teste tem outra economia: fixture longa e `console` de diagnostico sao legitimos ali,");
+  parts.push('    // e o gate ja isenta arquivo de teste nas mesmas regras (`isTest`).');
+  parts.push("    files: ['**/tests/**', '**/*.test.*', '**/*.spec.*'],");
+  parts.push("    rules: { 'max-lines-per-function': 'off', 'no-console': 'off' },");
+  parts.push('  },');
+  parts.push('];');
+  return `${parts.join('\n')}\n`;
 }
 
 /**
@@ -129,7 +129,7 @@ function ruffConfig() {
     // MESMA lista do eslint (IGNORADOS inteiro), sem filtro — uma fonte unica produzindo duas listas
     // diferentes e a fonte unica desmentida: um filtro por prefixo (so `.` ou
     // `tools`) deixa `dist`/`build`/`coverage`/`generated`/`node_modules` de fora do ruff.
-    `exclude = [${IGNORADOS.map((p) => `"${p}"`).join(', ')}]`,
+    `exclude = [${IGNORED.map((p) => `"${p}"`).join(', ')}]`,
     '',
     '[lint]',
     'select = ["E", "F", "W", "B", "C90", "T20", "ANN", "RET", "SIM", "PL"]',
@@ -139,13 +139,13 @@ function ruffConfig() {
     'max-complexity = 10',
     '',
     '[lint.pylint]',
-    '# gate: limiar-parametros',
-    `max-args = ${LIMIARES.parametros}`,
-    '# gate: limiar-funcao — `max-statements` e o analogo mais proximo que o ruff oferece.',
-    `max-statements = ${LIMIARES.linhasFuncao}`,
+    '# gate: parameters-threshold',
+    `max-args = ${THRESHOLDS.params}`,
+    '# gate: function-threshold — `max-statements` e o analogo mais proximo que o ruff oferece.',
+    `max-statements = ${THRESHOLDS.functionLines}`,
     '',
     '[lint.per-file-ignores]',
-    '# Teste tem outra economia — o gate ja o isenta das mesmas regras (`eTeste`). A lista acompanha',
+    '# Teste tem outra economia — o gate ja o isenta das mesmas regras (`isTest`). A lista acompanha',
     '# a do pyproject.toml de cada modulo: raiz e modulo isentam o teste do MESMO conjunto.',
     '"**/tests/**" = ["ANN", "PLR0915", "PLR2004", "S101", "T20"]',
     '',
@@ -155,89 +155,89 @@ function ruffConfig() {
 /**
  * Qual arquivo cada binding gera, e com que conteúdo. PURA: não toca disco, não lê argumento.
  *
- * É exportada porque a regra `lint-derivado` do gate precisa da MESMA resposta que o `--check`
+ * É exportada porque a regra `derived-lint` do gate precisa da MESMA resposta que o `--check`
  * daqui. Uma segunda cópia da lógica seria uma segunda fonte da verdade — o defeito exato que este
  * gerador existe para eliminar, reencenado um nível acima. Por isso o CLI abaixo só roda quando
  * este arquivo é o entrypoint: importá-lo tem de ser inerte.
  */
-export function saidaDe(binding) {
-  if (binding === 'python') return { nome: '.ruff.toml', conteudo: ruffConfig() };
-  return { nome: 'eslint.config.js', conteudo: eslintConfig(binding) };
+export function outputOf(binding) {
+  if (binding === 'python') return { name: '.ruff.toml', content: ruffConfig() };
+  return { name: 'eslint.config.js', content: eslintConfig(binding) };
 }
 
 /** Binding do destino, pelos arquivos de raiz que só ele tem. */
-function detectarBinding(destino) {
-  if (existsSync(join(destino, 'pyproject.toml'))) return 'python';
-  if (existsSync(join(destino, 'tsconfig.json'))) return 'typescript';
-  if (existsSync(join(destino, 'jsconfig.json'))) return 'javascript';
+function detectBinding(destination) {
+  if (existsSync(join(destination, 'pyproject.toml'))) return 'python';
+  if (existsSync(join(destination, 'tsconfig.json'))) return 'typescript';
+  if (existsSync(join(destination, 'jsconfig.json'))) return 'javascript';
   return null;
 }
 
 /** Sobe até achar a raiz do projeto (a que tem `modules/`); senão, o diretório atual. */
-function acharRaizProjeto() {
-  let atual = process.cwd();
-  for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'modules'))) return atual;
-    const pai = dirname(atual);
-    if (pai === atual) break;
-    atual = pai;
+function findProjectRoot() {
+  let current = process.cwd();
+  for (let level = 0; level < 8; level += 1) {
+    if (existsSync(join(current, 'modules'))) return current;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
   }
   return process.cwd();
 }
 
-function lerOpcoes() {
-  const brutos = process.argv.slice(2);
-  const valorDe = (nome) => {
-    const indice = brutos.indexOf(`--${nome}`);
-    return indice === -1 ? null : brutos[indice + 1];
+function readOptions() {
+  const rawArgs = process.argv.slice(2);
+  const flagValue = (name) => {
+    const index = rawArgs.indexOf(`--${name}`);
+    return index === -1 ? null : rawArgs[index + 1];
   };
-  const destino = resolve(process.cwd(), valorDe('target') ?? acharRaizProjeto());
+  const destination = resolve(process.cwd(), flagValue('target') ?? findProjectRoot());
   return {
-    destino,
-    binding: valorDe('binding') ?? detectarBinding(destino),
-    conferir: brutos.includes('--check'),
+    destination,
+    binding: flagValue('binding') ?? detectBinding(destination),
+    check: rawArgs.includes('--check'),
   };
 }
 
-function principal() {
-  const { destino, binding, conferir } = lerOpcoes();
+function main() {
+  const { destination, binding, check } = readOptions();
   if (binding === null) {
-    process.stderr.write(`erro: nao identifiquei o binding de ${destino} — use --binding\n`);
+    process.stderr.write(`Error: could not identify the binding for ${destination}; use --binding\n`);
     return 1;
   }
   if (!BINDINGS.includes(binding)) {
-    process.stderr.write(`erro: binding "${binding}" invalido — use ${BINDINGS.join(', ')}\n`);
+    process.stderr.write(`Error: invalid binding "${binding}"; choose from ${BINDINGS.join(', ')}\n`);
     return 1;
   }
 
-  const { nome, conteudo } = saidaDe(binding);
-  const caminho = join(destino, nome);
-  // Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:lerTexto` — o `.gitattributes`
+  const { name, content } = outputOf(binding);
+  const path = join(destination, name);
+  // Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:readText` — o `.gitattributes`
   // e o conserto estrutural, isto cobre clone ainda nao renormalizado.
-  const emDisco = existsSync(caminho)
-    ? readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n')
+  const onDisk = existsSync(path)
+    ? readFileSync(path, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n')
     : null;
 
-  if (conferir) {
-    if (emDisco === conteudo) {
-      process.stdout.write(`config-lint: OK — ${nome} em dia com tools/gate/thresholds.mjs\n`);
+  if (check) {
+    if (onDisk === content) {
+      process.stdout.write(`lint-config: OK — ${name} matches tools/gate/thresholds.mjs\n`);
       return 0;
     }
     process.stderr.write(
-      `config-lint: REPROVADO — ${nome} diverge dos limiares do gate.\n`
-      + '  rode: node tools/generate-lint-config.mjs\n',
+      `lint-config: FAILED — ${name} differs from the gate thresholds.\n`
+      + '  run: node tools/generate-lint-config.mjs\n',
     );
     return 1;
   }
 
-  writeFileSync(caminho, conteudo, 'utf8');
-  process.stdout.write(`${emDisco === conteudo ? 'inalterado' : 'gerado'}: ${nome} (binding ${binding})\n`);
+  writeFileSync(path, content, 'utf8');
+  process.stdout.write(`${onDisk === content ? 'Unchanged' : 'Generated'}: ${name} (binding ${binding})\n`);
   return 0;
 }
 
-// Só executa quando ESTE arquivo é o entrypoint. Sem a guarda, `import { saidaDe }` de dentro do
-// gate escreveria arquivo e derrubaria o processo — e a regra `lint-derivado`, que precisa da
+// Só executa quando ESTE arquivo é o entrypoint. Sem a guarda, `import { outputOf }` de dentro do
+// gate escreveria arquivo e derrubaria o processo — e a regra `derived-lint`, que precisa da
 // função pura, não teria como consumi-la sem duplicá-la.
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(principal());
+  process.exit(main());
 }

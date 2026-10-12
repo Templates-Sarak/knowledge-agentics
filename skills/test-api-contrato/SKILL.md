@@ -19,11 +19,11 @@ Aditiva (cria testes de contrato) → HITL leve. Teste ativo **só no próprio a
 
 | Regra do gate | O que já é cobrado, sem executar nada |
 |---|---|
-| `contrato` | o `contract/openapi.yaml` existe, é legível e declara `/health`, `/meta`, `/resumo` |
-| `rota-nomenclatura` | `servers[0].url` = `basePath`; segmento sem verbo (PT e EN); kebab-case; parâmetro camelCase |
-| `contrato-sincronizado` | as rotas do código e as do `paths:` coincidem **nos dois sentidos** |
-| `projecao-contrato` | todo campo que o mapeador projeta está declarado em algum schema de **resposta** |
-| `consome-contrato` | quem declara `consumes` aponta para rota e método que o dono realmente declara |
+| `contract` | o `contract/openapi.yaml` existe, é legível e declara `/health`, `/meta`, `/resumo` |
+| `route-naming` | `servers[0].url` = `basePath`; segmento sem verbo (PT e EN); kebab-case; parâmetro camelCase |
+| `synchronized-contract` | as rotas do código e as do `paths:` coincidem **nos dois sentidos** |
+| `contract-projection` | todo campo que o mapeador projeta está declarado em algum schema de **resposta** |
+| `consumes-contract` | quem declara `consumes` aponta para rota e método que o dono realmente declara |
 
 ```
 node tools/gate/validate.mjs <caminho-do-modulo>     # antes de escrever teste nenhum
@@ -34,7 +34,7 @@ conserte-o primeiro: teste de contrato sobre spec inválida mede a coisa errada.
 
 ## Onde o gate para — e por que esta skill existe
 
-O `04-regras.md` §7.2 declara o limite em voz alta, na linha do `consome-contrato`:
+O `04-regras.md` §7.2 declara o limite em voz alta, na linha do `consumes-contract`:
 
 > mudança de forma **dentro** do schema (tipo alterado, campo que virou opcional, enum que perdeu valor)
 > passa — a regra lê o caminho e o método, nunca o corpo.

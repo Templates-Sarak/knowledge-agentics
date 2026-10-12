@@ -5,11 +5,11 @@
 Separado de `audit_base.py` por SRP: aquele orquestra e imprime; este só compara.
 
 POLÍTICA: falha fechada. Se `thresholds.mjs` mudar de forma e o parser abaixo deixar de
-reconhecer o objeto `LIMIARES`, o retorno é reprovação explícita — nunca inferência silenciosa
+reconhecer o objeto `THRESHOLDS`, o retorno é reprovação explícita — nunca inferência silenciosa
 (mesmo defeito de fail-open que este repo já mediu e corrigiu em outro lugar).
 
 Núcleo × casca: as funções `_de_texto`/`_de_dict` são puras (recebem texto/estrutura já lidos,
-nunca tocam `fs`) e são o que o `--autoteste` de `audit_base.py` prova com fixtures em memória.
+nunca tocam `fs`) e são o que o `--selftest` de `audit_base.py` prova com fixtures em memória.
 As funções `_de_arquivo` são a casca fina que só lê o disco e delega.
 """
 
@@ -17,15 +17,15 @@ import json
 import os
 import re
 
-CHAVES_MJS = ("linhasFuncao", "aninhamento", "parametros")
+CHAVES_MJS = ("functionLines", "nesting", "params")
 CHAVES_CONFIG = ("maxFunctionLines", "maxNesting", "maxParams")
 MAPA_MJS_PARA_CONFIG = dict(zip(CHAVES_MJS, CHAVES_CONFIG))
 
-_BLOCO_LIMIARES = re.compile(r"LIMIARES\s*=\s*\{(.*?)\}", re.DOTALL)
+_BLOCO_LIMIARES = re.compile(r"THRESHOLDS\s*=\s*\{(.*?)\}", re.DOTALL)
 
 
 def limiares_de_texto_mjs(texto):
-    """Núcleo: `{linhasFuncao, aninhamento, parametros}` extraído do TEXTO de `thresholds.mjs`,
+    """Núcleo: `{functionLines, nesting, params}` extraído do TEXTO de `thresholds.mjs`,
     ou `None` se o formato não bater — fail-closed, nunca infere valor ausente."""
     bloco = _BLOCO_LIMIARES.search(texto)
     if bloco is None:
@@ -100,7 +100,7 @@ def auditar_limiares(base_dir):
     mjs = limiares_de_thresholds(caminho_mjs)
     if mjs is None:
         return [
-            "[thresholds.mjs] formato inesperado — não foi possível extrair LIMIARES; "
+            "[thresholds.mjs] formato inesperado — não foi possível extrair THRESHOLDS; "
             "comparação reprovada (fail-closed)"
         ]
     achados = []

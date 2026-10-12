@@ -10,7 +10,7 @@
 //
 // Os tres numeros vem de UMA fonte, a mesma que gera a config de todo projeto criado pelo template
 // (`tools/generate-lint-config.mjs`) — nunca reescritos aqui.
-import { LIMIARES } from './specs/_estrutura_modulos/tools/gate/thresholds.mjs';
+import { THRESHOLDS } from './specs/_estrutura_modulos/tools/gate/thresholds.mjs';
 
 export default [
   { ignores: ['**/node_modules/**'] },
@@ -21,13 +21,13 @@ export default [
       sourceType: 'module',
     },
     rules: {
-      // gate: limiar-funcao
-      'max-lines-per-function': ['error', { max: LIMIARES.linhasFuncao, skipBlankLines: true, skipComments: true }],
-      // gate: limiar-aninhamento
-      'max-depth': ['error', LIMIARES.aninhamento],
-      // gate: limiar-parametros
-      'max-params': ['error', LIMIARES.parametros],
-      // gate: excecao-engolida
+      // gate: function-threshold
+      'max-lines-per-function': ['error', { max: THRESHOLDS.functionLines, skipBlankLines: true, skipComments: true }],
+      // gate: nesting-threshold
+      'max-depth': ['error', THRESHOLDS.nesting],
+      // gate: parameters-threshold
+      'max-params': ['error', THRESHOLDS.params],
+      // gate: swallowed-exception
       'no-empty': ['error', { allowEmptyCatch: false }],
       // gate: log
       'no-console': 'error',
@@ -35,7 +35,7 @@ export default [
   },
   {
     // Fixture de teste (lista de casos) nao e funcao — mesma isencao que `padrao-typescript`/
-    // `padrao-python` ja dao a `tests/`. As tres funcoes `casosDeAutoteste` desta base sao dados,
+    // `padrao-python` ja dao a `tests/`. As tres funcoes `selfTestCases` desta base sao dados,
     // nao logica: um array de objetos literais que so cresce quando um caso novo entra.
     files: [
       'specs/_estrutura_modulos/tools/affected.mjs',

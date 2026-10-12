@@ -1,115 +1,115 @@
 /**
  * rules/data.mjs — família "Dados" do catálogo (specs/arquitetura/04-regras.md §4.3).
- * ids: schema-nao-public, tabela-prefixo, tabela-alheia, migrations, tabela-declarada, rls,
- *      tabela-nao-declarada, schema-espelha-migrations
+ * ids: non-public-schema, table-prefix, foreign-table, migrations, table-declared, rls,
+ *      table-undeclared, schema-mirrors-migrations
  *
  * `migrations` le `conteudo` CRU de proposito — o `-- rollback` que ela procura E um comentario
- * SQL. As demais, quando julgam codigo, leem `textoDeCodigo`. `tabela-nao-declarada` e
- * `schema-espelha-migrations` tambem leem `conteudo` CRU, pelo mesmo motivo de `juntarSql`: SQL
- * nao passa por `textoDeCodigo`, e o comentario `-- rollback` (com os `drop table` comentados) e
- * dado, nao ruido — por isso as duas usam `semComentarioSql` para distinguir DROP real de DROP
+ * SQL. As demais, quando julgam codigo, leem `codeText`. `table-undeclared` e
+ * `schema-mirrors-migrations` tambem leem `conteudo` CRU, pelo mesmo motivo de `joinSql`: SQL
+ * nao passa por `codeText`, e o comentario `-- rollback` (com os `drop table` comentados) e
+ * dado, nao ruido — por isso as duas usam `withoutSqlComment` para distinguir DROP real de DROP
  * comentado, em vez de tratar o texto cru como se fosse so codigo.
  */
-import { textoDeCodigo } from '../text.mjs';
+import { codeText } from '../text.mjs';
 
-const PADRAO_MIGRATION = /^\d{4}-[a-z][a-z0-9]*(-[a-z0-9]+)+\.sql$/;
+const MIGRATION_PATTERN = /^\d{4}-[a-z][a-z0-9]*(-[a-z0-9]+)+\.sql$/;
 
-/** O laco de `achado` isolado do de `tabela-alheia.verificar` — so por isso o aninhamento cabe no
+/** O laco de `achado` isolado do de `foreign-table.verificar` — so por isso o aninhamento cabe no
  * limiar que esta propria regra e as irmas do §4.7 cobram do codigo do usuario. Mensagem intacta:
  * o autoteste compara CONJUNTO DE IDS, e o texto e o conserto que o autor le. */
-function achadosDeReferenciaAlheia(ctx, arquivo, outro) {
-  // snake_case pelo mesmo motivo de `tabela-prefixo`: a tabela do vizinho `nota-fiscal`
+function foreignReferenceFindings(ctx, file, other) {
+  // snake_case pelo mesmo motivo de `table-prefix`: a tabela do vizinho `nota-fiscal`
   // chama-se `nota_fiscal_*`. Procurar pelo id cru deixaria a regra CALADA exatamente sobre
   // os modulos com hifen — falso negativo silencioso, nao ausencia de risco.
-  const achados = [];
-  const padrao = new RegExp(`\\b${outro.idPasta.replace(/-/g, '_')}_[a-z][a-z0-9_]*`, 'g');
-  for (const achado of new Set(textoDeCodigo(arquivo).match(padrao) ?? [])) {
-    achados.push({
-      modulo: ctx.idPasta,
-      mensagem: `${arquivo.rel}: referencia a tabela de outro modulo ("${achado}") — o dado alheio vem pela api/ dele`,
+  const findings = [];
+  const pattern = new RegExp(`\\b${other.dirId.replace(/-/g, '_')}_[a-z][a-z0-9_]*`, 'g');
+  for (const finding of new Set(codeText(file).match(pattern) ?? [])) {
+    findings.push({
+      modulo: ctx.dirId,
+      mensagem: `${file.rel}: references a table owned by another module ("${finding}") — access its data through that module's API`,
     });
   }
-  return achados;
+  return findings;
 }
 
 export default [
   {
-    id: 'schema-nao-public',
+    id: 'non-public-schema',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const schema = ctx.manifesto?.data?.schema;
-      if (schema === undefined || schema === '') return ['data.schema nao declarado'];
-      if (schema.toLowerCase() === 'public') return ['data.schema e "public" — proibido (specs/arquitetura/02 §6.1)'];
+    check(ctx) {
+      const schema = ctx.manifest?.data?.schema;
+      if (schema === undefined || schema === '') return ['data.schema is not declared'];
+      if (schema.toLowerCase() === 'public') return ['data.schema is "public" — this is not allowed (specs/arquitetura/02 §6.1)'];
       return [];
     },
   },
   {
-    id: 'tabela-prefixo',
+    id: 'table-prefix',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const data = ctx.manifesto?.data;
+    check(ctx) {
+      const data = ctx.manifest?.data;
       if (data === undefined) return [];
       // snake_case, NAO o id cru: identificador SQL nao aceita hifen sem aspas, e
-      // `schema-manifesto` cobra `^[a-z][a-z0-9_]*$` em `data.tables[]`. Exigir aqui o id cru
+      // `manifest-schema` cobra `^[a-z][a-z0-9_]*$` em `data.tables[]`. Exigir aqui o id cru
       // tornava `nota-fiscal` IMPOSSIVEL — esta regra pedia `nota-fiscal_` e o schema proibia
       // o hifen na tabela que comeca por ele: duas regras do mesmo gate pedindo coisas
       // incompativeis. E a mesma conversao que `<module_snake>` faz no molde.
-      const esperado = `${ctx.manifesto.id.replace(/-/g, '_')}_`;
-      const achados = [];
-      if (data.prefix !== esperado) {
-        achados.push(`data.prefix "${data.prefix}" deveria ser "${esperado}"`);
+      const expected = `${ctx.manifest.id.replace(/-/g, '_')}_`;
+      const findings = [];
+      if (data.prefix !== expected) {
+        findings.push(`data.prefix "${data.prefix}" should be "${expected}"`);
       }
-      for (const tabela of data.tables ?? []) {
-        if (!tabela.startsWith(esperado)) achados.push(`tabela "${tabela}" sem o prefixo "${esperado}"`);
+      for (const table of data.tables ?? []) {
+        if (!table.startsWith(expected)) findings.push(`table "${table}" is missing the prefix "${expected}"`);
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'tabela-alheia',
+    id: 'foreign-table',
     nivel: 'erro',
     escopo: 'global',
-    verificar(contextos) {
-      const achados = [];
-      for (const ctx of contextos) {
-        const alheios = contextos.filter((outro) => outro.idPasta !== ctx.idPasta);
-        for (const arquivo of [...ctx.codigo, ...ctx.sql]) {
-          if (arquivo.eTeste) continue;
-          for (const outro of alheios) achados.push(...achadosDeReferenciaAlheia(ctx, arquivo, outro));
+    check(contexts) {
+      const findings = [];
+      for (const ctx of contexts) {
+        const foreign = contexts.filter((other) => other.dirId !== ctx.dirId);
+        for (const file of [...ctx.code, ...ctx.sql]) {
+          if (file.isTest) continue;
+          for (const other of foreign) findings.push(...foreignReferenceFindings(ctx, file, other));
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
     id: 'migrations',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
+    check(ctx) {
       const migrations = ctx.sql.filter((a) => a.rel.startsWith('database/migrations/'));
-      const achados = [];
+      const findings = [];
       for (const migration of migrations) {
-        const nome = migration.rel.split('/').pop();
-        if (!PADRAO_MIGRATION.test(nome)) {
-          achados.push(`database/migrations/${nome}: fora do padrao NNNN-verbo-objeto.sql`);
+        const name = migration.rel.split('/').pop();
+        if (!MIGRATION_PATTERN.test(name)) {
+          findings.push(`database/migrations/${name}: does not follow the NNNN-verb-object.sql naming pattern`);
         }
-        if (!/--\s*rollback/i.test(migration.conteudo)) {
-          achados.push(`database/migrations/${nome}: sem bloco "-- rollback"`);
+        if (!/--\s*rollback/i.test(migration.content)) {
+          findings.push(`database/migrations/${name}: is missing a "-- rollback" block`);
         }
       }
-      const tabelas = ctx.manifesto?.data?.tables ?? [];
-      if (tabelas.length > 0 && migrations.length === 0) {
-        achados.push('modulo declara tabelas mas nao tem database/migrations/');
+      const tables = ctx.manifest?.data?.tables ?? [];
+      if (tables.length > 0 && migrations.length === 0) {
+        findings.push('module declares tables but has no database/migrations/');
       }
-      return achados;
+      return findings;
     },
   },
   {
     /**
      * `data.tables` é declaração — sem esta regra, nada a confronta com o disco. O
-     * `artefato-declarado` chega a justificar deixar `database/` de fora dizendo que *"quem declara
+     * `artifact-declared` chega a justificar deixar `database/` de fora dizendo que *"quem declara
      * banco é `data.tables`"*, o que só é verdade se alguém cobrar isso. Esta regra cobra.
      *
      * A metade "declara tabelas e não tem `database/migrations/`" é do `migrations`, não desta
@@ -117,59 +117,55 @@ export default [
      * receberia uma mensagem do `migrations` mais uma por tabela daqui — N+1 mensagens para um
      * conserto só.
      */
-    id: 'tabela-declarada',
+    id: 'table-declared',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const tabelas = ctx.manifesto?.data?.tables ?? [];
+    check(ctx) {
+      const tables = ctx.manifest?.data?.tables ?? [];
       // Ausencia TOTAL de SQL e do `migrations` — um defeito, uma mensagem.
-      if (tabelas.length === 0 || ctx.sql.length === 0) return [];
-      const sql = juntarSql(ctx);
-      return tabelas
-        .filter((tabela) => !criaTabela(sql, tabela))
-        .map((tabela) => `tabela "${tabela}" declarada em data.tables e sem CREATE TABLE no SQL do`
-          + ' modulo — declaracao sem consequencia: o schema real nao tem a tabela que o manifesto'
-          + ' promete. Crie a migration, ou remova a tabela da declaracao');
+      if (tables.length === 0 || ctx.sql.length === 0) return [];
+      const sql = joinSql(ctx);
+      return tables
+        .filter((table) => !createsTable(sql, table))
+        .map((table) => `table "${table}" is declared in data.tables but has no CREATE TABLE statement in the module`);
     },
   },
   {
     id: 'rls',
     nivel: 'aviso',
     escopo: 'module',
-    verificar(ctx) {
-      const sql = juntarSql(ctx);
-      return (ctx.manifesto?.data?.tables ?? [])
-        // Tabela que NAO EXISTE no SQL e do `tabela-declarada`, e a fronteira e explicita: sem
+    check(ctx) {
+      const sql = joinSql(ctx);
+      return (ctx.manifest?.data?.tables ?? [])
+        // Tabela que NAO EXISTE no SQL e do `table-declared`, e a fronteira e explicita: sem
         // isto, a tabela ausente cai aqui com a mensagem errada — "sem RLS", quando o problema e
         // que ela nao existe. Um defeito, uma mensagem, e a mensagem certa.
-        .filter((tabela) => criaTabela(sql, tabela))
-        .filter((tabela) => {
-          const padrao = new RegExp(`alter\\s+table[^;]*${tabela}[^;]*enable\\s+row\\s+level\\s+security`, 's');
-          return !padrao.test(sql);
+        .filter((table) => createsTable(sql, table))
+        .filter((table) => {
+          const pattern = new RegExp(`alter\\s+table[^;]*${table}[^;]*enable\\s+row\\s+level\\s+security`, 's');
+          return !pattern.test(sql);
         })
-        .map((tabela) => `tabela "${tabela}" sem ENABLE ROW LEVEL SECURITY no SQL do modulo`);
+        .map((table) => `table "${table}" has no ENABLE ROW LEVEL SECURITY statement in the module SQL`);
     },
   },
   {
     /**
-     * O espelho exato de `tabela-declarada`: aquela cobra "declarada e sem CREATE TABLE"; esta
+     * O espelho exato de `table-declared`: aquela cobra "declarada e sem CREATE TABLE"; esta
      * cobra "CREATE TABLE e sem declaracao". Nenhuma tabela cai nas duas — uma tabela criada E
-     * declarada nao interessa a nenhuma; uma so declarada e so a `tabela-declarada` a ve (esta so
+     * declarada nao interessa a nenhuma; uma so declarada e so a `table-declared` a ve (esta so
      * enumera o que o SQL CRIA); uma so criada e so esta a ve. `rls` tambem fica de fora por
      * construcao: ela so itera `data.tables`, entao uma tabela criada e nao declarada nunca entra
      * no laco dela.
      */
-    id: 'tabela-nao-declarada',
+    id: 'table-undeclared',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const declaradas = new Set(ctx.manifesto?.data?.tables ?? []);
-      const criadas = tabelasCriadas(juntarSql(ctx));
-      return [...criadas]
-        .filter((tabela) => !declaradas.has(tabela))
-        .map((tabela) => `tabela "${tabela}" criada no SQL do modulo e ausente de data.tables — o`
-          + ' schema real tem uma tabela que o manifesto nao reconhece. Declare a tabela em'
-          + ' data.tables, ou remova-a do SQL');
+    check(ctx) {
+      const declared = new Set(ctx.manifest?.data?.tables ?? []);
+      const created = createdTables(joinSql(ctx));
+      return [...created]
+        .filter((table) => !declared.has(table))
+        .map((table) => `table "${table}" is created in module SQL but is missing from data.tables`);
     },
   },
   {
@@ -180,44 +176,40 @@ export default [
      * de cada tabela, nunca a existencia dela.
      *
      * `descontando os DROP TABLE reais` (specs/arquitetura/02-contrato-e-dados.md §6.3) e o motivo de
-     * `tabelasVivasAposMigrations` simular a SEQUENCIA — nunca `criadas - dropadas` como dois
+     * `liveTablesAfterMigrations` simular a SEQUENCIA — nunca `criadas - dropadas` como dois
      * conjuntos isolados: uma migration que cria X, outra que a derruba e uma terceira que a
      * recria produz um "criadas" e um "dropadas" com X nos dois, e a subtracao (sem ordem) some
      * com X mesmo que ele exista no schema final. Aplicar create/drop NA ORDEM das migrations —
      * pelo nome do arquivo, `NNNN-...` — e o que faz o estado bater com o que o "up" produz de
-     * verdade. `semComentarioSql` entra pelo mesmo motivo de sempre: o bloco `-- rollback` do
+     * verdade. `withoutSqlComment` entra pelo mesmo motivo de sempre: o bloco `-- rollback` do
      * molde comenta um `drop table` por tabela, e um extrator sobre o texto CRU contaria esses
      * tres DROPs como reais, esvaziando o conjunto de "vivas" mesmo no molde conforme.
      */
-    id: 'schema-espelha-migrations',
+    id: 'schema-mirrors-migrations',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
+    check(ctx) {
       const migrations = ctx.sql.filter((a) => a.rel.startsWith('database/migrations/'));
       const schemaSql = ctx.sql.find((a) => a.rel === 'database/schema.sql');
       if (migrations.length === 0 || schemaSql === undefined) return [];
 
-      const criadasNasMigrations = tabelasVivasAposMigrations(migrations);
-      const criadasNoSchema = tabelasCriadas(schemaSql.conteudo.toLowerCase());
+      const createdInMigrations = liveTablesAfterMigrations(migrations);
+      const createdInSchema = createdTables(schemaSql.content.toLowerCase());
 
-      const soNasMigrations = [...criadasNasMigrations].filter((t) => !criadasNoSchema.has(t));
-      const soNoSchema = [...criadasNoSchema].filter((t) => !criadasNasMigrations.has(t));
+      const onlyInMigrations = [...createdInMigrations].filter((t) => !createdInSchema.has(t));
+      const onlyInSchema = [...createdInSchema].filter((t) => !createdInMigrations.has(t));
 
       return [
-        ...soNasMigrations.map((tabela) => `tabela "${tabela}": as migrations criam e o`
-          + ' database/schema.sql nao tem — o espelho ficou para tras do resultado real do "up".'
-          + ' Atualize database/schema.sql'),
-        ...soNoSchema.map((tabela) => `tabela "${tabela}": database/schema.sql tem e nenhuma`
-          + ' migration cria — o espelho promete uma tabela que "up" nunca produz. Corrija'
-          + ' database/schema.sql ou a migration que deveria cria-la'),
+        ...onlyInMigrations.map((table) => `table "${table}": migrations create it, but database/schema.sql does not reflect the result of "up". Update database/schema.sql`),
+        ...onlyInSchema.map((table) => `table "${table}": database/schema.sql declares it, but no migration creates it. Update database/schema.sql or the migration that should create it`),
       ];
     },
   },
 ];
 
 /** Todo o SQL do módulo, em minúsculas. Uma leitura, usada pelas duas regras que olham tabela. */
-function juntarSql(ctx) {
-  return ctx.sql.map((a) => a.conteudo).join('\n').toLowerCase();
+function joinSql(ctx) {
+  return ctx.sql.map((a) => a.content).join('\n').toLowerCase();
 }
 
 /**
@@ -225,15 +217,15 @@ function juntarSql(ctx) {
  * atravessa o `;` do statement anterior nem entra na lista de colunas, então `create table x (…
  * y_id …)` não conta como criação de `y`.
  */
-function criaTabela(sql, tabela) {
-  return new RegExp(`create\\s+table[^;(]*${tabela}`, 's').test(sql);
+function createsTable(sql, table) {
+  return new RegExp(`create\\s+table[^;(]*${table}`, 's').test(sql);
 }
 
 /**
  * Remove comentário SQL de linha (`--` até o fim da linha) E de bloco (`/* *\/`) — o dialeto é
  * Postgres, que suporta os dois; quem não usa comentário de bloco é só o MOLDE. É o que separa
  * DROP real de DROP comentado no bloco `-- rollback`: sem a metade de linha,
- * `tabelasPeloVerbo(sql, 'drop')` sobre o texto CRU acharia os três `-- drop table if exists ...`
+ * `tablesByVerb(sql, 'drop')` sobre o texto CRU acharia os três `-- drop table if exists ...`
  * do rollback do molde como DROPs de verdade; sem a metade de bloco, um `CREATE TABLE` citado
  * dentro de `/* ... *\/` entraria no conjunto como se fosse real.
  *
@@ -245,60 +237,60 @@ function criaTabela(sql, tabela) {
  * `CREATE TABLE` real que viesse depois na MESMA linha — falso negativo assumido, registrado em
  * `04-regras.md` §7.2.
  */
-function semComentarioSql(sql) {
-  let saida = '';
-  let posicao = 0;
-  while (posicao < sql.length) {
-    if (sql.startsWith('--', posicao)) {
-      const fimLinha = sql.indexOf('\n', posicao);
-      if (fimLinha === -1) break;
-      posicao = fimLinha;
+function withoutSqlComment(sql) {
+  let output = '';
+  let position = 0;
+  while (position < sql.length) {
+    if (sql.startsWith('--', position)) {
+      const lineEnd = sql.indexOf('\n', position);
+      if (lineEnd === -1) break;
+      position = lineEnd;
       continue;
     }
-    if (sql.startsWith('/*', posicao)) {
-      const fimBloco = sql.indexOf('*/', posicao + 2);
-      if (fimBloco === -1) break;
-      posicao = fimBloco + 2;
+    if (sql.startsWith('/*', position)) {
+      const blockEnd = sql.indexOf('*/', position + 2);
+      if (blockEnd === -1) break;
+      position = blockEnd + 2;
       continue;
     }
-    saida += sql[posicao];
-    posicao += 1;
+    output += sql[position];
+    position += 1;
   }
-  return saida;
+  return output;
 }
 
 /** `[GLOBAL|LOCAL] {TEMPORARY|TEMP}` e `UNLOGGED` entram ENTRE `create` e `table`, nunca depois —
  * é a forma real da cláusula Postgres, não um detalhe de regex. Sem isto, `create temp table x`
  * e `create unlogged table x` escapavam inteiros do extrator (medido). */
-const MODIFICADOR_CREATE = '(?:temp(?:orary)?\\s+|unlogged\\s+)?';
+const CREATE_MODIFIER = '(?:temp(?:orary)?\\s+|unlogged\\s+)?';
 
 /** `[if [not] exists] [schema.]tabela`, com ou sem aspas — a forma que sobra depois do
  * verbo+modificador, comum a `create table` e `drop table`. */
-const NOME_TABELA_SQL = '(?:if\\s+(?:not\\s+)?exists\\s+)?(?:(?:"[^"]+"|[a-z_][a-z0-9_]*)\\.)?"?([a-z_][a-z0-9_]*)"?';
+const SQL_TABLE_NAME = '(?:if\\s+(?:not\\s+)?exists\\s+)?(?:(?:"[^"]+"|[a-z_][a-z0-9_]*)\\.)?"?([a-z_][a-z0-9_]*)"?';
 
 /**
  * Nomes de tabela que aparecem depois de `create table` ou `drop table`. O identificador pode vir
  * cru (`create table x`) ou entre aspas duplas, com ou sem schema qualificando-o
  * (`"escopo"."molde_metadados"`) — a forma que `<escopo>`/`<module_snake>` produzem depois de
- * substituídos. `sql` já chega em minúsculas (`juntarSql`) e sem comentário (`semComentarioSql`).
+ * substituídos. `sql` já chega em minúsculas (`joinSql`) e sem comentário (`withoutSqlComment`).
  */
-function tabelasPeloVerbo(sql, verbo) {
-  const padrao = new RegExp(`${verbo}\\s+${MODIFICADOR_CREATE}table\\s+${NOME_TABELA_SQL}`, 'gs');
-  return new Set([...sql.matchAll(padrao)].map((m) => m[1]));
+function tablesByVerb(sql, verb) {
+  const pattern = new RegExp(`${verb}\\s+${CREATE_MODIFIER}table\\s+${SQL_TABLE_NAME}`, 'gs');
+  return new Set([...sql.matchAll(pattern)].map((m) => m[1]));
 }
 
-/** Todo nome de tabela que o SQL (já sem comentário) cria — usada por `tabela-nao-declarada` e
- * pela metade "schema.sql" de `schema-espelha-migrations`. */
-function tabelasCriadas(sql) {
-  return tabelasPeloVerbo(semComentarioSql(sql), 'create');
+/** Todo nome de tabela que o SQL (já sem comentário) cria — usada por `table-undeclared` e
+ * pela metade "schema.sql" de `schema-mirrors-migrations`. */
+function createdTables(sql) {
+  return tablesByVerb(withoutSqlComment(sql), 'create');
 }
 
 /** `create`/`drop table` de um SQL, na ORDEM em que aparecem no texto — o dado que
- * `tabelasVivasAposMigrations` precisa para simular a sequência, que um par de `Set`s (criadas,
+ * `liveTablesAfterMigrations` precisa para simular a sequência, que um par de `Set`s (criadas,
  * dropadas) não guarda. */
-function eventosDeTabela(sql) {
-  const padrao = new RegExp(`(create|drop)\\s+${MODIFICADOR_CREATE}table\\s+${NOME_TABELA_SQL}`, 'gs');
-  return [...sql.matchAll(padrao)].map((m) => ({ verbo: m[1], tabela: m[2] }));
+function tableEvents(sql) {
+  const pattern = new RegExp(`(create|drop)\\s+${CREATE_MODIFIER}table\\s+${SQL_TABLE_NAME}`, 'gs');
+  return [...sql.matchAll(pattern)].map((m) => ({ verb: m[1], table: m[2] }));
 }
 
 /**
@@ -307,18 +299,18 @@ function eventosDeTabela(sql) {
  * isolados: uma migration que cria X, outra que a derruba e uma terceira que a recria produz um
  * "criadas" e um "dropadas" com X nos dois, e a subtração sem ordem some com X mesmo que ele
  * exista no schema final (falso positivo medido, corrigido por esta função). DROP comentado no
- * bloco `-- rollback` não conta — `semComentarioSql` já removeu o comentário antes de
- * `eventosDeTabela` procurar.
+ * bloco `-- rollback` não conta — `withoutSqlComment` já removeu o comentário antes de
+ * `tableEvents` procurar.
  */
-function tabelasVivasAposMigrations(migrations) {
-  const ordenadas = [...migrations].sort((a, b) => a.rel.localeCompare(b.rel));
-  const vivas = new Set();
-  for (const migration of ordenadas) {
-    const semComentario = semComentarioSql(migration.conteudo.toLowerCase());
-    for (const { verbo, tabela } of eventosDeTabela(semComentario)) {
-      if (verbo === 'create') vivas.add(tabela);
-      else vivas.delete(tabela);
+function liveTablesAfterMigrations(migrations) {
+  const sorted = [...migrations].sort((a, b) => a.rel.localeCompare(b.rel));
+  const live = new Set();
+  for (const migration of sorted) {
+    const withoutComment = withoutSqlComment(migration.content.toLowerCase());
+    for (const { verb, table } of tableEvents(withoutComment)) {
+      if (verb === 'create') live.add(table);
+      else live.delete(table);
     }
   }
-  return vivas;
+  return live;
 }

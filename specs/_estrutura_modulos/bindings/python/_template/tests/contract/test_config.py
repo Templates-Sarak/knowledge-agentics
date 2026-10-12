@@ -7,7 +7,7 @@ boot real prova. Este teste fecha essa lacuna removendo `PYTEST_CURRENT_TEST` do
 proposito, so durante a chamada.
 
 Usa `<MODULE>_API_PORT` (ja declarada em module.json:requiredEnv pelo molde) em vez de inventar uma
-chave nova: uma chave sintetica usada via `os.environ[...]` seria acusada por `env-declarado` — "usada
+chave nova: uma chave sintetica usada via `os.environ[...]` seria acusada por `env-declared` — "usada
 no codigo e ausente do manifesto" — por um vazamento que nao tem nada a ver com este teste.
 
 MEDIDO: remover `PYTEST_CURRENT_TEST` numa FIXTURE (fase "setup") nao basta — o pytest RE-ESCREVE a

@@ -15,7 +15,7 @@ EXATAMENTE as mudancas do manifesto; commit ou mudanca alheia = erro (reverter e
 
 Nucleo x casca: `acoes_aplicaveis`, `compor`, `lacunas_restantes`, `pendencias`, `precondicoes`,
 `precondicoes_desfazer`, `montar_manifesto`, `plano_de_desfazer` e `erros_de_desfazer` sao PUROS —
-provados pelo `--autoteste` do `propagar.py` (este modulo nao tem CLI propria).
+provados pelo `--selftest` do `propagar.py` (este modulo nao tem CLI propria).
 """
 
 import datetime

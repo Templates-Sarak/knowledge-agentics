@@ -14,7 +14,7 @@ exigir editar este arquivo.
 Uso, sempre da RAIZ do projeto (ROOT_API_PORT no ambiente ou no `.env` da raiz):
 
     python -m src.composition              sobe o processo
-    python -m src.composition --autoteste  roda a prova interna das decisoes puras
+    python -m src.composition --selftest  roda a prova interna das decisoes puras
 """
 
 from __future__ import annotations
@@ -354,7 +354,7 @@ def start_system(raiz: Path) -> None:
     app = build_system(raiz)
     _log_composition("info", f"sistema subindo na porta {porta}", host=host, porta=porta)
     # Lazy DE PROPOSITO (em `_build_server`): uvicorn so e preciso para SUBIR o processo de verdade;
-    # `--autoteste` e os testes importam este modulo sem nunca chamar `start_system`.
+    # `--selftest` e os testes importam este modulo sem nunca chamar `start_system`.
     servidor = _build_server(app, host, porta, drain_ms)
     servidor.run()
     codigo = shutdown_exit_code("drained")
@@ -481,7 +481,7 @@ def _run_selftest() -> int:
 
 
 if __name__ == "__main__":
-    if "--autoteste" in sys.argv:
+    if "--selftest" in sys.argv:
         sys.exit(_run_selftest())
     else:
         start_system(Path.cwd())

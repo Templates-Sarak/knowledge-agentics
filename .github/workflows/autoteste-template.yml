@@ -22,10 +22,10 @@ jobs:
   # GUARDA DE REGRESSAO — "o commit que acabei de empurrar quebrou algo?", nao "o template
   # envelheceu?" (isso e o job de baixo). Roda em SEGUNDOS, sem scaffold e sem Postgres: so a
   # integridade da base (audit_base.py — YAML, contratos JSON, ponteiro orfao, limiares
-  # divergentes), tipo estatico de tools/** e todo --autoteste registrado (skills/ + hooks/
+  # divergentes), tipo estatico de tools/** e todo --selftest registrado (skills/ + hooks/
   # inclusos). main e o artefato de distribuicao (`/plugin marketplace add .../knowledge-agentics`
   # le o repo direto) e, antes deste job, NENHUM commit rodava isto — so o pre-commit LOCAL da
-  # maquina do Igor, que nao e versionado. O caro (autoteste:template, verificar-migrations) fica
+  # maquina do Igor, que nao e versionado. O caro (selftest:template, verificar-migrations) fica
   # no CALENDARIO porque o que ele mede so muda com o tempo (CVE novo, breakage de major); o barato
   # fica no EVENTO porque o que ele mede muda a cada commit.
   guarda-base:
@@ -41,7 +41,7 @@ jobs:
       - run: npm ci
       - run: python skills/meta-verificacao-base/scripts/audit_base.py --raiz .
       - run: npm run typecheck:tools
-      - run: npm run autoteste:tudo
+      - run: npm run selftest:all
       - run: npm run lint
 
   autoteste-template:
@@ -62,11 +62,11 @@ jobs:
           python-version: '3.11'
       - run: npm ci
       # Os dois baratos primeiro (segundos, sem scaffold): tipo estatico em tools/** (simbolo
-      # inexistente em ramo nao percorrido) e todo --autoteste do template (--autoteste que nada
+      # inexistente em ramo nao percorrido) e todo --selftest do template (--selftest que nada
       # invoca e indistinguivel de nao ter).
       - run: npm run typecheck:tools
-      - run: npm run autoteste:tudo
-      - run: npm run autoteste:template
+      - run: npm run selftest:all
+      - run: npm run selftest:template
 
   # O projeto gerado SOBE em container de verdade (ADR-022): builda as duas imagens, sobe o profile `app`
   # com Postgres e sonda a origem unica, nos tres bindings. O runner Linux do GitHub traz Docker, entao o
@@ -88,7 +88,7 @@ jobs:
           python-version: '3.11'
       - run: npm ci
       - run: docker version
-      - run: npm run autoteste:template:docker
+      - run: npm run selftest:template:docker
 
   # Os runners de migrations (scripts/migrations.mjs, scripts/migrations.py) precisam de Postgres
   # real — o job acima nao tem banco e nunca exercita isto. Medido: ciclo completo

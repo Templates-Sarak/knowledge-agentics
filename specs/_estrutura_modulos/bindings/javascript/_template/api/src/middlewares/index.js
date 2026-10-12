@@ -25,7 +25,7 @@ export function securityHeaders(config) {
   };
 }
 
-/** Origens sao DECLARADAS em config/security.json. `*` e proibido (regra `cors-aberto`). */
+/** Origens sao DECLARADAS em config/security.json. `*` e proibido (regra `open-cors`). */
 export function cors(config) {
   return (req, res, next) => {
     const origem = req.headers.origin;

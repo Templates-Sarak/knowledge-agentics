@@ -32,7 +32,7 @@ bytes-crus-contra-bytes-crus ainda pega a divergência real.
 
 Núcleo × casca, o padrão das irmãs (`contagens.py` é o molde de forma): `divergencias` é pura —
 recebe dois dicts `{caminho: conteúdo}` (texto `str` ou binário `bytes`) e o dict de exceções,
-nunca toca `fs` — e é o que o `--autoteste` de `audit_base.py` prova com fixtures em memória.
+nunca toca `fs` — e é o que o `--selftest` de `audit_base.py` prova com fixtures em memória.
 `conteudos_da_arvore`/`auditar_paridade` são a casca fina que lê `fs`.
 """
 
@@ -42,7 +42,7 @@ ARVORE_A = "specs/_estrutura_base"
 ARVORE_B = "specs/_estrutura_base_site"
 
 # Pasta gerada/cache/vendorizada — nunca conteúdo do repositório. Mesmo vocabulário de exclusão
-# que `run-all-selftests.mjs:IGNORAR` e `gate/context.mjs:NAO_PERCORRER` usam pelo mesmo motivo,
+# que `run-all-selftests.mjs:IGNORAR` e `gate/context.mjs:SKIP_WALK` usam pelo mesmo motivo,
 # ampliado só com o que já apareceu NESTAS duas árvores especificamente (`.ruff_cache`).
 PASTAS_IGNORADAS = {
     "__pycache__",

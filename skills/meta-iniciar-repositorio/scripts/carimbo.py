@@ -2,7 +2,7 @@
 
     python carimbo.py --target <dir> --tipo app|site [--binding <b> ...] [--modular]
                       [--registrar --id <id> --nome <nome>] [--mapa <arquivo>]
-    python carimbo.py --autoteste      prova o nucleo com fixtures em memoria (sem disco)
+    python carimbo.py --selftest      prova o nucleo com fixtures em memoria (sem disco)
 
 Uma fonte para cada coisa:
   - `.sarak/base.json` (no SISTEMA) — de qual commit da base ele veio. E a fonte da VERSAO.
@@ -12,7 +12,7 @@ Usado pelo `init_repo.py` (apps) e pela skill `spec-site-fundacao` (sites); a pr
 atualizacoes da base le os dois. Sem `--registrar`, o mapa nao e tocado.
 
 Nucleo x casca: `montar_carimbo`, `registrar_no_mapa`, `caminho_relativo` e `entrada_do_mapa` sao
-PURAS (recebem dados, nunca tocam `fs` nem processo) — sao o que o `--autoteste` prova. As funcoes
+PURAS (recebem dados, nunca tocam `fs` nem processo) — sao o que o `--selftest` prova. As funcoes
 que leem git e escrevem arquivo sao a casca fina.
 """
 
@@ -273,7 +273,7 @@ def _parser():
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    if "--autoteste" in sys.argv[1:]:
+    if "--selftest" in sys.argv[1:]:
         return autoteste()
     args = _parser().parse_args()
     if args.registrar and not args.id:
@@ -451,7 +451,7 @@ def autoteste() -> int:
     falhas = [nome for nome, caso in CASOS if not caso()]
     for nome in falhas:
         print(f"[FALHA] {nome}", file=sys.stderr)
-    print(f"carimbo --autoteste: {len(CASOS) - len(falhas)}/{len(CASOS)} caso(s) verde")
+    print(f"carimbo --selftest: {len(CASOS) - len(falhas)}/{len(CASOS)} caso(s) verde")
     return 1 if falhas else 0
 
 

@@ -39,7 +39,7 @@
     "//start:prod": "PRODUCAO. Sobe do EMITIDO (dist/), sem tsx — e o artefato de `npm run build`, autossuficiente sem a arvore .ts (03-operacao.md §9). `importarApi` prefere dist/api/src/index.js de cada modulo quando ele existe, e cai para a fonte quando nao existe — por isso dev e prod usam a MESMA composition.ts.",
     "start:prod": "node dist/src/composition.js",
     "//start:selftest": "Prova as decisoes puras do entrypoint (rotas unicas, escolha de entrypoint emitido x fonte) sem subir processo nem tocar disco.",
-    "start:selftest": "tsx src/composition.ts --autoteste",
+    "start:selftest": "tsx src/composition.ts --selftest",
     "//build": "Compila o backend (raiz + cada modulo, tsc -p tsconfig.build.json) e constroi o front de todo modulo com web/ (vite build) — 03-operacao.md §9. `node tools/package.mjs <destino>` faz o mesmo MAIS empacota um artefato backend autossuficiente em <destino>.",
     "build": "node tools/package.mjs",
     "//docker": "Container local (03-operacao.md §9.5): `docker:up` builda e sobe o profile `app` (backend + front + Postgres) em loopback e espera os healthchecks; `deploy:sync` regenera o que o container deriva dos manifestos (create-module ja o faz). Exige Docker e deploy/.env (modelo: deploy/.env.example).",

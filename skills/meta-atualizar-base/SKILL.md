@@ -22,7 +22,7 @@ Esta skill orquestra a distribuição de novas features, correções ou ajustes 
      ```bash
      python skills/meta-verificacao-base/scripts/audit_base.py --raiz .
      ```
-   - **Critério:** Se o script apontar **qualquer** erro estrutural (YAML, vazamentos, contratos quebrados), **PARE/ABORTE** o processo imediatamente e notifique o usuário para correção. Nunca propague uma base quebrada.
+   - **Critério:** O script sai com código **≠ 0** quando acha qualquer coisa. Se apontar **qualquer** erro estrutural (YAML, vazamentos, contratos quebrados), **PARE/ABORTE** o processo imediatamente e notifique o usuário para correção. Nunca propague uma base quebrada.
 
 2. **Sincronização Local (IDEs)**
    - **Ferramenta:** terminal

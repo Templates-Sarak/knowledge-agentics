@@ -8,7 +8,7 @@ da sintese). Os numeros `NN` saem do `proximo_numero_plan` da familia `00` do `0
 plan e o revisor, depois do HITL.
 
 Nucleo x casca: `propostas`, `proximo_da_familia`, `atualizacao_direta`, `motivos_de_bloqueio` e
-`montar_relatorio` sao PUROS — provados pelo `--autoteste` do `propagar.py` (este modulo nao tem CLI
+`montar_relatorio` sao PUROS — provados pelo `--selftest` do `propagar.py` (este modulo nao tem CLI
 propria). Git, disco e referencias temporarias sao casca.
 """
 

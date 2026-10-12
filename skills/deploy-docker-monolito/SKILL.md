@@ -17,7 +17,7 @@ builda e publica imagem) → HITL antes de build/push.
 > traz**. Esta skill os **consome**: aponta para eles, não mantém cópia. O que é só dela é o que muda por
 > provedor — o compose de **produção** por digest, a entrada e o registry. Lei:
 > `specs/_estrutura_modulos/doutrina/03-operacao.md` §9.5; catálogo: `04-regras.md`
-> (`container-presente`, `compose-variaveis-declaradas`). Pré-deploy comum:
+> (`container-present`, `compose-variables-declared`). Pré-deploy comum:
 > `../deploy-vercel/references/predeploy-comum.md`.
 
 ## Quando usar
@@ -109,5 +109,5 @@ Trate **um projeto por vez**. O porquê de cada peça está em `references/`.
 - `assets/compose.production.yml` — **o único asset**: o molde de produção por digest (por provedor, por isso
   é da skill). Os demais arquivos são do template: `../../specs/_estrutura_modulos/bindings/<binding>/root/`.
 - `scripts/validar_monolito.py` + `scripts/config.json` — validação determinística do empacotamento do monólito
-  **legado** (`--autoteste` registrado em `specs/_estrutura_modulos/tests/run-all-selftests.mjs`).
+  **legado** (`--selftest` registrado em `specs/_estrutura_modulos/tests/run-all-selftests.mjs`).
 - `../deploy-docker-microsservico/scripts/validar_docker.py` — o validador genérico, reutilizado por referência.

@@ -23,32 +23,32 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PORTAS_CONHECIDAS } from './gate/ports-vocabulary.mjs';
+import { KNOWN_PORTS } from './gate/ports-vocabulary.mjs';
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
-const CAMINHO_CONFIG_PORTAS = join(AQUI, 'gate', 'schemas', 'config-ports.schema.json');
-const CAMINHO_MODULO = join(AQUI, 'gate', 'schemas', 'module.schema.json');
+const HERE = dirname(fileURLToPath(import.meta.url));
+const PORTS_CONFIG_PATH = join(HERE, 'gate', 'schemas', 'config-ports.schema.json');
+const MODULE_PATH = join(HERE, 'gate', 'schemas', 'module.schema.json');
 
-const COMENTARIO_CONFIG_PORTAS =
+const PORTS_CONFIG_COMMENT =
   'UNICO lugar do modulo onde o nome de um fornecedor aparece. Lei dona: specs/arquitetura/01-modulo.md '
   + '§5. `additionalProperties: false` fecha o vocabulario de portas: nome fora do catalogo do §5.1 '
   + 'reprova. O que ele NAO faz, e nao tem como fazer, e amarrar este arquivo ao manifesto — schema nao '
-  + 'enxerga o module.json. Quem cobra a coincidencia nos DOIS sentidos e a regra `porta-declarada` '
+  + 'enxerga o module.json. Quem cobra a coincidencia nos DOIS sentidos e a regra `port-declared` '
   + '(04-regras.md §4.4): porta configurada aqui e ausente do manifesto e config morta; porta declarada '
   + 'la e ausente daqui derruba o boot.';
 
 /** `config-ports.schema.json` — cada porta vira `"name": { "type": "string", "minLength": 1 }`. */
-function conteudoConfigPortas() {
-  const propriedades = PORTAS_CONHECIDAS
-    .map((porta) => `    "${porta}": { "type": "string", "minLength": 1 }`)
+function portsConfigContent() {
+  const properties = KNOWN_PORTS
+    .map((port) => `    "${port}": { "type": "string", "minLength": 1 }`)
     .join(',\n');
   return [
     '{',
-    `  "$comment": "${COMENTARIO_CONFIG_PORTAS}",`,
+    `  "$comment": "${PORTS_CONFIG_COMMENT}",`,
     '  "type": "object",',
     '  "additionalProperties": false,',
     '  "properties": {',
-    propriedades,
+    properties,
     '  }',
     '}',
     '',
@@ -70,58 +70,58 @@ function conteudoConfigPortas() {
  * `"ports"` — se um lado divergir do outro, o padrão nunca casa e `--check` reporta OK mesmo
  * com o enum desatualizado, em silêncio.
  */
-function comEnumDePortasAtualizado(textoOriginal, portas) {
-  const novoEnum = `[${portas.map((p) => JSON.stringify(p)).join(', ')}]`;
-  return textoOriginal.replace(/("ports":\s*\{[^]*?"enum":\s*)\[[^\]]*\]/, `$1${novoEnum}`);
+function withUpdatedPortsEnum(originalText, ports) {
+  const newEnum = `[${ports.map((p) => JSON.stringify(p)).join(', ')}]`;
+  return originalText.replace(/("ports":\s*\{[^]*?"enum":\s*)\[[^\]]*\]/, `$1${newEnum}`);
 }
 
-// Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:lerTexto` — o `.gitattributes`
+// Normaliza CRLF->LF: mesma defesa em profundidade de `context.mjs:readText` — o `.gitattributes`
 // e o conserto estrutural, isto cobre clone ainda nao renormalizado.
-function lerOuNulo(caminho) {
-  return existsSync(caminho)
-    ? readFileSync(caminho, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n')
+function readOrNull(path) {
+  return existsSync(path)
+    ? readFileSync(path, 'utf8').replace(/^﻿/, '').replace(/\r\n/g, '\n')
     : null;
 }
 
-function principal() {
-  const conferir = process.argv.includes('--check');
+function main() {
+  const check = process.argv.includes('--check');
 
-  const configPortasEsperado = conteudoConfigPortas();
-  const configPortasEmDisco = lerOuNulo(CAMINHO_CONFIG_PORTAS);
+  const expectedConfigPorts = portsConfigContent();
+  const portsConfigOnDisk = readOrNull(PORTS_CONFIG_PATH);
 
-  const moduloEmDisco = lerOuNulo(CAMINHO_MODULO);
-  if (moduloEmDisco === null) {
-    process.stderr.write(`erro: ${CAMINHO_MODULO} ausente\n`);
+  const moduleOnDisk = readOrNull(MODULE_PATH);
+  if (moduleOnDisk === null) {
+    process.stderr.write(`Error: ${MODULE_PATH} is missing\n`);
     return 1;
   }
-  const moduloEsperado = comEnumDePortasAtualizado(moduloEmDisco, PORTAS_CONHECIDAS);
+  const expectedModule = withUpdatedPortsEnum(moduleOnDisk, KNOWN_PORTS);
 
-  const divergentes = [
-    configPortasEmDisco !== configPortasEsperado ? 'config-ports.schema.json' : null,
-    moduloEmDisco !== moduloEsperado ? 'module.schema.json (ports.items.enum)' : null,
-  ].filter((nome) => nome !== null);
+  const divergent = [
+    portsConfigOnDisk !== expectedConfigPorts ? 'config-ports.schema.json' : null,
+    moduleOnDisk !== expectedModule ? 'module.schema.json (ports.items.enum)' : null,
+  ].filter((name) => name !== null);
 
-  if (conferir) {
-    if (divergentes.length === 0) {
-      process.stdout.write('gerar-schemas-portas: OK — os dois schemas em dia com ports-vocabulary.mjs\n');
+  if (check) {
+    if (divergent.length === 0) {
+      process.stdout.write('generate-port-schemas: OK — both schemas match ports-vocabulary.mjs\n');
       return 0;
     }
     process.stderr.write(
-      `gerar-schemas-portas: REPROVADO — divergente(s): ${divergentes.join(', ')}.\n`
-      + '  rode: node tools/generate-port-schemas.mjs\n',
+      `generate-port-schemas: FAILED — divergent: ${divergent.join(', ')}.\n`
+      + '  run: node tools/generate-port-schemas.mjs\n',
     );
     return 1;
   }
 
-  writeFileSync(CAMINHO_CONFIG_PORTAS, configPortasEsperado, 'utf8');
-  writeFileSync(CAMINHO_MODULO, moduloEsperado, 'utf8');
-  process.stdout.write(divergentes.length === 0
-    ? 'inalterado: os dois schemas ja estavam em dia\n'
-    : `gerado: ${divergentes.join(', ')}\n`);
+  writeFileSync(PORTS_CONFIG_PATH, expectedConfigPorts, 'utf8');
+  writeFileSync(MODULE_PATH, expectedModule, 'utf8');
+  process.stdout.write(divergent.length === 0
+    ? 'unchanged: both schemas are up to date\n'
+    : `generated: ${divergent.join(', ')}\n`);
   return 0;
 }
 
 // Só executa quando ESTE arquivo é o entrypoint — mesma guarda de `generate-lint-config.mjs`.
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(principal());
+  process.exit(main());
 }

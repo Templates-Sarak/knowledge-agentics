@@ -11,7 +11,7 @@ falso positivo nessas seis — o oposto do que a Tarefa 6 pediu (impedir a REGRE
 "O Gatilho"/"Regras de Ouro" sem checklist, não inventar uma exigência nova que a própria base não segue).
 
 Separado de `audit_base.py` por SRP. Núcleo × casca: `secoes_faltando` é pura (recebe texto e a
-lista de prefixos, nunca toca `fs`) — é o que o `--autoteste` prova com fixtures em memória.
+lista de prefixos, nunca toca `fs`) — é o que o `--selftest` prova com fixtures em memória.
 `auditar_secoes` é a casca fina que lê `fs` e delega.
 """
 

@@ -15,6 +15,7 @@
 - **Zero hardcoded**: tunables não-secretos na config versionada; segredos e valores por-ambiente no `.env`. Nunca um default de infraestrutura embutido.
 - **Segredos**: `.env` no `.gitignore`, `.env.example` versionado, variáveis prefixadas por módulo.
 - **Scripts**: uma responsabilidade, parametrizados, I/O claro.
+- **Idioma**: código em inglês (identificadores de qualquer escopo, módulos, rotas, tabelas, chaves, ids de regra, mensagens); português só em texto ao usuário final no front, comentários e documentação — detalhe na `padrao-escrita`.
 
 ## Inegociáveis (Nível 1 — arquitetura de módulos)
 - **O princípio** — o único que este gancho afirma: **a fronteira física de pastas É a fronteira de dependência**. Extrair um módulo é copiar uma pasta e recortar chaves `<MODULO>_*` do `.env`, nunca reescrever import.

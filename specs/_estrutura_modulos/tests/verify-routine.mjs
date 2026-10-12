@@ -5,7 +5,7 @@
  * TEMPLATE, como `template-self-test.mjs` e as demais de `tests/` (§4.6).
  *
  *   node tests/verify-routine.mjs             roda o roteiro inteiro (A–G), ~5 min — a camada 3 domina
- *   node tests/verify-routine.mjs --autoteste prova o núcleo (contagem, achado de termo) com fixtures
+ *   node tests/verify-routine.mjs --selftest prova o núcleo (contagem, achado de termo) com fixtures
  *
  * Antes desta ferramenta, §11.2 era comando + comentário `# esperado: N` — verde ou vermelho vivia
  * na cabeça de quem rodou, e um número que divergisse ficava só na prosa até a PRÓXIMA verificação
@@ -14,9 +14,9 @@
  * "N regras com caso de teste" mas nunca compara contra `REGRAS.length` — regra nova sem caso não
  * derrubava nada, só encolhia um número que ninguém olhava).
  *
- * NÚCLEO × CASCA, precedente de `verify-map.mjs`/`verify-catalog.mjs`: `compararValor` e
- * `ocorrenciasDoTermo` são puras. A CASCA orquestra os processos reais (node, python) nas mesmas
- * pastas temporárias que o roteiro em prosa descreve, e reusa `classificarPasso` de
+ * NÚCLEO × CASCA, precedente de `verify-map.mjs`/`verify-catalog.mjs`: `compareValue` e
+ * `termOccurrences` são puras. A CASCA orquestra os processos reais (node, python) nas mesmas
+ * pastas temporárias que o roteiro em prosa descreve, e reusa `classifyStep` de
  * `template-self-test.mjs` em vez de reimplementar "o que é um `spawnSync` que deu certo".
  */
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -25,8 +25,8 @@ import { spawnSync } from 'node:child_process';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { classificarPasso } from './template-self-test.mjs';
-import { REGRAS } from '../tools/gate/engine.mjs';
+import { classifyStep } from './template-self-test.mjs';
+import { RULES } from '../tools/gate/engine.mjs';
 
 // ================================================================================================
 // NÚCLEO — puro. Nenhuma linha até a marca "CASCA" toca `fs` nem `child_process`.
@@ -34,194 +34,210 @@ import { REGRAS } from '../tools/gate/engine.mjs';
 
 /** Comparação genérica por valor (número, string ou objeto via forma canônica). Um formato só de
  * resultado para toda afirmação do roteiro — é o que deixa a saída previsível de A a G. */
-export function compararValor(rotulo, obtido, esperado) {
-  const bateu = JSON.stringify(obtido) === JSON.stringify(esperado);
+export function compareValue(label, obtained, expected) {
+  const matched = JSON.stringify(obtained) === JSON.stringify(expected);
   return {
-    ok: bateu,
-    rotulo,
-    detalhe: bateu ? null : `esperado ${JSON.stringify(esperado)}, obtido ${JSON.stringify(obtido)}`,
+    ok: matched,
+    label,
+    detail: matched ? null : `expected ${JSON.stringify(expected)}, received ${JSON.stringify(obtained)}`,
   };
 }
 
 /** Quantas vezes `id: '` aparece no texto de um arquivo de família de regras — o mesmo recorte que
  * o `grep -c "id: '"` do §11.2 faz, só que em JS puro (portável, sem depender de `grep` no PATH). */
-export function contarIdsDeRegra(texto) {
-  return (texto.match(/id:\s*'/g) ?? []).length;
+export function countRuleIds(text) {
+  return (text.match(/id:\s*'/g) ?? []).length;
 }
 
-/** De uma lista `{ caminho, texto }` (já lida pela casca), os caminhos cujo texto cita `termo` — o
+/** De uma lista `{ path, text }` (já lida pela casca), os caminhos cujo texto cita `termo` — o
  * núcleo do "o que vazou da base para o projeto gerado" (§11.2 F). Pura: não decide QUAIS arquivos
  * ler, só filtra o que já foi lido. */
-export function ocorrenciasDoTermo(arquivosComTexto, termo) {
-  return arquivosComTexto.filter(({ texto }) => texto.includes(termo)).map(({ caminho }) => caminho);
+export function termOccurrences(filesWithText, term) {
+  return filesWithText.filter(({ text }) => text.includes(term)).map(({ path }) => path);
 }
 
 // ================================================================================================
 // CASCA — toca disco, `child_process` e ambiente.
 // ================================================================================================
 
-const AQUI = dirname(fileURLToPath(import.meta.url));
-const RAIZ_TEMPLATE = join(AQUI, '..');
-const RAIZ_BASE = join(RAIZ_TEMPLATE, '..', '..');
+const HERE = dirname(fileURLToPath(import.meta.url));
+const TEMPLATE_ROOT = join(HERE, '..');
+const BASE_ROOT = join(TEMPLATE_ROOT, '..', '..');
 const NODE = process.execPath;
-const IGNORAR_VARREDURA = new Set(['node_modules', '.git', '.venv', '__pycache__']);
+const IGNORE_SCAN = new Set(['node_modules', '.git', '.venv', '__pycache__']);
 
-function rodarNode(args, cwd) {
+function runNode(args, cwd) {
   return spawnSync(NODE, args, { cwd, encoding: 'utf8', shell: false });
 }
 
-function resolverPython() {
-  const candidatos = [process.env.SARAK_PYTHON, 'python', 'python3'].filter(Boolean);
-  return candidatos.find((c) => spawnSync(c, ['--version'], { shell: false }).status === 0) ?? null;
+function resolvePython() {
+  const candidates = [process.env.SARAK_PYTHON, 'python', 'python3'].filter(Boolean);
+  return candidates.find((c) => spawnSync(c, ['--version'], { shell: false }).status === 0) ?? null;
 }
 
-function rodarPython(executavel, args, cwd) {
-  return spawnSync(executavel, args, { cwd, encoding: 'utf8', shell: false });
+function runPython(executable, args, cwd) {
+  return spawnSync(executable, args, { cwd, encoding: 'utf8', shell: false });
 }
 
 /** Passo = `{ nome, fn }`; `fn` devolve `{ ok, detalhe }` OU lança (a exceção vira `FALHA` também —
  * um passo que explode não deve derrubar o roteiro inteiro, só marcar a si mesmo). */
-function rodarPasso(nome, fn) {
+function runStep(name, fn) {
   try {
     const r = fn();
-    return { nome, ok: r.ok === true, detalhe: r.detalhe ?? null };
-  } catch (causa) {
-    return { nome, ok: false, detalhe: `excecao: ${causa.message}` };
+    return { name, ok: r.ok === true, detail: r.detail ?? null };
+  } catch (cause) {
+    return { name, ok: false, detail: `exception: ${cause.message}` };
   }
 }
 
-function deProcesso(resultadoSpawn) {
-  const c = classificarPasso(resultadoSpawn);
-  return { ok: c.ok, detalhe: c.ok ? null : `${c.motivo} — ${[resultadoSpawn?.stdout, resultadoSpawn?.stderr].filter(Boolean).join(' | ').slice(0, 300)}` };
+function fromProcess(spawnResult) {
+  const c = classifyStep(spawnResult);
+  return { ok: c.ok, detail: c.ok ? null : `${c.motivo} — ${[spawnResult?.stdout, spawnResult?.stderr].filter(Boolean).join(' | ').slice(0, 300)}` };
 }
 
-/** Varre uma árvore inteira (arquivo por arquivo) devolvendo `{ caminho relativo, texto }` — só de
+/** Varre uma árvore inteira (arquivo por arquivo) devolvendo `{ path relativo, text }` — só de
  * texto (extensões conhecidas), para o achado de termo de F não estourar em binário. */
-function lerArvore(raiz) {
+function readTree(root) {
   const EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.json', '.md', '.yaml', '.yml']);
-  const achados = [];
-  const pilha = [raiz];
-  while (pilha.length > 0) {
-    const atual = pilha.pop();
-    for (const entrada of readdirSync(atual, { withFileTypes: true })) {
-      if (IGNORAR_VARREDURA.has(entrada.name)) continue;
-      const caminho = join(atual, entrada.name);
-      if (entrada.isDirectory()) { pilha.push(caminho); continue; }
-      if (!EXT.has(entrada.name.slice(entrada.name.lastIndexOf('.')))) continue;
-      achados.push({ caminho: relative(raiz, caminho).split('\\').join('/'), texto: readFileSync(caminho, 'utf8') });
+  const findings = [];
+  const stack = [root];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if (IGNORE_SCAN.has(entry.name)) continue;
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) { stack.push(path); continue; }
+      if (!EXT.has(entry.name.slice(entry.name.lastIndexOf('.')))) continue;
+      findings.push({ path: relative(root, path).split('\\').join('/'), text: readFileSync(path, 'utf8') });
     }
   }
-  return achados;
+  return findings;
 }
 
 // ── A. as quatro camadas de auto-verificação (§4.1) ────────────────────────────────────────────
 
-const TOTAL_ESPERADO_POR_BINDING = { typescript: 136, javascript: 136, python: 131 };
+const EXPECTED_TOTAL_BY_BINDING = { typescript: 136, javascript: 136, python: 131 };
 
-function passosCamada2() {
-  return Object.keys(TOTAL_ESPERADO_POR_BINDING).map((binding) => ({
-    nome: `camada 2 — ${binding}`,
+function layer2Steps() {
+  return Object.keys(EXPECTED_TOTAL_BY_BINDING).map((binding) => ({
+    name: `layer 2 — ${binding}`,
     fn: () => {
-      const resultado = rodarNode([join(RAIZ_TEMPLATE, 'tools', 'gate', 'tests', 'run.mjs'), '--binding', binding], RAIZ_BASE);
-      const proc = deProcesso(resultado);
+      const result = runNode([join(TEMPLATE_ROOT, 'tools', 'gate', 'tests', 'run.mjs'), '--binding', binding], BASE_ROOT);
+      const proc = fromProcess(result);
       if (!proc.ok) return proc;
-      const saida = resultado.stdout ?? '';
-      const totalOk = saida.match(/binding \w+: (\d+)\/(\d+) ok/);
-      if (totalOk === null) return { ok: false, detalhe: 'saida sem a linha "binding X: N/N ok"' };
+      const output = result.stdout ?? '';
+      const totalOk = output.match(/binding \w+: (\d+)\/(\d+) passed/);
+      if (totalOk === null) return { ok: false, detail: 'output is missing the "binding X: N/N passed" line' };
       const [, ok, total] = totalOk;
-      if (ok !== total) return { ok: false, detalhe: `${ok}/${total} — ha FALHA, exit 0 nao deveria ter acontecido` };
+      if (ok !== total) return { ok: false, detail: `${ok}/${total} — failures were reported with exit code 0` };
       // A CATRACA que faltava: `run.mjs` conta "N regras com caso de teste" mas nunca compara contra
       // o catalogo. Regra nova sem caso encolhia esse numero em silencio — aqui ele reprova.
-      const cobertura = saida.match(/(\d+) regras com caso de teste/);
-      if (cobertura === null) return { ok: false, detalhe: 'saida sem "N regras com caso de teste"' };
-      return compararValor('regras com caso de teste', Number(cobertura[1]), REGRAS.length);
+      const coverage = output.match(/(\d+) rules with test cases/);
+      if (coverage === null) return { ok: false, detail: 'output is missing the "N rules with test cases" line' };
+      return compareValue('rules with test cases', Number(coverage[1]), RULES.length);
     },
   }));
 }
 
-function passosResto() {
+function restSteps() {
   return [
     {
-      nome: 'camada 4 — nenhum --autoteste orfao',
-      fn: () => deProcesso(rodarNode([join(RAIZ_TEMPLATE, 'tests', 'run-all-selftests.mjs')], RAIZ_BASE)),
+      name: 'layer 4: no orphan --selftest entry',
+      fn: () => fromProcess(runNode([join(TEMPLATE_ROOT, 'tests', 'run-all-selftests.mjs')], BASE_ROOT)),
     },
     {
-      nome: 'camada 3 — o template se testa',
+      name: 'layer 3: the template tests itself',
       fn: () => {
-        const resultado = rodarNode([join(RAIZ_TEMPLATE, 'tests', 'template-self-test.mjs')], RAIZ_BASE);
-        const proc = deProcesso(resultado);
+        const result = runNode([join(TEMPLATE_ROOT, 'tests', 'template-self-test.mjs')], BASE_ROOT);
+        const proc = fromProcess(result);
         if (!proc.ok) return proc;
-        const bate = /3\/3 bindings verdes/.test(resultado.stdout ?? '');
-        return { ok: bate, detalhe: bate ? null : 'saida sem "3/3 bindings verdes"' };
+        const matches = /3\/3 bindings passed/.test(result.stdout ?? '');
+        return { ok: matches, detail: matches ? null : 'output is missing "3/3 bindings passed"' };
       },
     },
     {
-      nome: 'typecheck:tools',
-      fn: () => deProcesso(rodarNode([join(RAIZ_BASE, 'node_modules', 'typescript', 'bin', 'tsc'), '--project', 'tsconfig.tools-check.json'], RAIZ_BASE)),
+      name: 'typecheck:tools',
+      fn: () => fromProcess(runNode([join(BASE_ROOT, 'node_modules', 'typescript', 'bin', 'tsc'), '--project', 'tsconfig.tools-check.json'], BASE_ROOT)),
     },
   ];
 }
 
 // ── B. o catálogo de regras (§4.2) ──────────────────────────────────────────────────────────────
 
-const FAMILIAS_ESPERADAS = {
+const EXPECTED_FAMILIES = {
   configuration: 21, contract: 11, data: 8, isolation: 12, operation: 14, structure: 11, writing: 4,
 };
 
-function passosCatalogo() {
-  const pastaRegras = join(RAIZ_TEMPLATE, 'tools', 'gate', 'rules');
-  const porFamilia = () => {
-    const achados = {};
-    for (const arquivo of readdirSync(pastaRegras).filter((n) => n.endsWith('.mjs'))) {
-      achados[arquivo.replace('.mjs', '')] = contarIdsDeRegra(readFileSync(join(pastaRegras, arquivo), 'utf8'));
+function catalogSteps() {
+  const rulesDir = join(TEMPLATE_ROOT, 'tools', 'gate', 'rules');
+  const byFamily = () => {
+    const findings = {};
+    for (const file of readdirSync(rulesDir).filter((n) => n.endsWith('.mjs'))) {
+      findings[file.replace('.mjs', '')] = countRuleIds(readFileSync(join(rulesDir, file), 'utf8'));
     }
-    return achados;
+    return findings;
   };
-  const por = (chave) => REGRAS.reduce((a, r) => ({ ...a, [r[chave]]: (a[r[chave]] ?? 0) + 1 }), {});
+  const countBy = (key) => RULES.reduce((a, r) => ({ ...a, [r[key]]: (a[r[key]] ?? 0) + 1 }), {});
+  const countBySeverity = () => RULES.reduce((counts, rule) => {
+    const severity = rule.nivel === 'erro' ? 'error' : 'warning';
+    counts[severity] = (counts[severity] ?? 0) + 1;
+    return counts;
+  }, {});
 
   return [
-    { nome: 'catalogo — total de regras', fn: () => compararValor('regras', REGRAS.length, 81) },
-    { nome: 'catalogo — por escopo', fn: () => compararValor('escopo', por('escopo'), { module: 60, root: 17, global: 4 }) },
-    { nome: 'catalogo — por nivel', fn: () => compararValor('nivel', por('nivel'), { erro: 77, aviso: 4 }) },
-    { nome: 'catalogo — por familia', fn: () => compararValor('familia', porFamilia(), FAMILIAS_ESPERADAS) },
+    { name: 'catalog: total rule count', fn: () => compareValue('rules', RULES.length, 81) },
+    { name: 'catalog: counts by scope', fn: () => compareValue('scope', countBy('escopo'), { module: 60, root: 17, global: 4 }) },
+    { name: 'catalog: counts by severity', fn: () => compareValue('severity', countBySeverity(), { error: 77, warning: 4 }) },
+    { name: 'catalog: counts by family', fn: () => compareValue('family', byFamily(), EXPECTED_FAMILIES) },
     {
       // O terceiro argumento varre `tools/**` atras de "N regras com caso"/"N regras suas"
       // defasada — o defeito medido em `affected.mjs`/`contract-compatible.mjs`/`gate/context.mjs`
       // (73/74/57 contra o 76/58 real). So `tools/**`, nunca `.md` — limite declarado em
       // `verify-catalog.mjs` e em `04-regras.md` §7.2.
-      nome: 'catalogo — a catraca lei <-> codigo (ids + contagem em tools/**)',
-      fn: () => deProcesso(rodarNode([
-        join(AQUI, 'verify-catalog.mjs'), '--check',
-        join(RAIZ_TEMPLATE, 'doutrina', '04-regras.md'), join(RAIZ_TEMPLATE, 'tools', 'gate', 'engine.mjs'),
-        join(RAIZ_TEMPLATE, 'tools'),
-      ], RAIZ_BASE)),
+      name: 'catalog: doctrine and code ids and tools counts agree',
+      fn: () => fromProcess(runNode([
+        join(HERE, 'verify-catalog.mjs'), '--check',
+        join(TEMPLATE_ROOT, 'doutrina', '04-regras.md'), join(TEMPLATE_ROOT, 'tools', 'gate', 'engine.mjs'),
+        join(TEMPLATE_ROOT, 'tools'),
+      ], BASE_ROOT)),
     },
     {
-      // PORTAS_CONHECIDAS duplicada a mao em cinco lugares, nada comparava — a mesma disciplina
+      // KNOWN_PORTS duplicada a mao em cinco lugares, nada comparava — a mesma disciplina
       // da checagem de ids acima, aplicada ao vocabulario de portas em vez do catalogo de regras.
-      nome: 'catalogo — vocabulario de portas identico nas cinco fontes',
-      fn: () => deProcesso(rodarNode([join(AQUI, 'verify-catalog.mjs'), '--check-vocabulary', RAIZ_TEMPLATE], RAIZ_BASE)),
+      name: 'catalog: port vocabulary matches across five sources',
+      fn: () => fromProcess(runNode([join(HERE, 'verify-catalog.mjs'), '--check-vocabulary', TEMPLATE_ROOT], BASE_ROOT)),
+    },
+    {
+      // `renamed-rules.json` viaja com o gate e e GERADO da tabela do ADR-024: se o ADR mudar e o arquivo
+      // nao, a dica de renomeacao da excecao mandaria o dono para um id que o gate nao conhece.
+      name: 'catalog: shipped rename table matches ADR-024 and the catalog',
+      fn: () => fromProcess(runNode([
+        join(HERE, 'verify-catalog.mjs'), '--check-renames',
+        join(TEMPLATE_ROOT, 'doutrina', 'adr', 'decisoes.md'),
+        join(TEMPLATE_ROOT, 'tools', 'gate', 'renamed-rules.json'),
+        join(TEMPLATE_ROOT, 'tools', 'gate', 'engine.mjs'),
+      ], BASE_ROOT)),
     },
   ];
 }
 
 // ── C. os dois manifestos (§2.1) ────────────────────────────────────────────────────────────────
 
-function passosManifestos() {
-  const schemas = join(RAIZ_TEMPLATE, 'tools', 'gate', 'schemas');
+function manifestSteps() {
+  const schemas = join(TEMPLATE_ROOT, 'tools', 'gate', 'schemas');
   return [
     {
-      nome: 'manifesto — module.schema.json',
+      name: 'manifest: module.schema.json',
       fn: () => {
         const s = JSON.parse(readFileSync(join(schemas, 'module.schema.json'), 'utf8'));
-        return compararValor('module.schema', { obrigatorios: s.required.length, additionalProperties: s.additionalProperties }, { obrigatorios: 19, additionalProperties: false });
+        return compareValue('module.schema', { requiredCount: s.required.length, additionalProperties: s.additionalProperties }, { requiredCount: 19, additionalProperties: false });
       },
     },
     {
-      nome: 'manifesto — project.schema.json',
+      name: 'manifest: project.schema.json',
       fn: () => {
         const s = JSON.parse(readFileSync(join(schemas, 'project.schema.json'), 'utf8'));
-        return compararValor('project.schema', { obrigatorios: s.required, additionalProperties: s.additionalProperties }, { obrigatorios: ['requiredEnv'], additionalProperties: false });
+        return compareValue('project.schema', { required: s.required, additionalProperties: s.additionalProperties }, { required: ['requiredEnv'], additionalProperties: false });
       },
     },
   ];
@@ -229,38 +245,38 @@ function passosManifestos() {
 
 // ── D. rotas obrigatórias (§2) e o que não viaja (§4.6) ─────────────────────────────────────────
 
-function passosRotasETests() {
+function routeAndTestSteps() {
   return [
     {
-      nome: 'rotas obrigatorias em contract.mjs',
+      name: 'required routes in contract.mjs',
       fn: () => {
-        const texto = readFileSync(join(RAIZ_TEMPLATE, 'tools', 'gate', 'rules', 'contract.mjs'), 'utf8');
-        const bate = ['/health', '/meta', '/resumo'].every((rota) => texto.includes(`'${rota}'`));
-        return { ok: bate, detalhe: bate ? null : 'contract.mjs nao declara as tres rotas obrigatorias' };
+        const text = readFileSync(join(TEMPLATE_ROOT, 'tools', 'gate', 'rules', 'contract.mjs'), 'utf8');
+        const matches = ['/health', '/meta', '/resumo'].every((route) => text.includes(`'${route}'`));
+        return { ok: matches, detail: matches ? null : 'contract.mjs does not declare all three required routes' };
       },
     },
     {
-      // 6: os cinco de antes + `supervisionar.mjs` (casca de processo do autoteste do template — teto e
-      // encerramento da arvore). `prova-desligamento.py` e `.json` nao entram: so `.mjs` e contado.
-      nome: 'ferramentas de manutencao — exatamente 6 arquivos .mjs em tests/',
-      fn: () => compararValor('arquivos .mjs em tests/', readdirSync(AQUI).filter((n) => n.endsWith('.mjs')).length, 6),
+      // 6: os cinco de antes + `supervise.mjs` (casca de processo do autoteste do template — teto e
+      // encerramento da arvore). `shutdown-proof.py` e `.json` nao entram: so `.mjs` e contado.
+      name: 'maintenance tools: exactly 6 .mjs files in tests/',
+      fn: () => compareValue('.mjs files in tests/', readdirSync(HERE).filter((n) => n.endsWith('.mjs')).length, 6),
     },
   ];
 }
 
 // ── E. a declaração de módulo (§5.1) ────────────────────────────────────────────────────────────
 
-function passosRejeicaoDeModulo(python) {
+function moduleRejectionSteps(python) {
   if (python === null) {
-    return [{ nome: 'declaracao de modulo (E)', ok: false, detalhe: 'nenhum interpretador python resolvido (SARAK_PYTHON/python/python3)', pulado: true }];
+    return [{ name: 'module declaration (E)', ok: false, detail: 'no Python interpreter was resolved (SARAK_PYTHON/python/python3)', skipped: true }];
   }
-  const initRepo = join(RAIZ_BASE, 'skills', 'meta-iniciar-repositorio', 'scripts', 'init_repo.py');
-  const casos = [
-    { alvo: 'fe-t1', args: ['--modulos', 'catalogo'] },
-    { alvo: 'fe-t2', args: ['--modulos', 'hub:connector:artefato'] },
+  const initRepo = join(BASE_ROOT, 'skills', 'meta-iniciar-repositorio', 'scripts', 'init_repo.py');
+  const cases = [
+    { target: 'fe-t1', args: ['--modulos', 'catalogo'] },
+    { target: 'fe-t2', args: ['--modulos', 'hub:connector:artefato'] },
   ];
-  return casos.map(({ alvo, args }) => ({
-    nome: `rejeicao de forma invalida — ${args.join(' ')}`,
+  return cases.map(({ target, args }) => ({
+    name: `invalid-shape rejection — ${args.join(' ')}`,
     fn: () => {
       // O PAI é único por `mkdtemp` (como o passo F) — nunca o `destino`: a afirmação é que
       // `init_repo.py` REJEITADO não cria o destino, e um `destino` pré-criado por `mkdtemp`
@@ -268,15 +284,15 @@ function passosRejeicaoDeModulo(python) {
       // Caminho fixo aqui (medido, Onda 3) colidia entre duas instâncias simultâneas — a segunda
       // apagava o alvo da primeira no meio do teste e morria sem saída, parecendo defeito do
       // template.
-      const pai = mkdtempSync(join(tmpdir(), 'sarak-verify-routine-rejeicao-'));
+      const parent = mkdtempSync(join(tmpdir(), 'sarak-verify-routine-rejeicao-'));
       try {
-        const destino = join(pai, alvo);
-        const resultado = rodarPython(python, [initRepo, '--target', destino, ...args], RAIZ_BASE);
-        if (resultado.status !== 1) return { ok: false, detalhe: `esperava exit 1, saiu ${resultado.status}` };
-        if (existsSync(destino)) return { ok: false, detalhe: `${destino} foi criado — rejeicao devia deixar nada para tras` };
+        const destination = join(parent, target);
+        const result = runPython(python, [initRepo, '--target', destination, ...args], BASE_ROOT);
+        if (result.status !== 1) return { ok: false, detail: `expected exit 1, received ${result.status}` };
+        if (existsSync(destination)) return { ok: false, detail: `${destination} was created — rejection should leave no destination` };
         return { ok: true };
       } finally {
-        rmSync(pai, { recursive: true, force: true });
+        rmSync(parent, { recursive: true, force: true });
       }
     },
   }));
@@ -284,118 +300,118 @@ function passosRejeicaoDeModulo(python) {
 
 // ── F + G. o que viaja para o projeto gerado, e a camada 1 nele (§1.3, §4.1, §4.3) ─────────────
 
-function passosProjetoGerado(python) {
-  const destino = mkdtempSync(join(tmpdir(), 'sarak-verify-routine-fe-p-'));
-  const t = (...partes) => join(destino, ...partes);
-  const passos = [
+function generatedProjectSteps(python) {
+  const destination = mkdtempSync(join(tmpdir(), 'sarak-verify-routine-fe-p-'));
+  const t = (...parts) => join(destination, ...parts);
+  const steps = [
     {
-      nome: 'F — create-project.mjs gera o projeto',
-      fn: () => deProcesso(rodarNode([join(RAIZ_TEMPLATE, 'tools', 'create-project.mjs'), destino, '--binding', 'typescript', '--scope', 'acme'], RAIZ_BASE)),
+      name: 'F: create-project generates the project',
+      fn: () => fromProcess(runNode([join(TEMPLATE_ROOT, 'tools', 'create-project.mjs'), destination, '--binding', 'typescript', '--scope', 'acme'], BASE_ROOT)),
     },
     {
-      nome: 'F — verify-map.mjs --check no projeto gerado',
-      fn: () => deProcesso(rodarNode([join(AQUI, 'verify-map.mjs'), '--check', t('specs', 'arquitetura')], RAIZ_BASE)),
+      name: 'F: verify-map check passes in the generated project',
+      fn: () => fromProcess(runNode([join(HERE, 'verify-map.mjs'), '--check', t('specs', 'arquitetura')], BASE_ROOT)),
     },
     {
-      nome: 'F — nenhum vazamento de "_estrutura_modulos" alem da linha declarada',
+      name: 'F: no _estrutura_modulos leak beyond the declared line',
       fn: () => {
-        const achados = ocorrenciasDoTermo(lerArvore(destino), '_estrutura_modulos');
-        return compararValor('arquivos que citam _estrutura_modulos', achados, ['specs/adr/000-decisoes-do-template.md']);
+        const findings = termOccurrences(readTree(destination), '_estrutura_modulos');
+        return compareValue('files that cite _estrutura_modulos', findings, ['specs/adr/000-decisoes-do-template.md']);
       },
     },
     {
-      nome: 'G — create-module.mjs no projeto gerado',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'create-module.mjs'), 'catalogo', '--role', 'domain'], destino)),
+      name: 'G: create-module works in the generated project',
+      fn: () => fromProcess(runNode([join(destination, 'tools', 'create-module.mjs'), 'catalogo', '--role', 'domain'], destination)),
     },
     {
-      nome: 'G — camada 1: gate --all no projeto gerado',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'gate', 'validate.mjs'), '--all'], destino)),
+      name: 'G: gate --all passes in the generated project',
+      fn: () => fromProcess(runNode([join(destination, 'tools', 'gate', 'validate.mjs'), '--all'], destination)),
     },
     {
-      nome: 'G — sync-env.mjs --check',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'sync-env.mjs'), '--check'], destino)),
+      name: 'G: module creation and gate checks in a generated project',
+      fn: () => fromProcess(runNode([join(destination, 'tools', 'sync-env.mjs'), '--check'], destination)),
     },
     {
-      nome: 'G — generate-port-schemas.mjs --check',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'generate-port-schemas.mjs'), '--check'], destino)),
+      name: 'G: module creation and gate checks in a generated project',
+      fn: () => fromProcess(runNode([join(destination, 'tools', 'generate-port-schemas.mjs'), '--check'], destination)),
     },
     {
-      nome: 'G — generate-lint-config.mjs --check',
-      fn: () => deProcesso(rodarNode([join(destino, 'tools', 'generate-lint-config.mjs'), '--check'], destino)),
+      name: 'G: module creation and gate checks in a generated project',
+      fn: () => fromProcess(runNode([join(destination, 'tools', 'generate-lint-config.mjs'), '--check'], destination)),
     },
   ];
-  return { passos, limpar: () => rmSync(destino, { recursive: true, force: true }) };
+  return { steps, clean: () => rmSync(destination, { recursive: true, force: true }) };
 }
 
-function rodarRoteiro() {
-  const python = resolverPython();
-  const { passos: passosFG, limpar } = passosProjetoGerado(python);
-  const grupos = [
-    ...passosCamada2(),
-    ...passosResto(),
-    ...passosCatalogo(),
-    ...passosManifestos(),
-    ...passosRotasETests(),
-    ...passosRejeicaoDeModulo(python),
-    ...passosFG,
+function runScript() {
+  const python = resolvePython();
+  const { steps: fgSteps, clean } = generatedProjectSteps(python);
+  const groups = [
+    ...layer2Steps(),
+    ...restSteps(),
+    ...catalogSteps(),
+    ...manifestSteps(),
+    ...routeAndTestSteps(),
+    ...moduleRejectionSteps(python),
+    ...fgSteps,
   ];
 
-  const resultados = [];
+  const results = [];
   try {
-    for (const passo of grupos) {
-      const resultado = passo.pulado === true ? passo : rodarPasso(passo.nome, passo.fn);
-      resultados.push(resultado);
-      const marca = resultado.pulado === true ? 'pula ' : (resultado.ok ? 'ok   ' : 'FALHA');
-      process.stdout.write(`  ${marca} ${resultado.nome}\n`);
-      if (resultado.ok !== true && resultado.pulado !== true) process.stdout.write(`       ${resultado.detalhe}\n`);
+    for (const step of groups) {
+      const result = step.skipped === true ? step : runStep(step.name, step.fn);
+      results.push(result);
+      const mark = result.skipped === true ? 'skip ' : (result.ok ? 'ok   ' : 'FAIL');
+      process.stdout.write(`  ${mark} ${result.name}\n`);
+      if (result.ok !== true && result.skipped !== true) process.stdout.write(`       ${result.detail}\n`);
     }
   } finally {
-    limpar();
+    clean();
   }
 
-  const falhas = resultados.filter((r) => r.ok !== true && r.pulado !== true);
-  const executados = resultados.filter((r) => r.pulado !== true);
-  process.stdout.write(`\nverify-routine: ${executados.length - falhas.length}/${executados.length} passo(s) ok\n`);
-  return falhas.length > 0 ? 1 : 0;
+  const failures = results.filter((r) => r.ok !== true && r.skipped !== true);
+  const executed = results.filter((r) => r.skipped !== true);
+  process.stdout.write(`\nverify-routine: ${executed.length - failures.length}/${executed.length} steps passed\n`);
+  return failures.length > 0 ? 1 : 0;
 }
 
 // ================================================================================================
 // AUTOTESTE — núcleo puro contra fixtures em memória, sem tocar disco nem `child_process`.
 // ================================================================================================
 
-function casosDeAutoteste() {
+function selfTestCases() {
   return [
-    { nome: 'compararValor: numeros iguais -> ok', fn: () => compararValor('x', 5, 5).ok === true },
-    { nome: 'compararValor: numeros diferentes -> nao ok, com os dois lados no detalhe', fn: () => {
-      const r = compararValor('x', 5, 6);
-      return r.ok === false && r.detalhe.includes('5') && r.detalhe.includes('6');
+    { name: 'compareValue: equal numbers succeed', fn: () => compareValue('x', 5, 5).ok === true },
+    { name: 'compareValue: unequal numbers fail and show both values', fn: () => {
+      const r = compareValue('x', 5, 6);
+      return r.ok === false && r.detail.includes('5') && r.detail.includes('6');
     } },
-    { nome: 'compararValor: objetos com mesma forma -> ok', fn: () => compararValor('x', { a: 1, b: 2 }, { a: 1, b: 2 }).ok === true },
-    { nome: 'contarIdsDeRegra: conta so as ocorrencias de "id: \'"', fn: () => contarIdsDeRegra("id: 'a',\n  id: 'b',\n  outraChave: 'x'") === 2 },
-    { nome: 'contarIdsDeRegra: texto sem id -> zero', fn: () => contarIdsDeRegra('nada aqui') === 0 },
-    { nome: 'ocorrenciasDoTermo: acha so quem cita o termo', fn: () => {
-      const r = ocorrenciasDoTermo([{ caminho: 'a.md', texto: 'cita _estrutura_modulos aqui' }, { caminho: 'b.md', texto: 'nao cita' }], '_estrutura_modulos');
+    { name: 'compareValue: objects with the same shape succeed', fn: () => compareValue('x', { a: 1, b: 2 }, { a: 1, b: 2 }).ok === true },
+    { name: 'countRuleIds: counts only occurrences of the id key', fn: () => countRuleIds("id: 'a',\n  id: 'b',\n  otherKey: 'x'") === 2 },
+    { name: 'countRuleIds: text without an id returns zero', fn: () => countRuleIds('nothing here') === 0 },
+    { name: 'termOccurrences: returns only files that cite the term', fn: () => {
+      const r = termOccurrences([{ path: 'a.md', text: 'mentions _estrutura_modulos here' }, { path: 'b.md', text: 'does not mention it' }], '_estrutura_modulos');
       return r.length === 1 && r[0] === 'a.md';
     } },
-    { nome: 'ocorrenciasDoTermo: nenhuma ocorrencia -> lista vazia', fn: () => ocorrenciasDoTermo([{ caminho: 'a.md', texto: 'nada' }], '_estrutura_modulos').length === 0 },
+    { name: 'termOccurrences: no occurrences returns an empty list', fn: () => termOccurrences([{ path: 'a.md', text: 'nothing' }], '_estrutura_modulos').length === 0 },
   ];
 }
 
-function rodarAutoteste() {
-  let falhas = 0;
-  for (const caso of casosDeAutoteste()) {
+function runSelfTest() {
+  let failures = 0;
+  for (const testCase of selfTestCases()) {
     let ok;
     try {
-      ok = caso.fn() === true;
+      ok = testCase.fn() === true;
     } catch {
       ok = false;
     }
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
-  const total = casosDeAutoteste().length;
-  process.stdout.write(`\nautoteste (verify-routine): ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  const total = selfTestCases().length;
+  process.stdout.write(`\nself-test (verify-routine): ${total - failures}/${total} passed\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 // ================================================================================================
@@ -403,5 +419,5 @@ function rodarAutoteste() {
 // ================================================================================================
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(process.argv.includes('--autoteste') ? rodarAutoteste() : rodarRoteiro());
+  process.exit(process.argv.includes('--selftest') ? runSelfTest() : runScript());
 }

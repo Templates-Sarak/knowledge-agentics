@@ -1,7 +1,7 @@
 // Rotas do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §2.
 //
 // O contrato manda: toda rota daqui existe em contract/openapi.yaml, e o inverso tambem
-// (regra `contrato-sincronizado`). Valide na borda ANTES do dominio; exija permissao nomeada;
+// (regra `synchronized-contract`). Valide na borda ANTES do dominio; exija permissao nomeada;
 // monte a resposta pelo mapeador; lance ApiError — nunca `res.status(...)` ad hoc.
 import { Router } from 'express';
 

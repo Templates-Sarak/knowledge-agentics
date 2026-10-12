@@ -5,7 +5,7 @@ precedente de `tools/generate-lint-config.mjs` do template de modulos: uma fonte
 
     python gerar_config.py               escreve config.json a partir do catalogo canonico
     python gerar_config.py --conferir    nao escreve; sai 1 se o disco divergir do que seria gerado
-    python gerar_config.py --autoteste   nao toca disco; prova CANONICO e a extracao dos tres campos
+    python gerar_config.py --selftest   nao toca disco; prova CANONICO e a extracao dos tres campos
 
 Por que so TRES campos do canonico (`padroes`, `arquivos_sensiveis`, `arquivos_permitidos`): e tudo
 que `verificar_commit.py` le. `extensoes_texto`/`ignorar_dirs`/`tamanho_max_arquivo_bytes` sao do
@@ -74,7 +74,7 @@ def autoteste() -> int:
 
 
 def main() -> int:
-    if "--autoteste" in sys.argv[1:]:
+    if "--selftest" in sys.argv[1:]:
         return autoteste()
     conferir = "--conferir" in sys.argv[1:]
     try:

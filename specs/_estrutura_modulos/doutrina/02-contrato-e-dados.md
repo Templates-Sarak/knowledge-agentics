@@ -36,7 +36,7 @@ se conhece exige uma forma **compartilhada** — por isso o módulo que declara 
 `total` (inteiro) no schema `200` de `GET /resumo`. Sem esse mínimo, agregar só seria possível com um caso por
 módulo dentro do conector: exatamente o acoplamento que "composição sem lista fixa" existe para proibir, e a
 razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do módulo continua livre ao lado do
-`total` — a lei fixa o **piso**, não o conjunto. Cobrado por `resumo-exportado`
+`total` — a lei fixa o **piso**, não o conjunto. Cobrado por `exported-summary`
 (`specs/arquitetura/04-regras.md` §4.5); `exportsSummary: false` não proíbe nada.
 
 > **Decisão de segurança, tomada.** `/meta` é rota pública por necessidade — o sistema descobre módulo antes de
@@ -45,7 +45,7 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
 > segredo em `requiredEnv`, o vocabulário inteiro de `permissions`, `publicRoutes` (o que não exige token) e
 > `sensitiveFields` — o mapa de onde está a PII. A escolha feita foi a **projeção reduzida**, aplicada agora e
 > não adiada para quando houver login: `/meta` devolve só os oito campos da tabela acima, cobrados por
-> `saida-crua` (`specs/arquitetura/04-regras.md` §4.5) e travados por caso em `cases.mjs`. O que sai da lista — `data`,
+> `raw-output` (`specs/arquitetura/04-regras.md` §4.5) e travados por caso em `cases.mjs`. O que sai da lista — `data`,
 > `requiredEnv`, `ports`, `permissions`, `publicRoutes`, `sensitiveFields`, `consumes` — é reconhecimento do
 > módulo (o front precisa saber id/rota/navegação para se montar), nunca descoberta de superfície interna.
 > Sair de `publicRoutes` quando houver login continua disponível como **endurecimento adicional**, não como
@@ -60,8 +60,8 @@ razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do m�
 - **Convenção de nome, e ela é NORMATIVA — não estilo.** Função de PROJEÇÃO DE SAÍDA (domínio/manifesto →
   contrato) nomeia-se `para<Algo>` em TS/JS (`toContract`, `toMeta`, `toCollection` — `para` seguido de
   maiúscula) ou `para_<algo>` em Python. Conversão para o BANCO nomeia-se na direção inversa —
-  `<algo>ParaLinha`/`linhaPara<Algo>` — nunca começando por `para`. `projecao-contrato`, `payload-camelcase`
-  e `sensivel-em-saida` **dependem** desta convenção para achar a função (`04-regras.md` §7.2): projeção
+  `<algo>ParaLinha`/`linhaPara<Algo>` — nunca começando por `para`. `contract-projection`, `payload-camelcase`
+  e `sensitive-in-output` **dependem** desta convenção para achar a função (`04-regras.md` §7.2): projeção
   batizada fora dela — `montarResposta`, por exemplo — **escapa das três, inteira**, silenciosamente. Não é
   detalhe de estilo: é o nome que a regra que protege PII na borda usa para saber onde olhar.
 - Campo listado em `module.json:sensitiveFields` nunca aparece em resposta, log ou OpenAPI.
@@ -73,7 +73,7 @@ tipo de domínio.
 **A consequência que se aceita de propósito:** campo novo exige tocar em dois lugares — schema e mapeador.
 
 Esquecer o **schema** não é falha silenciosa: publicar campo que o contrato não promete é erro de
-gate (`projecao-contrato`, `specs/arquitetura/04-regras.md` §4.5). Esquecer o **mapeador** continua silencioso
+gate (`contract-projection`, `specs/arquitetura/04-regras.md` §4.5). Esquecer o **mapeador** continua silencioso
 por escolha — o campo simplesmente não aparece, e cobrar essa direção acusaria toda resposta que a `api/` monta
 sem passar pelo mapeador (§7.2). Essa metade é do teste de contrato, que exercita a resposta de verdade.
 Assimetria deliberada: publicar por omissão é o risco grave, e é o que o gate fecha.
@@ -133,7 +133,7 @@ depreciação anunciada no `openapi.yaml`.
 não na spec, ou o contrário, é divergência que o gate pega.
 
 Mudança de contrato afeta quem declarou `consumes` do seu módulo — **consulte o grafo antes**, não depois.
-Remover uma rota, renomeá-la ou trocar o método dela quebra quem depende: a regra `consome-contrato`
+Remover uma rota, renomeá-la ou trocar o método dela quebra quem depende: a regra `consumes-contract`
 (`specs/arquitetura/04-regras.md` §4.2) confere cada `consumes` contra a spec do dono e reprova no consumidor.
 Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (§7.2).
 

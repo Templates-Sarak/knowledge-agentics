@@ -24,17 +24,17 @@ estes testes rodam o app e olham a resposta de verdade. Só entram depois de
 - Divergência → conserte **o lado errado**: se o código mudou de propósito, atualize a spec; se a spec está
   certa, conserte o código. Nunca silencie.
 
-> `contrato-sincronizado` já garante que rota do código e rota da spec coincidem. O que sobra aqui é o
+> `synchronized-contract` já garante que rota do código e rota da spec coincidem. O que sobra aqui é o
 > **corpo** da resposta, que o gate não lê.
 
 ## Consumer — dependência só do contrato
 
 - O consumidor fala com o provider por `core/gateways/<provider>`, **só HTTP**, e a dependência está
   declarada em `module.json:consumes`. Nunca importa `core/` alheio nem lê tabela alheia — isso o gate já
-  cobra (`import-lateral`, `gateway-http`, `gateway-declarado`, `tabela-alheia`).
+  cobra (`lateral-import`, `gateway-http`, `gateway-declared`, `foreign-table`).
 - **Mock derivado do contrato**: o test double sai da spec, não da implementação. Mock copiado da
   implementação testa o acidente, não a promessa — e passa a mentir no dia em que o provider muda.
-- `consome-contrato` já verifica que a rota e o método declarados existem no dono. O que sobra aqui é a
+- `consumes-contract` já verifica que a rota e o método declarados existem no dono. O que sobra aqui é a
   **forma do payload**, que ele explicitamente não lê (§7.2).
 - Em arquitetura distribuída, **Pact** (consumer-driven contracts) formaliza isso. Dentro de um monorepo, o
   `openapi.yaml` compartilhado já cumpre o papel.

@@ -39,7 +39,7 @@
     "//start": "Sobe o monolito modular (specs/arquitetura/00-arquitetura.md §5): um processo, uma porta.",
     "start": "node src/composition.js",
     "//start:selftest": "Prova a UNICA decisao pura do entrypoint (verificarRotasUnicas) sem subir processo nem tocar disco.",
-    "start:selftest": "node src/composition.js --autoteste",
+    "start:selftest": "node src/composition.js --selftest",
     "//docker": "Container local (03-operacao.md §9.5): `docker:up` builda e sobe o profile `app` (backend + front + Postgres) em loopback e espera os healthchecks; `deploy:sync` regenera o que o container deriva dos manifestos (create-module ja o faz). Exige Docker e deploy/.env (modelo: deploy/.env.example).",
     "docker:up": "node tools/docker-up.mjs up",
     "docker:stop": "node tools/docker-up.mjs stop",

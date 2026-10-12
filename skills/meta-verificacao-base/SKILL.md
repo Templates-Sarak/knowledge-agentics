@@ -27,6 +27,11 @@ Trate **a base inteira** como um único bloco.
    - **Contratos:** Subagentes sem obrigatoriedade JSON.
    - **Ponteiros/Órfãos:** Inconsistências de nomenclatura.
    - **Erros Sintáticos/Vazamentos:** JSONs inválidos, JS quebrado ou tokens *hardcoded*.
+
+   **Código de saída.** O script sai com **`1` quando qualquer categoria do JSON tem achado** e com **`0` só
+   quando todas estão vazias** (o total de achados vai a `stderr`). Quem o encadeia — o `pre-commit` local, o
+   job de integridade do workflow, o gate de `meta-atualizar-base` — pode confiar no `$?`, sem ler o JSON.
+   O `--selftest` imprime `N/M ok` (casos rodados e aprovados) e sai `1` com qualquer falha ou com zero caso.
 2. **Triar a saída** — interprete a saída em JSON ou lista gerada pelo script. Separe o que é falha fatal (ex: quebra de *parser*) do que é aviso (falso-positivo heurístico).
 3. **HITL — Plano de Correção** — liste os arquivos com falha e a proposta exata de correção (ex: trocar `:` por `=` no *frontmatter* da skill X). → "⚠️ Confirma as adequações estruturais?". **Aguarde.**
 4. **Adequar** — para cada item aprovado, edite o arquivo respectivo resolvendo a inconsistência apontada. Não invente correções além das necessárias.
@@ -71,3 +76,14 @@ Trate **a base inteira** como um único bloco.
   da raiz — campos e tipos, `id` único e em kebab-case, `caminho` único, `tipo`/`situacao`/`binding` dentro
   dos valores aceitos e caminhos relativos com `/`. **Não** cobra que o caminho exista: o audit roda em CI e
   em outras máquinas, onde os sistemas não estão clonados ao lado da base.
+- `scripts/sistemas_nos_viajantes.py` — chamada pelo `audit_base.py` (categoria `sistemas_nos_viajantes`): nenhum
+  arquivo que **viaja** para o projeto gerado (`doutrina/`, `bindings/`, `tools/` do template e os moldes do
+  fluxo SDD em `specs/_estrutura_base*/`) pode conter o `id` ou o `nome` de um sistema do `mapa.json`. A lista
+  vem do mapa lido em runtime. Mapa ilegível ou sem sistema é achado (a guarda sem o que procurar passaria
+  calada). Documentação que não viaja (`skills/**`, `README.md`) pode citar sistema.
+- `scripts/ids_citados.py` — chamada pelo `audit_base.py` (categoria `ids_citados`): todo id de regra citado em
+  `skills/**`, `commands/**`, `agents/**`, `hooks/**` e `README.md` existe no catálogo, **lido do código do
+  gate** (`tools/gate/rules/*.mjs` + o pseudo-id do `engine.mjs`). Só a forma inequívoca conta: id antigo com
+  hífen entre crases (da tabela `tools/gate/renamed-rules.json`), token entre crases logo após "regra(s)"/"id(s)"
+  e a primeira coluna de tabela de catálogo. Prefere falso negativo; `ids_citados.EXCECOES` lista, com motivo,
+  os arquivos que citam id antigo de propósito.

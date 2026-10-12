@@ -3,7 +3,7 @@
 //
 // Deterministico significa: mesma entrada, saida byte a byte identica. Por isso o instante e o
 // identificador chegam prontos, de fora — `new Date()` e `Math.random()` sao proibidos aqui e o
-// gate reprova (regra `determinismo`). E o que torna o motor testavel sem congelar relogio.
+// gate reprova (regra `determinism`). E o que torna o motor testavel sem congelar relogio.
 
 /**
  * Substitui marcadores `{{chave}}` do template pelos valores informados.

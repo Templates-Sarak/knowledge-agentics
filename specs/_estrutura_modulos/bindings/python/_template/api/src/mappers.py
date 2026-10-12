@@ -4,7 +4,7 @@ Duas responsabilidades, e so estas:
   1. FRONTEIRA DE CAIXA — o banco fala snake_case, o contrato fala camelCase. Explicita, nas
      duas direcoes. Nunca implicita, nunca no ORM.
   2. PROJECAO DE SAIDA POR ALLOWLIST — a resposta e montada CAMPO A CAMPO. Devolver o registro
-     cru e proibido (regra `saida-crua`): e o que impede vazar coluna nova ou PII acrescentada
+     cru e proibido (regra `raw-output`): e o que impede vazar coluna nova ou PII acrescentada
      depois por quem nao pensou na borda.
 
 A consequencia aceita de proposito: campo novo exige tocar aqui TAMBEM. Esquecer faz o campo nao

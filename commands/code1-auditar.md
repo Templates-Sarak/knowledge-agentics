@@ -28,6 +28,9 @@ consolida os achados num **plano de adequação** e **persiste** em `.sarak/audi
    antes de seguir. Se for **template**, rode `node tools/gate/validate.mjs --all --json` primeiro e
    passe o resultado aos agentes: eles complementam o gate, não o repetem.
 
+   O contrato JSON do gate usa `findings[]` e `errorCount`; cada achado tem `module`, `rule`,
+   `severity` (`error` ou `warning`) e `message`. Preserve esses nomes ao consumir a entrada.
+
    Capture a data com `Bash`: `date +%F` (use como `<data>`).
 
 2. **Fan-out (um `code-auditor` por módulo, em paralelo)** — dispare, via **Task**, o agente `code-auditor`

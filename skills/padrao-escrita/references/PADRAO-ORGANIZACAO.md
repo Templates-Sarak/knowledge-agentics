@@ -59,10 +59,10 @@ As quatro fronteiras que a tornam verdadeira, cada uma com regra de gate própri
 
 | Fronteira | O que garante | Regras que a cobram |
 |---|---|---|
-| **Código** | nenhum módulo importa outro; lógica de negócio nunca é compartilhada — duplica-se | `import-lateral`, `import-adapter` |
-| **Infraestrutura** | o módulo declara o que precisa; quem fornece é escolhido fora dele | `sdk-fornecedor`, `schema-config` |
-| **Módulo alheio** | dado de outro módulo vem por HTTP, declarado — nunca por import ou tabela | `gateway-http`, `gateway-declarado`, `consome-ciclo` |
-| **Dados** | schema nunca `public`, tabela sempre prefixada, sem JOIN/FK cruzando módulos | `schema-nao-public`, `tabela-prefixo`, `tabela-alheia` |
+| **Código** | nenhum módulo importa outro; lógica de negócio nunca é compartilhada — duplica-se | `lateral-import`, `import-adapter` |
+| **Infraestrutura** | o módulo declara o que precisa; quem fornece é escolhido fora dele | `vendor-sdk`, `config-schema` |
+| **Módulo alheio** | dado de outro módulo vem por HTTP, declarado — nunca por import ou tabela | `gateway-http`, `gateway-declared`, `consumes-cycle` |
+| **Dados** | schema nunca `public`, tabela sempre prefixada, sem JOIN/FK cruzando módulos | `non-public-schema`, `table-prefix`, `foreign-table` |
 
 ---
 

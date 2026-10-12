@@ -1,6 +1,6 @@
 /**
  * rules/writing.mjs — família "Escrita" do catálogo (specs/arquitetura/04-regras.md §4.7).
- * ids: limiar-funcao, limiar-aninhamento, limiar-parametros, excecao-engolida
+ * ids: function-threshold, nesting-threshold, parameters-threshold, swallowed-exception
  *
  * Por que no gate e não só no linter: o gate viaja com o módulo e roda sem `npm install`. Delegar
  * 100% ao ESLint/Ruff significa que num repositório sem linter instalado estes limites não são
@@ -14,216 +14,216 @@
  * cada lado guardasse a própria cópia, o §7.2 mandaria o linter vencer o gate numa divergência
  * que ninguém teria como notar.
  */
-import { LIMIARES } from '../thresholds.mjs';
+import { THRESHOLDS } from '../thresholds.mjs';
 
-const MAX_LINHAS_FUNCAO = LIMIARES.linhasFuncao;
-const MAX_ANINHAMENTO = LIMIARES.aninhamento;
-const MAX_PARAMETROS = LIMIARES.parametros;
+const MAX_FUNCTION_LINES = THRESHOLDS.functionLines;
+const MAX_NESTING = THRESHOLDS.nesting;
+const MAX_PARAMS = THRESHOLDS.params;
 
-const EXT_CHAVES = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
+const EXT_KEYS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 
 /** Só arquivos de produção da linguagem pedida. Teste tem outra economia e fica de fora. */
-function arquivosDe(ctx, chaves) {
-  return ctx.codigo.filter((a) => !a.eTeste && EXT_CHAVES.has(a.ext) === chaves);
+function filesOf(ctx, keys) {
+  return ctx.code.filter((a) => !a.isTest && EXT_KEYS.has(a.ext) === keys);
 }
 
-function contarChaves(texto) {
-  const semTexto = texto.replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '');
-  const abre = (semTexto.match(/[{[(]/g) ?? []).length;
-  const fecha = (semTexto.match(/[}\])]/g) ?? []).length;
-  return abre - fecha;
+function countKeys(text) {
+  const withoutText = text.replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '');
+  const opens = (withoutText.match(/[{[(]/g) ?? []).length;
+  const closes = (withoutText.match(/[}\])]/g) ?? []).length;
+  return opens - closes;
 }
 
 /** Assinaturas de função em linguagem de chaves e em Python. */
-const INICIO_FUNCAO = [
+const FUNCTION_START = [
   /\bfunction\s+\w+\s*\(/,
   /\b(?:export\s+)?(?:async\s+)?function\b/,
   /\b\w+\s*\([^)]*\)\s*(?::\s*[^={]+)?\s*(?:=>\s*)?\{\s*$/,
   /^\s*(?:async\s+)?def\s+\w+\s*\(/,
 ];
 
-function ehInicioDeFuncao(texto) {
-  return INICIO_FUNCAO.some((padrao) => padrao.test(texto));
+function isFunctionStart(text) {
+  return FUNCTION_START.some((pattern) => pattern.test(text));
 }
 
 /** Mede o tamanho de cada função por profundidade de bloco (chaves) ou por recuo (Python). */
-function medirFuncoes(arquivo) {
-  const ehPython = arquivo.ext === '.py';
-  const medidas = [];
-  let atual = null;
+function measureFunctions(file) {
+  const isPython = file.ext === '.py';
+  const measured = [];
+  let current = null;
 
-  for (const { numero, texto } of arquivo.linhasCodigo) {
-    if (atual !== null) {
-      const recuo = texto.length - texto.trimStart().length;
-      const acabou = ehPython ? recuo <= atual.recuo : (atual.profundidade += contarChaves(texto)) <= 0;
-      atual.linhas += 1;
-      if (acabou) {
-        medidas.push(atual);
-        atual = null;
+  for (const { number, text } of file.codeLines) {
+    if (current !== null) {
+      const indent = text.length - text.trimStart().length;
+      const ended = isPython ? indent <= current.indent : (current.depth += countKeys(text)) <= 0;
+      current.lines += 1;
+      if (ended) {
+        measured.push(current);
+        current = null;
         continue;
       }
     }
-    if (atual === null && ehInicioDeFuncao(texto)) {
-      atual = {
-        inicio: numero,
-        linhas: 0,
-        recuo: texto.length - texto.trimStart().length,
-        profundidade: ehPython ? 1 : contarChaves(texto),
+    if (current === null && isFunctionStart(text)) {
+      current = {
+        start: number,
+        lines: 0,
+        indent: text.length - text.trimStart().length,
+        depth: isPython ? 1 : countKeys(text),
       };
     }
   }
-  if (atual !== null) medidas.push(atual);
-  return medidas;
+  if (current !== null) measured.push(current);
+  return measured;
 }
 
 /** Conta parâmetros da assinatura, tolerando genéricos e valores default simples. */
-function contarParametros(texto) {
-  const abre = texto.indexOf('(');
-  if (abre === -1) return 0;
-  let profundidade = 0;
-  let atual = '';
-  const partes = [];
+function countParams(text) {
+  const opens = text.indexOf('(');
+  if (opens === -1) return 0;
+  let depth = 0;
+  let current = '';
+  const parts = [];
 
-  for (const caractere of texto.slice(abre)) {
-    if ('([{<'.includes(caractere)) profundidade += 1;
-    if (')]}>'.includes(caractere)) {
-      profundidade -= 1;
-      if (profundidade === 0) break;
+  for (const character of text.slice(opens)) {
+    if ('([{<'.includes(character)) depth += 1;
+    if (')]}>'.includes(character)) {
+      depth -= 1;
+      if (depth === 0) break;
     }
-    if (caractere === ',' && profundidade === 1) {
-      partes.push(atual);
-      atual = '';
+    if (character === ',' && depth === 1) {
+      parts.push(current);
+      current = '';
       continue;
     }
-    if (profundidade >= 1) atual += caractere;
+    if (depth >= 1) current += character;
   }
-  partes.push(atual);
-  return partes.map((p) => p.replace('(', '').trim()).filter((p) => p !== '' && p !== 'self' && p !== 'cls').length;
+  parts.push(current);
+  return parts.map((p) => p.replace('(', '').trim()).filter((p) => p !== '' && p !== 'self' && p !== 'cls').length;
 }
 
 // Só estes abrem "aninhamento". Objeto literal, JSX, callback e bloco de função NAO sao
 // aninhamento de controle — contá-los foi o que gerou falso positivo na primeira versão desta regra.
-const CONTROLE = /^\s*(?:\}\s*)?(?:if|else|for|while|switch|do|try|catch|finally)\b/;
-const CONTROLE_PY = /^\s*(?:if|elif|else|for|while|with|try|except|finally)\b/;
+const CONTROL = /^\s*(?:\}\s*)?(?:if|else|for|while|switch|do|try|catch|finally)\b/;
+const CONTROL_PY = /^\s*(?:if|elif|else|for|while|with|try|except|finally)\b/;
 
 /** Profundidade de blocos de CONTROLE em linguagem de chaves, por pilha. */
-function aninhamentoPorChaves(linhas) {
-  const pilha = [];
-  const achados = [];
+function nestingByKeys(lines) {
+  const stack = [];
+  const findings = [];
 
-  for (const { numero, texto } of linhas) {
-    const semTexto = texto.replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '');
-    const ehControle = CONTROLE.test(texto);
-    let primeiraAbertura = true;
+  for (const { number, text } of lines) {
+    const withoutText = text.replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '');
+    const isControl = CONTROL.test(text);
+    let firstOpening = true;
 
     // O maximo DENTRO da linha, nao o saldo no fim dela: `if (a) { return 1; }` abre e fecha na
     // mesma linha, e e exatamente esse caso que escaparia se so o saldo final fosse medido.
-    let maximo = pilha.filter(Boolean).length;
-    for (const caractere of semTexto) {
-      if (caractere === '{') {
-        pilha.push(ehControle && primeiraAbertura);
-        primeiraAbertura = false;
-        maximo = Math.max(maximo, pilha.filter(Boolean).length);
+    let max = stack.filter(Boolean).length;
+    for (const character of withoutText) {
+      if (character === '{') {
+        stack.push(isControl && firstOpening);
+        firstOpening = false;
+        max = Math.max(max, stack.filter(Boolean).length);
       }
-      if (caractere === '}') pilha.pop();
+      if (character === '}') stack.pop();
     }
-    if (maximo > MAX_ANINHAMENTO) achados.push({ numero, profundidade: maximo });
+    if (max > MAX_NESTING) findings.push({ number, depth: max });
   }
-  return achados;
+  return findings;
 }
 
 /** Profundidade de blocos de CONTROLE em Python, pelos recuos onde um controle abriu. */
-function aninhamentoPython(linhas) {
-  const abertos = [];
-  const achados = [];
+function pythonNesting(lines) {
+  const open = [];
+  const findings = [];
 
-  for (const { numero, texto } of linhas) {
-    const recuo = texto.length - texto.trimStart().length;
-    while (abertos.length > 0 && recuo <= abertos[abertos.length - 1]) abertos.pop();
-    if (abertos.length > MAX_ANINHAMENTO) achados.push({ numero, profundidade: abertos.length });
-    if (CONTROLE_PY.test(texto) && texto.trimEnd().endsWith(':')) abertos.push(recuo);
+  for (const { number, text } of lines) {
+    const indent = text.length - text.trimStart().length;
+    while (open.length > 0 && indent <= open[open.length - 1]) open.pop();
+    if (open.length > MAX_NESTING) findings.push({ number, depth: open.length });
+    if (CONTROL_PY.test(text) && text.trimEnd().endsWith(':')) open.push(indent);
   }
-  return achados;
+  return findings;
 }
 
 export default [
   {
-    id: 'limiar-funcao',
+    id: 'function-threshold',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of [...arquivosDe(ctx, true), ...arquivosDe(ctx, false)]) {
-        for (const medida of medirFuncoes(arquivo)) {
-          if (medida.linhas > MAX_LINHAS_FUNCAO) {
-            achados.push(`${arquivo.rel}:${medida.inicio}: funcao com ${medida.linhas} linhas (limiar ${MAX_LINHAS_FUNCAO})`);
+    check(ctx) {
+      const findings = [];
+      for (const file of [...filesOf(ctx, true), ...filesOf(ctx, false)]) {
+        for (const measured of measureFunctions(file)) {
+          if (measured.lines > MAX_FUNCTION_LINES) {
+            findings.push(`${file.rel}:${measured.start}: function has ${measured.lines} lines (limit ${MAX_FUNCTION_LINES})`);
           }
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'limiar-aninhamento',
+    id: 'nesting-threshold',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        const medir = arquivo.ext === '.py' ? aninhamentoPython : aninhamentoPorChaves;
-        for (const { numero, profundidade } of medir(arquivo.linhasCodigo)) {
-          achados.push(`${arquivo.rel}:${numero}: aninhamento ${profundidade} (limiar ${MAX_ANINHAMENTO}) — use guard clause`);
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        const measure = file.ext === '.py' ? pythonNesting : nestingByKeys;
+        for (const { number, depth } of measure(file.codeLines)) {
+          findings.push(`${file.rel}:${number}: nesting depth ${depth} (limit ${MAX_NESTING}) — use a guard clause`);
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'limiar-parametros',
+    id: 'parameters-threshold',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        for (const { numero, texto } of arquivo.linhasCodigo) {
-          if (!ehInicioDeFuncao(texto)) continue;
-          const total = contarParametros(texto);
-          if (total > MAX_PARAMETROS) {
-            achados.push(`${arquivo.rel}:${numero}: ${total} parametros (limiar ${MAX_PARAMETROS}) — agrupe num objeto`);
+    check(ctx) {
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        for (const { number, text } of file.codeLines) {
+          if (!isFunctionStart(text)) continue;
+          const total = countParams(text);
+          if (total > MAX_PARAMS) {
+            findings.push(`${file.rel}:${number}: ${total} parameters (limit ${MAX_PARAMS}) — group them in an object`);
           }
         }
       }
-      return achados;
+      return findings;
     },
   },
   {
-    id: 'excecao-engolida',
+    id: 'swallowed-exception',
     nivel: 'erro',
     escopo: 'module',
-    verificar(ctx) {
-      const vazio = [
+    check(ctx) {
+      const empty = [
         /catch\s*(?:\([^)]*\))?\s*\{\s*\}/,
         /except[^:]*:\s*pass\s*$/,
         /catch\s*(?:\([^)]*\))?\s*\{\s*$/,
       ];
-      const achados = [];
-      for (const arquivo of ctx.codigo) {
-        if (arquivo.eTeste) continue;
-        const linhas = arquivo.linhasCodigo;
-        linhas.forEach(({ numero, texto }, indice) => {
-          if (vazio[0].test(texto) || vazio[1].test(texto)) {
-            achados.push(`${arquivo.rel}:${numero}: excecao engolida — trate, traduza ou deixe subir`);
+      const findings = [];
+      for (const file of ctx.code) {
+        if (file.isTest) continue;
+        const lines = file.codeLines;
+        lines.forEach(({ number, text }, index) => {
+          if (empty[0].test(text) || empty[1].test(text)) {
+            findings.push(`${file.rel}:${number}: swallowed exception — handle it, wrap it, or let it propagate`);
             return;
           }
           // `catch {` seguido direto de `}` na proxima linha de codigo.
-          if (vazio[2].test(texto) && linhas[indice + 1]?.texto.trim() === '}') {
-            achados.push(`${arquivo.rel}:${numero}: excecao engolida — trate, traduza ou deixe subir`);
+          if (empty[2].test(text) && lines[index + 1]?.text.trim() === '}') {
+            findings.push(`${file.rel}:${number}: swallowed exception — handle it, wrap it, or let it propagate`);
           }
         });
       }
-      return achados;
+      return findings;
     },
   },
 ];

@@ -92,12 +92,12 @@ function isOlder(found, minimum) {
 
 function requireDocker(options) {
   const probe = spawnSync('docker', ['info', '--format', '{{.ServerVersion}}'], { stdio: 'pipe' });
-  if (probe.status !== 0) fail('Docker não está ativo. Abra o Docker e aguarde o Engine iniciar.');
+  if (probe.status !== 0) fail('Docker is not running. Start Docker and wait for the Engine to become ready.');
   const version = spawnSync('docker', ['compose', 'version', '--short'], { encoding: 'utf8' });
   const shown = String(version.stdout).trim();
   const parts = shown.replace(/^v/, '').split('.').map(Number);
   if (version.status !== 0 || parts.some(Number.isNaN) || isOlder(parts, options.minCompose)) {
-    fail(`Docker Compose ${options.minCompose.join('.')}+ é exigido (vários --env-file e extends). Encontrado: ${shown || 'ausente'}.`);
+    fail(`Docker Compose ${options.minCompose.join('.')}+ is required (multiple --env-file options and extends). Found: ${shown || 'not installed'}.`);
   }
 }
 
@@ -105,7 +105,7 @@ function requireDocker(options) {
 function readEnvironment(options) {
   const missing = [options.rootEnv, options.deployEnv].filter((file) => !existsSync(file));
   if (missing.length > 0) {
-    fail(`Arquivo(s) de ambiente ausente(s): ${missing.join(', ')}. Crie-os a partir dos .env.example (node tools/sync-env.mjs gera o da raiz; deploy/.env.example é o do deploy).`);
+    fail(`Missing environment file(s): ${missing.join(', ')}. Create them from the .env.example files (node tools/sync-env.mjs generates the root file; deploy/.env.example is for deployment).`);
   }
   return { ...readEnvPairs(readFileSync(options.rootEnv, 'utf8')), ...readEnvPairs(readFileSync(options.deployEnv, 'utf8')) };
 }
@@ -137,11 +137,10 @@ function probePort(port, host) {
 
 function portProblem(code, port, key) {
   if (code === 'EACCES') {
-    return `A porta ${port} (${key}) é proibida pelo sistema (EACCES). No Windows costuma ser faixa reservada `
-      + `pelo Hyper-V/WinNAT — confira com: ${RESERVED_RANGE_HINT} — e escolha uma porta fora das faixas.`;
+    return `Port ${port} (${key}) is reserved by the operating system (EACCES). On Windows, Hyper-V/WinNAT often reserves port ranges; check ${RESERVED_RANGE_HINT} and choose a port outside them.`;
   }
-  if (code === 'EADDRINUSE') return `A porta ${port} (${key}) já está ocupada. Libere-a e tente de novo.`;
-  return `A porta ${port} (${key}) não pôde ser verificada (${code}).`;
+  if (code === 'EADDRINUSE') return `Port ${port} (${key}) is already in use. Free it and try again.`;
+  return `Could not check port ${port} (${key}): ${code}.`;
 }
 
 function alreadyRunning(options) {
@@ -153,7 +152,7 @@ async function checkPorts(options, env, keys) {
   if (alreadyRunning(options)) return;
   for (const key of keys) {
     const port = Number(env[key]);
-    if (!Number.isInteger(port) || port <= 0) fail(`${key} ausente ou inválida nos arquivos de ambiente.`);
+    if (!Number.isInteger(port) || port <= 0) fail(`${key} is missing or invalid in the environment files.`);
     const code = await probePort(port, options.loopback);
     if (code !== 'free') fail(portProblem(code, port, key));
   }
@@ -166,9 +165,9 @@ async function up(options) {
   const keys = portKeysOf(options.composeFile);
   await checkPorts(options, env, keys);
   const run = compose(options, ['up', '--build', '--detach', '--wait']);
-  if (run.status !== 0) fail('A subida falhou. Os containers ficaram para inspeção: node tools/docker-up.mjs logs');
+  if (run.status !== 0) fail('Container startup failed. The containers are available for inspection: node tools/docker-up.mjs logs');
   const urlKey = options.urlKeys.find((key) => keys.includes(key));
-  if (urlKey !== undefined) process.stdout.write(`Disponível em http://${options.loopback}:${env[urlKey]}\n`);
+  if (urlKey !== undefined) process.stdout.write(`Available at http://${options.loopback}:${env[urlKey]}\n`);
 }
 
 function passthrough(options, args) {
@@ -180,7 +179,7 @@ function passthrough(options, args) {
 async function main() {
   const { command, options } = parseArgs(process.argv.slice(2));
   if (!COMMANDS.includes(command)) {
-    process.stderr.write(`Uso: node tools/docker-up.mjs <${COMMANDS.join('|')}> [opções]\n`);
+    process.stderr.write(`Usage: node tools/docker-up.mjs <${COMMANDS.join('|')}> [options]\n`);
     process.exit(2);
   }
   for (const key of ['composeFile', 'rootEnv', 'deployEnv']) options[key] = resolve(options[key]);

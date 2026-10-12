@@ -164,6 +164,6 @@ gate acusou; quais termos a denylist pegou; se a origem estava estável no passo
 - `references/templates.md` — mapa de capacidade, plano HITL, denylist, ADR de pontos de extensão,
   `compose` de verificação e relatório final.
 - `references/examples.md` — uma generalização certa e uma errada, com o impacto de cada desvio.
-- `scripts/inventariar_origem.py` — passo 1, read-only, com `--autoteste`.
-- `scripts/verificar_neutralidade.py` — degrau 6, lógica pura, com `--autoteste`.
-- `scripts/verificar_entregavel.py` — orquestra os seis degraus e o ambiente efêmero, com `--autoteste`.
+- `scripts/inventariar_origem.py` — passo 1, read-only, com `--selftest`.
+- `scripts/verificar_neutralidade.py` — degrau 6, lógica pura, com `--selftest`.
+- `scripts/verificar_entregavel.py` — orquestra os seis degraus e o ambiente efêmero, com `--selftest`.
