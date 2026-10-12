@@ -26,11 +26,11 @@ requestId → headers de segurança → CORS → rate limit → autenticação �
 2. **Headers** — HSTS, `nosniff`, `frame-deny`, `referrer-policy`, vindos de `config/security.json`.
 3. **CORS** — origens **declaradas**. `*` é proibido.
 4. **Rate limit** — janela e limites em `config/security.json`, com limites distintos para leitura, escrita
-   e operações caras. Estouro devolve `LIMITE_EXCEDIDO` com `Retry-After`.
+   e operações caras. Estouro devolve `LIMIT_EXCEEDED` com `Retry-After`.
 5. **Autenticação — deny by default.** Toda rota exige token, **exceto** as declaradas em
    `module.json:publicRoutes`. Rota pública é **opt-in explícito**, e o método faz parte da declaração:
    abrir a leitura nunca pode abrir a escrita do mesmo caminho por descuido.
-6. **Autorização** — a rota exige uma permissão nomeada (`<module>:ler`, `<module>:escrever`), verificada
+6. **Autorização** — a rota exige uma permissão nomeada (`<module>:read`, `<module>:write`), verificada
    contra as claims. Autorização é da `api/` do módulo; RLS no banco é defesa em profundidade, não o controle
    primário.
 7. **Validação na borda** — antes do domínio, com allowlist de campos e limite de corpo ([[02-contrato-e-dados]] §3.2).
@@ -61,7 +61,7 @@ requestId → headers de segurança → CORS → rate limit → autenticação �
 - A taxonomia é **fechada** ([[02-contrato-e-dados]] §3.1). Código novo exige mudança na lei, não improviso.
 - **Exceção nunca é engolida.** `catch` vazio é erro de gate.
 - Erro de adapter é traduzido pelo adapter para a taxonomia; o domínio nunca vê o tipo de erro do fornecedor.
-- Erro de gateway (outro módulo indisponível) é `DEPENDENCIA_EXTERNA`, e o módulo consumidor decide se degrada
+- Erro de gateway (outro módulo indisponível) é `EXTERNAL_DEPENDENCY`, e o módulo consumidor decide se degrada
   ou falha — mas decide **explicitamente**.
 
 # 5. Teste
@@ -210,15 +210,15 @@ O comando, por binding:
 | TS/JS | `npm run coverage` (por módulo) / `npm run ci:coverage` (todos, via workspaces) | `vitest run --coverage`, threshold em `coverage.thresholds.lines` lido de `config/verification.json` | CI |
 | Python | `python verify.py --coverage` | `pytest --cov`, piso em `--cov-fail-under` lido da mesma política | CI |
 
-Grava `relatorios/cobertura/lcov.info` (formato lcov, para SonarQube/Codecov/Coveralls) e
-`relatorios/junit.xml` (resultado de teste, formato JUnit). **Nunca** roda em `npm test`/`pytest -q`
+Grava `reports/coverage/lcov.info` (formato lcov, para SonarQube/Codecov/Coveralls) e
+`reports/junit.xml` (resultado de teste, formato JUnit). **Nunca** roda em `npm test`/`pytest -q`
 comuns — é opt-in por comando próprio, de propósito: relatório escrito a cada teste local é ruído, e
-`relatorios/` é `.gitignore`d nos três bindings. Abaixo do mínimo, a PRÓPRIA ferramenta reprova
+`reports/` é `.gitignore`d nos três bindings. Abaixo do mínimo, a PRÓPRIA ferramenta reprova
 (threshold do vitest; `--cov-fail-under` do pytest-cov) — nenhuma reimplementação de leitura de lcov
 aqui. Ferramenta de cobertura ausente também reprova, nunca "ok" (lei 7 do gate, `verify.py`).
 
 Lint em formato de máquina segue o mesmo desenho: `npm run ci:lint` (JSON, eslint) e
-`python verify.py --lint-relatorio` (SARIF, ruff — nativo na versão pinada, testado). SARIF no
+`python verify.py --lint-report` (SARIF, ruff — nativo na versão pinada, testado). SARIF no
 eslint exigiria pacote externo (`@microsoft/eslint-formatter-sarif`); não entregue — ver 04-regras.md
 §7.2 pela medição completa.
 
@@ -281,7 +281,7 @@ npm run build
 
 # 5. migrations — contra um Postgres efemero, com <MODULE>_DB_URL apontando pra ele. Local: o
 #    `compose.yml` do projeto o sobe (§9.5). Em CI: `services:` do provedor.
-node scripts/migrations.mjs ciclo <module>
+node scripts/migrations.mjs cycle <module>
 ```
 
 **O que este exemplo não mostra, de propósito:** o Postgres **de CI** (`services:` do provedor — decisão
@@ -382,7 +382,7 @@ de sempre (`noEmit: true`) — o módulo continua compilando **isolado**, a cond
 ```
 node scripts/migrations.mjs up <module>       # ou: python scripts/migrations.py up <module>
 node scripts/migrations.mjs down <module>     # reverte so a ULTIMA aplicada (bloco "-- rollback")
-node scripts/migrations.mjs ciclo <module>    # up -> down -> up — prova que o rollback fecha,
+node scripts/migrations.mjs cycle <module>    # up -> down -> up — prova que o rollback fecha,
                                                # de qualquer estado inicial
 ```
 

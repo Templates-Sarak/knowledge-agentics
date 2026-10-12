@@ -6,39 +6,39 @@
 // autossuficiente desde o primeiro `npm test`.
 
 export const CODES = {
-  VALIDACAO: 400,
-  NAO_AUTENTICADO: 401,
-  NAO_AUTORIZADO: 403,
-  NAO_ENCONTRADO: 404,
-  CONFLITO: 409,
-  LIMITE_EXCEDIDO: 429,
-  DEPENDENCIA_EXTERNA: 502,
-  INTERNO: 500,
+  VALIDATION: 400,
+  UNAUTHENTICATED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  LIMIT_EXCEEDED: 429,
+  EXTERNAL_DEPENDENCY: 502,
+  INTERNAL: 500,
 };
 
 /**
  * O unico erro que a borda sabe traduzir em resposta.
- * A `mensagem` e generica e estavel — o detalhe vai para o log, ligado pelo requestId.
+ * A `message` e generica e estavel — o detalhe vai para o log, ligado pelo requestId.
  */
 export class ApiError extends Error {
   /**
-   * @param {keyof typeof CODES} codigo
-   * @param {string} mensagem
-   * @param {string} [detalhe]
+   * @param {keyof typeof CODES} code
+   * @param {string} message
+   * @param {string} [detail]
    */
-  constructor(codigo, mensagem, detalhe) {
-    super(mensagem);
+  constructor(code, message, detail) {
+    super(message);
     this.name = 'ApiError';
-    this.codigo = codigo;
-    this.detalhe = detalhe;
+    this.code = code;
+    this.detail = detail;
   }
 
   get status() {
-    return CODES[this.codigo];
+    return CODES[this.code];
   }
 }
 
 /** Envelope unico de erro. Toda falha sai exatamente nesta forma. */
-export function errorEnvelope(erro, requestId) {
-  return { erro: { codigo: erro.codigo, mensagem: erro.message, requestId } };
+export function errorEnvelope(error, requestId) {
+  return { error: { code: error.code, message: error.message, requestId } };
 }

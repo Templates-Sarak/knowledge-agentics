@@ -10,14 +10,14 @@
 
 /** Taxonomia FECHADA de erro (specs/arquitetura/02-contrato-e-dados.md §3.1). */
 export const ERROR_CODES = {
-  VALIDACAO: 400,
-  NAO_AUTENTICADO: 401,
-  NAO_AUTORIZADO: 403,
-  NAO_ENCONTRADO: 404,
-  CONFLITO: 409,
-  LIMITE_EXCEDIDO: 429,
-  DEPENDENCIA_EXTERNA: 502,
-  INTERNO: 500,
+  VALIDATION: 400,
+  UNAUTHENTICATED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  LIMIT_EXCEEDED: 429,
+  EXTERNAL_DEPENDENCY: 502,
+  INTERNAL: 500,
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_CODES;
@@ -25,11 +25,11 @@ export type ErrorCode = keyof typeof ERROR_CODES;
 /** Falha de porta. O adapter TRADUZ o erro do fornecedor para ca — o dominio nunca ve o SDK. */
 export class PortError extends Error {
   constructor(
-    public readonly codigo: ErrorCode,
-    mensagem: string,
-    public readonly detalhe?: string,
+    public readonly code: ErrorCode,
+    message: string,
+    public readonly detail?: string,
   ) {
-    super(mensagem);
+    super(message);
     this.name = 'PortError';
   }
 }
@@ -59,30 +59,30 @@ export const KNOWN_PORTS = [
 
 export type PortName = (typeof KNOWN_PORTS)[number];
 
-export interface Pagina<T> {
-  itens: T[];
-  pagina: number;
-  tamanho: number;
+export interface Page<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
   total: number;
 }
 
 export interface Repository<T> {
-  list(pagina: number, tamanho: number): Promise<Pagina<T>>;
+  list(page: number, pageSize: number): Promise<Page<T>>;
   findByHash(hash: string): Promise<T | null>;
-  insert(registro: T): Promise<void>;
+  insert(entry: T): Promise<void>;
   count(): Promise<number>;
 }
 
 export interface AuditEvent {
   hash: string;
-  acao: string;
-  sujeito: string;
-  camposAlterados: string[];
+  action: string;
+  actor: string;
+  changedFields: string[];
   requestId: string;
 }
 
 export interface Audit {
-  record(evento: AuditEvent): Promise<void>;
+  record(event: AuditEvent): Promise<void>;
 }
 
 export interface Clock {
@@ -94,7 +94,7 @@ export interface IdGenerator {
 }
 
 export interface TokenVerifier {
-  verify(token: string): Promise<{ permissoes: string[] } | null>;
+  verify(token: string): Promise<{ permissions: string[] } | null>;
 }
 
 /**
@@ -103,12 +103,12 @@ export interface TokenVerifier {
  * nada de `executar(comando: string)` — o desenho que sustenta `sql-in-module` do lado do banco.
  */
 export interface Storage {
-  save(caminho: string, conteudo: Buffer): Promise<void>;
-  find(caminho: string): Promise<Buffer | null>;
-  remove(caminho: string): Promise<void>;
+  save(path: string, content: Buffer): Promise<void>;
+  find(path: string): Promise<Buffer | null>;
+  remove(path: string): Promise<void>;
 }
 
 /** Envia mensagem a um destinatario — e-mail, o outro caso mais comum. */
 export interface Notifier {
-  send(destinatario: string, assunto: string, corpo: string): Promise<void>;
+  send(recipient: string, subject: string, body: string): Promise<void>;
 }

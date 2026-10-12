@@ -14,7 +14,7 @@
 // `core/gateways/<outro>.ts` seguindo a forma abaixo e declare-o no manifesto.
 //
 //   // core/gateways/financeiro.ts
-//   import type { Registro } from '../domain/index.js';
+//   import type { Entry } from '../domain/index.js';
 //
 //   export interface FinanceGateway {
 //     obterAliquotaVigentePct(): Promise<number>;
@@ -34,10 +34,10 @@
 /** Falha ao falar com outro modulo. A borda a traduz para DEPENDENCIA_EXTERNA (502). */
 export class GatewayError extends Error {
   constructor(
-    public readonly modulo: string,
-    motivo: string,
+    public readonly module: string,
+    reason: string,
   ) {
-    super(`gateway "${modulo}" indisponivel: ${motivo}`);
+    super(`gateway "${module}" unavailable: ${reason}`);
     this.name = 'GatewayError';
   }
 }

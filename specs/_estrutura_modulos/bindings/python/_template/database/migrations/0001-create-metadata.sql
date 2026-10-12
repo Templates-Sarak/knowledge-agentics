@@ -1,7 +1,7 @@
 -- Primeira migration do modulo <module>. Lei dona: specs/arquitetura/02-contrato-e-dados.md §6.3.
 --
 -- Regras materializadas aqui:
---   - schema DECLARADO em module.json:dados.schema. NUNCA "public".
+--   - schema DECLARADO em module.json:data.schema. NUNCA "public".
 --   - toda tabela prefixada <module_snake>_ e declarada no manifesto.
 --   - toda tabela com id, hash, created_at, updated_at.
 --   - RLS ligada: defesa em profundidade (o controle primario e a autorizacao na api/).
@@ -10,47 +10,47 @@
 --   - <module_snake>_migrations e a tabela de CONTROLE do runner (scripts/migrations.{mjs,py}): registra
 --     o que ja foi aplicado, para "up" pular o que ja rodou e "down" saber qual foi o ultimo.
 
-create schema if not exists "<escopo>";
+create schema if not exists "<scope>";
 
-create table "<escopo>"."<module_snake>_migrations" (
-  arquivo      text        primary key,
-  aplicada_em  timestamptz not null default now()
+create table "<scope>"."<module_snake>_migrations" (
+  file_name    text        primary key,
+  applied_at   timestamptz not null default now()
 );
 
-alter table "<escopo>"."<module_snake>_migrations" enable row level security;
+alter table "<scope>"."<module_snake>_migrations" enable row level security;
 
-create table "<escopo>"."<module_snake>_metadados" (
+create table "<scope>"."<module_snake>_metadata" (
   id          uuid primary key default gen_random_uuid(),
   hash        text        not null unique,
-  titulo      text        not null,
+  title       text        not null,
   status      text        not null,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
-create index "<module_snake>_metadados_status_idx" on "<escopo>"."<module_snake>_metadados" (status);
+create index "<module_snake>_metadata_status_idx" on "<scope>"."<module_snake>_metadata" (status);
 
-alter table "<escopo>"."<module_snake>_metadados" enable row level security;
+alter table "<scope>"."<module_snake>_metadata" enable row level security;
 
 -- Trilha de auditoria: guarda o NOME dos campos alterados, nunca o valor (specs/arquitetura/02-contrato-e-dados.md §6.4).
-create table "<escopo>"."<module_snake>_auditoria" (
+create table "<scope>"."<module_snake>_audit" (
   id               uuid primary key default gen_random_uuid(),
   hash             text        not null,
-  acao             text        not null,
-  sujeito          text        not null,
-  campos_alterados text[]      not null default '{}',
+  action           text        not null,
+  actor            text        not null,
+  changed_fields   text[]      not null default '{}',
   request_id       text        not null,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
 
-create index "<module_snake>_auditoria_hash_idx" on "<escopo>"."<module_snake>_auditoria" (hash);
+create index "<module_snake>_audit_hash_idx" on "<scope>"."<module_snake>_audit" (hash);
 
-alter table "<escopo>"."<module_snake>_auditoria" enable row level security;
+alter table "<scope>"."<module_snake>_audit" enable row level security;
 
-revoke update, delete on "<escopo>"."<module_snake>_auditoria" from public;
+revoke update, delete on "<scope>"."<module_snake>_audit" from public;
 
 -- rollback
--- drop table if exists "<escopo>"."<module_snake>_auditoria";
--- drop table if exists "<escopo>"."<module_snake>_metadados";
--- drop table if exists "<escopo>"."<module_snake>_migrations";
+-- drop table if exists "<scope>"."<module_snake>_audit";
+-- drop table if exists "<scope>"."<module_snake>_metadata";
+-- drop table if exists "<scope>"."<module_snake>_migrations";

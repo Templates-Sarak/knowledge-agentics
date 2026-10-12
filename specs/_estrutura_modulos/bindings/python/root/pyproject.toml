@@ -1,5 +1,5 @@
 [project]
-name = "<escopo>"
+name = "<scope>"
 version = "0.1.0"
 description = "Federacao de modulos autossuficientes."
 requires-python = ">=3.11"

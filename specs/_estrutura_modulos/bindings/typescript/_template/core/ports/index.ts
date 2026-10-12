@@ -5,30 +5,30 @@
 // Quem atende cada porta e decidido em config/ports.json, e o adapter e INJETADO no bootstrap.
 // O modulo nunca importa `adapters/*` nem SDK de fornecedor — trocar de provedor e editar um JSON.
 
-import type { Registro } from '../domain/index.js';
+import type { Entry } from '../domain/index.js';
 
-export interface Pagina<T> {
-  itens: T[];
-  pagina: number;
-  tamanho: number;
+export interface Page<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
   total: number;
 }
 
 /** Persistencia dos registros do proprio modulo. Nunca toca tabela de outro modulo. */
 export interface Repository {
-  list(pagina: number, tamanho: number): Promise<Pagina<Registro>>;
-  findByHash(hash: string): Promise<Registro | null>;
-  insert(registro: Registro): Promise<void>;
+  list(page: number, pageSize: number): Promise<Page<Entry>>;
+  findByHash(hash: string): Promise<Entry | null>;
+  insert(entry: Entry): Promise<void>;
   count(): Promise<number>;
 }
 
 /** Trilha append-only do modulo. Guarda o NOME dos campos alterados, nunca o valor. */
 export interface Audit {
-  record(evento: {
+  record(event: {
     hash: string;
-    acao: string;
-    sujeito: string;
-    camposAlterados: string[];
+    action: string;
+    actor: string;
+    changedFields: string[];
     requestId: string;
   }): Promise<void>;
 }
@@ -46,7 +46,7 @@ export interface IdGenerator {
 /** Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
  * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1). */
 export interface Notifier {
-  send(destinatario: string, assunto: string, corpo: string): Promise<void>;
+  send(recipient: string, subject: string, body: string): Promise<void>;
 }
 
 /**
@@ -54,7 +54,7 @@ export interface Notifier {
  * e a uma entrada de module.json:ports — o gate cobra que os tres concordem.
  *
  * `notifier` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
- * fabrica (`FABRICAS.notifier`, src/composition.ts) e alcancada de verdade no boot, nao so
+ * fabrica (`FACTORIES.notifier`, src/composition.ts) e alcancada de verdade no boot, nao so
  * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  */
 export interface ModuleDependencies {

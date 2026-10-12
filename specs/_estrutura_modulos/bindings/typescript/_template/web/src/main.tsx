@@ -6,13 +6,13 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { RaizDoModulo } from './index.js';
+import { ModuleRoot } from './index.js';
 
-const alvo = document.getElementById('root');
-if (alvo === null) throw new Error('elemento #raiz nao encontrado em index.html');
+const target = document.getElementById('root');
+if (target === null) throw new Error('element #root not found in index.html');
 
-createRoot(alvo).render(
+createRoot(target).render(
   <StrictMode>
-    <RaizDoModulo />
+    <ModuleRoot />
   </StrictMode>,
 );

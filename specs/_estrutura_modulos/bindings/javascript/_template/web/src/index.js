@@ -2,13 +2,14 @@
 //
 // O web/ e SEMPRE um pacote que exporta suas paginas. Isso permite os dois modelos de composicao
 // sobre a MESMA estrutura:
-//   - shell unico: importa `@<escopo>/<module>-web` e monta as paginas na navegacao dele;
+//   - shell unico: importa `@<scope>/<module>-web` e monta as paginas na navegacao dele;
 //   - SPA por modulo: `web/src/main.jsx` monta a mesma raiz, servida sob /<module>.
 //
 // Nada aqui conhece o shell. Um modulo nunca importa pagina de outro modulo.
 export { List } from './pages/List.jsx';
 export { Notice } from './components/Notice.jsx';
 export { useRecordList } from './hooks/useRecordList.js';
+export { errorText, statusLabel } from './api-client/labels.js';
 
 /** Raiz do modulo. E o que o shell monta, e o que `main.jsx` renderiza. */
-export { List as RaizDoModulo } from './pages/List.jsx';
+export { List as ModuleRoot } from './pages/List.jsx';

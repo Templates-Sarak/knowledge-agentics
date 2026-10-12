@@ -251,15 +251,15 @@ function routeAndTestSteps() {
       name: 'required routes in contract.mjs',
       fn: () => {
         const text = readFileSync(join(TEMPLATE_ROOT, 'tools', 'gate', 'rules', 'contract.mjs'), 'utf8');
-        const matches = ['/health', '/meta', '/resumo'].every((route) => text.includes(`'${route}'`));
+        const matches = ['/health', '/meta', '/summary'].every((route) => text.includes(`'${route}'`));
         return { ok: matches, detail: matches ? null : 'contract.mjs does not declare all three required routes' };
       },
     },
     {
       // 6: os cinco de antes + `supervise.mjs` (casca de processo do autoteste do template — teto e
       // encerramento da arvore). `shutdown-proof.py` e `.json` nao entram: so `.mjs` e contado.
-      name: 'maintenance tools: exactly 6 .mjs files in tests/',
-      fn: () => compareValue('.mjs files in tests/', readdirSync(HERE).filter((n) => n.endsWith('.mjs')).length, 6),
+      name: 'maintenance tools: exactly 7 .mjs files in tests/',
+      fn: () => compareValue('.mjs files in tests/', readdirSync(HERE).filter((n) => n.endsWith('.mjs')).length, 7),
     },
   ];
 }

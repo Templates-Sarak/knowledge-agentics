@@ -19,7 +19,7 @@
  * `config/`, `api/`, `core/`) — o fonte E o artefato. Python NAO tem passo de empacotamento
  * (03-operacao.md §9.1): este script recusa o binding Python com mensagem, nunca finge empacotar.
  *
- * DEPENDENCIA DE ADAPTER VIAJA COM O ADAPTER E SO ENTRA SE ELE E ESCOLHIDO: `adapters/<provedor>/
+ * DEPENDENCIA DE ADAPTER VIAJA COM O ADAPTER E SO ENTRA SE ELE E ESCOLHIDO: `adapters/<provider>/
  * package.json` declara o driver (`pg`), e o artefato so o carrega se algum modulo escolhe aquele
  * provedor em `config/ports.json`. Projeto que fica em `memory` nao paga o driver.
  *
@@ -226,7 +226,7 @@ function validateDestination(projectRoot, destination) {
 
 /**
  * PURA — os provedores que ALGUM modulo escolhe: a uniao dos valores string de cada `config/ports.json`.
- * E o que decide quais `adapters/<provedor>/` contribuem com `dependencies` ao artefato (o nome da
+ * E o que decide quais `adapters/<provider>/` contribuem com `dependencies` ao artefato (o nome da
  * pasta do adapter e o nome do provedor — a convencao de `create-adapter.mjs`).
  */
 export function chosenProviders(portList) {

@@ -28,7 +28,7 @@ reaparece como erro de gate em outro lugar, e o rastro se perde:
 
 1. **Pasta** — `modules/<antigo>/` → `modules/<id>/`. `<id>` casa `^[a-z][a-z0-9-]*$`.
 2. **Contrato** — `contract/openapi.yaml:servers[0].url` = `/api/v1/<id>` (basePath do `module.json`).
-3. **Package** — `@<escopo>/<antigo>` → `@<escopo>/<id>` (e `@<escopo>/<antigo>-<camada>` se houver
+3. **Package** — `@<scope>/<antigo>` → `@<scope>/<id>` (e `@<scope>/<antigo>-<camada>` se houver
    package de camada). Atualize **todo** import dele, em todos os módulos que o consomem.
 4. **Web** — `webPath: "/<antigo>"` → `webPath: "/<id>"` (ou `null`); entrada de `navigation` acompanha.
 5. **Permissões** — `<antigo>:<verbo>` → `<id>:<verbo>`, em `module.json:permissions` e em todo

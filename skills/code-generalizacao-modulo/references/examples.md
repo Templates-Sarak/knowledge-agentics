@@ -19,7 +19,7 @@ a verificação de credencial a um provedor externo.
 ### Passo 1 — inventário (trecho da saída)
 
 ```
-Contrato ....... 11 endpoints: GET /health, GET /meta, GET /resumo, POST /sessoes, ...
+Contrato ....... 11 endpoints: GET /health, GET /meta, GET /summary, POST /sessoes, ...
 Tabelas ........ loja_empresas, loja_usuarios, loja_papeis, loja_usuario_papel, loja_convites
 Ambiente ....... LOJA_DB_URL, LOJA_API_PORT, LOJA_AUTH_ISSUER, LOJA_SMTP_URL
 Portas ......... repository, clock, idGenerator, notifier
@@ -51,7 +51,7 @@ manter os dois traria o ramo junto.
 
 `id: identidade` · escopo `@acme` · tabelas `identidade_organizacoes`, `identidade_usuarios`,
 `identidade_papeis`, `identidade_usuario_papel`, `identidade_convites` · env `IDENTIDADE_*` ·
-permissões `identidade:ler`, `identidade:escrever` · `role: domain` · `consumes: []`.
+permissões `identidade:read`, `identidade:write` · `role: domain` · `consumes: []`.
 
 Note o que **não** aconteceu: `loja_empresas` não virou `store_companies`. O nome saiu da capacidade
 ("organização"), não de uma tradução da origem.
@@ -98,7 +98,7 @@ nada no repositório diz de onde a capacidade veio.
 | **Manteve `consumes: catalogo`** | "depois eu resolvo" | o módulo não sobe sozinho: sem o vizinho, o gateway não tem URL base. O degrau 2 (`--extraction`) reprovou, e o conserto foi redesenho |
 | **Deixou o SDK do provedor de identidade dentro do módulo** | "é o provedor que a gente usa" | o consumidor seguinte usava outro; o módulo teve de ser aberto e refeito, que é exatamente o que o padrão de portas existe para evitar |
 | **Copiou a migration com o `INSERT` de seed** | "os dados de exemplo ajudam" | nomes e e-mails reais de clientes da origem versionados num repositório novo — vazamento de negócio e de PII na mesma linha |
-| **Aceitou gate verde como entrega** | "o gate passou, está pronto" | o gate é estático e nunca roda o módulo; a migration tinha erro de sintaxe e o `/resumo` devolvia campo fora do contrato. Os degraus 4 e 5 pegariam os dois |
+| **Aceitou gate verde como entrega** | "o gate passou, está pronto" | o gate é estático e nunca roda o módulo; a migration tinha erro de sintaxe e o `/summary` devolvia campo fora do contrato. Os degraus 4 e 5 pegariam os dois |
 | **Versionou a `denylist-origem.txt` dentro do repo novo** | "assim fica junto do projeto" | um arquivo listando o nome da origem, dentro do entregável — o `verificar_entregavel.py` recusa antes de varrer, e a razão é o próprio degrau 6 |
 
 ---

@@ -12,7 +12,7 @@ venv/
 dist/
 build/
 *.egg-info/
-relatorios/
+reports/
 .coverage
 
 # generated/ e ESTRUTURA, nao saida: `generatesArtifact: true` DECLARA a pasta e `artifact-declared` a

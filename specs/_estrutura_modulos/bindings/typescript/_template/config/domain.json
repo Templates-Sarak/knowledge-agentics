@@ -1,8 +1,8 @@
 {
-  "_comment": "Parametros de NEGOCIO. Vocabulario fechado nunca vira literal no codigo.",
+  "_comment": "Parametros de NEGOCIO. Vocabulario fechado nunca vira literal no codigo. Os valores sao dado (ingles); o rotulo em portugues mora em config/texts.json:statusLabels.",
   "validStatuses": [
-    "rascunho",
-    "ativo",
-    "encerrado"
+    "draft",
+    "active",
+    "closed"
   ]
 }

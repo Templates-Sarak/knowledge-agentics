@@ -18,7 +18,7 @@ Norma dona: `specs/arquitetura/04-regras.md` §4.5 (na base, `specs/_estrutura_m
 
 | Já é cobrado | Regra |
 |---|---|
-| `/health`, `/meta` e `/resumo` declarados | `contract` |
+| `/health`, `/meta` e `/summary` declarados | `contract` |
 | a spec é legível pelo leitor de bloco do gate | `contract` |
 | `servers[0].url` igual ao `basePath` do `module.json` | `route-naming` |
 | nenhum segmento de path carrega verbo (PT ou EN) | `route-naming` |
@@ -27,7 +27,7 @@ Norma dona: `specs/arquitetura/04-regras.md` §4.5 (na base, `specs/_estrutura_m
 | todo campo projetado pelo mapeador está num schema de resposta | `contract-projection` |
 | propriedade de resposta em camelCase | `payload-camelcase` |
 
-**Plural de recurso é convenção, não regra** (§3.1): escreva `/registros`, mas nenhum verificador o cobra —
+**Plural de recurso é convenção, não regra** (§3.1): escreva `/entries`, mas nenhum verificador o cobra —
 e as três rotas obrigatórias são singulares por desenho.
 
 ## As formas que o contrato usa de verdade
@@ -38,11 +38,11 @@ e as três rotas obrigatórias são singulares por desenho.
 servers:
   - url: /api/v1/<module>
 paths:
-  /registros:
-  /registros/{hash}:
+  /entries:
+  /entries/{hash}:
 ```
 
-Escrever `/api/v1/<module>/registros` dentro de `paths:` é erro — `route-naming` compara
+Escrever `/api/v1/<module>/entries` dentro de `paths:` é erro — `route-naming` compara
 `servers[0].url` com o `basePath`, e o path sai relativo dali.
 
 **Bloco, nunca flow style.** O leitor do gate é linha a linha, sem dependência externa — é o que permite o
@@ -50,11 +50,11 @@ gate viajar junto do módulo extraído. `paths: {"/x": {...}}` numa linha é rep
 tem de ser **exatamente** 2 na rota e 4 no método.
 
 **Identificador é o hash universal**, nunca o id interno do banco (`02-contrato-e-dados.md` §4):
-`/registros/{hash}`.
+`/entries/{hash}`.
 
 **Erro tem taxonomia fechada.** O schema chama-se `Erro`, e o envelope é `{ erro: { codigo, mensagem,
-requestId } }`, com `codigo` num enum fechado (`VALIDACAO`, `NAO_AUTENTICADO`, `NAO_AUTORIZADO`,
-`NAO_ENCONTRADO`, `CONFLITO`, `LIMITE_EXCEDIDO`, `DEPENDENCIA_EXTERNA`, `INTERNO`). A taxonomia vive em
+requestId } }`, com `codigo` num enum fechado (`VALIDATION`, `UNAUTHENTICATED`, `FORBIDDEN`,
+`NOT_FOUND`, `CONFLICT`, `LIMIT_EXCEEDED`, `EXTERNAL_DEPENDENCY`, `INTERNAL`). A taxonomia vive em
 `packages/portas` e está em `02-contrato-e-dados.md` §3.1 — não invente código novo, e não use um schema
 `Error` com `{ code, message }`.
 

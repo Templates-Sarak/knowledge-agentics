@@ -19,16 +19,16 @@ from core.ports import Auth, IdGenerator
 from .errors import ApiError, error_envelope
 from .logger import Logger
 
-Proximo = Callable[[Request], Awaitable[Any]]
+NextCall = Callable[[Request], Awaitable[Any]]
 
 
-def _path_relative(caminho: str, rota_base: str) -> str:
+def _path_relative(path: str, base_route: str) -> str:
     """`publicRoutes` e declarado RELATIVO a rotaBase ("GET /health"), mas esta cadeia roda antes
     do router — aqui o caminho ainda e absoluto. Sem tirar o prefixo, nenhuma rota publica casaria
     e /health, /meta e /resumo responderiam 401."""
-    if not caminho.startswith(rota_base):
-        return caminho
-    return caminho[len(rota_base) :] or "/"
+    if not path.startswith(base_route):
+        return path
+    return path[len(base_route) :] or "/"
 
 
 @dataclass(frozen=True)
@@ -36,103 +36,103 @@ class EdgeContext:
     """O que a cadeia precisa alem da config. Agrupado para respeitar o limiar de 4 parametros
     (specs/arquitetura/04-regras.md §4.7) — e porque os tres andam sempre juntos."""
 
-    gerador: IdGenerator
+    generator: IdGenerator
     auth: Auth
     logger: Logger
 
 
-def record_middlewares(app: Any, config: Any, borda: EdgeContext) -> None:
-    gerador, auth, logger = borda.gerador, borda.auth, borda.logger
-    seguranca = config.seguranca
-    manifesto = config.manifesto
-    publicas = {rota.upper() for rota in manifesto["publicRoutes"]}
-    janelas: dict[str, tuple[float, int]] = {}
+def record_middlewares(app: Any, config: Any, boundary: EdgeContext) -> None:
+    generator, auth, logger = boundary.generator, boundary.auth, boundary.logger
+    security = config.security
+    manifest = config.manifest
+    public_set = {route.upper() for route in manifest["publicRoutes"]}
+    windows: dict[str, tuple[float, int]] = {}
 
     @app.middleware("http")
-    async def chain(request: Request, proximo: Proximo) -> Any:
-        request.state.request_id = gerador.hash()
+    async def chain(request: Request, call_next: NextCall) -> Any:
+        request.state.request_id = generator.hash()
         try:
-            _limit(request, seguranca["rateLimit"], janelas)
-            await _authenticate(request, auth, publicas, manifesto["basePath"])
-            resposta = await proximo(request)
-        except ApiError as erro:
-            return _respond_error(erro, request, logger)
-        except Exception as causa:  # noqa: BLE001 — traduzido, nunca engolido
-            interno = ApiError("INTERNO", config.textos["genericError"], str(causa))
-            return _respond_error(interno, request, logger)
+            _limit(request, security["rateLimit"], windows)
+            await _authenticate(request, auth, public_set, manifest["basePath"])
+            response = await call_next(request)
+        except ApiError as error:
+            return _respond_error(error, request, logger)
+        except Exception as cause:  # noqa: BLE001 — traduzido, nunca engolido
+            internal = ApiError("INTERNAL", config.texts["genericError"], str(cause))
+            return _respond_error(internal, request, logger)
 
-        _apply_headers(resposta, seguranca["headers"])
-        _apply_cors(request, resposta, seguranca["cors"])
-        resposta.headers["x-request-id"] = request.state.request_id
-        return resposta
+        _apply_headers(response, security["headers"])
+        _apply_cors(request, response, security["cors"])
+        response.headers["x-request-id"] = request.state.request_id
+        return response
 
 
-def _respond_error(erro: ApiError, request: Request, logger: Logger) -> JSONResponse:
+def _respond_error(error: ApiError, request: Request, logger: Logger) -> JSONResponse:
     """Unico lugar que transforma excecao em resposta. Detalhe vai para o log, nunca ao cliente."""
     request_id = getattr(request.state, "request_id", "")
     logger.error(
-        "falha na requisicao",
-        dados={
+        "request failed",
+        data={
             "requestId": request_id,
-            "codigo": erro.codigo,
-            "caminho": request.url.path,
-            "detalhe": erro.detalhe or erro.mensagem,
+            "code": error.code,
+            "path": request.url.path,
+            "detail": error.detail or error.message,
         },
     )
-    return JSONResponse(status_code=erro.status, content=error_envelope(erro, request_id))
+    return JSONResponse(status_code=error.status, content=error_envelope(error, request_id))
 
 
-def _apply_headers(resposta: Any, headers: dict[str, Any]) -> None:
+def _apply_headers(response: Any, headers: dict[str, Any]) -> None:
     if headers["hsts"]:
-        resposta.headers["strict-transport-security"] = "max-age=31536000; includeSubDomains"
+        response.headers["strict-transport-security"] = "max-age=31536000; includeSubDomains"
     if headers["noSniff"]:
-        resposta.headers["x-content-type-options"] = "nosniff"
+        response.headers["x-content-type-options"] = "nosniff"
     if headers["frameDeny"]:
-        resposta.headers["x-frame-options"] = "DENY"
-    resposta.headers["referrer-policy"] = headers["referrerPolicy"]
+        response.headers["x-frame-options"] = "DENY"
+    response.headers["referrer-policy"] = headers["referrerPolicy"]
 
 
-def _apply_cors(request: Request, resposta: Any, cors: dict[str, Any]) -> None:
+def _apply_cors(request: Request, response: Any, cors: dict[str, Any]) -> None:
     """Origens sao DECLARADAS em config/security.json. `*` e proibido."""
-    origem = request.headers.get("origin")
-    if origem is not None and origem in cors["allowedOrigins"]:
-        resposta.headers["access-control-allow-origin"] = origem
-        resposta.headers["access-control-allow-methods"] = ", ".join(cors["methods"])
+    origin = request.headers.get("origin")
+    if origin is not None and origin in cors["allowedOrigins"]:
+        response.headers["access-control-allow-origin"] = origin
+        response.headers["access-control-allow-methods"] = ", ".join(cors["methods"])
 
 
-def _limit(request: Request, config: dict[str, Any], janelas: dict[str, tuple[float, int]]) -> None:
+def _limit(request: Request, config: dict[str, Any], windows: dict[str, tuple[float, int]]) -> None:
     """Contador em memoria: suficiente para um processo. Multi-instancia exige porta dedicada."""
-    limite = config["readLimit"] if request.method == "GET" else config["writeLimit"]
-    chave = f"{request.client.host if request.client else '?'}:{request.method}"
+    limit = config["readLimit"] if request.method == "GET" else config["writeLimit"]
+    key = f"{request.client.host if request.client else '?'}:{request.method}"
     now = time.monotonic()
-    inicio, contagem = janelas.get(chave, (now, 0))
+    start, count = windows.get(key, (now, 0))
 
-    if now - inicio > config["windowSeconds"]:
-        janelas[chave] = (now, 1)
+    if now - start > config["windowSeconds"]:
+        windows[key] = (now, 1)
         return
-    if contagem + 1 > limite:
-        raise ApiError("LIMITE_EXCEDIDO", "limite de requisicoes excedido")
-    janelas[chave] = (inicio, contagem + 1)
+    if count + 1 > limit:
+        raise ApiError("LIMIT_EXCEEDED", "request limit exceeded")
+    windows[key] = (start, count + 1)
 
 
-async def _authenticate(request: Request, auth: Auth, publicas: set[str], rota_base: str) -> None:
+async def _authenticate(request: Request, auth: Auth, public_set: set[str], base_route: str) -> None:
     """DENY BY DEFAULT: so as rotas de `module.json:publicRoutes` passam sem token."""
-    relativo = _path_relative(request.url.path, rota_base)
-    if f"{request.method} {relativo}".upper() in publicas:
-        request.state.permissoes = []
+    relative_path = _path_relative(request.url.path, base_route)
+    if f"{request.method} {relative_path}".upper() in public_set:
+        request.state.permissions = []
         return
 
-    cabecalho = request.headers.get("authorization", "")
-    if not cabecalho.startswith("Bearer "):
-        raise ApiError("NAO_AUTENTICADO", "token ausente")
+    header = request.headers.get("authorization", "")
+    if not header.startswith("Bearer "):
+        raise ApiError("UNAUTHENTICATED", "missing token")
 
-    claims = await auth.verify(cabecalho[7:])
+    claims = await auth.verify(header[7:])
     if claims is None:
-        raise ApiError("NAO_AUTENTICADO", "token invalido")
-    request.state.permissoes = claims.get("permissions", [])
+        raise ApiError("UNAUTHENTICATED", "invalid token")
+    request.state.permissions = claims.get("permissions", [])
 
 
-def require_permission(request: Request, permissao: str) -> None:
+def require_permission(request: Request, permission: str) -> None:
     """Autorizacao por permissao NOMEADA. RLS no banco e defesa em profundidade, nao o controle."""
-    if permissao not in getattr(request.state, "permissoes", []):
-        raise ApiError("NAO_AUTORIZADO", "permissao insuficiente")
+    if permission not in getattr(request.state, "permissions", []):
+        raise ApiError("FORBIDDEN", "insufficient permission")

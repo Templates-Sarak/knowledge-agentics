@@ -1,5 +1,5 @@
 [project]
-name = "<escopo>-<module>"
+name = "<scope>-<module>"
 version = "0.1.0"
 description = "Modulo <module> — fatia vertical autossuficiente (contrato + core + api)."
 requires-python = ">=3.11"

@@ -80,7 +80,7 @@ function swapMarkers(text, isTemplate) {
     .replaceAll('<MODULE>', TEMPLATE_SYNTHETIC_ID.toUpperCase())
     .replaceAll('<Module>', 'Molde')
     .replaceAll('<module>', TEMPLATE_SYNTHETIC_ID)
-    .replaceAll('<escopo>', 'escopo');
+    .replaceAll('<scope>', 'scope');
 }
 
 /**

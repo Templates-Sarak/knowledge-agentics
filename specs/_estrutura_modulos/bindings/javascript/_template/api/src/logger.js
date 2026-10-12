@@ -4,39 +4,39 @@
 // nao e responsabilidade de quem chama lembrar. `console.*` e proibido no modulo (regra `log`);
 // a saida vai por process.stdout, que e o unico canal do logger.
 
-const NIVEIS = ['debug', 'info', 'warn', 'error'];
-const REDIGIDO = '[REDIGIDO]';
-const PROFUNDIDADE_MAXIMA = 4;
+const LEVELS = ['debug', 'info', 'warn', 'error'];
+const REDACTED = '[REDACTED]';
+const MAX_DEPTH = 4;
 
 /** Substitui recursivamente o valor de todo campo sensivel. */
-function redact(valor, sensiveis, profundidade = 0) {
-  if (profundidade > PROFUNDIDADE_MAXIMA || valor === null || typeof valor !== 'object') return valor;
-  if (Array.isArray(valor)) return valor.map((item) => redact(item, sensiveis, profundidade + 1));
+function redact(value, sensitive, depth = 0) {
+  if (depth > MAX_DEPTH || value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((item) => redact(item, sensitive, depth + 1));
 
-  const saida = {};
-  for (const [chave, conteudo] of Object.entries(valor)) {
-    saida[chave] = sensiveis.has(chave) ? REDIGIDO : redact(conteudo, sensiveis, profundidade + 1);
+  const output = {};
+  for (const [key, content] of Object.entries(value)) {
+    output[key] = sensitive.has(key) ? REDACTED : redact(content, sensitive, depth + 1);
   }
-  return saida;
+  return output;
 }
 
 /**
- * @param {{ modulo: string, nivelMinimo: string, camposSensiveis: string[] }} opcoes
+ * @param {{ module: string, minLevel: string, sensitiveFields: string[] }} options
  */
-export function createLogger({ modulo, nivelMinimo, camposSensiveis }) {
-  const sensiveis = new Set(camposSensiveis);
-  const minimo = NIVEIS.indexOf(nivelMinimo);
+export function createLogger({ module, minLevel, sensitiveFields }) {
+  const sensitive = new Set(sensitiveFields);
+  const minimum = LEVELS.indexOf(minLevel);
 
-  const emit = (nivel, mensagem, dados) => {
-    if (NIVEIS.indexOf(nivel) < minimo) return;
-    const linha = { nivel, modulo, mensagem, ...redact(dados ?? {}, sensiveis) };
-    process.stdout.write(`${JSON.stringify(linha)}\n`);
+  const emit = (level, message, data) => {
+    if (LEVELS.indexOf(level) < minimum) return;
+    const line = { level, module, message, ...redact(data ?? {}, sensitive) };
+    process.stdout.write(`${JSON.stringify(line)}\n`);
   };
 
   return {
-    debug: (mensagem, dados) => emit('debug', mensagem, dados),
-    info: (mensagem, dados) => emit('info', mensagem, dados),
-    warn: (mensagem, dados) => emit('warn', mensagem, dados),
-    error: (mensagem, dados) => emit('error', mensagem, dados),
+    debug: (message, data) => emit('debug', message, data),
+    info: (message, data) => emit('info', message, data),
+    warn: (message, data) => emit('warn', message, data),
+    error: (message, data) => emit('error', message, data),
   };
 }

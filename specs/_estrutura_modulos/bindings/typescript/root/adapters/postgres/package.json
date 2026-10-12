@@ -1,5 +1,5 @@
 {
-  "name": "@<escopo>/adapter-postgres",
+  "name": "@<scope>/adapter-postgres",
   "version": "0.1.0",
   "private": true,
   "type": "module",

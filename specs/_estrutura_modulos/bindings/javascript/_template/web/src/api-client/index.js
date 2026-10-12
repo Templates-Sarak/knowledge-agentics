@@ -4,25 +4,44 @@
 // origem. Nunca com o banco, nunca com a api de outro modulo — dado alheio e responsabilidade da
 // api/ deste modulo, via core/gateways/. Caminho relativo tambem evita URL literal no bundle.
 
-const ROTA_BASE = '/api/v1/<module>';
+const BASE_ROUTE = '/api/v1/<module>';
 
-async function request(caminho, opcoes = {}) {
-  const resposta = await fetch(`${ROTA_BASE}${caminho}`, {
-    ...opcoes,
-    headers: { 'content-type': 'application/json', ...(opcoes.headers ?? {}) },
-  });
-
-  if (!resposta.ok) {
-    const corpo = await resposta.json().catch(() => ({}));
-    throw new Error(corpo.erro?.mensagem ?? `HTTP ${resposta.status}`);
+/**
+ * Erro da API com o CODIGO estavel do envelope. A mensagem da API e em ingles e e para quem depura:
+ * quem fala com o usuario e o front, que traduz o codigo por `config/texts.json:errorLabels`.
+ */
+export class ApiClientError extends Error {
+  /**
+   * @param {string} code
+   * @param {string} message
+   */
+  constructor(code, message) {
+    super(message);
+    this.name = 'ApiClientError';
+    this.code = code;
   }
-  return resposta.json();
 }
 
-export function listRecords(pagina, tamanho) {
-  return request(`/registros?pagina=${pagina}&tamanho=${tamanho}`);
+async function request(path, options = {}) {
+  const response = await fetch(`${BASE_ROUTE}${path}`, {
+    ...options,
+    headers: { 'content-type': 'application/json', ...(options.headers ?? {}) },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new ApiClientError(
+      body.error?.code ?? 'INTERNAL',
+      body.error?.message ?? `HTTP ${response.status}`,
+    );
+  }
+  return response.json();
+}
+
+export function listRecords(page, pageSize) {
+  return request(`/entries?page=${page}&pageSize=${pageSize}`);
 }
 
 export function getRecord(hash) {
-  return request(`/registros/${encodeURIComponent(hash)}`);
+  return request(`/entries/${encodeURIComponent(hash)}`);
 }

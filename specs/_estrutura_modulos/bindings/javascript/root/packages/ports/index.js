@@ -12,28 +12,28 @@
 
 /** Taxonomia FECHADA de erro (specs/arquitetura/02-contrato-e-dados.md §3.1). */
 export const ERROR_CODES = {
-  VALIDACAO: 400,
-  NAO_AUTENTICADO: 401,
-  NAO_AUTORIZADO: 403,
-  NAO_ENCONTRADO: 404,
-  CONFLITO: 409,
-  LIMITE_EXCEDIDO: 429,
-  DEPENDENCIA_EXTERNA: 502,
-  INTERNO: 500,
+  VALIDATION: 400,
+  UNAUTHENTICATED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  LIMIT_EXCEEDED: 429,
+  EXTERNAL_DEPENDENCY: 502,
+  INTERNAL: 500,
 };
 
 /** Falha de porta. O adapter TRADUZ o erro do fornecedor para ca — o dominio nunca ve o SDK. */
 export class PortError extends Error {
   /**
-   * @param {keyof typeof ERROR_CODES} codigo
-   * @param {string} mensagem
-   * @param {string} [detalhe]
+   * @param {keyof typeof ERROR_CODES} code
+   * @param {string} message
+   * @param {string} [detail]
    */
-  constructor(codigo, mensagem, detalhe) {
-    super(mensagem);
+  constructor(code, message, detail) {
+    super(message);
     this.name = 'PortError';
-    this.codigo = codigo;
-    this.detalhe = detalhe;
+    this.code = code;
+    this.detail = detail;
   }
 }
 
@@ -62,34 +62,34 @@ export const KNOWN_PORTS = [
 
 /**
  * @template T
- * @typedef {object} Pagina
- * @property {T[]} itens
- * @property {number} pagina
- * @property {number} tamanho
+ * @typedef {object} Page
+ * @property {T[]} items
+ * @property {number} page
+ * @property {number} pageSize
  * @property {number} total
  */
 
 /**
  * @template T
  * @typedef {object} Repository
- * @property {(pagina: number, tamanho: number) => Promise<Pagina<T>>} list
+ * @property {(page: number, pageSize: number) => Promise<Page<T>>} list
  * @property {(hash: string) => Promise<T | null>} findByHash
- * @property {(registro: T) => Promise<void>} insert
+ * @property {(entry: T) => Promise<void>} insert
  * @property {() => Promise<number>} count
  */
 
 /**
  * @typedef {object} AuditEvent
  * @property {string} hash
- * @property {string} acao
- * @property {string} sujeito
- * @property {string[]} camposAlterados
+ * @property {string} action
+ * @property {string} actor
+ * @property {string[]} changedFields
  * @property {string} requestId
  */
 
 /**
  * @typedef {object} Audit
- * @property {(evento: AuditEvent) => Promise<void>} record
+ * @property {(event: AuditEvent) => Promise<void>} record
  *
  * @typedef {object} Clock
  * @property {() => string} now
@@ -98,7 +98,7 @@ export const KNOWN_PORTS = [
  * @property {() => string} hash
  *
  * @typedef {object} TokenVerifier
- * @property {(token: string) => Promise<{ permissoes: string[] } | null>} verify
+ * @property {(token: string) => Promise<{ permissions: string[] } | null>} verify
  */
 
 /**
@@ -107,16 +107,16 @@ export const KNOWN_PORTS = [
  * nada de `executar(comando: string)` — o desenho que sustenta `sql-in-module` do lado do banco.
  *
  * @typedef {object} Storage
- * @property {(caminho: string, conteudo: Buffer) => Promise<void>} save
- * @property {(caminho: string) => Promise<Buffer | null>} find
- * @property {(caminho: string) => Promise<void>} remove
+ * @property {(path: string, content: Buffer) => Promise<void>} save
+ * @property {(path: string) => Promise<Buffer | null>} find
+ * @property {(path: string) => Promise<void>} remove
  */
 
 /**
  * Envia mensagem a um destinatario — e-mail, o outro caso mais comum.
  *
  * @typedef {object} Notifier
- * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} send
+ * @property {(recipient: string, subject: string, body: string) => Promise<void>} send
  */
 
 export {};

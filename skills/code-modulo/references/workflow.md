@@ -186,7 +186,7 @@ Escreva `contract/openapi.yaml` com os três endpoints obrigatórios e os recurs
 |---|---|
 | `GET <basePath>/health` | vivo? portas resolvidas? |
 | `GET <basePath>/meta` | ecoa o manifesto — é por aqui que o sistema descobre o módulo |
-| `GET <basePath>/resumo` | contagem e indicadores que o conector agrega |
+| `GET <basePath>/summary` | contagem e indicadores que o conector agrega |
 
 **O que detectar:**
 - Verbo no path (`/criarItem`) → a ação é o método HTTP.
@@ -211,7 +211,7 @@ Escreva `contract/openapi.yaml` com os três endpoints obrigatórios e os recurs
 6. **`tests/`** — `domain/`, `contract/`, `web/`, tudo com adapters de memória.
 
 **O que detectar:**
-- `import` de `@<escopo>/<outro-modulo>` ou caminho relativo saindo da pasta → **import lateral**, erro.
+- `import` de `@<scope>/<outro-modulo>` ou caminho relativo saindo da pasta → **import lateral**, erro.
 - SDK de fornecedor dentro do módulo → erro; o SDK só existe no adapter.
 - Cliente HTTP de outro módulo fora de `core/gateways/` → a pasta declara a fronteira; fora dela, o nome mente.
 

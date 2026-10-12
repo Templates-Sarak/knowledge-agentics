@@ -11,25 +11,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, Sequence
 
-from ..domain import Registro
+from ..domain import Entry
 
 
 @dataclass(frozen=True)
-class Pagina:
-    itens: Sequence[Registro]
-    pagina: int
-    tamanho: int
+class Page:
+    items: Sequence[Entry]
+    page: int
+    page_size: int
     total: int
 
 
 class Repository(Protocol):
     """Persistencia dos registros do PROPRIO modulo. Nunca toca tabela de outro modulo."""
 
-    async def list(self, pagina: int, tamanho: int) -> Pagina: ...
+    async def list(self, page: int, page_size: int) -> Page: ...
 
-    async def find_by_hash(self, hash_universal: str) -> Registro | None: ...
+    async def find_by_hash(self, hash_universal: str) -> Entry | None: ...
 
-    async def insert(self, registro: Registro) -> None: ...
+    async def insert(self, entry: Entry) -> None: ...
 
     async def count(self) -> int: ...
 
@@ -37,7 +37,7 @@ class Repository(Protocol):
 class Audit(Protocol):
     """Trilha append-only. Guarda o NOME dos campos alterados, nunca o valor."""
 
-    async def record(self, evento: dict[str, object]) -> None: ...
+    async def record(self, event: dict[str, object]) -> None: ...
 
 
 class Clock(Protocol):
@@ -60,7 +60,7 @@ class Notifier(Protocol):
     """Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
     modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1)."""
 
-    async def send(self, destinatario: str, assunto: str, corpo: str) -> None: ...
+    async def send(self, recipient: str, subject: str, body: str) -> None: ...
 
 
 @dataclass(frozen=True)
@@ -71,7 +71,7 @@ class ModuleDependencies:
     module.json:ports — o gate cobra que os tres concordem.
 
     `notifier` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
-    fabrica (`FABRICAS["notifier"]`, src/composition.py) e alcancada de verdade no boot, nao so
+    fabrica (`FACTORIES["notifier"]`, src/composition.py) e alcancada de verdade no boot, nao so
     declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
     """
 

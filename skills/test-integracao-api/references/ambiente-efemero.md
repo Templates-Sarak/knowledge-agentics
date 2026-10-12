@@ -65,8 +65,8 @@ O passo 4 do `SKILL.md` não é "chame o endpoint e confira o status" — é as 
 teste não prova persistência nenhuma:
 
 ```typescript
-test('POST /registros persiste o registro', async () => {
-  const resposta = await request(app).post('/api/v1/<module>/registros').send({ titulo: 'x' });
+test('POST /entries persiste o registro', async () => {
+  const resposta = await request(app).post('/api/v1/<module>/entries').send({ titulo: 'x' });
 
   // asserção 1 — o contrato HTTP
   expect(resposta.status).toBe(201);
@@ -98,7 +98,7 @@ A validação contra banco real, num projeto do template, mora em **dois lugares
 1. **`adapters/<tecnologia>/`** (ex.: `adapters/postgres/`) — é aqui, na raiz do projeto, que o driver
    real vive (`00-arquitetura.md` §3.2); é o adapter concreto que se testa contra um Testcontainer, não
    o módulo que o consome através da porta.
-2. **`scripts/migrations.mjs ciclo <module>`** (`03-operacao.md` §9.3) — prova `up → down → up` contra um
+2. **`scripts/migrations.mjs cycle <module>`** (`03-operacao.md` §9.3) — prova `up → down → up` contra um
    Postgres efêmero de verdade, de qualquer estado inicial. É o comando que já faz o papel de "as
    migrations rodam limpo" que o setup acima replica manualmente.
 

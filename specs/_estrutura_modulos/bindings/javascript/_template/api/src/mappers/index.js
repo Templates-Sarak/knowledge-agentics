@@ -13,28 +13,28 @@
 
 /**
  * banco -> dominio
- * @param {{ hash: string, titulo: string, status: string, created_at: string }} linha
- * @returns {import('../../../core/domain/index.js').Registro}
+ * @param {{ hash: string, title: string, status: string, created_at: string }} line
+ * @returns {import('../../../core/domain/index.js').Entry}
  */
-export function rowToDomain(linha) {
+export function rowToDomain(line) {
   return {
-    hash: linha.hash,
-    titulo: linha.titulo,
-    status: linha.status,
-    criadoEm: linha.created_at,
+    hash: line.hash,
+    title: line.title,
+    status: line.status,
+    createdAt: line.created_at,
   };
 }
 
 /**
  * dominio -> banco
- * @param {import('../../../core/domain/index.js').Registro} registro
+ * @param {import('../../../core/domain/index.js').Entry} entry
  */
-export function domainToRow(registro) {
+export function domainToRow(entry) {
   return {
-    hash: registro.hash,
-    titulo: registro.titulo,
-    status: registro.status,
-    created_at: registro.criadoEm,
+    hash: entry.hash,
+    title: entry.title,
+    status: entry.status,
+    created_at: entry.createdAt,
   };
 }
 
@@ -42,14 +42,14 @@ export function domainToRow(registro) {
  * dominio -> CONTRATO. A allowlist e esta funcao: o que nao esta escrito aqui nao e publicado.
  * Campo declarado em module.json:sensitiveFields nunca entra — ou entra mascarado.
  *
- * @param {import('../../../core/domain/index.js').Registro} registro
+ * @param {import('../../../core/domain/index.js').Entry} entry
  */
-export function toContract(registro) {
+export function toContract(entry) {
   return {
-    hash: registro.hash,
-    titulo: registro.titulo,
-    status: registro.status,
-    criadoEm: registro.criadoEm,
+    hash: entry.hash,
+    title: entry.title,
+    status: entry.status,
+    createdAt: entry.createdAt,
   };
 }
 
@@ -59,22 +59,22 @@ export function toContract(registro) {
  * `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota.
  *
  * @param {{ id: string, name: string, version: string, role: string, basePath: string,
- *   webPath: string|null, navigation: object|null, exportsSummary: boolean }} manifesto
+ *   webPath: string|null, navigation: object|null, exportsSummary: boolean }} manifest
  */
-export function toMeta(manifesto) {
+export function toMeta(manifest) {
   return {
-    id: manifesto.id,
-    name: manifesto.name,
-    version: manifesto.version,
-    role: manifesto.role,
-    basePath: manifesto.basePath,
-    webPath: manifesto.webPath,
-    navigation: manifesto.navigation,
-    exportsSummary: manifesto.exportsSummary,
+    id: manifest.id,
+    name: manifest.name,
+    version: manifest.version,
+    role: manifest.role,
+    basePath: manifest.basePath,
+    webPath: manifest.webPath,
+    navigation: manifest.navigation,
+    exportsSummary: manifest.exportsSummary,
   };
 }
 
 /** Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1). */
-export function toCollection(registros, pagina, tamanho, total) {
-  return { itens: registros.map(toContract), pagina, tamanho, total };
+export function toCollection(entries, page, pageSize, total) {
+  return { items: entries.map(toContract), page, pageSize, total };
 }

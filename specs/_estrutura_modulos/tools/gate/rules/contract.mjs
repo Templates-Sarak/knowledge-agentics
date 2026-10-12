@@ -20,7 +20,7 @@ import {
 import { codeText } from '../text.mjs';
 import { LOG_CALL_VERBS } from './operation.mjs';
 
-const REQUIRED = ['/health', '/meta', '/resumo'];
+const REQUIRED = ['/health', '/meta', '/summary'];
 
 /**
  * A forma que o leitor de bloco aceita, por seção. É o que falta numa mensagem que só diz
@@ -428,7 +428,7 @@ function projectionKeys(ctx) {
  * Chaves projetadas que nenhum schema de resposta declara. UMA direção só, de propósito.
  *
  * A inversa (propriedade declarada e nunca projetada) parece simétrica e não é: `/health`,
- * `/meta` e `/resumo` são montadas pela própria `api/`, e o schema `Erro` pelo tratador de erro —
+ * `/meta` e `/summary` são montadas pela própria `api/`, e o schema `Erro` pelo tratador de erro —
  * nenhum deles passa pelo mapeador. Cobrá-la daria falso positivo garantido nos três moldes.
  */
 function projectionDivergences(projected, declared) {
@@ -688,7 +688,7 @@ export default [
     escopo: 'module',
     check(ctx) {
       // UMA direcao so, como `contract-projection`: `false` nao proibe nada. O modulo que nao entra
-      // no dashboard pode ter `total` no `/resumo` dele sem que isso seja defeito de coisa alguma.
+      // no dashboard pode ter `total` no `/summary` dele sem que isso seja defeito de coisa alguma.
       if (ctx.manifest?.exportsSummary !== true) return [];
 
       const spec = specOf(ctx);
@@ -696,12 +696,12 @@ export default [
       // viraria "nao declara" — afirmar ausencia do que nao se leu manda apagar o que esta certo.
       if (spec === null || failedReads(spec.content).includes('paths')) return [];
 
-      const declared = responseProperties(spec.content, '/resumo', 'get', '200');
-      // `/resumo` ausente da spec e do `contract`, que ja a cobra como rota obrigatoria.
+      const declared = responseProperties(spec.content, '/summary', 'get', '200');
+      // `/summary` ausente da spec e do `contract`, que ja a cobra como rota obrigatoria.
       if (declared === null || declared.has('total')) return [];
-      return ['exportsSummary: true, but the GET /resumo 200 schema does not declare "total" — the cross-module aggregator '
+      return ['exportsSummary: true, but the GET /summary 200 schema does not declare "total" — the cross-module aggregator '
         + 'composes results without a fixed module list and only understands the minimum shape. Declare integer "total" '
-        + 'in the /resumo response, or set exportsSummary to false'];
+        + 'in the /summary response, or set exportsSummary to false'];
     },
   },
   {

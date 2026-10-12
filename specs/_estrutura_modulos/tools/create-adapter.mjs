@@ -3,11 +3,11 @@
  * create-adapter.mjs — scaffold determinístico de adapter. Lei dona: specs/arquitetura/01-modulo.md
  * §5.2.
  *
- *   node tools/create-adapter.mjs <porta> <provedor> [--binding typescript]
+ *   node tools/create-adapter.mjs <port> <provider> [--binding typescript]
  *
  * Mesma forma do `create-module.mjs`: copia o molde (`adapters/_template`, instalado por
  * `create-project.mjs`), substitui marcadores, registra a fábrica em `src/composition.*` e roda o
- * gate. `<porta>` tem de estar no vocabulário conhecido (`tools/gate/ports-vocabulary.mjs`)
+ * gate. `<port>` tem de estar no vocabulário conhecido (`tools/gate/ports-vocabulary.mjs`)
  * — nome fora dele é rejeitado antes de tocar disco.
  *
  * O molde é um STUB, de propósito: os MÉTODOS de cada interface variam por porta (`Repository`
@@ -17,8 +17,8 @@
  * porta e o arquivo; o gate NÃO cobra método (não é AST), só isolamento e forma.
  *
  * LIMITE CONHECIDO: `tokenVerifier` é resolvida por `resolveTokenVerifier()`/`resolve_token_verifier()`, não por
- * `FABRICAS` — é a auth ÚNICA do sistema, nunca por-módulo. Registrar um adapter para a porta
- * "tokenVerifier" aqui ACRESCENTA a entrada em `FABRICAS` (coerente com o vocabulário), mas
+ * `FACTORIES` — é a auth ÚNICA do sistema, nunca por-módulo. Registrar um adapter para a porta
+ * "tokenVerifier" aqui ACRESCENTA a entrada em `FACTORIES` (coerente com o vocabulário), mas
  * nada a consulta hoje; trocar o provedor de auth continua sendo editar `resolveTokenVerifier()` à mão. Não
  * é bug deste script — é a mesma arquitetura de antes dele. Nome da porta por ADR-010
  * (`specs/adr/000-decisoes-do-template.md`) — era `auth`, e colidia com a auth da fiação.
@@ -102,7 +102,7 @@ function toPascalCase(kebab) {
  * Nome de pasta/import do adapter — kebab-case em TS/JS (onde funciona: nome de pasta e chave de
  * objeto CITADA aceitam hífen), snake_case só em Python, onde o hífen não é uma preferência de
  * estilo e sim ilegal em `import`/nome de módulo (regra da linguagem, não deste script). A
- * IDENTIDADE do provedor (o que vai em `config/ports.json`, na chave string de `FABRICAS` e na
+ * IDENTIDADE do provedor (o que vai em `config/ports.json`, na chave string de `FACTORIES` e na
  * mensagem pro usuário) continua kebab-case nos três bindings — só a pasta física em disco e o
  * caminho de import Python sofrem a conversão. ADR-011.
  */
@@ -111,14 +111,14 @@ function adapterDir(binding, provider) {
 }
 
 /**
- * `<provedor-pasta>` é um marcador À PARTE de `<provedor>`: identidade (nome do adapter, "Adapter
+ * `<provider-folder>` é um marcador À PARTE de `<provider>`: identidade (nome do adapter, "Adapter
  * disco-frio para a porta...") continua kebab-case sempre, mas a referência a CAMINHO EM DISCO
  * (`adapters/<pasta>/__init__.py` no TODO do molde Python) precisa apontar pro nome de pasta real
  * — que diverge da identidade quando `adapterDir` converte pra snake_case. Sem o marcador
  * separado, o TODO gerado apontaria pra uma pasta que não existe.
  */
 function replaceMarkers(text, port, provider, dir) {
-  return text.replaceAll('<porta>', port).replaceAll('<provedor-pasta>', dir).replaceAll('<provedor>', provider);
+  return text.replaceAll('<port>', port).replaceAll('<provider-folder>', dir).replaceAll('<provider>', provider);
 }
 
 /**
@@ -179,12 +179,12 @@ function registerFactoryTs(content, { port, provider, symbolName, importPath }) 
     return withImport.replace(portLine, `$1, '${provider}': () => ${symbolName}()$2`);
   }
   // `[^>]*` no lugar da assinatura do parâmetro (em vez de `\(\)` fixo): o molde real declara
-  // `(modulo: DiscoveredManifest) => unknown`, não `() => unknown` — a âncora antiga, presa à
+  // `(module: DiscoveredManifest) => unknown`, não `() => unknown` — a âncora antiga, presa à
   // forma SEM parâmetro, nunca casava contra o molde de verdade. Medido: a única porta que hoje
-  // alcança este ramo (`FABRICAS` já tem as outras seis) sai com "nao encontrei onde registrar a
+  // alcança este ramo (`FACTORIES` já tem as outras seis) sai com "nao encontrei onde registrar a
   // fabrica", sempre. `[^>]*` tolera qualquer assinatura de parâmetro futura sem reabrir o mesmo
   // drift — só não atravessa o `>>` de fechamento do genérico.
-  const objectOpening = /(const FABRICAS: Record<string, Record<string, [^>]*=> unknown>> = \{\n)/;
+  const objectOpening = /(const FACTORIES: Record<string, Record<string, [^>]*=> unknown>> = \{\n)/;
   if (!objectOpening.test(withImport)) return null;
   return withImport.replace(objectOpening, `$1  ${port}: { '${provider}': () => ${symbolName}() },\n`);
 }
@@ -201,7 +201,7 @@ function registerFactoryJs(content, { port, provider, symbolName, importPath }) 
     // Mesma razão da versão TS acima: chave CITADA, porque `provedor` pode ter hífen.
     return withImport.replace(portLine, `$1, '${provider}': () => ${symbolName}()$2`);
   }
-  const objectOpening = /(const FABRICAS = \{\n)/;
+  const objectOpening = /(const FACTORIES = \{\n)/;
   if (!objectOpening.test(withImport)) return null;
   return withImport.replace(objectOpening, `$1  ${port}: { '${provider}': () => ${symbolName}() },\n`);
 }
@@ -227,7 +227,7 @@ function registerFactoryPy(content, { port, provider, symbolName, importPath }) 
   // `Callable[[dict[str, Any]], Any]` (o adapter recebe o manifesto), nao `Callable[[], Any]`
   // (sem parametro) — a ancora antiga so casava a forma vazia. `.*` no lugar da lista de
   // parametros tolera qualquer assinatura, presente ou futura, sem reabrir o mesmo drift.
-  const objectOpening = /(FABRICAS: dict\[str, dict\[str, Callable\[.*\]\]\] = \{\n)/;
+  const objectOpening = /(FACTORIES: dict\[str, dict\[str, Callable\[.*\]\]\] = \{\n)/;
   if (!objectOpening.test(withImport)) return null;
   return withImport.replace(objectOpening, `$1    "${port}": {"${provider}": ${symbolName}},\n`);
 }
@@ -255,7 +255,7 @@ function registerFactory(projectRoot, options, generatedName) {
   if (updated === null) {
     abort(
       `Could not find the factory registration point in ${path}; the expected anchors changed. `
-      + 'Register the adapter import and its FABRICAS entry manually.',
+      + 'Register the adapter import and its FACTORIES entry manually.',
     );
   }
   writeFileSync(path, updated, 'utf8');
@@ -285,7 +285,7 @@ function runGate(projectRoot) {
 // antes do refactor de §4.7 (`max-params`), que dois bugs pré-existentes apareceram — nenhum era do
 // refactor, e os dois foram corrigidos na mesma rodada:
 //
-// (1) TS: o tipo de `FABRICAS` no molde real é `Record<string, Record<string, (modulo:
+// (1) TS: o tipo de `FACTORIES` no molde real é `Record<string, Record<string, (modulo:
 //     DiscoveredManifest) => unknown>>`, mas a âncora de "porta nova" em `registerFactoryTs`
 //     esperava `() => unknown` (sem parâmetro) — drift entre o gerador e o molde. Consertado:
 //     `[^>]*` no lugar da assinatura do parâmetro, tolerante à forma sem reabrir o mesmo drift.
@@ -303,7 +303,7 @@ const FIXTURE_TS_TEMPLATE_REAL = [
   "} from '../adapters/memory/index.js';",
   "import { createPostgresRepository } from '../adapters/postgres/index.js';",
   '',
-  'const FABRICAS: Record<string, Record<string, (modulo: DiscoveredManifest) => unknown>> = {',
+  'const FACTORIES: Record<string, Record<string, (module: DiscoveredManifest) => unknown>> = {',
   '  repository: { memory: () => createRepository() },',
   '};',
   '',
@@ -314,7 +314,7 @@ const FIXTURE_JS_TEMPLATE_REAL = [
   '  createRepository,',
   "} from '../adapters/memory/index.js';",
   '',
-  'const FABRICAS = {',
+  'const FACTORIES = {',
   '  repository: { memory: () => createRepository() },',
   '};',
   '',
@@ -327,7 +327,7 @@ const FIXTURE_PY_TEMPLATE_REAL = [
   'from adapters.postgres import PostgresAudit, PostgresRepository',
   '',
   '# Fabrica de adapter por (porta, provedor).',
-  'FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {',
+  'FACTORIES: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {',
   '    "repository": {"memory": lambda modulo: InMemoryRepository()},',
   '}',
   '',
@@ -342,7 +342,7 @@ const FIXTURE_PY_ISOLATED_ANCHOR = [
   ')',
   '',
   '# Fabrica de adapter por (porta, provedor).',
-  'FABRICAS: dict[str, dict[str, Callable[[], Any]]] = {',
+  'FACTORIES: dict[str, dict[str, Callable[[], Any]]] = {',
   '    "repository": {"memory": lambda: InMemoryRepository()},',
   '}',
   '',
@@ -361,10 +361,10 @@ function pureCases() {
     { name: 'providerName: TypeScript adds the create prefix', fn: () => providerName('typescript', 'okta') === 'criarOkta' },
     { name: 'providerName: JavaScript adds the create prefix', fn: () => providerName('javascript', 'okta') === 'criarOkta' },
     { name: 'providerName: Python uses PascalCase without a prefix', fn: () => providerName('python', 'okta') === 'Okta' },
-    { name: 'replaceMarkers: replaces <port> and <provider>', fn: () => replaceMarkers('<porta> e <provedor>', 'auth', 'okta', 'okta') === 'auth e okta' },
+    { name: 'replaceMarkers: replaces <port> and <provider>', fn: () => replaceMarkers('<port> e <provider>', 'auth', 'okta', 'okta') === 'auth e okta' },
     {
       name: 'replaceMarkers: replaces <provider-folder> separately from <provider>',
-      fn: () => replaceMarkers('<provedor> em <provedor-pasta>', 'x', 'disco-frio', 'disco_frio') === 'disco-frio em disco_frio',
+      fn: () => replaceMarkers('<provider> em <provider-folder>', 'x', 'disco-frio', 'disco_frio') === 'disco-frio em disco_frio',
     },
     { name: 'adapterDir: Python converts hyphens to underscores', fn: () => adapterDir('python', 'disco-frio') === 'disco_frio' },
     { name: 'adapterDir: TypeScript and JavaScript preserve kebab-case', fn: () => adapterDir('typescript', 'disco-frio') === 'disco-frio' && adapterDir('javascript', 'disco-frio') === 'disco-frio' },

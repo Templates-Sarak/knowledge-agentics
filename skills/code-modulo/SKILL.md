@@ -87,7 +87,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 4. **Scaffold** — `node tools/create-module.mjs <id> --role domain|gateway|connector --binding <b> [--no-artifact]`.
 5. **Declarar no manifesto** — `data`, `requiredEnv`, `ports`, `consumes`, `permissions`, `publicRoutes`,
    `sensitiveFields`, `navigation`. **Não declarado, não existe** — é daqui que o gate lê.
-6. **Contrato antes do código** — `contract/openapi.yaml` **primeiro**, com `/health`, `/meta` e `/resumo`.
+6. **Contrato antes do código** — `contract/openapi.yaml` **primeiro**, com `/health`, `/meta` e `/summary`.
 7. **Preencher nesta ordem** — `core/domain` → `api/src/routes` → `api/src/mappers` (saída por
    **allowlist**) → `database/` (migration com `-- rollback`) → `web/src/pages` → `tests/`.
 8. **Sincronizar ambiente** — `node tools/sync-env.mjs`; valores reais no `.env` da **raiz**. O que o
@@ -121,7 +121,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 - [ ] HITL com plano explícito **antes** de qualquer arquivo criado?
 - [ ] `id` idêntico em pasta, package, `basePath`, prefixo de tabela e prefixo de env?
 - [ ] Manifesto reflete o que o código usa (tabelas, env, portas, `consumes`, permissões)?
-- [ ] `contract/openapi.yaml` escrito **antes** do código, com `/health`, `/meta` e `/resumo`?
+- [ ] `contract/openapi.yaml` escrito **antes** do código, com `/health`, `/meta` e `/summary`?
 - [ ] Zero import de outro módulo e zero SDK de fornecedor dentro do módulo?
 - [ ] `consumes` sem ciclo, e cada gateway com a sua entrada declarada?
 - [ ] `.env.example` gerado pelo script (não editado à mão) e valores no `.env` da raiz?

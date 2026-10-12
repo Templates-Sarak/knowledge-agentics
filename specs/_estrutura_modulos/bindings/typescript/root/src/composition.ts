@@ -38,7 +38,7 @@ export interface DiscoveredManifest {
   basePath: string;
   role: string;
   ports: string[];
-  pasta: string;
+  dir: string;
 }
 
 /**
@@ -49,9 +49,9 @@ export interface DiscoveredManifest {
  * `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um adapter que precisa de contexto
  * por-modulo nao teria como sabe-lo.
  */
-const FABRICAS: Record<string, Record<string, (modulo: DiscoveredManifest) => unknown>> = {
-  repository: { memory: () => createRepository(), postgres: (modulo) => createPostgresRepository(modulo) },
-  audit: { memory: () => createAuditLog(), postgres: (modulo) => createPostgresAudit(modulo) },
+const FACTORIES: Record<string, Record<string, (module: DiscoveredManifest) => unknown>> = {
+  repository: { memory: () => createRepository(), postgres: (module) => createPostgresRepository(module) },
+  audit: { memory: () => createAuditLog(), postgres: (module) => createPostgresAudit(module) },
   clock: { system: () => createClock() },
   idGenerator: { default: () => createIdGenerator() },
   storage: { memory: () => createInMemoryStorage() },
@@ -59,17 +59,17 @@ const FABRICAS: Record<string, Record<string, (modulo: DiscoveredManifest) => un
 };
 
 /** Le todos os manifestos. E a DESCOBERTA: o sistema conhece os modulos por declaracao, nao por import. */
-export function discoverModules(raiz: string): DiscoveredManifest[] {
-  const base = join(raiz, 'modules');
+export function discoverModules(root: string): DiscoveredManifest[] {
+  const base = join(root, 'modules');
   if (!existsSync(base)) return [];
 
   return readdirSync(base)
-    .filter((nome) => !nome.startsWith('_'))
-    .filter((nome) => existsSync(join(base, nome, 'module.json')))
-    .map((nome) => {
-      const pasta = join(base, nome);
-      const manifesto = JSON.parse(readFileSync(join(pasta, 'module.json'), 'utf8')) as DiscoveredManifest;
-      return { ...manifesto, pasta };
+    .filter((name) => !name.startsWith('_'))
+    .filter((name) => existsSync(join(base, name, 'module.json')))
+    .map((name) => {
+      const dir = join(base, name);
+      const manifest = JSON.parse(readFileSync(join(dir, 'module.json'), 'utf8')) as DiscoveredManifest;
+      return { ...manifest, dir };
     });
 }
 
@@ -77,24 +77,24 @@ export function discoverModules(raiz: string): DiscoveredManifest[] {
  * Resolve as portas declaradas por um modulo, lendo a ESCOLHA em config/ports.json dele.
  * Porta declarada sem provedor conhecido derruba o boot — melhor falhar aqui que servir errado.
  */
-export function resolveDependencies(modulo: DiscoveredManifest): Record<string, unknown> {
-  const escolhas = JSON.parse(readFileSync(join(modulo.pasta, 'config', 'ports.json'), 'utf8')) as Record<
+export function resolveDependencies(module: DiscoveredManifest): Record<string, unknown> {
+  const choices = JSON.parse(readFileSync(join(module.dir, 'config', 'ports.json'), 'utf8')) as Record<
     string,
     string
   >;
-  const dependencias: Record<string, unknown> = {};
+  const dependencies: Record<string, unknown> = {};
 
-  for (const porta of modulo.ports) {
-    const provedor = escolhas[porta];
-    const fabrica = FABRICAS[porta]?.[provedor ?? ''];
-    if (fabrica === undefined) {
+  for (const port of module.ports) {
+    const provider = choices[port];
+    const factory = FACTORIES[port]?.[provider ?? ''];
+    if (factory === undefined) {
       throw new Error(
-        `[composition] ${modulo.id}: porta "${porta}" com provedor "${provedor}" sem fabrica registrada`,
+        `[composition] ${module.id}: port "${port}" with provider "${provider}" without a registered factory`,
       );
     }
-    dependencias[porta] = fabrica(modulo);
+    dependencies[port] = factory(module);
   }
-  return dependencias;
+  return dependencies;
 }
 
 /**
@@ -110,21 +110,21 @@ export function resolveTokenVerifier(): TokenVerifier {
  * alcancado (o Express do primeiro responde por ele antes), e o defeito ficaria mudo ate alguem
  * notar uma rota "sumida". PURO — dado o array de manifestos, so decide; nao toca disco nem rede.
  */
-export function verifyRoutesUnique(modulos: DiscoveredManifest[]): void {
-  const porRota = new Map<string, string[]>();
-  for (const modulo of modulos) {
-    porRota.set(modulo.basePath, [...(porRota.get(modulo.basePath) ?? []), modulo.id]);
+export function verifyRoutesUnique(modules: DiscoveredManifest[]): void {
+  const byRoute = new Map<string, string[]>();
+  for (const module of modules) {
+    byRoute.set(module.basePath, [...(byRoute.get(module.basePath) ?? []), module.id]);
   }
-  const colisoes = [...porRota.entries()].filter(([, ids]) => ids.length > 1);
-  if (colisoes.length === 0) return;
+  const collisions = [...byRoute.entries()].filter(([, ids]) => ids.length > 1);
+  if (collisions.length === 0) return;
 
-  const detalhe = colisoes.map(([rota, ids]) => `"${rota}" (${ids.join(', ')})`).join('; ');
-  throw new Error(`[composition] rotaBase colidindo entre modulos: ${detalhe}`);
+  const detail = collisions.map(([route, ids]) => `"${route}" (${ids.join(', ')})`).join('; ');
+  throw new Error(`[composition] baseRoute colliding across modules: ${detail}`);
 }
 
 /** O que se espera de `api/src/index.*` de um modulo — o mesmo `createApp` que os testes de contrato usam. */
-interface ModuloApi {
-  createApp(opcoes: { deps: Record<string, unknown>; auth: TokenVerifier; raiz: string }): Express;
+interface ModuleApi {
+  createApp(options: { deps: Record<string, unknown>; auth: TokenVerifier; root: string }): Express;
 }
 
 /**
@@ -135,29 +135,29 @@ interface ModuloApi {
  * `dist/` desatualizado (fonte mudou, build nao rodou de novo) e servido sem aviso — mitigado por
  * `tools/package.mjs` sempre recompilar do zero antes de copiar, nunca reusar `dist/` velho.
  */
-export function chooseModuleEntrypoint(pastaModulo: string, emitidoExiste: boolean): string {
-  return emitidoExiste
-    ? join(pastaModulo, 'dist', 'api', 'src', 'index.js')
-    : join(pastaModulo, 'api', 'src', 'index.ts');
+export function chooseModuleEntrypoint(moduleDir: string, emittedExists: boolean): string {
+  return emittedExists
+    ? join(moduleDir, 'dist', 'api', 'src', 'index.js')
+    : join(moduleDir, 'api', 'src', 'index.ts');
 }
 
 /** Import dinamico do modulo, pelo CAMINHO — a mesma descoberta por declaracao, nunca por lista fixa. */
-async function importApi(modulo: DiscoveredManifest): Promise<ModuloApi> {
-  const emitido = join(modulo.pasta, 'dist', 'api', 'src', 'index.js');
-  const caminho = chooseModuleEntrypoint(modulo.pasta, existsSync(emitido));
-  return (await import(pathToFileURL(caminho).href)) as ModuloApi;
+async function importApi(module: DiscoveredManifest): Promise<ModuleApi> {
+  const emitted = join(module.dir, 'dist', 'api', 'src', 'index.js');
+  const path = chooseModuleEntrypoint(module.dir, existsSync(emitted));
+  return (await import(pathToFileURL(path).href)) as ModuleApi;
 }
 
 /** Pares chave=valor de um `.env`, ignorando comentario e linha vazia — mesma leitura do carregador de modulo. */
-function readPairsEnv(caminho: string): Array<[string, string]> {
-  return readFileSync(caminho, 'utf8')
+function readPairsEnv(path: string): Array<[string, string]> {
+  return readFileSync(path, 'utf8')
     .replace(/^﻿/, '')
     .split(/\r?\n/)
-    .map((linha) => linha.trim())
-    .filter((linha) => linha !== '' && !linha.startsWith('#') && linha.includes('='))
-    .map((linha) => {
-      const igual = linha.indexOf('=');
-      return [linha.slice(0, igual).trim(), linha.slice(igual + 1).trim()] as [string, string];
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith('#') && line.includes('='))
+    .map((line) => {
+      const equalsIndex = line.indexOf('=');
+      return [line.slice(0, equalsIndex).trim(), line.slice(equalsIndex + 1).trim()] as [string, string];
     });
 }
 
@@ -167,11 +167,11 @@ function readPairsEnv(caminho: string): Array<[string, string]> {
  * arquivo: cada modulo, chamado daqui, ainda resolve o proprio `.env`/`ENV_ROOT`, mas a essa altura
  * o processo ja tem tudo — a leitura dele so confirma o que ja esta la.
  */
-function loadEnvRoot(raiz: string): void {
-  const caminho = join(raiz, '.env');
-  if (!existsSync(caminho)) return;
-  for (const [chave, valor] of readPairsEnv(caminho)) {
-    if (process.env[chave] === undefined) process.env[chave] = valor;
+function loadEnvRoot(root: string): void {
+  const path = join(root, '.env');
+  if (!existsSync(path)) return;
+  for (const [key, value] of readPairsEnv(path)) {
+    if (process.env[key] === undefined) process.env[key] = value;
   }
 }
 
@@ -180,40 +180,44 @@ function loadEnvRoot(raiz: string): void {
  * em "/". `createApp`, quando composto (recebe `root`), ja sabe que o Express externo tira o prefixo
  * antes de entregar a requisicao a ele; aqui so se ESCOLHE onde montar, nenhuma rota e remontada.
  */
-export async function buildSystem(raiz: string): Promise<Express> {
-  const modulos = discoverModules(raiz);
-  verifyRoutesUnique(modulos);
+export async function buildSystem(root: string): Promise<Express> {
+  const modules = discoverModules(root);
+  verifyRoutesUnique(modules);
 
   const auth = resolveTokenVerifier();
   const app = express();
 
-  for (const modulo of modulos) {
-    const deps = resolveDependencies(modulo);
-    const api = await importApi(modulo);
+  for (const module of modules) {
+    const deps = resolveDependencies(module);
+    const api = await importApi(module);
     // MONTADO na propria rotaBase — nunca em "/". Middleware de modulo (auth INCLUSIVE, que NEGA
     // por padrao) roda para QUALQUER requisicao que alcance o app dele; montado em "/", o app do
     // PRIMEIRO modulo responderia (errado) por caminho de OUTRO modulo antes de "no match" —
     // medido: 401 na rota publica de um segundo modulo, negada pela auth do primeiro. Montando na
     // rotaBase, o Express so entrega ao app do modulo a requisicao que ja e dele.
-    app.use(modulo.basePath, api.createApp({ deps, auth, raiz: modulo.pasta }));
+    app.use(module.basePath, api.createApp({ deps, auth, root: module.dir }));
   }
   return app;
 }
 
 /** Le uma variavel obrigatoria da RAIZ. Ausente = boot morre com mensagem acionavel. */
-function envRequiredRoot(chave: string): string {
-  const valor = process.env[chave];
-  if (valor === undefined || valor === '') {
+function envRequiredRoot(key: string): string {
+  const value = process.env[key];
+  if (value === undefined || value === '') {
     throw new Error(
-      `[composition] variavel obrigatoria ausente: ${chave} (declare em project.json:requiredEnv)`,
+      `[composition] required variable missing: ${key} (declare it in project.json:requiredEnv)`,
     );
   }
-  return valor;
+  return value;
 }
 
 /** Log ESTRUTURADO da raiz de composicao — uma linha JSON, a mesma forma `{ nivel, modulo, mensagem }` dos modulos. */
-function logComposition(nivel: 'info' | 'error', mensagem: string, campos: Record<string, unknown> = {}): void {
-  process.stdout.write(`${JSON.stringify({ nivel, modulo: 'composition', mensagem, ...campos })}\n`);
+function logComposition(
+  level: 'info' | 'error',
+  message: string,
+  fields: Record<string, unknown> = {},
+): void {
+  process.stdout.write(`${JSON.stringify({ level, module: 'composition', message, ...fields })}\n`);
 }
 
 /** Tunables nao-secretos do processo composto (`config/runtime.json`, versionado, na raiz). */
@@ -225,33 +229,35 @@ export interface RuntimeConfig {
  * PURA — valida o TEXTO de `config/runtime.json`. Falha nomeando a chave: tunable ausente ou invalido
  * DERRUBA o boot, nunca vira um default embutido (mesma lei de `ROOT_API_PORT`).
  */
-export function parseRuntimeConfig(texto: string): RuntimeConfig {
-  let bruto: { shutdown?: { drainTimeoutMs?: unknown } };
+export function parseRuntimeConfig(text: string): RuntimeConfig {
+  let raw: { shutdown?: { drainTimeoutMs?: unknown } };
   try {
-    bruto = JSON.parse(texto.replace(/^\uFEFF/, '')) as typeof bruto;
-  } catch (causa) {
-    throw new Error(`[composition] config/runtime.json nao e JSON valido: ${String(causa)}`);
+    raw = JSON.parse(text.replace(/^\uFEFF/, '')) as typeof raw;
+  } catch (cause) {
+    throw new Error(`[composition] config/runtime.json is not valid JSON: ${String(cause)}`);
   }
-  const teto = bruto?.shutdown?.drainTimeoutMs;
-  if (typeof teto !== 'number' || !Number.isInteger(teto) || teto <= 0) {
-    throw new Error('[composition] config/runtime.json: shutdown.drainTimeoutMs deve ser um inteiro > 0 (milissegundos)');
+  const cap = raw?.shutdown?.drainTimeoutMs;
+  if (typeof cap !== 'number' || !Number.isInteger(cap) || cap <= 0) {
+    throw new Error(
+      '[composition] config/runtime.json: shutdown.drainTimeoutMs must be an integer > 0 (milliseconds)',
+    );
   }
-  return { shutdown: { drainTimeoutMs: teto } };
+  return { shutdown: { drainTimeoutMs: cap } };
 }
 
-function loadRuntimeConfig(raiz: string): RuntimeConfig {
-  const caminho = join(raiz, 'config', 'runtime.json');
-  if (!existsSync(caminho)) {
-    throw new Error(`[composition] ${caminho} ausente — a raiz declara aqui o teto do desligamento gracioso`);
+function loadRuntimeConfig(root: string): RuntimeConfig {
+  const path = join(root, 'config', 'runtime.json');
+  if (!existsSync(path)) {
+    throw new Error(`[composition] ${path} missing — the root declares the graceful-shutdown cap here`);
   }
-  return parseRuntimeConfig(readFileSync(caminho, 'utf8'));
+  return parseRuntimeConfig(readFileSync(path, 'utf8'));
 }
 
 export type ShutdownOutcome = 'drained' | 'timeout' | 'error';
 
 /** PURA — o codigo de saida do desligamento: so "drenou dentro do teto" sai 0. */
-export function shutdownExitCode(resultado: ShutdownOutcome): number {
-  return resultado === 'drained' ? 0 : 1;
+export function shutdownExitCode(result: ShutdownOutcome): number {
+  return result === 'drained' ? 0 : 1;
 }
 
 /**
@@ -259,17 +265,17 @@ export function shutdownExitCode(resultado: ShutdownOutcome): number {
  * (keep-alive) e fechada na hora — nao ha requisicao a drenar nela. Resolve `timeout` se o teto
  * estourar (as conexoes restantes sao derrubadas) e `error` se o `close` falhar.
  */
-export function drainServer(servidor: Server, drainTimeoutMs: number): Promise<ShutdownOutcome> {
+export function drainServer(server: Server, drainTimeoutMs: number): Promise<ShutdownOutcome> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
-      servidor.closeAllConnections();
+      server.closeAllConnections();
       resolve('timeout');
     }, drainTimeoutMs);
-    servidor.close((erro) => {
+    server.close((error) => {
       clearTimeout(timer);
-      resolve(erro === undefined ? 'drained' : 'error');
+      resolve(error === undefined ? 'drained' : 'error');
     });
-    servidor.closeIdleConnections();
+    server.closeIdleConnections();
   });
 }
 
@@ -278,24 +284,24 @@ export function drainServer(servidor: Server, drainTimeoutMs: number): Promise<S
  * nao ha SIGTERM entregavel a um processo Node (`process.kill` o derruba na hora), e o sinal gracioso
  * que chega de verdade e o CTRL_BREAK do console, que o Node expoe como SIGBREAK.
  */
-export function shutdownSignals(plataforma: string): NodeJS.Signals[] {
-  return plataforma === 'win32' ? ['SIGTERM', 'SIGINT', 'SIGBREAK'] : ['SIGTERM', 'SIGINT'];
+export function shutdownSignals(platform: string): NodeJS.Signals[] {
+  return platform === 'win32' ? ['SIGTERM', 'SIGINT', 'SIGBREAK'] : ['SIGTERM', 'SIGINT'];
 }
 
 /** SIGTERM e SIGINT: desliga gracioso, loga o resultado e sai com `shutdownExitCode`. Um 2o sinal e ignorado. */
-function installShutdown(servidor: Server, drainTimeoutMs: number): void {
-  let encerrando = false;
-  const encerrar = (sinal: string): void => {
-    if (encerrando) return;
-    encerrando = true;
-    logComposition('info', 'desligamento iniciado', { sinal, drainTimeoutMs });
-    void drainServer(servidor, drainTimeoutMs).then((resultado) => {
-      const nivel = resultado === 'drained' ? 'info' : 'error';
-      logComposition(nivel, 'desligamento concluido', { resultado, codigo: shutdownExitCode(resultado) });
-      process.exit(shutdownExitCode(resultado));
+function installShutdown(server: Server, drainTimeoutMs: number): void {
+  let shuttingDown = false;
+  const shutDown = (signal: string): void => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    logComposition('info', 'shutdown started', { signal, drainTimeoutMs });
+    void drainServer(server, drainTimeoutMs).then((result) => {
+      const level = result === 'drained' ? 'info' : 'error';
+      logComposition(level, 'shutdown completed', { result, code: shutdownExitCode(result) });
+      process.exit(shutdownExitCode(result));
     });
   };
-  for (const sinal of shutdownSignals(process.platform)) process.on(sinal, () => encerrar(sinal));
+  for (const signal of shutdownSignals(process.platform)) process.on(signal, () => shutDown(signal));
 }
 
 /**
@@ -305,18 +311,18 @@ function installShutdown(servidor: Server, drainTimeoutMs: number): void {
  * TODAS as interfaces, o que em dev expoe o servico na rede local sem ninguem ter pedido.
  * Depois de no ar, SIGTERM/SIGINT desligam gracioso, dentro do teto de `config/runtime.json`.
  */
-export async function startSystem(raiz: string): Promise<Server> {
-  loadEnvRoot(raiz);
-  const porta = Number(envRequiredRoot('ROOT_API_PORT'));
+export async function startSystem(root: string): Promise<Server> {
+  loadEnvRoot(root);
+  const port = Number(envRequiredRoot('ROOT_API_PORT'));
   const host = envRequiredRoot('ROOT_API_HOST');
-  const runtime = loadRuntimeConfig(raiz);
-  const app = await buildSystem(raiz);
+  const runtime = loadRuntimeConfig(root);
+  const app = await buildSystem(root);
 
   return new Promise((resolve) => {
-    const servidor = app.listen(porta, host, () => {
-      logComposition('info', `sistema no ar na porta ${porta}`, { host, porta });
-      installShutdown(servidor, runtime.shutdown.drainTimeoutMs);
-      resolve(servidor);
+    const server = app.listen(port, host, () => {
+      logComposition('info', `system up on port ${port}`, { host, port });
+      installShutdown(server, runtime.shutdown.drainTimeoutMs);
+      resolve(server);
     });
   });
 }
@@ -327,135 +333,147 @@ export async function startSystem(raiz: string): Promise<Server> {
 // ================================================================================================
 
 function testManifest(id: string, basePath: string): DiscoveredManifest {
-  return { id, name: id, basePath, role: 'domain', ports: [], pasta: `/fake/${id}` };
+  return { id, name: id, basePath, role: 'domain', ports: [], dir: `/fake/${id}` };
 }
 
-function uniqueRoutesCases(): Array<{ nome: string; modulos: DiscoveredManifest[]; esperaErro: boolean }> {
+function uniqueRoutesCases(): Array<{ name: string; modules: DiscoveredManifest[]; expectsError: boolean }> {
   return [
-    { nome: 'lista vazia', modulos: [], esperaErro: false },
-    { nome: 'um so modulo', modulos: [testManifest('a', '/api/v1/a')], esperaErro: false },
+    { name: 'empty list', modules: [], expectsError: false },
+    { name: 'a single module', modules: [testManifest('a', '/api/v1/a')], expectsError: false },
     {
-      nome: 'rotas distintas',
-      modulos: [testManifest('a', '/api/v1/a'), testManifest('b', '/api/v1/b')],
-      esperaErro: false,
+      name: 'distinct routes',
+      modules: [testManifest('a', '/api/v1/a'), testManifest('b', '/api/v1/b')],
+      expectsError: false,
     },
     {
-      nome: 'rotas colidindo',
-      modulos: [testManifest('a', '/api/v1/a'), testManifest('a2', '/api/v1/a')],
-      esperaErro: true,
+      name: 'colliding routes',
+      modules: [testManifest('a', '/api/v1/a'), testManifest('a2', '/api/v1/a')],
+      expectsError: true,
     },
     {
-      nome: 'tres modulos, dois colidindo',
-      modulos: [
+      name: 'three modules, two colliding',
+      modules: [
         testManifest('a', '/api/v1/a'),
         testManifest('b', '/api/v1/b'),
         testManifest('b2', '/api/v1/b'),
       ],
-      esperaErro: true,
+      expectsError: true,
     },
   ];
 }
 
 function entrypointCases(): Array<{
-  nome: string;
-  pasta: string;
-  emitidoExiste: boolean;
-  esperado: string;
+  name: string;
+  dir: string;
+  emittedExists: boolean;
+  expected: string;
 }> {
   return [
     {
-      nome: 'emitido existe: usa dist/api/src/index.js',
-      pasta: '/proj/modules/catalogo',
-      emitidoExiste: true,
-      esperado: join('/proj/modules/catalogo', 'dist', 'api', 'src', 'index.js'),
+      name: 'emitted exists: uses dist/api/src/index.js',
+      dir: '/proj/modules/catalog',
+      emittedExists: true,
+      expected: join('/proj/modules/catalog', 'dist', 'api', 'src', 'index.js'),
     },
     {
-      nome: 'emitido ausente: cai para a fonte api/src/index.ts',
-      pasta: '/proj/modules/catalogo',
-      emitidoExiste: false,
-      esperado: join('/proj/modules/catalogo', 'api', 'src', 'index.ts'),
+      name: 'emitted missing: falls back to the source api/src/index.ts',
+      dir: '/proj/modules/catalog',
+      emittedExists: false,
+      expected: join('/proj/modules/catalog', 'api', 'src', 'index.ts'),
     },
   ];
 }
 
-function runtimeCases(): Array<{ nome: string; ok: () => boolean }> {
-  const lanca = (texto: string): boolean => {
+function runtimeCases(): Array<{ name: string; ok: () => boolean }> {
+  const throws = (text: string): boolean => {
     try {
-      parseRuntimeConfig(texto);
+      parseRuntimeConfig(text);
       return false;
     } catch {
       return true;
     }
   };
   return [
-    { nome: 'parseRuntimeConfig: aceita o teto inteiro > 0', ok: () => parseRuntimeConfig('{"shutdown":{"drainTimeoutMs":5000}}').shutdown.drainTimeoutMs === 5000 },
-    { nome: 'parseRuntimeConfig: BOM e tolerado', ok: () => parseRuntimeConfig('\uFEFF{"shutdown":{"drainTimeoutMs":1}}').shutdown.drainTimeoutMs === 1 },
-    { nome: 'parseRuntimeConfig: chave ausente derruba', ok: () => lanca('{}') },
-    { nome: 'parseRuntimeConfig: zero, negativo, fracionario e texto derrubam', ok: () => (
-      ['0', '-5', '1.5', '"10"'].every((v) => lanca(`{"shutdown":{"drainTimeoutMs":${v}}}`))
-    ) },
-    { nome: 'parseRuntimeConfig: JSON quebrado derruba', ok: () => lanca('{') },
-    { nome: 'shutdownSignals: SIGTERM+SIGINT em todo lugar; SIGBREAK so no Windows', ok: () => (
-      shutdownSignals('linux').join() === 'SIGTERM,SIGINT' && shutdownSignals('win32').includes('SIGBREAK')
-    ) },
-    { nome: 'shutdownExitCode: so drained sai 0', ok: () => (
-      shutdownExitCode('drained') === 0 && shutdownExitCode('timeout') !== 0 && shutdownExitCode('error') !== 0
-    ) },
+    {
+      name: 'parseRuntimeConfig: accepts an integer cap > 0',
+      ok: () => parseRuntimeConfig('{"shutdown":{"drainTimeoutMs":5000}}').shutdown.drainTimeoutMs === 5000,
+    },
+    {
+      name: 'parseRuntimeConfig: a BOM is tolerated',
+      ok: () => parseRuntimeConfig('\uFEFF{"shutdown":{"drainTimeoutMs":1}}').shutdown.drainTimeoutMs === 1,
+    },
+    { name: 'parseRuntimeConfig: a missing key fails', ok: () => throws('{}') },
+    {
+      name: 'parseRuntimeConfig: zero, negative, fractional and text fail',
+      ok: () => ['0', '-5', '1.5', '"10"'].every((v) => throws(`{"shutdown":{"drainTimeoutMs":${v}}}`)),
+    },
+    { name: 'parseRuntimeConfig: broken JSON fails', ok: () => throws('{') },
+    {
+      name: 'shutdownSignals: SIGTERM+SIGINT everywhere; SIGBREAK only on Windows',
+      ok: () =>
+        shutdownSignals('linux').join() === 'SIGTERM,SIGINT' && shutdownSignals('win32').includes('SIGBREAK'),
+    },
+    {
+      name: 'shutdownExitCode: only drained exits 0',
+      ok: () =>
+        shutdownExitCode('drained') === 0 &&
+        shutdownExitCode('timeout') !== 0 &&
+        shutdownExitCode('error') !== 0,
+    },
   ];
 }
 
 function runSelftest(): number {
-  let falhas = 0;
-  const casos = uniqueRoutesCases();
+  let failures = 0;
+  const testCases = uniqueRoutesCases();
 
-  for (const caso of casos) {
-    let lancou = false;
+  for (const testCase of testCases) {
+    let threw = false;
     try {
-      verifyRoutesUnique(caso.modulos);
+      verifyRoutesUnique(testCase.modules);
     } catch {
-      lancou = true;
+      threw = true;
     }
-    const ok = lancou === caso.esperaErro;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} verifyRoutesUnique: ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+    const ok = threw === testCase.expectsError;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} verifyRoutesUnique: ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
 
-  const casosEntrypoint = entrypointCases();
-  for (const caso of casosEntrypoint) {
-    const obtido = chooseModuleEntrypoint(caso.pasta, caso.emitidoExiste);
-    const ok = obtido === caso.esperado;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} chooseModuleEntrypoint: ${caso.nome}\n`);
+  const entrypointTestCases = entrypointCases();
+  for (const testCase of entrypointTestCases) {
+    const obtained = chooseModuleEntrypoint(testCase.dir, testCase.emittedExists);
+    const ok = obtained === testCase.expected;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} chooseModuleEntrypoint: ${testCase.name}\n`);
     if (!ok) {
-      falhas += 1;
-      process.stdout.write(`       esperado: ${caso.esperado} obtido: ${obtido}\n`);
+      failures += 1;
+      process.stdout.write(`       expected: ${testCase.expected} obtained: ${obtained}\n`);
     }
   }
-
 
   const runtime = runtimeCases();
-  for (const caso of runtime) {
-    const ok = caso.ok();
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+  for (const testCase of runtime) {
+    const ok = testCase.ok();
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
-  const total = casos.length + casosEntrypoint.length + runtime.length;
-  process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  const total = testCases.length + entrypointTestCases.length + runtime.length;
+  process.stdout.write(`
+selftest: ${total - failures}/${total} ok\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 // ================================================================================================
 // CLI — so quando executado diretamente (`tsx src/composition.ts`), nunca quando importado por teste.
 // ================================================================================================
 
-const ehExecucaoDireta =
-  process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
+const isDirectRun = process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
 
-if (ehExecucaoDireta) {
+if (isDirectRun) {
   if (process.argv.includes('--selftest')) {
     process.exit(runSelftest());
   } else {
-    startSystem(process.cwd()).catch((causa: unknown) => {
-      process.stderr.write(`${causa instanceof Error ? causa.message : String(causa)}\n`);
+    startSystem(process.cwd()).catch((cause: unknown) => {
+      process.stderr.write(`${cause instanceof Error ? cause.message : String(cause)}\n`);
       process.exitCode = 1;
     });
   }

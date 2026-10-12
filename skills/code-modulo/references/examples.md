@@ -23,8 +23,8 @@ preço vigente de cada item para outros módulos e tem tela própria. Não gera 
 
 ```
 modules/catalogo/
-├── module.json          role domain · schema "<escopo>" · prefixo catalogo_
-├── contract/openapi.yaml   /health /meta /resumo /itens /itens/{hash}/preco-vigente
+├── module.json          role domain · schema "<scope>" · prefixo catalogo_
+├── contract/openapi.yaml   /health /meta /summary /itens /itens/{hash}/preco-vigente
 ├── config/              api, domain, seguranca, ports, textos
 ├── core/
 │   ├── domain/          regra do preco vigente (vigencia por data, sem valor default)

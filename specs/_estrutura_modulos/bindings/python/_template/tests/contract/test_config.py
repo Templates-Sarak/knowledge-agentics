@@ -24,9 +24,9 @@ import pytest
 
 from api.src.config import _check_env_required
 
-CHAVE = "<MODULE>_API_PORT"
+KEY = "<MODULE>_API_PORT"
 
-MANIFESTO_BASE = {
+BASE_MANIFEST = {
     "id": "<module>",
     "name": "<Module>",
     "version": "0.1.0",
@@ -36,11 +36,11 @@ MANIFESTO_BASE = {
     "navigation": None,
     "exportsSummary": False,
     "data": {
-        "schema": "<escopo>",
+        "schema": "<scope>",
         "prefix": "<module_snake>_",
         "tables": [],
     },
-    "requiredEnv": [CHAVE],
+    "requiredEnv": [KEY],
     "ports": [],
     "permissions": [],
     "publicRoutes": [],
@@ -48,29 +48,29 @@ MANIFESTO_BASE = {
 }
 
 
-def test_derruba_quando_falta_variavel_fora_do_pytest():
+def test_fails_boot_when_variable_missing_outside_pytest():
     pytest_original = os.environ.pop("PYTEST_CURRENT_TEST", None)
-    chave_original = os.environ.pop(CHAVE, None)
+    original_key = os.environ.pop(KEY, None)
     try:
-        with pytest.raises(RuntimeError, match="variaveis ausentes no ambiente"):
-            _check_env_required(MANIFESTO_BASE)
+        with pytest.raises(RuntimeError, match="variables missing from the environment"):
+            _check_env_required(BASE_MANIFEST)
     finally:
         if pytest_original is not None:
             os.environ["PYTEST_CURRENT_TEST"] = pytest_original
-        if chave_original is not None:
-            os.environ[CHAVE] = chave_original
+        if original_key is not None:
+            os.environ[KEY] = original_key
 
 
-def test_nao_derruba_quando_a_variavel_esta_presente():
+def test_does_not_fail_when_variable_present():
     pytest_original = os.environ.pop("PYTEST_CURRENT_TEST", None)
-    chave_original = os.environ.get(CHAVE)
-    os.environ[CHAVE] = "3999"
+    original_key = os.environ.get(KEY)
+    os.environ[KEY] = "3999"
     try:
-        _check_env_required(MANIFESTO_BASE)
+        _check_env_required(BASE_MANIFEST)
     finally:
         if pytest_original is not None:
             os.environ["PYTEST_CURRENT_TEST"] = pytest_original
-        if chave_original is None:
-            os.environ.pop(CHAVE, None)
+        if original_key is None:
+            os.environ.pop(KEY, None)
         else:
-            os.environ[CHAVE] = chave_original
+            os.environ[KEY] = original_key

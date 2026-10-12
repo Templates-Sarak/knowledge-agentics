@@ -4,50 +4,50 @@
 // nao e responsabilidade de quem chama lembrar. `console.*` e proibido no modulo (regra `log`);
 // a saida vai por process.stdout, que e o unico canal do logger.
 
-const NIVEIS = ['debug', 'info', 'warn', 'error'] as const;
-export type Level = (typeof NIVEIS)[number];
+const LEVELS = ['debug', 'info', 'warn', 'error'] as const;
+export type Level = (typeof LEVELS)[number];
 
 export interface Logger {
-  debug(mensagem: string, dados?: Record<string, unknown>): void;
-  info(mensagem: string, dados?: Record<string, unknown>): void;
-  warn(mensagem: string, dados?: Record<string, unknown>): void;
-  error(mensagem: string, dados?: Record<string, unknown>): void;
+  debug(message: string, data?: Record<string, unknown>): void;
+  info(message: string, data?: Record<string, unknown>): void;
+  warn(message: string, data?: Record<string, unknown>): void;
+  error(message: string, data?: Record<string, unknown>): void;
 }
 
-interface OpcoesLogger {
-  modulo: string;
-  nivelMinimo: Level;
-  camposSensiveis: string[];
+interface LoggerOptions {
+  module: string;
+  minLevel: Level;
+  sensitiveFields: string[];
 }
 
-const REDIGIDO = '[REDIGIDO]';
+const REDACTED = '[REDACTED]';
 
 /** Substitui recursivamente o valor de todo campo sensivel. Profundidade limitada por seguranca. */
-function redact(valor: unknown, sensiveis: Set<string>, profundidade = 0): unknown {
-  if (profundidade > 4 || valor === null || typeof valor !== 'object') return valor;
-  if (Array.isArray(valor)) return valor.map((item) => redact(item, sensiveis, profundidade + 1));
+function redact(value: unknown, sensitive: Set<string>, depth = 0): unknown {
+  if (depth > 4 || value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((item) => redact(item, sensitive, depth + 1));
 
-  const saida: Record<string, unknown> = {};
-  for (const [chave, conteudo] of Object.entries(valor as Record<string, unknown>)) {
-    saida[chave] = sensiveis.has(chave) ? REDIGIDO : redact(conteudo, sensiveis, profundidade + 1);
+  const output: Record<string, unknown> = {};
+  for (const [key, content] of Object.entries(value as Record<string, unknown>)) {
+    output[key] = sensitive.has(key) ? REDACTED : redact(content, sensitive, depth + 1);
   }
-  return saida;
+  return output;
 }
 
-export function createLogger({ modulo, nivelMinimo, camposSensiveis }: OpcoesLogger): Logger {
-  const sensiveis = new Set(camposSensiveis);
-  const minimo = NIVEIS.indexOf(nivelMinimo);
+export function createLogger({ module, minLevel, sensitiveFields }: LoggerOptions): Logger {
+  const sensitive = new Set(sensitiveFields);
+  const minimum = LEVELS.indexOf(minLevel);
 
-  const emit = (nivel: Level, mensagem: string, dados?: Record<string, unknown>): void => {
-    if (NIVEIS.indexOf(nivel) < minimo) return;
-    const linha = { nivel, modulo, mensagem, ...(redact(dados ?? {}, sensiveis) as object) };
-    process.stdout.write(`${JSON.stringify(linha)}\n`);
+  const emit = (level: Level, message: string, data?: Record<string, unknown>): void => {
+    if (LEVELS.indexOf(level) < minimum) return;
+    const line = { level, module, message, ...(redact(data ?? {}, sensitive) as object) };
+    process.stdout.write(`${JSON.stringify(line)}\n`);
   };
 
   return {
-    debug: (mensagem, dados) => emit('debug', mensagem, dados),
-    info: (mensagem, dados) => emit('info', mensagem, dados),
-    warn: (mensagem, dados) => emit('warn', mensagem, dados),
-    error: (mensagem, dados) => emit('error', mensagem, dados),
+    debug: (message, data) => emit('debug', message, data),
+    info: (message, data) => emit('info', message, data),
+    warn: (message, data) => emit('warn', message, data),
+    error: (message, data) => emit('error', message, data),
   };
 }

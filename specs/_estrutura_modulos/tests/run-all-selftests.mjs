@@ -141,6 +141,7 @@ const REGISTRY = [
   { caminho: 'specs/_estrutura_modulos/tests/template-self-test.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/supervise.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/run-all-selftests.mjs', runtime: 'node' },
+  { caminho: 'specs/_estrutura_modulos/tests/measure-language.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py', runtime: 'python' },

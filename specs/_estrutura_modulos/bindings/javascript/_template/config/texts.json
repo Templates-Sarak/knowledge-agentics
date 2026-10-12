@@ -1,7 +1,22 @@
 {
-  "_comment": "Rotulos e mensagens exibidos ao usuario. Nenhum texto literal no codigo.",
+  "_comment": "Rotulos e mensagens exibidos ao usuario. Nenhum texto literal no codigo. O dado e em ingles: `statusLabels` traduz o valor armazenado (config/domain.json) e `errorLabels` traduz o codigo de erro da API — o front mostra o rotulo, nunca o valor cru.",
   "title": "<Module>",
   "loading": "Carregando...",
   "emptyList": "Nenhum registro ainda.",
-  "genericError": "Nao foi possivel carregar os dados."
+  "genericError": "Nao foi possivel carregar os dados.",
+  "statusLabels": {
+    "draft": "Rascunho",
+    "active": "Ativo",
+    "closed": "Encerrado"
+  },
+  "errorLabels": {
+    "VALIDATION": "Os dados enviados sao invalidos.",
+    "UNAUTHENTICATED": "Sessao ausente ou expirada.",
+    "FORBIDDEN": "Voce nao tem permissao para esta acao.",
+    "NOT_FOUND": "Registro nao encontrado.",
+    "CONFLICT": "O registro conflita com o estado atual.",
+    "LIMIT_EXCEEDED": "Muitas requisicoes. Tente de novo em instantes.",
+    "EXTERNAL_DEPENDENCY": "Um servico necessario esta indisponivel.",
+    "INTERNAL": "Erro interno. Tente novamente."
+  }
 }

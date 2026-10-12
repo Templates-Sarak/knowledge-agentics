@@ -1769,7 +1769,7 @@ mesmos arquivos de container, e a cada projeto o mesmo erro (imagem de front ser
 **Status:** 🟢 Aceito — **substitui** o princípio do `ADR-009`, as exceções que o `04-regras.md` §3.1
 "Idioma" carregava e o `ADR-019` §3.1 (ver "O que substitui, e como cada ADR é marcado"). **Esta decisão não
 renomeia nada**: ela escreve a lei, mede o que ainda está em português, registra as decisões do dono e fixa o
-plano de ondas. As tabelas de renomeação são o `ADR-024` (onda 1) e o `ADR-025` (onda 2).
+plano de ondas. As tabelas de renomeação são o `ADR-024` (onda 1), o `ADR-025` (onda 2) e o `ADR-027` (onda 4).
 
 **Contexto.** A campanha do `ADR-013` ao `ADR-020` aplicou, eixo a eixo, o princípio do `ADR-009` — *"a
 árvore de arquivos é inglês; o conteúdo dela é português"* — e fechou o conjunto com gate verde. O que
@@ -1896,6 +1896,9 @@ e entrega o autoteste verde antes da seguinte.
 | **4b** | domínio do molde: rotas, tabelas, colunas, schemas, permissões, **código de erro e mensagem da API em inglês** (decisão 1), **valores de domínio em inglês** (decisão 3), `openapi.yaml`, migrations, `domain.json`; os rótulos em português vão para o `texts.json` | números da linha 4b | onda 4a; decisões 1 e 3 | autoteste + gate; `contract`/`route-naming` reescritos junto |
 | **5** | código da base: `skills/*/scripts`, `hooks`, `plugin`; chaves de saída citadas em skills/commands; flags; nomes de script; chaves JSON do `.sarak/` (decisão 6) | medido à parte | decisões 5 e 6; a flag anda **junto com a onda 2** | `audit_base.py`, `meta-verificacao-base`, `autoteste:tudo` |
 | **6** | cobrança por máquina: regra de gate (id em inglês) com o vocabulário fechado num **arquivo único** do template (decisão 7); isenções (valor de `texts.json`, comentário, documentação, `module.json:name` — decisão 2); `verify-catalog` e `cases.mjs` ganham o caso | 1.186 termos; catálogo 81 → 82 | ondas 1–5 (senão o gate reprova o próprio repositório) | `run.mjs`, `verify-catalog`, o autoteste |
+
+**Aplicação.** Ondas 1 (`ADR-024`), 2 (`ADR-025`), 3 (`ADR-026`) e 4a/4b (`ADR-027`) aplicadas. A medida
+passa a ser reproduzível por `tests/measure-language.mjs` (vocabulário em `tests/language-vocabulary.json`).
 
 **Consequências.**
 
@@ -2432,3 +2435,290 @@ As flags de `supervise.mjs` (`supervisionar.mjs`) mudaram de `--teto-ms`, `--ate
 `tools/package.mjs --backend-only` é reservado para o build da imagem de backend; o `npm run build`
 padrão continua incluindo o Vite.
 
+
+---
+
+## ADR-027 — Os bindings e o domínio do molde em inglês: a tabela que a onda 4 aplica
+
+**Status:** 🟢 Aceito — aplicado na onda 4 (4a: identificadores de `bindings/**`; 4b: o domínio que o projeto
+gerado expõe). Fecha a linha 4 do plano de ondas do `ADR-023` e aplica as decisões 1 e 3 do dono. Sai com o
+número 027 porque o `ADR-026` já descreve o contrato público do gate (onda 3).
+
+**Contexto.** Depois das ondas 1 a 3 o que o projeto gerado ainda dizia em português era o **molde** — a
+entidade de exemplo, as rotas, as tabelas, as colunas, os códigos de erro, as permissões, os valores de
+domínio — e os identificadores dos três bindings (`typescript`, `javascript`, `python`; `root/` e
+`_template/`). Medido com o vocabulário fechado (ver "Como foi medido"): **1.341 de 2.975** declarações,
+**156 de 1.089** acessos por ponto, **710 de 1.819** literais de texto e **253 de 1.708** palavras de arquivo
+de dado em `bindings/**`.
+
+O molde tem uma particularidade que as ondas anteriores não tinham: o nome é **contrato** com quem o lê. A
+rota `/resumo` é **exigida** pela regra `contract` e lida pelo agregador (`exportsSummary`); o nome da tabela
+e da coluna é lido pelo adapter `postgres` dos três bindings e pelo runner de migrations; o código de erro é
+lido pelo front; a permissão é lida de `module.json`. Por isso a mudança é **uma só**: gate, agregador,
+contrato, molde, doutrina e testes andam no mesmo commit.
+
+### As escolhas de nome
+
+| Elemento | Antes | Depois | Por quê |
+|---|---|---|---|
+| Entidade de exemplo | `Registro` / `NovoRegistro` / `LinhaRegistro` | `Entry` / `NewEntry` / `EntryRow` | **`Record` fica de fora**: é o tipo utilitário `Record<K, V>` do TypeScript e já aparece no mesmo arquivo. `Item` colidiria com a chave `items` do envelope de coleção; `Resource` é genérico demais e vira nome de rota ruim. `Entry` não é tipo embutido de TS/JS, nem nome reservado de Python, de SQL (Postgres: não reservado) ou de OpenAPI |
+| Rota de coleção | `/registros`, `/registros/{hash}` | `/entries`, `/entries/{hash}` | plural, kebab-case, sem verbo (`route-naming`) |
+| Rota obrigatória | `/resumo` | `/summary` | exigida por `contract`, lida por `exported-summary` e pelo agregador; muda junto em gate, molde e doutrina |
+| Paginação | `?pagina=&tamanho=`, `{ itens, pagina, tamanho, total }` | `?page=&pageSize=`, `{ items, page, pageSize, total }` | `defaultPageSize`/`maxPageSize` já eram `…PageSize` na config; camelCase no fio nos três bindings (no Python o parâmetro é `page_size` dentro do código e `pageSize` na rede) |
+| Tabela de dados | `<m>_metadados` | `<m>_metadata` | tradução direta; o conteúdo continua sendo o recorte "metadados do registro" |
+| Tabela de trilha | `<m>_auditoria` | `<m>_audit` | idem; o nome da porta já é `audit` |
+| Índices | `…_metadados_status_idx`, `…_auditoria_hash_idx` | `…_metadata_status_idx`, `…_audit_hash_idx` | seguem a tabela |
+| Colunas | `arquivo`, `aplicada_em` | `file_name`, `applied_at` | tabela de controle `<m>_migrations` |
+| Colunas | `titulo`, `acao`, `sujeito`, `campos_alterados` | `title`, `action`, `actor`, `changed_fields` | **`actor`, não `subject`**: `subject` já é o assunto do e-mail do `Notifier`; `sujeito` aqui é quem executou a ação |
+| Migration | `0001-cria-metadados.sql` | `0001-create-metadata.sql` | `NNNN-verbo-objeto` com verbo e objeto em inglês |
+| Schemas do contrato | `Registro`, `NovoRegistro`, `Erro` | `Entry`, `NewEntry`, `ErrorEnvelope` | **`Error` fica de fora** (embutido do JS); `ErrorEnvelope` é o par de `errorEnvelope()` |
+| Envelope de erro | `{ erro: { codigo, mensagem, requestId } }` | `{ error: { code, message, requestId } }` | decisão 1 |
+| Permissões | `<m>:ler`, `<m>:escrever` | `<m>:read`, `<m>:write` | declaradas em `module.json:permissions`, cobradas por `permission-literal` |
+| Valores armazenados | `rascunho`, `ativo`, `encerrado` | `draft`, `active`, `closed` | decisão 3; o rótulo vai para `config/texts.json:statusLabels` |
+| Marcadores | `<escopo>` | `<scope>` | valor de `data.schema` e do escopo dos packages; lido por `create-project`, `create-module`, `gate/context` |
+| Marcadores de adapter | `<porta>`, `<provedor>`, `<provedor-pasta>` | `<port>`, `<provider>`, `<provider-folder>` | lidos por `create-adapter` |
+| Chave de manifesto | `ui.pacote` | `ui.package` | schema `module.schema.json` e regra `ui-kit` |
+| Pasta de relatório | `relatorios/`, `relatorios/cobertura/` | `reports/`, `reports/coverage/` | saída de `coverage`/`ci:lint`; lida por `coverage:check`, `.gitignore`, `.dockerignore` e `strict-structure` |
+| Flag e verbo de CLI | `--lint-relatorio`, `migrations … ciclo` | `--lint-report`, `migrations … cycle` | |
+| Elemento HTML | `#raiz` | `#root` | `web/index.html` e `main.tsx` |
+
+### Os códigos de erro (decisão 1)
+
+O código é constante em inglês; a **mensagem** da API também é em inglês (é para quem depura); o **front
+traduz o código** por `config/texts.json:errorLabels`.
+
+| Antes | Depois | HTTP | Observação |
+|---|---|---|---|
+| `VALIDACAO` | `VALIDATION` | 400 | |
+| `NAO_AUTENTICADO` | `UNAUTHENTICATED` | 401 | |
+| `NAO_AUTORIZADO` | `FORBIDDEN` | 403 | o nome HTTP do estado "autenticado, sem a permissão"; `UNAUTHORIZED` seria 401 em HTTP e confundiria com a linha acima |
+| `NAO_ENCONTRADO` | `NOT_FOUND` | 404 | |
+| `CONFLITO` | `CONFLICT` | 409 | |
+| `LIMITE_EXCEDIDO` | `LIMIT_EXCEEDED` | 429 | cobre o limite de taxa e o de corpo |
+| `DEPENDENCIA_EXTERNA` | `EXTERNAL_DEPENDENCY` | 502 | |
+| `INTERNO` | `INTERNAL` | 500 | |
+
+**O mapeamento no front (mínimo, coberto por teste).** `web/src/api-client/index.ts` ganha `ApiClientError`
+(carrega `code`); `web/src/api-client/labels.ts` tem três funções puras — `statusLabel` (valor armazenado →
+rótulo), `errorCodeOf` (erro → código, por *duck typing*, porque o cliente é trocado por *mock* nos testes) e
+`errorText` (código → texto; sem código ou sem rótulo, o texto genérico, **nunca** a mensagem técnica). A tela
+mostra `texts.statusLabels[status]` e `texts.errorLabels[code]`. Cobertura: `tests/web/labels.test.*`
+(unidade) e dois casos novos em `tests/web/List.test.*` (código `NOT_FOUND` vira o texto em português; o status
+`draft` aparece como "Rascunho" e o valor cru não aparece). `statusLabels` e `errorLabels` são chaves **só da
+tela**: `--no-web` as poda junto com `loading`/`emptyList`/`genericError`. O Python é só backend e não ganha
+essas chaves.
+
+### Os identificadores (4a)
+
+O critério é o do `ADR-024` B e do `ADR-025`: **ordem idiomática inglesa** (`nomeDeArquivo` → `fileName`,
+`clausulaSelect` → `selectClause`), `camelCase` em TS/JS e `snake_case` em Python, **o mesmo conceito com o
+mesmo nome nos três**. Os 290 nomes distintos (mais 21 nomes de teste do Python, abaixo) estão na tabela;
+onde o par `camelCase` / `snake_case` não é a mera troca de caixa, a célula traz os dois.
+
+| antigo → novo | antigo → novo | antigo → novo |
+|---|---|---|
+| `_atual` → `_current` | `_CAMPOS_PERMITIDOS` → `_ALLOWED_FIELDS` | `_conexoes` → `_connections` |
+| `_dados_cache` → `_cache_data` | `_FAIXA_HASH` → `_HASH_RANGE` | `_instante` → `_instant` |
+| `_MARCADOR` → `_MARKER` | `_minimo` → `_minimum` | `_modulo` → `_module` |
+| `_PaginaDoMolde` → `_TemplatePage` | `_permissoes` → `_permissions` | `_PERMISSOES_MINIMAS` → `_MINIMUM_PERMISSIONS` |
+| `_PROFUNDIDADE_MAXIMA` → `_MAX_DEPTH` | `_RegistroDoMolde` → `_TemplateEntry` | `_registros` → `_entries` |
+| `_rotas` → `_routes` | `_sensiveis` → `_sensitive` | `acao` → `action` |
+| `achado` → `finding` | `achados` → `findings` | `alvo` → `target` |
+| `aplicados` → `applied` | `apps_por_rota_base` → `apps_by_base_route` | `AQUI` → `HERE` |
+| `arquivo` → `file_name` | `arquivos` → `files` | `assunto` → `subject` |
+| `ativo` → `active` | `atual` → `current` | `AuthDeTeste` → `TestAuth` |
+| `borda` → `boundary` | `bruto` → `raw` | `bruto_pagina` → `raw_page` |
+| `bruto_tamanho` → `raw_page_size` | `cabecalho` → `header` | `caminho` → `path` |
+| `campo` → `field` | `campos` → `fields` | `campos_alterados` → `changed_fields` |
+| `campos_sensiveis` → `sensitive_fields` | `camposAlterados` → `changedFields` | `camposSensiveis` → `sensitiveFields` |
+| `carregando` → `loading` | `casado` → `matched` | `caso` → `testCase` / `test_case` |
+| `casos` → `testCases` / `test_cases` | `casosEntrypoint` → `entrypointTestCases` | `causa` → `cause` |
+| `chave` → `key` | `CHAVE` → `KEY` | `chave_obtida` → `obtained_key` |
+| `chave_original` → `original_key` | `clausula_conta` → `count_clause` | `clausula_from` → `from_clause` |
+| `clausula_insert` → `insert_clause` | `clausula_onde` → `where_clause` | `clausula_ordem` → `order_clause` |
+| `clausula_select` → `select_clause` | `clausula_values` → `values_clause` | `clausulaConta` → `countClause` |
+| `clausulaFrom` → `fromClause` | `clausulaInsert` → `insertClause` | `clausulaOnde` → `whereClause` |
+| `clausulaOrdem` → `orderClause` | `clausulaSelect` → `selectClause` | `clausulaValues` → `valuesClause` |
+| `cliente` → `client` | `codigo` → `code` | `Colecao` → `Collection` |
+| `colisoes` → `collisions` | `comando` → `command` | `composto` → `composed` |
+| `conexao` → `connection` | `configuracao` → `configuration` | `CONFLITO` → `CONFLICT` |
+| `conhecido` → `known` | `consulta` → `query` | `consumidora` → `consumer` |
+| `contagem` → `count` | `conteudo` → `content` | `corpo` → `body` |
+| `CREDENCIAL_DE_TESTE` → `TEST_CREDENTIAL` | `criado_em` → `created_at` | `criadoEm` → `createdAt` |
+| `dados` → `data` | `dadosCache` → `cacheData` | `data-tom` → `data-tone` |
+| `DEPENDENCIA_EXTERNA` → `EXTERNAL_DEPENDENCY` | `dependencias` → `dependencies` | `deps_por_nome` → `deps_by_name` |
+| `desconhecido` → `unknownField` / `unknown_field` | `destinatario` → `recipient` | `detalhe` → `detail` |
+| `direcao` → `direction` | `dominio` → `domain` | `ehExecucaoDireta` → `isDirectRun` |
+| `emitido` → `emitted` | `emitidoExiste` → `emittedExists` | `encerrando` → `shuttingDown` / `shutting_down` |
+| `encerrar` → `shutDown` / `shut_down` | `entrada` → `input` / `input_value` | `EnvelopeErro` → `ErrorEnvelope` |
+| `enviados` → `sent` | `erro` → `error` | `escolhas` → `choices` |
+| `escrever` → `write` | `espera_erro` → `expects_error` | `esperado` → `expected` |
+| `esperaErro` → `expectsError` | `Estado` → `State` | `evento` → `event` |
+| `eventos` → `events` | `executar` → `execute` | `existe` → `exists` |
+| `existente` → `existing` | `fabrica` → `factory` | `FABRICAS` → `FACTORIES` |
+| `falhas` → `failures` | `faltam` → `missing` | `faltando` → `missing` |
+| `feitos` → `done` | `gerador` → `generator` | `gerar` → `generate` |
+| `ID_DE_MODULO_VALIDO` → `VALID_MODULE_ID` | `id_do_modulo` → `module_id` | `idDoModulo` → `moduleId` |
+| `identificador` → `identifier` | `igual` → `equalsIndex` / `equals_index` | `indentacao` → `indentation` |
+| `indice_marcador` → `marker_index` | `indiceMarcador` → `markerIndex` | `iniciais` → `initial` |
+| `INICIAL` → `INITIAL` | `inicio` → `start` | `instante` → `instant` |
+| `INSTANTE` → `INSTANT` | `INSTANTE_FIXO` → `FIXED_INSTANT` | `INTERNO` → `INTERNAL` |
+| `interno` → `internal` | `invalidos` → `invalid` | `itens` → `items` |
+| `janelas` → `windows` | `lanca` → `throws` | `lancou` → `threw` |
+| `ler` → `read` | `limite` → `limit` | `LIMITE_EXCEDIDO` → `LIMIT_EXCEEDED` |
+| `limpa` → `cleaned` | `linha` → `line` | `LINHA_COMENTADA` → `COMMENTED_LINE` |
+| `linha_conta` → `count_line` | `LinhaRegistro` → `EntryRow` | `linhas` → `lines` |
+| `listarMock` → `listMock` | `manifesto` → `manifest` | `MANIFESTO_BASE` → `BASE_MANIFEST` |
+| `MARCADOR_ROLLBACK` → `ROLLBACK_MARKER` | `mensagem` → `message` | `mensagemDeErro` → `errorMessage` |
+| `MensagemEnviada` → `SentMessage` | `minima` → `minimum` | `minimo` → `minimum` |
+| `MINIMO_DE_ARGUMENTOS` → `MINIMUM_ARGUMENTS` | `modo` → `mode` | `modulo` → `module` |
+| `ModuloApi` → `ModuleApi` | `modulos` → `modules` | `motivo` → `reason` |
+| `NAO_AUTENTICADO` → `UNAUTHENTICATED` | `NAO_AUTORIZADO` → `FORBIDDEN` | `NAO_ENCONTRADO` → `NOT_FOUND` |
+| `neutro` → `neutral` | `NIVEIS` → `LEVELS` | `nivel` → `level` |
+| `nivel_minimo` → `min_level` | `nivelMinimo` → `minLevel` | `nome` → `name` |
+| `nome_de_arquivo` → `file_name` | `nome_e_colunas` → `name_and_columns` | `nomeDeArquivo` → `fileName` |
+| `nomeEColunas` → `nameAndColumns` | `nomes` → `names` | `nomes_do_modulo` → `module_names` |
+| `nomes_ordenados_up` → `ordered_up_names` | `nomes_up` → `up_names` | `nomesOrdenadosUp` → `orderedUpNames` |
+| `nomesUp` → `upNames` | `NovoRegistro` → `NewEntry` | `obtido` → `obtained` |
+| `opcoes` → `options` | `Opcoes` → `Options` | `OpcoesLogger` → `LoggerOptions` |
+| `ordem_obtida` → `obtained_order` | `ordenados` → `ordered` | `origem` → `origin` |
+| `originais` → `originals` | `padrao` → `defaultStatus` / `default_status` | `pagina` → `page` |
+| `Pagina` → `Page` | `PAGINA_INICIAL` → `INITIAL_PAGE` | `pai` → `parent` |
+| `parar_no_primeiro` → `stop_at_first` | `pares` → `pairs` | `partida` → `start` |
+| `passos` → `steps` | `pasta` → `dir` | `pasta_modulo` → `module_dir` |
+| `pastaModulo` → `moduleDir` | `permissao` → `permission` | `permissoes` → `permissions` |
+| `permitidos` → `allowed` | `plataforma` → `platform` | `ponteiro` → `pointer` |
+| `por_rota` → `by_route` | `porRota` → `byRoute` | `porta` → `port` |
+| `portas` → `ports` | `prefixo` → `prefix` | `prefixos` → `prefixes` |
+| `profundidade` → `depth` | `PROFUNDIDADE_MAXIMA` → `MAX_DEPTH` | `provedor` → `provider` |
+| `proximo` → `nextValue` / `call_next` | `Proximo` → `NextCall` | `publicas` → `publicSet` / `public_set` |
+| `RAIZ` → `ROOT` | `raiz` → `root` | `raiz_modulo` → `module_root` |
+| `RaizDoModulo` → `ModuleRoot` | `raizModulo` → `moduleRoot` | `REDIGIDO` → `REDACTED` |
+| `registro` → `entry` | `Registro` → `Entry` | `RegistroDoMolde` → `TemplateEntry` |
+| `registros` → `entries` | `relativo` → `relativePath` / `relative_path` | `relatorio` → `report` |
+| `relogio` → `clock` | `resolvido` → `resolved` | `resposta` → `response` |
+| `resto` → `rest` | `resultado` → `result` | `resumo` → `summary` |
+| `rota` → `route` | `ROTA_BASE` → `BASE_ROUTE` | `rota_base` → `base_route` |
+| `rotaBase` → `baseRoute` | `rotas` → `routes` | `rotas_base` → `base_routes` |
+| `rotasPublicas` → `publicRoutes` / `public_routes` | `rotulo` → `label` | `saida` → `output` |
+| `seguranca` → `security` | `sensiveis` → `sensitive` | `servidor` → `server` |
+| `ServidorComTeto` → `ServerWithCap` | `simples` → `simple` | `sinal` → `signal` |
+| `situacao` → `phase` | `Situacao` → `Phase` | `sobrescrever` → `overrides` |
+| `STATUS_VALIDOS` → `VALID_STATUSES` | `status_validos` → `valid_statuses` | `statusValidos` → `validStatuses` |
+| `sufixo` → `suffix` | `sujeito` → `actor` | `tabela` → `table` |
+| `tabela_controle` → `control_table` | `tabelaControle` → `controlTable` | `tamanho` → `pageSize` / `page_size` |
+| `TAMANHO_INICIAL` → `INITIAL_PAGE_SIZE` | `teto` → `cap` | `TETO_DE_TESTE` → `TEST_CAP` |
+| `texto` → `text` | `texto_junit` → `junit_text` | `textos` → `texts` |
+| `titulo` → `title` | `token_valido` → `credential` | `tokenValido` → `credential` |
+| `tom` → `tone` | `Tom` → `Tone` | `transporte` → `transport` |
+| `up_down_obtido` → `up_down_obtained` | `VALIDACAO` → `VALIDATION` | `valido` → `valid` |
+| `valor` → `value` | `VALOR_ORIGINAL` → `ORIGINAL_VALUE` | `valores` → `values` |
+| `vazio` → `empty` | `VERBOS_DE_REVERSAO` → `ROLLBACK_VERBS` |  |
+
+**Decididos por ocorrência** (a tabela por nome não basta):
+
+| Termo | Decisão |
+|---|---|
+| `padrao` | `defaultStatus` — era o primeiro status válido, não "padrão" no sentido de regra |
+| `entrada` | `input` (TS/JS) e `input_value` (Python, para não sombrear o embutido `input`) |
+| `caso` / `casos` | `testCase` / `testCases` — `case` é reservada |
+| `modulo` | `module`, como o `ADR-025` fixou; vale também onde o nome é local ou parâmetro (ESM e Python não reservam) |
+| `situacao` | `phase` — é o estado de *carregamento* da tela (`loading`/`ok`/`empty`/`error`), não o `status` da entidade |
+| `tom` / `Tom` / `data-tom` | `tone` / `Tone` / `data-tone` |
+| `teto` | `cap`, como no `ADR-025` |
+| `publicas` | `publicSet` / `public_set` — `public` é reservada |
+| `proximo` | `nextValue` (contador do gerador sequencial) / `call_next` (cadeia de middleware do Python) |
+| `tokenValido` | `credential` — o *scanner* de segredos (`Segredo atribuido`) reconhece `…Token = '…'`; `validToken` reprovaria o primeiro commit do projeto gerado |
+| `casosEntrypoint` | `entrypointTestCases` — `entrypointCases` já nomeia a função que os produz |
+| `FABRICAS` | `FACTORIES` — a âncora de `create-adapter.mjs` lê esse nome do `composition.*` |
+| `igual` | `equalsIndex` / `equals_index` — é a posição do `=` numa linha de `.env`, não um booleano |
+
+**Nomes de teste do Python** (a convenção `test_<verbo>_<objeto>` fica; só a língua muda):
+
+| Antes | Depois |
+|---|---|
+| `test_cria_e_devolve_so_os_campos_da_projecao` | `test_creates_and_returns_only_projection_fields` |
+| `test_derruba_quando_falta_variavel_fora_do_pytest` | `test_fails_boot_when_variable_missing_outside_pytest` |
+| `test_hash_inexistente_devolve_nao_encontrado` | `test_unknown_hash_returns_not_found` |
+| `test_lista_no_envelope_de_colecao` | `test_lists_in_collection_envelope` |
+| `test_meta_ecoa_o_manifesto` | `test_meta_echoes_manifest` |
+| `test_monta_com_o_primeiro_status_quando_nenhum_e_informado` | `test_builds_with_first_status_when_none_given` |
+| `test_motor_e_deterministico` | `test_engine_is_deterministic` |
+| `test_motor_escapa_html` | `test_engine_escapes_html` |
+| `test_motor_preserva_marcador_sem_valor` | `test_engine_preserves_marker_without_value` |
+| `test_nao_derruba_quando_a_variavel_esta_presente` | `test_does_not_fail_when_variable_present` |
+| `test_nao_inventa_instante_nem_identificador` | `test_does_not_invent_instant_or_identifier` |
+| `test_nega_leitura_sem_token` | `test_denies_read_without_token` |
+| `test_nega_token_invalido` | `test_denies_invalid_token` |
+| `test_recusa_status_fora_do_vocabulario` | `test_rejects_status_outside_vocabulary` |
+| `test_recusa_titulo_vazio` | `test_rejects_empty_title` |
+| `test_rejeita_campo_desconhecido` | `test_rejects_unknown_field` |
+| `test_rejeita_paginacao_invalida` | `test_rejects_invalid_pagination` |
+| `test_rejeita_tamanho_acima_do_teto` | `test_rejects_page_size_above_cap` |
+| `test_remove_espaco_em_volta_do_titulo` | `test_trims_whitespace_around_title` |
+| `test_resumo_devolve_a_contagem` | `test_summary_returns_count` |
+| `test_health_responde_sem_token` | `test_health_answers_without_token` |
+
+### O que fica em português, e por quê
+
+- **`module.json:name`** (decisão 2) e os **valores** de `config/texts.json` — texto ao usuário; o `statusLabels`
+  e o `errorLabels` entram aqui.
+- **Comentários e documentação**: `info.title`/`info.description`/`summary` do `openapi.yaml`, `description` de
+  `pyproject.toml` e `package.json`, `README.md` dos moldes, `doutrina/`, skills.
+- **O texto do artefato publicado** (`core/templates/base.html`: "Identificador", "Situacao", "Criado em") —
+  é o que a pessoa lê na página gerada; os **marcadores** `{{title}}`, `{{hash}}`, `{{status}}`, `{{createdAt}}`
+  são código e passaram para o inglês.
+- **Exemplos de `reason` em `config/compliance.json`** — prosa de justificativa.
+
+### Como foi aplicado
+
+**Método.** Renomeação por árvore sintática, não textual: API do `typescript` para `.ts/.tsx/.js/.jsx/.mjs`
+(cada `Identifier`, cada literal de texto) e `tokenize` do Python para `.py` (cada `NAME`, cada `STRING`, cada
+parte de f-string). O mapa é por nome, **igual nos três bindings**, com a variante `snake_case` onde o nome
+é de Python. Literal de texto passa por duas tabelas: **frases inteiras** (mensagens) e **palavras de SQL**
+(`titulo`, `acao`, `sujeito`, `campos_alterados`, `arquivo`, `aplicada_em`, só em literal que tem verbo SQL).
+Comentário só muda onde cita um nome entre crases ou dentro de chaves de JSDoc. Em seguida, à mão: os
+arquivos de dado (`openapi.yaml`, SQL, `module.json`, `config/*.json`), o front, os testes novos e o ferramental
+que lia os nomes (`create-adapter`, `create-module`, `create-project`, `gate/context`, regras `contract`,
+`isolation`, `structure`, `operation`, os casos do gate, `shutdown-proof.py`, `template-self-test`).
+
+**O que a prova pegou** (e o mapa não pegaria): `shutdown-proof.py` lia `"resultado"` do log estruturado;
+`migrations.*` lia `line.arquivo` da coluna que virou `file_name`; a âncora `FABRICAS` de `create-adapter`;
+`propagar.py` só reconhecia `escopo` como nome da variável do marcador (lia o comentário do arquivo, não a
+linha de código — a prova usava um texto de fixture); JSDoc com o nome do parâmetro na linha seguinte ao tipo; `prettier`
+reflowando linhas que ficaram curtas; 3 literais `'page_size'` que eram chave de rede.
+
+**Como foi medido.** `tests/measure-language.mjs` + `tests/language-vocabulary.json` (668 termos, origem por
+termo, 61 cognatos fora de propósito). Mesma régua dos dois lados, sobre o `HEAD` da onda 3 e sobre a árvore
+nova:
+
+| Em `bindings/**` | Antes | Depois |
+|---|---|---|
+| declarações (nome único por arquivo, nome e papel) | 1.341 de 2.975 | **0** de 3.023 |
+| acessos por ponto | 156 de 1.089 | **0** de 1.119 |
+| literais de texto | 710 de 1.819 | **0** de 1.884 |
+| palavras de arquivo de dado | 253 de 1.708 | **0** de 1.734 |
+
+Texto de documentação em arquivo de dado (`description`, `summary` e `title` do `openapi.yaml`, `description` do
+`pyproject.toml`, `reason` de `compliance.json`, as chaves `//…` e `_comment` de JSON) fica **fora** da medida, como
+comentário — é o terceiro lugar do `ADR-023`. Contagem de casos do gate, antes e depois: TypeScript
+138 (4 sem cobertura) e 138 (4); JavaScript 138 (4) e 138 (4); Python 133 (9) e 133 (9) — nenhum caso perdeu
+cobertura por causa do rename.
+
+### Consequências
+
+1. **O gate e o molde mudaram juntos.** `contract` exige `/summary`; `exported-summary` lê `/summary`;
+   `strict-structure` tolera `reports/`; `module.schema.json` aceita `ui.package`. O catálogo continua com **81**
+   regras — trocar o literal que uma regra cobra não é regra nova nem id novo.
+2. **Sistema que já adotou o molde adota por plan** (`ADR-023`, "Quem já adotou"). O que quebra por contrato
+   nominal, e o plano precisa listar: `consumes[].contract` com `GET /resumo`, `permissions` com `:ler`/`:escrever`
+   (`module.json` **e** o que o *auth* devolve em `permissions`), `ui.pacote`, o marcador `<escopo>` em
+   `project.json`/`package.json`, a pasta `relatorios/` no `.gitignore`/CI, o código de erro que o front lê.
+3. **Tabela em produção não é renomeada por este ADR.** `<m>_metadados` → `<m>_metadata` e as colunas viram
+   migration que o dono do sistema decide, com expand-contract (`db-migrations`). O molde muda; o banco de um
+   sistema vivo não.
+4. **O front passa a depender de `config/texts.json`** para mostrar valor armazenado e erro: valor sem rótulo
+   aparece como veio; código sem rótulo vira o texto genérico.
+5. **Fora desta onda, declarado:** objetos internos do ferramental (`escopo`, `nivel`, `regra` nas regras do
+   gate; chaves de saída de `affected`, `ci-security`, `ci-dependencies` — ADR-026) e os fixtures de `cases.mjs`
+   que exercitam detecção em português; a onda 5 (código da base) e a onda 6 (regra de gate de idioma) seguem.

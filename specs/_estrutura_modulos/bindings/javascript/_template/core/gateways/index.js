@@ -30,12 +30,12 @@
 /** Falha ao falar com outro modulo. A borda a traduz para DEPENDENCIA_EXTERNA (502). */
 export class GatewayError extends Error {
   /**
-   * @param {string} modulo
-   * @param {string} motivo
+   * @param {string} module
+   * @param {string} reason
    */
-  constructor(modulo, motivo) {
-    super(`gateway "${modulo}" indisponivel: ${motivo}`);
+  constructor(module, reason) {
+    super(`gateway "${module}" unavailable: ${reason}`);
     this.name = 'GatewayError';
-    this.modulo = modulo;
+    this.module = module;
   }
 }

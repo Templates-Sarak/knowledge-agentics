@@ -259,10 +259,10 @@ function createNeighbor(modulesDir, template, consumes) {
   manifest.id = 'vizinho';
   manifest.basePath = '/api/v1/vizinho';
   manifest.webPath = '/vizinho';
-  manifest.data = { schema: 'escopo', prefix: 'vizinho_', tables: ['vizinho_metadados'] };
-  manifest.permissions = ['vizinho:ler', 'vizinho:escrever'];
-  // `/resumo` e obrigatoria em todo modulo: o vizinho fecha o ciclo sem violar `consumes-contract`.
-  manifest.consumes = consumes ? [{ module: 'molde', contract: 'GET /resumo', why: 'ciclo' }] : [];
+  manifest.data = { schema: 'escopo', prefix: 'vizinho_', tables: ['vizinho_metadata'] };
+  manifest.permissions = ['vizinho:read', 'vizinho:write'];
+  // `/summary` e obrigatoria em todo modulo: o vizinho fecha o ciclo sem violar `consumes-contract`.
+  manifest.consumes = consumes ? [{ module: 'molde', contract: 'GET /summary', why: 'ciclo' }] : [];
   writeJson(path, manifest);
   return root;
 }

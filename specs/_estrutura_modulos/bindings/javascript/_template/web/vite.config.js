@@ -20,12 +20,12 @@ import { defineConfig } from 'vite';
 // front e publicado sob `<webPath>/`, e sem `base` o index.html pediria `/assets/...` na raiz do
 // host e quebraria. `webPath` nulo (modulo sem front publicado) cai em `/`. Um roteador de cliente
 // adicionado depois precisa de `basename` igual a este `webPath` (specs/arquitetura/00-arquitetura.md §4.4).
-const raiz = import.meta.dirname;
-const { webPath } = JSON.parse(readFileSync(join(raiz, '..', 'module.json'), 'utf8').replace(/^﻿/, ''));
+const root = import.meta.dirname;
+const { webPath } = JSON.parse(readFileSync(join(root, '..', 'module.json'), 'utf8').replace(/^﻿/, ''));
 const base = typeof webPath === 'string' && webPath !== '' ? `${webPath.replace(/\/+$/, '')}/` : '/';
 
 export default defineConfig({
-  root: raiz,
+  root: root,
   base,
   plugins: [react()],
   build: { outDir: 'dist', emptyOutDir: true },

@@ -4,7 +4,7 @@ Nao e um adapter "de brinquedo": e o que permite os testes de todo modulo rodare
 banco. Sem variante de memoria para cada porta, o desacoplamento nao e verificavel — e o que nao
 e verificavel e folclore (ADR-003, specs/adr/000-decisoes-do-template.md).
 
-Adapter NAO conhece dominio: nao existe `if module == "catalogo"` aqui dentro.
+Adapter NAO conhece dominio: nao existe `if module == "catalog"` aqui dentro.
 """
 
 from __future__ import annotations
@@ -13,40 +13,40 @@ import random
 from datetime import datetime, timezone
 from typing import Any, Sequence
 
-from packages.ports import Pagina
+from packages.ports import Page
 
-_FAIXA_HASH = (10000, 99999)
+_HASH_RANGE = (10000, 99999)
 
 
 class InMemoryRepository:
-    def __init__(self, iniciais: Sequence[Any] = ()) -> None:
-        self._registros = list(iniciais)
+    def __init__(self, initial: Sequence[Any] = ()) -> None:
+        self._entries = list(initial)
 
-    async def list(self, pagina: int, tamanho: int) -> Pagina:
-        inicio = (pagina - 1) * tamanho
-        return Pagina(
-            itens=self._registros[inicio : inicio + tamanho],
-            pagina=pagina,
-            tamanho=tamanho,
-            total=len(self._registros),
+    async def list(self, page: int, page_size: int) -> Page:
+        start = (page - 1) * page_size
+        return Page(
+            items=self._entries[start : start + page_size],
+            page=page,
+            page_size=page_size,
+            total=len(self._entries),
         )
 
     async def find_by_hash(self, hash_universal: str) -> Any | None:
-        return next((r for r in self._registros if r.hash == hash_universal), None)
+        return next((r for r in self._entries if r.hash == hash_universal), None)
 
-    async def insert(self, registro: Any) -> None:
-        self._registros.append(registro)
+    async def insert(self, entry: Any) -> None:
+        self._entries.append(entry)
 
     async def count(self) -> int:
-        return len(self._registros)
+        return len(self._entries)
 
 
 class InMemoryAudit:
     def __init__(self) -> None:
-        self.eventos: list[dict[str, object]] = []
+        self.events: list[dict[str, object]] = []
 
-    async def record(self, evento: dict[str, object]) -> None:
-        self.eventos.append(evento)
+    async def record(self, event: dict[str, object]) -> None:
+        self.events.append(event)
 
 
 class SystemClock:
@@ -59,25 +59,25 @@ class SystemClock:
 class FixedClock:
     """Relogio congelado, para teste de motor deterministico."""
 
-    def __init__(self, instante: str) -> None:
-        self._instante = instante
+    def __init__(self, instant: str) -> None:
+        self._instant = instant
 
     def now(self) -> str:
-        return self._instante
+        return self._instant
 
 
 class DefaultIdGenerator:
     def hash(self) -> str:
-        return str(random.randint(*_FAIXA_HASH))
+        return str(random.randint(*_HASH_RANGE))
 
 
 class SequentialIdGenerator:
-    def __init__(self, inicio: int = 10000) -> None:
-        self._atual = inicio
+    def __init__(self, start: int = 10000) -> None:
+        self._current = start
 
     def hash(self) -> str:
-        self._atual += 1
-        return str(self._atual)
+        self._current += 1
+        return str(self._current)
 
 
 class DenyingTokenVerifier:
@@ -88,27 +88,27 @@ class DenyingTokenVerifier:
 
 
 class InMemoryStorage:
-    """`arquivos` exposto para o teste inspecionar o que foi salvo — mesmo padrao de
+    """`files` exposto para o teste inspecionar o que foi salvo — mesmo padrao de
     `InMemoryAudit`."""
 
     def __init__(self) -> None:
-        self.arquivos: dict[str, bytes] = {}
+        self.files: dict[str, bytes] = {}
 
-    async def save(self, caminho: str, conteudo: bytes) -> None:
-        self.arquivos[caminho] = conteudo
+    async def save(self, path: str, content: bytes) -> None:
+        self.files[path] = content
 
-    async def find(self, caminho: str) -> bytes | None:
-        return self.arquivos.get(caminho)
+    async def find(self, path: str) -> bytes | None:
+        return self.files.get(path)
 
-    async def remove(self, caminho: str) -> None:
-        self.arquivos.pop(caminho, None)
+    async def remove(self, path: str) -> None:
+        self.files.pop(path, None)
 
 
 class InMemoryNotifier:
-    """`enviados` exposto pelo mesmo motivo de `InMemoryStorage`: o teste afirma o que saiu."""
+    """`sent` exposto pelo mesmo motivo de `InMemoryStorage`: o teste afirma o que saiu."""
 
     def __init__(self) -> None:
-        self.enviados: list[dict[str, str]] = []
+        self.sent: list[dict[str, str]] = []
 
-    async def send(self, destinatario: str, assunto: str, corpo: str) -> None:
-        self.enviados.append({"destinatario": destinatario, "assunto": assunto, "corpo": corpo})
+    async def send(self, recipient: str, subject: str, body: str) -> None:
+        self.sent.append({"recipient": recipient, "subject": subject, "body": body})

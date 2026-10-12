@@ -67,7 +67,7 @@
       "required": ["mode"],
       "properties": {
         "mode": { "type": "string", "enum": ["own", "kit"] },
-        "pacote": { "type": "string", "minLength": 1 }
+        "package": { "type": "string", "minLength": 1 }
       }
     },
 

@@ -15,8 +15,8 @@ requisicao em voo e uma requisicao de verdade que ainda nao terminou quando o si
 CENARIOS:
   drena    a requisicao lenta termina ANTES do teto: envia o sinal com ela em voo, CONFERE que o
            processo continua vivo (esta drenando), le a resposta 200 e exige saida 0 + o log
-           estruturado resultado=drained.
-  estoura  a requisicao lenta dura MAIS que o teto: exige saida != 0 + o log resultado=timeout,
+           estruturado result=drained.
+  estoura  a requisicao lenta dura MAIS que o teto: exige saida != 0 + o log result=timeout,
            dentro do teto + margem.
 
 Saida: uma linha JSON `{cenario, ok, motivo, codigo, decorrido_ms}`; exit 0 se ok, 1 se nao.
@@ -215,8 +215,8 @@ def main(argv: list[str]) -> int:
         return 2
     ok, reason, code, elapsed_ms, output = _run(args, command)
     expected = EXPECTED_LOG[args.scenario]
-    if ok and not re.search(r'"resultado":\s*"' + expected + '"', output):
-        ok, reason = False, f"exited as expected, but the structured log is missing resultado={expected}"
+    if ok and not re.search(r'"result":\s*"' + expected + '"', output):
+        ok, reason = False, f"exited as expected, but the structured log is missing result={expected}"
     report: dict[str, Any] = {
         "scenario": args.scenario,
         "ok": ok,

@@ -11,9 +11,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { checkEnvRequired } from '../../api/src/config.js';
 
-const CHAVE = '<MODULE>_API_PORT';
+const KEY = '<MODULE>_API_PORT';
 
-const MANIFESTO_BASE = {
+const BASE_MANIFEST = {
   id: '<module>',
   name: '<Module>',
   version: '0.1.0',
@@ -22,8 +22,8 @@ const MANIFESTO_BASE = {
   webPath: null,
   navigation: null,
   exportsSummary: false,
-  data: { schema: '<escopo>', prefix: '<module_snake>_', tables: [] },
-  requiredEnv: [CHAVE],
+  data: { schema: '<scope>', prefix: '<module_snake>_', tables: [] },
+  requiredEnv: [KEY],
   ports: [],
   permissions: [],
   publicRoutes: [],
@@ -31,24 +31,24 @@ const MANIFESTO_BASE = {
 };
 
 const NODE_ENV_ORIGINAL = process.env['NODE_ENV'];
-const VALOR_ORIGINAL = process.env[CHAVE];
+const ORIGINAL_VALUE = process.env[KEY];
 
 afterEach(() => {
   process.env['NODE_ENV'] = NODE_ENV_ORIGINAL;
-  if (VALOR_ORIGINAL === undefined) delete process.env[CHAVE];
-  else process.env[CHAVE] = VALOR_ORIGINAL;
+  if (ORIGINAL_VALUE === undefined) delete process.env[KEY];
+  else process.env[KEY] = ORIGINAL_VALUE;
 });
 
 describe('checkEnvRequired', () => {
-  it('derruba o boot quando falta variavel obrigatoria E o processo NAO esta em NODE_ENV=test', () => {
+  it('fails the boot when a required variable is missing AND the process is NOT under NODE_ENV=test', () => {
     process.env['NODE_ENV'] = 'production';
-    delete process.env[CHAVE];
-    expect(() => checkEnvRequired(MANIFESTO_BASE)).toThrow(/variaveis ausentes no ambiente/);
+    delete process.env[KEY];
+    expect(() => checkEnvRequired(BASE_MANIFEST)).toThrow(/variables missing from the environment/);
   });
 
-  it('NAO derruba quando a variavel esta presente, mesmo fora de NODE_ENV=test', () => {
+  it('does NOT fail when the variable is present, even outside NODE_ENV=test', () => {
     process.env['NODE_ENV'] = 'production';
-    process.env[CHAVE] = '3999';
-    expect(() => checkEnvRequired(MANIFESTO_BASE)).not.toThrow();
+    process.env[KEY] = '3999';
+    expect(() => checkEnvRequired(BASE_MANIFEST)).not.toThrow();
   });
 });

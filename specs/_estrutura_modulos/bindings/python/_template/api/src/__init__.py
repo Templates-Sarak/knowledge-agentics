@@ -20,23 +20,23 @@ __all__ = ["create_app", "listen_port", "load_configuration", "env_required"]
 
 def create_app(deps: ModuleDependencies, auth: Auth, config: ModuleConfiguration | None = None) -> FastAPI:
     """Monta o modulo num FastAPI. Usado pela raiz de composicao E pelos testes de contrato."""
-    configuracao = config or load_configuration()
-    manifesto = configuracao.manifesto
+    configuration = config or load_configuration()
+    manifest = configuration.manifest
 
     logger = create_logger(
-        modulo=manifesto["id"],
-        nivel_minimo=configuracao.api["logLevel"],
-        campos_sensiveis=manifesto["sensitiveFields"],
+        module=manifest["id"],
+        min_level=configuration.api["logLevel"],
+        sensitive_fields=manifest["sensitiveFields"],
     )
 
     app = FastAPI(
-        title=configuracao.textos["title"],
-        version=manifesto["version"],
+        title=configuration.texts["title"],
+        version=manifest["version"],
         docs_url=None,
         redoc_url=None,
     )
-    record_middlewares(app, configuracao, EdgeContext(deps.idGenerator, auth, logger))
-    app.include_router(create_routes(deps, configuracao), prefix=manifesto["basePath"])
+    record_middlewares(app, configuration, EdgeContext(deps.idGenerator, auth, logger))
+    app.include_router(create_routes(deps, configuration), prefix=manifest["basePath"])
     return app
 
 

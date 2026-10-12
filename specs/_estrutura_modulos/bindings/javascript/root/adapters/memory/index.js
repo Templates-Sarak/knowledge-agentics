@@ -8,35 +8,35 @@
 
 /**
  * @template {{ hash: string }} T
- * @param {T[]} [iniciais]
+ * @param {T[]} [initial]
  * @returns {import('../../packages/ports/index.js').Repository<T>}
  */
-export function createRepository(iniciais = []) {
-  const registros = [...iniciais];
+export function createRepository(initial = []) {
+  const entries = [...initial];
   return {
-    async list(pagina, tamanho) {
-      const inicio = (pagina - 1) * tamanho;
-      return { itens: registros.slice(inicio, inicio + tamanho), pagina, tamanho, total: registros.length };
+    async list(page, pageSize) {
+      const start = (page - 1) * pageSize;
+      return { items: entries.slice(start, start + pageSize), page, pageSize, total: entries.length };
     },
     async findByHash(hash) {
-      return registros.find((registro) => registro.hash === hash) ?? null;
+      return entries.find((entry) => entry.hash === hash) ?? null;
     },
-    async insert(registro) {
-      registros.push(registro);
+    async insert(entry) {
+      entries.push(entry);
     },
     async count() {
-      return registros.length;
+      return entries.length;
     },
   };
 }
 
 export function createAuditLog() {
   /** @type {import('../../packages/ports/index.js').AuditEvent[]} */
-  const eventos = [];
+  const events = [];
   return {
-    eventos,
-    async record(evento) {
-      eventos.push(evento);
+    events,
+    async record(event) {
+      events.push(event);
     },
   };
 }
@@ -47,20 +47,20 @@ export function createClock() {
 }
 
 /** Relogio congelado, para teste de motor deterministico. */
-export function createFixedClock(instante) {
-  return { now: () => instante };
+export function createFixedClock(instant) {
+  return { now: () => instant };
 }
 
 export function createIdGenerator() {
   return { hash: () => String(Math.floor(Math.random() * 90000) + 10000) };
 }
 
-export function createSequentialGenerator(inicio = 10000) {
-  let atual = inicio;
+export function createSequentialGenerator(start = 10000) {
+  let current = start;
   return {
     hash() {
-      atual += 1;
-      return String(atual);
+      current += 1;
+      return String(current);
     },
   };
 }
@@ -75,35 +75,35 @@ export function createDenyingTokenVerifier() {
 }
 
 /**
- * `arquivos` exposto para o teste inspecionar o que foi salvo — mesmo padrao de `createAuditLog`.
- * @returns {import('../../packages/ports/index.js').Storage & { arquivos: Map<string, Buffer> }}
+ * `files` exposto para o teste inspecionar o que foi salvo — mesmo padrao de `createAuditLog`.
+ * @returns {import('../../packages/ports/index.js').Storage & { files: Map<string, Buffer> }}
  */
 export function createInMemoryStorage() {
-  const arquivos = new Map();
+  const files = new Map();
   return {
-    arquivos,
-    async save(caminho, conteudo) {
-      arquivos.set(caminho, conteudo);
+    files,
+    async save(path, content) {
+      files.set(path, content);
     },
-    async find(caminho) {
-      return arquivos.get(caminho) ?? null;
+    async find(path) {
+      return files.get(path) ?? null;
     },
-    async remove(caminho) {
-      arquivos.delete(caminho);
+    async remove(path) {
+      files.delete(path);
     },
   };
 }
 
 /**
- * `enviados` exposto pelo mesmo motivo de `createInMemoryStorage`: o teste afirma o que saiu.
- * @returns {import('../../packages/ports/index.js').Notifier & { enviados: Array<{destinatario: string, assunto: string, corpo: string}> }}
+ * `sent` exposto pelo mesmo motivo de `createInMemoryStorage`: o teste afirma o que saiu.
+ * @returns {import('../../packages/ports/index.js').Notifier & { sent: Array<{recipient: string, subject: string, body: string}> }}
  */
 export function createInMemoryNotifier() {
-  const enviados = [];
+  const sent = [];
   return {
-    enviados,
-    async send(destinatario, assunto, corpo) {
-      enviados.push({ destinatario, assunto, corpo });
+    sent,
+    async send(recipient, subject, body) {
+      sent.push({ recipient, subject, body });
     },
   };
 }

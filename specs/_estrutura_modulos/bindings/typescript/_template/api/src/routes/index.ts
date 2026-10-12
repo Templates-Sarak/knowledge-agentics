@@ -12,52 +12,52 @@ import { ApiError } from '../errors.js';
 import { requirePermission } from '../middlewares/index.js';
 import { toCollection, toContract, toMeta } from '../mappers/index.js';
 
-interface Opcoes {
+interface Options {
   deps: ModuleDependencies;
   config: ModuleConfiguration;
 }
 
 /** Paginacao validada na borda, com padrao e teto vindos de config/api.json. */
 function readPagination(query: Record<string, unknown>, config: ModuleConfiguration): [number, number] {
-  const pagina = Number(query['pagina'] ?? 1);
-  const tamanho = Number(query['tamanho'] ?? config.api.defaultPageSize);
-  if (!Number.isInteger(pagina) || pagina < 1) {
-    throw new ApiError('VALIDACAO', 'parametro "pagina" deve ser inteiro >= 1');
+  const page = Number(query['page'] ?? 1);
+  const pageSize = Number(query['pageSize'] ?? config.api.defaultPageSize);
+  if (!Number.isInteger(page) || page < 1) {
+    throw new ApiError('VALIDATION', 'parameter "page" must be an integer >= 1');
   }
-  if (!Number.isInteger(tamanho) || tamanho < 1 || tamanho > config.api.maxPageSize) {
-    throw new ApiError('VALIDACAO', `parametro "tamanho" deve estar entre 1 e ${config.api.maxPageSize}`);
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > config.api.maxPageSize) {
+    throw new ApiError('VALIDATION', `parameter "pageSize" must be between 1 and ${config.api.maxPageSize}`);
   }
-  return [pagina, tamanho];
+  return [page, pageSize];
 }
 
 /** Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado (specs/arquitetura/02-contrato-e-dados.md §3.2). */
-function readBody(corpo: unknown): { titulo: unknown; status?: unknown } {
-  if (typeof corpo !== 'object' || corpo === null) {
-    throw new ApiError('VALIDACAO', 'corpo deve ser um objeto');
+function readBody(body: unknown): { title: unknown; status?: unknown } {
+  if (typeof body !== 'object' || body === null) {
+    throw new ApiError('VALIDATION', 'body must be an object');
   }
-  const permitidos = new Set(['titulo', 'status']);
-  const desconhecido = Object.keys(corpo).find((chave) => !permitidos.has(chave));
-  if (desconhecido !== undefined) {
-    throw new ApiError('VALIDACAO', `campo desconhecido no corpo: "${desconhecido}"`);
+  const allowed = new Set(['title', 'status']);
+  const unknownField = Object.keys(body).find((key) => !allowed.has(key));
+  if (unknownField !== undefined) {
+    throw new ApiError('VALIDATION', `unknown field in body: "${unknownField}"`);
   }
-  return corpo as { titulo: unknown; status?: unknown };
+  return body as { title: unknown; status?: unknown };
 }
 
-function requiredRoutes(router: Router, { deps, config }: Opcoes): void {
-  const { manifesto } = config;
+function requiredRoutes(router: Router, { deps, config }: Options): void {
+  const { manifest } = config;
 
   router.get('/health', (_req, res, next) => {
     deps.repository
       .count()
-      .then(() => res.json({ ok: true, modulo: manifesto.id }))
+      .then(() => res.json({ ok: true, module: manifest.id }))
       .catch(next);
   });
 
   router.get('/meta', (_req, res) => {
-    res.json(toMeta(manifesto));
+    res.json(toMeta(manifest));
   });
 
-  router.get('/resumo', (_req, res, next) => {
+  router.get('/summary', (_req, res, next) => {
     deps.repository
       .count()
       .then((total) => res.json({ total }))
@@ -69,83 +69,81 @@ function requiredRoutes(router: Router, { deps, config }: Opcoes): void {
  * As permissoes vem do manifesto, nunca de literal no codigo.
  * Manifesto incompleto derruba o boot aqui — melhor que servir rota sem autorizacao.
  */
-function permissionsFor(config: ModuleConfiguration): { ler: string; escrever: string } {
-  const [ler, escrever] = config.manifesto.permissions;
-  if (ler === undefined || escrever === undefined) {
-    throw new Error('[rotas] module.json:permissions precisa declarar leitura e escrita');
+function permissionsFor(config: ModuleConfiguration): { read: string; write: string } {
+  const [read, write] = config.manifest.permissions;
+  if (read === undefined || write === undefined) {
+    throw new Error('[routes] module.json:permissions must declare read and write');
   }
-  return { ler, escrever };
+  return { read, write };
 }
 
-function recordRoutes(router: Router, { deps, config }: Opcoes): void {
-  const { ler, escrever } = permissionsFor(config);
+function recordRoutes(router: Router, { deps, config }: Options): void {
+  const { read, write } = permissionsFor(config);
 
-  router.get('/registros', requirePermission(ler), (req, res, next) => {
+  router.get('/entries', requirePermission(read), (req, res, next) => {
     Promise.resolve()
       .then(() => readPagination(req.query as Record<string, unknown>, config))
-      .then(([pagina, tamanho]) => deps.repository.list(pagina, tamanho))
-      .then((resultado) =>
-        res.json(toCollection(resultado.itens, resultado.pagina, resultado.tamanho, resultado.total)),
-      )
+      .then(([page, pageSize]) => deps.repository.list(page, pageSize))
+      .then((result) => res.json(toCollection(result.items, result.page, result.pageSize, result.total)))
       .catch(next);
   });
 
-  router.get('/registros/:hash', requirePermission(ler), (req, res, next) => {
+  router.get('/entries/:hash', requirePermission(read), (req, res, next) => {
     const hash = req.params['hash'];
     if (hash === undefined || hash === '') {
-      next(new ApiError('VALIDACAO', 'hash ausente no caminho'));
+      next(new ApiError('VALIDATION', 'missing hash in the path'));
       return;
     }
     deps.repository
       .findByHash(hash)
-      .then((registro) => {
-        if (registro === null) throw new ApiError('NAO_ENCONTRADO', 'registro nao encontrado');
-        res.json(toContract(registro));
+      .then((entry) => {
+        if (entry === null) throw new ApiError('NOT_FOUND', 'entry not found');
+        res.json(toContract(entry));
       })
       .catch(next);
   });
 
-  router.post('/registros', requirePermission(escrever), (req, res, next) => {
+  router.post('/entries', requirePermission(write), (req, res, next) => {
     Promise.resolve()
       .then(() => create(req.body as unknown, deps, config, req.requestId))
-      .then((registro) => res.status(201).json(toContract(registro)))
-      .catch((causa: unknown) => next(translate(causa)));
+      .then((entry) => res.status(201).json(toContract(entry)))
+      .catch((cause: unknown) => next(translate(cause)));
   });
 }
 
 async function create(
-  corpo: unknown,
+  body: unknown,
   deps: ModuleDependencies,
   config: ModuleConfiguration,
   requestId: string,
 ) {
-  const entrada = readBody(corpo);
-  const registro = buildRecord(
-    entrada as { titulo: string; status?: string },
-    config.dominio.validStatuses,
+  const input = readBody(body);
+  const entry = buildRecord(
+    input as { title: string; status?: string },
+    config.domain.validStatuses,
     deps.idGenerator.hash(),
     deps.clock.now(),
   );
-  await deps.repository.insert(registro);
+  await deps.repository.insert(entry);
   await deps.audit.record({
-    hash: registro.hash,
-    acao: 'create',
-    sujeito: 'sistema',
-    camposAlterados: Object.keys(registro),
+    hash: entry.hash,
+    action: 'create',
+    actor: 'system',
+    changedFields: Object.keys(entry),
     requestId,
   });
-  return registro;
+  return entry;
 }
 
 /** Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO (specs/arquitetura/02-contrato-e-dados.md §3.2). */
-function translate(causa: unknown): unknown {
-  if (causa instanceof ValidationError) return new ApiError('VALIDACAO', causa.message);
-  return causa;
+function translate(cause: unknown): unknown {
+  if (cause instanceof ValidationError) return new ApiError('VALIDATION', cause.message);
+  return cause;
 }
 
-export function createRoutes(opcoes: Opcoes): Router {
+export function createRoutes(options: Options): Router {
   const router = Router();
-  requiredRoutes(router, opcoes);
-  recordRoutes(router, opcoes);
+  requiredRoutes(router, options);
+  recordRoutes(router, options);
   return router;
 }

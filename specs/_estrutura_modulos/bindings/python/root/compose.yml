@@ -28,13 +28,13 @@ services:
   db:
     image: postgres:16.6-alpine
     environment:
-      POSTGRES_DB: ${DEPLOY_DB_NAME:?defina DEPLOY_DB_NAME no deploy/.env}
-      POSTGRES_USER: ${DEPLOY_DB_USER:?defina DEPLOY_DB_USER no deploy/.env}
-      POSTGRES_PASSWORD: ${DEPLOY_DB_PASSWORD:?defina DEPLOY_DB_PASSWORD no deploy/.env}
+      POSTGRES_DB: ${DEPLOY_DB_NAME:?set DEPLOY_DB_NAME in deploy/.env}
+      POSTGRES_USER: ${DEPLOY_DB_USER:?set DEPLOY_DB_USER in deploy/.env}
+      POSTGRES_PASSWORD: ${DEPLOY_DB_PASSWORD:?set DEPLOY_DB_PASSWORD in deploy/.env}
     # Publicada SÓ em loopback: o adapter postgres e `python verify.py --migrations` rodam no host.
     # Não precisa do host? Remova `ports` — o serviço `app` fala com `db` pela rede do compose.
     ports:
-      - "127.0.0.1:${DEPLOY_DB_PORT:?defina DEPLOY_DB_PORT no deploy/.env}:5432"
+      - "127.0.0.1:${DEPLOY_DB_PORT:?set DEPLOY_DB_PORT in deploy/.env}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -67,7 +67,7 @@ services:
       ROOT_API_HOST: 0.0.0.0
     # A API em loopback do host, na porta de deploy/.env (nunca em 0.0.0.0 do host).
     ports:
-      - "127.0.0.1:${DEPLOY_APP_PORT:?defina DEPLOY_APP_PORT no deploy/.env}:${ROOT_API_PORT:?defina ROOT_API_PORT no .env}"
+      - "127.0.0.1:${DEPLOY_APP_PORT:?set DEPLOY_APP_PORT in deploy/.env}:${ROOT_API_PORT:?set ROOT_API_PORT in .env}"
     depends_on:
       db:
         condition: service_healthy

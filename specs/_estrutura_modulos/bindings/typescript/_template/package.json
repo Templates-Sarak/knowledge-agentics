@@ -1,5 +1,5 @@
 {
-  "name": "@<escopo>/<module>",
+  "name": "@<scope>/<module>",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,9 +14,9 @@
     "build:web": "vite build --config web/vite.config.ts",
     "validate": "node ../../tools/gate/validate.mjs .",
     "validate:extraction": "node ../../tools/gate/validate.mjs --extraction .",
-    "//coverage": "So aqui, nunca no `test`: escreve relatorios/cobertura/lcov.info (SonarQube/Codecov) e relatorios/junit.xml (CI). `coverage:check` reprova se o relatorio nao existir ou vier degenerado (ferramenta que 'passou' sem medir nada) — lei 7 aplicada ao relatorio, nao so ao exit code do vitest.",
-    "coverage": "vitest run --coverage --reporter=default --reporter=junit --outputFile=relatorios/junit.xml && npm run coverage:check",
-    "coverage:check": "node -e \"const fs=require('fs');const alvos=[['relatorios/cobertura/lcov.info','SF:'],['relatorios/junit.xml','<testsuite']];for(const [p,marca] of alvos){if(!fs.existsSync(p)){console.error('relatorio ausente: '+p);process.exit(1)}const t=fs.readFileSync(p,'utf8');if(!t.includes(marca)){console.error('relatorio degenerado (sem '+marca+'): '+p);process.exit(1)}}const m=fs.readFileSync('relatorios/junit.xml','utf8').match(/tests=\\\"(\\d+)\\\"/);if(!m||Number(m[1])===0){console.error('junit sem nenhum teste registrado — a suite nao rodou');process.exit(1)}console.log('relatorios OK: lcov + junit presentes, nao degenerados, '+m[1]+' teste(s)')\""
+    "//coverage": "So aqui, nunca no `test`: escreve reports/coverage/lcov.info (SonarQube/Codecov) e reports/junit.xml (CI). `coverage:check` reprova se o relatorio nao existir ou vier degenerado (ferramenta que 'passou' sem medir nada) — lei 7 aplicada ao relatorio, nao so ao exit code do vitest.",
+    "coverage": "vitest run --coverage --reporter=default --reporter=junit --outputFile=reports/junit.xml && npm run coverage:check",
+    "coverage:check": "node -e \"const fs=require('fs');const targets=[['reports/coverage/lcov.info','SF:'],['reports/junit.xml','<testsuite']];for(const [p,marker] of targets){if(!fs.existsSync(p)){console.error('report missing: '+p);process.exit(1)}const t=fs.readFileSync(p,'utf8');if(!t.includes(marker)){console.error('degenerate report (no '+marker+'): '+p);process.exit(1)}}const m=fs.readFileSync('reports/junit.xml','utf8').match(/tests=\\\"(\\d+)\\\"/);if(!m||Number(m[1])===0){console.error('junit has no test recorded — the suite did not run');process.exit(1)}console.log('reports OK: lcov + junit present, not degenerate, '+m[1]+' test(s)')\""
   },
   "dependencies": {
     "express": "4.22.2"

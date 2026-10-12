@@ -4,56 +4,57 @@
 import { useEffect, useState } from 'react';
 
 import { listRecords } from '../api-client/index.js';
+import { errorCodeOf } from '../api-client/labels.js';
 
 /**
- * @typedef {'carregando' | 'ok' | 'vazio' | 'erro'} Situacao
+ * @typedef {'loading' | 'ok' | 'empty' | 'error'} Phase
  *
- * @typedef {object} Estado
- * @property {Situacao} situacao
- * @property {import('../../../core/domain/index.js').Registro[]} registros
+ * @typedef {object} State
+ * @property {Phase} phase
+ * @property {import('../../../core/domain/index.js').Entry[]} entries
  * @property {number} total
- * @property {string | null} mensagemDeErro
+ * @property {string | null} errorCode
  */
 
-/** @type {Estado} */
-const INICIAL = { situacao: 'carregando', registros: [], total: 0, mensagemDeErro: null };
+/** @type {State} */
+const INITIAL = { phase: 'loading', entries: [], total: 0, errorCode: null };
 
 /**
- * @param {number} pagina
- * @param {number} tamanho
- * @returns {Estado}
+ * @param {number} page
+ * @param {number} pageSize
+ * @returns {State}
  */
-export function useRecordList(pagina, tamanho) {
-  const [state, setState] = useState(INICIAL);
+export function useRecordList(page, pageSize) {
+  const [state, setState] = useState(INITIAL);
 
   useEffect(() => {
-    let ativo = true;
-    setState(INICIAL);
+    let active = true;
+    setState(INITIAL);
 
-    listRecords(pagina, tamanho)
+    listRecords(page, pageSize)
       .then((collection) => {
-        if (!ativo) return;
+        if (!active) return;
         setState({
-          situacao: collection.itens.length === 0 ? 'vazio' : 'ok',
-          registros: collection.itens,
+          phase: collection.items.length === 0 ? 'empty' : 'ok',
+          entries: collection.items,
           total: collection.total,
-          mensagemDeErro: null,
+          errorCode: null,
         });
       })
-      .catch((causa) => {
-        if (!ativo) return;
+      .catch((cause) => {
+        if (!active) return;
         setState({
-          situacao: 'erro',
-          registros: [],
+          phase: 'error',
+          entries: [],
           total: 0,
-          mensagemDeErro: causa instanceof Error ? causa.message : String(causa),
+          errorCode: errorCodeOf(cause),
         });
       });
 
     return () => {
-      ativo = false;
+      active = false;
     };
-  }, [pagina, tamanho]);
+  }, [page, pageSize]);
 
   return state;
 }

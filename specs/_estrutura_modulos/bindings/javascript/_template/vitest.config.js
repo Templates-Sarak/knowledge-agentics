@@ -29,7 +29,7 @@ function minimumCoverage() {
   }
 }
 
-const minima = minimumCoverage();
+const minimum = minimumCoverage();
 
 export default defineConfig({
   plugins: [react()],
@@ -43,13 +43,13 @@ export default defineConfig({
       include: ['core/**', 'api/src/**', 'web/src/**'],
       exclude: ['**/*.d.ts'],
       // So ativa com `--coverage` (npm run coverage) — nunca no `npm test` comum, que nao roda o
-      // provider e nao escreve nada em `relatorios/`. reporter/dir moram aqui, nao na CLI, porque
+      // provider e nao escreve nada em `reports/`. reporter/dir moram aqui, nao na CLI, porque
       // sao a MESMA config em toda invocacao — repetir na CLI seria uma segunda fonte pra divergir.
       reporter: ['text', 'lcovonly'],
-      reportsDirectory: 'relatorios/cobertura',
+      reportsDirectory: 'reports/coverage',
       // Abaixo do minimo, o PROPRIO vitest reprova (exit != 0) — reusa o mecanismo de threshold dele
       // em vez de reimplementar leitura de lcov.info aqui. So aplica quando a politica existe.
-      thresholds: minima !== undefined ? { lines: minima } : undefined,
+      thresholds: minimum !== undefined ? { lines: minimum } : undefined,
     },
   },
 });

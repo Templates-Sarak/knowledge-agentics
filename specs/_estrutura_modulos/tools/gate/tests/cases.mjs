@@ -58,8 +58,8 @@ export const CASES = [
   },
   {
     regra: 'manifest-schema',
-    description: 'DECOY: unexpected field while relatorios/ and .coverage are also present',
-    // Prova, POR MAQUINA, que `relatorios` e `.coverage` continuam tolerados em
+    description: 'DECOY: unexpected field while reports/ and .coverage are also present',
+    // Prova, POR MAQUINA, que `reports` e `.coverage` continuam tolerados em
     // `ALLOWED_ENTRIES` (structure.mjs) — sem depender de olhar o `Set` a olho. A regra
     // esperada aqui e OUTRA (manifest-schema); se a tolerancia de qualquer uma das duas
     // regredir, `strict-structure` acusa TAMBEM, um id que este caso nao declara em `tambem`, e
@@ -67,8 +67,8 @@ export const CASES = [
     //
     // Sem pasta de verdade: o harness nao tem operacao de `mkdir` (so `escrever` grava ARQUIVO), e
     // a regra `strict-structure` julga so o NOME de topo (`ctx.entradasRaiz`, por `readdirSync`),
-    // nunca se e arquivo ou pasta — um arquivo chamado `relatorios` prova exatamente a mesma
-    // linha de codigo que uma pasta `relatorios/` provaria.
+    // nunca se e arquivo ou pasta — um arquivo chamado `reports` prova exatamente a mesma
+    // linha de codigo que uma pasta `reports/` provaria.
     //
     // Conteudo medido (nao presumido): nenhum dos dois nomes tem extensao que bata `EXT_CODE`
     // (`.ts/.tsx/.js/.jsx/.mjs/.cjs/.py`, context.mjs) — nenhum vira `ctx.codigo`, nenhuma regra
@@ -80,7 +80,7 @@ export const CASES = [
     // nenhuma — ao contrario de `tsconfig.build.json`, que TRAVA a suite inteira ao ser removida).
     mutate: (m) => {
       m.manifest((x) => ({ ...x, extraDecoyField: true }));
-      m.writeOut('relatorios', 'lcov (fixture do chamariz — nunca lido como codigo)');
+      m.writeOut('reports', 'lcov (fixture do chamariz — nunca lido como codigo)');
       m.writeOut('.coverage', 'sqlite (fixture do chamariz — nunca lido como codigo)');
     },
   },
@@ -223,7 +223,7 @@ export const CASES = [
     // violacao dela mesma. Se a regra regredir, emite id nao declarado e este caso reprova.
     mutate: (m) => m.writeOut(
       'core/gateways/vizinho.ts',
-      '// NAO faca aqui: select nome from vizinho_metadados\n'
+      '// NAO faca aqui: select nome from vizinho_metadata\n'
       + 'export async function f(u) { return fetch(u); }\n',
     ),
   },
@@ -232,13 +232,13 @@ export const CASES = [
     description: 'cycle in the consumes graph',
     // Cascata legitima: declarar `consumes` sem criar `core/gateways/vizinho.*` e defeito de verdade.
     also: ['gateway-declared'],
-    // O contrato declarado tem de EXISTIR na spec do vizinho (`/resumo` e obrigatoria em todo
+    // O contrato declarado tem de EXISTIR na spec do vizinho (`/summary` e obrigatoria em todo
     // modulo). Com `GET /x`, este caso violaria tambem `consumes-contract` e deixaria de exercitar
     // uma regra so — caso de teste com duas violacoes nao prova qual das duas esta viva.
     mutate: (m) => {
       m.manifest((x) => ({
         ...x,
-        consumes: [{ module: 'vizinho', contract: 'GET /resumo', why: 'ciclo' }],
+        consumes: [{ module: 'vizinho', contract: 'GET /summary', why: 'ciclo' }],
         requiredEnv: [...x.requiredEnv, 'VIZINHO_URL'],
       }));
       // A chave nova tem de chegar ao `.env.example`, senao o caso violava tambem `env-example` —
@@ -348,13 +348,13 @@ export const CASES = [
     regra: 'ui-token',
     description: 'color literal in a style declaration with the UI kit imported correctly',
     // O arquivo IMPORTA o kit de proposito: sem isso a clausula (b) do `ui-kit` acusaria junto e o
-    // caso deixaria de provar qual das duas regras esta viva. `<escopo>` e trocado em memoria pelo
+    // caso deixaria de provar qual das duas regras esta viva. `<scope>` e trocado em memoria pelo
     // carregador do contexto, entao o import vale nos tres bindings.
     mutate: (m) => {
       m.manifest((x) => ({ ...x, ui: { ...x.ui, mode: 'kit' } }));
       m.writeOut(
         'web/src/components/Cores.tsx',
-        "import { Caixa } from '@<escopo>/ui-kit';\n"
+        "import { Caixa } from '@<scope>/ui-kit';\n"
         + 'export const Destaque = () => <Caixa style={{ color: \'#ff0000\' }} />;\n',
       );
     },
@@ -372,7 +372,7 @@ export const CASES = [
       m.manifest((x) => ({ ...x, ui: { ...x.ui, mode: 'kit' } }));
       m.writeOut(
         'web/src/components/DoKit.tsx',
-        "import { Caixa } from '@<escopo>/ui-kit';\nexport const C = Caixa;\n",
+        "import { Caixa } from '@<scope>/ui-kit';\nexport const C = Caixa;\n",
       );
       m.writeOut(
         'web/src/estilos.css',
@@ -416,7 +416,7 @@ export const CASES = [
   {
     regra: 'foreign-table',
     description: 'references another module\'s table',
-    mutate: (m) => m.writeOut('core/domain/mau.ts', "export const q = 'select * from vizinho_metadados';\n"),
+    mutate: (m) => m.writeOut('core/domain/mau.ts', "export const q = 'select * from vizinho_metadata';\n"),
     requiresNeighbor: true,
   },
   {
@@ -445,9 +445,9 @@ export const CASES = [
     // Agnostico de binding: os dois arquivos sao identicos nos tres moldes. `migrations` segue
     // calada — ela cobra nome e bloco de rollback, e nenhum dos dois muda aqui.
     mutate: (m) => {
-      const alter = 'alter table "<escopo>"."<module_snake>_auditoria" enable row level security;';
+      const alter = 'alter table "<scope>"."<module_snake>_audit" enable row level security;';
       m.substitute('database/schema.sql', alter, '');
-      m.substitute('database/migrations/0001-cria-metadados.sql', alter, '');
+      m.substitute('database/migrations/0001-create-metadata.sql', alter, '');
     },
   },
   {
@@ -457,10 +457,10 @@ export const CASES = [
     // o unico defeito e a declaracao ausente. Criar so num dos dois acusaria tambem
     // `schema-mirrors-migrations`, ruido que este caso nao quer provar.
     mutate: (m) => {
-      const creation = 'create table "<escopo>"."<module_snake>_outra" (id uuid);\n';
+      const creation = 'create table "<scope>"."<module_snake>_outra" (id uuid);\n';
       m.writeOut(
         'database/migrations/0002-cria-outra.sql',
-        `${creation}\n-- rollback\n-- drop table if exists "<escopo>"."<module_snake>_outra";\n`,
+        `${creation}\n-- rollback\n-- drop table if exists "<scope>"."<module_snake>_outra";\n`,
       );
       m.add('database/schema.sql', `\n${creation}`);
     },
@@ -479,9 +479,9 @@ export const CASES = [
       }));
       m.writeOut(
         'database/migrations/0002-cria-outra.sql',
-        'create table "<escopo>"."<module_snake>_outra" (id uuid);\n'
-          + 'alter table "<escopo>"."<module_snake>_outra" enable row level security;\n\n'
-          + '-- rollback\n-- drop table if exists "<escopo>"."<module_snake>_outra";\n',
+        'create table "<scope>"."<module_snake>_outra" (id uuid);\n'
+          + 'alter table "<scope>"."<module_snake>_outra" enable row level security;\n\n'
+          + '-- rollback\n-- drop table if exists "<scope>"."<module_snake>_outra";\n',
       );
     },
   },
@@ -682,7 +682,7 @@ export const CASES = [
       m.writeOut('core/gateways/vizinho.ts', 'export async function obter(u) { return fetch(u); }\n');
       m.manifest((x) => ({
         ...x,
-        consumes: [{ module: 'vizinho', contract: 'GET /resumo', why: 'prova do triangulo' }],
+        consumes: [{ module: 'vizinho', contract: 'GET /summary', why: 'prova do triangulo' }],
       }));
     },
     requiresNeighbor: true,
@@ -845,8 +845,8 @@ export const CASES = [
     // Nao registra rota: um `router.get` novo violaria tambem `synchronized-contract`, e o caso
     // deixaria de provar qual regra esta viva. So a chamada, com o literal que a regra persegue.
     mutate: (m) => m.addIn('routes', {
-      js: "\nexport const exigirLiteral = (req) => requirePermission('molde:ler')(req);\n",
-      py: '\n\ndef exigir_literal(request):\n    require_permission(request, "molde:ler")\n',
+      js: "\nexport const exigirLiteral = (req) => requirePermission('molde:read')(req);\n",
+      py: '\n\ndef exigir_literal(request):\n    require_permission(request, "molde:read")\n',
     }),
   },
   {
@@ -934,9 +934,9 @@ export const CASES = [
         '                type: object',
         '                properties:',
         '                  hash: { type: string }',
-        '                  titulo: { type: string }',
+        '                  title: { type: string }',
         '                  status: { type: string }',
-        '                  criadoEm: { type: string }',
+        '                  createdAt: { type: string }',
         '                  id: { type: string }',
         '                  name: { type: string }',
         '                  version: { type: string }',
@@ -945,9 +945,9 @@ export const CASES = [
         '                  webPath: { type: string }',
         '                  navigation: { type: object }',
         '                  exportsSummary: { type: boolean }',
-        '                  itens: { type: array }',
-        '                  pagina: { type: integer }',
-        '                  tamanho: { type: integer }',
+        '                  items: { type: array }',
+        '                  page: { type: integer }',
+        '                  pageSize: { type: integer }',
         '                  total: { type: integer }',
         '',
       ].join('\n'),
@@ -956,7 +956,7 @@ export const CASES = [
   {
     regra: 'contract',
     description: 'valid flow-style spec that the block reader cannot parse',
-    // OpenAPI VALIDO: declara servers, /health, /meta e /resumo. So que em flow style. O gate tem
+    // OpenAPI VALIDO: declara servers, /health, /meta e /summary. So que em flow style. O gate tem
     // de acusar UMA vez que nao consegue ler — nunca afirmar que as rotas faltam, que e falso.
     mutate: (m) => m.writeOut(
       'contract/openapi.yaml',
@@ -965,7 +965,7 @@ export const CASES = [
         'servers: [{url: /api/v1/<module>}]',
         'paths: {"/health": {get: {responses: {"200": {description: ok}}}},'
           + ' "/meta": {get: {responses: {"200": {description: ok}}}},'
-          + ' "/resumo": {get: {responses: {"200": {description: ok}}}}}',
+          + ' "/summary": {get: {responses: {"200": {description: ok}}}}}',
         '',
       ].join('\n'),
     ),
@@ -990,7 +990,7 @@ export const CASES = [
       '            responses:',
       "                '200':",
       '                    description: ok',
-      '    /resumo:',
+      '    /summary:',
       '        get:',
       '            responses:',
       "                '200':",
@@ -1008,7 +1008,7 @@ export const CASES = [
     description: 'path parameter is not camelCase',
     // `{Hash}` e `:hash` normalizam para o mesmo `{}`, entao `synchronized-contract` continua
     // calado — este caso acusa UM id, e prova que a checagem de segmento esta viva.
-    mutate: (m) => m.substitute('contract/openapi.yaml', '/registros/{hash}:', '/registros/{Hash}:'),
+    mutate: (m) => m.substitute('contract/openapi.yaml', '/entries/{hash}:', '/entries/{Hash}:'),
   },
   {
     regra: 'route-naming',
@@ -1060,8 +1060,8 @@ export const CASES = [
     contains: 'phantomField',
     mutate: (m) => m.substitute(
       'api/src/mappers.py',
-      'mascarado.\n    """\n    return {\n        "hash": registro.hash,',
-      'mascarado.\n    """\n    return {\n        "phantomField": registro.hash,',
+      'mascarado.\n    """\n    return {\n        "hash": entry.hash,',
+      'mascarado.\n    """\n    return {\n        "phantomField": entry.hash,',
     ),
   },
   {
@@ -1335,14 +1335,14 @@ export const CASES = [
       m.manifest((x) => ({ ...x, sensitiveFields: ['cpf'] }));
       for (const path of ['api/src/mappers/index.ts', 'api/src/mappers/index.js']) {
         try {
-          m.substitute(path, 'exportsSummary: manifesto.exportsSummary,', "exportsSummary: manifesto.exportsSummary,\n    cpf: 'x',");
+          m.substitute(path, 'exportsSummary: manifest.exportsSummary,', "exportsSummary: manifest.exportsSummary,\n    cpf: 'x',");
         } catch { /* binding errado para este caminho — ENOENT esperado */ }
       }
       try {
         m.substitute(
           'api/src/mappers.py',
-          '"exportsSummary": manifesto["exportsSummary"],',
-          '"exportsSummary": manifesto["exportsSummary"],\n        "cpf": "x",',
+          '"exportsSummary": manifest["exportsSummary"],',
+          '"exportsSummary": manifest["exportsSummary"],\n        "cpf": "x",',
         );
       } catch { /* binding errado — ENOENT esperado */ }
     },
@@ -1357,16 +1357,16 @@ export const CASES = [
         try {
           m.substitute(
             path,
-            'return { itens: registros.map(toContract), pagina, tamanho, total };',
-            "return { itens: registros.map(toContract), pagina, tamanho, total, cpf: 'x' };",
+            'return { items: entries.map(toContract), page, pageSize, total };',
+            "return { items: entries.map(toContract), page, pageSize, total, cpf: 'x' };",
           );
         } catch { /* binding errado para este caminho — ENOENT esperado */ }
       }
       try {
         m.substitute(
           'api/src/mappers.py',
-          '"itens": [to_contract(r) for r in registros],',
-          '"itens": [to_contract(r) for r in registros],\n        "cpf": "x",',
+          '"items": [to_contract(r) for r in entries],',
+          '"items": [to_contract(r) for r in entries],\n        "cpf": "x",',
         );
       } catch { /* binding errado — ENOENT esperado */ }
     },
@@ -1606,18 +1606,18 @@ export const CASES = [
       );
       m.addIn('routes', {
         js: '\n// A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
-          + "//   import { X } from '@<escopo>/vizinho';\n"
+          + "//   import { X } from '@<scope>/vizinho';\n"
           + "//   import { c } from '../../adapters/memory/index.js';\n"
           + "//   import pg from 'pg';\n"
           + '//   const s = process.env.MOLDE_SEGREDO_DOC;\n'
-          + "//   select nome from vizinho_metadados where id = ' + id\n"
+          + "//   select nome from vizinho_metadata where id = ' + id\n"
           + "//   router.get('/rota-desativada', listarLegado);\n"
           + "export const gritar = () => console.log('este si e defeito');\n",
         py: '\n\n# A lei, escrita como documentacao. NENHUMA destas linhas pode ser acusada:\n'
           + '#   from adapters.memory import criar\n'
           + '#   import psycopg2\n'
           + '#   s = os.environ["MOLDE_SEGREDO_DOC"]\n'
-          + '#   select nome from vizinho_metadados where id = " + id\n'
+          + '#   select nome from vizinho_metadata where id = " + id\n'
           + '#   @router.get("/rota-desativada")\n'
           + 'def gritar():\n    print("este si e defeito")\n',
       });
@@ -1668,8 +1668,8 @@ export const CASES = [
     times: 1,
     mutate: (m) => m.substitute(
       'api/src/middlewares.py',
-      'publicas = {rota.upper() for rota in manifesto["publicRoutes"]}',
-      'publicas = {"SAUDE"}',
+      'public_set = {route.upper() for route in manifest["publicRoutes"]}',
+      'public_set = {"HEALTH"}',
     ),
   },
   {

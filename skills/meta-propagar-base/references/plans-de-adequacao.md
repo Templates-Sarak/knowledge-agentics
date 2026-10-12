@@ -153,7 +153,7 @@ destino_sintese: "—"
 | FF | Família | Escopo (uma linha) |
 |---|---|---|
 | 00 | Fundação | <o texto já existente do molde> |
-| <FF> | <nome> | <escopo> |
+| <FF> | <nome> | <scope> |
 
 **Mapeamento aprovado** (todo arquivo da lacuna `migracao-de-familias-pendente`, sem exceção):
 | Nome atual | Novo nome | `familia` |

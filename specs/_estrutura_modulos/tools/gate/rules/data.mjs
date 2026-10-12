@@ -271,7 +271,7 @@ const SQL_TABLE_NAME = '(?:if\\s+(?:not\\s+)?exists\\s+)?(?:(?:"[^"]+"|[a-z_][a-
 /**
  * Nomes de tabela que aparecem depois de `create table` ou `drop table`. O identificador pode vir
  * cru (`create table x`) ou entre aspas duplas, com ou sem schema qualificando-o
- * (`"escopo"."molde_metadados"`) — a forma que `<escopo>`/`<module_snake>` produzem depois de
+ * (`"scope"."template_metadata"`) — a forma que `<scope>`/`<module_snake>` produzem depois de
  * substituídos. `sql` já chega em minúsculas (`joinSql`) e sem comentário (`withoutSqlComment`).
  */
 function tablesByVerb(sql, verb) {

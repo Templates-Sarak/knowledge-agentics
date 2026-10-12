@@ -2,35 +2,35 @@
 -- Este arquivo e um espelho, nao a fonte: a fonte sao as migrations em database/migrations/.
 -- Alterar schema em ambiente com dado real e HITL (specs/arquitetura/02-contrato-e-dados.md §6.3).
 
-create schema if not exists "<escopo>";
+create schema if not exists "<scope>";
 
-create table "<escopo>"."<module_snake>_migrations" (
-  arquivo      text        primary key,
-  aplicada_em  timestamptz not null default now()
+create table "<scope>"."<module_snake>_migrations" (
+  file_name    text        primary key,
+  applied_at   timestamptz not null default now()
 );
 
-alter table "<escopo>"."<module_snake>_migrations" enable row level security;
+alter table "<scope>"."<module_snake>_migrations" enable row level security;
 
-create table "<escopo>"."<module_snake>_metadados" (
+create table "<scope>"."<module_snake>_metadata" (
   id          uuid primary key default gen_random_uuid(),
   hash        text        not null unique,
-  titulo      text        not null,
+  title       text        not null,
   status      text        not null,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
-alter table "<escopo>"."<module_snake>_metadados" enable row level security;
+alter table "<scope>"."<module_snake>_metadata" enable row level security;
 
-create table "<escopo>"."<module_snake>_auditoria" (
+create table "<scope>"."<module_snake>_audit" (
   id               uuid primary key default gen_random_uuid(),
   hash             text        not null,
-  acao             text        not null,
-  sujeito          text        not null,
-  campos_alterados text[]      not null default '{}',
+  action           text        not null,
+  actor            text        not null,
+  changed_fields   text[]      not null default '{}',
   request_id       text        not null,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
 
-alter table "<escopo>"."<module_snake>_auditoria" enable row level security;
+alter table "<scope>"."<module_snake>_audit" enable row level security;

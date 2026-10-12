@@ -44,7 +44,7 @@
  * `packages/ports/index.*` (esqueleto, nome vai inglês — linha 3). `extractSourcePorts` reconhece
  * os dois nomes de símbolo; o que a checagem exige igual nos cinco é o CONTEÚDO (o conjunto de
  * portas), nunca o nome do símbolo que o carrega. Compara por CONJUNTO, não por ordem — a mesma
- * disciplina de `compareCatalogs`. **Sem cláusula de "porta sem `FABRICAS`"**: a decisão foi não
+ * disciplina de `compareCatalogs`. **Sem cláusula de "porta sem `FACTORIES`"**: a decisão foi não
  * escrevê-la — exigiria lista de exceção editorial (toda porta sem provedor padrão, como
  * `tokenVerifier`, entraria nela), e uma cláusula que precisa de exceção editorial vale menos que a
  * cláusula de conjunto sozinha e correta.
@@ -481,14 +481,14 @@ function selfTestCases() {
       },
     },
     {
-      name: 'extractSourcePorts: array JS/TS entre colchetes',
+      name: 'extractSourcePorts: JS/TS array between brackets',
       fn: () => {
         const r = extractSourcePorts("export const KNOWN_PORTS = [\n  'repositorio',\n  'storage',\n] as const;");
         return r.length === 2 && r[0] === 'repositorio' && r[1] === 'storage';
       },
     },
     {
-      name: 'extractSourcePorts: tupla Python entre parenteses, aspas duplas',
+      name: 'extractSourcePorts: Python tuple between parentheses, double quotes',
       fn: () => {
         const r = extractSourcePorts('KNOWN_PORTS = (\n    "repositorio",\n    "storage",\n)');
         return r.length === 2 && r[0] === 'repositorio' && r[1] === 'storage';
@@ -496,7 +496,7 @@ function selfTestCases() {
     },
     {
       name: 'extractSourcePorts: returns null when KNOWN_PORTS is absent from the text',
-      fn: () => extractSourcePorts('nada aqui') === null,
+      fn: () => extractSourcePorts('nothing here') === null,
     },
     {
       name: 'compareVocabularies: matching sets in different orders have no differences',

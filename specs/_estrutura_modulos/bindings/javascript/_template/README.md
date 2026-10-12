@@ -21,10 +21,10 @@ gateways) · `specs/arquitetura/02-contrato-e-dados.md` (API, erro, schema) ·
 
 | Marcador | Vira | Aparece em |
 |---|---|---|
-| `<module>` | id em kebab-case (`catalogo`) | pastas, rotas, prefixo de tabela, package |
-| `<MODULE>` | id em MAIÚSCULA (`CATALOGO`) | variáveis de ambiente |
-| `<Module>` | rótulo humano (`Catalogo`) | manifesto, textos |
-| `<escopo>` | escopo dos packages (`acme`) | nome do package, schema do banco |
+| `<module>` | id em kebab-case (`catalog`) | pastas, rotas, prefixo de tabela, package |
+| `<MODULE>` | id em MAIÚSCULA (`CATALOG`) | variáveis de ambiente |
+| `<Module>` | rótulo humano (`Catalog`) | manifesto, textos |
+| `<scope>` | escopo dos packages (`acme`) | nome do package, schema do banco |
 
 Módulo que **não gera artefato** descarta `core/engine`, `core/templates`, `database/` e `generated/`
 (`--no-artifact`). Módulo sem tela descarta `web/` (`--no-web`). **Descartar é permitido; renomear, não.**
@@ -54,7 +54,7 @@ tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 - **Infraestrutura desacoplada:** o módulo fala com `core/ports`, nunca com fornecedor. O nome do provedor só
   aparece em `config/ports.json` — trocar de banco é editar uma linha de JSON.
 - **Módulo alheio desacoplado:** dado de outro módulo vem por `core/gateways/`, só HTTP, declarado em `consumes`.
-- **Contrato primeiro:** `contract/openapi.yaml` antes do código, com `/health`, `/meta` e `/resumo`.
+- **Contrato primeiro:** `contract/openapi.yaml` antes do código, com `/health`, `/meta` e `/summary`.
 - **Saída por allowlist:** a resposta é montada campo a campo no mapeador. Devolver registro cru é proibido.
 - **Deny by default:** toda rota exige token, exceto as de `publicRoutes`.
 - **Log estruturado** com `requestId` e redação automática de campo sensível. `console.*` é proibido.
@@ -65,17 +65,17 @@ tests/           domain/ contract/ web/ fixtures/ — sem rede, sem banco
 
 ```
 npm test                     testes do módulo, sem rede e sem banco
-npm run tipos                tsc --noEmit -p jsconfig.json
-npm run validar              o gate de conformidade neste módulo
-npm run validar:extracao     este módulo vira microsserviço hoje?
+npm run typecheck                tsc --noEmit -p jsconfig.json
+npm run validate              o gate de conformidade neste módulo
+npm run validate:extraction     este módulo vira microsserviço hoje?
 ```
 
 ## Checklist antes de dizer "pronto"
 
-- [ ] `npm run validar` passa.
+- [ ] `npm run validate` passa.
 - [ ] `module.json` reflete o que o código usa (tabelas, env, portas, `consumes`, permissões).
-- [ ] Rotas do código == `contract/openapi.yaml`; `/health`, `/meta` e `/resumo` respondendo.
+- [ ] Rotas do código == `contract/openapi.yaml`; `/health`, `/meta` e `/summary` respondendo.
 - [ ] Nenhum literal de config ou segredo; nenhum `process.env` fora de `api/src/config.js`.
 - [ ] Nenhum campo sensível em resposta, log ou OpenAPI.
 - [ ] Testes verdes, sem rede.
-- [ ] `npm run validar:extracao` sem erro — o módulo vira microsserviço hoje.
+- [ ] `npm run validate:extraction` sem erro — o módulo vira microsserviço hoje.

@@ -17,38 +17,38 @@
 // sofre (ele mora fora de adapters/src/packages, o escopo que `concatenated-sql` varre).
 import type { Pool } from 'pg';
 
-import type { Audit, AuditEvent, Pagina, Repository } from '../../packages/ports/index.js';
+import type { Audit, AuditEvent, Page, Repository } from '../../packages/ports/index.js';
 
 /** O suficiente do manifesto para o adapter se configurar — nunca o tipo inteiro de `src/composition.ts`:
  * `adapters/` não pode importar de `src/` (regra `isolated-adapter`), então este tipo é local e mínimo. */
 export interface ModuleForAdapter {
   id: string;
-  pasta: string;
+  dir: string;
 }
 
-/** A forma que o molde cria — não é o `Registro` de `core/domain` (adapter não pode importar de
+/** A forma que o molde cria — não é o `Entry` de `core/domain` (adapter não pode importar de
  * `modules/`), mas estruturalmente idêntica, então qualquer módulo do molde aceita este objeto. */
-export interface RegistroDoMolde {
+export interface TemplateEntry {
   hash: string;
-  titulo: string;
+  title: string;
   status: string;
-  criadoEm: string;
+  createdAt: string;
 }
 
-function environmentKey(idDoModulo: string): string {
-  return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
+function environmentKey(moduleId: string): string {
+  return `${moduleId.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
 
 /** Ausente = falha nomeando a chave exata (lei 7 do catálogo) — nunca um default silencioso. */
-function requiredUrl(idDoModulo: string): string {
-  const chave = environmentKey(idDoModulo);
-  const valor = process.env[chave];
-  if (valor === undefined || valor === '') {
+function requiredUrl(moduleId: string): string {
+  const key = environmentKey(moduleId);
+  const value = process.env[key];
+  if (value === undefined || value === '') {
     throw new Error(
-      `[adapters/postgres] variavel obrigatoria ausente: ${chave} (declare em module.json:requiredEnv e no .env da raiz)`,
+      `[adapters/postgres] required variable missing: ${key} (declare it in module.json:requiredEnv and in the root .env)`,
     );
   }
-  return valor;
+  return value;
 }
 
 interface ManifestData {
@@ -59,23 +59,23 @@ interface ManifestData {
 /** `data.schema`/`data.prefix` do PRÓPRIO manifesto do módulo — a mesma fonte que a migration
  * 0001 usa para nomear as tabelas, nunca um terceiro lugar (mesmo raciocínio de `migrations.mjs`).
  * Cacheada por pasta — o manifesto não muda em runtime, e cada operação chamaria isto de novo. */
-const dadosCache = new Map<string, ManifestData>();
+const cacheData = new Map<string, ManifestData>();
 
-async function readData(modulo: ModuleForAdapter): Promise<ManifestData> {
-  const existente = dadosCache.get(modulo.pasta);
-  if (existente !== undefined) return existente;
+async function readData(module: ModuleForAdapter): Promise<ManifestData> {
+  const existing = cacheData.get(module.dir);
+  if (existing !== undefined) return existing;
   const { readFile } = await import('node:fs/promises');
   const { join } = await import('node:path');
-  const texto = await readFile(join(modulo.pasta, 'module.json'), 'utf8');
-  const manifesto = JSON.parse(texto.replace(/^﻿/, '')) as { data: ManifestData };
-  dadosCache.set(modulo.pasta, manifesto.data);
-  return manifesto.data;
+  const text = await readFile(join(module.dir, 'module.json'), 'utf8');
+  const manifest = JSON.parse(text.replace(/^﻿/, '')) as { data: ManifestData };
+  cacheData.set(module.dir, manifest.data);
+  return manifest.data;
 }
 
 /** `"<schema>"."<tabela>"` — nunca interpolado numa linha que também tenha um verbo SQL (ver o
  * cabeçalho do arquivo). Isolado aqui porque as quatro operações abaixo precisam da mesma forma. */
-function qualifiedName(schema: string, tabela: string): string {
-  return `"${schema}"."${tabela}"`;
+function qualifiedName(schema: string, table: string): string {
+  return `"${schema}"."${table}"`;
 }
 
 // ================================================================================================
@@ -90,25 +90,20 @@ const pools = new Map<string, Pool>();
  * `composition.ts`) exigiria o pacote instalado mesmo em um caminho que nunca toca banco. O `import
  * type { Pool }` acima é diferente: é apagado na compilação, nunca vira um `require('pg')`. */
 async function poolFor(url: string): Promise<Pool> {
-  const existente = pools.get(url);
-  if (existente !== undefined) return existente;
+  const existing = pools.get(url);
+  if (existing !== undefined) return existing;
   const { Pool } = await import('pg');
   const pool = new Pool({ connectionString: url });
   pools.set(url, pool);
   return pool;
 }
 
-function toRecord(linha: {
-  hash: string;
-  titulo: string;
-  status: string;
-  created_at: Date;
-}): RegistroDoMolde {
+function toRecord(line: { hash: string; title: string; status: string; created_at: Date }): TemplateEntry {
   return {
-    hash: linha.hash,
-    titulo: linha.titulo,
-    status: linha.status,
-    criadoEm: linha.created_at.toISOString(),
+    hash: line.hash,
+    title: line.title,
+    status: line.status,
+    createdAt: line.created_at.toISOString(),
   };
 }
 
@@ -118,67 +113,67 @@ function toRecord(linha: {
 
 interface TableContext {
   pool: Pool;
-  nome: string;
+  name: string;
 }
 
 /** Resolve pool + nome qualificado de UMA vez — as quatro operações abaixo precisam das duas coisas. */
-async function tableContext(modulo: ModuleForAdapter, sufixo: string): Promise<TableContext> {
-  const { schema, prefix } = await readData(modulo);
-  const pool = await poolFor(requiredUrl(modulo.id));
-  return { pool, nome: qualifiedName(schema, `${prefix}${sufixo}`) };
+async function tableContext(module: ModuleForAdapter, suffix: string): Promise<TableContext> {
+  const { schema, prefix } = await readData(module);
+  const pool = await poolFor(requiredUrl(module.id));
+  return { pool, name: qualifiedName(schema, `${prefix}${suffix}`) };
 }
 
 async function listRecords(
-  modulo: ModuleForAdapter,
-  pagina: number,
-  tamanho: number,
-): Promise<Pagina<RegistroDoMolde>> {
-  const { pool, nome } = await tableContext(modulo, 'metadados');
-  const inicio = (pagina - 1) * tamanho;
+  module: ModuleForAdapter,
+  page: number,
+  pageSize: number,
+): Promise<Page<TemplateEntry>> {
+  const { pool, name } = await tableContext(module, 'metadata');
+  const start = (page - 1) * pageSize;
 
-  const clausulaSelect = 'select hash, titulo, status, created_at';
-  const clausulaFrom = `from ${nome}`;
-  const clausulaOrdem = 'order by created_at asc, hash asc limit $1 offset $2';
-  const linhas = await pool.query([clausulaSelect, clausulaFrom, clausulaOrdem].join(' '), [tamanho, inicio]);
+  const selectClause = 'select hash, title, status, created_at';
+  const fromClause = `from ${name}`;
+  const orderClause = 'order by created_at asc, hash asc limit $1 offset $2';
+  const lines = await pool.query([selectClause, fromClause, orderClause].join(' '), [pageSize, start]);
 
-  const clausulaConta = 'select count(*)::int as total';
-  const contagem = await pool.query([clausulaConta, clausulaFrom].join(' '));
+  const countClause = 'select count(*)::int as total';
+  const count = await pool.query([countClause, fromClause].join(' '));
 
-  return { itens: linhas.rows.map(toRecord), pagina, tamanho, total: contagem.rows[0].total };
+  return { items: lines.rows.map(toRecord), page, pageSize, total: count.rows[0].total };
 }
 
-async function findRecordByHash(modulo: ModuleForAdapter, hash: string): Promise<RegistroDoMolde | null> {
-  const { pool, nome } = await tableContext(modulo, 'metadados');
-  const clausulaSelect = 'select hash, titulo, status, created_at';
-  const clausulaFrom = `from ${nome}`;
-  const clausulaOnde = 'where hash = $1';
-  const resultado = await pool.query([clausulaSelect, clausulaFrom, clausulaOnde].join(' '), [hash]);
-  return resultado.rows[0] === undefined ? null : toRecord(resultado.rows[0]);
+async function findRecordByHash(module: ModuleForAdapter, hash: string): Promise<TemplateEntry | null> {
+  const { pool, name } = await tableContext(module, 'metadata');
+  const selectClause = 'select hash, title, status, created_at';
+  const fromClause = `from ${name}`;
+  const whereClause = 'where hash = $1';
+  const result = await pool.query([selectClause, fromClause, whereClause].join(' '), [hash]);
+  return result.rows[0] === undefined ? null : toRecord(result.rows[0]);
 }
 
-async function insertRecord(modulo: ModuleForAdapter, registro: RegistroDoMolde): Promise<void> {
-  const { pool, nome } = await tableContext(modulo, 'metadados');
-  const nomeEColunas = `${nome} (hash, titulo, status, created_at, updated_at)`;
-  const clausulaInsert = 'insert into';
-  const clausulaValues = 'values ($1, $2, $3, $4, $4)';
-  const consulta = [clausulaInsert, nomeEColunas, clausulaValues].join(' ');
-  await pool.query(consulta, [registro.hash, registro.titulo, registro.status, registro.criadoEm]);
+async function insertRecord(module: ModuleForAdapter, entry: TemplateEntry): Promise<void> {
+  const { pool, name } = await tableContext(module, 'metadata');
+  const nameAndColumns = `${name} (hash, title, status, created_at, updated_at)`;
+  const insertClause = 'insert into';
+  const valuesClause = 'values ($1, $2, $3, $4, $4)';
+  const query = [insertClause, nameAndColumns, valuesClause].join(' ');
+  await pool.query(query, [entry.hash, entry.title, entry.status, entry.createdAt]);
 }
 
-async function countRecords(modulo: ModuleForAdapter): Promise<number> {
-  const { pool, nome } = await tableContext(modulo, 'metadados');
-  const clausulaSelect = 'select count(*)::int as total';
-  const clausulaFrom = `from ${nome}`;
-  const resultado = await pool.query([clausulaSelect, clausulaFrom].join(' '));
-  return resultado.rows[0].total;
+async function countRecords(module: ModuleForAdapter): Promise<number> {
+  const { pool, name } = await tableContext(module, 'metadata');
+  const selectClause = 'select count(*)::int as total';
+  const fromClause = `from ${name}`;
+  const result = await pool.query([selectClause, fromClause].join(' '));
+  return result.rows[0].total;
 }
 
-export function createPostgresRepository(modulo: ModuleForAdapter): Repository<RegistroDoMolde> {
+export function createPostgresRepository(module: ModuleForAdapter): Repository<TemplateEntry> {
   return {
-    list: (pagina, tamanho) => listRecords(modulo, pagina, tamanho),
-    findByHash: (hash) => findRecordByHash(modulo, hash),
-    insert: (registro) => insertRecord(modulo, registro),
-    count: () => countRecords(modulo),
+    list: (page, pageSize) => listRecords(module, page, pageSize),
+    findByHash: (hash) => findRecordByHash(module, hash),
+    insert: (entry) => insertRecord(module, entry),
+    count: () => countRecords(module),
   };
 }
 
@@ -186,23 +181,17 @@ export function createPostgresRepository(modulo: ModuleForAdapter): Repository<R
 // AUDITORIA
 // ================================================================================================
 
-async function recordAuditEvent(modulo: ModuleForAdapter, evento: AuditEvent): Promise<void> {
-  const { pool, nome } = await tableContext(modulo, 'auditoria');
-  const nomeEColunas = `${nome} (hash, acao, sujeito, campos_alterados, request_id)`;
-  const clausulaInsert = 'insert into';
-  const clausulaValues = 'values ($1, $2, $3, $4, $5)';
-  const consulta = [clausulaInsert, nomeEColunas, clausulaValues].join(' ');
-  await pool.query(consulta, [
-    evento.hash,
-    evento.acao,
-    evento.sujeito,
-    evento.camposAlterados,
-    evento.requestId,
-  ]);
+async function recordAuditEvent(module: ModuleForAdapter, event: AuditEvent): Promise<void> {
+  const { pool, name } = await tableContext(module, 'audit');
+  const nameAndColumns = `${name} (hash, action, actor, changed_fields, request_id)`;
+  const insertClause = 'insert into';
+  const valuesClause = 'values ($1, $2, $3, $4, $5)';
+  const query = [insertClause, nameAndColumns, valuesClause].join(' ');
+  await pool.query(query, [event.hash, event.action, event.actor, event.changedFields, event.requestId]);
 }
 
-export function createPostgresAudit(modulo: ModuleForAdapter): Audit {
-  return { record: (evento) => recordAuditEvent(modulo, evento) };
+export function createPostgresAudit(module: ModuleForAdapter): Audit {
+  return { record: (event) => recordAuditEvent(module, event) };
 }
 
 // ================================================================================================

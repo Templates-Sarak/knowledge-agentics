@@ -28,17 +28,17 @@ export interface ModuleOptions {
    * modulo em execucao standalone; a raiz compoe varios modulos no mesmo processo, cwd nenhum
    * serve para todos ao mesmo tempo.
    */
-  raiz?: string;
+  root?: string;
 }
 
 /** Monta o modulo num Express. Usado pela raiz de composicao E pelos testes de contrato. */
-export function createApp({ deps, auth, raiz }: ModuleOptions): Express {
-  const config = loadConfiguration(raiz);
-  const { seguranca, manifesto } = config;
+export function createApp({ deps, auth, root }: ModuleOptions): Express {
+  const config = loadConfiguration(root);
+  const { security, manifest } = config;
   const logger = createLogger({
-    modulo: manifesto.id,
-    nivelMinimo: config.api.logLevel,
-    camposSensiveis: manifesto.sensitiveFields,
+    module: manifest.id,
+    minLevel: config.api.logLevel,
+    sensitiveFields: manifest.sensitiveFields,
   });
 
   // COMPOSTO (raiz passada pela raiz de composicao) x STANDALONE (dev isolado, testes de contrato).
@@ -51,17 +51,17 @@ export function createApp({ deps, auth, raiz }: ModuleOptions): Express {
   // (medido: 401 num modulo composto em segundo, so por causa do primeiro montado antes dele).
   // Standalone nao tem esse prefixo tirado por ninguem — o path chega inteiro, e o app precisa
   // aplicar `manifesto.basePath` ele mesmo, como sempre fez.
-  const composto = raiz !== undefined;
-  const prefixo = composto ? '/' : manifesto.basePath;
+  const composed = root !== undefined;
+  const prefix = composed ? '/' : manifest.basePath;
 
   const app = express();
   app.use(express.json({ limit: `${config.api.maxBodyKb}kb` }));
   app.use(requestId(() => deps.idGenerator.hash()));
-  app.use(securityHeaders(seguranca.headers));
-  app.use(cors(seguranca.cors));
-  app.use(rateLimit(seguranca.rateLimit));
-  app.use(authentication(auth, manifesto.publicRoutes, composto ? '' : manifesto.basePath));
-  app.use(prefixo, createRoutes({ deps, config }));
+  app.use(securityHeaders(security.headers));
+  app.use(cors(security.cors));
+  app.use(rateLimit(security.rateLimit));
+  app.use(authentication(auth, manifest.publicRoutes, composed ? '' : manifest.basePath));
+  app.use(prefix, createRoutes({ deps, config }));
   app.use(errorHandler(logger));
 
   return app;
@@ -72,16 +72,16 @@ export function createApp({ deps, auth, raiz }: ModuleOptions): Express {
  * No monolito modular quem sobe e a raiz de composicao; aqui a porta vem do ambiente, e a falta
  * dela DERRUBA o boot (specs/arquitetura/01-modulo.md §4.3).
  */
-export function start(opcoes: ModuleOptions): void {
+export function start(options: ModuleOptions): void {
   const config = loadConfiguration();
   const logger = createLogger({
-    modulo: config.manifesto.id,
-    nivelMinimo: config.api.logLevel,
-    camposSensiveis: config.manifesto.sensitiveFields,
+    module: config.manifest.id,
+    minLevel: config.api.logLevel,
+    sensitiveFields: config.manifest.sensitiveFields,
   });
-  const porta = Number(envRequired('<MODULE>_API_PORT'));
+  const port = Number(envRequired('<MODULE>_API_PORT'));
 
-  createApp(opcoes).listen(porta, () => {
-    logger.info('api no ar', { porta, rotaBase: config.manifesto.basePath });
+  createApp(options).listen(port, () => {
+    logger.info('api no ar', { port, baseRoute: config.manifest.basePath });
   });
 }

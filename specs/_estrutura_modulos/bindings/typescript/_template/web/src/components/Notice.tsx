@@ -5,16 +5,16 @@
 // `packages/ui-kit` — a ARVORE nao muda, so a dependencia (ADR-007, specs/adr/000-decisoes-do-template.md).
 import type { ReactNode } from 'react';
 
-type Tom = 'neutro' | 'erro';
+type Tone = 'neutral' | 'error';
 
 interface Props {
-  tom?: Tom;
+  tone?: Tone;
   children: ReactNode;
 }
 
-export function Notice({ tom = 'neutro', children }: Props) {
+export function Notice({ tone = 'neutral', children }: Props) {
   return (
-    <p role={tom === 'erro' ? 'alert' : 'status'} data-tom={tom}>
+    <p role={tone === 'error' ? 'alert' : 'status'} data-tone={tone}>
       {children}
     </p>
   );

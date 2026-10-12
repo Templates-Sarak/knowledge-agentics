@@ -46,13 +46,13 @@
  * init` + `git add -A`) e exige ZERO achado — nenhuma allowlist, nenhum `--no-verify`: achado aqui
  * é o template instalando o próprio vazamento.
  *
- * `create-adapter:<porta>` — um passo POR PORTA do vocabulário (`tools/gate/ports-vocabulary.mjs`),
+ * `create-adapter:<port>` — um passo POR PORTA do vocabulário (`tools/gate/ports-vocabulary.mjs`),
  * reusando o projeto que os passos acima já geraram: é a única forma automatizada, na agenda
  * semanal, de exercitar `create-adapter.mjs` de verdade. Sem isto, o gerador só era provado por
  * fixture — cópia do molde — e foi exatamente uma fixture que envelheceu sem ninguém comparar
  * (âncora Python, ramo de porta nova em TS/Python) que produziu os dois bugs da rodada anterior.
  * Varrer o vocabulário INTEIRO, em vez de citar `repository`/`tokenVerifier` a dedo, cobre os
- * dois ramos do gerador que interessam — porta JÁ em `FABRICAS` (a maioria) e porta AUSENTE dela
+ * dois ramos do gerador que interessam — porta JÁ em `FACTORIES` (a maioria) e porta AUSENTE dela
  * (hoje só `tokenVerifier`) — e cobre a porta nova sozinho no dia em que o vocabulário crescer
  * de novo (`fila` tem retorno prometido no comentário de `ports-vocabulary.mjs`), sem editar este
  * arquivo. Cada passo confere **exit 0 e conteúdo**: só o exit code não distingue "registrou" de
@@ -63,7 +63,7 @@
  * de graça — nenhum passo novo depois disso, só reaproveitamento do que já roda.
  *
  * `boot` — o passo que SOBE o processo composto do projeto gerado e consulta o `health` de um módulo
- * criado. Existe porque nenhum passo anterior subia o processo, e a tabela `FABRICAS` do
+ * criado. Existe porque nenhum passo anterior subia o processo, e a tabela `FACTORIES` do
  * `composition.*` usou a chave `memoria` enquanto o `ports.json` dizia `memory`: todo projeto TS/JS
  * gerado quebrava no boot e o autoteste seguia verde. Roda DEPOIS de `first-commit` (o boot pode
  * escrever em disco; o commit simulado já foi medido sobre o staged limpo) e ANTES de
@@ -73,7 +73,7 @@
  * comando) é núcleo; subir, sondar e matar é a casca.
  *
  * `container-files` — a prova SEM Docker de que o projeto nasce dockerizado (ADR-022): os arquivos de
- * container existem, nenhum marcador (`<project>`, `<escopo>`…) sobrou, e `sync-deploy.mjs --check` passa
+ * container existem, nenhum marcador (`<project>`, `<scope>`…) sobrou, e `sync-deploy.mjs --check` passa
  * com uma `location` por `webPath` declarado. Barato, roda em todo modo — inclusive `--fast`. Cada
  * `create-module` já confere o mesmo `--check` logo depois de criar (o gerador roda dentro dele).
  *
@@ -177,7 +177,7 @@ export function symbolName(binding, provider) {
 /**
  * Um passo `create-adapter` por porta do VOCABULÁRIO INTEIRO (`ports-vocabulary.mjs`), não por uma
  * lista curada à mão — é o que faz uma porta nova (`fila`, se voltar) entrar na cobertura sozinha,
- * sem editar este arquivo. Ver o parágrafo "create-adapter:<porta>" no cabeçalho.
+ * sem editar este arquivo. Ver o parágrafo "create-adapter:<port>" no cabeçalho.
  */
 export function adapterSteps() {
   return KNOWN_PORTS.map((port, index) => ({
@@ -244,12 +244,12 @@ function moduleSteps(fast) {
 
 /**
  * O que roda DEPOIS do último `create-module` e antes do que lê o resultado, nos três bindings:
- *   - `create-adapter:<porta>` — reusa o projeto já gerado (ver "create-adapter:<porta>" no cabeçalho);
+ *   - `create-adapter:<port>` — reusa o projeto já gerado (ver "create-adapter:<port>" no cabeçalho);
  *   - `format-adapters` — `runPrettierWrite`/`runRuffFormat`: MESMO motivo nos dois bindings,
  *     só a ferramenta muda. Até a rodada que fechou o defeito do hífen no provedor (ADR-011), "ruff
  *     format já bate, mesmo varrendo o vocabulário inteiro" era medido e verdadeiro — porque
  *     `indexProvider` só gerava provedor de UMA letra, sem hífen. Trocar para kebab COM hífen (pra
- *     exercitar o próprio achado ①) engordou a linha de `FABRICAS` além dos 110 cols do ruff MESMO
+ *     exercitar o próprio achado ①) engordou a linha de `FACTORIES` além dos 110 cols do ruff MESMO
  *     pro provedor mais curto possível — Python precisa do mesmo passo que TS/JS sempre teve;
  *   - `simulated-clone` — só poda o disco; quem lê o resultado é o `verify` mais adiante;
  *   - `first-commit` — "este repositório nasce commitável?" só faz sentido sobre o STAGED de um
@@ -416,7 +416,7 @@ export const FRONT_FILES = ['front.Dockerfile', 'deploy/nginx.conf'];
  * propósito: o texto cita `<MODULE>_DB_URL` e `<basePath>` em prosa, e uma regex genérica `<...>` os
  * acusaria — aqui só entra o marcador que é substituído de verdade.
  */
-export const CONTAINER_MARKERS = ['<project>', '<PROJECT>', '<escopo>', '<INFRA_DIR>', '<WEB_PATH>', '<MAX_BODY_SIZE>', '<PROXY_READ_TIMEOUT>'];
+export const CONTAINER_MARKERS = ['<project>', '<PROJECT>', '<scope>', '<INFRA_DIR>', '<WEB_PATH>', '<MAX_BODY_SIZE>', '<PROXY_READ_TIMEOUT>'];
 
 /** PURA — `[{ arquivo, marcador }]` do que sobrou nos textos (`{ [arquivo]: texto }`). Vazia = ok. */
 export function leftoverMarkers(texts) {

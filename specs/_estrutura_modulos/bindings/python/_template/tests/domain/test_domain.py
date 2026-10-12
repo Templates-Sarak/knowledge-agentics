@@ -8,48 +8,48 @@ from core.domain import ValidationError, build_record
 from core.engine import generate_artifact
 from tests.fixtures import record_example
 
-STATUS_VALIDOS = ["rascunho", "ativo", "encerrado"]
-INSTANTE = "2024-01-01T00:00:00.000Z"
+VALID_STATUSES = ["draft", "active", "closed"]
+INSTANT = "2024-01-01T00:00:00.000Z"
 
 
-def test_monta_com_o_primeiro_status_quando_nenhum_e_informado() -> None:
-    registro = build_record({"titulo": "Exemplo"}, STATUS_VALIDOS, "10001", INSTANTE)
-    assert registro.status == "rascunho"
-    assert registro.hash == "10001"
+def test_builds_with_first_status_when_none_given() -> None:
+    entry = build_record({"title": "Example"}, VALID_STATUSES, "10001", INSTANT)
+    assert entry.status == "draft"
+    assert entry.hash == "10001"
 
 
-def test_remove_espaco_em_volta_do_titulo() -> None:
-    registro = build_record({"titulo": "  Exemplo  "}, STATUS_VALIDOS, "10001", INSTANTE)
-    assert registro.titulo == "Exemplo"
+def test_trims_whitespace_around_title() -> None:
+    entry = build_record({"title": "  Example  "}, VALID_STATUSES, "10001", INSTANT)
+    assert entry.title == "Example"
 
 
-def test_recusa_titulo_vazio() -> None:
+def test_rejects_empty_title() -> None:
     with pytest.raises(ValidationError):
-        build_record({"titulo": "   "}, STATUS_VALIDOS, "10001", INSTANTE)
+        build_record({"title": "   "}, VALID_STATUSES, "10001", INSTANT)
 
 
-def test_recusa_status_fora_do_vocabulario() -> None:
+def test_rejects_status_outside_vocabulary() -> None:
     with pytest.raises(ValidationError):
-        build_record({"titulo": "X", "status": "inventado"}, STATUS_VALIDOS, "10001", INSTANTE)
+        build_record({"title": "X", "status": "invented"}, VALID_STATUSES, "10001", INSTANT)
 
 
-def test_nao_inventa_instante_nem_identificador() -> None:
-    registro = build_record({"titulo": "X"}, STATUS_VALIDOS, "99999", INSTANTE)
-    assert (registro.hash, registro.criado_em) == ("99999", INSTANTE)
+def test_does_not_invent_instant_or_identifier() -> None:
+    entry = build_record({"title": "X"}, VALID_STATUSES, "99999", INSTANT)
+    assert (entry.hash, entry.created_at) == ("99999", INSTANT)
 
 
-TEMPLATE = "<h1>{{titulo}}</h1><p>{{hash}}</p>"
+TEMPLATE = "<h1>{{title}}</h1><p>{{hash}}</p>"
 
 
-def test_motor_e_deterministico() -> None:
-    registro = record_example()
-    assert generate_artifact(registro, TEMPLATE) == generate_artifact(registro, TEMPLATE)
+def test_engine_is_deterministic() -> None:
+    entry = record_example()
+    assert generate_artifact(entry, TEMPLATE) == generate_artifact(entry, TEMPLATE)
 
 
-def test_motor_escapa_html() -> None:
-    registro = record_example(titulo="<script>alert(1)</script>")
-    assert "<script>" not in generate_artifact(registro, TEMPLATE)
+def test_engine_escapes_html() -> None:
+    entry = record_example(title="<script>alert(1)</script>")
+    assert "<script>" not in generate_artifact(entry, TEMPLATE)
 
 
-def test_motor_preserva_marcador_sem_valor() -> None:
-    assert generate_artifact(record_example(), "{{inexistente}}") == "{{inexistente}}"
+def test_engine_preserves_marker_without_value() -> None:
+    assert generate_artifact(record_example(), "{{missing}}") == "{{missing}}"

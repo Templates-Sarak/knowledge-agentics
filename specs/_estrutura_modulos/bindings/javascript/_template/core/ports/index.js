@@ -10,34 +10,34 @@
 
 /**
  * @template T
- * @typedef {object} Pagina
- * @property {T[]} itens
- * @property {number} pagina
- * @property {number} tamanho
+ * @typedef {object} Page
+ * @property {T[]} items
+ * @property {number} page
+ * @property {number} pageSize
  * @property {number} total
  */
 
 /**
  * Persistencia dos registros do proprio modulo. Nunca toca tabela de outro modulo.
  * @typedef {object} Repository
- * @property {(pagina: number, tamanho: number) => Promise<Pagina<import('../domain/index.js').Registro>>} list
- * @property {(hash: string) => Promise<import('../domain/index.js').Registro | null>} findByHash
- * @property {(registro: import('../domain/index.js').Registro) => Promise<void>} insert
+ * @property {(page: number, pageSize: number) => Promise<Page<import('../domain/index.js').Entry>>} list
+ * @property {(hash: string) => Promise<import('../domain/index.js').Entry | null>} findByHash
+ * @property {(entry: import('../domain/index.js').Entry) => Promise<void>} insert
  * @property {() => Promise<number>} count
  */
 
 /**
  * Trilha append-only do modulo. Guarda o NOME dos campos alterados, nunca o valor.
  * @typedef {object} Audit
- * @property {(evento: AuditEvent) => Promise<void>} record
+ * @property {(event: AuditEvent) => Promise<void>} record
  */
 
 /**
  * @typedef {object} AuditEvent
  * @property {string} hash
- * @property {string} acao
- * @property {string} sujeito
- * @property {string[]} camposAlterados
+ * @property {string} action
+ * @property {string} actor
+ * @property {string[]} changedFields
  * @property {string} requestId
  */
 
@@ -55,14 +55,14 @@
 
 /**
  * @typedef {object} Auth
- * @property {(token: string) => Promise<{ permissoes: string[] } | null>} verify
+ * @property {(token: string) => Promise<{ permissions: string[] } | null>} verify
  */
 
 /**
  * Envia mensagem a um destinatario — e-mail. Existe aqui so como amostra: nenhuma rota deste
  * modulo a consome ainda (specs/arquitetura/01-modulo.md §5.1).
  * @typedef {object} Notifier
- * @property {(destinatario: string, assunto: string, corpo: string) => Promise<void>} send
+ * @property {(recipient: string, subject: string, body: string) => Promise<void>} send
  */
 
 /**
@@ -70,7 +70,7 @@
  * config/ports.json e a uma entrada de module.json:ports — o gate cobra que os tres concordem.
  *
  * `notifier` e OPCIONAL de proposito: e a porta que este molde declara so para provar que a
- * fabrica (`FABRICAS.notifier`, src/composition.js) e alcancada de verdade no boot, nao so
+ * fabrica (`FACTORIES.notifier`, src/composition.js) e alcancada de verdade no boot, nao so
  * declarada — nenhuma rota do modulo a exige, e um modulo real e livre para nao a declarar.
  *
  * @typedef {object} ModuleDependencies

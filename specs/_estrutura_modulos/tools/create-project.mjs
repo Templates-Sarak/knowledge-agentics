@@ -27,16 +27,16 @@ const BINDINGS = ['typescript', 'javascript', 'python'];
 /** Nome da decisao do template dentro de `specs/adr/` — a ancora das excecoes do gate. */
 const TEMPLATE_ADR = '000-decisoes-do-template.md';
 /**
- * Pastas que delimitam a varredura de `<escopo>` num destino já povoado — SEM `tools/`.
+ * Pastas que delimitam a varredura de `<scope>` num destino já povoado — SEM `tools/`.
  *
  * `tools/` é vendorizado — "ninguém edita" (a mesma razão de `generate-lint-config.mjs:IGNORADOS`
  * excluir `tools/` do linter da base). `create-module.mjs` (e este próprio arquivo) têm a string
- * `<escopo>` na PRÓPRIA LÓGICA de substituição, não como marcador a preencher: incluir `tools/` na
+ * `<scope>` na PRÓPRIA LÓGICA de substituição, não como marcador a preencher: incluir `tools/` na
  * varredura reescreve essa lógica para o VALOR do escopo — `create-project.mjs destino --scope
  * verif`, por exemplo, deixaria a cópia de `create-module.mjs` com `.replaceAll('verif', escopo)`
- * em vez de `.replaceAll('<escopo>', escopo)`, corrompendo a PRÓPRIA ferramenta: o próximo
+ * em vez de `.replaceAll('<scope>', escopo)`, corrompendo a PRÓPRIA ferramenta: o próximo
  * `create-module.mjs <id>` rodado nesse projeto mutila qualquer `<id>` que contenha "verif" como
- * substring. Nenhum arquivo de `tools/` tem `<escopo>` como marcador de verdade — só como parte da
+ * substring. Nenhum arquivo de `tools/` tem `<scope>` como marcador de verdade — só como parte da
  * lógica —, então excluí-la não perde nada.
  */
 const DIRS_WITH_SCOPE_MARKER = ['modules', 'specs', 'packages', 'adapters', 'src', 'config'];
@@ -73,7 +73,7 @@ function walk(dir, accumulated = []) {
 }
 
 /**
- * Só o que este script instalou e pode ter `<escopo>` como marcador de verdade — nunca
+ * Só o que este script instalou e pode ter `<scope>` como marcador de verdade — nunca
  * `tools/` (ver `DIRS_WITH_SCOPE_MARKER`). Percorrer o destino inteiro seria errado num
  * repositório já existente — `node_modules` e `.git` entrariam no laço.
  */
@@ -85,12 +85,12 @@ function filesWithScopeMarker(destination) {
   return [...nestedFiles, ...rootFiles];
 }
 
-/** No esqueleto da raiz, só `<escopo>` é substituído — os demais marcadores são do módulo. */
+/** No esqueleto da raiz, só `<scope>` é substituído — os demais marcadores são do módulo. */
 function applyScope(files, scope) {
   for (const file of files) {
     const content = readFileSync(file, 'utf8');
-    if (!content.includes('<escopo>')) continue;
-    writeFileSync(file, content.replaceAll('<escopo>', scope), 'utf8');
+    if (!content.includes('<scope>')) continue;
+    writeFileSync(file, content.replaceAll('<scope>', scope), 'utf8');
   }
 }
 

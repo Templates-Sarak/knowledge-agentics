@@ -80,7 +80,8 @@ arquivos descobertos (38) é a mesma antes e depois.
 
 ## 3. Como reproduzir a medição
 
-O script não é versionado; o método é este, e qualquer reimplementação que o siga reproduz os totais:
+O medidor é versionado desde a onda 4 (`specs/_estrutura_modulos/tests/measure-language.mjs`, seção 7); o
+método é este, e qualquer reimplementação que o siga reproduz os totais:
 
 1. **Declarações** — extrair de cada arquivo (`.mjs/.js/.ts` pela API do compilador TypeScript; `.py` pelo
    módulo `ast`) o nome de cada função, classe, constante, variável local, parâmetro e chave de objeto, com
@@ -177,3 +178,45 @@ Resíduos intencionais revisados:
   Não são o contrato JSON do gate tratado em A2; migrá-las exigiria outro conjunto de consumidores. Essa
   fronteira foi mantida e deve ser decidida antes de uma onda dedicada a esses contratos.
 
+## 7. Estado depois da onda 4 (bindings e domínio do molde)
+
+**O medidor agora mora no repositório.** `specs/_estrutura_modulos/tests/measure-language.mjs`, com o vocabulário
+fechado ao lado (`language-vocabulary.json`: 668 termos, **origem por termo**, 61 cognatos que nunca entram,
+palavras funcionais só para texto livre). Não viaja para o projeto gerado. `node tests/measure-language.mjs`
+imprime por escopo (`bindings`, `tools`, `tests`), categoria (`decl`, `member`, `string`, `data`) e raiz;
+`--list --full` lista cada ocorrência; `--root <pasta>` mede outra árvore (um `git worktree` do commit
+anterior dá o "antes" com a **mesma** régua); `--unknown` e `--unknown-strings` listam as palavras que o
+vocabulário ainda não conhece, para revisão; `--selftest` está no `run-all-selftests`.
+
+Origem do vocabulário, por termo (campo `origins`): `earendel-gate` (o vocabulário do sistema adotante),
+`adr-025-dictionary` (o dicionário do `ADR-025`), `adr-024-ids` (palavras dos ids antigos que nenhum id novo
+contém), `adr-023-domain` (o domínio do molde) e `tokenization-review` (levantamento por tokenização dos
+identificadores e dos literais, revisado palavra a palavra). Palavra nova só entra com origem — e a falha mais
+comum é de **cobertura do vocabulário**, não da régua: a onda 4 descobriu `desligamento`, `iniciado` e
+`concluido` pelo `--unknown-strings` depois de a primeira medição dar zero literais.
+
+| Escopo | Categoria | Antes (HEAD da onda 3) | Depois |
+|---|---|---|---|
+| `bindings/**` | declarações | 1.341 de 2.975 | **0** de 3.023 |
+| `bindings/**` | acessos por ponto | 156 de 1.089 | **0** de 1.119 |
+| `bindings/**` | literais de texto | 710 de 1.819 | **0** de 1.884 |
+| `bindings/**` | palavras de arquivo de dado | 253 de 1.708 | **0** de 1.734 |
+| `tools/**` | declarações | 77 de 2.747 | 77 de 2.747 |
+| `tools/**` | literais de texto | 408 de 3.957 | 347 de 3.959 |
+
+O vocabulário usado nos dois lados é o final (668 termos); o número "antes" é maior que o da seção 5 por isso.
+As sobras de `tools/**` e `tests/**` são as de sempre, nomeadas na seção 6: chaves de objeto internas do
+motor do gate (`escopo`, `nivel`, `regra`), chaves de saída de `affected`/`ci-security`/`ci-dependencies`
+(`ADR-026`), `SEM_COBERTURA` no harness do gate e fixtures que leem ou exercitam prosa e código em português.
+
+**O que cruza a fronteira e o plano de cada sistema precisa listar** (detalhe no `ADR-027`):
+`consumes[].contract` com `GET /resumo`; `permissions` com `:ler`/`:escrever` (no `module.json` e no que o
+*auth* devolve); `ui.pacote`; o marcador `<escopo>` (`project.json`, `package.json`, `pyproject.toml`);
+a pasta `relatorios/` no `.gitignore`/CI; o código de erro e a mensagem que o front lê; e, para cada
+tabela do molde (`<m>_metadados`, `<m>_auditoria`) e coluna (`arquivo`, `aplicada_em`, `titulo`, `acao`,
+`sujeito`, `campos_alterados`), a migration que o **dono** do sistema decide (seção 1.4).
+
+| Item | Onda | Quem aplica nos sistemas |
+|---|---|---|
+| identificadores de `bindings/**` | 4a | plan por binding do sistema (a substituição de `tools/` não os traz) |
+| domínio do molde (rota, schema, permissão, código de erro, valor) | 4b | plan do sistema; **tabela e coluna em produção: migration do dono** |

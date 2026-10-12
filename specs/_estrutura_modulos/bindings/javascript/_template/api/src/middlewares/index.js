@@ -7,9 +7,9 @@
 import { ApiError, errorEnvelope } from '../errors.js';
 
 /** Correlaciona log, trilha de auditoria e envelope de erro. Primeiro da cadeia, sempre. */
-export function requestId(gerar) {
+export function requestId(generate) {
   return (req, res, next) => {
-    req.requestId = gerar();
+    req.requestId = generate();
     res.setHeader('x-request-id', req.requestId);
     next();
   };
@@ -28,9 +28,9 @@ export function securityHeaders(config) {
 /** Origens sao DECLARADAS em config/security.json. `*` e proibido (regra `open-cors`). */
 export function cors(config) {
   return (req, res, next) => {
-    const origem = req.headers.origin;
-    if (typeof origem === 'string' && config.allowedOrigins.includes(origem)) {
-      res.setHeader('access-control-allow-origin', origem);
+    const origin = req.headers.origin;
+    if (typeof origin === 'string' && config.allowedOrigins.includes(origin)) {
+      res.setHeader('access-control-allow-origin', origin);
       res.setHeader('access-control-allow-methods', config.methods.join(', '));
     }
     next();
@@ -39,23 +39,23 @@ export function cors(config) {
 
 /** Contador em memoria: suficiente para um processo. Multi-instancia exige uma porta dedicada. */
 export function rateLimit(config) {
-  const janelas = new Map();
+  const windows = new Map();
 
   return (req, res, next) => {
-    const limite = req.method === 'GET' ? config.readLimit : config.writeLimit;
-    const chave = `${req.ip ?? 'desconhecido'}:${req.method}`;
+    const limit = req.method === 'GET' ? config.readLimit : config.writeLimit;
+    const key = `${req.ip ?? 'unknown'}:${req.method}`;
     const now = Date.now();
-    const atual = janelas.get(chave);
+    const current = windows.get(key);
 
-    if (atual === undefined || now - atual.inicio > config.windowSeconds * 1000) {
-      janelas.set(chave, { inicio: now, contagem: 1 });
+    if (current === undefined || now - current.start > config.windowSeconds * 1000) {
+      windows.set(key, { start: now, count: 1 });
       next();
       return;
     }
-    atual.contagem += 1;
-    if (atual.contagem > limite) {
+    current.count += 1;
+    if (current.count > limit) {
       res.setHeader('retry-after', String(config.windowSeconds));
-      next(new ApiError('LIMITE_EXCEDIDO', 'limite de requisicoes excedido'));
+      next(new ApiError('LIMIT_EXCEEDED', 'request limit exceeded'));
       return;
     }
     next();
@@ -67,36 +67,36 @@ export function rateLimit(config) {
  * router ser montado — aqui `req.path` ainda e absoluto. Sem tirar o prefixo, nenhuma rota
  * publica casaria e /health, /meta e /resumo responderiam 401.
  */
-function pathRelative(caminho, rotaBase) {
-  if (!caminho.startsWith(rotaBase)) return caminho;
-  const resto = caminho.slice(rotaBase.length);
-  return resto === '' ? '/' : resto;
+function pathRelative(path, baseRoute) {
+  if (!path.startsWith(baseRoute)) return path;
+  const rest = path.slice(baseRoute.length);
+  return rest === '' ? '/' : rest;
 }
 
 /** DENY BY DEFAULT: so as rotas de `module.json:publicRoutes` passam sem token. */
-export function authentication(auth, rotasPublicas, rotaBase) {
-  const publicas = new Set(rotasPublicas.map((rota) => rota.toUpperCase()));
+export function authentication(auth, publicRoutes, baseRoute) {
+  const publicSet = new Set(publicRoutes.map((route) => route.toUpperCase()));
 
   return (req, _res, next) => {
-    const relativo = pathRelative(req.path, rotaBase);
-    if (publicas.has(`${req.method} ${relativo}`.toUpperCase())) {
-      req.permissoes = [];
+    const relativePath = pathRelative(req.path, baseRoute);
+    if (publicSet.has(`${req.method} ${relativePath}`.toUpperCase())) {
+      req.permissions = [];
       next();
       return;
     }
-    const cabecalho = req.headers.authorization;
-    if (typeof cabecalho !== 'string' || !cabecalho.startsWith('Bearer ')) {
-      next(new ApiError('NAO_AUTENTICADO', 'token ausente'));
+    const header = req.headers.authorization;
+    if (typeof header !== 'string' || !header.startsWith('Bearer ')) {
+      next(new ApiError('UNAUTHENTICATED', 'missing token'));
       return;
     }
     auth
-      .verify(cabecalho.slice(7))
+      .verify(header.slice(7))
       .then((claims) => {
         if (claims === null) {
-          next(new ApiError('NAO_AUTENTICADO', 'token invalido'));
+          next(new ApiError('UNAUTHENTICATED', 'invalid token'));
           return;
         }
-        req.permissoes = claims.permissoes;
+        req.permissions = claims.permissions;
         next();
       })
       .catch(next);
@@ -104,10 +104,10 @@ export function authentication(auth, rotasPublicas, rotaBase) {
 }
 
 /** Autorizacao por permissao NOMEADA. RLS no banco e defesa em profundidade, nao o controle. */
-export function requirePermission(permissao) {
+export function requirePermission(permission) {
   return (req, _res, next) => {
-    if (!req.permissoes?.includes(permissao)) {
-      next(new ApiError('NAO_AUTORIZADO', 'permissao insuficiente'));
+    if (!req.permissions?.includes(permission)) {
+      next(new ApiError('FORBIDDEN', 'insufficient permission'));
       return;
     }
     next();
@@ -116,18 +116,18 @@ export function requirePermission(permissao) {
 
 /** Unico lugar que transforma excecao em resposta. Detalhe vai para o log, nunca para o cliente. */
 export function errorHandler(logger) {
-  return (erro, req, res, _next) => {
-    const conhecido =
-      erro instanceof ApiError
-        ? erro
-        : new ApiError('INTERNO', 'erro interno', erro instanceof Error ? erro.message : String(erro));
+  return (error, req, res, _next) => {
+    const known =
+      error instanceof ApiError
+        ? error
+        : new ApiError('INTERNAL', 'internal error', error instanceof Error ? error.message : String(error));
 
-    logger.error('falha na requisicao', {
+    logger.error('request failed', {
       requestId: req.requestId,
-      codigo: conhecido.codigo,
-      caminho: req.path,
-      detalhe: conhecido.detalhe ?? conhecido.message,
+      code: known.code,
+      path: req.path,
+      detail: known.detail ?? known.message,
     });
-    res.status(conhecido.status).json(errorEnvelope(conhecido, req.requestId));
+    res.status(known.status).json(errorEnvelope(known, req.requestId));
   };
 }

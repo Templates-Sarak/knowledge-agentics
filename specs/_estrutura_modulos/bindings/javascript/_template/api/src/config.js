@@ -8,46 +8,46 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 /** Le removendo o BOM: editor e shell do Windows gravam por padrao, e `JSON.parse` rejeita. */
-function readText(caminho) {
-  return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
+function readText(path) {
+  return readFileSync(path, 'utf8').replace(/^﻿/, '');
 }
 
 /** Sobe a partir de um ponto ate achar o `module.json`. Funciona em dev, em teste e ja extraido. */
-export function findRootModule(partida = process.cwd()) {
-  let atual = partida;
-  for (let nivel = 0; nivel < 8; nivel += 1) {
-    if (existsSync(join(atual, 'module.json'))) return atual;
-    const pai = dirname(atual);
-    if (pai === atual) break;
-    atual = pai;
+export function findRootModule(start = process.cwd()) {
+  let current = start;
+  for (let level = 0; level < 8; level += 1) {
+    if (existsSync(join(current, 'module.json'))) return current;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
   }
-  throw new Error(`[config] module.json nao encontrado a partir de "${partida}"`);
+  throw new Error(`[config] module.json not found from "${start}"`);
 }
 
-function readJson(raiz, relativo) {
+function readJson(root, relativePath) {
   try {
-    return JSON.parse(readText(join(raiz, relativo)));
-  } catch (causa) {
-    throw new Error(`[config] nao foi possivel ler "${relativo}": ${String(causa)}`);
+    return JSON.parse(readText(join(root, relativePath)));
+  } catch (cause) {
+    throw new Error(`[config] could not read "${relativePath}": ${String(cause)}`);
   }
 }
 
 /** Pares chave=valor de um `.env`, ignorando comentario e linha vazia. */
-function readPairsEnv(caminho) {
-  return readText(caminho)
+function readPairsEnv(path) {
+  return readText(path)
     .split(/\r?\n/)
-    .map((linha) => linha.trim())
-    .filter((linha) => linha !== '' && !linha.startsWith('#') && linha.includes('='))
-    .map((linha) => {
-      const igual = linha.indexOf('=');
-      return [linha.slice(0, igual).trim(), linha.slice(igual + 1).trim()];
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith('#') && line.includes('='))
+    .map((line) => {
+      const equalsIndex = line.indexOf('=');
+      return [line.slice(0, equalsIndex).trim(), line.slice(equalsIndex + 1).trim()];
     });
 }
 
 /** Aplica pares no ambiente SEM sobrescrever o que ja veio do processo — mantem a precedencia. */
-function applyWithoutOverwrite(pares) {
-  for (const [chave, valor] of pares) {
-    if (process.env[chave] === undefined) process.env[chave] = valor;
+function applyWithoutOverwrite(pairs) {
+  for (const [key, value] of pairs) {
+    if (process.env[key] === undefined) process.env[key] = value;
   }
 }
 
@@ -56,30 +56,30 @@ function applyWithoutOverwrite(pares) {
  * O `.env` do modulo aponta para o da raiz por `ENV_ROOT`. Na extracao, apaga-se essa linha e
  * os valores passam a viver localmente — sem uma linha de codigo mudar.
  */
-function resolveEnvironment(raizModulo) {
-  const local = join(raizModulo, '.env');
+function resolveEnvironment(moduleRoot) {
+  const local = join(moduleRoot, '.env');
   if (!existsSync(local)) return;
 
-  const pares = readPairsEnv(local);
-  applyWithoutOverwrite(pares.filter(([chave]) => chave !== 'ENV_ROOT'));
+  const pairs = readPairsEnv(local);
+  applyWithoutOverwrite(pairs.filter(([key]) => key !== 'ENV_ROOT'));
 
-  const ponteiro = pares.find(([chave]) => chave === 'ENV_ROOT');
-  if (ponteiro === undefined) return;
+  const pointer = pairs.find(([key]) => key === 'ENV_ROOT');
+  if (pointer === undefined) return;
 
-  const alvo = isAbsolute(ponteiro[1]) ? ponteiro[1] : resolve(raizModulo, ponteiro[1]);
-  if (!existsSync(alvo)) {
-    throw new Error(`[config] ENV_ROOT aponta para "${alvo}", que nao existe`);
+  const target = isAbsolute(pointer[1]) ? pointer[1] : resolve(moduleRoot, pointer[1]);
+  if (!existsSync(target)) {
+    throw new Error(`[config] ENV_ROOT points to "${target}", which does not exist`);
   }
-  applyWithoutOverwrite(readPairsEnv(alvo));
+  applyWithoutOverwrite(readPairsEnv(target));
 }
 
 /** Le uma variavel obrigatoria. Ausente = boot morre com mensagem acionavel. */
-export function envRequired(chave) {
-  const valor = process.env[chave];
-  if (valor === undefined || valor === '') {
-    throw new Error(`[config] variavel obrigatoria ausente: ${chave} (declare em module.json:requiredEnv)`);
+export function envRequired(key) {
+  const value = process.env[key];
+  if (value === undefined || value === '') {
+    throw new Error(`[config] required variable missing: ${key} (declare it in module.json:requiredEnv)`);
   }
-  return valor;
+  return value;
 }
 
 /**
@@ -90,26 +90,26 @@ export function envRequired(chave) {
  * boot real (`npm run start`) ou este mesmo teste, chamando a funcao com `NODE_ENV` diferente de
  * `test` de proposito.
  */
-export function checkEnvRequired(manifesto) {
-  const faltando = manifesto.requiredEnv.filter((chave) => process.env[chave] === undefined);
-  if (faltando.length > 0 && process.env['NODE_ENV'] !== 'test') {
-    throw new Error(`[config] ${manifesto.id}: variaveis ausentes no ambiente: ${faltando.join(', ')}`);
+export function checkEnvRequired(manifest) {
+  const missing = manifest.requiredEnv.filter((key) => process.env[key] === undefined);
+  if (missing.length > 0 && process.env['NODE_ENV'] !== 'test') {
+    throw new Error(`[config] ${manifest.id}: variables missing from the environment: ${missing.join(', ')}`);
   }
 }
 
 /** Carrega e valida TUDO no boot; qualquer falta derruba o processo antes de servir. */
-export function loadConfiguration(raiz = findRootModule()) {
-  const manifesto = readJson(raiz, 'module.json');
-  resolveEnvironment(raiz);
-  checkEnvRequired(manifesto);
+export function loadConfiguration(root = findRootModule()) {
+  const manifest = readJson(root, 'module.json');
+  resolveEnvironment(root);
+  checkEnvRequired(manifest);
 
   return {
-    raiz,
-    manifesto,
-    api: readJson(raiz, 'config/api.json'),
-    dominio: readJson(raiz, 'config/domain.json'),
-    seguranca: readJson(raiz, 'config/security.json'),
-    portas: readJson(raiz, 'config/ports.json'),
-    textos: readJson(raiz, 'config/texts.json'),
+    root,
+    manifest,
+    api: readJson(root, 'config/api.json'),
+    domain: readJson(root, 'config/domain.json'),
+    security: readJson(root, 'config/security.json'),
+    ports: readJson(root, 'config/ports.json'),
+    texts: readJson(root, 'config/texts.json'),
   };
 }

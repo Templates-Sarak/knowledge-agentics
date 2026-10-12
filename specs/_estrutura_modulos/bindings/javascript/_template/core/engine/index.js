@@ -6,22 +6,22 @@
 // gate reprova (regra `determinism`). E o que torna o motor testavel sem congelar relogio.
 
 /**
- * Substitui marcadores `{{chave}}` do template pelos valores informados.
+ * Substitui marcadores `{{key}}` do template pelos valores informados.
  * @param {string} template
- * @param {Record<string, string>} valores
+ * @param {Record<string, string>} values
  * @returns {string}
  */
-function fill(template, valores) {
-  return template.replace(/\{\{(\w+)\}\}/g, (original, chave) => valores[chave] ?? original);
+function fill(template, values) {
+  return template.replace(/\{\{(\w+)\}\}/g, (original, key) => values[key] ?? original);
 }
 
 /**
  * Escapa o que vai para HTML. Artefato publicado nao pode virar vetor de injecao.
- * @param {string} texto
+ * @param {string} text
  * @returns {string}
  */
-function escape(texto) {
-  return texto
+function escape(text) {
+  return text
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -32,15 +32,15 @@ function escape(texto) {
  * Gera o artefato de um registro. O `template` vem de core/templates/, lido pela borda —
  * o motor nao le arquivo, para continuar puro e testavel.
  *
- * @param {import('../domain/index.js').Registro} registro
+ * @param {import('../domain/index.js').Entry} entry
  * @param {string} template
  * @returns {string}
  */
-export function generateArtifact(registro, template) {
+export function generateArtifact(entry, template) {
   return fill(template, {
-    hash: escape(registro.hash),
-    titulo: escape(registro.titulo),
-    status: escape(registro.status),
-    criadoEm: escape(registro.criadoEm),
+    hash: escape(entry.hash),
+    title: escape(entry.title),
+    status: escape(entry.status),
+    createdAt: escape(entry.createdAt),
   });
 }

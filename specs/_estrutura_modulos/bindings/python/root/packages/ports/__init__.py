@@ -17,14 +17,14 @@ from typing import Protocol, Sequence, TypeVar
 T = TypeVar("T")
 
 ERROR_CODES: dict[str, int] = {
-    "VALIDACAO": 400,
-    "NAO_AUTENTICADO": 401,
-    "NAO_AUTORIZADO": 403,
-    "NAO_ENCONTRADO": 404,
-    "CONFLITO": 409,
-    "LIMITE_EXCEDIDO": 429,
-    "DEPENDENCIA_EXTERNA": 502,
-    "INTERNO": 500,
+    "VALIDATION": 400,
+    "UNAUTHENTICATED": 401,
+    "FORBIDDEN": 403,
+    "NOT_FOUND": 404,
+    "CONFLICT": 409,
+    "LIMIT_EXCEEDED": 429,
+    "EXTERNAL_DEPENDENCY": 502,
+    "INTERNAL": 500,
 }
 
 # Fonte NORMATIVA: `tools/gate/ports-vocabulary.mjs`, na base — os dois schemas do gate
@@ -50,41 +50,41 @@ KNOWN_PORTS = (
 class PortError(Exception):
     """Falha de porta. O adapter TRADUZ o erro do fornecedor para ca — o dominio nunca ve o SDK."""
 
-    def __init__(self, codigo: str, mensagem: str, detalhe: str | None = None) -> None:
-        super().__init__(mensagem)
-        self.codigo = codigo
-        self.detalhe = detalhe
+    def __init__(self, code: str, message: str, detail: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.detail = detail
 
 
 @dataclass(frozen=True)
-class Pagina:
-    itens: Sequence[object]
-    pagina: int
-    tamanho: int
+class Page:
+    items: Sequence[object]
+    page: int
+    page_size: int
     total: int
 
 
 @dataclass(frozen=True)
 class AuditEvent:
     hash: str
-    acao: str
-    sujeito: str
-    campos_alterados: list[str]
+    action: str
+    actor: str
+    changed_fields: list[str]
     request_id: str
 
 
 class Repository(Protocol):
-    async def list(self, pagina: int, tamanho: int) -> Pagina: ...
+    async def list(self, page: int, page_size: int) -> Page: ...
 
     async def find_by_hash(self, hash_universal: str) -> object | None: ...
 
-    async def insert(self, registro: object) -> None: ...
+    async def insert(self, entry: object) -> None: ...
 
     async def count(self) -> int: ...
 
 
 class Audit(Protocol):
-    async def record(self, evento: dict[str, object]) -> None: ...
+    async def record(self, event: dict[str, object]) -> None: ...
 
 
 class Clock(Protocol):
@@ -105,14 +105,14 @@ class Storage(Protocol):
     `Repository`: nada de `executar(comando: str)` — o desenho que sustenta `sql-in-module` do
     lado do banco."""
 
-    async def save(self, caminho: str, conteudo: bytes) -> None: ...
+    async def save(self, path: str, content: bytes) -> None: ...
 
-    async def find(self, caminho: str) -> bytes | None: ...
+    async def find(self, path: str) -> bytes | None: ...
 
-    async def remove(self, caminho: str) -> None: ...
+    async def remove(self, path: str) -> None: ...
 
 
 class Notifier(Protocol):
     """Envia mensagem a um destinatario — e-mail, o outro caso mais comum."""
 
-    async def send(self, destinatario: str, assunto: str, corpo: str) -> None: ...
+    async def send(self, recipient: str, subject: str, body: str) -> None: ...

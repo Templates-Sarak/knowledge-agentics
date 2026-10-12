@@ -4,9 +4,9 @@
 // modulo. Se o projeto usar ui.mode = "kit", troque o corpo por um componente de
 // `packages/ui-kit` — a ARVORE nao muda, so a dependencia (ADR-007, specs/adr/000-decisoes-do-template.md).
 
-export function Notice({ tom = 'neutro', children }) {
+export function Notice({ tone = 'neutral', children }) {
   return (
-    <p role={tom === 'erro' ? 'alert' : 'status'} data-tom={tom}>
+    <p role={tone === 'error' ? 'alert' : 'status'} data-tone={tone}>
       {children}
     </p>
   );

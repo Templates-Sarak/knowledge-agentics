@@ -4,9 +4,9 @@ Lei dona: specs/arquitetura/01-modulo.md §6.  Decisao: ADR-002 (specs/adr/000-d
 PORTA e infraestrutura (banco, storage, auth). GATEWAY e outro modulo.
 Sao riscos diferentes, por isso moram em pastas diferentes — e o gate cobra regras diferentes:
 
-  - arquivo aqui fala EXCLUSIVAMENTE HTTP (regra `gateway-http`);
+  - file_name aqui fala EXCLUSIVAMENTE HTTP (regra `gateway-http`);
     nenhum SQL, nenhuma conexao, nenhum acesso a tabela — nem a propria;
-  - cada arquivo aqui TEM entrada em module.json:consumes (regra `gateway-declared`);
+  - cada file_name aqui TEM entrada em module.json:consumes (regra `gateway-declared`);
   - o grafo de `consumes` nao pode ter ciclo (regra `consumes-cycle`);
   - a URL base vem do ambiente, nunca literal (regra `hardcode-url`).
 
@@ -35,6 +35,6 @@ from __future__ import annotations
 class GatewayError(Exception):
     """Falha ao falar com outro modulo. A borda a traduz para DEPENDENCIA_EXTERNA (502)."""
 
-    def __init__(self, modulo: str, motivo: str) -> None:
-        super().__init__(f'gateway "{modulo}" indisponivel: {motivo}')
-        self.modulo = modulo
+    def __init__(self, module: str, reason: str) -> None:
+        super().__init__(f'gateway "{module}" unavailable: {reason}')
+        self.module = module

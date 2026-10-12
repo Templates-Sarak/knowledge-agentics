@@ -21,7 +21,7 @@ Todo módulo tem exatamente esta forma. Divergir dela exige decisão registrada 
 ```
 modules/<module>/
 ├── module.json          identidade + contrato — o sistema DESCOBRE o módulo por aqui
-├── package.json         @<escopo>/<module>        (pyproject.toml no binding Python)
+├── package.json         @<scope>/<module>        (pyproject.toml no binding Python)
 ├── .env                 ENV_ROOT + overrides — NÃO versionado, criado pelo scaffold
 ├── .env.example         GERADO de module.json:requiredEnv — nunca editado à mão
 ├── README.md
@@ -47,7 +47,7 @@ modules/<module>/
 │   └── src/
 │       ├── index.ts     bootstrap — RECEBE os adapters, nunca os cria
 │       ├── config.ts    carregador único; o único arquivo que toca env
-│       ├── routes/      rotas + /health, /meta, /resumo obrigatórios
+│       ├── routes/      rotas + /health, /meta, /summary obrigatórios
 │       ├── middlewares/ requestId, headers, CORS, rate limit, auth, erro
 │       ├── mappers/  snake↔camel + projeção de saída por allowlist
 │       └── logger.ts    logger estruturado com redação de campo sensível
@@ -99,11 +99,11 @@ O sistema **descobre** os módulos, não os conhece. O manifesto é o que torna 
 | `ports` | string[] | portas de infraestrutura que exige (§5) |
 | `consumes` | objeto[] | contratos de **outros módulos** dos quais depende (§6) |
 | `ui.mode` | enum | `own` \| `kit` — de onde vêm os componentes visuais (§7) |
-| `permissions` | string[] | permissões que a API exige (`<id>:ler`, `<id>:escrever`) |
+| `permissions` | string[] | permissões que a API exige (`<id>:read`, `<id>:write`) |
 | `publicRoutes` | string[] | rotas sem autenticação, no formato `"MÉTODO /caminho"` — **opt-in explícito** |
 | `sensitiveFields` | string[] | campos que nunca saem em resposta, log ou OpenAPI |
 | `navigation` | objeto \| null | `{ label, icon, order }` — o que o conector monta no menu |
-| `exportsSummary` | boolean | se entra no dashboard cross-módulo. `true` **obriga** o schema `200` de `GET /resumo` a declarar `total` (inteiro) — a forma mínima que o agregador lê sem conhecer o módulo ([[02-contrato-e-dados]] §2) |
+| `exportsSummary` | boolean | se entra no dashboard cross-módulo. `true` **obriga** o schema `200` de `GET /summary` a declarar `total` (inteiro) — a forma mínima que o agregador lê sem conhecer o módulo ([[02-contrato-e-dados]] §2) |
 | `generatesArtifact` | boolean | se possui `core/engine`, `core/templates` e `generated/` |
 
 ## 3.2 O que o manifesto habilita
@@ -144,7 +144,7 @@ O `.env` **real e único** de segredo fica na **raiz do projeto**. Cada módulo 
 **aponta** para ele:
 
 ```bash
-# modules/catalogo/.env   (não versionado; criado pelo scaffold)
+# modules/catalog/.env   (não versionado; criado pelo scaffold)
 ENV_ROOT=../../.env
 
 # Override local (dev). Vazio no monorepo; preenchido quando o módulo for extraído.
@@ -228,7 +228,7 @@ ADR.
 - **O módulo nunca importa SDK de fornecedor.** O SDK só existe dentro do adapter.
 - **`memory` é obrigatório para toda porta.** Os testes do módulo rodam inteiros sem infraestrutura; se não
   rodam, o desacoplamento é ficção.
-- **O adapter não conhece domínio.** Não existe `if (module === 'catalogo')` dentro de adapter.
+- **O adapter não conhece domínio.** Não existe `if (module === 'catalog')` dentro de adapter.
 - **Erro de fornecedor não vaza.** O adapter traduz a falha para a taxonomia fechada antes de devolver.
 - **Trocar de fornecedor é editar `config/ports.json`.** Se for preciso mais que isso, a porta está mal desenhada.
 - **Adapter novo nasce por `create-adapter.mjs <porta> <provedor>`**, nunca à mão — mesma forma do
@@ -236,7 +236,7 @@ ADR.
   `src/composition.*` e roda o gate antes de devolver o controle.
 - **`postgres` (`repository`/`audit`) já vem PRONTO, ao lado de `memory`** — não nasce
   por `create-adapter.mjs`, porque já existe: materializa a forma que
-  `create-module.mjs` já cria (`<prefix>metadados`/`<prefix>auditoria`). `memory` continua o
+  `create-module.mjs` já cria (`<prefix>metadata`/`<prefix>audit`). `memory` continua o
   DEFAULT de todo módulo; trocar é a mesma linha de `config/ports.json`, agora verdadeira nos dois
   sentidos. A fábrica recebe o **manifesto do módulo** (`DiscoveredManifest`/`dict`), não zero
   argumentos — é o que permite um adapter genérico saber `data.schema`/`data.prefix`/`<MODULE>_DB_URL`
@@ -249,7 +249,7 @@ diferentes, para que a diferença seja visível e verificável.
 
 ```jsonc
 "consumes": [
-  { "module": "catalogo", "contract": "GET /aliquotas/vigente", "why": "alíquota do mês na conciliação" }
+  { "module": "catalog", "contract": "GET /tax-rates/current", "why": "alíquota do mês na conciliação" }
 ]
 ```
 
@@ -277,7 +277,7 @@ aqui para que a próxima fase não improvise.
 | modo | O que significa | O que o gate cobra |
 |---|---|---|
 | `own` | o módulo define suas primitivas em `web/src/components/` | proibido importar componente de **outro módulo** — é a regra `lateral-import`, que já cobra isto para o módulo inteiro; não há regra específica de `ui` neste modo |
-| `kit` | a renderização vem de `packages/ui-kit` (nome canônico; `ui.pacote` declara outro) | `ui-kit` (erro): nenhum arquivo importa a biblioteca de UI bruta, e algo em `web/` importa o kit — kit declarado e nunca importado é declaração sem consequência. `ui-token` (aviso): zero literal de cor ou fonte em declaração de estilo |
+| `kit` | a renderização vem de `packages/ui-kit` (nome canônico; `ui.package` declara outro) | `ui-kit` (erro): nenhum arquivo importa a biblioteca de UI bruta, e algo em `web/` importa o kit — kit declarado e nunca importado é declaração sem consequência. `ui-token` (aviso): zero literal de cor ou fonte em declaração de estilo |
 
 Módulo sem `web/` silencia nos dois modos: descartar a tela é permitido (§2).
 

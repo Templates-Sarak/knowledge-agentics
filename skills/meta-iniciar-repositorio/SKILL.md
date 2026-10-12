@@ -62,7 +62,7 @@ Apresente: alvo, binding, escopo, módulos com papel, **se o sistema entra no `m
 ```bash
 python skills/meta-iniciar-repositorio/scripts/init_repo.py \
   --target "<caminho-alvo>" --name "<nome>" \
-  --binding <typescript|javascript|python> --escopo <escopo> \
+  --binding <typescript|javascript|python> --scope <scope> \
   --modulos <id>:<role>[:artefato] [<id>:<role>[:artefato]...] --git-init \
   [--registrar --id <id-kebab>]
 ```
@@ -71,7 +71,7 @@ Cada módulo é `<id>:<role>[:artefato]` — o sufixo de papel é **obrigatório
 (`role` em `domain`\|`gateway`\|`connector`, o vocabulário do próprio manifesto). Sem ele, o script
 recusa com a forma correta na mensagem, nunca adivinha pelo nome. `:artefato` só é aceito para
 `domain` — `gateway`/`connector` nunca geram artefato, por arquitetura. Se o sistema tiver um módulo
-agregador (menu + `/resumo` cross-módulo), o id sugerido é `hub`: `catalogo:domain hub:connector`.
+agregador (menu + `/summary` cross-módulo), o id sugerido é `hub`: `catalogo:domain hub:connector`.
 
 O script **cria o diretório-alvo** se ele ainda não existir — não precisa de
 `mkdir` manual antes. Ele mesmo recusa (`[ERRO] Alvo recusado`) raiz do sistema de arquivos e a pasta

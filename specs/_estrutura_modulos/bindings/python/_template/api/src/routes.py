@@ -11,112 +11,112 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 
-from core.domain import ValidationError, Registro, build_record
+from core.domain import ValidationError, Entry, build_record
 from core.ports import ModuleDependencies
 from .errors import ApiError
 from .mappers import to_collection, to_contract, to_meta
 from .middlewares import require_permission
 
-_CAMPOS_PERMITIDOS = {"titulo", "status"}
+_ALLOWED_FIELDS = {"title", "status"}
 
 # Leitura e escrita: o minimo que todo modulo declara (specs/arquitetura/01-modulo.md §3.1).
-_PERMISSOES_MINIMAS = 2
+_MINIMUM_PERMISSIONS = 2
 
 
 def _permissions_for(config: Any) -> tuple[str, str]:
     """As permissoes vem do manifesto, nunca de literal. Manifesto incompleto derruba o boot."""
-    permissoes = config.manifesto["permissions"]
-    if len(permissoes) < _PERMISSOES_MINIMAS:
-        raise RuntimeError("[routes] module.json:permissions precisa declarar leitura e escrita")
-    return permissoes[0], permissoes[1]
+    permissions = config.manifest["permissions"]
+    if len(permissions) < _MINIMUM_PERMISSIONS:
+        raise RuntimeError("[routes] module.json:permissions must declare read and write")
+    return permissions[0], permissions[1]
 
 
 def _read_pagination(request: Request, config: Any) -> tuple[int, int]:
     """Paginacao validada na borda, com padrao e teto vindos de config/api.json."""
-    bruto_pagina = request.query_params.get("pagina", "1")
-    bruto_tamanho = request.query_params.get("tamanho", str(config.api["defaultPageSize"]))
-    if not bruto_pagina.isdigit() or int(bruto_pagina) < 1:
-        raise ApiError("VALIDACAO", 'parametro "pagina" deve ser inteiro >= 1')
-    teto = config.api["maxPageSize"]
-    if not bruto_tamanho.isdigit() or not 1 <= int(bruto_tamanho) <= teto:
-        raise ApiError("VALIDACAO", f'parametro "tamanho" deve estar entre 1 e {teto}')
-    return int(bruto_pagina), int(bruto_tamanho)
+    raw_page = request.query_params.get("page", "1")
+    raw_page_size = request.query_params.get("pageSize", str(config.api["defaultPageSize"]))
+    if not raw_page.isdigit() or int(raw_page) < 1:
+        raise ApiError("VALIDATION", 'parameter "page" must be an integer >= 1')
+    cap = config.api["maxPageSize"]
+    if not raw_page_size.isdigit() or not 1 <= int(raw_page_size) <= cap:
+        raise ApiError("VALIDATION", f'parameter "pageSize" must be between 1 and {cap}')
+    return int(raw_page), int(raw_page_size)
 
 
-def _read_body(corpo: Any) -> dict[str, Any]:
+def _read_body(body: Any) -> dict[str, Any]:
     """Allowlist de entrada: campo desconhecido e REJEITADO, nunca ignorado
     (specs/arquitetura/02-contrato-e-dados.md §3.2)."""
-    if not isinstance(corpo, dict):
-        raise ApiError("VALIDACAO", "corpo deve ser um objeto")
-    desconhecido = next((c for c in corpo if c not in _CAMPOS_PERMITIDOS), None)
-    if desconhecido is not None:
-        raise ApiError("VALIDACAO", f'campo desconhecido no corpo: "{desconhecido}"')
-    return corpo
+    if not isinstance(body, dict):
+        raise ApiError("VALIDATION", "body must be an object")
+    unknown_field = next((c for c in body if c not in _ALLOWED_FIELDS), None)
+    if unknown_field is not None:
+        raise ApiError("VALIDATION", f'unknown field in body: "{unknown_field}"')
+    return body
 
 
 def create_routes(deps: ModuleDependencies, config: Any) -> APIRouter:
     router = APIRouter()
-    ler, escrever = _permissions_for(config)
+    read, write = _permissions_for(config)
 
     @router.get("/health")
     async def health() -> dict[str, Any]:
         await deps.repository.count()
-        return {"ok": True, "module": config.manifesto["id"]}
+        return {"ok": True, "module": config.manifest["id"]}
 
     @router.get("/meta")
     async def meta() -> dict[str, Any]:
-        return to_meta(config.manifesto)
+        return to_meta(config.manifest)
 
-    @router.get("/resumo")
-    async def resumo() -> dict[str, Any]:
+    @router.get("/summary")
+    async def summary() -> dict[str, Any]:
         return {"total": await deps.repository.count()}
 
-    @router.get("/registros")
+    @router.get("/entries")
     async def list(request: Request) -> dict[str, Any]:
-        require_permission(request, ler)
-        pagina, tamanho = _read_pagination(request, config)
-        resultado = await deps.repository.list(pagina, tamanho)
-        return to_collection(resultado.itens, resultado.pagina, resultado.tamanho, resultado.total)
+        require_permission(request, read)
+        page, page_size = _read_pagination(request, config)
+        result = await deps.repository.list(page, page_size)
+        return to_collection(result.items, result.page, result.page_size, result.total)
 
-    @router.get("/registros/{hash_universal}")
+    @router.get("/entries/{hash_universal}")
     async def get(request: Request, hash_universal: str) -> dict[str, Any]:
-        require_permission(request, ler)
-        registro = await deps.repository.find_by_hash(hash_universal)
-        if registro is None:
-            raise ApiError("NAO_ENCONTRADO", "registro nao encontrado")
-        return to_contract(registro)
+        require_permission(request, read)
+        entry = await deps.repository.find_by_hash(hash_universal)
+        if entry is None:
+            raise ApiError("NOT_FOUND", "entry not found")
+        return to_contract(entry)
 
-    @router.post("/registros", status_code=201)
+    @router.post("/entries", status_code=201)
     async def create(request: Request) -> dict[str, Any]:
-        require_permission(request, escrever)
-        corpo = _read_body(await request.json())
-        registro = await _persist(corpo, deps, config, request.state.request_id)
-        return to_contract(registro)
+        require_permission(request, write)
+        body = _read_body(await request.json())
+        entry = await _persist(body, deps, config, request.state.request_id)
+        return to_contract(entry)
 
     return router
 
 
-async def _persist(corpo: dict[str, Any], deps: ModuleDependencies, config: Any, request_id: str) -> Registro:
+async def _persist(body: dict[str, Any], deps: ModuleDependencies, config: Any, request_id: str) -> Entry:
     """Erro de dominio e erro do CLIENTE: a borda o traduz para VALIDACAO
     (specs/arquitetura/02-contrato-e-dados.md §3.2)."""
     try:
-        registro = build_record(
-            corpo,
-            config.dominio["validStatuses"],
+        entry = build_record(
+            body,
+            config.domain["validStatuses"],
             deps.idGenerator.hash(),
             deps.clock.now(),
         )
-    except ValidationError as causa:
-        raise ApiError("VALIDACAO", str(causa)) from causa
+    except ValidationError as cause:
+        raise ApiError("VALIDATION", str(cause)) from cause
 
-    await deps.repository.insert(registro)
+    await deps.repository.insert(entry)
     await deps.audit.record(
         {
-            "hash": registro.hash,
-            "acao": "create",
-            "sujeito": "sistema",
-            "camposAlterados": list(registro.as_dict().keys()),
+            "hash": entry.hash,
+            "action": "create",
+            "actor": "system",
+            "changedFields": list(entry.as_dict().keys()),
             "requestId": request_id,
         }
     )
-    return registro
+    return entry

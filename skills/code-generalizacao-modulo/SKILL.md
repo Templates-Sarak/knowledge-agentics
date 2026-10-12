@@ -73,7 +73,7 @@ não existe: *"não verificado" nunca é reportado como `ok`*.
 4. **Criar o repositório do módulo** — um módulo, um repositório. Via `meta-iniciar-repositorio`:
    ```
    python meta-iniciar-repositorio/scripts/init_repo.py --target <repo> --name "<capacidade>" \
-          --binding <typescript|javascript|python> --escopo <escopo> --modulos <id>:<role> --git-init
+          --binding <typescript|javascript|python> --scope <scope> --modulos <id>:<role> --git-init
    ```
    O repo nasce com `tools/`, `packages/ports`, `adapters/memory`, `src/composicao` e
    `specs/arquitetura/` ao redor do módulo — o procedimento de extração da doutrina já vem executado.
@@ -81,7 +81,7 @@ não existe: *"não verificado" nunca é reportado como `ok`*.
    escrito como **decisão de arquitetura** (por que a autenticação é uma porta, quais são os pontos de
    extensão), **nunca como histórico**. Procedência não se registra em lugar nenhum.
 6. **Contrato antes do código** — `contract/openapi.yaml` reescrito a partir da capacidade, com
-   `/health`, `/meta` e `/resumo` e **exemplos neutros**. Só então: `core/domain` → `api/src/routes` →
+   `/health`, `/meta` e `/summary` e **exemplos neutros**. Só então: `core/domain` → `api/src/routes` →
    `api/src/mappers` → `database/` (migration **nova**, com `-- rollback`) → `web/` → `tests/`.
 7. **Os seis degraus** — `python scripts/verificar_entregavel.py --repo <repo> --modulo <id>`.
 8. **Entregar** — ⚠️ HITL final com o relatório dos seis degraus, os pontos de extensão e o que ficou
@@ -95,7 +95,7 @@ não existe: *"não verificado" nunca é reportado como `ok`*.
 | 2 | **Extraível** | `validate.mjs --extraction modules/<id>` |
 | 3 | **Funciona sem infra** | o comando `verificar` do binding — tipos + testes com `adapters/memory`, sem rede e sem banco |
 | 4 | **O schema funciona** | migration `up` **e** `rollback` num banco efêmero (Docker) → `db-migrations` + `test-integracao-api` |
-| 5 | **Sobe e cumpre o contrato** | boot no compose efêmero; `/health`, `/meta` e `/resumo` validados contra o `openapi.yaml` → `test-api-contrato` |
+| 5 | **Sobe e cumpre o contrato** | boot no compose efêmero; `/health`, `/meta` e `/summary` validados contra o `openapi.yaml` → `test-api-contrato` |
 | 6 | **É genérico** | `scripts/verificar_neutralidade.py` — denylist em **todo** texto do módulo, zero ocorrência |
 
 O gate (1 e 2) é **estático e sem efeito colateral por contrato**: ele nunca roda o módulo. Tratar
@@ -154,7 +154,7 @@ gate acusou; quais termos a denylist pegou; se a origem estava estável no passo
 - [ ] Repositório criado por `meta-iniciar-repositorio`, um módulo, `--modulos <id>:domain|gateway`?
 - [ ] `consumes` vazio, `role` ≠ `connector`, nenhum SDK de fornecedor dentro do módulo?
 - [ ] Decisões do mapa registradas como ADR de desenho, **sem** procedência?
-- [ ] `openapi.yaml` escrito antes do código, com `/health`, `/meta`, `/resumo` e exemplos neutros?
+- [ ] `openapi.yaml` escrito antes do código, com `/health`, `/meta`, `/summary` e exemplos neutros?
 - [ ] Migration nova (com `-- rollback`), nenhuma linha vinda da origem?
 - [ ] Os **seis** degraus executados e verdes, nenhum pulado?
 - [ ] Relatório final entregue, com pontos de extensão e pendências (`.env`, primeiro commit)?

@@ -8,12 +8,12 @@
   "basePath": "/api/v1/<module>",
   "webPath": null,
   "data": {
-    "schema": "<escopo>",
+    "schema": "<scope>",
     "prefix": "<module_snake>_",
     "tables": [
       "<module_snake>_migrations",
-      "<module_snake>_metadados",
-      "<module_snake>_auditoria"
+      "<module_snake>_metadata",
+      "<module_snake>_audit"
     ]
   },
   "requiredEnv": [
@@ -32,13 +32,13 @@
     "mode": "own"
   },
   "permissions": [
-    "<module>:ler",
-    "<module>:escrever"
+    "<module>:read",
+    "<module>:write"
   ],
   "publicRoutes": [
     "GET /health",
     "GET /meta",
-    "GET /resumo"
+    "GET /summary"
   ],
   "sensitiveFields": [],
   "navigation": null,

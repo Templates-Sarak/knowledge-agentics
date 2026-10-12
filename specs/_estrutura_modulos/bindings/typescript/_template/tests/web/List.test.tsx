@@ -5,53 +5,67 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import textos from '../../config/texts.json';
+import texts from '../../config/texts.json';
 import { List } from '../../web/src/pages/List.js';
 import { listRecords } from '../../web/src/api-client/index.js';
 import { recordExample } from '../fixtures/index.js';
 
 vi.mock('../../web/src/api-client/index.js', () => ({ listRecords: vi.fn() }));
 
-const listarMock = vi.mocked(listRecords);
+const listMock = vi.mocked(listRecords);
 
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
 
-function collection(itens: ReturnType<typeof recordExample>[]) {
-  return { itens, pagina: 1, tamanho: 20, total: itens.length };
+function collection(items: ReturnType<typeof recordExample>[]) {
+  return { items, page: 1, pageSize: 20, total: items.length };
 }
 
 describe('List', () => {
-  it('mostra o estado CARREGANDO antes da resposta', () => {
-    listarMock.mockReturnValue(new Promise(() => undefined));
+  it('shows the LOADING state before the response', () => {
+    listMock.mockReturnValue(new Promise(() => undefined));
     render(<List />);
-    expect(screen.getByText(textos.loading)).toBeDefined();
+    expect(screen.getByText(texts.loading)).toBeDefined();
   });
 
-  it('mostra o estado VAZIO quando nao ha registro', async () => {
-    listarMock.mockResolvedValue(collection([]));
+  it('shows the EMPTY state when there is no entry', async () => {
+    listMock.mockResolvedValue(collection([]));
     render(<List />);
-    await waitFor(() => expect(screen.getByText(textos.emptyList)).toBeDefined());
+    await waitFor(() => expect(screen.getByText(texts.emptyList)).toBeDefined());
   });
 
-  it('mostra o estado ERRO quando a api falha', async () => {
-    listarMock.mockRejectedValue(new Error('falhou'));
+  it('shows the ERROR state when the api fails', async () => {
+    listMock.mockRejectedValue(new Error('failed'));
     render(<List />);
-    await waitFor(() => expect(screen.getByText(textos.genericError)).toBeDefined());
+    await waitFor(() => expect(screen.getByText(texts.genericError)).toBeDefined());
   });
 
-  it('lista os registros no caminho feliz', async () => {
-    listarMock.mockResolvedValue(collection([recordExample({ titulo: 'Primeiro' })]));
+  it('lists the entries on the happy path', async () => {
+    listMock.mockResolvedValue(collection([recordExample({ title: 'First' })]));
     render(<List />);
-    await waitFor(() => expect(screen.getByText('Primeiro')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('First')).toBeDefined());
   });
 
-  it('nao expoe mensagem tecnica de erro ao usuario', async () => {
-    listarMock.mockRejectedValue(new Error('connect ECONNREFUSED 10.0.0.1'));
+  it('translates an API error code to the Portuguese text', async () => {
+    listMock.mockRejectedValue(Object.assign(new Error('entry not found'), { code: 'NOT_FOUND' }));
     render(<List />);
-    await waitFor(() => expect(screen.getByText(textos.genericError)).toBeDefined());
+    await waitFor(() => expect(screen.getByText(texts.errorLabels.NOT_FOUND)).toBeDefined());
+    expect(screen.queryByText('entry not found')).toBeNull();
+  });
+
+  it('shows the Portuguese label of the status, never the stored value', async () => {
+    listMock.mockResolvedValue(collection([recordExample({ status: 'draft' })]));
+    render(<List />);
+    await waitFor(() => expect(screen.getByText(texts.statusLabels.draft)).toBeDefined());
+    expect(screen.queryByText('draft')).toBeNull();
+  });
+
+  it('does not expose a technical error message to the user', async () => {
+    listMock.mockRejectedValue(new Error('connect ECONNREFUSED 10.0.0.1'));
+    render(<List />);
+    await waitFor(() => expect(screen.getByText(texts.genericError)).toBeDefined());
     expect(screen.queryByText(/ECONNREFUSED/)).toBeNull();
   });
 });

@@ -3,50 +3,51 @@
 // carregando, vazio e erro. Tela que so trata o caminho feliz reprova em revisao.
 import { useEffect, useState } from 'react';
 
-import { type Registro, listRecords } from '../api-client/index.js';
+import { type Entry, listRecords } from '../api-client/index.js';
+import { errorCodeOf } from '../api-client/labels.js';
 
-export type Situacao = 'carregando' | 'ok' | 'vazio' | 'erro';
+export type Phase = 'loading' | 'ok' | 'empty' | 'error';
 
-interface Estado {
-  situacao: Situacao;
-  registros: Registro[];
+interface State {
+  phase: Phase;
+  entries: Entry[];
   total: number;
-  mensagemDeErro: string | null;
+  errorCode: string | null;
 }
 
-const INICIAL: Estado = { situacao: 'carregando', registros: [], total: 0, mensagemDeErro: null };
+const INITIAL: State = { phase: 'loading', entries: [], total: 0, errorCode: null };
 
-export function useRecordList(pagina: number, tamanho: number): Estado {
-  const [state, setState] = useState<Estado>(INICIAL);
+export function useRecordList(page: number, pageSize: number): State {
+  const [state, setState] = useState<State>(INITIAL);
 
   useEffect(() => {
-    let ativo = true;
-    setState(INICIAL);
+    let active = true;
+    setState(INITIAL);
 
-    listRecords(pagina, tamanho)
+    listRecords(page, pageSize)
       .then((collection) => {
-        if (!ativo) return;
+        if (!active) return;
         setState({
-          situacao: collection.itens.length === 0 ? 'vazio' : 'ok',
-          registros: collection.itens,
+          phase: collection.items.length === 0 ? 'empty' : 'ok',
+          entries: collection.items,
           total: collection.total,
-          mensagemDeErro: null,
+          errorCode: null,
         });
       })
-      .catch((causa: unknown) => {
-        if (!ativo) return;
+      .catch((cause: unknown) => {
+        if (!active) return;
         setState({
-          situacao: 'erro',
-          registros: [],
+          phase: 'error',
+          entries: [],
           total: 0,
-          mensagemDeErro: causa instanceof Error ? causa.message : String(causa),
+          errorCode: errorCodeOf(cause),
         });
       });
 
     return () => {
-      ativo = false;
+      active = false;
     };
-  }, [pagina, tamanho]);
+  }, [page, pageSize]);
 
   return state;
 }

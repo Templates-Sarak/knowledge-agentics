@@ -78,7 +78,7 @@ resposta — "é do negócio e some" — é legítima e precisa ser dita em voz 
 ## §3 — Identidade: derivar, nunca traduzir
 
 Sete itens, todos decididos no portão: `id` (kebab-case), nome da capacidade, escopo dos packages,
-prefixo de tabela (`<id>_`), prefixo de env (`<ID>_`), permissões (`<id>:ler`, `<id>:escrever`) e
+prefixo de tabela (`<id>_`), prefixo de env (`<ID>_`), permissões (`<id>:read`, `<id>:write`) e
 `basePath`.
 
 **Traduzir é a falha silenciosa.** `pedido_usuario` → `order_user` mantém o negócio inteiro, só que
@@ -95,7 +95,7 @@ regra é da lei (`04-regras.md`), e o gate cobra.
 
 ```
 python meta-iniciar-repositorio/scripts/init_repo.py --target <repo> --name "<capacidade>" \
-       --binding <typescript|javascript|python> --escopo <escopo> --modulos <id>:<role> --git-init
+       --binding <typescript|javascript|python> --scope <scope> --modulos <id>:<role> --git-init
 ```
 
 **Por que repositório próprio, e não uma pasta numa biblioteca comum.** A unidade de verificação do
@@ -127,7 +127,7 @@ A segunda forma é procedência, viaja na cópia e vaza a origem — exatamente 
 
 ## §6 — Escrever: contrato primeiro, e a ordem que evita retrabalho
 
-`contract/openapi.yaml` **antes** de qualquer rota, com `/health`, `/meta`, `/resumo` e **exemplos
+`contract/openapi.yaml` **antes** de qualquer rota, com `/health`, `/meta`, `/summary` e **exemplos
 neutros** (o exemplo do contrato é o lugar clássico onde o nome da empresa de origem sobrevive).
 
 Depois: `core/domain` → `api/src/routes` → `api/src/mappers` (saída por allowlist) → `database/`

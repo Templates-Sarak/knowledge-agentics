@@ -15,65 +15,65 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from core.domain import Registro
+from core.domain import Entry
 
 
-def row_to_domain(linha: dict[str, Any]) -> Registro:
+def row_to_domain(line: dict[str, Any]) -> Entry:
     """banco -> dominio"""
-    return Registro(
-        hash=linha["hash"],
-        titulo=linha["titulo"],
-        status=linha["status"],
-        criado_em=linha["created_at"],
+    return Entry(
+        hash=line["hash"],
+        title=line["title"],
+        status=line["status"],
+        created_at=line["created_at"],
     )
 
 
-def domain_to_row(registro: Registro) -> dict[str, Any]:
+def domain_to_row(entry: Entry) -> dict[str, Any]:
     """dominio -> banco"""
     return {
-        "hash": registro.hash,
-        "titulo": registro.titulo,
-        "status": registro.status,
-        "created_at": registro.criado_em,
+        "hash": entry.hash,
+        "title": entry.title,
+        "status": entry.status,
+        "created_at": entry.created_at,
     }
 
 
-def to_contract(registro: Registro) -> dict[str, Any]:
+def to_contract(entry: Entry) -> dict[str, Any]:
     """dominio -> CONTRATO (camelCase).
 
     A allowlist E esta funcao: o que nao esta escrito aqui nao e publicado. Campo declarado em
     module.json:sensitiveFields nunca entra — ou entra mascarado.
     """
     return {
-        "hash": registro.hash,
-        "titulo": registro.titulo,
-        "status": registro.status,
-        "criadoEm": registro.criado_em,
+        "hash": entry.hash,
+        "title": entry.title,
+        "status": entry.status,
+        "createdAt": entry.created_at,
     }
 
 
-def to_meta(manifesto: dict[str, Any]) -> dict[str, Any]:
+def to_meta(manifest: dict[str, Any]) -> dict[str, Any]:
     """manifesto -> META publica (allowlist). `GET /meta` e rota SEM TOKEN (`publicRoutes`): o que
     nao esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
     `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota.
     """
     return {
-        "id": manifesto["id"],
-        "name": manifesto["name"],
-        "version": manifesto["version"],
-        "role": manifesto["role"],
-        "basePath": manifesto["basePath"],
-        "webPath": manifesto["webPath"],
-        "navigation": manifesto["navigation"],
-        "exportsSummary": manifesto["exportsSummary"],
+        "id": manifest["id"],
+        "name": manifest["name"],
+        "version": manifest["version"],
+        "role": manifest["role"],
+        "basePath": manifest["basePath"],
+        "webPath": manifest["webPath"],
+        "navigation": manifest["navigation"],
+        "exportsSummary": manifest["exportsSummary"],
     }
 
 
-def to_collection(registros: Sequence[Registro], pagina: int, tamanho: int, total: int) -> dict[str, Any]:
+def to_collection(entries: Sequence[Entry], page: int, page_size: int, total: int) -> dict[str, Any]:
     """Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1)."""
     return {
-        "itens": [to_contract(r) for r in registros],
-        "pagina": pagina,
-        "tamanho": tamanho,
+        "items": [to_contract(r) for r in entries],
+        "page": page,
+        "pageSize": page_size,
         "total": total,
     }

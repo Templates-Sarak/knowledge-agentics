@@ -4,7 +4,7 @@
     python verify.py [--fast]
     python verify.py --coverage           so cobertura (dezenas de segundos por modulo) — CI,
                                            nunca o `verify` de cima: ver 03-operacao.md §7
-    python verify.py --lint-relatorio     ruff em SARIF, relatorios/lint.sarif — CI
+    python verify.py --lint-report     ruff em SARIF, reports/lint.sarif — CI
     python verify.py --security           .env versionado + segredo no delta — CI, fail-closed
     python verify.py --dependencies       pip-audit contra o piso de severidade — CI
     python verify.py --migrations up|down|ciclo <module>   delega a scripts/migrations.py
@@ -55,11 +55,11 @@ from collections.abc import Callable
 from functools import partial
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent
 
 
-def _write(texto: str) -> None:
-    sys.stdout.write(texto)
+def _write(text: str) -> None:
+    sys.stdout.write(text)
     sys.stdout.flush()
 
 
@@ -75,38 +75,38 @@ def _find_node() -> str | None:
     return shutil.which("node")
 
 
-def _resolve(comando: list[str]) -> list[str] | None:
+def _resolve(command: list[str]) -> list[str] | None:
     """Ferramenta Python roda pelo interpretador ATUAL (`-m`), nunca pelo PATH.
 
     `shutil.which` nao enxerga ferramenta instalada num venv que nao esta ativado — e o caso
     normal em CI.
     """
-    if comando[0] == "node":
-        achado = _find_node()
-        return None if achado is None else [achado, *comando[1:]]
-    return [sys.executable, "-m", *comando]
+    if command[0] == "node":
+        finding = _find_node()
+        return None if finding is None else [finding, *command[1:]]
+    return [sys.executable, "-m", *command]
 
 
-def _run(rotulo: str, comando: list[str], pasta: Path | None = None) -> bool:
+def _run(label: str, command: list[str], dir: Path | None = None) -> bool:
     """Executa um passo e reporta. Ferramenta ausente REPROVA — nao verificado nunca vira 'ok'."""
-    resolvido = _resolve(comando)
-    if resolvido is None:
+    resolved = _resolve(command)
+    if resolved is None:
         _write(
-            f"  FALHA {rotulo}: 'node' nao encontrado — passo NAO verificado.\n"
-            "        Instale Node, ou aponte SARAK_NODE para o caminho do binario.\n"
+            f"  FAIL {label}: 'node' not found — step NOT verified.\n"
+            "        Install Node, or point SARAK_NODE at the binary path.\n"
         )
         return False
 
-    resultado = subprocess.run(resolvido, cwd=pasta or RAIZ, check=False)
+    result = subprocess.run(resolved, cwd=dir or ROOT, check=False)
     # Ferramenta Python ausente devolve 1 com "No module named X" — reportar como nao verificado
     # seria mentira confortavel; aqui isso REPROVA, e a mensagem do proprio Python explica.
-    ok = resultado.returncode == 0
-    _write(f"  {'ok   ' if ok else 'FALHA'} {rotulo}\n")
+    ok = result.returncode == 0
+    _write(f"  {'ok   ' if ok else 'FAIL'} {label}\n")
     return ok
 
 
 def _modules() -> list[Path]:
-    base = RAIZ / "modules"
+    base = ROOT / "modules"
     if not base.exists():
         return []
     return [p for p in sorted(base.iterdir()) if not p.name.startswith("_") and (p / "module.json").exists()]
@@ -116,125 +116,125 @@ def _minimum_coverage() -> int | None:
     """`coverage.minimum` de `config/verification.json` — a MESMA politica que `hooks/test-cobertura.js`
     le para o push, uma fonte so. Ausente ou ilegivel: sem piso (o gate, nao este comando, cobra a
     ausencia da politica via `verification-declared`)."""
-    caminho = RAIZ / "config" / "verification.json"
-    if not caminho.exists():
+    path = ROOT / "config" / "verification.json"
+    if not path.exists():
         return None
     try:
-        minima = json.loads(caminho.read_text(encoding="utf-8")).get("coverage", {}).get("minimum")
+        minimum = json.loads(path.read_text(encoding="utf-8")).get("coverage", {}).get("minimum")
     except (OSError, json.JSONDecodeError):
         return None
-    return minima if isinstance(minima, int) else None
+    return minimum if isinstance(minimum, int) else None
 
 
-def _degenerate_report(pasta_modulo: Path) -> str | None:
+def _degenerate_report(module_dir: Path) -> str | None:
     """Motivo se o relatorio de cobertura for degenerado (ausente, vazio, ou com zero teste
     registrado); `None` quando esta tudo certo. Lei 7 aplicada ao RELATORIO, nao so ao exit code do
     pytest: uma ferramenta que 'passa' sem escrever nada de verdade nao pode contar como sucesso."""
-    lcov = pasta_modulo / "relatorios" / "cobertura" / "lcov.info"
-    junit = pasta_modulo / "relatorios" / "junit.xml"
+    lcov = module_dir / "reports" / "coverage" / "lcov.info"
+    junit = module_dir / "reports" / "junit.xml"
     if not lcov.exists():
-        return f"relatorio ausente: {lcov}"
+        return f"report missing: {lcov}"
     if "SF:" not in lcov.read_text(encoding="utf-8"):
-        return f"relatorio degenerado (sem SF:): {lcov}"
+        return f"degenerate report (no SF:): {lcov}"
     if not junit.exists():
-        return f"relatorio ausente: {junit}"
-    texto_junit = junit.read_text(encoding="utf-8")
-    if "<testsuite" not in texto_junit:
-        return f"relatorio degenerado (sem <testsuite): {junit}"
-    casado = re.search(r'tests="(\d+)"', texto_junit)
-    if casado is None or int(casado.group(1)) == 0:
-        return "junit sem nenhum teste registrado — a suite nao rodou"
+        return f"report missing: {junit}"
+    junit_text = junit.read_text(encoding="utf-8")
+    if "<testsuite" not in junit_text:
+        return f"degenerate report (no <testsuite): {junit}"
+    matched = re.search(r'tests="(\d+)"', junit_text)
+    if matched is None or int(matched.group(1)) == 0:
+        return "junit has no test recorded — the suite did not run"
     return None
 
 
-def _coverage_command(minima: int | None) -> list[str]:
-    comando = [
+def _coverage_command(minimum: int | None) -> list[str]:
+    command = [
         "pytest",
         "-q",
         "--cov=core",
         "--cov=api",
         "--cov-report=term",
-        "--cov-report=lcov:relatorios/cobertura/lcov.info",
-        "--junitxml=relatorios/junit.xml",
+        "--cov-report=lcov:reports/coverage/lcov.info",
+        "--junitxml=reports/junit.xml",
     ]
-    if minima is not None:
-        comando.append(f"--cov-fail-under={minima}")
-    return comando
+    if minimum is not None:
+        command.append(f"--cov-fail-under={minimum}")
+    return command
 
 
 def _run_coverage() -> int:
     """`--coverage`: SO cobertura, por modulo — nao roda o resto do `verify`. E o analogo do
     `ci:coverage` do package.json: comando proprio, custa dezenas de segundos por modulo
     (03-operacao.md §7), por isso nao entra no `verify` de cima nem no pre-commit/pre-push."""
-    minima = _minimum_coverage()
-    modulos = _modules()
-    if not modulos:
-        _write("  !    nenhum modulo em modules/ — nada para medir\n")
+    minimum = _minimum_coverage()
+    modules = _modules()
+    if not modules:
+        _write("  !    no module in modules/ — nothing to measure\n")
         return 0
 
-    falhas = 0
-    for m in modulos:
-        ok = _run(f"cobertura: {m.name}", _coverage_command(minima), m)
+    failures = 0
+    for m in modules:
+        ok = _run(f"coverage: {m.name}", _coverage_command(minimum), m)
         if ok:
-            motivo = _degenerate_report(m)
-            if motivo is not None:
+            reason = _degenerate_report(m)
+            if reason is not None:
                 ok = False
-                _write(f"  FALHA cobertura: {m.name} (relatorio degenerado — {motivo})\n")
-        falhas += 0 if ok else 1
+                _write(f"  FAIL coverage: {m.name} (degenerate report — {reason})\n")
+        failures += 0 if ok else 1
 
-    _write(f"\ncobertura: {'OK' if falhas == 0 else f'REPROVADO — {falhas} modulo(s)'}\n")
-    return 1 if falhas > 0 else 0
+    _write(f"\ncoverage: {'OK' if failures == 0 else f'FAILED — {failures} module(s)'}\n")
+    return 1 if failures > 0 else 0
 
 
 def _run_lint_report() -> int:
-    """`--lint-relatorio`: o MESMO `ruff check .` do `verify` — reprova nos MESMOS achados —, só
+    """`--lint-report`: o MESMO `ruff check .` do `verify` — reprova nos MESMOS achados —, só
     que também grava SARIF (formato nativo do ruff, zero dependência nova — medido antes de escrever
     isto). Sem `--exit-zero` de propósito: medido que o ruff grava o arquivo mesmo saindo != 0 (achado
     real), então o relatório continua disponível para o CI mesmo quando este passo reprova — nenhum
     motivo para esconder achado atrás de um exit code artificialmente verde."""
-    Path("relatorios").mkdir(exist_ok=True)
-    comando = ["ruff", "check", ".", "--output-format=sarif", "--output-file=relatorios/lint.sarif"]
-    ok = _run("lint (ruff --output-format=sarif)", comando, None)
-    if not Path("relatorios/lint.sarif").exists():
-        _write("  FALHA lint (ruff --output-format=sarif): relatorio nao foi escrito\n")
+    Path("reports").mkdir(exist_ok=True)
+    command = ["ruff", "check", ".", "--output-format=sarif", "--output-file=reports/lint.sarif"]
+    ok = _run("lint (ruff --output-format=sarif)", command, None)
+    if not Path("reports/lint.sarif").exists():
+        _write("  FAIL lint (ruff --output-format=sarif): report was not written\n")
         ok = False
-    _write(f"\nlint-relatorio: {'OK' if ok else 'REPROVADO'}\n")
+    _write(f"\nlint-report: {'OK' if ok else 'FAILED'}\n")
     return 0 if ok else 1
 
 
-def _run_delegated(rotulo: str, script: str) -> int:
+def _run_delegated(label: str, script: str) -> int:
     """Passos que já vivem em `tools/` (Node, zero dependência) — este comando só delega, no
     mesmo padrão do passo 1 ("conformidade (gate)"). Evita reimplementar o parser de `npm audit`/
     `pip-audit` em Python: uma fonte só, chamada dos dois bindings."""
-    ok = _run(rotulo, ["node", f"tools/{script}"], None)
+    ok = _run(label, ["node", f"tools/{script}"], None)
     return 0 if ok else 1
 
 
-def _run_migrations(resto: list[str]) -> int:
+def _run_migrations(rest: list[str]) -> int:
     """`--migrations up|down|ciclo <module>` delega para `scripts/migrations.py` — script de
     PROJETO, não ferramenta (03-operação.md §9.3): precisa de driver de Postgres, fora do
     zero-dependência de `tools/` (lei 3). Roda pelo interpretador ATUAL, não por `-m`
     (`scripts/migrations.py` é arquivo solto, não módulo instalado) — mesmo motivo de `_resolve`
     para os outros passos Python: um venv não ativado não aparece pelo PATH."""
-    if not resto:
-        _write("uso: python verify.py --migrations up|down|ciclo <module>\n")
+    if not rest:
+        _write("usage: python verify.py --migrations up|down|cycle <module>\n")
         return 1
-    resultado = subprocess.run([sys.executable, "scripts/migrations.py", *resto], cwd=RAIZ, check=False)
-    return resultado.returncode
+    result = subprocess.run([sys.executable, "scripts/migrations.py", *rest], cwd=ROOT, check=False)
+    return result.returncode
 
 
-def _run_docker(resto: list[str]) -> int:
+def _run_docker(rest: list[str]) -> int:
     """`--docker up|stop|logs` delega a `tools/docker-up.mjs` (Node, zero dependencia) — a MESMA
     ferramenta do binding Node, uma leitura so do compose. Sem Docker ou sem os dois `.env`, a
     propria ferramenta reprova nomeando o que falta."""
-    if not resto:
-        _write("uso: python verify.py --docker up|stop|logs\n")
+    if not rest:
+        _write("usage: python verify.py --docker up|stop|logs\n")
         return 1
-    comando = _resolve(["node", "tools/docker-up.mjs", *resto])
-    if comando is None:
-        _write("FALHA docker: 'node' nao encontrado. Instale Node, ou aponte SARAK_NODE.\n")
+    command = _resolve(["node", "tools/docker-up.mjs", *rest])
+    if command is None:
+        _write("FAIL docker: 'node' not found. Install Node, or point SARAK_NODE at it.\n")
         return 1
-    return subprocess.run(comando, cwd=RAIZ, check=False).returncode
+    return subprocess.run(command, cwd=ROOT, check=False).returncode
 
 
 # As UNICAS flags que este comando reconhece. Argumento fora desta lista REPROVA (`_recusar_
@@ -246,7 +246,7 @@ FLAGS = frozenset(
     {
         "--fast",
         "--coverage",
-        "--lint-relatorio",
+        "--lint-report",
         "--security",
         "--dependencies",
         "--migrations",
@@ -259,12 +259,12 @@ def _reject_unknown(argv: list[str]) -> str | None:
     """Motivo, se houver argumento nao reconhecido. `--migrations` e `--docker` consomem o resto
     (up|down|ciclo <module>; up|stop|logs), entao nada depois delas e julgado aqui — o dono daqueles
     argumentos e o runner."""
-    for consumidora in ("--migrations", "--docker"):
-        if consumidora in argv:
-            argv = argv[: argv.index(consumidora)]
+    for consumer in ("--migrations", "--docker"):
+        if consumer in argv:
+            argv = argv[: argv.index(consumer)]
     for arg in argv:
         if arg not in FLAGS:
-            return f'argumento nao reconhecido: "{arg}" — use uma de {" ".join(sorted(FLAGS))}'
+            return f'unrecognized argument: "{arg}" — use one of {" ".join(sorted(FLAGS))}'
     return None
 
 
@@ -276,15 +276,15 @@ def _dispatch_mode(argv: list[str]) -> int | None:
     tools/gate/thresholds.mjs): despachar modo e uma responsabilidade, rodar a cadeia e outra.
     Suprimir o limiar aqui seria o verificador isentando a si mesmo da regra que ele cobra.
     """
-    simples: dict[str, Callable[[], int]] = {
+    simple: dict[str, Callable[[], int]] = {
         "--coverage": _run_coverage,
-        "--lint-relatorio": _run_lint_report,
-        "--security": partial(_run_delegated, "seguranca", "ci-security.mjs"),
-        "--dependencies": partial(_run_delegated, "dependencias", "ci-dependencies.mjs"),
+        "--lint-report": _run_lint_report,
+        "--security": partial(_run_delegated, "security", "ci-security.mjs"),
+        "--dependencies": partial(_run_delegated, "dependencies", "ci-dependencies.mjs"),
     }
-    for flag, executar in simples.items():
+    for flag, execute in simple.items():
         if flag in argv:
-            return executar()
+            return execute()
     if "--migrations" in argv:
         return _run_migrations(argv[argv.index("--migrations") + 1 :])
     if "--docker" in argv:
@@ -293,42 +293,42 @@ def _dispatch_mode(argv: list[str]) -> int | None:
 
 
 def main() -> int:
-    motivo = _reject_unknown(sys.argv[1:])
-    if motivo is not None:
-        _write(f"{motivo}\n")
+    reason = _reject_unknown(sys.argv[1:])
+    if reason is not None:
+        _write(f"{reason}\n")
         return 1
 
-    modo = _dispatch_mode(sys.argv)
-    if modo is not None:
-        return modo
+    mode = _dispatch_mode(sys.argv)
+    if mode is not None:
+        return mode
 
-    parar_no_primeiro = "--fast" in sys.argv
+    stop_at_first = "--fast" in sys.argv
     # Anotado: sem isto o tipo e inferido dos quatro primeiros (pasta=None) e os passos de
     # teste, que carregam um Path, nao entram.
-    passos: list[tuple[str, list[str], Path | None]] = [
-        ("conformidade (gate)", ["node", "tools/gate/validate.mjs", "--all"], None),
-        ("ambiente (.env.example)", ["node", "tools/sync-env.mjs", "--check"], None),
+    steps: list[tuple[str, list[str], Path | None]] = [
+        ("conformance (gate)", ["node", "tools/gate/validate.mjs", "--all"], None),
+        ("environment (.env.example)", ["node", "tools/sync-env.mjs", "--check"], None),
         ("deploy (container)", ["node", "tools/sync-deploy.mjs", "--check"], None),
-        ("schemas de portas", ["node", "tools/generate-port-schemas.mjs", "--check"], None),
+        ("port schemas", ["node", "tools/generate-port-schemas.mjs", "--check"], None),
         # `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.
-        ("formato (ruff format)", ["ruff", "format", "--check", "."], None),
-        ("limiares (ruff)", ["ruff", "check", "."], None),
-        ("tipos (mypy)", ["mypy", "."], None),
+        ("format (ruff format)", ["ruff", "format", "--check", "."], None),
+        ("thresholds (ruff)", ["ruff", "check", "."], None),
+        ("types (mypy)", ["mypy", "."], None),
     ]
-    passos += [(f"testes: {m.name}", ["pytest", "-q"], m) for m in _modules()]
+    steps += [(f"tests: {m.name}", ["pytest", "-q"], m) for m in _modules()]
 
     if not _modules():
-        _write("  !    nenhum modulo em modules/ — nada para testar\n")
+        _write("  !    no module in modules/ — nothing to test\n")
 
-    falhas = 0
-    for rotulo, comando, pasta in passos:
-        if not _run(rotulo, comando, pasta):
-            falhas += 1
-            if parar_no_primeiro:
+    failures = 0
+    for label, command, dir in steps:
+        if not _run(label, command, dir):
+            failures += 1
+            if stop_at_first:
                 break
 
-    _write(f"\nverify: {'OK' if falhas == 0 else f'REPROVADO — {falhas} passo(s)'}\n")
-    return 1 if falhas > 0 else 0
+    _write(f"\nverify: {'OK' if failures == 0 else f'FAILED — {failures} step(s)'}\n")
+    return 1 if failures > 0 else 0
 
 
 if __name__ == "__main__":

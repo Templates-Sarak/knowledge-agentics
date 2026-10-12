@@ -7,55 +7,55 @@
 // Clock e idGenerator sao FIXOS aqui de proposito: e o que torna o motor testavel sem congelar
 // o relogio do sistema, e o que prova que o dominio nao chama `new Date()` escondido.
 
-const INSTANTE_FIXO = '2024-01-01T00:00:00.000Z';
+const FIXED_INSTANT = '2024-01-01T00:00:00.000Z';
 
-export function createInMemoryRepository(iniciais = []) {
-  const registros = [...iniciais];
+export function createInMemoryRepository(initial = []) {
+  const entries = [...initial];
   return {
-    async list(pagina, tamanho) {
-      const inicio = (pagina - 1) * tamanho;
-      return { itens: registros.slice(inicio, inicio + tamanho), pagina, tamanho, total: registros.length };
+    async list(page, pageSize) {
+      const start = (page - 1) * pageSize;
+      return { items: entries.slice(start, start + pageSize), page, pageSize, total: entries.length };
     },
     async findByHash(hash) {
-      return registros.find((registro) => registro.hash === hash) ?? null;
+      return entries.find((entry) => entry.hash === hash) ?? null;
     },
-    async insert(registro) {
-      registros.push(registro);
+    async insert(entry) {
+      entries.push(entry);
     },
     async count() {
-      return registros.length;
+      return entries.length;
     },
   };
 }
 
 export function createInMemoryAudit() {
-  const eventos = [];
+  const events = [];
   return {
-    eventos,
-    async record(evento) {
-      eventos.push(evento);
+    events,
+    async record(event) {
+      events.push(event);
     },
   };
 }
 
-export function createFixedClock(instante = INSTANTE_FIXO) {
-  return { now: () => instante };
+export function createFixedClock(instant = FIXED_INSTANT) {
+  return { now: () => instant };
 }
 
 /** Sequencial e previsivel: teste que depende de sorteio nao e teste. */
 export function createSequentialGenerator() {
-  let proximo = 0;
+  let nextValue = 0;
   return {
     hash() {
-      proximo += 1;
-      return String(10000 + proximo);
+      nextValue += 1;
+      return String(10000 + nextValue);
     },
   };
 }
 
-export function createDependencies(iniciais = []) {
+export function createDependencies(initial = []) {
   return {
-    repository: createInMemoryRepository(iniciais),
+    repository: createInMemoryRepository(initial),
     audit: createInMemoryAudit(),
     clock: createFixedClock(),
     idGenerator: createSequentialGenerator(),
@@ -63,14 +63,14 @@ export function createDependencies(iniciais = []) {
 }
 
 /** Auth que aceita um token conhecido. Qualquer outro e negado — deny by default. */
-export function createAuth(permissoes, tokenValido = 'token-de-teste') {
+export function createAuth(permissions, credential = 'test-token') {
   return {
     async verify(token) {
-      return token === tokenValido ? { permissoes } : null;
+      return token === credential ? { permissions } : null;
     },
   };
 }
 
-export function recordExample(sobrescrever = {}) {
-  return { hash: '10001', titulo: 'Exemplo', status: 'rascunho', criadoEm: INSTANTE_FIXO, ...sobrescrever };
+export function recordExample(overrides = {}) {
+  return { hash: '10001', title: 'Example', status: 'draft', createdAt: FIXED_INSTANT, ...overrides };
 }

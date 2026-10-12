@@ -9,37 +9,37 @@ from __future__ import annotations
 from typing import Any
 
 CODES: dict[str, int] = {
-    "VALIDACAO": 400,
-    "NAO_AUTENTICADO": 401,
-    "NAO_AUTORIZADO": 403,
-    "NAO_ENCONTRADO": 404,
-    "CONFLITO": 409,
-    "LIMITE_EXCEDIDO": 429,
-    "DEPENDENCIA_EXTERNA": 502,
-    "INTERNO": 500,
+    "VALIDATION": 400,
+    "UNAUTHENTICATED": 401,
+    "FORBIDDEN": 403,
+    "NOT_FOUND": 404,
+    "CONFLICT": 409,
+    "LIMIT_EXCEEDED": 429,
+    "EXTERNAL_DEPENDENCY": 502,
+    "INTERNAL": 500,
 }
 
 
 class ApiError(Exception):
     """O unico erro que a borda sabe traduzir em resposta."""
 
-    def __init__(self, codigo: str, mensagem: str, detalhe: str | None = None) -> None:
-        super().__init__(mensagem)
-        self.codigo = codigo
-        self.mensagem = mensagem
-        self.detalhe = detalhe
+    def __init__(self, code: str, message: str, detail: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.detail = detail
 
     @property
     def status(self) -> int:
-        return CODES[self.codigo]
+        return CODES[self.code]
 
 
-def error_envelope(erro: ApiError, request_id: str) -> dict[str, Any]:
+def error_envelope(error: ApiError, request_id: str) -> dict[str, Any]:
     """Envelope UNICO de erro. Toda falha sai exatamente nesta forma."""
     return {
-        "erro": {
-            "codigo": erro.codigo,
-            "mensagem": erro.mensagem,
+        "error": {
+            "code": error.code,
+            "message": error.message,
             "requestId": request_id,
         }
     }

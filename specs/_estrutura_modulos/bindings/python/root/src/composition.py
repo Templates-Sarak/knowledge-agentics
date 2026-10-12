@@ -47,56 +47,56 @@ from adapters.postgres import PostgresAudit, PostgresRepository
 # descartam o argumento), `postgres` usa (`module["id"]` para a chave de ambiente,
 # `module["pasta"]` para ler `data.schema`/`data.prefix` do proprio manifesto). Sem isto, um
 # adapter que precisa de contexto por-modulo nao teria como sabe-lo.
-FABRICAS: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {
-    "repository": {"memory": lambda modulo: InMemoryRepository(), "postgres": PostgresRepository},
-    "audit": {"memory": lambda modulo: InMemoryAudit(), "postgres": PostgresAudit},
-    "clock": {"system": lambda modulo: SystemClock()},
-    "idGenerator": {"default": lambda modulo: DefaultIdGenerator()},
-    "storage": {"memory": lambda modulo: InMemoryStorage()},
-    "notifier": {"memory": lambda modulo: InMemoryNotifier()},
+FACTORIES: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {
+    "repository": {"memory": lambda module: InMemoryRepository(), "postgres": PostgresRepository},
+    "audit": {"memory": lambda module: InMemoryAudit(), "postgres": PostgresAudit},
+    "clock": {"system": lambda module: SystemClock()},
+    "idGenerator": {"default": lambda module: DefaultIdGenerator()},
+    "storage": {"memory": lambda module: InMemoryStorage()},
+    "notifier": {"memory": lambda module: InMemoryNotifier()},
 }
 
 
-def _read_json(caminho: Path) -> Any:
-    return json.loads(caminho.read_text(encoding="utf-8-sig"))
+def _read_json(path: Path) -> Any:
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
-def discover_modules(raiz: Path) -> list[dict[str, Any]]:
+def discover_modules(root: Path) -> list[dict[str, Any]]:
     """Le todos os manifestos. E a DESCOBERTA: o sistema conhece os modulos por declaracao, nao
     por import. Molde (`_*`) fica de fora — e material do scaffold, nao um modulo do sistema."""
-    base = raiz / "modules"
+    base = root / "modules"
     if not base.exists():
         return []
 
-    achados = []
-    for pasta in sorted(base.iterdir()):
-        if pasta.name.startswith("_") or not (pasta / "module.json").exists():
+    findings = []
+    for dir in sorted(base.iterdir()):
+        if dir.name.startswith("_") or not (dir / "module.json").exists():
             continue
-        manifesto = _read_json(pasta / "module.json")
-        manifesto["pasta"] = pasta
-        achados.append(manifesto)
-    return achados
+        manifest = _read_json(dir / "module.json")
+        manifest["dir"] = dir
+        findings.append(manifest)
+    return findings
 
 
-def resolve_dependencies(modulo: dict[str, Any]) -> dict[str, Any]:
+def resolve_dependencies(module: dict[str, Any]) -> dict[str, Any]:
     """Resolve as portas declaradas, lendo a ESCOLHA em config/ports.json do modulo.
 
     Porta declarada sem provedor conhecido derruba o boot — melhor falhar aqui que servir errado.
     """
-    escolhas = _read_json(modulo["pasta"] / "config" / "ports.json")
-    dependencias: dict[str, Any] = {}
+    choices = _read_json(module["dir"] / "config" / "ports.json")
+    dependencies: dict[str, Any] = {}
 
-    for porta in modulo["ports"]:
-        provedor = escolhas.get(porta)
-        fabrica = FABRICAS.get(porta, {}).get(provedor or "")
-        if fabrica is None:
-            identificador = modulo["id"]
+    for port in module["ports"]:
+        provider = choices.get(port)
+        factory = FACTORIES.get(port, {}).get(provider or "")
+        if factory is None:
+            identifier = module["id"]
             raise RuntimeError(
-                f'[composition] {identificador}: porta "{porta}" com provedor '
-                f'"{provedor}" sem fabrica registrada'
+                f'[composition] {identifier}: port "{port}" with provider '
+                f'"{provider}" without a registered factory'
             )
-        dependencias[porta] = fabrica(modulo)
-    return dependencias
+        dependencies[port] = factory(module)
+    return dependencies
 
 
 def resolve_token_verifier() -> DenyingTokenVerifier:
@@ -105,24 +105,24 @@ def resolve_token_verifier() -> DenyingTokenVerifier:
     return DenyingTokenVerifier()
 
 
-def verify_routes_unique(modulos: list[dict[str, Any]]) -> None:
+def verify_routes_unique(modules: list[dict[str, Any]]) -> None:
     """Nenhum par de modulos pode reivindicar a mesma rotaBase: o dispatcher so guarda UM app por
     prefixo, entao o segundo modulo simplesmente desapareceria, mudo, do sistema. PURO — dado o
     array de manifestos, so decide; nao toca disco nem rede."""
-    por_rota: dict[str, list[str]] = {}
-    for modulo in modulos:
-        por_rota.setdefault(modulo["basePath"], []).append(modulo["id"])
+    by_route: dict[str, list[str]] = {}
+    for module in modules:
+        by_route.setdefault(module["basePath"], []).append(module["id"])
 
-    colisoes = {rota: ids for rota, ids in por_rota.items() if len(ids) > 1}
-    if not colisoes:
+    collisions = {route: ids for route, ids in by_route.items() if len(ids) > 1}
+    if not collisions:
         return
-    detalhe = "; ".join(f'"{rota}" ({", ".join(ids)})' for rota, ids in colisoes.items())
-    raise RuntimeError(f"[composition] rotaBase colidindo entre modulos: {detalhe}")
+    detail = "; ".join(f'"{route}" ({", ".join(ids)})' for route, ids in collisions.items())
+    raise RuntimeError(f"[composition] baseRoute colliding across modules: {detail}")
 
 
-def choose_base_route(rotas_base: list[str], caminho: str) -> str | None:
-    """Escolhe a rotaBase cujo prefixo casa `caminho`, por FRONTEIRA de segmento — nunca por
-    `startswith` cru: "/api/v1/catalogo" nao pode casar "/api/v1/catalogo-x". PURO.
+def choose_base_route(base_routes: list[str], path: str) -> str | None:
+    """Escolhe a rotaBase cujo prefixo casa `path`, por FRONTEIRA de segmento — nunca por
+    `startswith` cru: "/api/v1/catalog" nao pode casar "/api/v1/catalog-x". PURO.
 
     Precisa disto porque o dispatcher da raiz NAO usa `Mount` do Starlette: `Mount` faz STRIP do
     prefixo casado antes de repassar, mas cada sub-app de modulo ja tem a propria rotaBase
@@ -131,13 +131,13 @@ def choose_base_route(rotas_base: list[str], caminho: str) -> str | None:
     app certo e repassa o `scope` intacto (`AsgiRoot` abaixo). Ordena por comprimento decrescente
     para a rotaBase mais especifica vencer primeiro, caso um dia existam rotas aninhadas.
     """
-    for rota_base in sorted(rotas_base, key=len, reverse=True):
-        if caminho == rota_base or caminho.startswith(rota_base + "/"):
-            return rota_base
+    for base_route in sorted(base_routes, key=len, reverse=True):
+        if path == base_route or path.startswith(base_route + "/"):
+            return base_route
     return None
 
 
-def _import_api_module(modulo: dict[str, Any]) -> Any:
+def _import_api_module(module: dict[str, Any]) -> Any:
     """Carrega `api.src` do modulo — o mesmo `create_app` que os testes de contrato usam.
 
     Cada modulo Python usa `core.*` como import ABSOLUTO relativo a PASTA DELE (o mesmo motivo de
@@ -149,26 +149,26 @@ def _import_api_module(modulo: dict[str, Any]) -> Any:
     antes: o `create_app` capturado guarda so o que precisa (fechamento de funcao), entao o proximo
     modulo pode reusar os MESMOS nomes sem colidir com o anterior.
     """
-    pasta = str(modulo["pasta"])
-    prefixos = ("core.", "api.")
-    nomes_do_modulo = [n for n in sys.modules if n in ("core", "api") or n.startswith(prefixos)]
-    for nome in nomes_do_modulo:
-        del sys.modules[nome]
+    dir = str(module["dir"])
+    prefixes = ("core.", "api.")
+    module_names = [n for n in sys.modules if n in ("core", "api") or n.startswith(prefixes)]
+    for name in module_names:
+        del sys.modules[name]
 
-    sys.path.insert(0, pasta)
+    sys.path.insert(0, dir)
     try:
         return importlib.import_module("api.src")
     finally:
-        sys.path.remove(pasta)
+        sys.path.remove(dir)
 
 
 class AsgiRoot:
     """O app do PROCESSO: dispatcha por rotaBase para o app ASGI do modulo dono, sem `Mount` (ver
     `choose_base_route`). So entende `http` e `lifespan` — nenhum modulo declara websocket."""
 
-    def __init__(self, apps_por_rota_base: dict[str, Any]) -> None:
-        self._apps = apps_por_rota_base
-        self._rotas = list(apps_por_rota_base)
+    def __init__(self, apps_by_base_route: dict[str, Any]) -> None:
+        self._apps = apps_by_base_route
+        self._routes = list(apps_by_base_route)
 
     async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
         if scope["type"] == "lifespan":
@@ -178,27 +178,27 @@ class AsgiRoot:
             await self._not_found(send)
             return
 
-        rota_base = choose_base_route(self._rotas, scope["path"])
-        if rota_base is None:
+        base_route = choose_base_route(self._routes, scope["path"])
+        if base_route is None:
             await self._not_found(send)
             return
-        await self._apps[rota_base](scope, receive, send)
+        await self._apps[base_route](scope, receive, send)
 
     @staticmethod
     async def _lifecycle(receive: Any, send: Any) -> None:
         """Nenhum modulo declara startup/shutdown — so confirma o protocolo para o uvicorn nao
         acusar 'lifespan unsupported'."""
         while True:
-            mensagem = await receive()
-            if mensagem["type"] == "lifespan.startup":
+            message = await receive()
+            if message["type"] == "lifespan.startup":
                 await send({"type": "lifespan.startup.complete"})
-            elif mensagem["type"] == "lifespan.shutdown":
+            elif message["type"] == "lifespan.shutdown":
                 await send({"type": "lifespan.shutdown.complete"})
                 return
 
     @staticmethod
     async def _not_found(send: Any) -> None:
-        corpo = json.dumps({"erro": {"codigo": "NAO_ENCONTRADO", "mensagem": "rota nao encontrada"}}).encode()
+        body = json.dumps({"error": {"code": "NOT_FOUND", "message": "route not found"}}).encode()
         await send(
             {
                 "type": "http.response.start",
@@ -206,99 +206,99 @@ class AsgiRoot:
                 "headers": [(b"content-type", b"application/json")],
             }
         )
-        await send({"type": "http.response.body", "body": corpo})
+        await send({"type": "http.response.body", "body": body})
 
 
-def build_system(raiz: Path) -> AsgiRoot:
+def build_system(root: Path) -> AsgiRoot:
     """Monta o app do PROCESSO: um app ASGI por modulo, sob a `basePath` dele. Cada modulo ja
     expoe suas rotas sob a propria rotaBase — `create_app` cuida disso; aqui NAO se remonta rota
     nenhuma, so se escolhe qual app atende cada requisicao (`AsgiRoot`)."""
-    modulos = discover_modules(raiz)
-    verify_routes_unique(modulos)
+    modules = discover_modules(root)
+    verify_routes_unique(modules)
 
     auth = resolve_token_verifier()
     apps: dict[str, Any] = {}
-    for modulo in modulos:
-        deps_por_nome = resolve_dependencies(modulo)
-        api = _import_api_module(modulo)
+    for module in modules:
+        deps_by_name = resolve_dependencies(module)
+        api = _import_api_module(module)
         # `ModuleDependencies` e um dataclass POR MODULO (core/ports/__init__.py de cada um, nao
         # um tipo global) — o bootstrap acessa `deps.idGenerator` por ATRIBUTO, nunca por chave. Como
         # `_import_api_module` ja deixou o `core.ports` FRESCO deste modulo em `sys.modules`
         # (import transitivo de `api.src`), a classe certa e essa — nunca uma importada aqui em
         # cima, que colidiria com o `core` de outro modulo pelo mesmo motivo do import da api.
-        deps = sys.modules["core.ports"].ModuleDependencies(**deps_por_nome)
-        config = api.load_configuration(modulo["pasta"])
-        apps[modulo["basePath"]] = api.create_app(deps, auth, config)
+        deps = sys.modules["core.ports"].ModuleDependencies(**deps_by_name)
+        config = api.load_configuration(module["dir"])
+        apps[module["basePath"]] = api.create_app(deps, auth, config)
     return AsgiRoot(apps)
 
 
-def _read_pairs_env(caminho: Path) -> list[tuple[str, str]]:
-    pares: list[tuple[str, str]] = []
-    for linha in caminho.read_text(encoding="utf-8-sig").splitlines():
-        limpa = linha.strip()
-        if limpa == "" or limpa.startswith("#") or "=" not in limpa:
+def _read_pairs_env(path: Path) -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        cleaned = line.strip()
+        if cleaned == "" or cleaned.startswith("#") or "=" not in cleaned:
             continue
-        chave, _, valor = limpa.partition("=")
-        pares.append((chave.strip(), valor.strip()))
-    return pares
+        key, _, value = cleaned.partition("=")
+        pairs.append((key.strip(), value.strip()))
+    return pairs
 
 
-def _load_env_root(raiz: Path) -> None:
+def _load_env_root(root: Path) -> None:
     """Carrega o `.env` UNICO da raiz (specs/arquitetura/00-arquitetura.md §5) no processo, sem
     sobrescrever o que ja veio de fora (mesma precedencia de ADR-004). E o unico lugar que toca
     este arquivo: cada modulo, chamado daqui, ainda resolve o proprio `.env`/`ENV_ROOT`, mas a
     essa altura o processo ja tem tudo — a leitura dele so confirma o que ja esta la."""
-    caminho = raiz / ".env"
-    if not caminho.exists():
+    path = root / ".env"
+    if not path.exists():
         return
-    for chave, valor in _read_pairs_env(caminho):
-        os.environ.setdefault(chave, valor)
+    for key, value in _read_pairs_env(path):
+        os.environ.setdefault(key, value)
 
 
-def _env_required_root(chave: str) -> str:
+def _env_required_root(key: str) -> str:
     """Le uma variavel obrigatoria da RAIZ. Ausente = boot morre com mensagem acionavel."""
-    valor = os.environ.get(chave)
-    if valor is None or valor == "":
-        raise RuntimeError(f"[composition] variavel obrigatoria ausente: {chave} (declare em project.json)")
-    return valor
+    value = os.environ.get(key)
+    if value is None or value == "":
+        raise RuntimeError(f"[composition] required variable missing: {key} (declare it in project.json)")
+    return value
 
 
-def _log_composition(nivel: str, mensagem: str, **campos: Any) -> None:
+def _log_composition(level: str, message: str, **fields: Any) -> None:
     """Log ESTRUTURADO da raiz de composicao — uma linha JSON, a mesma forma `{nivel, modulo,
     mensagem}` dos modulos."""
-    _write(json.dumps({"nivel": nivel, "modulo": "composition", "mensagem": mensagem, **campos}) + "\n")
+    _write(json.dumps({"level": level, "module": "composition", "message": message, **fields}) + "\n")
 
 
-def parse_runtime_config(texto: str) -> int:
+def parse_runtime_config(text: str) -> int:
     """PURA — valida o TEXTO de `config/runtime.json` e devolve `shutdown.drainTimeoutMs` (ms).
     Tunable ausente ou invalido DERRUBA o boot, nomeando a chave: nunca um default embutido (mesma lei
     de `ROOT_API_PORT`)."""
     try:
-        bruto = json.loads(texto.removeprefix("﻿"))
-    except json.JSONDecodeError as causa:
-        raise RuntimeError(f"[composition] config/runtime.json nao e JSON valido: {causa}") from causa
-    teto = bruto.get("shutdown", {}).get("drainTimeoutMs") if isinstance(bruto, dict) else None
-    if isinstance(teto, bool) or not isinstance(teto, int) or teto <= 0:
+        raw = json.loads(text.removeprefix("﻿"))
+    except json.JSONDecodeError as cause:
+        raise RuntimeError(f"[composition] config/runtime.json is not valid JSON: {cause}") from cause
+    cap = raw.get("shutdown", {}).get("drainTimeoutMs") if isinstance(raw, dict) else None
+    if isinstance(cap, bool) or not isinstance(cap, int) or cap <= 0:
         raise RuntimeError(
-            "[composition] config/runtime.json: shutdown.drainTimeoutMs deve ser um inteiro > 0 (ms)"
+            "[composition] config/runtime.json: shutdown.drainTimeoutMs must be an integer > 0 (ms)"
         )
-    return teto
+    return cap
 
 
-def _load_runtime_config(raiz: Path) -> int:
-    caminho = raiz / "config" / "runtime.json"
-    if not caminho.exists():
-        raise RuntimeError(f"[composition] {caminho} ausente — a raiz declara aqui o teto de desligamento")
-    return parse_runtime_config(caminho.read_text(encoding="utf-8"))
+def _load_runtime_config(root: Path) -> int:
+    path = root / "config" / "runtime.json"
+    if not path.exists():
+        raise RuntimeError(f"[composition] {path} missing — the root declares the shutdown cap here")
+    return parse_runtime_config(path.read_text(encoding="utf-8"))
 
 
-def shutdown_exit_code(resultado: str) -> int:
+def shutdown_exit_code(result: str) -> int:
     """PURA — o codigo de saida do desligamento: so "drained" (drenou dentro do teto) sai 0."""
-    return 0 if resultado == "drained" else 1
+    return 0 if result == "drained" else 1
 
 
 @contextlib.contextmanager
-def _capture_signals_without_reraise(servidor: Any) -> Iterator[None]:
+def _capture_signals_without_reraise(server: Any) -> Iterator[None]:
     """Substitui o `capture_signals` do uvicorn: o original, depois de desligar gracioso, REEMITE o
     sinal capturado com o handler original — o processo morre POR SINAL (143 no Linux, 0xC000013A no
     Windows), nunca com `exit 0`, e o orquestrador nao distingue "drenou" de "foi morto". Aqui o
@@ -308,57 +308,57 @@ def _capture_signals_without_reraise(servidor: Any) -> Iterator[None]:
     if threading.current_thread() is not threading.main_thread():
         yield
         return
-    originais = {sig: signal.signal(sig, servidor.handle_exit) for sig in HANDLED_SIGNALS}
+    originals = {sig: signal.signal(sig, server.handle_exit) for sig in HANDLED_SIGNALS}
     try:
         yield
     finally:
-        for sig, handler in originais.items():
+        for sig, handler in originals.items():
             signal.signal(sig, handler)
 
 
 def _drain_timeout_exit() -> None:
-    codigo = shutdown_exit_code("timeout")
-    _log_composition("error", "desligamento concluido", resultado="timeout", codigo=codigo)
-    os._exit(codigo)
+    code = shutdown_exit_code("timeout")
+    _log_composition("error", "shutdown completed", result="timeout", code=code)
+    os._exit(code)
 
 
-def _build_server(app: Any, host: str, porta: int, drain_ms: int) -> Any:
+def _build_server(app: Any, host: str, port: int, drain_ms: int) -> Any:
     """O servidor uvicorn com o teto de drenagem. Ao 1o SIGTERM/SIGINT (SIGBREAK no Windows) ele para
     de aceitar conexoes e drena; um relogio de `drain_ms` derruba o processo com codigo != 0 se a
     drenagem nao terminar (ver `_capture_signals_without_reraise` para o motivo da substituicao)."""
     import uvicorn  # noqa: PLC0415
 
-    class ServidorComTeto(uvicorn.Server):
+    class ServerWithCap(uvicorn.Server):
         def handle_exit(self, sig: int, frame: Any) -> None:
             if not self.should_exit:
-                _log_composition("info", "desligamento iniciado", sinal=int(sig), drainTimeoutMs=drain_ms)
-                relogio = threading.Timer(drain_ms / 1000, _drain_timeout_exit)
-                relogio.daemon = True
-                relogio.start()
+                _log_composition("info", "shutdown started", signal=int(sig), drainTimeoutMs=drain_ms)
+                clock = threading.Timer(drain_ms / 1000, _drain_timeout_exit)
+                clock.daemon = True
+                clock.start()
             super().handle_exit(sig, frame)
 
         def capture_signals(self) -> Any:
             return _capture_signals_without_reraise(self)
 
-    return ServidorComTeto(uvicorn.Config(app, host=host, port=porta, log_level="info"))
+    return ServerWithCap(uvicorn.Config(app, host=host, port=port, log_level="info"))
 
 
-def start_system(raiz: Path) -> None:
+def start_system(root: Path) -> None:
     """Sobe o processo: um app ASGI, uma porta (specs/arquitetura/00-arquitetura.md §5). Porta e host
     vem do ambiente — nenhum literal aqui — e a falta de qualquer um DERRUBA o boot, nomeando a
     chave. SIGTERM/SIGINT desligam gracioso, dentro do teto de `config/runtime.json`."""
-    _load_env_root(raiz)
-    porta = int(_env_required_root("ROOT_API_PORT"))
+    _load_env_root(root)
+    port = int(_env_required_root("ROOT_API_PORT"))
     host = _env_required_root("ROOT_API_HOST")
-    drain_ms = _load_runtime_config(raiz)
-    app = build_system(raiz)
-    _log_composition("info", f"sistema subindo na porta {porta}", host=host, porta=porta)
+    drain_ms = _load_runtime_config(root)
+    app = build_system(root)
+    _log_composition("info", f"system starting on port {port}", host=host, port=port)
     # Lazy DE PROPOSITO (em `_build_server`): uvicorn so e preciso para SUBIR o processo de verdade;
     # `--selftest` e os testes importam este modulo sem nunca chamar `start_system`.
-    servidor = _build_server(app, host, porta, drain_ms)
-    servidor.run()
-    codigo = shutdown_exit_code("drained")
-    _log_composition("info", "desligamento concluido", resultado="drained", codigo=codigo)
+    server = _build_server(app, host, port, drain_ms)
+    server.run()
+    code = shutdown_exit_code("drained")
+    _log_composition("info", "shutdown completed", result="drained", code=code)
 
 
 # ================================================================================================
@@ -368,78 +368,83 @@ def start_system(raiz: Path) -> None:
 # ================================================================================================
 
 
-def _test_manifest(id_: str, rota_base: str) -> dict[str, Any]:
-    return {"id": id_, "basePath": rota_base}
+def _test_manifest(id_: str, base_route: str) -> dict[str, Any]:
+    return {"id": id_, "basePath": base_route}
 
 
 def _unique_routes_cases() -> list[dict[str, Any]]:
     return [
-        {"name": "lista vazia", "modules": [], "espera_erro": False},
-        {"name": "um so modulo", "modules": [_test_manifest("a", "/api/v1/a")], "espera_erro": False},
+        {"name": "empty list", "modules": [], "expects_error": False},
+        {"name": "a single module", "modules": [_test_manifest("a", "/api/v1/a")], "expects_error": False},
         {
-            "name": "rotas distintas",
+            "name": "distinct routes",
             "modules": [_test_manifest("a", "/api/v1/a"), _test_manifest("b", "/api/v1/b")],
-            "espera_erro": False,
+            "expects_error": False,
         },
         {
-            "name": "rotas colidindo",
+            "name": "colliding routes",
             "modules": [_test_manifest("a", "/api/v1/a"), _test_manifest("a2", "/api/v1/a")],
-            "espera_erro": True,
+            "expects_error": True,
         },
     ]
 
 
 def _route_choice_cases() -> list[dict[str, Any]]:
-    rotas = ["/api/v1/catalogo", "/api/v1/pedidos"]
+    routes = ["/api/v1/catalog", "/api/v1/orders"]
     return [
-        {"name": "casa exato", "rotas": rotas, "caminho": "/api/v1/catalogo", "esperado": "/api/v1/catalogo"},
         {
-            "name": "casa sub-caminho",
-            "rotas": rotas,
-            "caminho": "/api/v1/catalogo/health",
-            "esperado": "/api/v1/catalogo",
+            "name": "matches exactly",
+            "routes": routes,
+            "path": "/api/v1/catalog",
+            "expected": "/api/v1/catalog",
         },
         {
-            "name": "NAO casa prefixo parcial",
-            "rotas": rotas,
-            "caminho": "/api/v1/catalogo-x/health",
-            "esperado": None,
+            "name": "matches a sub-path",
+            "routes": routes,
+            "path": "/api/v1/catalog/health",
+            "expected": "/api/v1/catalog",
         },
-        {"name": "sem match", "rotas": rotas, "caminho": "/nada", "esperado": None},
+        {
+            "name": "does NOT match a partial prefix",
+            "routes": routes,
+            "path": "/api/v1/catalog-x/health",
+            "expected": None,
+        },
+        {"name": "no match", "routes": routes, "path": "/nothing", "expected": None},
     ]
 
 
-def _write(texto: str) -> None:
-    sys.stdout.write(texto)
+def _write(text: str) -> None:
+    sys.stdout.write(text)
     sys.stdout.flush()
 
 
-TETO_DE_TESTE = 5000
+TEST_CAP = 5000
 
 
 def _runtime_cases() -> list[tuple[str, bool]]:
-    def lanca(texto: str) -> bool:
+    def throws(text: str) -> bool:
         try:
-            parse_runtime_config(texto)
+            parse_runtime_config(text)
         except RuntimeError:
             return True
         return False
 
-    invalidos = ("0", "-5", "1.5", '"10"', "true")
-    valido = '{"shutdown":{"drainTimeoutMs":' + str(TETO_DE_TESTE) + "}}"
+    invalid = ("0", "-5", "1.5", '"10"', "true")
+    valid = '{"shutdown":{"drainTimeoutMs":' + str(TEST_CAP) + "}}"
     return [
         (
-            "parse_runtime_config: aceita o teto inteiro > 0",
-            parse_runtime_config(valido) == TETO_DE_TESTE,
+            "parse_runtime_config: accepts an integer cap > 0",
+            parse_runtime_config(valid) == TEST_CAP,
         ),
-        ("parse_runtime_config: chave ausente derruba", lanca("{}")),
+        ("parse_runtime_config: a missing key fails", throws("{}")),
         (
-            "parse_runtime_config: zero, negativo, fracionario, texto e bool derrubam",
-            all(lanca('{"shutdown":{"drainTimeoutMs":' + v + "}}") for v in invalidos),
+            "parse_runtime_config: zero, negative, fractional, text and bool fail",
+            all(throws('{"shutdown":{"drainTimeoutMs":' + v + "}}") for v in invalid),
         ),
-        ("parse_runtime_config: JSON quebrado derruba", lanca("{")),
+        ("parse_runtime_config: broken JSON fails", throws("{")),
         (
-            "shutdown_exit_code: so drained sai 0",
+            "shutdown_exit_code: only drained exits 0",
             shutdown_exit_code("drained") == 0
             and shutdown_exit_code("timeout") != 0
             and shutdown_exit_code("error") != 0,
@@ -448,36 +453,36 @@ def _runtime_cases() -> list[tuple[str, bool]]:
 
 
 def _run_selftest() -> int:
-    falhas = 0
+    failures = 0
 
-    for caso in _unique_routes_cases():
-        lancou = False
+    for test_case in _unique_routes_cases():
+        threw = False
         try:
-            verify_routes_unique(caso["modules"])
+            verify_routes_unique(test_case["modules"])
         except RuntimeError:
-            lancou = True
-        ok = lancou == caso["espera_erro"]
-        _write(f"  {'ok   ' if ok else 'FALHA'} verify_routes_unique: {caso['name']}\n")
+            threw = True
+        ok = threw == test_case["expects_error"]
+        _write(f"  {'ok   ' if ok else 'FAIL'} verify_routes_unique: {test_case['name']}\n")
         if not ok:
-            falhas += 1
+            failures += 1
 
-    for caso in _route_choice_cases():
-        obtido = choose_base_route(caso["rotas"], caso["caminho"])
-        ok = obtido == caso["esperado"]
-        _write(f"  {'ok   ' if ok else 'FALHA'} choose_base_route: {caso['name']}\n")
+    for test_case in _route_choice_cases():
+        obtained = choose_base_route(test_case["routes"], test_case["path"])
+        ok = obtained == test_case["expected"]
+        _write(f"  {'ok   ' if ok else 'FAIL'} choose_base_route: {test_case['name']}\n")
         if not ok:
-            falhas += 1
-            _write(f"       esperado: {caso['esperado']!r} obtido: {obtido!r}\n")
+            failures += 1
+            _write(f"       expected: {test_case['expected']!r} obtained: {obtained!r}\n")
 
     runtime = _runtime_cases()
-    for nome, ok in runtime:
-        _write(f"  {'ok   ' if ok else 'FALHA'} {nome}\n")
+    for name, ok in runtime:
+        _write(f"  {'ok   ' if ok else 'FAIL'} {name}\n")
         if not ok:
-            falhas += 1
+            failures += 1
 
     total = len(_unique_routes_cases()) + len(_route_choice_cases()) + len(runtime)
-    _write(f"\nautoteste: {total - falhas}/{total} ok\n")
-    return 0 if falhas == 0 else 1
+    _write(f"\nselftest: {total - failures}/{total} ok\n")
+    return 0 if failures == 0 else 1
 
 
 if __name__ == "__main__":

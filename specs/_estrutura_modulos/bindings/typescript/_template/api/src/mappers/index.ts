@@ -11,34 +11,34 @@
 // nao aparecer — falha silenciosa que o teste de contrato pega. O inverso, publicar por omissao,
 // seria pior.
 
-import type { Registro } from '../../../core/domain/index.js';
+import type { Entry } from '../../../core/domain/index.js';
 import type { Manifest } from '../config.js';
 
 /** Linha crua do banco. Nunca sai desta camada. */
-export interface LinhaRegistro {
+export interface EntryRow {
   hash: string;
-  titulo: string;
+  title: string;
   status: string;
   created_at: string;
 }
 
 /** banco -> dominio */
-export function rowToDomain(linha: LinhaRegistro): Registro {
+export function rowToDomain(line: EntryRow): Entry {
   return {
-    hash: linha.hash,
-    titulo: linha.titulo,
-    status: linha.status,
-    criadoEm: linha.created_at,
+    hash: line.hash,
+    title: line.title,
+    status: line.status,
+    createdAt: line.created_at,
   };
 }
 
 /** dominio -> banco */
-export function domainToRow(registro: Registro): LinhaRegistro {
+export function domainToRow(entry: Entry): EntryRow {
   return {
-    hash: registro.hash,
-    titulo: registro.titulo,
-    status: registro.status,
-    created_at: registro.criadoEm,
+    hash: entry.hash,
+    title: entry.title,
+    status: entry.status,
+    created_at: entry.createdAt,
   };
 }
 
@@ -46,12 +46,12 @@ export function domainToRow(registro: Registro): LinhaRegistro {
  * dominio -> CONTRATO. A allowlist e esta funcao: o que nao esta escrito aqui nao e publicado.
  * Campo declarado em module.json:sensitiveFields nunca entra — ou entra mascarado.
  */
-export function toContract(registro: Registro): Record<string, unknown> {
+export function toContract(entry: Entry): Record<string, unknown> {
   return {
-    hash: registro.hash,
-    titulo: registro.titulo,
-    status: registro.status,
-    criadoEm: registro.criadoEm,
+    hash: entry.hash,
+    title: entry.title,
+    status: entry.status,
+    createdAt: entry.createdAt,
   };
 }
 
@@ -60,25 +60,25 @@ export function toContract(registro: Registro): Record<string, unknown> {
  * esta aqui e reconhecimento — schema do banco, nomes de chave de segredo, vocabulario de
  * `permissions`, `publicRoutes` e `sensitiveFields` nunca saem por esta rota.
  */
-export function toMeta(manifesto: Manifest): Record<string, unknown> {
+export function toMeta(manifest: Manifest): Record<string, unknown> {
   return {
-    id: manifesto.id,
-    name: manifesto.name,
-    version: manifesto.version,
-    role: manifesto.role,
-    basePath: manifesto.basePath,
-    webPath: manifesto.webPath,
-    navigation: manifesto.navigation,
-    exportsSummary: manifesto.exportsSummary,
+    id: manifest.id,
+    name: manifest.name,
+    version: manifest.version,
+    role: manifest.role,
+    basePath: manifest.basePath,
+    webPath: manifest.webPath,
+    navigation: manifest.navigation,
+    exportsSummary: manifest.exportsSummary,
   };
 }
 
 /** Envelope unico de colecao (specs/arquitetura/02-contrato-e-dados.md §3.1). */
 export function toCollection(
-  registros: Registro[],
-  pagina: number,
-  tamanho: number,
+  entries: Entry[],
+  page: number,
+  pageSize: number,
   total: number,
 ): Record<string, unknown> {
-  return { itens: registros.map(toContract), pagina, tamanho, total };
+  return { items: entries.map(toContract), page, pageSize, total };
 }

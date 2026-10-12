@@ -19,7 +19,7 @@ Aditiva (cria testes de contrato) → HITL leve. Teste ativo **só no próprio a
 
 | Regra do gate | O que já é cobrado, sem executar nada |
 |---|---|
-| `contract` | o `contract/openapi.yaml` existe, é legível e declara `/health`, `/meta`, `/resumo` |
+| `contract` | o `contract/openapi.yaml` existe, é legível e declara `/health`, `/meta`, `/summary` |
 | `route-naming` | `servers[0].url` = `basePath`; segmento sem verbo (PT e EN); kebab-case; parâmetro camelCase |
 | `synchronized-contract` | as rotas do código e as do `paths:` coincidem **nos dois sentidos** |
 | `contract-projection` | todo campo que o mapeador projeta está declarado em algum schema de **resposta** |

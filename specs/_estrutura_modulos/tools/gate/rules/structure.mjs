@@ -21,15 +21,15 @@ const ALLOWED_ENTRIES = new Set([
   '.env', '.env.example', '.gitignore', 'package-lock.json', 'node_modules',
   'tsconfig.json', 'tsconfig.build.json', 'jsconfig.json', 'vitest.config.ts', 'vitest.config.js',
   'eslint.config.mjs', 'eslint.config.js',
-  // `relatorios/` e onde `npm run coverage`/`pytest --cov` escrevem lcov+junit — ela so existe
-  // depois de rodada, nunca escrita a mao, e e SEMPRE `relatorios/`, nos tres bindings (a config
+  // `reports/` e onde `npm run coverage`/`pytest --cov` escrevem lcov+junit — ela so existe
+  // depois de rodada, nunca escrita a mao, e e SEMPRE `reports/`, nos tres bindings (a config
   // dita isso, nao o nome do pacote — diferente do `.egg-info`, que carrega o nome do pacote e por
   // isso e tolerado por FORMA, nao por lista). `.gitignore` a cobre; aqui e so a arvore fechada.
   // `.coverage` e o banco SQLite que o `coverage.py` (por baixo do pytest-cov) escreve na RAIZ do
-  // modulo, fora de `relatorios/` — nao e escolha nossa, e onde a ferramenta grava por padrao.
+  // modulo, fora de `reports/` — nao e escolha nossa, e onde a ferramenta grava por padrao.
   // As DUAS travadas por maquina: `gate/tests/cases.mjs`, caso "manifest-schema — CHAMARIZ" —
   // regride a tolerancia de qualquer uma e `strict-structure` acusa um id nao declarado ali.
-  'relatorios', '.coverage',
+  'reports', '.coverage',
   // `dist/` NAO esta aqui, de proposito — medido (nao presumido) que a entrada seria
   // INALCANCAVEL: `gate/context.mjs:SKIP_WALK` (FORA de escopo) ja contem `'dist'`, e
   // `entradasRaiz` filtra tudo que esta em `SKIP_WALK` ANTES desta lista ser consultada

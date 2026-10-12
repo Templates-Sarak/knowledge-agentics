@@ -20,85 +20,85 @@ import httpx
 import pytest_asyncio
 
 from api.src import create_app
-from tests.fixtures import AuthDeTeste, create_dependencies, record_example
+from tests.fixtures import FakeAuth, create_dependencies, record_example
 
-ROTA_BASE = "/api/v1/<module>"
-CREDENCIAL_DE_TESTE = "token-de-teste"
+BASE_ROUTE = "/api/v1/<module>"
+TEST_CREDENTIAL = "test-token"
 
 
 @pytest_asyncio.fixture()
 async def client() -> AsyncIterator[httpx.AsyncClient]:
     app = create_app(
         deps=create_dependencies([record_example()]),
-        auth=AuthDeTeste(["<module>:ler", "<module>:escrever"], CREDENCIAL_DE_TESTE),
+        auth=FakeAuth(["<module>:read", "<module>:write"], TEST_CREDENTIAL),
     )
-    transporte = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transporte, base_url="http://modulo-de-teste") as cliente:
-        yield cliente
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test-module") as client:
+        yield client
 
 
 def _auth() -> dict[str, str]:
-    return {"authorization": f"Bearer {CREDENCIAL_DE_TESTE}"}
+    return {"authorization": f"Bearer {TEST_CREDENTIAL}"}
 
 
-async def test_health_responde_sem_token(client: httpx.AsyncClient) -> None:
-    resposta = await client.get(f"{ROTA_BASE}/health")
-    assert resposta.status_code == 200
-    assert resposta.json()["ok"] is True
+async def test_health_answers_without_token(client: httpx.AsyncClient) -> None:
+    response = await client.get(f"{BASE_ROUTE}/health")
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
 
 
-async def test_meta_ecoa_o_manifesto(client: httpx.AsyncClient) -> None:
-    assert (await client.get(f"{ROTA_BASE}/meta")).json()["basePath"] == ROTA_BASE
+async def test_meta_echoes_manifest(client: httpx.AsyncClient) -> None:
+    assert (await client.get(f"{BASE_ROUTE}/meta")).json()["basePath"] == BASE_ROUTE
 
 
-async def test_resumo_devolve_a_contagem(client: httpx.AsyncClient) -> None:
-    assert (await client.get(f"{ROTA_BASE}/resumo")).json()["total"] == 1
+async def test_summary_returns_count(client: httpx.AsyncClient) -> None:
+    assert (await client.get(f"{BASE_ROUTE}/summary")).json()["total"] == 1
 
 
-async def test_nega_leitura_sem_token(client: httpx.AsyncClient) -> None:
-    resposta = await client.get(f"{ROTA_BASE}/registros")
-    assert resposta.status_code == 401
-    assert resposta.json()["erro"]["codigo"] == "NAO_AUTENTICADO"
+async def test_denies_read_without_token(client: httpx.AsyncClient) -> None:
+    response = await client.get(f"{BASE_ROUTE}/entries")
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "UNAUTHENTICATED"
 
 
-async def test_nega_token_invalido(client: httpx.AsyncClient) -> None:
-    resposta = await client.get(f"{ROTA_BASE}/registros", headers={"authorization": "Bearer errado"})
-    assert resposta.status_code == 401
+async def test_denies_invalid_token(client: httpx.AsyncClient) -> None:
+    response = await client.get(f"{BASE_ROUTE}/entries", headers={"authorization": "Bearer wrong"})
+    assert response.status_code == 401
 
 
-async def test_lista_no_envelope_de_colecao(client: httpx.AsyncClient) -> None:
-    corpo = (await client.get(f"{ROTA_BASE}/registros", headers=_auth())).json()
-    assert len(corpo["itens"]) == 1
-    assert corpo["total"] == 1
+async def test_lists_in_collection_envelope(client: httpx.AsyncClient) -> None:
+    body = (await client.get(f"{BASE_ROUTE}/entries", headers=_auth())).json()
+    assert len(body["items"]) == 1
+    assert body["total"] == 1
 
 
-async def test_hash_inexistente_devolve_nao_encontrado(client: httpx.AsyncClient) -> None:
-    resposta = await client.get(f"{ROTA_BASE}/registros/00000", headers=_auth())
-    assert resposta.status_code == 404
-    assert resposta.json()["erro"]["codigo"] == "NAO_ENCONTRADO"
+async def test_unknown_hash_returns_not_found(client: httpx.AsyncClient) -> None:
+    response = await client.get(f"{BASE_ROUTE}/entries/00000", headers=_auth())
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "NOT_FOUND"
 
 
-async def test_cria_e_devolve_so_os_campos_da_projecao(client: httpx.AsyncClient) -> None:
-    resposta = await client.post(f"{ROTA_BASE}/registros", json={"titulo": "Novo"}, headers=_auth())
-    assert resposta.status_code == 201
-    assert sorted(resposta.json().keys()) == ["criadoEm", "hash", "status", "titulo"]
+async def test_creates_and_returns_only_projection_fields(client: httpx.AsyncClient) -> None:
+    response = await client.post(f"{BASE_ROUTE}/entries", json={"title": "New"}, headers=_auth())
+    assert response.status_code == 201
+    assert sorted(response.json().keys()) == ["createdAt", "hash", "status", "title"]
 
 
-async def test_rejeita_campo_desconhecido(client: httpx.AsyncClient) -> None:
-    resposta = await client.post(
-        f"{ROTA_BASE}/registros",
-        json={"titulo": "Novo", "admin": True},
+async def test_rejects_unknown_field(client: httpx.AsyncClient) -> None:
+    response = await client.post(
+        f"{BASE_ROUTE}/entries",
+        json={"title": "New", "admin": True},
         headers=_auth(),
     )
-    assert resposta.status_code == 400
-    assert resposta.json()["erro"]["codigo"] == "VALIDACAO"
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION"
 
 
-async def test_rejeita_paginacao_invalida(client: httpx.AsyncClient) -> None:
-    resposta = await client.get(f"{ROTA_BASE}/registros?pagina=0", headers=_auth())
-    assert resposta.status_code == 400
+async def test_rejects_invalid_pagination(client: httpx.AsyncClient) -> None:
+    response = await client.get(f"{BASE_ROUTE}/entries?page=0", headers=_auth())
+    assert response.status_code == 400
 
 
-async def test_rejeita_tamanho_acima_do_teto(client: httpx.AsyncClient) -> None:
-    resposta = await client.get(f"{ROTA_BASE}/registros?tamanho=9999", headers=_auth())
-    assert resposta.status_code == 400
+async def test_rejects_page_size_above_cap(client: httpx.AsyncClient) -> None:
+    response = await client.get(f"{BASE_ROUTE}/entries?pageSize=9999", headers=_auth())
+    assert response.status_code == 400

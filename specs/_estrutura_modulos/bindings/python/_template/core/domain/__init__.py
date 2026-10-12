@@ -14,13 +14,13 @@ from typing import Any, Sequence
 
 
 @dataclass(frozen=True)
-class Registro:
+class Entry:
     """Registro do dominio, na caixa do contrato (camelCase na borda, snake_case aqui)."""
 
     hash: str
-    titulo: str
+    title: str
     status: str
-    criado_em: str
+    created_at: str
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -29,41 +29,41 @@ class Registro:
 class ValidationError(Exception):
     """Falha de validacao do dominio. A borda a traduz para VALIDACAO (400)."""
 
-    def __init__(self, campo: str, mensagem: str) -> None:
-        super().__init__(mensagem)
-        self.campo = campo
+    def __init__(self, field: str, message: str) -> None:
+        super().__init__(message)
+        self.field = field
 
 
-def _require_title(titulo: Any) -> str:
-    if not isinstance(titulo, str) or titulo.strip() == "":
-        raise ValidationError("titulo", "titulo e obrigatorio")
-    return titulo.strip()
+def _require_title(title: Any) -> str:
+    if not isinstance(title, str) or title.strip() == "":
+        raise ValidationError("title", "title is required")
+    return title.strip()
 
 
-def _require_status(status: Any, status_validos: Sequence[str]) -> str:
-    if not status_validos:
-        raise ValidationError("status", "config/domain.json:validStatuses esta vazio")
+def _require_status(status: Any, valid_statuses: Sequence[str]) -> str:
+    if not valid_statuses:
+        raise ValidationError("status", "config/domain.json:validStatuses is empty")
     if status is None:
-        return status_validos[0]
-    if not isinstance(status, str) or status not in status_validos:
-        raise ValidationError("status", f"status deve ser um de: {', '.join(status_validos)}")
+        return valid_statuses[0]
+    if not isinstance(status, str) or status not in valid_statuses:
+        raise ValidationError("status", f"status must be one of: {', '.join(valid_statuses)}")
     return status
 
 
 def build_record(
-    entrada: dict[str, Any],
-    status_validos: Sequence[str],
+    input_value: dict[str, Any],
+    valid_statuses: Sequence[str],
     hash_universal: str,
-    criado_em: str,
-) -> Registro:
+    created_at: str,
+) -> Entry:
     """Valida a entrada externa e devolve o registro do dominio.
 
-    O `hash` e o `criado_em` vem de FORA (portas), nunca daqui — e o que mantem o dominio
+    O `hash` e o `created_at` vem de FORA (portas), nunca daqui — e o que mantem o dominio
     deterministico e testavel sem congelar o relogio do sistema.
     """
-    return Registro(
+    return Entry(
         hash=hash_universal,
-        titulo=_require_title(entrada.get("titulo")),
-        status=_require_status(entrada.get("status"), status_validos),
-        criado_em=criado_em,
+        title=_require_title(input_value.get("title")),
+        status=_require_status(input_value.get("status"), valid_statuses),
+        created_at=created_at,
     )

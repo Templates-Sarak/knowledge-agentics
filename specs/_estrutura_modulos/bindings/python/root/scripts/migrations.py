@@ -17,13 +17,13 @@ isto e ferramenta de operacao, nunca importada por `src/composition.py`).
 
 DECISAO (a) [psql via subprocess] x (b) [driver `psycopg`] — medido antes de escolher: nesta base de
 desenvolvimento `psql` nao esta disponivel (fora do PATH, e o winget so oferece SERVIDOR completo,
-nao um cliente isolado). Instalar um Postgres inteiro no sistema so para ter o CLI e acao pesada e
+nao um cliente isolado). Instalar um Postgres inteiro no sistema so para ter o CLI e action pesada e
 dificil de reverter — desproporcional para um cliente. `psycopg` como optional-dependency e comum,
 escopada ao projeto, instalada pelo MESMO `pip install -e ".[dev]"` que ja instala tudo mais.
 
 ESTADO POR MODULO — sem controle de versao de migration, um projeto com tres migrations e dois
 ambientes nao consegue rodar `up` a segunda vez. A tabela `<schema>.<prefix>migrations`
-(`arquivo text primary key`, `aplicada_em timestamptz`) e criada pela PRIMEIRA migration do
+(`file_name text primary key`, `applied_at timestamptz`) e criada pela PRIMEIRA migration do
 molde — nao por este runner: o runner so LE e ESCREVE nela, nunca decide a forma dela por fora do
 SQL versionado. `up` aplica so o que falta; `down` reverte so o ULTIMO aplicado (nunca "tudo de
 uma vez" — e o comportamento padrao de runner de migration, e o que faz `ciclo` funcionar de
@@ -44,8 +44,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-RAIZ = Path(__file__).resolve().parent.parent
-MINIMO_DE_ARGUMENTOS = 2
+ROOT = Path(__file__).resolve().parent.parent
+MINIMUM_ARGUMENTS = 2
 
 # ====================================================================================================
 # NUCLEO PURO — nunca toca disco nem rede. E a metade que --selftest prova.
@@ -55,79 +55,79 @@ MINIMO_DE_ARGUMENTOS = 2
 # Serve DUAS funcoes: e o formato certo, E recusa de saida qualquer metacaractere de shell (`;`,
 # `$()`, `&`, espaco) — nenhuma entrada adversarial passa daqui para caminho de arquivo nem para
 # chave de ambiente.
-ID_DE_MODULO_VALIDO = re.compile(r"^[a-z][a-z0-9-]*$")
+VALID_MODULE_ID = re.compile(r"^[a-z][a-z0-9-]*$")
 
-VERBOS_DE_REVERSAO = re.compile(
+ROLLBACK_VERBS = re.compile(
     r"^(drop|alter|delete|truncate|revoke|grant|create|insert|update)\b", re.IGNORECASE
 )
 
-MARCADOR_ROLLBACK = re.compile(r"^\s*--\s*rollback\s*$", re.IGNORECASE)
+ROLLBACK_MARKER = re.compile(r"^\s*--\s*rollback\s*$", re.IGNORECASE)
 
-LINHA_COMENTADA = re.compile(r"^(\s*)--\s?(.*)$")
+COMMENTED_LINE = re.compile(r"^(\s*)--\s?(.*)$")
 
 
-def split_up_down(conteudo: str) -> tuple[str, str]:
+def split_up_down(content: str) -> tuple[str, str]:
     """Separa o UP do DOWN de uma migration. O marcador e uma LINHA so com "-- rollback" — nao uma
     ocorrencia em qualquer lugar do texto (diferente do regex de deteccao do gate, `data.mjs`, que
     so precisa saber SE existe bloco, nunca onde ele comeca)."""
-    linhas = conteudo.splitlines()
-    indice_marcador = next((i for i, linha in enumerate(linhas) if MARCADOR_ROLLBACK.match(linha)), None)
-    if indice_marcador is None:
-        return conteudo.strip(), ""
+    lines = content.splitlines()
+    marker_index = next((i for i, line in enumerate(lines) if ROLLBACK_MARKER.match(line)), None)
+    if marker_index is None:
+        return content.strip(), ""
 
-    up = "\n".join(linhas[:indice_marcador]).strip()
-    down = _uncomment_rollback(linhas[indice_marcador + 1 :])
+    up = "\n".join(lines[:marker_index]).strip()
+    down = _uncomment_rollback(lines[marker_index + 1 :])
     return up, down
 
 
-def _uncomment_rollback(linhas: list[str]) -> str:
+def _uncomment_rollback(lines: list[str]) -> str:
     """Descomenta o bloco de rollback, linha a linha — NUNCA lanca. Linha em branco: descartada.
     Linha comentada cujo conteudo comeca por um verbo de DDL/DML conhecido: descomentada (o "-- "
     sai, preservando a indentacao). Qualquer outra coisa — comentario de verdade, linha ja sem "--"
     — passa INALTERADA: e SQL valido de um jeito ou de outro. E o que faz o parser nunca quebrar,
     provado por --selftest com linha em branco, comentario que NAO e rollback, e indentacao."""
-    resultado = []
-    for linha in linhas:
-        if linha.strip() == "":
+    result = []
+    for line in lines:
+        if line.strip() == "":
             continue
-        casado = LINHA_COMENTADA.match(linha)
-        if casado is None:
-            resultado.append(linha)
+        matched = COMMENTED_LINE.match(line)
+        if matched is None:
+            result.append(line)
             continue
-        indentacao, resto = casado.group(1), casado.group(2)
-        resultado.append(f"{indentacao}{resto}" if VERBOS_DE_REVERSAO.match(resto) else linha)
-    return "\n".join(resultado).strip()
+        indentation, rest = matched.group(1), matched.group(2)
+        result.append(f"{indentation}{rest}" if ROLLBACK_VERBS.match(rest) else line)
+    return "\n".join(result).strip()
 
 
-def _prefix(nome_de_arquivo: str) -> str | None:
+def _prefix(file_name: str) -> str | None:
     """Nome do arquivo -> prefixo NNNN. `None` quando foge do padrao — a regra `migrations` do gate
     ja reprova isso; aqui so nao quebra a ordenacao."""
-    casado = re.match(r"^(\d{4})-", nome_de_arquivo)
-    return casado.group(1) if casado else None
+    matched = re.match(r"^(\d{4})-", file_name)
+    return matched.group(1) if matched else None
 
 
-def order_migrations(nomes: list[str], direcao: str) -> list[str]:
+def order_migrations(names: list[str], direction: str) -> list[str]:
     """UP em ordem crescente (prefixo NNNN); DOWN e o INVERSO — reverte o que aplicou por ultimo
     primeiro."""
-    ordenados = sorted(nomes, key=lambda nome: _prefix(nome) or nome)
-    return list(reversed(ordenados)) if direcao == "down" else ordenados
+    ordered = sorted(names, key=lambda name: _prefix(name) or name)
+    return list(reversed(ordered)) if direction == "down" else ordered
 
 
-def environment_key(id_do_modulo: str) -> str:
+def environment_key(module_id: str) -> str:
     """`<module>` -> `<MODULE>_DB_URL` — a MESMA convencao de `module.json:requiredEnv`."""
-    return f"{id_do_modulo.upper().replace('-', '_')}_DB_URL"
+    return f"{module_id.upper().replace('-', '_')}_DB_URL"
 
 
-def pending(nomes_ordenados_up: list[str], aplicados: set[str]) -> list[str]:
-    """Os nomes (ja ordenados por 'up') que NAO estao em `aplicados` — em ordem, o que falta aplicar."""
-    return [nome for nome in nomes_ordenados_up if nome not in aplicados]
+def pending(ordered_up_names: list[str], applied: set[str]) -> list[str]:
+    """Os nomes (ja ordenados por 'up') que NAO estao em `applied` — em ordem, o que falta aplicar."""
+    return [name for name in ordered_up_names if name not in applied]
 
 
-def last_applied(nomes_ordenados_up: list[str], aplicados: set[str]) -> str | None:
-    """O ULTIMO nome (na ordem 'up') que esta em `aplicados` — `None` se nenhum esta. E o alvo do
+def last_applied(ordered_up_names: list[str], applied: set[str]) -> str | None:
+    """O ULTIMO nome (na ordem 'up') que esta em `applied` — `None` se nenhum esta. E o alvo do
     `down`: reverter um passo, nunca a lista inteira, e por isso `ciclo` funciona de qualquer estado."""
-    feitos = [nome for nome in nomes_ordenados_up if nome in aplicados]
-    return feitos[-1] if feitos else None
+    done = [name for name in ordered_up_names if name in applied]
+    return done[-1] if done else None
 
 
 # ====================================================================================================
@@ -135,75 +135,75 @@ def last_applied(nomes_ordenados_up: list[str], aplicados: set[str]) -> str | No
 # ====================================================================================================
 
 
-def _read_text(caminho: Path) -> str:
-    return caminho.read_text(encoding="utf-8-sig")
+def _read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8-sig")
 
 
-def _read_pairs_env(caminho: Path) -> list[tuple[str, str]]:
-    pares: list[tuple[str, str]] = []
-    for linha in _read_text(caminho).splitlines():
-        limpa = linha.strip()
-        if limpa == "" or limpa.startswith("#") or "=" not in limpa:
+def _read_pairs_env(path: Path) -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    for line in _read_text(path).splitlines():
+        cleaned = line.strip()
+        if cleaned == "" or cleaned.startswith("#") or "=" not in cleaned:
             continue
-        chave, _, valor = limpa.partition("=")
-        pares.append((chave.strip(), valor.strip()))
-    return pares
+        key, _, value = cleaned.partition("=")
+        pairs.append((key.strip(), value.strip()))
+    return pairs
 
 
 def _load_env_root() -> None:
     """Carrega o `.env` UNICO da raiz no processo, sem sobrescrever o que ja veio de fora — mesma
     precedencia de `src/composition.py:_load_env_root` (ADR-004)."""
-    caminho = RAIZ / ".env"
-    if not caminho.exists():
+    path = ROOT / ".env"
+    if not path.exists():
         return
-    for chave, valor in _read_pairs_env(caminho):
-        os.environ.setdefault(chave, valor)
+    for key, value in _read_pairs_env(path):
+        os.environ.setdefault(key, value)
 
 
-def _module_folder(id_do_modulo: str) -> Path:
+def _module_folder(module_id: str) -> Path:
     """`<module>` valido E dentro de `modules/` — nunca escapa por `..` nem separador. Falha
     nomeando a entrada recusada, nunca silenciosa."""
-    if not ID_DE_MODULO_VALIDO.match(id_do_modulo):
-        raise RuntimeError(f'[migrations] "{id_do_modulo}" nao e kebab-case minusculo valido')
-    base = (RAIZ / "modules").resolve()
-    pasta = (base / id_do_modulo).resolve()
-    if base not in pasta.parents:
-        raise RuntimeError(f'[migrations] "{id_do_modulo}" resolve para fora de modules/ — recusado')
-    if not (pasta / "module.json").exists():
-        raise RuntimeError(f'[migrations] modulo "{id_do_modulo}" nao encontrado em modules/')
-    return pasta
+    if not VALID_MODULE_ID.match(module_id):
+        raise RuntimeError(f'[migrations] "{module_id}" is not valid lowercase kebab-case')
+    base = (ROOT / "modules").resolve()
+    dir = (base / module_id).resolve()
+    if base not in dir.parents:
+        raise RuntimeError(f'[migrations] "{module_id}" resolves outside modules/ — refused')
+    if not (dir / "module.json").exists():
+        raise RuntimeError(f'[migrations] module "{module_id}" not found in modules/')
+    return dir
 
 
-def _list_migrations(pasta_modulo: Path) -> list[str]:
-    base = pasta_modulo / "database" / "migrations"
+def _list_migrations(module_dir: Path) -> list[str]:
+    base = module_dir / "database" / "migrations"
     if not base.exists():
         return []
     return [p.name for p in base.iterdir() if p.suffix == ".sql"]
 
 
-def _control_table(pasta_modulo: Path) -> tuple[str, str, str]:
+def _control_table(module_dir: Path) -> tuple[str, str, str]:
     """`data.schema`/`data.prefix` do manifesto — a MESMA fonte que declara as tabelas do
     modulo, nunca um terceiro lugar para o nome da tabela de controle. Devolve `(schema, tabela,
     qualificada)` — `qualificada` (`"schema"."tabela"`) permite as funcoes abaixo passarem UM
     parametro em vez de dois (limiar de 4 parametros)."""
-    manifesto = json.loads(_read_text(pasta_modulo / "module.json"))
-    dados = manifesto["data"]
-    schema = dados["schema"]
-    tabela = f"{dados['prefix']}migrations"
-    return schema, tabela, f'"{schema}"."{tabela}"'
+    manifest = json.loads(_read_text(module_dir / "module.json"))
+    data = manifest["data"]
+    schema = data["schema"]
+    table = f"{data['prefix']}migrations"
+    return schema, table, f'"{schema}"."{table}"'
 
 
-def _required_url(id_do_modulo: str) -> str:
-    """Le uma variavel obrigatoria. Ausente = falha nomeando a chave (lei 7 do catalogo, mesmo
+def _required_url(module_id: str) -> str:
+    """Le uma variavel obrigatoria. Ausente = falha nomeando a chave (lei 7 do catalog, mesmo
     padrao de `api/src/config.py:env_required`)."""
-    chave = environment_key(id_do_modulo)
-    valor = os.environ.get(chave)
-    if not valor:
+    key = environment_key(module_id)
+    value = os.environ.get(key)
+    if not value:
         raise RuntimeError(
-            f"[migrations] variavel obrigatoria ausente: {chave}"
-            " (declare em module.json:requiredEnv e no .env da raiz)"
+            f"[migrations] required variable missing: {key}"
+            " (declare it in module.json:requiredEnv and in the root .env)"
         )
-    return valor
+    return value
 
 
 def _connect(url: str) -> Any:
@@ -215,101 +215,101 @@ def _connect(url: str) -> Any:
     return psycopg.connect(url)
 
 
-def _applied_migrations(conexao: Any, schema: str, tabela: str) -> set[str]:
-    """`set` dos `arquivo` ja registrados — vazio (nunca erro) quando a tabela de controle ainda
+def _applied_migrations(connection: Any, schema: str, table: str) -> set[str]:
+    """`set` dos `file_name` ja registrados — vazio (nunca erro) quando a tabela de controle ainda
     nao existe, o estado normal do PRIMEIRO `up` de um banco novo."""
-    with conexao.cursor() as cursor:
+    with connection.cursor() as cursor:
         cursor.execute(
             "select 1 from information_schema.tables where table_schema = %s and table_name = %s",
-            (schema, tabela),
+            (schema, table),
         )
         if cursor.fetchone() is None:
             return set()
-        cursor.execute(f'select arquivo from "{schema}"."{tabela}"')
-        return {linha[0] for linha in cursor.fetchall()}
+        cursor.execute(f'select file_name from "{schema}"."{table}"')
+        return {line[0] for line in cursor.fetchall()}
 
 
-def _apply_one(conexao: Any, pasta_modulo: Path, nome: str, tabela_controle: str) -> None:
+def _apply_one(connection: Any, module_dir: Path, name: str, control_table: str) -> None:
     """UMA migration, dentro de UMA transacao: roda o SQL, depois grava a linha de controle —
     nessa ordem, porque a migration 0001 CRIA a tabela de controle no proprio SQL que acabou de
-    rodar. `tabela_controle` ja vem qualificada (`_control_table`) — um parametro, nao dois."""
-    conteudo = _read_text(pasta_modulo / "database" / "migrations" / nome)
-    up, _ = split_up_down(conteudo)
-    sys.stdout.write(f"  up {nome}...\n")
+    rodar. `control_table` ja vem qualificada (`_control_table`) — um parametro, nao dois."""
+    content = _read_text(module_dir / "database" / "migrations" / name)
+    up, _ = split_up_down(content)
+    sys.stdout.write(f"  up {name}...\n")
     try:
-        with conexao.cursor() as cursor:
+        with connection.cursor() as cursor:
             if up:
                 cursor.execute(up)
-            cursor.execute(f"insert into {tabela_controle} (arquivo) values (%s)", (nome,))
-        conexao.commit()
+            cursor.execute(f"insert into {control_table} (file_name) values (%s)", (name,))
+        connection.commit()
     except Exception:
-        conexao.rollback()
+        connection.rollback()
         raise
 
 
-def _revert_one(conexao: Any, pasta_modulo: Path, nome: str, tabela_controle: str) -> None:
+def _revert_one(connection: Any, module_dir: Path, name: str, control_table: str) -> None:
     """UMA migration revertida, dentro de UMA transacao: apaga a linha de controle ANTES do SQL de
     reversao — a ordem inversa de `_apply_one`, pelo motivo simetrico: reverter 0001 apaga a
     propria tabela de controle."""
-    conteudo = _read_text(pasta_modulo / "database" / "migrations" / nome)
-    _, down = split_up_down(conteudo)
-    sys.stdout.write(f"  down {nome}...\n")
+    content = _read_text(module_dir / "database" / "migrations" / name)
+    _, down = split_up_down(content)
+    sys.stdout.write(f"  down {name}...\n")
     try:
-        with conexao.cursor() as cursor:
-            cursor.execute(f"delete from {tabela_controle} where arquivo = %s", (nome,))
+        with connection.cursor() as cursor:
+            cursor.execute(f"delete from {control_table} where file_name = %s", (name,))
             if down:
                 cursor.execute(down)
-        conexao.commit()
+        connection.commit()
     except Exception:
-        conexao.rollback()
+        connection.rollback()
         raise
 
 
-def _apply_pending(conexao: Any, pasta_modulo: Path) -> None:
-    schema, tabela, tabela_controle = _control_table(pasta_modulo)
-    nomes_up = order_migrations(_list_migrations(pasta_modulo), "up")
-    aplicados = _applied_migrations(conexao, schema, tabela)
-    faltam = pending(nomes_up, aplicados)
-    if not faltam:
-        sys.stdout.write("  nada pendente — todas as migrations ja estao aplicadas\n")
+def _apply_pending(connection: Any, module_dir: Path) -> None:
+    schema, table, control_table = _control_table(module_dir)
+    up_names = order_migrations(_list_migrations(module_dir), "up")
+    applied = _applied_migrations(connection, schema, table)
+    missing = pending(up_names, applied)
+    if not missing:
+        sys.stdout.write("  nothing pending — every migration is already applied\n")
         return
-    for nome in faltam:
-        _apply_one(conexao, pasta_modulo, nome, tabela_controle)
+    for name in missing:
+        _apply_one(connection, module_dir, name, control_table)
 
 
-def _revert_last(conexao: Any, pasta_modulo: Path) -> None:
-    schema, tabela, tabela_controle = _control_table(pasta_modulo)
-    nomes_up = order_migrations(_list_migrations(pasta_modulo), "up")
-    aplicados = _applied_migrations(conexao, schema, tabela)
-    alvo = last_applied(nomes_up, aplicados)
-    if alvo is None:
-        sys.stdout.write("  nada aplicado — nada a reverter\n")
+def _revert_last(connection: Any, module_dir: Path) -> None:
+    schema, table, control_table = _control_table(module_dir)
+    up_names = order_migrations(_list_migrations(module_dir), "up")
+    applied = _applied_migrations(connection, schema, table)
+    target = last_applied(up_names, applied)
+    if target is None:
+        sys.stdout.write("  nothing applied — nothing to revert\n")
         return
-    _revert_one(conexao, pasta_modulo, alvo, tabela_controle)
+    _revert_one(connection, module_dir, target, control_table)
 
 
-def run_up(id_do_modulo: str) -> None:
-    pasta_modulo = _module_folder(id_do_modulo)
-    url = _required_url(id_do_modulo)
-    with _connect(url) as conexao:
-        _apply_pending(conexao, pasta_modulo)
+def run_up(module_id: str) -> None:
+    module_dir = _module_folder(module_id)
+    url = _required_url(module_id)
+    with _connect(url) as connection:
+        _apply_pending(connection, module_dir)
 
 
-def run_down(id_do_modulo: str) -> None:
-    pasta_modulo = _module_folder(id_do_modulo)
-    url = _required_url(id_do_modulo)
-    with _connect(url) as conexao:
-        _revert_last(conexao, pasta_modulo)
+def run_down(module_id: str) -> None:
+    module_dir = _module_folder(module_id)
+    url = _required_url(module_id)
+    with _connect(url) as connection:
+        _revert_last(connection, module_dir)
 
 
-def run_cycle(id_do_modulo: str) -> None:
-    sys.stdout.write(f"[migrations] {id_do_modulo}: up (aplica pendentes)\n")
-    run_up(id_do_modulo)
-    sys.stdout.write(f"[migrations] {id_do_modulo}: down (reverte o ultimo aplicado)\n")
-    run_down(id_do_modulo)
-    sys.stdout.write(f"[migrations] {id_do_modulo}: up (reaplica o que o down reverteu)\n")
-    run_up(id_do_modulo)
-    sys.stdout.write(f"[migrations] {id_do_modulo}: ciclo up -> down -> up OK\n")
+def run_cycle(module_id: str) -> None:
+    sys.stdout.write(f"[migrations] {module_id}: up (applies pending)\n")
+    run_up(module_id)
+    sys.stdout.write(f"[migrations] {module_id}: down (reverts the last applied)\n")
+    run_down(module_id)
+    sys.stdout.write(f"[migrations] {module_id}: up (reapplies what down reverted)\n")
+    run_up(module_id)
+    sys.stdout.write(f"[migrations] {module_id}: cycle up -> down -> up OK\n")
 
 
 # ====================================================================================================
@@ -321,24 +321,24 @@ def run_cycle(id_do_modulo: str) -> None:
 def _split_up_down_cases() -> list[dict[str, Any]]:
     return [
         {
-            "nome": "bloco simples (o molde de verdade)",
-            "entrada": "\n".join(
+            "name": "simple block (the real template)",
+            "input_value": "\n".join(
                 [
-                    'create table "acme"."x_metadados" (id uuid);',
+                    'create table "acme"."x_metadata" (id uuid);',
                     "",
                     "-- rollback",
-                    '-- drop table if exists "acme"."x_auditoria";',
-                    '-- drop table if exists "acme"."x_metadados";',
+                    '-- drop table if exists "acme"."x_audit";',
+                    '-- drop table if exists "acme"."x_metadata";',
                 ]
             ),
-            "esperado": (
-                'create table "acme"."x_metadados" (id uuid);',
-                'drop table if exists "acme"."x_auditoria";\ndrop table if exists "acme"."x_metadados";',
+            "expected": (
+                'create table "acme"."x_metadata" (id uuid);',
+                'drop table if exists "acme"."x_audit";\ndrop table if exists "acme"."x_metadata";',
             ),
         },
         {
-            "nome": "ADVERSARIAL: linha em branco, comentario que NAO e rollback, indentacao no bloco",
-            "entrada": "\n".join(
+            "name": "ADVERSARIAL: blank line, a comment that is NOT rollback, indentation in the block",
+            "input_value": "\n".join(
                 [
                     'create table "acme"."x" (id uuid);',
                     "-- rollback",
@@ -349,7 +349,7 @@ def _split_up_down_cases() -> list[dict[str, Any]]:
                     '     -- alter table "acme"."x" disable trigger all;',
                 ]
             ),
-            "esperado": (
+            "expected": (
                 'create table "acme"."x" (id uuid);',
                 "\n".join(
                     [
@@ -361,14 +361,14 @@ def _split_up_down_cases() -> list[dict[str, Any]]:
             ),
         },
         {
-            "nome": "sem bloco de rollback: down vazio, up e o arquivo inteiro",
-            "entrada": 'create table "acme"."x" (id uuid);',
-            "esperado": ('create table "acme"."x" (id uuid);', ""),
+            "name": "no rollback block: empty down, up is the whole file",
+            "input_value": 'create table "acme"."x" (id uuid);',
+            "expected": ('create table "acme"."x" (id uuid);', ""),
         },
         {
-            "nome": "bloco de rollback vazio (so a marca, nada depois)",
-            "entrada": 'create table "acme"."x" (id uuid);\n-- rollback\n',
-            "esperado": ('create table "acme"."x" (id uuid);', ""),
+            "name": "empty rollback block (only the marker, nothing after)",
+            "input_value": 'create table "acme"."x" (id uuid);\n-- rollback\n',
+            "expected": ('create table "acme"."x" (id uuid);', ""),
         },
     ]
 
@@ -376,24 +376,24 @@ def _split_up_down_cases() -> list[dict[str, Any]]:
 def _ordering_cases() -> list[dict[str, Any]]:
     return [
         {
-            "nome": "up: ordem crescente",
-            "nomes": ["0002-acrescenta-status.sql", "0001-cria-metadados.sql"],
-            "direcao": "up",
-            "esperado": ["0001-cria-metadados.sql", "0002-acrescenta-status.sql"],
+            "name": "up: ascending order",
+            "names": ["0002-add-status.sql", "0001-create-metadata.sql"],
+            "direction": "up",
+            "expected": ["0001-create-metadata.sql", "0002-add-status.sql"],
         },
         {
-            "nome": "down: ordem INVERSA",
-            "nomes": ["0001-cria-metadados.sql", "0002-acrescenta-status.sql"],
-            "direcao": "down",
-            "esperado": ["0002-acrescenta-status.sql", "0001-cria-metadados.sql"],
+            "name": "down: REVERSE order",
+            "names": ["0001-create-metadata.sql", "0002-add-status.sql"],
+            "direction": "down",
+            "expected": ["0002-add-status.sql", "0001-create-metadata.sql"],
         },
     ]
 
 
 def _environment_key_cases() -> list[dict[str, Any]]:
     return [
-        {"nome": "simples", "id": "catalogo", "esperado": "CATALOGO_DB_URL"},
-        {"nome": "com hifen", "id": "linha-de-producao", "esperado": "LINHA_DE_PRODUCAO_DB_URL"},
+        {"name": "simple", "id": "catalog", "expected": "CATALOG_DB_URL"},
+        {"name": "with hyphen", "id": "production-line", "expected": "PRODUCTION_LINE_DB_URL"},
     ]
 
 
@@ -401,77 +401,77 @@ def _state_cases() -> list[dict[str, Any]]:
     """`pending`/`last_applied` contra os TRES estados que `ciclo` atravessa: banco vazio,
     parcialmente migrado, e totalmente migrado (o caso que trava `up` sem este controle de
     estado — medido no teste real)."""
-    nomes = ["0001-cria-metadados.sql", "0002-acrescenta-status.sql", "0003-cria-indice.sql"]
+    names = ["0001-create-metadata.sql", "0002-add-status.sql", "0003-create-index.sql"]
     return [
         {
-            "nome": "pending: banco vazio -> as tres, em ordem",
-            "fn": lambda: pending(nomes, set()) == nomes,
+            "name": "pending: empty database -> all three, in order",
+            "fn": lambda: pending(names, set()) == names,
         },
         {
-            "nome": "pending: banco ja migrado por completo -> nenhuma (isto e o que travava antes)",
-            "fn": lambda: pending(nomes, set(nomes)) == [],
+            "name": "pending: fully migrated database -> none (this is what used to hang)",
+            "fn": lambda: pending(names, set(names)) == [],
         },
         {
-            "nome": "pending: so a primeira aplicada -> falta a segunda e a terceira, em ordem",
-            "fn": lambda: pending(nomes, {nomes[0]}) == [nomes[1], nomes[2]],
+            "name": "pending: only the first applied -> the second and third remain, in order",
+            "fn": lambda: pending(names, {names[0]}) == [names[1], names[2]],
         },
         {
-            "nome": "last_applied: nenhuma aplicada -> None (down nao tem o que reverter)",
-            "fn": lambda: last_applied(nomes, set()) is None,
+            "name": "last_applied: none applied -> None (down has nothing to revert)",
+            "fn": lambda: last_applied(names, set()) is None,
         },
         {
-            "nome": "last_applied: todas aplicadas -> a TERCEIRA (maior prefixo), nunca a primeira",
-            "fn": lambda: last_applied(nomes, set(nomes)) == nomes[2],
+            "name": "last_applied: all applied -> the THIRD (highest prefix), never the first",
+            "fn": lambda: last_applied(names, set(names)) == names[2],
         },
         {
-            "nome": "last_applied: aplicadas fora de ordem no set -> ainda assim a de MAIOR prefixo",
-            "fn": lambda: last_applied(nomes, {nomes[2], nomes[0]}) == nomes[2],
+            "name": "last_applied: applied out of order in the set -> still the one with the HIGHEST prefix",
+            "fn": lambda: last_applied(names, {names[2], names[0]}) == names[2],
         },
     ]
 
 
 def _run_selftest() -> int:
-    falhas = 0
+    failures = 0
     total = 0
 
-    for caso in _split_up_down_cases():
+    for test_case in _split_up_down_cases():
         total += 1
-        up_down_obtido = split_up_down(caso["entrada"])
-        ok = up_down_obtido == caso["esperado"]
-        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} split_up_down: {caso['nome']}\n")
+        up_down_obtained = split_up_down(test_case["input_value"])
+        ok = up_down_obtained == test_case["expected"]
+        sys.stdout.write(f"  {'ok   ' if ok else 'FAIL'} split_up_down: {test_case['name']}\n")
         if not ok:
-            falhas += 1
-            sys.stdout.write(f"       esperado: {caso['esperado']!r}\n")
-            sys.stdout.write(f"       obtido:   {up_down_obtido!r}\n")
+            failures += 1
+            sys.stdout.write(f"       expected: {test_case['expected']!r}\n")
+            sys.stdout.write(f"       obtained: {up_down_obtained!r}\n")
 
-    for caso in _ordering_cases():
+    for test_case in _ordering_cases():
         total += 1
-        ordem_obtida = order_migrations(caso["nomes"], caso["direcao"])
-        ok = ordem_obtida == caso["esperado"]
-        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} order_migrations: {caso['nome']}\n")
+        obtained_order = order_migrations(test_case["names"], test_case["direction"])
+        ok = obtained_order == test_case["expected"]
+        sys.stdout.write(f"  {'ok   ' if ok else 'FAIL'} order_migrations: {test_case['name']}\n")
         if not ok:
-            falhas += 1
+            failures += 1
 
-    for caso in _environment_key_cases():
+    for test_case in _environment_key_cases():
         total += 1
-        chave_obtida = environment_key(caso["id"])
-        ok = chave_obtida == caso["esperado"]
-        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} environment_key: {caso['nome']}\n")
+        obtained_key = environment_key(test_case["id"])
+        ok = obtained_key == test_case["expected"]
+        sys.stdout.write(f"  {'ok   ' if ok else 'FAIL'} environment_key: {test_case['name']}\n")
         if not ok:
-            falhas += 1
+            failures += 1
 
-    for caso in _state_cases():
+    for test_case in _state_cases():
         total += 1
         try:
-            ok = caso["fn"]() is True
+            ok = test_case["fn"]() is True
         except Exception:
             ok = False
-        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} {caso['nome']}\n")
+        sys.stdout.write(f"  {'ok   ' if ok else 'FAIL'} {test_case['name']}\n")
         if not ok:
-            falhas += 1
+            failures += 1
 
-    sys.stdout.write(f"\nautoteste: {total - falhas}/{total} ok\n")
-    return 0 if falhas == 0 else 1
+    sys.stdout.write(f"\nselftest: {total - failures}/{total} ok\n")
+    return 0 if failures == 0 else 1
 
 
 # ====================================================================================================
@@ -484,25 +484,25 @@ def main() -> int:
     if "--selftest" in argv:
         return _run_selftest()
 
-    if len(argv) < MINIMO_DE_ARGUMENTOS or argv[0] not in ("up", "down", "ciclo"):
+    if len(argv) < MINIMUM_ARGUMENTS or argv[0] not in ("up", "down", "cycle"):
         sys.stderr.write(
-            "uso: python scripts/migrations.py up|down|ciclo <module>\n"
+            "usage: python scripts/migrations.py up|down|cycle <module>\n"
             "     python scripts/migrations.py --selftest\n"
         )
         return 1
 
-    comando, alvo = argv[0], argv[1]
+    command, target = argv[0], argv[1]
     _load_env_root()
     try:
-        if comando == "up":
-            run_up(alvo)
-        elif comando == "down":
-            run_down(alvo)
+        if command == "up":
+            run_up(target)
+        elif command == "down":
+            run_down(target)
         else:
-            run_cycle(alvo)
+            run_cycle(target)
         return 0
-    except Exception as causa:  # noqa: BLE001 — traduzido para saida, nunca engolido
-        sys.stderr.write(f"{causa}\n")
+    except Exception as cause:  # noqa: BLE001 — traduzido para saida, nunca engolido
+        sys.stderr.write(f"{cause}\n")
         return 1
 
 

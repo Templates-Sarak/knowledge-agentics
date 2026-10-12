@@ -428,9 +428,9 @@ function main() {
 const BASE = `
 openapi: 3.1.0
 servers:
-  - url: /api/v1/pedidos
+  - url: /api/v1/orders
 paths:
-  /registros:
+  /entries:
     get:
       responses:
         '200':
@@ -439,38 +439,38 @@ paths:
               schema:
                 type: object
                 properties:
-                  itens: { type: array }
+                  items: { type: array }
                   total: { type: integer }
     post:
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/NovoRegistro' }
+            schema: { $ref: '#/components/schemas/NewEntry' }
       responses:
         '201':
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Registro' }
-  /registros/{hash}:
+              schema: { $ref: '#/components/schemas/Entry' }
+  /entries/{hash}:
     get:
       responses:
         '200':
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Registro' }
+              schema: { $ref: '#/components/schemas/Entry' }
 components:
   schemas:
-    Registro:
+    Entry:
       type: object
       properties:
         hash: { type: string }
-        titulo: { type: string }
-    NovoRegistro:
+        title: { type: string }
+    NewEntry:
       type: object
-      required: [titulo]
+      required: [title]
       properties:
-        titulo: { type: string }
+        title: { type: string }
 `;
 
 /** Fixture ILEGÍVEL de propósito — `paths:` em *flow style*, que `spec.mjs:specOperations` não alcança. */
@@ -481,19 +481,19 @@ function selfTestCases() {
     {
       name: 'removed route: BREAKING',
       before: BASE,
-      after: BASE.replace(/ {2}\/registros\/\{hash\}:[\s\S]*?(?=\ncomponents:)/, ''),
+      after: BASE.replace(/ {2}\/entries\/\{hash\}:[\s\S]*?(?=\ncomponents:)/, ''),
       expected: { compativel: false, tipo: 'removed-route' },
     },
     {
       name: 'added route: compatible',
       before: BASE,
-      after: `${BASE.replace('components:', '  /saude:\n    get:\n      responses:\n        \'200\':\n          content: {}\ncomponents:')}`,
+      after: `${BASE.replace('components:', '  /status:\n    get:\n      responses:\n        \'200\':\n          content: {}\ncomponents:')}`,
       expected: { compativel: true },
     },
     {
       name: 'method removed from a retained route: BREAKING',
       before: BASE,
-      after: BASE.replace(/ {4}post:[\s\S]*?(?=\n {2}\/registros\/)/, ''),
+      after: BASE.replace(/ {4}post:[\s\S]*?(?=\n {2}\/entries\/)/, ''),
       expected: { compativel: false, tipo: 'removed-method' },
     },
     {
@@ -505,25 +505,25 @@ function selfTestCases() {
     {
       name: 'response field added: compatible',
       before: BASE,
-      after: BASE.replace('                  total: { type: integer }', '                  total: { type: integer }\n                  pagina: { type: integer }'),
+      after: BASE.replace('                  total: { type: integer }', '                  total: { type: integer }\n                  page: { type: integer }'),
       expected: { compativel: true },
     },
     {
       name: 'required request field added: BREAKING',
       before: BASE,
-      after: BASE.replace('required: [titulo]', 'required: [titulo, status]'),
+      after: BASE.replace('required: [title]', 'required: [title, status]'),
       expected: { compativel: false, tipo: 'required-request-field-added' },
     },
     {
       name: 'required request field removed: compatible',
-      before: BASE.replace('required: [titulo]', 'required: [titulo, status]'),
+      before: BASE.replace('required: [title]', 'required: [title, status]'),
       after: BASE,
       expected: { compativel: true },
     },
     {
       name: 'servers[0].url changed: BREAKING',
       before: BASE,
-      after: BASE.replace('/api/v1/pedidos', '/api/v1/pedidos-v2'),
+      after: BASE.replace('/api/v1/orders', '/api/v1/orders-v2'),
       expected: { compativel: false, tipo: 'changed-server' },
     },
     {

@@ -40,11 +40,11 @@ Camada 3 da skill `code-generalizacao-modulo`. Blocos copiáveis, na ordem em qu
 > | `id` | `<kebab-case>` | faz sentido num sistema de qualquer ramo? |
 > | nome | `<Capacidade>` | — |
 > | binding | `typescript` \| `javascript` \| `python` | — |
-> | escopo dos packages | `@<escopo>` | — |
+> | escopo dos packages | `@<scope>` | — |
 > | `role` | `domain` \| `gateway` (nunca `connector`) | — |
 > | prefixo de tabela | `<id>_` | — |
 > | prefixo de env | `<ID>_` | — |
-> | permissões | `<id>:ler`, `<id>:escrever` | — |
+> | permissões | `<id>:read`, `<id>:write` | — |
 > | `basePath` | `/api/v1/<id>` | — |
 >
 > **Repositório-alvo:** `<caminho absoluto>` — será criado por `meta-iniciar-repositorio`.

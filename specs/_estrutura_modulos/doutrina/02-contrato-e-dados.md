@@ -16,8 +16,8 @@ Esta lei define a forma do contrato, a identidade dos registros, a forma dos dad
 # 2. Forma das rotas
 
 - Prefixo `/api/v1/<module>` (= `module.json:basePath`), recursos no **plural kebab-case**, **sem verbo** no
-  path. A ação é o método HTTP: `POST /api/v1/catalogo`, nunca `/criarItem`.
-- Filtro por query string; paginação `?pagina=&tamanho=`, com padrão e teto em `config/api.json`.
+  path. A ação é o método HTTP: `POST /api/v1/catalog`, nunca `/criarItem`.
+- Filtro por query string; paginação `?page=&pageSize=`, com padrão e teto em `config/api.json`.
 - O identificador na URL é o **hash universal** (§4), nunca o `id` interno do banco.
 
 **Endpoints obrigatórios em todo módulo:**
@@ -26,14 +26,14 @@ Esta lei define a forma do contrato, a identidade dos registros, a forma dos dad
 |---|---|
 | `GET <basePath>/health` | vivo? portas resolvidas? |
 | `GET <basePath>/meta` | metadados PÚBLICOS do módulo, por **allowlist** — `id`, `name`, `version`, `role`, `basePath`, `webPath`, `navigation`, `exportsSummary`, e nada além. Nunca `data` (schema/prefix/tables), `requiredEnv`, `ports`, `permissions`, `publicRoutes`, `sensitiveFields` nem `consumes` — o que falta é reconhecimento, não descoberta |
-| `GET <basePath>/resumo` | contagem e indicadores que o conector agrega |
+| `GET <basePath>/summary` | contagem e indicadores que o conector agrega |
 
 O conector consome **apenas** esses três — nunca endpoint específico de um módulo.
 
-**A forma mínima de `/resumo`, e por que ela existe.** O agregador cross-módulo compõe **sem lista fixa**
+**A forma mínima de `/summary`, e por que ela existe.** O agregador cross-módulo compõe **sem lista fixa**
 ([[01-modulo]] §3.2): ele varre `modules/*/module.json` e não conhece módulo nenhum de antemão. Somar o que não
 se conhece exige uma forma **compartilhada** — por isso o módulo que declara `exportsSummary: true` deve declarar
-`total` (inteiro) no schema `200` de `GET /resumo`. Sem esse mínimo, agregar só seria possível com um caso por
+`total` (inteiro) no schema `200` de `GET /summary`. Sem esse mínimo, agregar só seria possível com um caso por
 módulo dentro do conector: exatamente o acoplamento que "composição sem lista fixa" existe para proibir, e a
 razão de o campo do manifesto ser mais que um rótulo. Indicador próprio do módulo continua livre ao lado do
 `total` — a lei fixa o **piso**, não o conjunto. Cobrado por `exported-summary`
@@ -80,25 +80,28 @@ Assimetria deliberada: publicar por omissão é o risco grave, e é o que o gate
 
 ## 3.1 Envelope e taxonomia de erro
 
-Sucesso devolve o recurso, ou `{ itens, pagina, tamanho, total }` em coleção. Erro devolve **sempre** a mesma forma:
+Sucesso devolve o recurso, ou `{ items, page, pageSize, total }` em coleção. Erro devolve **sempre** a mesma forma:
 
 ```json
-{ "erro": { "codigo": "VALIDACAO", "mensagem": "parametro \"pagina\" deve ser inteiro >= 1", "requestId": "..." } }
+{ "error": { "code": "VALIDATION", "message": "parameter \"page\" must be an integer >= 1", "requestId": "..." } }
 ```
 
 | Código | HTTP | Uso |
 |---|---|---|
-| `VALIDACAO` | 400 | input externo malformado |
-| `NAO_AUTENTICADO` | 401 | token ausente ou inválido |
-| `NAO_AUTORIZADO` | 403 | claims sem a permissão |
-| `NAO_ENCONTRADO` | 404 | recurso inexistente |
-| `CONFLITO` | 409 | violação de unicidade ou de estado |
-| `LIMITE_EXCEDIDO` | 429 | rate limit, com `Retry-After` |
-| `DEPENDENCIA_EXTERNA` | 502 | falha de adapter ou de gateway |
-| `INTERNO` | 500 | exceção não prevista |
+| `VALIDATION` | 400 | input externo malformado |
+| `UNAUTHENTICATED` | 401 | token ausente ou inválido |
+| `FORBIDDEN` | 403 | claims sem a permissão |
+| `NOT_FOUND` | 404 | recurso inexistente |
+| `CONFLICT` | 409 | violação de unicidade ou de estado |
+| `LIMIT_EXCEEDED` | 429 | rate limit, com `Retry-After` |
+| `EXTERNAL_DEPENDENCY` | 502 | falha de adapter ou de gateway |
+| `INTERNAL` | 500 | exceção não prevista |
 
-A taxonomia é **fechada** e vive em `packages/ports`. **A mensagem ao cliente é genérica e estável; o detalhe
-vai só para o log**, correlacionado pelo `requestId`. Mensagem de fornecedor nunca chega ao browser.
+A taxonomia é **fechada** e vive em `packages/ports`. **O código é constante em inglês e a mensagem da API
+também é em inglês — ela é para quem depura, não para a pessoa que usa a tela.** O front traduz o **código**
+para português pelo `config/texts.json` (`errorLabels`), nunca mostra a mensagem. A mensagem é genérica e
+estável; o detalhe vai só para o log, correlacionado pelo `requestId`. Mensagem de fornecedor nunca chega
+ao browser.
 
 ## 3.2 Validação na borda
 
@@ -106,7 +109,7 @@ Todo input externo é validado **na `api/`, antes do `core/domain`**: schema por
 (payload com campo desconhecido é rejeitado, não ignorado) e limite de tamanho de corpo vindo de `config/api.json`.
 
 Erro de domínio é erro do **cliente**, não falha interna: a borda traduz a exceção de validação do domínio para
-`VALIDACAO` (400).
+`VALIDATION` (400).
 
 # 4. Hash universal — a única cola entre módulos
 
@@ -143,7 +146,7 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
 
 - Schema **nunca** `public`. Um schema por módulo ou schema único é decisão do projeto, declarada em
   `data.schema`.
-- Toda tabela é **prefixada pelo módulo dono** (`catalogo_metadados`) e declarada em `data.tables`. Nome
+- Toda tabela é **prefixada pelo módulo dono** (`catalog_metadata`) e declarada em `data.tables`. Nome
   genérico sem prefixo (`clientes`, `logs`) é proibido — o prefixo é o que sustenta o isolamento no schema
   único, e o que evita renomeação no dia de separar.
 - **Só o dono lê e escreve** nas suas tabelas. **Proibido JOIN, view ou foreign key cruzando módulos.**
@@ -167,9 +170,9 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
   (`-- drop table if exists ...`); `scripts/migrations.{mjs,py}` (03-operação.md §9.3) descomenta e roda.
   É contrato textual preciso — não prosa que alguém lê antes de agir a mão.
 - **Estado por módulo:** a migration `0001` do molde cria `<schema>.<prefix>migrations`
-  (`arquivo text primary key`, `aplicada_em timestamptz`) — o registro do que já rodou. `up` aplica só
+  (`file_name text primary key`, `applied_at timestamptz`) — o registro do que já rodou. `up` aplica só
   as migrations **pendentes** (nunca falha por rodar duas vezes sobre um banco já migrado); `down`
-  reverte só a **última aplicada**, uma de cada vez — nunca a lista inteira. É o que faz `ciclo`
+  reverte só a **última aplicada**, uma de cada vez — nunca a lista inteira. É o que faz `cycle`
   (`up → down → up`) funcionar a partir de **qualquer** estado inicial, não só de banco vazio.
 - Mudança destrutiva usa **expand-contract**: adiciona → migra dado → passa a ler o novo → só então remove o
   antigo, em migrations separadas.
@@ -179,8 +182,8 @@ Ela cobra a **rota**; compatibilidade do payload continua sendo leitura humana (
 
 ## 6.4 Trilha de auditoria
 
-Toda escrita registra `hash`, `acao`, `sujeito`, `campos_alterados`, `request_id` e `ocorrido_em` em
-`<module>_auditoria`, tabela **append-only** do próprio módulo, implementada pela porta `audit`.
+Toda escrita registra `hash`, `action`, `actor`, `changed_fields`, `request_id` e `created_at` em
+`<module>_audit`, tabela **append-only** do próprio módulo, implementada pela porta `audit`.
 
 **Não confunda com log.** O log é operacional e efêmero (stdout, para diagnosticar); a trilha é registro
 **durável e consultável** de negócio, que responde "quem mudou o status deste registro em março". O `requestId`

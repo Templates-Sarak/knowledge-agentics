@@ -1,5 +1,5 @@
 {
-  "name": "<escopo>",
+  "name": "<scope>",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -25,7 +25,7 @@
     "//ci:coverage": "So CI (03-operacao.md §7): roda cobertura de CADA modulo com relatorio lcov+junit, e reprova se algum vier ausente/degenerado. Custa dezenas de segundos por modulo — por isso NAO entra no `verificar` local nem no pre-commit/pre-push.",
     "ci:coverage": "npm run coverage --workspaces --if-present",
     "//ci:lint": "So CI: o MESMO `eslint .` do `verificar`, so que tambem grava JSON (SonarQube le nativo; SARIF exigiria @microsoft/eslint-formatter-sarif, dependencia nova so para isso — nao entregue, ver 04-regras.md §7.2).",
-    "ci:lint": "eslint . -f json -o relatorios/lint.json",
+    "ci:lint": "eslint . -f json -o reports/lint.json",
     "//ci:security": "So CI, FAIL-CLOSED (03-operacao.md §8): .env versionado (git ls-files) + segredo no delta desde --since (default HEAD~1). Nao entra no pre-commit/verify — precisa de git, e o estagio 0 e sobre o REPOSITORIO, nao sobre o codigo local.",
     "ci:security": "node tools/ci-security.mjs",
     "//ci:dependencies": "So CI: npm audit --json contra config/verification.json:dependencies.minimumSeverity. Excecao de CVE nominal+datada em config/compliance.json:exceptionsCve.",

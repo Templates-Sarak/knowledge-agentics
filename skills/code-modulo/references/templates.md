@@ -11,7 +11,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 ```markdown
 ## Plano — iniciar o sistema `<nome>`
 
-**Destino:** <caminho>   ·   **Binding:** <typescript|javascript|python>   ·   **Escopo:** @<escopo>
+**Destino:** <caminho>   ·   **Binding:** <typescript|javascript|python>   ·   **Escopo:** @<scope>
 
 **Dados**
 | Item | Valor |
@@ -19,7 +19,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 | Topologia | schema único \| um schema por módulo |
 | Schema | `<nome>` — **nunca** `public` |
 
-**Interface:** ui.modo padrão `<proprio\|kit>` <, pacote `@<escopo>/ui-kit`>
+**Interface:** ui.modo padrão `<proprio\|kit>` <, pacote `@<scope>/ui-kit`>
 
 **Decisões que virarão ADR em `specs/adr/`**
 | # | Decisão | Escolha |
@@ -63,7 +63,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 | generatesArtifact | true \| false |
 
 **Dados** — schema `<schema>` (nunca `public`), prefixo `<id>_`
-- `<id>_metadados`, `<id>_auditoria`
+- `<id>_metadata`, `<id>_audit`
 
 **Portas de infraestrutura** — repository, audit, clock, idGenerator
 **Consome (outros módulos)** — `<outro>` via `GET /<recurso>` — motivo: <por quê>
@@ -95,7 +95,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
   "data": {
     "schema": "<schema>",
     "prefix": "<id>_",
-    "tables": ["<id>_metadados", "<id>_auditoria"]
+    "tables": ["<id>_metadata", "<id>_audit"]
   },
 
   "requiredEnv": ["<ID>_API_PORT", "<ID>_DB_URL"],
@@ -108,8 +108,8 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 
   "ui": { "modo": "proprio" },
 
-  "permissions": ["<id>:ler", "<id>:escrever"],
-  "publicRoutes": ["GET /health", "GET /meta", "GET /resumo"],
+  "permissions": ["<id>:read", "<id>:write"],
+  "publicRoutes": ["GET /health", "GET /meta", "GET /summary"],
   "sensitiveFields": [],
 
   "navigation": { "label": "<Nome>", "icon": "Box", "order": 100 },
@@ -148,7 +148,7 @@ paths:
     get:
       summary: Ecoa o manifesto — é por aqui que o sistema descobre o módulo
       responses: { '200': { description: ok } }
-  /resumo:
+  /summary:
     get:
       summary: Contagem e indicadores agregados pelo conector
       responses: { '200': { description: ok } }
@@ -174,18 +174,18 @@ paths:
         - { name: hash, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: ok }
-        '404': { description: NAO_ENCONTRADO }
+        '404': { description: NOT_FOUND }
 
 components:
   schemas:
-    Erro:
+    ErrorEnvelope:
       type: object
       properties:
-        erro:
+        error:
           type: object
           properties:
-            codigo: { type: string, enum: [VALIDACAO, NAO_AUTENTICADO, NAO_AUTORIZADO, NAO_ENCONTRADO, CONFLITO, LIMITE_EXCEDIDO, DEPENDENCIA_EXTERNA, INTERNO] }
-            mensagem: { type: string }
+            code: { type: string, enum: [VALIDATION, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND, CONFLICT, LIMIT_EXCEEDED, EXTERNAL_DEPENDENCY, INTERNAL] }
+            message: { type: string }
             requestId: { type: string }
 ```
 
@@ -198,17 +198,17 @@ identificador na URL é o hash universal, nunca o `id` interno do banco.
 
 ```sql
 -- modules/<id>/database/migrations/0001-cria-<entidade>.sql
-create table "<schema>"."<id>_metadados" (
+create table "<schema>"."<id>_metadata" (
   id          uuid primary key default gen_random_uuid(),
   hash        text not null unique,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
-alter table "<schema>"."<id>_metadados" enable row level security;
+alter table "<schema>"."<id>_metadata" enable row level security;
 
 -- rollback
--- drop table "<schema>"."<id>_metadados";
+-- drop table "<schema>"."<id>_metadata";
 ```
 
 Toda tabela tem `id`, `hash`, `created_at`, `updated_at`, RLS ligado e bloco `-- rollback`.
@@ -225,7 +225,7 @@ Toda tabela tem `id`, `hash`, `created_at`, `updated_at`, RLS ligado e bloco `--
 | Papel / binding | <role> / <binding> |
 | Rotas expostas | `/api/v1/<id>` — health, meta, resumo, <recursos> |
 | Tela | `/<id>` \| sem tela |
-| Tabelas | `<id>_metadados`, `<id>_auditoria` (schema `<schema>`) |
+| Tabelas | `<id>_metadata`, `<id>_audit` (schema `<schema>`) |
 | Portas | repository, audit, clock, idGenerator |
 | Consome | `<outro>` via `GET /<recurso>` \| nenhum |
 | Env acrescentada | `<ID>_API_PORT`, `<ID>_DB_URL` — **valores pendentes no `.env` da raiz** |

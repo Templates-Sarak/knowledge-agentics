@@ -16,42 +16,42 @@
 // mesmo raciocinio de `scripts/migrations.mjs`, aqui aplicado sob uma regra que migrations.mjs nao
 // sofre (ele mora fora de adapters/src/packages, o escopo que `concatenated-sql` varre).
 
-function environmentKey(idDoModulo) {
-  return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
+function environmentKey(moduleId) {
+  return `${moduleId.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
 
 /** Ausente = falha nomeando a chave exata (lei 7 do catálogo) — nunca um default silencioso. */
-function requiredUrl(idDoModulo) {
-  const chave = environmentKey(idDoModulo);
-  const valor = process.env[chave];
-  if (valor === undefined || valor === '') {
+function requiredUrl(moduleId) {
+  const key = environmentKey(moduleId);
+  const value = process.env[key];
+  if (value === undefined || value === '') {
     throw new Error(
-      `[adapters/postgres] variavel obrigatoria ausente: ${chave} (declare em module.json:requiredEnv e no .env da raiz)`,
+      `[adapters/postgres] required variable missing: ${key} (declare it in module.json:requiredEnv and in the root .env)`,
     );
   }
-  return valor;
+  return value;
 }
 
 /** `data.schema`/`data.prefix` do PRÓPRIO manifesto do módulo — a mesma fonte que a migration
  * 0001 usa para nomear as tabelas, nunca um terceiro lugar (mesmo raciocínio de `migrations.mjs`).
  * Cacheada por pasta — o manifesto não muda em runtime, e cada operação chamaria isto de novo. */
-const dadosCache = new Map();
+const cacheData = new Map();
 
-async function readData(modulo) {
-  const existente = dadosCache.get(modulo.pasta);
-  if (existente !== undefined) return existente;
+async function readData(module) {
+  const existing = cacheData.get(module.dir);
+  if (existing !== undefined) return existing;
   const { readFile } = await import('node:fs/promises');
   const { join } = await import('node:path');
-  const texto = await readFile(join(modulo.pasta, 'module.json'), 'utf8');
-  const manifesto = JSON.parse(texto.replace(/^﻿/, ''));
-  dadosCache.set(modulo.pasta, manifesto.data);
-  return manifesto.data;
+  const text = await readFile(join(module.dir, 'module.json'), 'utf8');
+  const manifest = JSON.parse(text.replace(/^﻿/, ''));
+  cacheData.set(module.dir, manifest.data);
+  return manifest.data;
 }
 
 /** `"<schema>"."<tabela>"` — nunca interpolado numa linha que também tenha um verbo SQL (ver o
  * cabeçalho do arquivo). Isolado aqui porque as quatro operações abaixo precisam da mesma forma. */
-function qualifiedName(schema, tabela) {
-  return `"${schema}"."${tabela}"`;
+function qualifiedName(schema, table) {
+  return `"${schema}"."${table}"`;
 }
 
 // ================================================================================================
@@ -65,20 +65,20 @@ const pools = new Map();
  * import estático aqui, senão carregar este arquivo (ex.: para autoteste de `composition.js`)
  * exigiria o pacote instalado mesmo em um caminho que nunca toca banco. */
 async function poolFor(url) {
-  const existente = pools.get(url);
-  if (existente !== undefined) return existente;
+  const existing = pools.get(url);
+  if (existing !== undefined) return existing;
   const { Pool } = await import('pg');
   const pool = new Pool({ connectionString: url });
   pools.set(url, pool);
   return pool;
 }
 
-function toRecord(linha) {
+function toRecord(line) {
   return {
-    hash: linha.hash,
-    titulo: linha.titulo,
-    status: linha.status,
-    criadoEm: linha.created_at.toISOString(),
+    hash: line.hash,
+    title: line.title,
+    status: line.status,
+    createdAt: line.created_at.toISOString(),
   };
 }
 
@@ -87,59 +87,59 @@ function toRecord(linha) {
 // ================================================================================================
 
 /** Resolve pool + nome qualificado de UMA vez — as quatro operações abaixo precisam das duas coisas. */
-async function tableContext(modulo, sufixo) {
-  const { schema, prefixo } = await readData(modulo);
-  const pool = await poolFor(requiredUrl(modulo.id));
-  return { pool, nome: qualifiedName(schema, `${prefixo}${sufixo}`) };
+async function tableContext(module, suffix) {
+  const { schema, prefix } = await readData(module);
+  const pool = await poolFor(requiredUrl(module.id));
+  return { pool, name: qualifiedName(schema, `${prefix}${suffix}`) };
 }
 
-async function listRecords(modulo, pagina, tamanho) {
-  const { pool, nome } = await tableContext(modulo, 'metadados');
-  const inicio = (pagina - 1) * tamanho;
+async function listRecords(module, page, pageSize) {
+  const { pool, name } = await tableContext(module, 'metadata');
+  const start = (page - 1) * pageSize;
 
-  const clausulaSelect = 'select hash, titulo, status, created_at';
-  const clausulaFrom = `from ${nome}`;
-  const clausulaOrdem = 'order by created_at asc, hash asc limit $1 offset $2';
-  const linhas = await pool.query([clausulaSelect, clausulaFrom, clausulaOrdem].join(' '), [tamanho, inicio]);
+  const selectClause = 'select hash, title, status, created_at';
+  const fromClause = `from ${name}`;
+  const orderClause = 'order by created_at asc, hash asc limit $1 offset $2';
+  const lines = await pool.query([selectClause, fromClause, orderClause].join(' '), [pageSize, start]);
 
-  const clausulaConta = 'select count(*)::int as total';
-  const contagem = await pool.query([clausulaConta, clausulaFrom].join(' '));
+  const countClause = 'select count(*)::int as total';
+  const count = await pool.query([countClause, fromClause].join(' '));
 
-  return { itens: linhas.rows.map(toRecord), pagina, tamanho, total: contagem.rows[0].total };
+  return { items: lines.rows.map(toRecord), page, pageSize, total: count.rows[0].total };
 }
 
-async function findRecordByHash(modulo, hash) {
-  const { pool, nome } = await tableContext(modulo, 'metadados');
-  const clausulaSelect = 'select hash, titulo, status, created_at';
-  const clausulaFrom = `from ${nome}`;
-  const clausulaOnde = 'where hash = $1';
-  const resultado = await pool.query([clausulaSelect, clausulaFrom, clausulaOnde].join(' '), [hash]);
-  return resultado.rows[0] === undefined ? null : toRecord(resultado.rows[0]);
+async function findRecordByHash(module, hash) {
+  const { pool, name } = await tableContext(module, 'metadata');
+  const selectClause = 'select hash, title, status, created_at';
+  const fromClause = `from ${name}`;
+  const whereClause = 'where hash = $1';
+  const result = await pool.query([selectClause, fromClause, whereClause].join(' '), [hash]);
+  return result.rows[0] === undefined ? null : toRecord(result.rows[0]);
 }
 
-async function insertRecord(modulo, registro) {
-  const { pool, nome } = await tableContext(modulo, 'metadados');
-  const nomeEColunas = `${nome} (hash, titulo, status, created_at, updated_at)`;
-  const clausulaInsert = 'insert into';
-  const clausulaValues = 'values ($1, $2, $3, $4, $4)';
-  const consulta = [clausulaInsert, nomeEColunas, clausulaValues].join(' ');
-  await pool.query(consulta, [registro.hash, registro.titulo, registro.status, registro.criadoEm]);
+async function insertRecord(module, entry) {
+  const { pool, name } = await tableContext(module, 'metadata');
+  const nameAndColumns = `${name} (hash, title, status, created_at, updated_at)`;
+  const insertClause = 'insert into';
+  const valuesClause = 'values ($1, $2, $3, $4, $4)';
+  const query = [insertClause, nameAndColumns, valuesClause].join(' ');
+  await pool.query(query, [entry.hash, entry.title, entry.status, entry.createdAt]);
 }
 
-async function countRecords(modulo) {
-  const { pool, nome } = await tableContext(modulo, 'metadados');
-  const clausulaSelect = 'select count(*)::int as total';
-  const clausulaFrom = `from ${nome}`;
-  const resultado = await pool.query([clausulaSelect, clausulaFrom].join(' '));
-  return resultado.rows[0].total;
+async function countRecords(module) {
+  const { pool, name } = await tableContext(module, 'metadata');
+  const selectClause = 'select count(*)::int as total';
+  const fromClause = `from ${name}`;
+  const result = await pool.query([selectClause, fromClause].join(' '));
+  return result.rows[0].total;
 }
 
-export function createPostgresRepository(modulo) {
+export function createPostgresRepository(module) {
   return {
-    list: (pagina, tamanho) => listRecords(modulo, pagina, tamanho),
-    findByHash: (hash) => findRecordByHash(modulo, hash),
-    insert: (registro) => insertRecord(modulo, registro),
-    count: () => countRecords(modulo),
+    list: (page, pageSize) => listRecords(module, page, pageSize),
+    findByHash: (hash) => findRecordByHash(module, hash),
+    insert: (entry) => insertRecord(module, entry),
+    count: () => countRecords(module),
   };
 }
 
@@ -147,23 +147,17 @@ export function createPostgresRepository(modulo) {
 // AUDITORIA
 // ================================================================================================
 
-async function recordAuditEvent(modulo, evento) {
-  const { pool, nome } = await tableContext(modulo, 'auditoria');
-  const nomeEColunas = `${nome} (hash, acao, sujeito, campos_alterados, request_id)`;
-  const clausulaInsert = 'insert into';
-  const clausulaValues = 'values ($1, $2, $3, $4, $5)';
-  const consulta = [clausulaInsert, nomeEColunas, clausulaValues].join(' ');
-  await pool.query(consulta, [
-    evento.hash,
-    evento.acao,
-    evento.sujeito,
-    evento.camposAlterados,
-    evento.requestId,
-  ]);
+async function recordAuditEvent(module, event) {
+  const { pool, name } = await tableContext(module, 'audit');
+  const nameAndColumns = `${name} (hash, action, actor, changed_fields, request_id)`;
+  const insertClause = 'insert into';
+  const valuesClause = 'values ($1, $2, $3, $4, $5)';
+  const query = [insertClause, nameAndColumns, valuesClause].join(' ');
+  await pool.query(query, [event.hash, event.action, event.actor, event.changedFields, event.requestId]);
 }
 
-export function createPostgresAudit(modulo) {
-  return { record: (evento) => recordAuditEvent(modulo, evento) };
+export function createPostgresAudit(module) {
+  return { record: (event) => recordAuditEvent(module, event) };
 }
 
 // ================================================================================================

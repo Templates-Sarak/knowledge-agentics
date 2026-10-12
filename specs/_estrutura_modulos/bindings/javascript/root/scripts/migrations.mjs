@@ -44,8 +44,8 @@ import { fileURLToPath } from 'node:url';
 // rodar "de qualquer lugar". Medido tambem (nao presumido) o formato do `await import('pg')`: o
 // pacote e CJS, mas expoe `Client` como export NOMEADO tambem (alem de `.default.Client`) —
 // desestruturar direto do resultado do import dinamico funciona, sem precisar de `.default`.
-const AQUI = dirname(fileURLToPath(import.meta.url));
-const RAIZ = resolve(AQUI, '..');
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(HERE, '..');
 
 // ================================================================================================
 // NUCLEO PURO — nunca toca disco nem rede. E a metade que `--selftest` prova.
@@ -55,22 +55,22 @@ const RAIZ = resolve(AQUI, '..');
  * Serve DUAS funcoes: e o formato certo, E recusa de saida qualquer metacaractere de shell (`;`,
  * `$()`, `&`, espaco) — nenhuma entrada adversarial passa daqui para caminho de arquivo nem para
  * chave de ambiente. */
-const ID_DE_MODULO_VALIDO = /^[a-z][a-z0-9-]*$/;
+const VALID_MODULE_ID = /^[a-z][a-z0-9-]*$/;
 
-const VERBOS_DE_REVERSAO = /^(drop|alter|delete|truncate|revoke|grant|create|insert|update)\b/i;
+const ROLLBACK_VERBS = /^(drop|alter|delete|truncate|revoke|grant|create|insert|update)\b/i;
 
 /**
  * Separa o UP do DOWN de uma migration. O marcador e uma LINHA so com "-- rollback" — nao uma
  * ocorrencia em qualquer lugar do texto (diferente do regex de deteccao do gate, `data.mjs`, que
  * so precisa saber SE existe bloco, nunca onde ele comeca).
  */
-export function splitUpDown(conteudo) {
-  const linhas = conteudo.split(/\r?\n/);
-  const indiceMarcador = linhas.findIndex((linha) => /^\s*--\s*rollback\s*$/i.test(linha));
-  if (indiceMarcador === -1) return { up: conteudo.trim(), down: '' };
+export function splitUpDown(content) {
+  const lines = content.split(/\r?\n/);
+  const markerIndex = lines.findIndex((line) => /^\s*--\s*rollback\s*$/i.test(line));
+  if (markerIndex === -1) return { up: content.trim(), down: '' };
 
-  const up = linhas.slice(0, indiceMarcador).join('\n').trim();
-  const down = uncommentRollback(linhas.slice(indiceMarcador + 1));
+  const up = lines.slice(0, markerIndex).join('\n').trim();
+  const down = uncommentRollback(lines.slice(markerIndex + 1));
   return { up, down };
 }
 
@@ -82,14 +82,14 @@ export function splitUpDown(conteudo) {
  * aqui se ja nao estivesse comentado). E o que faz o parser nunca quebrar, provado por
  * `--selftest` com linha em branco, comentario que NAO e rollback, e indentacao.
  */
-function uncommentRollback(linhas) {
-  return linhas
-    .filter((linha) => linha.trim() !== '')
-    .map((linha) => {
-      const casado = linha.match(/^(\s*)--\s?(.*)$/);
-      if (casado === null) return linha;
-      const [, indentacao, resto] = casado;
-      return VERBOS_DE_REVERSAO.test(resto) ? `${indentacao}${resto}` : linha;
+function uncommentRollback(lines) {
+  return lines
+    .filter((line) => line.trim() !== '')
+    .map((line) => {
+      const matched = line.match(/^(\s*)--\s?(.*)$/);
+      if (matched === null) return line;
+      const [, indentation, rest] = matched;
+      return ROLLBACK_VERBS.test(rest) ? `${indentation}${rest}` : line;
     })
     .join('\n')
     .trim();
@@ -97,32 +97,32 @@ function uncommentRollback(linhas) {
 
 /** Nome do arquivo -> prefixo NNNN. `null` quando foge do padrao — a regra `migrations` do gate ja
  * reprova isso; aqui so nao quebra a ordenacao. */
-function prefix(nomeDeArquivo) {
-  const casado = nomeDeArquivo.match(/^(\d{4})-/);
-  return casado === null ? null : casado[1];
+function prefix(fileName) {
+  const matched = fileName.match(/^(\d{4})-/);
+  return matched === null ? null : matched[1];
 }
 
 /** UP em ordem crescente (prefixo NNNN); DOWN e o INVERSO — reverte o que aplicou por ultimo primeiro. */
-export function orderMigrations(nomes, direcao) {
-  const ordenados = [...nomes].sort((a, b) => (prefix(a) ?? a).localeCompare(prefix(b) ?? b));
-  return direcao === 'down' ? ordenados.reverse() : ordenados;
+export function orderMigrations(names, direction) {
+  const ordered = [...names].sort((a, b) => (prefix(a) ?? a).localeCompare(prefix(b) ?? b));
+  return direction === 'down' ? ordered.reverse() : ordered;
 }
 
 /** `<module>` -> `<MODULE>_DB_URL` — a MESMA convencao de `module.json:requiredEnv`. */
-export function environmentKey(idDoModulo) {
-  return `${idDoModulo.toUpperCase().replace(/-/g, '_')}_DB_URL`;
+export function environmentKey(moduleId) {
+  return `${moduleId.toUpperCase().replace(/-/g, '_')}_DB_URL`;
 }
 
-/** Os nomes (ja ordenados por 'up') que NAO estao em `aplicados` — em ordem, o que falta aplicar. */
-export function pending(nomesOrdenadosUp, aplicados) {
-  return nomesOrdenadosUp.filter((nome) => !aplicados.has(nome));
+/** Os nomes (ja ordenados por 'up') que NAO estao em `applied` — em ordem, o que falta aplicar. */
+export function pending(orderedUpNames, applied) {
+  return orderedUpNames.filter((name) => !applied.has(name));
 }
 
-/** O ULTIMO nome (na ordem 'up') que esta em `aplicados` — `null` se nenhum esta. E o alvo do `down`:
+/** O ULTIMO nome (na ordem 'up') que esta em `applied` — `null` se nenhum esta. E o alvo do `down`:
  * reverter um passo, nunca a lista inteira, e por isso `ciclo` funciona de qualquer estado. */
-export function lastApplied(nomesOrdenadosUp, aplicados) {
-  const feitos = nomesOrdenadosUp.filter((nome) => aplicados.has(nome));
-  return feitos.length > 0 ? feitos.at(-1) : null;
+export function lastApplied(orderedUpNames, applied) {
+  const done = orderedUpNames.filter((name) => applied.has(name));
+  return done.length > 0 ? done.at(-1) : null;
 }
 
 // ================================================================================================
@@ -130,77 +130,77 @@ export function lastApplied(nomesOrdenadosUp, aplicados) {
 // pelos pontos nomeados (leitura de arquivo, rede) explicitamente.
 // ================================================================================================
 
-function readText(caminho) {
-  return readFileSync(caminho, 'utf8').replace(/^﻿/, '');
+function readText(path) {
+  return readFileSync(path, 'utf8').replace(/^﻿/, '');
 }
 
 /** Pares chave=valor de um `.env` — mesma leitura de `src/composition.ts:readPairsEnv`. */
-function readPairsEnv(caminho) {
-  return readText(caminho)
+function readPairsEnv(path) {
+  return readText(path)
     .split(/\r?\n/)
-    .map((linha) => linha.trim())
-    .filter((linha) => linha !== '' && !linha.startsWith('#') && linha.includes('='))
-    .map((linha) => {
-      const igual = linha.indexOf('=');
-      return [linha.slice(0, igual).trim(), linha.slice(igual + 1).trim()];
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith('#') && line.includes('='))
+    .map((line) => {
+      const equalsIndex = line.indexOf('=');
+      return [line.slice(0, equalsIndex).trim(), line.slice(equalsIndex + 1).trim()];
     });
 }
 
 /** Carrega o `.env` UNICO da raiz no processo, sem sobrescrever o que ja veio de fora — mesma
  * precedencia de `src/composition.ts:loadEnvRoot` (ADR-004). */
 function loadEnvRoot() {
-  const caminho = join(RAIZ, '.env');
-  if (!existsSync(caminho)) return;
-  for (const [chave, valor] of readPairsEnv(caminho)) {
-    if (process.env[chave] === undefined) process.env[chave] = valor;
+  const path = join(ROOT, '.env');
+  if (!existsSync(path)) return;
+  for (const [key, value] of readPairsEnv(path)) {
+    if (process.env[key] === undefined) process.env[key] = value;
   }
 }
 
 /** `<module>` valido E dentro de `modules/` — nunca escapa por `..` nem separador. Falha nomeando
  * a entrada recusada, nunca silenciosa. */
-function moduleFolder(idDoModulo) {
-  if (!ID_DE_MODULO_VALIDO.test(idDoModulo)) {
-    throw new Error(`[migrations] "${idDoModulo}" nao e um id de modulo valido (kebab-case minusculo)`);
+function moduleFolder(moduleId) {
+  if (!VALID_MODULE_ID.test(moduleId)) {
+    throw new Error(`[migrations] "${moduleId}" is not a valid module id (lowercase kebab-case)`);
   }
-  const base = join(RAIZ, 'modules');
-  const pasta = join(base, idDoModulo);
-  if (!pasta.startsWith(base + sep)) {
-    throw new Error(`[migrations] "${idDoModulo}" resolve para fora de modules/ — recusado`);
+  const base = join(ROOT, 'modules');
+  const dir = join(base, moduleId);
+  if (!dir.startsWith(base + sep)) {
+    throw new Error(`[migrations] "${moduleId}" resolves outside modules/ — refused`);
   }
-  if (!existsSync(join(pasta, 'module.json'))) {
-    throw new Error(`[migrations] modulo "${idDoModulo}" nao encontrado em modules/`);
+  if (!existsSync(join(dir, 'module.json'))) {
+    throw new Error(`[migrations] module "${moduleId}" not found in modules/`);
   }
-  return pasta;
+  return dir;
 }
 
-function listMigrations(pastaModulo) {
-  const base = join(pastaModulo, 'database', 'migrations');
+function listMigrations(moduleDir) {
+  const base = join(moduleDir, 'database', 'migrations');
   if (!existsSync(base)) return [];
-  return readdirSync(base).filter((nome) => nome.endsWith('.sql'));
+  return readdirSync(base).filter((name) => name.endsWith('.sql'));
 }
 
 /** `data.schema`/`data.prefix` do manifesto — a MESMA fonte que declara as tabelas do módulo,
  * nunca um terceiro lugar para o nome da tabela de controle. Devolve `{ schema, tabela, name }` —
  * `name` já qualificado (`"schema"."tabela"`), para as funções abaixo passarem UM parâmetro em vez
  * de dois (limiar de 4 parâmetros). */
-function controlTable(pastaModulo) {
-  const manifesto = JSON.parse(readText(join(pastaModulo, 'module.json')));
-  const schema = manifesto.data.schema;
-  const tabela = `${manifesto.data.prefix}migrations`;
-  return { schema, tabela, nome: `"${schema}"."${tabela}"` };
+function controlTable(moduleDir) {
+  const manifest = JSON.parse(readText(join(moduleDir, 'module.json')));
+  const schema = manifest.data.schema;
+  const table = `${manifest.data.prefix}migrations`;
+  return { schema, table, name: `"${schema}"."${table}"` };
 }
 
 /** Le uma variavel obrigatoria. Ausente = falha nomeando a chave (lei 7 do catalogo, mesmo padrao
  * de `api/src/config.ts:envRequired`). */
-function requiredUrl(idDoModulo) {
-  const chave = environmentKey(idDoModulo);
-  const valor = process.env[chave];
-  if (valor === undefined || valor === '') {
+function requiredUrl(moduleId) {
+  const key = environmentKey(moduleId);
+  const value = process.env[key];
+  if (value === undefined || value === '') {
     throw new Error(
-      `[migrations] variavel obrigatoria ausente: ${chave} (declare em module.json:requiredEnv e no .env da raiz)`,
+      `[migrations] required variable missing: ${key} (declare it in module.json:requiredEnv and in the root .env)`,
     );
   }
-  return valor;
+  return value;
 }
 
 async function connect(url) {
@@ -210,106 +210,110 @@ async function connect(url) {
   return client;
 }
 
-/** `Set` dos `arquivo` já registrados — vazio (nunca erro) quando a tabela de controle ainda não
+/** `Set` dos `file_name` já registrados — vazio (nunca erro) quando a tabela de controle ainda não
  * existe, o estado normal do PRIMEIRO `up` de um banco novo. */
-async function appliedMigrations(client, schema, tabela) {
-  const existe = await client.query(
+async function appliedMigrations(client, schema, table) {
+  const exists = await client.query(
     'select 1 from information_schema.tables where table_schema = $1 and table_name = $2',
-    [schema, tabela],
+    [schema, table],
   );
-  if (existe.rowCount === 0) return new Set();
-  const linhas = await client.query(`select arquivo from "${schema}"."${tabela}"`);
-  return new Set(linhas.rows.map((linha) => linha.arquivo));
+  if (exists.rowCount === 0) return new Set();
+  const lines = await client.query(`select file_name from "${schema}"."${table}"`);
+  return new Set(lines.rows.map((line) => line.file_name));
 }
 
 /** UMA migration, dentro de UMA transação: roda o SQL, depois grava a linha de controle — nessa
  * ordem, porque a migration 0001 CRIA a tabela de controle no próprio SQL que acabou de rodar.
- * `tabelaControle` já vem qualificada (`{ name }` de `controlTable`) — um parâmetro, não dois. */
-async function applyOne(client, pastaModulo, nome, tabelaControle) {
-  const conteudo = readText(join(pastaModulo, 'database', 'migrations', nome));
-  const { up } = splitUpDown(conteudo);
-  process.stdout.write(`  up ${nome}...\n`);
+ * `controlTable` já vem qualificada (`{ name }` de `controlTable`) — um parâmetro, não dois. */
+async function applyOne(client, moduleDir, name, controlTable) {
+  const content = readText(join(moduleDir, 'database', 'migrations', name));
+  const { up } = splitUpDown(content);
+  process.stdout.write(`  up ${name}...\n`);
   await client.query('begin');
   try {
     if (up !== '') await client.query(up);
-    await client.query(`insert into ${tabelaControle} (arquivo) values ($1)`, [nome]);
+    await client.query(`insert into ${controlTable} (file_name) values ($1)`, [name]);
     await client.query('commit');
-  } catch (causa) {
+  } catch (cause) {
     await client.query('rollback');
-    throw causa;
+    throw cause;
   }
 }
 
 /** UMA migration revertida, dentro de UMA transação: apaga a linha de controle ANTES do SQL de
  * reversão — a ordem inversa de `applyOne`, pelo motivo simétrico: reverter 0001 apaga a própria
  * tabela de controle, e não há como `DELETE` dela depois que ela sumiu. */
-async function revertOne(client, pastaModulo, nome, tabelaControle) {
-  const conteudo = readText(join(pastaModulo, 'database', 'migrations', nome));
-  const { down } = splitUpDown(conteudo);
-  process.stdout.write(`  down ${nome}...\n`);
+async function revertOne(client, moduleDir, name, controlTable) {
+  const content = readText(join(moduleDir, 'database', 'migrations', name));
+  const { down } = splitUpDown(content);
+  process.stdout.write(`  down ${name}...\n`);
   await client.query('begin');
   try {
-    await client.query(`delete from ${tabelaControle} where arquivo = $1`, [nome]);
+    await client.query(`delete from ${controlTable} where file_name = $1`, [name]);
     if (down !== '') await client.query(down);
     await client.query('commit');
-  } catch (causa) {
+  } catch (cause) {
     await client.query('rollback');
-    throw causa;
+    throw cause;
   }
 }
 
-async function applyPending(client, pastaModulo) {
-  const { schema, tabela, nome: tabelaControle } = controlTable(pastaModulo);
-  const nomesUp = orderMigrations(listMigrations(pastaModulo), 'up');
-  const aplicados = await appliedMigrations(client, schema, tabela);
-  const faltam = pending(nomesUp, aplicados);
-  if (faltam.length === 0) {
-    process.stdout.write('  nada pendente — todas as migrations ja estao aplicadas\n');
+async function applyPending(client, moduleDir) {
+  const { schema, table, name: controlTable } = controlTable(moduleDir);
+  const upNames = orderMigrations(listMigrations(moduleDir), 'up');
+  const applied = await appliedMigrations(client, schema, table);
+  const missing = pending(upNames, applied);
+  if (missing.length === 0) {
+    process.stdout.write('  nothing pending — every migration is already applied\n');
     return;
   }
-  for (const nome of faltam) await applyOne(client, pastaModulo, nome, tabelaControle);
+  for (const name of missing) await applyOne(client, moduleDir, name, controlTable);
 }
 
-async function revertLast(client, pastaModulo) {
-  const { schema, tabela, nome: tabelaControle } = controlTable(pastaModulo);
-  const nomesUp = orderMigrations(listMigrations(pastaModulo), 'up');
-  const aplicados = await appliedMigrations(client, schema, tabela);
-  const alvo = lastApplied(nomesUp, aplicados);
-  if (alvo === null) {
-    process.stdout.write('  nada aplicado — nada a reverter\n');
+async function revertLast(client, moduleDir) {
+  const { schema, table, name: controlTable } = controlTable(moduleDir);
+  const upNames = orderMigrations(listMigrations(moduleDir), 'up');
+  const applied = await appliedMigrations(client, schema, table);
+  const target = lastApplied(upNames, applied);
+  if (target === null) {
+    process.stdout.write('  nothing applied — nothing to revert\n');
     return;
   }
-  await revertOne(client, pastaModulo, alvo, tabelaControle);
+  await revertOne(client, moduleDir, target, controlTable);
 }
 
-async function runUp(idDoModulo) {
-  const pastaModulo = moduleFolder(idDoModulo);
-  const client = await connect(requiredUrl(idDoModulo));
+async function runUp(moduleId) {
+  const moduleDir = moduleFolder(moduleId);
+  const client = await connect(requiredUrl(moduleId));
   try {
-    await applyPending(client, pastaModulo);
+    await applyPending(client, moduleDir);
   } finally {
     await client.end();
   }
 }
 
-async function runDown(idDoModulo) {
-  const pastaModulo = moduleFolder(idDoModulo);
-  const client = await connect(requiredUrl(idDoModulo));
+async function runDown(moduleId) {
+  const moduleDir = moduleFolder(moduleId);
+  const client = await connect(requiredUrl(moduleId));
   try {
-    await revertLast(client, pastaModulo);
+    await revertLast(client, moduleDir);
   } finally {
     await client.end();
   }
 }
 
-async function runCycle(idDoModulo) {
-  process.stdout.write(`[migrations] ${idDoModulo}: up (aplica pendentes)\n`);
-  await runUp(idDoModulo);
-  process.stdout.write(`[migrations] ${idDoModulo}: down (reverte o ultimo aplicado)\n`);
-  await runDown(idDoModulo);
-  process.stdout.write(`[migrations] ${idDoModulo}: up (reaplica o que o down reverteu)\n`);
-  await runUp(idDoModulo);
-  process.stdout.write(`[migrations] ${idDoModulo}: ciclo up -> down -> up OK\n`);
+async function runCycle(moduleId) {
+  process.stdout.write(`[migrations] ${moduleId}: up (applies pending)
+`);
+  await runUp(moduleId);
+  process.stdout.write(`[migrations] ${moduleId}: down (reverts the last applied)
+`);
+  await runDown(moduleId);
+  process.stdout.write(`[migrations] ${moduleId}: up (reapplies what down reverted)
+`);
+  await runUp(moduleId);
+  process.stdout.write(`[migrations] ${moduleId}: cycle up -> down -> up OK
+`);
 }
 
 // ================================================================================================
@@ -323,22 +327,22 @@ async function runCycle(idDoModulo) {
 function splitUpDownFilledCases() {
   return [
     {
-      nome: 'bloco simples (o molde de verdade)',
-      entrada: [
-        'create table "acme"."x_metadados" (id uuid);',
+      name: 'simple block (the real template)',
+      input: [
+        'create table "acme"."x_metadata" (id uuid);',
         '',
         '-- rollback',
-        '-- drop table if exists "acme"."x_auditoria";',
-        '-- drop table if exists "acme"."x_metadados";',
+        '-- drop table if exists "acme"."x_audit";',
+        '-- drop table if exists "acme"."x_metadata";',
       ].join('\n'),
-      esperado: {
-        up: 'create table "acme"."x_metadados" (id uuid);',
-        down: 'drop table if exists "acme"."x_auditoria";\ndrop table if exists "acme"."x_metadados";',
+      expected: {
+        up: 'create table "acme"."x_metadata" (id uuid);',
+        down: 'drop table if exists "acme"."x_audit";\ndrop table if exists "acme"."x_metadata";',
       },
     },
     {
-      nome: 'ADVERSARIAL: linha em branco, comentario que NAO e rollback, e indentacao dentro do bloco',
-      entrada: [
+      name: 'ADVERSARIAL: blank line, a comment that is NOT rollback, and indentation inside the block',
+      input: [
         'create table "acme"."x" (id uuid);',
         '-- rollback',
         '  -- drop table if exists "acme"."x";',
@@ -347,7 +351,7 @@ function splitUpDownFilledCases() {
         '',
         '     -- alter table "acme"."x" disable trigger all;',
       ].join('\n'),
-      esperado: {
+      expected: {
         up: 'create table "acme"."x" (id uuid);',
         down: [
           'drop table if exists "acme"."x";',
@@ -363,14 +367,14 @@ function splitUpDownFilledCases() {
 function splitUpDownEmptyCases() {
   return [
     {
-      nome: 'sem bloco de rollback: down vazio, up e o arquivo inteiro',
-      entrada: 'create table "acme"."x" (id uuid);',
-      esperado: { up: 'create table "acme"."x" (id uuid);', down: '' },
+      name: 'no rollback block: empty down, up is the whole file',
+      input: 'create table "acme"."x" (id uuid);',
+      expected: { up: 'create table "acme"."x" (id uuid);', down: '' },
     },
     {
-      nome: 'bloco de rollback vazio (so a marca, nada depois)',
-      entrada: 'create table "acme"."x" (id uuid);\n-- rollback\n',
-      esperado: { up: 'create table "acme"."x" (id uuid);', down: '' },
+      name: 'empty rollback block (only the marker, nothing after)',
+      input: 'create table "acme"."x" (id uuid);\n-- rollback\n',
+      expected: { up: 'create table "acme"."x" (id uuid);', down: '' },
     },
   ];
 }
@@ -382,24 +386,24 @@ function splitUpDownCases() {
 function orderingCases() {
   return [
     {
-      nome: 'up: ordem crescente',
-      nomes: ['0002-acrescenta-status.sql', '0001-cria-metadados.sql'],
-      direcao: 'up',
-      esperado: ['0001-cria-metadados.sql', '0002-acrescenta-status.sql'],
+      name: 'up: ascending order',
+      names: ['0002-add-status.sql', '0001-create-metadata.sql'],
+      direction: 'up',
+      expected: ['0001-create-metadata.sql', '0002-add-status.sql'],
     },
     {
-      nome: 'down: ordem INVERSA',
-      nomes: ['0001-cria-metadados.sql', '0002-acrescenta-status.sql'],
-      direcao: 'down',
-      esperado: ['0002-acrescenta-status.sql', '0001-cria-metadados.sql'],
+      name: 'down: REVERSE order',
+      names: ['0001-create-metadata.sql', '0002-add-status.sql'],
+      direction: 'down',
+      expected: ['0002-add-status.sql', '0001-create-metadata.sql'],
     },
   ];
 }
 
 function environmentKeyCases() {
   return [
-    { nome: 'simples', id: 'catalogo', esperado: 'CATALOGO_DB_URL' },
-    { nome: 'com hifen', id: 'linha-de-producao', esperado: 'LINHA_DE_PRODUCAO_DB_URL' },
+    { name: 'simple', id: 'catalog', expected: 'CATALOG_DB_URL' },
+    { name: 'with hyphen', id: 'production-line', expected: 'PRODUCTION_LINE_DB_URL' },
   ];
 }
 
@@ -407,31 +411,31 @@ function environmentKeyCases() {
  * aplicado), banco parcialmente migrado, e banco totalmente migrado (o caso que trava `up` sem
  * este controle de estado — medido no teste real). */
 function stateCases() {
-  const nomes = ['0001-cria-metadados.sql', '0002-acrescenta-status.sql', '0003-cria-indice.sql'];
+  const names = ['0001-create-metadata.sql', '0002-add-status.sql', '0003-create-index.sql'];
   return [
     {
-      nome: 'pending: banco vazio -> as tres, em ordem',
-      fn: () => JSON.stringify(pending(nomes, new Set())) === JSON.stringify(nomes),
+      name: 'pending: empty database -> all three, in order',
+      fn: () => JSON.stringify(pending(names, new Set())) === JSON.stringify(names),
     },
     {
-      nome: 'pending: banco ja migrado por completo -> nenhuma (isto e o que travava antes)',
-      fn: () => pending(nomes, new Set(nomes)).length === 0,
+      name: 'pending: fully migrated database -> none (this is what used to hang)',
+      fn: () => pending(names, new Set(names)).length === 0,
     },
     {
-      nome: 'pending: so a primeira aplicada -> falta a segunda e a terceira, em ordem',
-      fn: () => JSON.stringify(pending(nomes, new Set([nomes[0]]))) === JSON.stringify([nomes[1], nomes[2]]),
+      name: 'pending: only the first applied -> the second and third remain, in order',
+      fn: () => JSON.stringify(pending(names, new Set([names[0]]))) === JSON.stringify([names[1], names[2]]),
     },
     {
-      nome: 'lastApplied: nenhuma aplicada -> null (down nao tem o que reverter)',
-      fn: () => lastApplied(nomes, new Set()) === null,
+      name: 'lastApplied: none applied -> null (down has nothing to revert)',
+      fn: () => lastApplied(names, new Set()) === null,
     },
     {
-      nome: 'lastApplied: todas aplicadas -> a TERCEIRA (maior prefixo), nunca a primeira',
-      fn: () => lastApplied(nomes, new Set(nomes)) === nomes[2],
+      name: 'lastApplied: all applied -> the THIRD (highest prefix), never the first',
+      fn: () => lastApplied(names, new Set(names)) === names[2],
     },
     {
-      nome: 'lastApplied: aplicadas fora de ordem no Set -> ainda assim a de MAIOR prefixo',
-      fn: () => lastApplied(nomes, new Set([nomes[2], nomes[0]])) === nomes[2],
+      name: 'lastApplied: applied out of order in the Set -> still the one with the HIGHEST prefix',
+      fn: () => lastApplied(names, new Set([names[2], names[0]])) === names[2],
     },
   ];
 }
@@ -439,57 +443,58 @@ function stateCases() {
 /** Isolado de `runSelftest` só para a função caber no limiar de 40 linhas — o mesmo limiar que
  * este arquivo existe para fazer valer no código do usuário. */
 function runStateCases() {
-  let falhas = 0;
-  for (const caso of stateCases()) {
+  let failures = 0;
+  for (const testCase of stateCases()) {
     let ok;
     try {
-      ok = caso.fn() === true;
+      ok = testCase.fn() === true;
     } catch {
       ok = false;
     }
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
-  return falhas;
+  return failures;
 }
 
 function runSelftest() {
-  let falhas = 0;
+  let failures = 0;
   let total = 0;
 
-  for (const caso of splitUpDownCases()) {
+  for (const testCase of splitUpDownCases()) {
     total += 1;
-    const obtido = splitUpDown(caso.entrada);
-    const ok = obtido.up === caso.esperado.up && obtido.down === caso.esperado.down;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} splitUpDown: ${caso.nome}\n`);
+    const obtained = splitUpDown(testCase.input);
+    const ok = obtained.up === testCase.expected.up && obtained.down === testCase.expected.down;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} splitUpDown: ${testCase.name}\n`);
     if (!ok) {
-      falhas += 1;
-      process.stdout.write(`       esperado: ${JSON.stringify(caso.esperado)}\n`);
-      process.stdout.write(`       obtido:   ${JSON.stringify(obtido)}\n`);
+      failures += 1;
+      process.stdout.write(`       expected: ${JSON.stringify(testCase.expected)}\n`);
+      process.stdout.write(`       obtained: ${JSON.stringify(obtained)}\n`);
     }
   }
 
-  for (const caso of orderingCases()) {
+  for (const testCase of orderingCases()) {
     total += 1;
-    const obtido = orderMigrations(caso.nomes, caso.direcao);
-    const ok = JSON.stringify(obtido) === JSON.stringify(caso.esperado);
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} orderMigrations: ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+    const obtained = orderMigrations(testCase.names, testCase.direction);
+    const ok = JSON.stringify(obtained) === JSON.stringify(testCase.expected);
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} orderMigrations: ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
 
-  for (const caso of environmentKeyCases()) {
+  for (const testCase of environmentKeyCases()) {
     total += 1;
-    const obtido = environmentKey(caso.id);
-    const ok = obtido === caso.esperado;
-    process.stdout.write(`  ${ok ? 'ok   ' : 'FALHA'} environmentKey: ${caso.nome}\n`);
-    if (!ok) falhas += 1;
+    const obtained = environmentKey(testCase.id);
+    const ok = obtained === testCase.expected;
+    process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} environmentKey: ${testCase.name}\n`);
+    if (!ok) failures += 1;
   }
 
   total += stateCases().length;
-  falhas += runStateCases();
+  failures += runStateCases();
 
-  process.stdout.write(`\nautoteste: ${total - falhas}/${total} ok\n`);
-  return falhas === 0 ? 0 : 1;
+  process.stdout.write(`
+selftest: ${total - failures}/${total} ok\n`);
+  return failures === 0 ? 0 : 1;
 }
 
 // ================================================================================================
@@ -497,12 +502,12 @@ function runSelftest() {
 // ================================================================================================
 
 async function principal() {
-  const [comando, alvo] = process.argv.slice(2);
-  if (comando === '--selftest') return runSelftest();
+  const [command, target] = process.argv.slice(2);
+  if (command === '--selftest') return runSelftest();
 
-  if (!['up', 'down', 'ciclo'].includes(comando) || alvo === undefined) {
+  if (!['up', 'down', 'cycle'].includes(command) || target === undefined) {
     process.stderr.write(
-      'uso: node scripts/migrations.mjs up|down|ciclo <module>\n' +
+      'usage: node scripts/migrations.mjs up|down|cycle <module>\n' +
         '     node scripts/migrations.mjs --selftest\n',
     );
     return 1;
@@ -510,16 +515,16 @@ async function principal() {
 
   loadEnvRoot();
   try {
-    if (comando === 'up') await runUp(alvo);
-    else if (comando === 'down') await runDown(alvo);
-    else await runCycle(alvo);
+    if (command === 'up') await runUp(target);
+    else if (command === 'down') await runDown(target);
+    else await runCycle(target);
     return 0;
-  } catch (causa) {
-    process.stderr.write(`${causa instanceof Error ? causa.message : String(causa)}\n`);
+  } catch (cause) {
+    process.stderr.write(`${cause instanceof Error ? cause.message : String(cause)}\n`);
     return 1;
   }
 }
 
-principal().then((codigo) => {
-  process.exitCode = codigo;
+principal().then((code) => {
+  process.exitCode = code;
 });

@@ -47,7 +47,7 @@ paths:
                   navigation: { type: [object, 'null'] }
                   exportsSummary: { type: boolean }
 
-  /resumo:
+  /summary:
     get:
       summary: Contagem e indicadores agregados pelo conector
       responses:
@@ -60,12 +60,12 @@ paths:
                 properties:
                   total: { type: integer }
 
-  /registros:
+  /entries:
     get:
       summary: Lista registros
       parameters:
-        - { name: pagina, in: query, schema: { type: integer, minimum: 1 } }
-        - { name: tamanho, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1 } }
       responses:
         '200':
           description: colecao paginada
@@ -74,11 +74,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  itens:
+                  items:
                     type: array
-                    items: { $ref: '#/components/schemas/Registro' }
-                  pagina: { type: integer }
-                  tamanho: { type: integer }
+                    items: { $ref: '#/components/schemas/Entry' }
+                  page: { type: integer }
+                  pageSize: { type: integer }
                   total: { type: integer }
     post:
       summary: Cria um registro
@@ -86,20 +86,20 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/NovoRegistro' }
+            schema: { $ref: '#/components/schemas/NewEntry' }
       responses:
         '201':
           description: criado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Registro' }
+              schema: { $ref: '#/components/schemas/Entry' }
         '400':
-          description: VALIDACAO
+          description: VALIDATION
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Erro' }
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
 
-  /registros/{hash}:
+  /entries/{hash}:
     get:
       summary: Obtem um registro pelo identificador universal
       parameters:
@@ -109,47 +109,47 @@ paths:
           description: ok
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Registro' }
+              schema: { $ref: '#/components/schemas/Entry' }
         '404':
-          description: NAO_ENCONTRADO
+          description: NOT_FOUND
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Erro' }
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
 
 components:
   schemas:
-    Registro:
+    Entry:
       type: object
-      required: [hash, titulo, status]
+      required: [hash, title, status]
       properties:
         hash: { type: string }
-        titulo: { type: string }
-        status: { type: string, enum: [rascunho, ativo, encerrado] }
-        criadoEm: { type: string, format: date-time }
+        title: { type: string }
+        status: { type: string, enum: [draft, active, closed] }
+        createdAt: { type: string, format: date-time }
 
-    NovoRegistro:
+    NewEntry:
       type: object
-      required: [titulo]
+      required: [title]
       properties:
-        titulo: { type: string, minLength: 1 }
-        status: { type: string, enum: [rascunho, ativo, encerrado] }
+        title: { type: string, minLength: 1 }
+        status: { type: string, enum: [draft, active, closed] }
 
-    Erro:
+    ErrorEnvelope:
       type: object
       properties:
-        erro:
+        error:
           type: object
           properties:
-            codigo:
+            code:
               type: string
               enum:
-                - VALIDACAO
-                - NAO_AUTENTICADO
-                - NAO_AUTORIZADO
-                - NAO_ENCONTRADO
-                - CONFLITO
-                - LIMITE_EXCEDIDO
-                - DEPENDENCIA_EXTERNA
-                - INTERNO
-            mensagem: { type: string }
+                - VALIDATION
+                - UNAUTHENTICATED
+                - FORBIDDEN
+                - NOT_FOUND
+                - CONFLICT
+                - LIMIT_EXCEEDED
+                - EXTERNAL_DEPENDENCY
+                - INTERNAL
+            message: { type: string }
             requestId: { type: string }

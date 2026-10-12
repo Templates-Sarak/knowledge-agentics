@@ -11,21 +11,21 @@ from __future__ import annotations
 import html
 import re
 
-from ..domain import Registro
+from ..domain import Entry
 
-_MARCADOR = re.compile(r"\{\{(\w+)\}\}")
-
-
-def _fill(template: str, valores: dict[str, str]) -> str:
-    """Substitui `{{chave}}` pelos valores. Marcador sem valor e PRESERVADO, nunca apagado."""
-
-    def replace(achado: re.Match[str]) -> str:
-        return valores.get(achado.group(1), achado.group(0))
-
-    return _MARCADOR.sub(replace, template)
+_MARKER = re.compile(r"\{\{(\w+)\}\}")
 
 
-def generate_artifact(registro: Registro, template: str) -> str:
+def _fill(template: str, values: dict[str, str]) -> str:
+    """Substitui `{{key}}` pelos valores. Marcador sem valor e PRESERVADO, nunca apagado."""
+
+    def replace(finding: re.Match[str]) -> str:
+        return values.get(finding.group(1), finding.group(0))
+
+    return _MARKER.sub(replace, template)
+
+
+def generate_artifact(entry: Entry, template: str) -> str:
     """Gera o artefato de um registro.
 
     O `template` vem de core/templates/, lido pela borda — o motor nao le arquivo, para
@@ -34,9 +34,9 @@ def generate_artifact(registro: Registro, template: str) -> str:
     return _fill(
         template,
         {
-            "hash": html.escape(registro.hash),
-            "titulo": html.escape(registro.titulo),
-            "status": html.escape(registro.status),
-            "criadoEm": html.escape(registro.criado_em),
+            "hash": html.escape(entry.hash),
+            "title": html.escape(entry.title),
+            "status": html.escape(entry.status),
+            "createdAt": html.escape(entry.created_at),
         },
     )

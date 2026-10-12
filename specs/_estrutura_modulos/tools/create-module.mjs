@@ -156,7 +156,7 @@ function substitute(text, id, scope) {
     .replaceAll('<MODULE>', id.toUpperCase().replace(/-/g, '_'))
     .replaceAll('<Module>', id.charAt(0).toUpperCase() + id.slice(1))
     .replaceAll('<module>', id)
-    .replaceAll('<escopo>', scope);
+    .replaceAll('<scope>', scope);
 }
 
 function walk(dir, accumulated = []) {
@@ -196,7 +196,7 @@ function adjustManifest(destination, options) {
 }
 
 /** Config de texto que so a tela usa. Sem `web/`, ela viraria config morta — e o gate avisa. */
-const SCREEN_ONLY_TEXTS = ['loading', 'emptyList', 'genericError'];
+const SCREEN_ONLY_TEXTS = ['loading', 'emptyList', 'genericError', 'statusLabels', 'errorLabels'];
 
 /**
  * `title` e lido so por `web/` em TS/JS — config morta sem ele (o gate avisa) — mas em PYTHON e o

@@ -12,7 +12,7 @@
  *
  * O `ui.mode` do manifesto tem duas cláusulas (01-modulo.md §7) e só UMA delas ganha regra própria:
  * a do modo `own` ("proibido importar componente de outro módulo") **é** a `lateral-import`
- * inteira — o import de `@<escopo>/<vizinho>` e o caminho relativo que sai da pasta. Escrever uma
+ * inteira — o import de `@<scope>/<vizinho>` e o caminho relativo que sai da pasta. Escrever uma
  * segunda regra para ela daria duas mensagens e um conserto só.
  */
 import { failedReads, normalize, specOperations, specOf } from '../spec.mjs';
@@ -264,12 +264,12 @@ function areaImports(project, prefix) {
 }
 
 /**
- * O pacote do kit deste módulo. É AQUI que `ui.pacote` ganha propósito: sem ele, o gate cobra o
- * nome canônico da tabela de nomes (`@<escopo>/ui-kit`, 04-regras.md §3.1); com ele, o projeto que
+ * O pacote do kit deste módulo. É AQUI que `ui.package` ganha propósito: sem ele, o gate cobra o
+ * nome canônico da tabela de nomes (`@<scope>/ui-kit`, 04-regras.md §3.1); com ele, o projeto que
  * batizou o kit de outro jeito diz qual é, e continua verificável.
  */
 function kitPackage(ctx) {
-  return ctx.manifest?.ui?.pacote ?? null;
+  return ctx.manifest?.ui?.package ?? null;
 }
 
 function isKitImport(ctx, target) {
@@ -442,7 +442,7 @@ export default [
       // origem para os componentes visuais e nada em `web/` vai busca-la la.
       const webFiles = ctx.code.filter((a) => a.rel.startsWith('web/') && !a.isTest);
       if (!webFiles.some((a) => importsOf(a).some((target) => isKitImport(ctx, target)))) {
-        const expected = kitPackage(ctx) ?? '@<escopo>/ui-kit';
+        const expected = kitPackage(ctx) ?? '@<scope>/ui-kit';
         findings.push(`ui.mode "kit" is declared, but no web/ file imports the kit ("${expected}") — import it in web/, declare its name in ui.package, or switch ui.mode back to "own"`);
       }
       return findings;
