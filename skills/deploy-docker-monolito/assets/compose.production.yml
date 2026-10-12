@@ -1,7 +1,9 @@
 # Compose de PRODUÇÃO do monólito modular — molde (references/producao.md). Vai ao servidor
 # sozinho, ao lado do `.env`; as imagens vêm do registry, nunca de build local.
 #
-# Copie para <INFRA_DIR>/compose.production.yml. Marcador: <project> (nome do projeto, minúsculas).
+# Copie para deploy/compose.production.yml. Marcador: <project> (nome do projeto, minúsculas). É o ÚNICO
+# arquivo de container que é da skill: o resto é do template (specs/_estrutura_modulos/bindings/<binding>/root/),
+# porque produção muda por provedor (ADR-022).
 #
 # - Imagens por DIGEST (@sha256:...), nunca por tag móvel: o digest que já esteve no ar não se
 #   move, então "reverter" volta ao bit exato. Os digests são registrados no passo de publicação.
@@ -21,10 +23,17 @@ services:
     image: "${DEPLOY_REGISTRY:?defina DEPLOY_REGISTRY no .env.deploy}/<project>-app@${DEPLOY_APP_DIGEST:?defina DEPLOY_APP_DIGEST no .env.deploy — o sha256 registrado na publicação}"
     env_file:
       - .env
+    environment:
+      # O host de escuta é propriedade do CONTAINER, não do ambiente: o .env do servidor pode guardar
+      # loopback (cópia do de dev), e dentro do container isso é inalcançável pelo front. `environment:`
+      # vence `env_file:`. O processo segue sem default embutido (03-operacao §9.5).
+      ROOT_API_HOST: 0.0.0.0
     restart: unless-stopped
-    # >= teto de desligamento do projeto + folga. O template não define esse teto hoje
-    # (composition não trata SIGTERM — pendência da skill): meça o pior pedido em voo.
-    stop_grace_period: ${DEPLOY_STOP_GRACE_PERIOD:?defina DEPLOY_STOP_GRACE_PERIOD no .env.deploy, por exemplo 30s}
+    # DERIVADO do teto de desligamento: config/runtime.json:shutdown.drainTimeoutMs + a folga de
+    # config/deploy.json:shutdown.graceMarginMs. O valor já está calculado em deploy/compose.modules.yml
+    # (stop_grace_period) — copie-o para DEPLOY_STOP_GRACE_PERIOD na publicação. Menor que o teto, o Docker
+    # manda SIGKILL com requisição em voo.
+    stop_grace_period: ${DEPLOY_STOP_GRACE_PERIOD:?defina DEPLOY_STOP_GRACE_PERIOD no .env.deploy — o stop_grace_period de deploy/compose.modules.yml}
     security_opt:
       - no-new-privileges:true
     cap_drop:

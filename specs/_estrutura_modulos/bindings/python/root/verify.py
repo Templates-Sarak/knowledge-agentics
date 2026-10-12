@@ -8,6 +8,7 @@
     python verify.py --security           .env versionado + segredo no delta — CI, fail-closed
     python verify.py --dependencies       pip-audit contra o piso de severidade — CI
     python verify.py --migrations up|down|ciclo <module>   delega a scripts/migrations.py
+    python verify.py --docker up|stop|logs   container local (profile `app`) — delega a tools/docker-up.mjs
 
 Argumento fora dessa lista REPROVA (exit 1) — nunca cai no caminho padrao em silencio.
 
@@ -15,15 +16,16 @@ Equivalente ao `npm run verify` do binding TypeScript. Roda, nesta ordem:
 
     1. gate de conformidade em todos os modulos      (tools/gate/validate.mjs --all)
     2. .env.example em dia com os manifestos         (tools/sync-env.mjs --check)
-    3. forma                                         (ruff format --check)
-    4. limiares e idiomas                            (ruff check)
-    5. tipos                                         (mypy)
-    6. testes de CADA modulo, a partir da pasta dele (pytest)
+    3. deploy em dia com os manifestos               (tools/sync-deploy.mjs --check)
+    4. forma                                         (ruff format --check)
+    5. limiares e idiomas                            (ruff check)
+    6. tipos                                         (mypy)
+    7. testes de CADA modulo, a partir da pasta dele (pytest)
 
 Os limiares que o ruff cobra vem de `.ruff.toml`, GERADO de `tools/gate/thresholds.mjs` — a
 mesma fonte que o gate usa. Nenhum numero de limiar e escrito a mao neste projeto.
 
-O passo 5 roda modulo a modulo de proposito: testar a partir da pasta do modulo e o que prova que
+O passo 7 roda modulo a modulo de proposito: testar a partir da pasta do modulo e o que prova que
 ele roda ISOLADO — a condicao pratica de "pronto para extracao" (specs/arquitetura/03-operacao.md §6).
 
 DEPENDENCIA DECLARADA: o gate e uma ferramenta Node — a mesma em todos os bindings, de proposito.
@@ -49,6 +51,8 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent
@@ -219,6 +223,20 @@ def _run_migrations(resto: list[str]) -> int:
     return resultado.returncode
 
 
+def _run_docker(resto: list[str]) -> int:
+    """`--docker up|stop|logs` delega a `tools/docker-up.mjs` (Node, zero dependencia) — a MESMA
+    ferramenta do binding Node, uma leitura so do compose. Sem Docker ou sem os dois `.env`, a
+    propria ferramenta reprova nomeando o que falta."""
+    if not resto:
+        _write("uso: python verify.py --docker up|stop|logs\n")
+        return 1
+    comando = _resolve(["node", "tools/docker-up.mjs", *resto])
+    if comando is None:
+        _write("FALHA docker: 'node' nao encontrado. Instale Node, ou aponte SARAK_NODE.\n")
+        return 1
+    return subprocess.run(comando, cwd=RAIZ, check=False).returncode
+
+
 # As UNICAS flags que este comando reconhece. Argumento fora desta lista REPROVA (`_recusar_
 # desconhecidas`) em vez de cair no caminho padrao: sem isso, `--coveragee` (typo) rodava a cadeia
 # INTEIRA, imprimia "verify: OK" e saia 0 — quem lesse o exit code concluiria que a cobertura
@@ -232,15 +250,18 @@ FLAGS = frozenset(
         "--security",
         "--dependencies",
         "--migrations",
+        "--docker",
     }
 )
 
 
 def _reject_unknown(argv: list[str]) -> str | None:
-    """Motivo, se houver argumento nao reconhecido. `--migrations` consome o resto (up|down|ciclo
-    <module>), entao nada depois dela e julgado aqui — o dono daqueles argumentos e o runner."""
-    if "--migrations" in argv:
-        argv = argv[: argv.index("--migrations")]
+    """Motivo, se houver argumento nao reconhecido. `--migrations` e `--docker` consomem o resto
+    (up|down|ciclo <module>; up|stop|logs), entao nada depois delas e julgado aqui — o dono daqueles
+    argumentos e o runner."""
+    for consumidora in ("--migrations", "--docker"):
+        if consumidora in argv:
+            argv = argv[: argv.index(consumidora)]
     for arg in argv:
         if arg not in FLAGS:
             return f'argumento nao reconhecido: "{arg}" — use uma de {" ".join(sorted(FLAGS))}'
@@ -255,16 +276,19 @@ def _dispatch_mode(argv: list[str]) -> int | None:
     tools/gate/thresholds.mjs): despachar modo e uma responsabilidade, rodar a cadeia e outra.
     Suprimir o limiar aqui seria o verificador isentando a si mesmo da regra que ele cobra.
     """
-    if "--coverage" in argv:
-        return _run_coverage()
-    if "--lint-relatorio" in argv:
-        return _run_lint_report()
-    if "--security" in argv:
-        return _run_delegated("seguranca", "ci-security.mjs")
-    if "--dependencies" in argv:
-        return _run_delegated("dependencias", "ci-dependencies.mjs")
+    simples: dict[str, Callable[[], int]] = {
+        "--coverage": _run_coverage,
+        "--lint-relatorio": _run_lint_report,
+        "--security": partial(_run_delegated, "seguranca", "ci-security.mjs"),
+        "--dependencies": partial(_run_delegated, "dependencias", "ci-dependencies.mjs"),
+    }
+    for flag, executar in simples.items():
+        if flag in argv:
+            return executar()
     if "--migrations" in argv:
         return _run_migrations(argv[argv.index("--migrations") + 1 :])
+    if "--docker" in argv:
+        return _run_docker(argv[argv.index("--docker") + 1 :])
     return None
 
 
@@ -284,6 +308,7 @@ def main() -> int:
     passos: list[tuple[str, list[str], Path | None]] = [
         ("conformidade (gate)", ["node", "tools/gate/validate.mjs", "--all"], None),
         ("ambiente (.env.example)", ["node", "tools/sync-env.mjs", "--check"], None),
+        ("deploy (container)", ["node", "tools/sync-deploy.mjs", "--check"], None),
         ("schemas de portas", ["node", "tools/generate-port-schemas.mjs", "--check"], None),
         # `--check` NAO escreve: no verificar o formatador ACUSA, e so o hook escreve.
         ("formato (ruff format)", ["ruff", "format", "--check", "."], None),

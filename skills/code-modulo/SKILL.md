@@ -90,7 +90,9 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 6. **Contrato antes do código** — `contract/openapi.yaml` **primeiro**, com `/health`, `/meta` e `/resumo`.
 7. **Preencher nesta ordem** — `core/domain` → `api/src/routes` → `api/src/mappers` (saída por
    **allowlist**) → `database/` (migration com `-- rollback`) → `web/src/pages` → `tests/`.
-8. **Sincronizar ambiente** — `node tools/sync-env.mjs`; valores reais no `.env` da **raiz**.
+8. **Sincronizar ambiente** — `node tools/sync-env.mjs`; valores reais no `.env` da **raiz**. O que o
+   container deriva do módulo (rota do front, URL do banco) o `create-module` já regenerou
+   (`node tools/sync-deploy.mjs`) — confira com `--check`.
 9. **Gate verde** — `validate.mjs modules/<id>` **e** `validate.mjs --extraction modules/<id>`.
 10. **Reportar** — id, role, binding, rotas, tabelas, portas, `consumes` e pendências.
 

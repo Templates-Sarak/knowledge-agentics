@@ -1,8 +1,9 @@
 # Produção — o molde do compose
 
-Arquivo: `assets/compose.production.yml`. É um **molde**: vai ao servidor sozinho, ao lado do `.env`, e
-puxa as imagens do registry. **Nunca builda.** Escolhas de entrada e de registry são **do HITL** do
-passo 12 do workflow — o molde não decide por ninguém.
+Arquivo: `assets/compose.production.yml` — **o único asset da skill**: o compose de produção muda por
+provedor, e por isso não é do template (ADR-022). É um **molde**: vai ao servidor sozinho, ao lado do `.env`,
+e puxa as imagens do registry. **Nunca builda.** Escolhas de entrada e de registry são **do HITL** do
+passo 9 do workflow — o molde não decide por ninguém.
 
 ## O que o molde fixa
 
@@ -14,7 +15,8 @@ passo 12 do workflow — o molde não decide por ninguém.
 | **Nenhuma** porta publicada | sem `ports` | o servidor não aceita conexão de entrada; a entrada é um serviço na rede |
 | Rede dedicada | `networks: backbone` | isola o projeto; **sem** `internal: true` |
 | `restart: unless-stopped` | todo serviço | sobe com o host, respeita `stop` manual |
-| `stop_grace_period` | `${DEPLOY_STOP_GRACE_PERIOD:?}` | ≥ teto de desligamento + folga, senão o Docker manda `SIGKILL` com trabalho em voo |
+| `stop_grace_period` | `${DEPLOY_STOP_GRACE_PERIOD:?}` | **derivado** do teto de desligamento + folga (abaixo), senão o Docker manda `SIGKILL` com trabalho em voo |
+| `ROOT_API_HOST` | `environment: 0.0.0.0` em `app` | o `.env` do servidor pode guardar loopback; host de escuta é propriedade do container (`03-operacao` §9.5) |
 | `env_file: .env` | `app` | segredo entra como ambiente do processo; o `.env` mora só no servidor, e só ele |
 | `depends_on … service_healthy` | `front` espera o `app` | o proxy não sobe apontando para o vazio |
 
@@ -22,8 +24,14 @@ passo 12 do workflow — o molde não decide por ninguém.
 chegar ao banco gerenciado e a APIs externas. "Interna" aqui quer dizer **sem porta publicada e numa rede
 própria**, não "sem rota de saída".
 
-**`stop_grace_period`:** o template **não define** teto de desligamento hoje — `composition.*` não trata
-`SIGTERM`. Até existir, meça o pior pedido em voo e dimensione por ele; é pendência da fase 2.
+**`stop_grace_period` é derivado, não chutado.** O processo composto drena as requisições em voo até
+`config/runtime.json:shutdown.drainTimeoutMs` e sai (`03-operacao` §9.4); o orquestrador só pode matar
+**depois** desse teto. O valor é **teto + folga** (`config/deploy.json:shutdown.graceMarginMs`), em segundos,
+arredondado para cima — e `node tools/sync-deploy.mjs` já o escreve em `deploy/compose.modules.yml`
+(`stop_grace_period: 10s`, para o padrão 8000 + 2000 ms). Na publicação, **copie esse valor** para
+`DEPLOY_STOP_GRACE_PERIOD` do `.env.deploy`: o servidor não tem o repositório, então o compose de produção
+não calcula, recebe. Mudou o teto no `runtime.json`? Regere, e atualize o `.env.deploy` junto — o validador
+não enxerga esse elo, a revisão da publicação enxerga.
 
 ## Os dois arquivos de ambiente no servidor
 
@@ -32,7 +40,7 @@ Decisão: **manter a separação do local**. No servidor ficam, ao lado do compo
 | Arquivo | Equivale a | Conteúdo | Quem lê |
 |---|---|---|---|
 | `.env` | o `.env` da raiz | `ROOT_API_PORT`, `<MODULE>_*` (segredos reais) | o processo do `app` (`env_file`) e a interpolação |
-| `.env.deploy` | `<INFRA_DIR>/.env` | `DEPLOY_REGISTRY`, `DEPLOY_APP_DIGEST`, `DEPLOY_FRONT_DIGEST`, `DEPLOY_STOP_GRACE_PERIOD` | só o compose |
+| `.env.deploy` | `deploy/.env` | `DEPLOY_REGISTRY`, `DEPLOY_APP_DIGEST`, `DEPLOY_FRONT_DIGEST`, `DEPLOY_STOP_GRACE_PERIOD` | só o compose |
 
 ```
 docker compose -f compose.production.yml --env-file .env --env-file .env.deploy up -d
@@ -64,7 +72,7 @@ A entrada fala com `front:8080` pelo nome do serviço. Qual usar depende de onde
 
 ## Registry e ordem da publicação
 
-1. As **duas imagens**, mesma tag de commit, `--build-arg <PROJECT>_VERSION=<commit>`.
+1. As **duas imagens**, mesma tag de commit, `--build-arg IMAGE_VERSION=<commit>`.
 2. Push no registry escolhido no HITL (sem `latest`).
 3. **Registrar os digests** (`sha256:…`) que o registry devolveu — são eles que entram em
    `DEPLOY_APP_DIGEST` e `DEPLOY_FRONT_DIGEST`.

@@ -72,6 +72,18 @@
  * árvore de processos sempre encerrada — ver `supervisionar.mjs`. A parte pura (ambiente, URL,
  * comando) é núcleo; subir, sondar e matar é a casca.
  *
+ * `container-arquivos` — a prova SEM Docker de que o projeto nasce dockerizado (ADR-022): os arquivos de
+ * container existem, nenhum marcador (`<project>`, `<escopo>`…) sobrou, e `sync-deploy.mjs --check` passa
+ * com uma `location` por `webPath` declarado. Barato, roda em todo modo — inclusive `--fast`. Cada
+ * `criar-modulo` já confere o mesmo `--check` logo depois de criar (o gerador roda dentro dele).
+ *
+ * `docker` — OPCIONAL, atrás de `--docker`: builda as duas imagens e SOBE o profile `app` do projeto
+ * gerado, e sonda `/healthz` do front e `<basePath>/health` pela origem única (no Python, pela própria
+ * API, que não tem front). Sem Docker no host o passo sai **PULADO: docker indisponível**, visível na
+ * saída e contado à parte — nunca "ok" calado. Derruba containers, volumes e as duas imagens no `finally`.
+ * Roda ANTES de `artefato` (que troca o provedor do primeiro módulo para `postgres`) e do `desligamento`
+ * (que instala um módulo que o gate reprovaria): o projeto tem de estar no estado que o `verify` aprovou.
+ *
  * TETOS DE TEMPO: todo processo que este arquivo dispara roda sob um teto por CLASSE de passo
  * (`LIMITES`, o ÚNICO lugar dos tunables de tempo). Estourar reprova com "estourou o teto de N s",
  * nunca com um "falhou" genérico, e a ÁRVORE de processos do passo é encerrada (o `spawnSync` com
@@ -79,6 +91,7 @@
  * A casca de processo é `supervisionar.mjs`, ao lado deste arquivo.
  */
 import { spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { platform, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
@@ -205,6 +218,8 @@ const CLASSE_DO_TIPO = {
   'npm-script': 'verificacao',
   boot: 'boot',
   'composition-autoteste': 'geracao',
+  'container-arquivos': 'leve',
+  docker: 'docker',
   desligamento: 'desligamento',
   artefato: 'instalacao',
 };
@@ -259,7 +274,7 @@ function passosDeSetup(binding, rapido) {
  * Python — medido, `bindings/python/_template` não tem pasta `web`), e `verify.py` já cobre forma +
  * limiares + tipos + testes num só passo, como o `npm run verify` do lado Node.
  */
-function passosDePython(rapido) {
+function passosDePython({ rapido, docker }) {
   return [
     { nome: 'gerar-projeto', tipo: 'gerar-projeto' },
     { nome: 'venv', tipo: 'venv' },
@@ -270,7 +285,9 @@ function passosDePython(rapido) {
     // Depois de `verificar`: o mapa instalado é doutrina, não código do módulo. Sem este passo,
     // `verify-map.mjs --check` seria um `--check` que existe e ninguém chama.
     { nome: 'mapa', tipo: 'mapa-instalado' },
+    { nome: 'container-arquivos', tipo: 'container-arquivos' },
     { nome: 'ci-dependencias', tipo: 'ci-dependencias-py' },
+    ...passosDeDocker(docker),
     ...passosDeRuntime(),
   ];
 }
@@ -282,6 +299,11 @@ function passosDePython(rapido) {
  * `desligamento` e o ultimo de proposito: ele instala um modulo descartavel (`zz-lento`, com uma rota
  * lenta) que o gate reprovaria se `verify` rodasse depois.
  */
+/** O passo `docker` só entra com `--docker`: custa minutos de build e exige um daemon no host. */
+function passosDeDocker(docker) {
+  return docker ? [{ nome: 'docker', tipo: 'docker' }] : [];
+}
+
 function passosDeRuntime() {
   return [
     { nome: 'composition-autoteste', tipo: 'composition-autoteste' },
@@ -289,16 +311,18 @@ function passosDeRuntime() {
   ];
 }
 
-function passosDeNode(binding, rapido) {
+function passosDeNode(binding, { rapido, docker }) {
   return [
     { nome: 'gerar-projeto', tipo: 'gerar-projeto' },
     { nome: 'instalar', tipo: 'npm-install' },
     ...passosDeSetup(binding, rapido),
     { nome: 'verify', tipo: 'npm-script', script: 'verify' },
     { nome: 'mapa', tipo: 'mapa-instalado' },
+    { nome: 'container-arquivos', tipo: 'container-arquivos' },
     { nome: 'build', tipo: 'npm-script', script: 'build' },
     { nome: 'lint', tipo: 'npm-script', script: 'lint' },
     { nome: 'ci-dependencias', tipo: 'npm-script', script: 'ci:dependencies' },
+    ...passosDeDocker(docker),
     { nome: 'artefato', tipo: 'artefato' },
     ...passosDeRuntime(),
   ];
@@ -321,8 +345,9 @@ function passosDeNode(binding, rapido) {
  * por CVE de terceiro antes mesmo de o resto ser medido — um portão que nasce vermelho é um portão
  * que se aprende a ignorar.
  */
-export function passosDoBinding(binding, { rapido = false } = {}) {
-  return binding === 'python' ? passosDePython(rapido) : passosDeNode(binding, rapido);
+export function passosDoBinding(binding, { rapido = false, docker = false } = {}) {
+  const opcoes = { rapido, docker };
+  return binding === 'python' ? passosDePython(opcoes) : passosDeNode(binding, opcoes);
 }
 
 /** O manifesto cujo `health` o passo `boot` consulta: o do PRIMEIRO módulo criado (o padrão). */
@@ -380,6 +405,81 @@ export function contarAvisosDoGate(texto) {
   let total = 0;
   for (const achado of String(texto ?? '').matchAll(/(\d+) aviso\(s\)/g)) total += Number(achado[1]);
   return total;
+}
+
+/** Os arquivos de container que TODO projeto gerado tem na raiz; os do front só onde há tela. */
+export const ARQUIVOS_DE_CONTAINER = ['Dockerfile', '.dockerignore', 'compose.yml', 'deploy/.env.example'];
+export const ARQUIVOS_DE_FRONT = ['front.Dockerfile', 'deploy/nginx.conf'];
+
+/**
+ * Marcadores que o `create-project` tem de ter resolvido nos arquivos de container. Lista FECHADA de
+ * propósito: o texto cita `<MODULE>_DB_URL` e `<basePath>` em prosa, e uma regex genérica `<...>` os
+ * acusaria — aqui só entra o marcador que é substituído de verdade.
+ */
+export const MARCADORES_DE_CONTAINER = ['<project>', '<PROJECT>', '<escopo>', '<INFRA_DIR>', '<WEB_PATH>', '<MAX_BODY_SIZE>', '<PROXY_READ_TIMEOUT>'];
+
+/** PURA — `[{ arquivo, marcador }]` do que sobrou nos textos (`{ [arquivo]: texto }`). Vazia = ok. */
+export function marcadoresSobrando(textos) {
+  return Object.entries(textos).flatMap(([arquivo, texto]) => (
+    MARCADORES_DE_CONTAINER.filter((marcador) => texto.includes(marcador)).map((marcador) => ({ arquivo, marcador }))
+  ));
+}
+
+/**
+ * PURA — problemas do conjunto de container de um projeto gerado. `presentes` = os caminhos relativos
+ * que existem; `comFront` = algum módulo publica tela; `textos` = o conteúdo dos arquivos presentes.
+ */
+export function problemasDeContainer({ presentes, comFront, textos }) {
+  const exigidos = comFront ? [...ARQUIVOS_DE_CONTAINER, ...ARQUIVOS_DE_FRONT] : ARQUIVOS_DE_CONTAINER;
+  const ausentes = exigidos.filter((arquivo) => !presentes.includes(arquivo)).map((arquivo) => `${arquivo} ausente`);
+  const sobras = marcadoresSobrando(textos).map(({ arquivo, marcador }) => `${arquivo}: marcador ${marcador} sem resolver`);
+  return [...ausentes, ...sobras];
+}
+
+/**
+ * PURA — problemas das rotas do front: cada `webPath` não-nulo tem a `location` dele no arquivo gerado, e
+ * nenhuma `location` de módulo sem tela. `manifestos` são os `module.json` dos módulos criados.
+ */
+export function problemasDasRotas(nginxGerado, manifestos) {
+  const problemas = [];
+  for (const { id, webPath } of manifestos) {
+    const tem = typeof webPath === 'string' && nginxGerado.includes(`location ${webPath}/ {`);
+    if (typeof webPath === 'string' && !tem) problemas.push(`modulo "${id}": sem location para ${webPath}`);
+    if (typeof webPath !== 'string' && nginxGerado.includes(`/${id}/`)) problemas.push(`modulo "${id}": location sem webPath`);
+  }
+  return problemas;
+}
+
+/**
+ * PURA — os valores de um `.env.example` (`{ chaves }` = as chaves, na ordem), preenchidos para o
+ * autoteste: `*_PORT` recebe uma porta livre da fila, `*_PASSWORD` o segredo efêmero, o resto o valor
+ * inócuo. Preencher A PARTIR do exemplo é o que prova que ele declara tudo o que o compose exige.
+ */
+export function preencherEnvDeDeploy(chaves, { portas, segredo, inocuo }) {
+  const fila = [...portas];
+  return chaves.map((chave) => {
+    if (chave.endsWith('_PORT')) return `${chave}=${fila.shift()}`;
+    if (chave.endsWith('_PASSWORD')) return `${chave}=${segredo}`;
+    return `${chave}=${inocuo}`;
+  }).join('\n').concat('\n');
+}
+
+/** PURA — as chaves (`KEY=`) de um `.env.example`, em ordem, sem comentário. */
+export function chavesDoEnvExemplo(texto) {
+  return texto.split(/\r?\n/).map((linha) => linha.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=/)?.[1]).filter((c) => c !== undefined);
+}
+
+/**
+ * PURA — as sondas do passo `docker`: `{ url, esperado }`. Com front (TS/JS) a origem ÚNICA responde
+ * `/healthz` 200, `/` 404 (sem catch-all), o `health` da API e a página do módulo; sem front (Python) a
+ * própria API responde o `health`.
+ */
+export function sondasDoDocker({ comFront, origem, manifesto }) {
+  const health = { url: `${origem}${manifesto.basePath}/health`, esperado: 200 };
+  if (!comFront) return [health];
+  const sondas = [{ url: `${origem}/healthz`, esperado: 200 }, { url: `${origem}/`, esperado: 404 }, health];
+  if (typeof manifesto.webPath === 'string') sondas.push({ url: `${origem}${manifesto.webPath}/`, esperado: 200 });
+  return sondas;
 }
 
 /**
@@ -500,7 +600,7 @@ function motivoDoTeto(tetoMs) {
 }
 
 /**
- * Um resultado bruto vira `{ ok, motivo }`. As formas de "não rodou" — teto estourado, `error`,
+ * Um resultado bruto vira `{ ok, motivo }` (e `pulado`, quando o passo se declara pulado). As formas de "não rodou" — teto estourado, `error`,
  * `status` nulo/indefinido, `status` não-zero — caem em `ok: false`. Nenhuma vira `ok: true`.
  * O teto vem ANTES de `error`: um `ETIMEDOUT` também é `error`, e "falhou" genérico esconderia a causa.
  */
@@ -508,6 +608,9 @@ export function classificarPasso(resultado) {
   if (resultado === null || resultado === undefined) {
     return { ok: false, motivo: 'nenhum resultado — passo nao foi executado' };
   }
+  // PULADO nao e verde: o passo declara que NAO rodou e diz por que, e a saida o conta a parte. So um
+  // `pulado` explicito (nunca a ausencia de erro) leva a este ramo.
+  if (typeof resultado.pulado === 'string') return { ok: true, motivo: null, pulado: resultado.pulado };
   if (estourouTeto(resultado)) return { ok: false, motivo: motivoDoTeto(resultado.tetoMs) };
   if (resultado.error !== undefined && resultado.error !== null) {
     return { ok: false, motivo: `erro ao executar: ${resultado.error.message ?? String(resultado.error)}` };
@@ -770,8 +873,12 @@ function executarCriarModulo(passo, ctx, exec) {
   const resultado = rodarNode([CRIAR_MODULO, passo.moduloId, '--role', 'domain', ...passo.flags], exec);
   if (classificarPasso(resultado).ok !== true) return resultado;
   const avisos = contarAvisosDoGate(resultado.stdout);
-  if (avisos === 0) return resultado;
-  return { ...falhaDePreparo(`modulo recem-criado gerou ${avisos} aviso(s) do gate — o molde tem de nascer limpo`), stdout: resultado.stdout };
+  if (avisos !== 0) {
+    return { ...falhaDePreparo(`modulo recem-criado gerou ${avisos} aviso(s) do gate — o molde tem de nascer limpo`), stdout: resultado.stdout };
+  }
+  // As rotas do front e a URL do banco sao GERADAS dos manifestos: o `create-module` as regenera, e o
+  // `--check` prova que ele o fez — sem edicao manual — para ESTE modulo, antes de o proximo chegar.
+  return rodarNode([join(ctx.destino, 'tools', 'sync-deploy.mjs'), '--check'], exec);
 }
 
 const PASTA_DO_ARTEFATO = '.artefato';
@@ -878,6 +985,177 @@ function executarDesligamento(_passo, ctx, exec) {
   return ultimo;
 }
 
+/** Le o texto de um arquivo relativo do projeto gerado, ou `null` se nao existe. */
+function lerTextoDoProjeto(destino, relativo) {
+  const caminho = join(destino, relativo);
+  return existsSync(caminho) ? readFileSync(caminho, 'utf8') : null;
+}
+
+/** Os `module.json` dos modulos reais criados (os moldes `_*` nao entram). */
+function manifestosReais(destino) {
+  const base = join(destino, 'modules');
+  return readdirSync(base)
+    .filter((nome) => !nome.startsWith('_') && existsSync(join(base, nome, 'module.json')))
+    .map((nome) => lerJsonDoProjeto(join(base, nome, 'module.json')));
+}
+
+/** Algum modulo real publica tela: `webPath` declarado E a pasta `web/` presente. */
+function algumModuloTemFront(destino) {
+  return manifestosReais(destino).some((m) => (
+    typeof m.webPath === 'string' && existsSync(join(destino, 'modules', m.id, 'web'))
+  ));
+}
+
+/**
+ * `container-arquivos`: o projeto nasce dockerizado, SEM precisar de Docker para provar. Confere a
+ * presenca dos arquivos, que nenhum marcador sobrou e que as rotas geradas batem com os `webPath`.
+ */
+function executarContainerArquivos(_passo, ctx) {
+  const comFront = algumModuloTemFront(ctx.destino);
+  const conhecidos = [...ARQUIVOS_DE_CONTAINER, ...ARQUIVOS_DE_FRONT, 'deploy/compose.modules.yml', 'deploy/nginx.modules.conf'];
+  const textos = {};
+  for (const relativo of conhecidos) {
+    const texto = lerTextoDoProjeto(ctx.destino, relativo);
+    if (texto !== null) textos[relativo] = texto;
+  }
+  const problemas = problemasDeContainer({ presentes: Object.keys(textos), comFront, textos });
+  if (comFront) problemas.push(...problemasDasRotas(textos['deploy/nginx.modules.conf'] ?? '', manifestosReais(ctx.destino)));
+  if (problemas.length === 0) return { error: null, status: 0, stdout: '', stderr: '' };
+  return falhaDePreparo(`container: ${problemas.join('; ')}`);
+}
+
+/** `docker info` responde: ha um daemon alcancavel. Sem ele o passo `docker` se declara pulado. */
+function dockerDisponivel() {
+  const resposta = spawnSync('docker', ['info', '--format', '{{.ServerVersion}}'], { encoding: 'utf8', shell: false, timeout: 30000 });
+  return resposta.error === undefined && resposta.status === 0;
+}
+
+/** Portas livres DISTINTAS, escolhidas pelo SO — ou `null` se o SO nao as der. */
+function descobrirPortasDistintas(quantidade) {
+  const achadas = new Set();
+  for (let tentativa = 0; tentativa < quantidade * 5 && achadas.size < quantidade; tentativa += 1) {
+    const porta = descobrirPortaLivre();
+    if (porta !== null) achadas.add(porta);
+  }
+  return achadas.size === quantidade ? [...achadas] : null;
+}
+
+/**
+ * Escreve o `.env` da raiz e o `deploy/.env` do projeto gerado. O `.env` leva `ROOT_API_HOST` em LOOPBACK
+ * de proposito: e o valor de dev, e o `app` so sobe alcancavel porque o compose o sobrescreve (a prova
+ * do host de container). Devolve as portas escolhidas ou a falha de preparo.
+ */
+function prepararAmbienteDoDocker(ctx) {
+  const portas = descobrirPortasDistintas(3);
+  if (portas === null) return { falha: falhaDePreparo('docker: nao foi possivel escolher portas livres') };
+  const [portaApi, portaBanco, portaEntrada] = portas;
+  // So os modulos REAIS: o molde `_template` carrega marcadores (`<MODULE>_API_PORT`) que nao sao
+  // nome de variavel valido — o compose recusaria o `.env`.
+  const manifestos = manifestosReais(ctx.destino);
+  const { chavesDaRaiz } = lerContextoDeBoot(ctx.destino);
+  const ambiente = ambienteDoBoot({ chavesDaRaiz, manifestos, porta: portaApi });
+  const envDaRaiz = Object.entries(ambiente).map(([chave, valor]) => `${chave}=${valor}`).join('\n');
+  writeFileSync(join(ctx.destino, '.env'), `${envDaRaiz}\n`, 'utf8');
+
+  const exemplo = lerTextoDoProjeto(ctx.destino, 'deploy/.env.example') ?? '';
+  const preenchido = preencherEnvDeDeploy(chavesDoEnvExemplo(exemplo), {
+    portas: [portaBanco, portaEntrada],
+    segredo: randomBytes(12).toString('hex'),
+    inocuo: LIMITES.boot.valorInocuo,
+  });
+  writeFileSync(join(ctx.destino, 'deploy', '.env'), preenchido, 'utf8');
+  return { portaApi, portaEntrada, manifesto: escolherManifestoDeBoot(manifestos) };
+}
+
+/** PURA — o erro e de CONEXAO (nunca chegou ao servidor) e, so por isso, vale uma nova tentativa. */
+export function erroDeConexao(resultado) {
+  return /fetch failed|ECONNREFUSED|ECONNRESET/.test(`${resultado?.stdout ?? ''}${resultado?.stderr ?? ''}`);
+}
+
+/**
+ * A sonda de UMA URL, com repeticao SO para erro de conexao (`LIMITES.sondaDocker`): o `--wait` do
+ * compose ja provou os healthchecks, mas a porta publicada no host pode demorar a aceitar no Docker
+ * Desktop. Status errado e definitivo — repetir o esconderia.
+ */
+function sondarUrl(sonda, exec) {
+  const { tentativas, intervaloMs } = LIMITES.sondaDocker;
+  let resultado = sondarUrlUmaVez(sonda, exec);
+  for (let n = 1; n < tentativas && classificarPasso(resultado).ok !== true && erroDeConexao(resultado); n += 1) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, intervaloMs);
+    resultado = sondarUrlUmaVez(sonda, exec);
+  }
+  return resultado;
+}
+
+/** Uma tentativa: `node -e fetch(...)`, sob o supervisor. Sai 0 so se o status for o esperado. */
+function sondarUrlUmaVez({ url, esperado }, exec) {
+  const script = 'const [u, e] = process.argv.slice(1);'
+    // `exitCode` e nao `process.exit()`: no Windows, sair logo depois do `fetch` derruba o libuv com
+    // `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` e o status vira nao-zero mesmo com 200.
+    + 'fetch(u, { redirect: "manual" }).then((r) => { console.log(u, r.status);'
+    + ' process.exitCode = r.status === Number(e) ? 0 : 1; })'
+    + '.catch((x) => { console.error(String(x)); process.exitCode = 1; });';
+  return rodarNode(['-e', script, url, String(esperado)], exec);
+}
+
+/** O nome do projeto compose (`name: <project>-local`) — de onde saem os nomes das duas imagens. */
+function nomeDoProjetoCompose(destino) {
+  return (lerTextoDoProjeto(destino, 'compose.yml') ?? '').match(/^name:\s*(\S+)-local\s*$/m)?.[1] ?? null;
+}
+
+/** Os argumentos `-f`/`--env-file` do compose do projeto gerado — os mesmos que `docker-up.mjs` passa. */
+function argumentosDoCompose(destino) {
+  return ['compose', '-f', join(destino, 'compose.yml'), '--env-file', join(destino, '.env'),
+    '--env-file', join(destino, 'deploy', '.env'), '--profile', 'app'];
+}
+
+/** Derruba containers e volumes do projeto e remove as DUAS imagens que o passo construiu. Nunca lanca. */
+function derrubarDocker(destino) {
+  const opcoes = { encoding: 'utf8', shell: false };
+  spawnSync('docker', [...argumentosDoCompose(destino), 'down', '--volumes', '--remove-orphans'], opcoes);
+  const projeto = nomeDoProjetoCompose(destino);
+  if (projeto === null) return;
+  spawnSync('docker', ['image', 'rm', '--force', `${projeto}-app:local`, `${projeto}-front:local`], opcoes);
+}
+
+/** Cauda dos logs dos servicos — a causa de uma sonda que falhou costuma estar la, nao no `fetch`. */
+function caudaDosLogs(destino) {
+  const logs = spawnSync('docker', [...argumentosDoCompose(destino), 'logs', '--tail', '30'], { encoding: 'utf8', shell: false });
+  return `${logs.stdout ?? ''}${logs.stderr ?? ''}`;
+}
+
+/** Sobe o profile `app` e sonda as URLs; o que ficou de pe e removido pelo chamador (`finally`). */
+function subirESondar(ctx, preparo, exec) {
+  const subida = rodarNode([join(ctx.destino, 'tools', 'docker-up.mjs'), 'up'], exec);
+  if (classificarPasso(subida).ok !== true) return { ...subida, stdout: `${subida.stdout ?? ''}${caudaDosLogs(ctx.destino)}` };
+  const comFront = algumModuloTemFront(ctx.destino);
+  // Com front a entrada e o front; sem front, a propria API (DEPLOY_APP_PORT) — as duas saem da mesma fila.
+  const origem = `http://${LIMITES.boot.hostDeLoopback}:${preparo.portaEntrada}`;
+  for (const sonda of sondasDoDocker({ comFront, origem, manifesto: preparo.manifesto })) {
+    const resultado = sondarUrl(sonda, exec);
+    if (classificarPasso(resultado).ok === true) continue;
+    const motivo = `docker: ${sonda.url} nao respondeu ${sonda.esperado} — ${resultado.stdout ?? ''}${resultado.stderr ?? ''}`;
+    return { ...falhaDePreparo(motivo), stdout: caudaDosLogs(ctx.destino) };
+  }
+  return { error: null, status: 0, stdout: '', stderr: '' };
+}
+
+/**
+ * `docker` (so com `--docker`): builda as duas imagens, sobe o profile `app` e sonda a origem unica. Sem
+ * daemon, o passo se DECLARA pulado — a saida o mostra e o veredito o conta a parte.
+ */
+function executarDocker(_passo, ctx, exec) {
+  if (!dockerDisponivel()) return { error: null, status: 0, stdout: '', stderr: '', pulado: 'docker indisponível' };
+  const preparo = prepararAmbienteDoDocker(ctx);
+  if (preparo.falha !== undefined) return preparo.falha;
+  try {
+    return subirESondar(ctx, preparo, exec);
+  } finally {
+    derrubarDocker(ctx.destino);
+  }
+}
+
+
 const BOM = /^﻿/;
 
 function lerJsonDoProjeto(caminho) {
@@ -942,6 +1220,8 @@ const EXECUTORES_COMUNS = {
   'composition-autoteste': executarCompositionAutoteste,
   artefato: executarArtefato,
   desligamento: executarDesligamento,
+  'container-arquivos': executarContainerArquivos,
+  docker: executarDocker,
   'criar-adapter': (passo, ctx, exec) => criarAdapterEVerificar(passo, ctx, exec),
   'clone-simulado': (_passo, ctx, exec) => simularClone(ctx.destino, exec),
   'primeiro-commit': (_passo, ctx, exec) => (
@@ -1042,13 +1322,13 @@ function executarPassos(passos, ctx) {
  * falhar (`primeiroFalho`). A pasta é sempre removida no `finally` — a MENOS que `--keep` peça
  * para preservar (uso: depurar um binding específico sem recriar o projeto do zero).
  */
-function executarBinding(binding, { manter, rapido }) {
+function executarBinding(binding, { manter, rapido, docker }) {
   const destino = mkdtempSync(join(tmpdir(), `sarak-autoteste-template-${binding}-`));
   const ctx = { binding, destino, pythonBase: null, venvDir: join(destino, '.venv') };
 
   try {
     if (binding === 'python') ctx.pythonBase = resolverPythonBase();
-    const executados = executarPassos(passosDoBinding(binding, { rapido }), ctx);
+    const executados = executarPassos(passosDoBinding(binding, { rapido, docker }), ctx);
     const ok = primeiroFalho(executados.map((e) => e.classificado)) === null;
     return { binding, ok, executados };
   } finally {
@@ -1071,6 +1351,10 @@ function imprimirFalha({ classificado, saida }) {
 function imprimirPasso(executado) {
   const { passo, classificado, duracaoMs } = executado;
   const segundos = ((duracaoMs ?? 0) / 1000).toFixed(1);
+  if (classificado.pulado !== undefined) {
+    process.stdout.write(`  pula  ${passo.nome} (${segundos} s) — pulado: ${classificado.pulado}\n`);
+    return;
+  }
   process.stdout.write(`  ${classificado.ok ? 'ok   ' : 'FALHA'} ${passo.nome} (${segundos} s)\n`);
   if (!classificado.ok) imprimirFalha(executado);
 }
@@ -1078,16 +1362,18 @@ function imprimirPasso(executado) {
 function imprimirBinding(resultado) {
   process.stdout.write(`\nbinding ${resultado.binding}:\n`);
   for (const executado of resultado.executados) imprimirPasso(executado);
-  const total = resultado.executados.length;
-  const okCount = resultado.executados.filter((e) => e.classificado.ok).length;
-  process.stdout.write(`  binding ${resultado.binding}: ${resultado.ok ? 'VERDE' : 'VERMELHO'} (${okCount}/${total} passos rodados chegaram a ok)\n`);
+  const pulados = resultado.executados.filter((e) => e.classificado.pulado !== undefined).length;
+  const total = resultado.executados.length - pulados;
+  const okCount = resultado.executados.filter((e) => e.classificado.ok && e.classificado.pulado === undefined).length;
+  const aviso = pulados > 0 ? `, ${pulados} PULADO(S) — nao verificado(s)` : '';
+  process.stdout.write(`  binding ${resultado.binding}: ${resultado.ok ? 'VERDE' : 'VERMELHO'} (${okCount}/${total} passos rodados chegaram a ok${aviso})\n`);
 }
 
 // ================================================================================================
 // CLI
 // ================================================================================================
 
-const FLAGS_BOOLEANAS = { '--fast': 'rapido', '--keep': 'manter', '--autoteste': 'autoteste' };
+const FLAGS_BOOLEANAS = { '--fast': 'rapido', '--keep': 'manter', '--autoteste': 'autoteste', '--docker': 'docker' };
 const ARGUMENTOS_ACEITOS = ['--binding <nome>', ...Object.keys(FLAGS_BOOLEANAS)];
 
 /**
@@ -1098,7 +1384,7 @@ const ARGUMENTOS_ACEITOS = ['--binding <nome>', ...Object.keys(FLAGS_BOOLEANAS)]
  * binding, e o valor tem de pertencer a `BINDINGS`.
  */
 function lerOpcoes(argv) {
-  const opcoes = { binding: null, manter: false, autoteste: false, rapido: false };
+  const opcoes = { binding: null, manter: false, autoteste: false, rapido: false, docker: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (Object.hasOwn(FLAGS_BOOLEANAS, arg)) {
@@ -1144,7 +1430,9 @@ function principal() {
     process.stdout.write(`aviso: pulando ${pulados.join(', ')} (${opcoes.binding !== null ? '--binding' : '--fast'}) — NAO foram medidos nesta rodada.\n`);
   }
 
-  const resultados = alvo.map((binding) => executarBinding(binding, { manter: opcoes.manter, rapido: opcoes.rapido }));
+  const resultados = alvo.map((binding) => executarBinding(binding, {
+    manter: opcoes.manter, rapido: opcoes.rapido, docker: opcoes.docker,
+  }));
   for (const resultado of resultados) imprimirBinding(resultado);
 
   const falhos = resultados.filter((r) => !r.ok);
@@ -1185,8 +1473,9 @@ function casosDeOrdemDosPassos() {
     { nome: 'passosDoBinding(javascript): mesma forma do typescript', fn: () => fimNode('javascript') },
     { nome: 'passosDoBinding(python): sem build/lint separado (sem web/ nos modulos python), runtime por ULTIMO', fn: () => {
       const nomes = nomesDoBinding('python');
-      return !nomes.includes('build') && !nomes.includes('lint') && nomes.at(-5) === 'verificar' && nomes.at(-4) === 'mapa'
-        && nomes.at(-3) === 'ci-dependencias' && nomes.at(-2) === 'composition-autoteste' && nomes.at(-1) === 'desligamento';
+      return !nomes.includes('build') && !nomes.includes('lint') && nomes.at(-6) === 'verificar' && nomes.at(-5) === 'mapa'
+        && nomes.at(-4) === 'container-arquivos' && nomes.at(-3) === 'ci-dependencias'
+        && nomes.at(-2) === 'composition-autoteste' && nomes.at(-1) === 'desligamento';
     } },
     { nome: 'passosDoBinding(python): venv e instalar ANTES do PRIMEIRO criar-modulo', fn: () => {
       const passos = passosDoBinding('python');
@@ -1524,8 +1813,84 @@ function casosDePrimeiroFalho() {
   ];
 }
 
+/** O que a dockerizacao do template (ADR-022) acrescenta: passos, pureza e a flag `--docker`. */
+function casosDeContainer() {
+  const docker = { docker: true };
+  return [
+    { nome: 'passosDoBinding: container-arquivos logo depois de mapa, nos tres bindings (e tambem no --fast)', fn: () => (
+      BINDINGS.every((binding) => [{}, { rapido: true }].every((opcoes) => {
+        const nomes = nomesDoBinding(binding, opcoes);
+        return nomes.indexOf('container-arquivos') === nomes.indexOf('mapa') + 1;
+      }))
+    ) },
+    { nome: 'passosDoBinding: o passo docker SO existe com { docker: true }', fn: () => (
+      BINDINGS.every((b) => !nomesDoBinding(b).includes('docker') && nomesDoBinding(b, docker).includes('docker'))
+    ) },
+    { nome: 'passosDoBinding: docker antes de artefato (Node) e do desligamento — o projeto ainda e o que o verify aprovou', fn: () => (
+      BINDINGS.every((binding) => {
+        const nomes = nomesDoBinding(binding, docker);
+        const depois = binding === 'python' ? 'composition-autoteste' : 'artefato';
+        return nomes.indexOf('docker') !== -1 && nomes.indexOf('docker') === nomes.indexOf(depois) - 1
+          && nomes.indexOf('docker') < nomes.indexOf('desligamento');
+      })
+    ) },
+    { nome: 'lerOpcoes: --docker aceito e listado entre os argumentos aceitos', fn: () => {
+      const { opcoes, erro } = lerOpcoes(['--docker', '--binding', 'typescript']);
+      return erro === undefined && opcoes.docker === true && ARGUMENTOS_ACEITOS.includes('--docker');
+    } },
+    { nome: 'classificarPasso: pulado e ok MAS carrega o motivo (nunca verde calado)', fn: () => {
+      const r = classificarPasso({ status: 0, pulado: 'docker indisponível' });
+      return r.ok === true && r.pulado === 'docker indisponível' && classificarPasso({ status: 0 }).pulado === undefined;
+    } },
+    { nome: 'tetoDoPasso: container-arquivos e docker tem classe de tempo (docker, o maior)', fn: () => (
+      tetoDoPasso({ tipo: 'container-arquivos' }) > 0 && tetoDoPasso({ tipo: 'docker' }) > tetoDoPasso({ tipo: 'artefato' })
+    ) },
+    { nome: 'problemasDeContainer: completo e sem marcador -> nenhum problema; sem o front exigido -> acusa', fn: () => {
+      const presentes = [...ARQUIVOS_DE_CONTAINER, ...ARQUIVOS_DE_FRONT];
+      const textos = Object.fromEntries(presentes.map((a) => [a, 'ok']));
+      const semFront = problemasDeContainer({ presentes: ARQUIVOS_DE_CONTAINER, comFront: false, textos });
+      const faltaFront = problemasDeContainer({ presentes: ARQUIVOS_DE_CONTAINER, comFront: true, textos });
+      return problemasDeContainer({ presentes, comFront: true, textos }).length === 0 && semFront.length === 0
+        && faltaFront.length === ARQUIVOS_DE_FRONT.length;
+    } },
+    { nome: 'marcadoresSobrando: acusa <project>/<escopo>, mas nao a prosa (<MODULE>_DB_URL, <basePath>)', fn: () => {
+      const sobras = marcadoresSobrando({ 'compose.yml': 'name: <project>-local', 'Dockerfile': 'a <basePath>/health e <MODULE>_DB_URL' });
+      return sobras.length === 1 && sobras[0].marcador === '<project>';
+    } },
+    { nome: 'problemasDasRotas: webPath sem location acusa; module sem webPath com location acusa; coerente nao', fn: () => {
+      const nginx = 'location /a/ {}';
+      const ok = problemasDasRotas(nginx, [{ id: 'a', webPath: '/a' }, { id: 'b', webPath: null }]);
+      const semRota = problemasDasRotas('', [{ id: 'a', webPath: '/a' }]);
+      const rotaSobrando = problemasDasRotas(nginx, [{ id: 'a', webPath: null }]);
+      return ok.length === 0 && semRota.length === 1 && rotaSobrando.length === 1;
+    } },
+    { nome: 'erroDeConexao: "fetch failed" repete; status errado ou resultado vazio NUNCA repete', fn: () => (
+      erroDeConexao({ stderr: 'TypeError: fetch failed' }) === true
+      && erroDeConexao({ stdout: 'http://h/x 404\n' }) === false
+      && erroDeConexao(null) === false
+    ) },
+    { nome: 'preencherEnvDeDeploy: *_PORT recebe porta da fila, *_PASSWORD o segredo, o resto o inocuo', fn: () => {
+      const texto = preencherEnvDeDeploy(['DEPLOY_DB_NAME', 'DEPLOY_DB_PASSWORD', 'DEPLOY_DB_PORT', 'DEPLOY_FRONT_PORT'],
+        { portas: [11, 22], segredo: 's', inocuo: 'x' });
+      return texto === 'DEPLOY_DB_NAME=x\nDEPLOY_DB_PASSWORD=s\nDEPLOY_DB_PORT=11\nDEPLOY_FRONT_PORT=22\n';
+    } },
+    { nome: 'chavesDoEnvExemplo: so KEY= — comentario, linha vazia e prosa com `=` ficam fora', fn: () => (
+      mesmaLista(chavesDoEnvExemplo('# a=b\n\nA=\n  B=1\nc = 2\n'), ['A', 'B'])
+    ) },
+    { nome: 'sondasDoDocker: com front = healthz 200, / 404, health e a pagina do modulo; sem front = so o health', fn: () => {
+      const manifesto = { basePath: '/api/v1/m', webPath: '/m' };
+      const com = sondasDoDocker({ comFront: true, origem: 'http://h:1', manifesto });
+      const sem = sondasDoDocker({ comFront: false, origem: 'http://h:1', manifesto });
+      return com.length === 4 && com.some((x) => x.url.endsWith('/') && x.esperado === 404)
+        && com.some((x) => x.url === 'http://h:1/m/' && x.esperado === 200)
+        && sem.length === 1 && sem[0].url === 'http://h:1/api/v1/m/health';
+    } },
+  ];
+}
+
 function casosDeAutoteste() {
   return [
+    ...casosDeContainer(),
     ...casosDeOrdemDosPassos(),
     ...casosDeSetupEBoot(),
     ...casosDeCombinacoes(),

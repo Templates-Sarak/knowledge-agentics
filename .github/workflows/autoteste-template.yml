@@ -68,6 +68,28 @@ jobs:
       - run: npm run autoteste:tudo
       - run: npm run autoteste:template
 
+  # O projeto gerado SOBE em container de verdade (ADR-022): builda as duas imagens, sobe o profile `app`
+  # com Postgres e sonda a origem unica, nos tres bindings. O runner Linux do GitHub traz Docker, entao o
+  # passo `docker` roda de verdade aqui — o que na maquina de dev pode sair PULADO. Job separado do
+  # `autoteste-template`: o build frio custa minutos por binding, e nao deve atrasar nem avermelhar o
+  # sensor barato (CVE e breakage de major) quando o que quebrou foi so a imagem.
+  autoteste-template-docker:
+    # Mesmo motivo do `if` de autoteste-template: gatilho efetivo continua schedule+workflow_dispatch.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm ci
+      - run: docker version
+      - run: npm run autoteste:template:docker
+
   # Os runners de migrations (scripts/migrations.mjs, scripts/migrations.py) precisam de Postgres
   # real — o job acima nao tem banco e nunca exercita isto. Medido: ciclo completo
   # (up -> up[pula] -> down -> up) e o estado no banco (tabelas, indice, unique, RLS, tabela de

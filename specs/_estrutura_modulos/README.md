@@ -80,6 +80,8 @@ gate/validate.mjs <caminho-do-modulo>                      valida UM módulo
 gate/validate.mjs --all                                     todos + as regras globais
 gate/validate.mjs --extraction <caminho>                   vira microsserviço hoje?
 sync-env.mjs [--check]                                      regenera os .env.example
+sync-deploy.mjs [--check]                                   regenera as rotas do front e a URL do banco do container
+docker-up.mjs up|stop|logs                                  sobe o compose local (profile `app`)
 ```
 
 **A unidade de verificação é o módulo, não o repositório.** Se o verificador só funcionasse no repositório
@@ -89,6 +91,26 @@ a arquitetura foi cobrada.
 **O template não traz pipeline de CI/CD**, de propósito. Config de CI é específica de provedor, e a regra não
 pode morar num lugar que se perde ao trocar de provedor. Plugar o gate em qualquer executor é uma linha — ver
 [`tools/gate/README.md`](tools/gate/README.md).
+
+## Container
+
+**O projeto gerado nasce dockerizado** ([ADR-022](doutrina/adr/decisoes.md), lei em
+[`doutrina/03-operacao.md`](doutrina/03-operacao.md) §9.5): `Dockerfile` (uma imagem de backend do monólito
+composto), `.dockerignore`, `compose.yml` (profile padrão = Postgres de dev; profile `app` = paridade),
+`deploy/.env.example` e, nos bindings com `web/` (TS e JS), `front.Dockerfile` e `deploy/nginx.conf` — o
+front em origem única. O Python nasce sem front.
+
+```bash
+# [projeto] preencha o .env da raiz e o deploy/.env (modelo: deploy/.env.example), então:
+npm run docker:up        # (Python: python verify.py --docker up) — builda, sobe com --wait, imprime a URL
+node tools/sync-deploy.mjs --check   # as rotas e a URL do banco batem com os manifestos (entra no verify)
+```
+
+O que muda com os módulos é **gerado** (`deploy/nginx.modules.conf`, `deploy/compose.modules.yml`) e
+**incluído** pelos arquivos estáticos, que o projeto ajusta sem perder o ajuste. O que o template **não**
+traz: compose de produção, registry, digests e entrada — são da skill `deploy-docker-monolito`, porque mudam
+por provedor (ADR-012, que continua valendo nessa parte). O gate cobra a presença
+(`container-presente`) e a declaração das variáveis do compose (`compose-variaveis-declaradas`).
 
 ## Bindings
 

@@ -576,6 +576,59 @@ export const CASOS = [
     mutar: (m) => m.escrever('../../.githooks/pre-commit', '#!/bin/sh\necho "oi"\n'),
   },
   {
+    regra: 'container-presente',
+    descricao: 'projeto sem Dockerfile na raiz',
+    // `../../` sobe para a raiz do PROJETO. O molde conforme traz os quatro arquivos base nos tres
+    // bindings, entao remover um e o unico defeito.
+    contem: 'Dockerfile ausente',
+    mutar: (m) => m.remover('../../Dockerfile'),
+  },
+  {
+    regra: 'container-presente',
+    descricao: 'projeto sem deploy/.env.example',
+    // O arquivo que carrega as chaves `DEPLOY_*` — sem ele o compose sobe com variavel vazia e nenhum
+    // documento diz quais. `compose-variaveis-declaradas` tambem acusa (as `DEPLOY_*` do compose
+    // perdem a casa onde eram declaradas): a cascata e legitima, nao ruido.
+    tambem: ['compose-variaveis-declaradas'],
+    contem: 'deploy/.env.example ausente',
+    mutar: (m) => m.remover('../../deploy/.env.example'),
+  },
+  {
+    regra: 'container-presente',
+    descricao: 'modulo com webPath e web/, e projeto sem front.Dockerfile',
+    // A condicional: o front so e exigido onde ha tela. O vizinho copia o molde (webPath `/vizinho` e
+    // `web/`); onde o molde nao tem `web/` (Python) o caso vira SEM COBERTURA, nao um "nenhum achado".
+    exigeVizinho: true,
+    contem: 'front.Dockerfile ausente',
+    mutar: (m) => m.removerPastaEm('frontDockerfile'),
+  },
+  {
+    regra: 'dockerignore-segredo',
+    descricao: '.dockerignore que nao ignora o .env',
+    // O arquivo existe (`container-presente` cala) e lista o resto do contexto — so o segredo ficou de
+    // fora. As duas mensagens da regra saem juntas: nem a raiz nem `**/.env` estao cobertas.
+    contem: '.dockerignore nao ignora',
+    vezes: 2,
+    mutar: (m) => m.escrever('../../.dockerignore', 'node_modules\ndist\n'),
+  },
+  {
+    regra: 'dockerignore-segredo',
+    descricao: '.dockerignore ignora .env na raiz mas nao `**/.env` (o dos modulos e o de deploy)',
+    // `.env` no dockerignore casa SO na raiz do contexto — a diferenca de semantica para o gitignore, e o
+    // motivo de a regra ter duas metades.
+    contem: '**/.env',
+    vezes: 1,
+    mutar: (m) => m.escrever('../../.dockerignore', 'node_modules\n.env\n.env.*\n!.env.example\n'),
+  },
+  {
+    regra: 'compose-variaveis-declaradas',
+    descricao: 'compose.yml interpola variavel que nenhum manifesto nem deploy/.env.example declara',
+    // `x-extra` e a forma legal de acrescentar uma chave de topo ao compose sem tocar servico nenhum —
+    // o texto continua YAML valido, e a variavel e a unica coisa errada.
+    contem: 'DEPLOY_NAO_DECLARADA',
+    mutar: (m) => m.acrescentar('../../compose.yml', '\nx-extra: ${DEPLOY_NAO_DECLARADA:?defina}\n'),
+  },
+  {
     regra: 'testes-web',
     descricao: 'webPath declarada e tests/web/ apagada',
     // Nao mexe no manifesto: o molde de TS/JS ja nasce com `webPath`, e usar a declaracao REAL e o

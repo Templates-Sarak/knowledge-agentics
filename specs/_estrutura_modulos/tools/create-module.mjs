@@ -399,6 +399,13 @@ function finalizar(opcoes, raizProjeto) {
   // primeiro modulo, com early-return se o arquivo ja existisse) nao faria — medido: chave do
   // segundo modulo nunca chega ao `.env` real por esse caminho.
   process.stdout.write(rodar('sync-env.mjs', [], raizProjeto));
+  // O mesmo vale para o que o container deriva dos manifestos: a `location` do front (webPath) e a URL
+  // do banco do modulo novo (`sync-deploy.mjs`). Idempotente, e o `verify` o confere (`--check`).
+  // Projeto que ainda nao adotou o container (sem config/deploy.json) nao e quebrado aqui: quem o
+  // cobra e a regra `container-presente` do gate, com a mensagem de quem falta.
+  if (existsSync(join(raizProjeto, 'config', 'deploy.json'))) {
+    process.stdout.write(rodar('sync-deploy.mjs', [], raizProjeto));
+  }
   process.stdout.write('instalando dependencias do modulo novo...\n');
   instalarDependencias(raizProjeto, opcoes.binding);
   process.stdout.write('validando...\n');

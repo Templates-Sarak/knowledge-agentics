@@ -137,6 +137,7 @@ const REGISTRO = [
   { caminho: 'specs/_estrutura_modulos/tools/contract-compatible.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/package.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/create-module.mjs', runtime: 'node' },
+  { caminho: 'specs/_estrutura_modulos/tools/sync-deploy.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tools/verify-commit.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/verify-map.mjs', runtime: 'node' },
   { caminho: 'specs/_estrutura_modulos/tests/verify-catalog.mjs', runtime: 'node' },

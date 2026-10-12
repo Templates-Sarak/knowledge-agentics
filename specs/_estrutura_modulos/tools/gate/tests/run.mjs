@@ -25,7 +25,7 @@
  * A segunda é a que importa mais: uma regra quebrada passa despercebida para sempre, porque
  * "verde" é indistinguível de "não verificou". Este runner torna as duas coisas distinguíveis.
  */
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -76,6 +76,12 @@ const ALVOS = {
     typescript: '../../packages/ports/index.ts',
     javascript: '../../packages/ports/index.js',
     python: '../../packages/ports/__init__.py',
+  },
+  // A imagem de front só existe nos bindings que têm `web/` — o Python nasce sem, e o caso que a remove
+  // vira SEM COBERTURA ali em vez de apagar o nada e cobrar um achado impossível.
+  frontDockerfile: {
+    typescript: '../../front.Dockerfile',
+    javascript: '../../front.Dockerfile',
   },
   mappers: {
     typescript: 'api/src/mappers/index.ts',
@@ -231,6 +237,11 @@ function montarRaizDoProjeto(temporario, binding) {
   // copiá-lo aqui o fixture voltaria a ser um projeto incompleto — a mesma classe de defeito que as
   // duas linhas acima já corrigiram para `.gitignore` e `project.json`.
   cpSync(join(raiz, '.githooks'), join(temporario, '.githooks'), { recursive: true });
+  // Os arquivos de container, pelo mesmo motivo: `container-presente` e `compose-variaveis-declaradas` os
+  // exigem em todo projeto. O front só entra onde o binding o tem (o Python nasce sem `web/`).
+  for (const nome of ['Dockerfile', '.dockerignore', 'compose.yml', 'front.Dockerfile', 'deploy']) {
+    if (existsSync(join(raiz, nome))) cpSync(join(raiz, nome), join(temporario, nome), { recursive: true });
+  }
   // A FIAÇÃO. Ela entra por duas razões, e a segunda é a que importa mais: `env-raiz-declarado`
   // precisa de código de raiz para ter o que ler, E este é o único lugar onde se prova, caso a
   // caso, que carregar o código da raiz NÃO fez regra de módulo nenhuma passar a enxergá-lo.

@@ -1,11 +1,9 @@
 # syntax=docker/dockerfile:1
 # Backend do monólito modular composto — binding Python. UMA imagem para todos os módulos.
-# Copie para a raiz do projeto como `Dockerfile`. Contexto de build: a RAIZ do projeto.
+# Contexto de build: a RAIZ do projeto. Lei: specs/arquitetura/03-operacao.md §9.5.
 #
-# Python não emite: o processo roda o fonte por natureza (03-operacao §9), e não existe
-# `package.mjs` para este binding. O artefato é montado aqui por convenção de pasta (§9.1).
-#
-# Marcador: <PROJECT> (prefixo do projeto, maiúsculas). Mesma versão de base nos três FROM.
+# Python não emite: o processo roda o fonte por natureza (§9.1) e não existe `package.mjs` para este
+# binding. O artefato é montado aqui por convenção de pasta. Mesma versão de base nos três FROM.
 
 # ── build ───────────────────────────────────────────────────────────────────
 FROM python:3.12.8-slim-bookworm AS build
@@ -14,6 +12,8 @@ COPY . .
 # assemble — raiz de composição, adapters, packages e, por módulo, module.json + config/ + api/ + core/.
 RUN set -eu; mkdir -p /out/backend; \
     cp -r src adapters packages /out/backend/; \
+    mkdir -p /out/backend/config; \
+    cp config/runtime.json /out/backend/config/runtime.json; \
     for dir in modules/[a-z]*/; do \
       id=$(basename "$dir"); \
       mkdir -p "/out/backend/modules/$id"; \
@@ -22,9 +22,29 @@ RUN set -eu; mkdir -p /out/backend; \
         if [ -d "$dir/$sub" ]; then cp -r "$dir/$sub" "/out/backend/modules/$id/$sub"; fi; \
       done; \
     done
-# Dependências de produção: união MECÂNICA de [project].dependencies da raiz e de cada módulo
-# (nunca uma lista escrita à mão que envelhece). Extras de dev ficam de fora.
-RUN python -c "import glob,tomllib;f=['pyproject.toml',*sorted(glob.glob('modules/[a-z]*/pyproject.toml'))];d=sorted({x for p in f for x in tomllib.load(open(p,'rb')).get('project',{}).get('dependencies',[])});print('\n'.join(d))" > /tmp/requirements.txt
+# Dependências de produção: união MECÂNICA de [project].dependencies da raiz e de cada módulo, mais o
+# extra de cada adapter ESCOLHIDO em algum config/ports.json (o extra tem o nome do provedor — é como o
+# driver do `postgres` entra só em quem o usa). Nunca uma lista escrita à mão que envelhece.
+RUN python - > /tmp/requirements.txt <<'PY'
+import glob
+import json
+import tomllib
+
+chosen = set()
+for path in glob.glob('modules/[a-z]*/config/ports.json'):
+    with open(path, encoding='utf-8') as handle:
+        chosen |= {value for value in json.load(handle).values() if isinstance(value, str)}
+
+requirements = set()
+for manifest in ['pyproject.toml', *sorted(glob.glob('modules/[a-z]*/pyproject.toml'))]:
+    with open(manifest, 'rb') as handle:
+        project = tomllib.load(handle).get('project', {})
+    requirements.update(project.get('dependencies', []))
+    for extra, dependencies in project.get('optional-dependencies', {}).items():
+        if extra in chosen:
+            requirements.update(dependencies)
+print('\n'.join(sorted(requirements)))
+PY
 
 # ── dependências de produção ────────────────────────────────────────────────
 # Estágio separado, mesma base e libc do runtime: o venv criado aqui roda lá.
@@ -38,19 +58,17 @@ RUN python -m venv /opt/venv \
 #  && /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
 #  && apt-get purge -y --auto-remove build-essential \
 #  && rm -rf /var/lib/apt/lists/*
-# Adapter postgres escolhido em algum config/ports.json? O psycopg é extra de dev da raiz e NÃO
-# entra em [project].dependencies (pendência registrada na skill) — instale-o aqui, fixado:
-# RUN /opt/venv/bin/pip install --no-cache-dir "psycopg[binary]==<PSYCOPG_VERSION>"
 
 # ── runtime ─────────────────────────────────────────────────────────────────
 FROM python:3.12.8-slim-bookworm AS runtime
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH=/opt/venv/bin:$PATH \
-    APP_BIND_HOST=0.0.0.0
+    PATH=/opt/venv/bin:$PATH
 
-ARG <PROJECT>_VERSION=""
-LABEL org.opencontainers.image.revision=$<PROJECT>_VERSION
+# A imagem se rotula com a própria versão (commit curto): é como se sabe o que roda a partir do
+# digest. Passe --build-arg IMAGE_VERSION=<commit>; sem ele o rótulo fica vazio.
+ARG IMAGE_VERSION=""
+LABEL org.opencontainers.image.revision=$IMAGE_VERSION
 
 RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /app
@@ -58,12 +76,10 @@ COPY --from=production-dependencies /opt/venv /opt/venv
 COPY --from=build --chown=app:app /out/backend/ ./
 USER app
 
-# A porta vem de ROOT_API_PORT (env_file, runtime). A rota de health é <basePath>/health do
-# primeiro module.json empacotado.
+# A porta e o host vêm de ROOT_API_PORT e ROOT_API_HOST, injetados no runtime (compose.yml) — sem
+# EXPOSE e sem literal. A rota de health é <basePath>/health do primeiro module.json empacotado.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD ["python", "-c", "import glob,json,os,sys,urllib.request as u;f=sorted(glob.glob('modules/[a-z]*/module.json'))[0];b=json.load(open(f))['basePath'];sys.exit(0 if u.urlopen('http://127.0.0.1:'+os.environ['ROOT_API_PORT']+b+'/health',timeout=4).status==200 else 1)"]
 
-# O composition.py sobe o uvicorn em 127.0.0.1 (sem host configurável): dentro do container o
-# front não alcançaria o processo. Por isso o CMD monta o sistema pela função pública
-# build_system e passa o host do ambiente (pendência da fase 2: composition aceitar o host).
-CMD ["python", "-c", "import os,pathlib,uvicorn;from src.composition import build_system;uvicorn.run(build_system(pathlib.Path.cwd()),host=os.environ['APP_BIND_HOST'],port=int(os.environ['ROOT_API_PORT']))"]
+# O entrypoint normal da raiz de composição: o host de escuta é o ROOT_API_HOST.
+CMD ["python", "-m", "src.composition"]

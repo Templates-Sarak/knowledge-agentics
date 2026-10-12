@@ -1,22 +1,21 @@
 #!/usr/bin/env node
 /**
- * docker-up.mjs — sobe, para e acompanha o compose local do monólito. Multiplataforma, zero
+ * docker-up.mjs — sobe, para e acompanha o compose local do projeto. Multiplataforma, zero
  * dependência. FINO de propósito: checa o ambiente e delega tudo ao `docker compose`.
- * Copie para <INFRA_DIR>/docker-up.mjs e rode da RAIZ do projeto.
+ * Lei dona: specs/arquitetura/03-operacao.md §9.5
  *
- *   node <INFRA_DIR>/docker-up.mjs up      checa Docker, os dois .env e as portas; builda e sobe com
- *                                           `--wait`; imprime a URL
- *   node <INFRA_DIR>/docker-up.mjs stop    derruba os serviços (os volumes ficam)
- *   node <INFRA_DIR>/docker-up.mjs logs    acompanha os logs
+ *   node tools/docker-up.mjs up      checa Docker, os dois .env, o deploy em dia e as portas; builda e
+ *                                    sobe o profile `app` com `--wait`; imprime a URL
+ *   node tools/docker-up.mjs stop    derruba os serviços (os volumes ficam)
+ *   node tools/docker-up.mjs logs    acompanha os logs
  *
  * Dois arquivos de ambiente, nesta ordem (o segundo vence em conflito):
- *   .env                 da RAIZ — ROOT_API_PORT e as chaves <MODULE>_* (fonte do sync-env)
- *   <INFRA_DIR>/.env     do DEPLOY — as chaves DEPLOY_* que só o compose lê (ao lado deste script)
+ *   .env           da RAIZ — ROOT_API_PORT e as chaves <MODULE>_* (o `sync-env` é o dono dele)
+ *   deploy/.env    do DEPLOY — as chaves DEPLOY_* que só o compose lê (ADR-022)
  *
- * Opções (todas com padrão em DEFAULTS):
- *   --compose-file <arquivo>   --root-env <arquivo>   --deploy-env <arquivo>   --profile <nome>
- *   --port-key <CHAVE>         (repetível) chave com porta publicada no host
- *   --url-key <CHAVE>          chave cuja porta compõe a URL impressa
+ * Opções (todas com padrão em DEFAULTS): --compose-file, --root-env, --deploy-env, --profile.
+ * As chaves de porta a checar e a URL a imprimir saem do próprio compose.yml (`${DEPLOY_*_PORT`),
+ * então o mesmo script serve ao binding com front e ao que não tem.
  *
  * Exit: 0 ok · 1 ambiente ou compose falhou · 2 uso.
  */
@@ -27,17 +26,25 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = join(HERE, '..');
 const DEFAULTS = {
-  composeFile: 'compose.yml',
-  rootEnv: '.env',
-  deployEnv: join(HERE, '.env'),
+  composeFile: join(PROJECT_ROOT, 'compose.yml'),
+  rootEnv: join(PROJECT_ROOT, '.env'),
+  deployEnv: join(PROJECT_ROOT, 'deploy', '.env'),
   profile: 'app',
-  portKeys: ['DEPLOY_DB_PORT', 'DEPLOY_FRONT_PORT'],
-  urlKey: 'DEPLOY_FRONT_PORT',
   loopback: '127.0.0.1',
   minCompose: [2, 23, 0],
+  // O ponto de entrada na ordem de preferência: o front (origem única), senão a própria API.
+  urlKeys: ['DEPLOY_FRONT_PORT', 'DEPLOY_APP_PORT'],
 };
 const COMMANDS = ['up', 'stop', 'logs'];
+const FLAGS = {
+  '--compose-file': 'composeFile',
+  '--root-env': 'rootEnv',
+  '--deploy-env': 'deployEnv',
+  '--profile': 'profile',
+};
+const PORT_KEY_PATTERN = /\$\{(DEPLOY_[A-Z0-9_]*PORT)\b/g;
 const RESERVED_RANGE_HINT = 'netsh interface ipv4 show excludedportrange protocol=tcp';
 
 function fail(message) {
@@ -47,20 +54,12 @@ function fail(message) {
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
-  const options = { ...DEFAULTS, portKeys: [] };
-  const flags = {
-    '--compose-file': 'composeFile',
-    '--root-env': 'rootEnv',
-    '--deploy-env': 'deployEnv',
-    '--profile': 'profile',
-    '--url-key': 'urlKey',
-  };
+  const options = { ...DEFAULTS };
   for (let i = 0; i < rest.length; i += 2) {
-    if (rest[i] === '--port-key') options.portKeys.push(rest[i + 1]);
-    else if (flags[rest[i]] !== undefined && rest[i + 1] !== undefined) options[flags[rest[i]]] = rest[i + 1];
-    else return { command: undefined, options };
+    const target = FLAGS[rest[i]];
+    if (target === undefined || rest[i + 1] === undefined) return { command: undefined, options };
+    options[target] = rest[i + 1];
   }
-  if (options.portKeys.length === 0) options.portKeys = [...DEFAULTS.portKeys];
   return { command, options };
 }
 
@@ -77,9 +76,11 @@ function readEnvPairs(text) {
 }
 
 function compose(options, args, capture = false) {
-  const base = ['compose', '-f', options.composeFile];
-  base.push('--env-file', options.rootEnv, '--env-file', options.deployEnv, '--profile', options.profile);
-  return spawnSync('docker', [...base, ...args], { stdio: capture ? 'pipe' : 'inherit', encoding: 'utf8' });
+  const base = ['compose', '-f', options.composeFile, '--env-file', options.rootEnv, '--env-file', options.deployEnv];
+  return spawnSync('docker', [...base, '--profile', options.profile, ...args], {
+    stdio: capture ? 'pipe' : 'inherit',
+    encoding: 'utf8',
+  });
 }
 
 function isOlder(found, minimum) {
@@ -96,7 +97,7 @@ function requireDocker(options) {
   const shown = String(version.stdout).trim();
   const parts = shown.replace(/^v/, '').split('.').map(Number);
   if (version.status !== 0 || parts.some(Number.isNaN) || isOlder(parts, options.minCompose)) {
-    fail(`Docker Compose ${options.minCompose.join('.')}+ é exigido (vários --env-file). Encontrado: ${shown || 'ausente'}.`);
+    fail(`Docker Compose ${options.minCompose.join('.')}+ é exigido (vários --env-file e extends). Encontrado: ${shown || 'ausente'}.`);
   }
 }
 
@@ -104,16 +105,32 @@ function requireDocker(options) {
 function readEnvironment(options) {
   const missing = [options.rootEnv, options.deployEnv].filter((file) => !existsSync(file));
   if (missing.length > 0) {
-    fail(`Arquivo(s) de ambiente ausente(s): ${missing.join(', ')}. Crie-os a partir dos .env.example.`);
+    fail(`Arquivo(s) de ambiente ausente(s): ${missing.join(', ')}. Crie-os a partir dos .env.example (node tools/sync-env.mjs gera o da raiz; deploy/.env.example é o do deploy).`);
   }
   return { ...readEnvPairs(readFileSync(options.rootEnv, 'utf8')), ...readEnvPairs(readFileSync(options.deployEnv, 'utf8')) };
+}
+
+/** O deploy gerado tem de refletir os manifestos: o compose subiria rotas e URLs de um estado velho. */
+function requireDeployInSync() {
+  const check = spawnSync(process.execPath, [join(HERE, 'sync-deploy.mjs'), '--check'], {
+    cwd: PROJECT_ROOT,
+    encoding: 'utf8',
+  });
+  if (check.status === 0) return;
+  fail(`${String(check.stdout).trim() || String(check.stderr).trim()}`);
+}
+
+/** Chaves de porta publicada no host, lidas do próprio compose — o arquivo é a fonte, não esta lista. */
+function portKeysOf(composeFile) {
+  const text = readFileSync(composeFile, 'utf8');
+  return [...new Set([...text.matchAll(PORT_KEY_PATTERN)].map((match) => match[1]))];
 }
 
 /** Tenta ocupar a porta em loopback. Devolve 'free' ou o código do erro (EADDRINUSE, EACCES…). */
 function probePort(port, host) {
   return new Promise((done) => {
     const probe = createServer();
-    probe.once('error', (error) => done(error.code ?? 'UNKNOWN'));
+    probe.once('error', (error) => done(/** @type {NodeJS.ErrnoException} */ (error).code ?? 'UNKNOWN'));
     probe.listen(port, host, () => probe.close(() => done('free')));
   });
 }
@@ -132,9 +149,9 @@ function alreadyRunning(options) {
   return listing.status === 0 && listing.stdout.trim() !== '';
 }
 
-async function checkPorts(options, env) {
+async function checkPorts(options, env, keys) {
   if (alreadyRunning(options)) return;
-  for (const key of options.portKeys) {
+  for (const key of keys) {
     const port = Number(env[key]);
     if (!Number.isInteger(port) || port <= 0) fail(`${key} ausente ou inválida nos arquivos de ambiente.`);
     const code = await probePort(port, options.loopback);
@@ -144,11 +161,14 @@ async function checkPorts(options, env) {
 
 async function up(options) {
   requireDocker(options);
+  requireDeployInSync();
   const env = readEnvironment(options);
-  await checkPorts(options, env);
+  const keys = portKeysOf(options.composeFile);
+  await checkPorts(options, env, keys);
   const run = compose(options, ['up', '--build', '--detach', '--wait']);
-  if (run.status !== 0) fail('A subida falhou. Os containers ficaram para inspeção: node docker-up.mjs logs');
-  process.stdout.write(`Disponível em http://${options.loopback}:${env[options.urlKey]}\n`);
+  if (run.status !== 0) fail('A subida falhou. Os containers ficaram para inspeção: node tools/docker-up.mjs logs');
+  const urlKey = options.urlKeys.find((key) => keys.includes(key));
+  if (urlKey !== undefined) process.stdout.write(`Disponível em http://${options.loopback}:${env[urlKey]}\n`);
 }
 
 function passthrough(options, args) {
@@ -160,7 +180,7 @@ function passthrough(options, args) {
 async function main() {
   const { command, options } = parseArgs(process.argv.slice(2));
   if (!COMMANDS.includes(command)) {
-    process.stderr.write(`Uso: node docker-up.mjs <${COMMANDS.join('|')}> [opções]\n`);
+    process.stderr.write(`Uso: node tools/docker-up.mjs <${COMMANDS.join('|')}> [opções]\n`);
     process.exit(2);
   }
   for (const key of ['composeFile', 'rootEnv', 'deployEnv']) options[key] = resolve(options[key]);

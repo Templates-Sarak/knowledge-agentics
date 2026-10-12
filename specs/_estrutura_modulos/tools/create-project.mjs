@@ -12,6 +12,9 @@
  * instalada em `specs/arquitetura/` (as cinco leis) e `specs/adr/` (as decisoes do template).
  * Regra escrita em dois lugares e o defeito que este template existe para evitar — inclusive
  * entre a doutrina e o fluxo SDD que governa as specs.
+ *
+ * O projeto nasce DOCKERIZADO (ADR-022): Dockerfile, .dockerignore, compose.yml e deploy/ vêm do
+ * binding, e o que muda com os módulos (rotas do front, URL do banco) é gerado por `sync-deploy.mjs`.
  */
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -37,6 +40,9 @@ const ADR_DO_TEMPLATE = '000-decisoes-do-template.md';
  * lógica —, então excluí-la não perde nada.
  */
 const PASTAS_COM_MARCADOR_ESCOPO = ['modules', 'specs', 'packages', 'adapters', 'src', 'config'];
+
+/** Marcador do nome do projeto nos arquivos de container da RAIZ (`compose.yml`) — ver `aplicarNomeDoProjeto`. */
+const MARCADOR_NOME_DO_PROJETO = '<project>';
 
 function abortar(mensagem) {
   process.stderr.write(`erro: ${mensagem}\n`);
@@ -85,6 +91,46 @@ function aplicarEscopo(arquivos, escopo) {
     const conteudo = readFileSync(arquivo, 'utf8');
     if (!conteudo.includes('<escopo>')) continue;
     writeFileSync(arquivo, conteudo.replaceAll('<escopo>', escopo), 'utf8');
+  }
+}
+
+/**
+ * O escopo como nome de projeto de container: o compose só aceita `[a-z0-9_-]` começando por letra ou
+ * dígito, e o escopo vem do nome da pasta (`Meu App.v2`). Minúsculo, o resto vira `-`.
+ */
+function toProjectSlug(escopo) {
+  const slug = escopo.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^[^a-z0-9]+/, '').replace(/-+$/, '');
+  return slug === '' ? 'project' : slug;
+}
+
+/**
+ * Resolve `<project>` nos arquivos de container da RAIZ. Só na raiz, de propósito: a doutrina em
+ * `specs/` cita o marcador em prosa e não pode ser reescrita pelo valor.
+ */
+function aplicarNomeDoProjeto(destino, escopo) {
+  const slug = toProjectSlug(escopo);
+  const arquivos = readdirSync(destino, { withFileTypes: true }).filter((entrada) => entrada.isFile());
+  for (const entrada of arquivos) {
+    const caminho = join(destino, entrada.name);
+    const conteudo = readFileSync(caminho, 'utf8');
+    if (!conteudo.includes(MARCADOR_NOME_DO_PROJETO)) continue;
+    writeFileSync(caminho, conteudo.replaceAll(MARCADOR_NOME_DO_PROJETO, slug), 'utf8');
+  }
+}
+
+/**
+ * Gera o que o container deriva dos manifestos (`deploy/nginx.modules.conf`, `deploy/compose.modules.yml`)
+ * — o projeto nasce com os arquivos de container coerentes, antes de qualquer módulo. Falha REPROVA.
+ */
+function gerarDeploy(destino) {
+  try {
+    execFileSync(process.execPath, [join(destino, 'tools', 'sync-deploy.mjs')], {
+      cwd: destino,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (causa) {
+    abortar(`projeto criado em ${destino}, mas o deploy nao foi gerado: ${String(causa.stderr ?? causa.message).trim()}`);
   }
 }
 
@@ -234,6 +280,7 @@ function mesclarGitignore(destino, anterior) {
 function imprimirProximosPassos(destino, opcoes, escopo, colisoes) {
   process.stdout.write(`projeto criado em ${destino} (binding ${opcoes.binding}, escopo "${escopo}")\n`);
   process.stdout.write('  doutrina instalada em specs/arquitetura/ e specs/adr/000-decisoes-do-template.md\n');
+  process.stdout.write('  container: Dockerfile, compose.yml e deploy/ (subir: node tools/docker-up.mjs up)\n');
   if (colisoes.length > 0) process.stdout.write(`  ATENCAO: sobrescrito por --force: ${colisoes.join(', ')}\n`);
   // O `pip` que `python -m venv` instala vem do interpretador do SISTEMA, nunca do template, e
   // pode trazer CVE propria — medido com pip 25.2 (6 CVEs): sem o upgrade, `ci:dependencias`
@@ -248,8 +295,8 @@ function imprimirProximosPassos(destino, opcoes, escopo, colisoes) {
   process.stdout.write('\nproximos passos:\n');
   process.stdout.write(`  1. ${instalar}\n`);
   process.stdout.write('  2. node tools/create-module.mjs <id> --role domain|gateway|connector\n');
-  process.stdout.write('  3. preencher o .env da raiz com os valores reais\n');
-  process.stdout.write(`  4. ${verificar}   (gate, env, formato, lint, tipos, testes)\n`);
+  process.stdout.write('  3. preencher o .env da raiz e o deploy/.env (modelo: deploy/.env.example) com os valores reais\n');
+  process.stdout.write(`  4. ${verificar}   (gate, env, deploy, formato, lint, tipos, testes)\n`);
   process.stdout.write('  5. git config core.hooksPath .githooks   (ativa pre-commit e pre-push;'
     + ' e config LOCAL, cada clone ativa o proprio — ver specs/arquitetura/03-operacao.md §7.1)\n');
   process.stdout.write('  6. no PRIMEIRO commit (so uma vez): git update-index --chmod=+x'
@@ -282,6 +329,8 @@ function principal() {
   copiarTemplate(destino, opcoes.binding);
   mesclarGitignore(destino, gitignoreAnterior);
   aplicarEscopo(arquivosComMarcadorEscopo(destino), escopo);
+  aplicarNomeDoProjeto(destino, escopo);
+  gerarDeploy(destino);
   gerarLockfile(destino, opcoes.binding);
 
   imprimirProximosPassos(destino, opcoes, escopo, colisoes);

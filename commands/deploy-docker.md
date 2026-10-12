@@ -20,13 +20,17 @@ Este command **roteia** entre duas skills e mantém o HITL; a lógica vive nelas
 
 ## Passos (da skill escolhida)
 1. **Pré-deploy comum** — `../deploy-vercel/references/predeploy-comum.md` (build local, env, sem segredo versionado).
-2. **Gerar** — siga o workflow da skill: Dockerfile multi-stage (versão fixada, não-root, `HEALTHCHECK`);
-   no monólito, também `front.Dockerfile` + `nginx.conf`, `.dockerignore`, `compose.yml` local e script de subida.
-3. **Validar** — monólito: `deploy-docker-monolito/scripts/validar_monolito.py --raiz $1` **e**
+2. **Arquivos** — siga o workflow da skill. **Projeto do template:** os arquivos (Dockerfile multi-stage,
+   `front.Dockerfile`, `.dockerignore`, `compose.yml`, `deploy/`) já nasceram com o `create-project` — confira
+   e ajuste, **não copie**. **Legado:** a fonte é `specs/_estrutura_modulos/bindings/<binding>/root/`. Módulo
+   extraído: Dockerfile multi-stage (versão fixada, não-root, `HEALTHCHECK`) pela skill dele.
+3. **Validar** — projeto do template: `node tools/gate/validate.mjs --all` (o gate cobra a presença e as
+   variáveis do compose). Legado, ou arquivo do template ajustado:
+   `deploy-docker-monolito/scripts/validar_monolito.py --raiz $1` **e**
    `deploy-docker-microsservico/scripts/validar_docker.py --raiz $1`; módulo extraído: só o segundo.
    Resolva os bloqueios.
-4. **Paridade local** — suba o compose (monólito: `docker compose --env-file .env --env-file
-   <INFRA_DIR>/.env --profile app up --build --wait`, Compose 2.23+) e confira o healthcheck verde.
+4. **Paridade local** — suba o compose (monólito: `node tools/docker-up.mjs up`, que passa os dois
+   `--env-file` — `.env` e `deploy/.env` — e exige Compose 2.23+) e confira o healthcheck verde.
 5. **HITL — plano de build/push** — o que será construído (monólito: as **duas imagens com a mesma tag de
    commit**), bases fixadas, validação, tag **semântica** (sem `latest`), registry →
    **"⚠️ Confirma o build/push da imagem?"** → aguarde.

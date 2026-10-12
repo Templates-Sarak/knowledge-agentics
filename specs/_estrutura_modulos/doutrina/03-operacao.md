@@ -279,16 +279,15 @@ npm run ci:dependencies  # audit + excecao datada
 # 4. artefato — so no binding que emite (TypeScript; JS/Python nao tem este passo, §9)
 npm run build
 
-# 5. migrations — contra o Postgres efemero QUE O PROVEDOR sobe (services:, docker run — nunca
-#    o template), com <MODULE>_DB_URL apontando pra ele
+# 5. migrations — contra um Postgres efemero, com <MODULE>_DB_URL apontando pra ele. Local: o
+#    `compose.yml` do projeto o sobe (§9.5). Em CI: `services:` do provedor.
 node scripts/migrations.mjs ciclo <module>
 ```
 
-**O que este exemplo não mostra, de propósito:** subir o Postgres (`services:` do provedor,
-`docker run` local — decisão de infraestrutura, fora da ADR-005) e publicar o artefato (`dist/` +
-`web/dist/` para onde quer que o deploy vá — também infraestrutura, não contrato). Prometer esses
-dois aqui seria a lei 9 dentro de um arquivo de doutrina: declaração sem verificador, porque nenhum
-comando do template os cobre.
+**O que este exemplo não mostra, de propósito:** o Postgres **de CI** (`services:` do provedor — decisão
+de infraestrutura, fora da ADR-005) e a **publicação** das imagens (registry, digest, entrada, servidor —
+muda por provedor e por empresa; é da skill `deploy-docker-monolito`, ADR-022). O que o template entrega
+é o que é seu: os arquivos de container do projeto (§9.5) e o gate que cobra a presença deles.
 
 # 8. Exceções
 
@@ -418,6 +417,64 @@ alcança um processo é o CTRL_BREAK do console — `process.kill` o derruba na 
 aceitar conexões, drena as requisições em voo até `config/runtime.json:shutdown.drainTimeoutMs` (tunable
 não-secreto, versionado, na raiz) e **sai 0** se drenou. Estourado o teto, loga e **sai ≠ 0**. Os dois
 desfechos saem em log estruturado (`resultado: drained | timeout`). O teto fica abaixo do
-`stop_grace_period` do orquestrador (10 s por padrão no Docker). No Python o `capture_signals` do uvicorn é
-substituído de propósito: o original reemite o sinal depois de desligar e o processo morreria **por sinal**
-(143), nunca com `exit 0`.
+`stop_grace_period` do orquestrador — e no `compose.yml` do projeto ele é **derivado**, não escrito: o
+`sync-deploy` o calcula como `drainTimeoutMs` + `config/deploy.json:shutdown.graceMarginMs` (§9.5). No Python
+o `capture_signals` do uvicorn é substituído de propósito: o original reemite o sinal depois de desligar e
+o processo morreria **por sinal** (143), nunca com `exit 0`.
+
+## 9.5 Container — o projeto nasce dockerizado
+
+Decisão do ADR-022 (que revisa o ADR-012): a **unidade de release** é **uma imagem de backend do monólito
+composto** mais **uma imagem de front** quando algum módulo tem `webPath`. O módulo **extraído** (ADR-001)
+continua possível e se publica pela skill `deploy-docker-microsservico`. Todo projeto gerado por
+`create-project` traz os arquivos abaixo — não é flag.
+
+| Arquivo (raiz do projeto) | O que é | Quem o escreve |
+|---|---|---|
+| `Dockerfile` | a imagem do backend: multi-stage, base fixada, não-root, `HEALTHCHECK`, `LABEL …revision`; o artefato vem de `tools/package.mjs` (§9.1) | binding (estático) |
+| `front.Dockerfile` | a imagem do front (`nginx-unprivileged`): o build de cada `web/` sob o `webPath` dele. **Só TS/JS** | binding (estático) |
+| `.dockerignore` | contexto enxuto, e **nenhum** `.env*` na imagem | binding (estático) |
+| `compose.yml` | **profile padrão** = o Postgres de dev; **profile `app`** = paridade (backend + front + banco, em loopback) | binding (estático) |
+| `deploy/nginx.conf` | a origem única: cabeçalhos, `/healthz`, `/` → 404, o proxy de `/api/v1/`. **Só TS/JS** | binding (estático; o projeto ajusta) |
+| `deploy/.env.example` | as chaves `DEPLOY_*` que **só o compose lê** | binding (estático) |
+| `deploy/nginx.modules.conf` | uma `location` por `module.json:webPath` não-nulo + os tunables do proxy | **gerado** (`sync-deploy`) |
+| `deploy/compose.modules.yml` | o fragmento do `app` que muda com os módulos: a URL do banco de cada `<MODULE>_DB_URL` e o `stop_grace_period` | **gerado** (`sync-deploy`) |
+
+**O ambiente que só o deploy lê mora em `deploy/.env`** (real, gitignored) **+ `deploy/.env.example`**
+(versionado) — nunca no `.env` da raiz, porque o `sync-env` é dono dele e move para a seção `ORFAS` toda chave
+que nenhum manifesto exige (ADR-004), e declarar `DEPLOY_*` em `project.json` faria `env-raiz-declarado`
+acusar "declarada e sem leitor". `tools/docker-up.mjs` passa os dois `--env-file` na ordem certa (o segundo
+vence).
+
+**Rotas e URLs são geradas, não escritas** — `node tools/sync-deploy.mjs` lê `modules/*/module.json` e
+`config/runtime.json`, e escreve os dois arquivos `*.modules.*`. O estático **inclui** o gerado
+(`include` no nginx, `extends` no compose), então o ajuste do projeto no `nginx.conf` sobrevive à
+regeneração. `--check` reprova se divergirem dos manifestos (mesmo modelo de `sync-env --check`) e entra no
+`verify`; `create-module` regenera. Os tunables (corpo máximo, timeout do proxy, folga de desligamento) são
+**config versionada** em `config/deploy.json` — fora de `config/runtime.json` de propósito: aquele o
+**processo** lê e o artefato carrega; este só o deploy lê.
+
+**`ROOT_API_HOST` no container.** O `.env` de dev guarda loopback, e com isso ninguém alcança o processo de
+dentro do container. O `compose.yml` o sobrescreve no `environment:` do serviço `app` (`0.0.0.0`): o host de
+escuta é **propriedade do container**, não do ambiente, e `environment:` vence `env_file:`. O processo
+continua **sem default embutido** (§9.4, `fallback-raiz`): se a linha sumir, o boot cai nomeando a chave. A
+alternativa descartada foi `ENV ROOT_API_HOST=0.0.0.0` no `Dockerfile`: o `env_file` do compose a vence, e o
+`.env` de dev voltaria a ser o que o container lê.
+
+**Módulo Python com front.** O molde Python nasce sem `web/`, então não há `front.Dockerfile`, `nginx.conf`
+nem serviço `front` no compose — o `app` publica a própria API em loopback (`DEPLOY_APP_PORT`). Se um módulo
+Python ganhar `web/` (o front do ecossistema é TypeScript), o projeto copia do binding `typescript`
+`front.Dockerfile` e `deploy/nginx.conf`, acrescenta o serviço `front` ao `compose.yml`, `DEPLOY_FRONT_PORT`
+ao `deploy/.env.example` e a chave `front` ao `config/deploy.json`; a partir daí `sync-deploy` gera as rotas
+(o gatilho é a presença de `deploy/nginx.conf`) e o gate passa a exigir os arquivos de front. Nada disto
+muda a doutrina.
+
+**O que o gate cobra** (§4.6 de `04-regras.md`): `container-presente`, `compose-variaveis-declaradas` e
+`dockerignore-segredo` (o `.env` — inclusive `modules/<id>/.env` e `deploy/.env` — fica fora do contexto de
+build). Dockerfile **bom** — não-root, sem `:latest`, healthcheck, porta em loopback, digest — é da skill
+(`validar_monolito.py`, para o legado), não lei do template: depende de decisão por provedor.
+
+**O que fica fora, de propósito:** o compose de **produção** (registry, digests, entrada, servidor) e a
+publicação — a skill `deploy-docker-monolito` os traz, porque mudam por provedor. O template também não modela
+ambientes (nada de staging/produção, nenhum segredo de produção) e não traz CD (ADR-012, que continua valendo
+nessa parte).

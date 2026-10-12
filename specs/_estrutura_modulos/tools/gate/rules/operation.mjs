@@ -2,7 +2,7 @@
  * rules/operation.mjs — família "Operação" do catálogo (specs/arquitetura/04-regras.md §4.6).
  * ids: log, determinismo, gateway-credencial, random-inseguro, rota-publica-autenticada,
  *      cookie-seguro, token-em-armazenamento, permissao-literal, sql-concatenado, sql-no-modulo,
- *      segredo-em-log
+ *      segredo-em-log, container-presente, compose-variaveis-declaradas, dockerignore-segredo
  *
  * `sql-concatenado` e `segredo-em-log` são de escopo `root` e olham a fiação. Estão nesta família
  * porque é a de SEGURANÇA operacional — a mesma de `cookie-seguro` e `token-em-armazenamento` —, e
@@ -14,8 +14,12 @@
  * detalhe — o literal `"GET /health"` aparece três vezes em docstring explicando a cadeia de auth,
  * e sobre o conteúdo bruto ele viraria violação da própria regra que a docstring descreve.
  */
+import { ARQUIVOS_DE_CONTAINER, ARQUIVOS_DE_FRONT } from '../context.mjs';
 import { leiturasFalhas, normalizar, operacoesDaSpec, specDe } from '../spec.mjs';
 import { textoDeCodigo } from '../text.mjs';
+
+/** `${VAR` do compose. O lookbehind descarta `$${VAR}`, o escape que entrega `${VAR}` ao container. */
+const INTERPOLACAO_DO_COMPOSE = /(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)/g;
 
 /**
  * Sufixo que denuncia CREDENCIAL numa chave de env. Vocabulário fechado, e o ÚNICO — exportado
@@ -518,6 +522,104 @@ export default [
       return (ctx.manifesto?.requiredEnv ?? [])
         .filter((chave) => PADRAO_CREDENCIAL.test(chave))
         .map((chave) => `env "${chave}" e credencial de servico externo — so modulo com papel "gateway" pode declarar`);
+    },
+  },
+  {
+    /**
+     * O projeto nasce dockerizado (ADR-022) e os arquivos de container existem na raiz.
+     *
+     * Presença, e só presença: o CONTEÚDO do Dockerfile (não-root, sem `:latest`, healthcheck) é da
+     * skill `deploy-docker-monolito`/`validar_monolito.py`, que é por-provedor e por-decisão — a lei
+     * do template afirma que os arquivos existem, não que sejam bons. A imagem de front só é exigida
+     * quando algum módulo publica uma tela: o binding Python nasce sem `web/` e sem front.
+     */
+    id: 'container-presente',
+    nivel: 'erro',
+    escopo: 'root',
+    verificar(projeto) {
+      // Módulo solto (extraído e ainda não religado a um projeto) não tem raiz a cobrar.
+      if (!projeto.ehProjeto) return [];
+      const { presentes, temFront } = projeto.container;
+      const exigidos = temFront ? [...ARQUIVOS_DE_CONTAINER, ...ARQUIVOS_DE_FRONT] : ARQUIVOS_DE_CONTAINER;
+      return exigidos
+        .filter((arquivo) => !presentes.includes(arquivo))
+        .map((arquivo) => `${arquivo} ausente na raiz do projeto — o projeto e dockerizado (03-operacao.md §9.5):`
+          + ' o template instala o arquivo pronto em bindings/<binding>/root/; copie-o e ajuste'
+          + (ARQUIVOS_DE_FRONT.includes(arquivo) ? ' (exigido porque algum modulo publica uma tela: webPath + web/)' : ''));
+    },
+  },
+  {
+    /**
+     * O `.env` não entra na imagem — a mesma invariante de `gitignore-segredo`, na outra fronteira.
+     *
+     * `gitignore-segredo` protege o REPOSITÓRIO; esta protege o CONTEXTO DE BUILD. Os dois arquivos de
+     * ignore têm semânticas diferentes e por isso a regra não é uma cópia: no `.dockerignore` um padrão
+     * sem o prefixo de globstar casa só na raiz do contexto — `.env` não alcança `modules/<id>/.env` nem
+     * `deploy/.env`, e é a forma com globstar (`**` + `/.env`) quem os pega. Um `COPY . .` num estágio de build com o `.env` no contexto grava o
+     * segredo numa camada (e no cache de build) — e é o primeiro "NUNCA" da skill de deploy.
+     *
+     * É a ÚNICA checagem fina do `validar_monolito.py` promovida a lei do template, e a razão é a
+     * mesma que torna `gitignore-segredo` lei: vale para todo projeto, sem depender de provedor. As
+     * outras (loopback, digest, rótulo, não-root) são decisão por provedor e ficam na skill (§7.2).
+     * `.dockerignore` ausente é do `container-presente` — um defeito, uma mensagem.
+     */
+    id: 'dockerignore-segredo',
+    nivel: 'erro',
+    escopo: 'root',
+    verificar(projeto) {
+      if (!projeto.ehProjeto) return [];
+      const texto = projeto.container.dockerignore;
+      if (texto === null) return [];
+      const padroes = texto.split('\n').map((linha) => linha.trim())
+        .filter((linha) => linha !== '' && !linha.startsWith('#') && !linha.startsWith('!'));
+      const cobre = (alvos) => padroes.some((padrao) => alvos.includes(padrao));
+      const achados = [];
+      if (!cobre(['.env', '.env*', '**/.env', '**/.env*'])) {
+        achados.push('.dockerignore nao ignora o .env da raiz — um `COPY . .` o grava numa camada da imagem'
+          + ' (e no cache de build). Acrescente `.env` (e `.env.*`, com `!.env.example` para manter o exemplo)');
+      }
+      if (!cobre(['**/.env', '**/.env*'])) {
+        achados.push('.dockerignore nao ignora `**/.env` — no dockerignore `.env` casa so na raiz do contexto, e'
+          + ' `modules/<id>/.env` e `deploy/.env` entrariam na imagem. Acrescente `**/.env`');
+      }
+      return achados;
+    },
+  },
+  {
+    /**
+     * Toda variável que o `compose.yml` interpola está declarada — ou o compose sobe com um valor vazio.
+     *
+     * "Declarada" tem duas casas, e a fronteira entre elas é o ADR-022: as chaves que o PROCESSO lê
+     * (`ROOT_*`, `<MODULE>_*`) saem dos manifestos (`project.json` e `module.json:requiredEnv`, de onde o
+     * `sync-env` gera o `.env.example` da raiz); as que SÓ o compose lê (`DEPLOY_*`) moram em
+     * `deploy/.env.example`. Variável fora das duas é a que ninguém documenta e ninguém preenche.
+     *
+     * Lê os manifestos, não o `.env.example` gerado: ele é derivado deles e `sync-env --check` já
+     * cobra a igualdade — e o fixture do gate (sem `.env.example` na raiz) mediria a ausência do
+     * arquivo, não a da declaração. `$$VAR` (escape do compose) e comentário não contam.
+     */
+    id: 'compose-variaveis-declaradas',
+    nivel: 'erro',
+    escopo: 'root',
+    verificar(projeto) {
+      if (!projeto.ehProjeto) return [];
+      // Manifesto da raiz ausente ou quebrado e do `manifesto-raiz`: sem ele toda `ROOT_*` pareceria
+      // nao declarada, e um defeito viraria uma mensagem por chave — a mesma guarda de `env-raiz-declarado`.
+      if (projeto.manifesto.valor === null) return [];
+      const { compose, composeModulos, chavesDeclaradas } = projeto.container;
+      const achados = [];
+      for (const [arquivo, texto] of [['compose.yml', compose], ['deploy/compose.modules.yml', composeModulos]]) {
+        if (texto === null) continue;
+        const semComentario = texto.split('\n').filter((linha) => !linha.trimStart().startsWith('#')).join('\n');
+        const usadas = new Set([...semComentario.matchAll(INTERPOLACAO_DO_COMPOSE)].map((m) => m[1]));
+        for (const variavel of usadas) {
+          if (chavesDeclaradas.includes(variavel)) continue;
+          achados.push(`${arquivo}: variavel "${variavel}" interpolada e nao declarada — se o processo a le, declare em`
+            + ' project.json/module.json:requiredEnv (o sync-env a leva ao .env.example); se so o compose a le,'
+            + ' declare em deploy/.env.example (ADR-022)');
+        }
+      }
+      return achados;
     },
   },
 ];

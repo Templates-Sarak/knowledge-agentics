@@ -6,7 +6,14 @@
     "instalacao": 300,
     "verificacao": 360,
     "boot": 60,
-    "desligamento": 90
+    "desligamento": 90,
+    "docker": 1200
+  },
+  "//docker": "Classe do passo `docker` (so com --docker): build das DUAS imagens (npm ci + tsc + vite, dentro do Dockerfile) e subida com --wait. O teto cobre um build frio num runner carregado e ainda pega um travamento em minutos.",
+  "//sondaDocker": "Sonda das URLs do passo `docker`: so um ERRO DE CONEXAO (a porta publicada pelo Docker Desktop pode demorar a aceitar logo depois do --wait) repete — status diferente do esperado e definitivo e NUNCA repete. tentativas: total de tentativas por URL; intervaloMs: pausa entre elas.",
+  "sondaDocker": {
+    "tentativas": 5,
+    "intervaloMs": 2000
   },
   "//margemDoSupervisorS": "Folga entre o teto do passo e o teto do spawnSync que cerca o supervisor: rede de seguranca de ultimo caso (o supervisor estoura primeiro).",
   "margemDoSupervisorS": 15,

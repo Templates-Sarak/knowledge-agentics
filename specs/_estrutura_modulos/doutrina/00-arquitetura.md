@@ -141,8 +141,10 @@ nunca a API de outro módulo.
 
 Caminho relativo exige mesma origem — e a raiz de composição (§3.4) **não é** essa origem: ela só sobe a
 API (um processo, uma porta), nunca o build estático de `web/`. Quem publica o front sob a mesma origem da
-API é decisão de **deploy** (reverse proxy, host estático na frente, CDN com regra de rota), e deploy não é
-assunto desta doutrina (§5: *"modularidade não é topologia de deploy"*).
+API é o **container** ([[03-operacao]] §9.5): a imagem de front (nginx) serve o build de cada `web/` sob o
+`webPath` dele e faz proxy de `/api/v1/` para o processo composto. A **produção** (entrada, registry,
+servidor) é decisão de deploy e muda por provedor — fica na skill, não nesta doutrina (§5: *"modularidade
+não é topologia de deploy"*).
 
 O front é publicado sob o **`webPath`** do próprio `module.json` (`/<webPath>/`), e o `web/vite.config.*`
 lê esse valor para o `base` do build — nunca um literal repetido. Sem `base`, o `index.html` pediria
@@ -158,6 +160,10 @@ a dependência é declarada em `module.json:consumes`. A pasta separada não é 
 A independência que importa é a de **código**, não a de deploy. Um sistema pode rodar como monólito modular —
 um processo, uma porta, um `.env` — sem afrouxar nenhuma regra deste documento. O dia em que um módulo precisar
 de infraestrutura própria, a mudança é de operação, não de código.
+
+O template entrega **a forma padrão** de colocar esse monólito em container (uma imagem de backend, uma de
+front — [[03-operacao]] §9.5, ADR-022), e isso não o amarra a ela: o módulo extraído (ADR-001) vira a própria
+imagem sem tocar código.
 
 # 6. Onde cada assunto vive
 

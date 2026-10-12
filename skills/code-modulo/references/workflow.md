@@ -250,6 +250,11 @@ node tools/sync-env.mjs
 Regenera o `.env.example` do módulo (a partir de `requiredEnv`) e o da raiz (união de todos).
 Depois, preencha os **valores reais** no `.env` da **raiz**.
 
+O container também deriva do manifesto (a `location` do front pelo `webPath`, a URL do banco por
+`<MODULE>_DB_URL`): `create-module` já roda `node tools/sync-deploy.mjs`, e o `verify` o confere com
+`--check`. Chave que **só o compose lê** (`DEPLOY_*`) não entra em `requiredEnv` — vai em
+`deploy/.env.example` (ADR-022).
+
 **O que detectar:**
 - `.env.example` editado à mão → será sobrescrito; a fonte é o manifesto.
 - Segredo real no `.env` do módulo → ele só aceita `ENV_ROOT` e overrides não-secretos.

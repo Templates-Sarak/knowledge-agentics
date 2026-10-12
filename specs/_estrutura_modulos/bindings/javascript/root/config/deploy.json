@@ -1,0 +1,17 @@
+{
+  "_doc": "Tunables NAO-secretos que SO o deploy le (tools/sync-deploy.mjs os aplica em deploy/nginx.modules.conf e deploy/compose.modules.yml). Fora do runtime.json de proposito: aquele o PROCESSO le e o artefato carrega; este nao. Valores por ambiente (portas, senhas) vivem em deploy/.env, nunca aqui.",
+  "front": {
+    "_doc": "O proxy da API na imagem de front. maxBodySize: o maior corpo que a API aceita (sem isto o proxy devolve 413 antes de a API ver o arquivo). proxyReadTimeoutSeconds: a maior operacao sincrona legitima da API.",
+    "maxBodySize": "5m",
+    "proxyReadTimeoutSeconds": 65
+  },
+  "shutdown": {
+    "_doc": "stop_grace_period do servico `app` = config/runtime.json:shutdown.drainTimeoutMs + esta folga. O orquestrador so pode matar depois de o processo ter tido o teto inteiro para drenar.",
+    "graceMarginMs": 2000
+  },
+  "database": {
+    "_doc": "O servico do Postgres de dev no compose.yml e a porta DELE na rede do compose (nao a publicada no host). Entram na URL que sobrescreve <MODULE>_DB_URL dentro do container.",
+    "service": "db",
+    "port": 5432
+  }
+}

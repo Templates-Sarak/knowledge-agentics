@@ -210,6 +210,53 @@ function lerCodigoDaRaiz(raizProjeto) {
     .filter((arquivo) => EXT_CODIGO.has(arquivo.ext));
 }
 
+/**
+ * Os arquivos de container que a RAIZ de um projeto dockerizado declara (03-operacao.md §9.5, ADR-022).
+ * O front tem os dele à parte: só entram quando algum módulo publica uma tela.
+ */
+export const ARQUIVOS_DE_CONTAINER = ['Dockerfile', '.dockerignore', 'compose.yml', 'deploy/.env.example'];
+export const ARQUIVOS_DE_FRONT = ['front.Dockerfile', 'deploy/nginx.conf'];
+
+/** `KEY=` de um `.env.example` — comentário e linha vazia ficam fora. */
+const CHAVE_DE_ENV_EXEMPLO = /^\s*([A-Za-z_][A-Za-z0-9_]*)=/;
+
+/** Manifestos dos módulos REAIS (moldes `_*` não são publicados), ilegível = ausente. */
+function lerManifestosReais(raizProjeto) {
+  const reais = listarModulos(raizProjeto).filter((pasta) => !basename(pasta).startsWith('_'));
+  return reais.flatMap((pasta) => {
+    try {
+      return [{ pasta, manifesto: JSON.parse(lerTexto(join(pasta, 'module.json'))) }];
+    } catch {
+      return [];
+    }
+  });
+}
+
+/**
+ * O que as regras de container precisam ver. Só leitura de disco: quem interpreta são as regras.
+ * `temFront` é "algum módulo real declara `webPath` E tem `web/`" — webPath sem tela é defeito de
+ * `web-declarado`, e cobrá-lo de novo aqui daria duas mensagens para um conserto só.
+ */
+function lerContainer(raizProjeto, manifestoDaRaiz) {
+  const ler = (rel) => (existsSync(join(raizProjeto, rel)) ? lerTexto(join(raizProjeto, rel)) : null);
+  const modulos = lerManifestosReais(raizProjeto);
+  const exemploDeploy = ler('deploy/.env.example');
+  const chavesDoExemplo = (exemploDeploy ?? '').split('\n')
+    .map((linha) => linha.match(CHAVE_DE_ENV_EXEMPLO)?.[1])
+    .filter((chave) => chave !== undefined);
+  const chavesDosManifestos = [manifestoDaRaiz?.valor, ...modulos.map((m) => m.manifesto)]
+    .flatMap((manifesto) => (Array.isArray(manifesto?.requiredEnv) ? manifesto.requiredEnv : []));
+  return {
+    presentes: [...ARQUIVOS_DE_CONTAINER, ...ARQUIVOS_DE_FRONT].filter((rel) => existsSync(join(raizProjeto, rel))),
+    compose: ler('compose.yml'),
+    composeModulos: ler('deploy/compose.modules.yml'),
+    dockerignore: ler('.dockerignore'),
+    chavesDeclaradas: [...new Set([...chavesDoExemplo, ...chavesDosManifestos])],
+    temFront: modulos.some(({ pasta, manifesto }) => typeof manifesto.webPath === 'string'
+      && existsSync(join(pasta, 'web'))),
+  };
+}
+
 /** `{ presente, valor }` de um `config/<nome>` na raiz — `valor` fica `null` em JSON ilegível ou
  * ausente, e é a regra dona (não este leitor) quem decide a mensagem para cada caso. */
 function lerConfigDaRaiz(raizProjeto, nomeArquivo) {
@@ -249,15 +296,17 @@ function lerProjeto(raizProjeto) {
   const hook = join(raizProjeto, '.githooks', 'pre-commit');
   const githooksPreCommit = existsSync(hook) ? lerTexto(hook) : null;
 
+  const manifestoDaRaiz = lerManifestoDaRaiz(raizProjeto);
   return {
     raiz: raizProjeto,
     ehProjeto,
-    manifesto: lerManifestoDaRaiz(raizProjeto),
+    manifesto: manifestoDaRaiz,
     verificacao,
     conformidade,
     configsDeLint,
     gitignore,
     githooksPreCommit,
+    container: lerContainer(raizProjeto, manifestoDaRaiz),
     codigo: lerCodigoDaRaiz(raizProjeto),
   };
 }

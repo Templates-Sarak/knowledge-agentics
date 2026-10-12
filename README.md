@@ -48,7 +48,13 @@ reescrever import.
 
 **Ele se verifica sozinho**, em quatro camadas: o gate cobra o projeto · o gate se testa · o template
 prova que gera projeto que passa na própria cadeia · toda ferramenta com `--autoteste` é executada.
-Verde significa que verificou — e **78 regras** são cobradas por máquina, não de memória.
+Verde significa que verificou — e **81 regras** são cobradas por máquina, não de memória.
+
+**O projeto nasce dockerizado** (ADR-022): `Dockerfile` (uma imagem de backend do monólito composto),
+`compose.yml` (Postgres de dev + paridade), `deploy/` e, nos bindings com `web/`, `front.Dockerfile` — o
+front em origem única. As rotas do front e a URL do banco do container são **geradas** dos manifestos
+(`tools/sync-deploy.mjs`) e conferidas no `verify`. O compose de **produção** (registry, digests, entrada)
+não é do template: é da skill `deploy-docker-monolito`, que **consome** estes arquivos.
 
 No projeto gerado, `doutrina/` chega como **`specs/arquitetura/`**. É o mesmo arquivo, instalado.
 
@@ -354,6 +360,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 python skills/meta-verificacao-base/scripts/audit_base.py --raiz .   # YAML, contratos, ponteiros órfãos
 npm run autoteste:tudo                                              # todo --autoteste registrado
 node specs/_estrutura_modulos/tests/verify-routine.mjs               # o template inteiro, ponta a ponta
+npm run autoteste:template:docker                                   # o projeto gerado SOBE em container (exige Docker)
 ```
 
 ---

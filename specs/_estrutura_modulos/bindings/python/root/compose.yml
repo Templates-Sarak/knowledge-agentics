@@ -1,0 +1,76 @@
+# Compose LOCAL do monólito modular — binding Python (03-operacao.md §9.5). Dois usos do mesmo arquivo:
+#
+#   node tools/docker-up.mjs up
+#       sobe o profile `app`: backend + Postgres, em loopback — paridade com produção
+#   docker compose --env-file .env --env-file deploy/.env up --wait
+#       sem o profile: só a dependência de dev (o Postgres); a app roda no host (`python -m src.composition`)
+#
+# SEMPRE os dois --env-file (Docker Compose 2.23+; o segundo vence em conflito). Sem eles o compose
+# só leria o .env da raiz e as DEPLOY_* faltariam. A ferramenta `tools/docker-up.mjs` já passa os dois
+# (é Node, como o gate: o projeto Python não declara Node, mas quem o desenvolve tem — README do template).
+#
+# Toda variável de infraestrutura é EXIGIDA com `:?` — nunca um valor padrão embutido. Duas fontes:
+#   .env da raiz     ROOT_API_PORT e os <MODULE>_* (o `sync-env` é dono dele — ADR-004)
+#   deploy/.env      as chaves DEPLOY_*, que SÓ este compose lê (modelo: deploy/.env.example — ADR-022)
+# O `env_file` do serviço `app` aponta só para o .env da raiz: o ambiente do processo não carrega DEPLOY_*.
+#
+# SEM FRONT: o molde Python nasce sem `web/` (webPath nulo), então não há imagem de front nem nginx —
+# o `app` publica a própria API em loopback. Se um módulo Python ganhar `web/`, o que muda está em
+# 03-operacao.md §9.5 ("Módulo Python com front").
+#
+# O que muda com os módulos (a URL do banco de cada <MODULE>_DB_URL, o stop_grace_period) vem do
+# fragmento GERADO deploy/compose.modules.yml (`node tools/sync-deploy.mjs`) — nada é escrito à mão aqui.
+
+name: <project>-local
+
+services:
+  # Dependência de dev. Sem `profiles`: sobe nos dois usos.
+  db:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_DB: ${DEPLOY_DB_NAME:?defina DEPLOY_DB_NAME no deploy/.env}
+      POSTGRES_USER: ${DEPLOY_DB_USER:?defina DEPLOY_DB_USER no deploy/.env}
+      POSTGRES_PASSWORD: ${DEPLOY_DB_PASSWORD:?defina DEPLOY_DB_PASSWORD no deploy/.env}
+    # Publicada SÓ em loopback: o adapter postgres e `python verify.py --migrations` rodam no host.
+    # Não precisa do host? Remova `ports` — o serviço `app` fala com `db` pela rede do compose.
+    ports:
+      - "127.0.0.1:${DEPLOY_DB_PORT:?defina DEPLOY_DB_PORT no deploy/.env}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Paridade com produção: o MESMO Dockerfile do backend.
+  app:
+    profiles: ["app"]
+    extends:
+      file: deploy/compose.modules.yml
+      service: app
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        IMAGE_VERSION: ${DEPLOY_IMAGE_VERSION:-}
+    image: <project>-app:local
+    # O .env único da raiz entra como ambiente do PROCESSO (precedência máxima, ADR-004). O
+    # artefato não leva o .env do módulo, então o ponteiro ENV_ROOT nunca é resolvido aqui.
+    env_file:
+      - .env
+    environment:
+      # O host de escuta é propriedade do CONTAINER, não do ambiente: o .env de dev guarda loopback
+      # (127.0.0.1) e, dentro do container, loopback é inalcançável pelo host. `environment:` vence
+      # `env_file:`, então o valor do .env é sobrescrito só aqui — o dev no host continua com o dele.
+      # O processo segue sem default embutido: se esta linha sumir, o boot cai nomeando a chave.
+      ROOT_API_HOST: 0.0.0.0
+    # A API em loopback do host, na porta de deploy/.env (nunca em 0.0.0.0 do host).
+    ports:
+      - "127.0.0.1:${DEPLOY_APP_PORT:?defina DEPLOY_APP_PORT no deploy/.env}:${ROOT_API_PORT:?defina ROOT_API_PORT no .env}"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

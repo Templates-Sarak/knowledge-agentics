@@ -1,6 +1,6 @@
 # Contexto de build enxuto — e nenhum segredo entra na imagem. Fica na RAIZ do projeto (o contexto).
 # As duas imagens (backend e front) usam o MESMO contexto: por isso `modules/*/web` NÃO é cortado
-# aqui — o front.Dockerfile precisa dele.
+# aqui — o front.Dockerfile precisa dele. Lei: specs/arquitetura/03-operacao.md §9.5.
 
 # Segredos e ambiente — NUNCA na imagem (só o exemplo, que carrega apenas as chaves).
 .env

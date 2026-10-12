@@ -352,7 +352,9 @@ nenhuma mesmo antes do hífen. Python ganhou o mesmo passo de formatação que T
 
 ## ADR-012 — Ambiente e unidade de release ficam fora do template
 
-**Status:** 🟢 Aceito
+**Status:** 🔴 Substituída em parte pelo `ADR-022` — a **unidade de release** deixou de ser pergunta aberta
+(o `ADR-022` a responde). **Continua valendo, e o `ADR-022` o repete:** o template não modela ambientes e não
+traz CD. Leia os dois juntos: este ADR é o porquê das duas ausências que permanecem.
 
 **Contexto.** Duas ausências do template são levantadas com frequência como lacuna, e as duas são decisão. Um
 revisor que as encontre sem este registro vai "consertar" o que foi deliberadamente deixado de fora — e o
@@ -1565,65 +1567,71 @@ do escopo) — fica registrado para quem reabrir `meta-iniciar-repositorio` coor
    `init_repo.py:301`, que precisa de coordenação (não conserto silencioso) no dia em que
    `meta-iniciar-repositorio` for revisitada.
 
-## ADR-021 — O projeto gerado sobe e se empacota de verdade: as decisões do lote 2 da fase 2a
+## ADR-021 — O projeto gerado sobe e se empacota de verdade
 
 **Status:** 🟢 Aceito
 
-**Contexto.** A skill `deploy-docker-monolito` provou, com build real, que um projeto gerado sobe em
-container — mas precisou de contornos para defeitos do template. Este ADR registra o que mudou no template
-para os contornos deixarem de existir, e **cada decisão que o prompt deixou aberta**. Tudo está coberto pela
-rede de `tests/template-self-test.mjs` (passos `boot`, `artefato`, `composition-autoteste`, `desligamento`).
+**Contexto.** Um projeto gerado pelo template precisava subir e se empacotar de verdade — num processo, num
+artefato autossuficiente e num container — e, para isso, exigia contornos para defeitos do próprio template:
+um `base` de build passado na linha de comando, listas de arquivos copiadas à mão, driver de banco instalado
+fora do manifesto, entrypoint Python chamado por função interna, sem teto de desligamento. Este ADR registra o
+que mudou no template para os contornos deixarem de existir, com as evidências medidas e as alternativas
+descartadas. Tudo está coberto pela rede de `tests/template-self-test.mjs` (passos `boot`, `artefato`,
+`composition-autoteste` e `desligamento`).
 
 ### 1. `pytest` travava de forma intermitente (Windows, Python 3.14)
 
 **Causa, com evidência.** `faulthandler` apontou `socket.py:_fallback_socketpair → accept()`, chamado por
 `asyncio` ao criar um event loop (`ProactorEventLoop._make_self_pipe`). No Windows `socket.socketpair()` é um
-fallback em Python: `listen` + `connect` não bloqueante + `accept` **sem timeout**. Um laço de
-`socketpair()` puro, sem pytest, trava em dezenas a centenas de chamadas nesta máquina; um `connect` de
-loopback medido com `select` leva 1, 3, 7, 15 ou 21 s para completar (retransmissão de SYN) e às vezes
-nunca completa. É perda de SYN no loopback do host + o `accept` sem timeout do CPython 3.14.0 — não é defeito
-do template, mas o template **multiplicava a exposição**: `TestClient` sem `with` abre um portal do anyio
-(logo um event loop e um `socketpair`) **por requisição**.
+fallback em Python: `listen` + `connect` não bloqueante + `accept` **sem timeout**. Medido em Windows com
+Python 3.14: um laço de `socketpair()` puro, sem pytest, trava em dezenas a centenas de chamadas; um
+`connect` de loopback medido com `select` leva 1, 3, 7, 15 ou 21 s para completar (retransmissão de SYN) e às
+vezes nunca completa. É perda de SYN no loopback do host + o `accept` sem timeout do CPython 3.14.0 — não é
+defeito do template, mas o template **multiplicava a exposição**: `TestClient` sem `with` abre um portal do
+anyio (logo um event loop e um `socketpair`) **por requisição**.
 
 **Decisão.** Os testes de contrato falam com o app por `httpx.AsyncClient` + `ASGITransport`, num único
 event loop de escopo de sessão (`asyncio_default_*_loop_scope = "session"`). Medido: `socketpair()` por
-execução de pytest de **11 para 1** (módulo `sondapad`, 21 testes). Não é timeout, retry nem `skip`; o
-`socketpair` residual (o do próprio asyncio) é inevitável no Windows. Efeito colateral: o aviso de
-depreciação `httpx` + `starlette.testclient` some. Nenhuma dependência foi trocada ou fixada de novo.
+execução de pytest de **11 para 1** (módulo de 21 testes). Não é timeout, retry nem `skip`; o `socketpair`
+residual (o do próprio asyncio) é inevitável no Windows. Efeito colateral: o aviso de depreciação `httpx` +
+`starlette.testclient` some. Nenhuma dependência foi trocada ou fixada de novo.
 
 ### 2. `base` do Vite vem do `webPath`
 
-`web/vite.config.*` lê `module.json:webPath` para o `base` (`/` se nulo). Build confere
+`web/vite.config.*` lê `module.json:webPath` para o `base` (`/` se nulo). O build confere
 `/<webPath>/assets/...`; o dev server serve sob `/<webPath>/`. O molde não tem proxy de `/api` (é
-deliberadamente mínimo, §4.4 da arquitetura), então não havia proxy a preservar. Frase de roteador em
-`00-arquitetura.md` §4.4.
+deliberadamente mínimo, §4.4 da arquitetura), então não havia proxy a preservar. A regra para um roteador de
+cliente (`basename` igual ao `webPath`) está em `00-arquitetura.md` §4.4. **Alternativa descartada:** passar
+`--base` na linha de comando do build — repete o `webPath` num segundo lugar, que diverge no primeiro módulo
+renomeado.
 
 ### 3. Artefato de backend
 
-- **JS:** `package.mjs` copia o fonte de runtime (§9.1). **C3 — lock:** o lock do artefato é gerado do lock
-  da raiz com `npm install --package-lock-only`. Alternativas descartadas: copiar o lock da raiz cru (carrega
-  entradas de workspace que não existem no artefato) e não ter lock (instalação de produção resolve
-  transitivas de novo a cada build). **C4 — Python:** a doutrina declara que **não há** empacotamento
-  (§9.1); instalar é `pip install`, e o equivalente de lock fica fora — as versões diretas são exatas e
-  um lock transitivo Python exigiria `pip-tools`/`uv`, dependência nova sem consumidor hoje.
+- **JS:** `package.mjs` copia o fonte de runtime (§9.1). **Lock:** o lock do artefato é gerado do lock da
+  raiz com `npm install --package-lock-only`. Alternativas descartadas: copiar o lock da raiz cru (carrega
+  entradas de workspace que não existem no artefato) e não ter lock (a instalação de produção resolve as
+  transitivas de novo a cada build).
+- **Python:** a doutrina declara que **não há** empacotamento (§9.1); instalar é `pip install`, e o
+  equivalente de lock fica fora — as versões diretas são exatas e um lock transitivo Python exigiria
+  `pip-tools`/`uv`, dependência nova sem consumidor hoje.
 - **`react`/`react-dom`** vão para `devDependencies` do módulo (TS e JS); o `vite build` segue verde.
 
-### 4. Driver do adapter `postgres` (D)
+### 4. Driver do adapter `postgres`
 
 Quem usa o driver é o adapter, então a dependência viaja com ele: `adapters/postgres/package.json`
-(workspace) declara `pg`; no Python, o extra `postgres`. O artefato só a leva **se algum módulo escolhe o
-provedor** em `config/ports.json` (a pasta do adapter tem o nome do provedor). `pg` saiu do
+(workspace) declara `pg`; no Python, o extra `postgres` do `pyproject.toml`. O artefato só a leva **se algum
+módulo escolhe o provedor** em `config/ports.json` (a pasta do adapter tem o nome do provedor). `pg` saiu do
 `devDependencies` da raiz — uma versão só, num lugar só. Alternativa descartada: deixar `pg` em
 `dependencies` da raiz, que faz todo projeto pagar pelo driver. O `import` do driver já era lazy.
 
-### 5. Host de escuta (E)
+### 5. Host de escuta
 
 `ROOT_API_HOST`, chave da raiz, **sem default**: `fallback-raiz` proíbe default embutido, e a falta de
 config tem de derrubar o boot. Aplicada nos **três** bindings para ter simetria (o Express escutava em todas
-as interfaces). Consequência declarada: projeto existente precisa acrescentar `ROOT_API_HOST` ao `.env`
-(`sync-env.mjs` a inclui; o valor é por ambiente).
+as interfaces e o uvicorn só em loopback). Consequência declarada: projeto existente precisa acrescentar
+`ROOT_API_HOST` ao `.env` (`sync-env.mjs` a inclui; o valor é por ambiente).
 
-### 6. Desligamento gracioso (F)
+### 6. Desligamento gracioso
 
 `config/runtime.json:shutdown.drainTimeoutMs` (versionado, na raiz) + `ROOT_API_HOST` (§9.4 da operação).
 Prova com **processo real** em `tests/prova-desligamento.py`, nos três bindings, no Windows (CTRL_BREAK →
@@ -1631,25 +1639,111 @@ SIGBREAK no Node, SIGBREAK no uvicorn) e, por construção, no SIGTERM dos demai
 lenta em voo, sinal, e dois cenários — drena (sai 0) e estoura (sai ≠ 0), ambos com log `resultado`.
 Descoberta: o `capture_signals` do uvicorn reemite o sinal e mata o processo por sinal; foi substituído.
 
-### 7. `create-project` e `create-module` (G)
+### 7. `create-project` e `create-module`
 
-- **Lock:** `create-project` passa a gerar `package-lock.json` (`--package-lock-only`) nos bindings Node,
-  antes de qualquer módulo. Medido antes: o lock só aparecia como efeito do `npm install` do primeiro
-  `create-module`. Falha em gerar **reprova** o comando.
+- **Lock:** `create-project` gera `package-lock.json` (`--package-lock-only`) nos bindings Node, antes de
+  qualquer módulo. Medido antes: o lock só aparecia como efeito do `npm install` do primeiro `create-module`,
+  e um projeto recém-criado (que o Dockerfile constrói com `npm ci`) saía sem ele. Falha em gerar **reprova**
+  o comando.
 - **Binding:** `project.json` ganha `binding` (enum, opcional); `create-module` o usa como padrão, `--binding`
   é a sobrescrita, aceita só entre os bindings que o projeto declara (ou tem molde próprio
   `modules/_template-<binding>`), com erro claro. O campo entrou com cobrança: o enum no
   `project.schema.json` (forma) e o uso por `create-module`; projeto legado sem o campo cai em
   `typescript`, como antes.
 
-### 8. Gate limpo num módulo recém-criado (H)
+### 8. Gate limpo num módulo recém-criado
 
 Medido: o aviso `[config-morta] texts.json: "title"` só aparecia com `--no-web` (TS e JS) — `title` é lido
 só por `web/`. O leitor está certo; o defeito era a **poda**: `TEXTOS_SO_DA_TELA` não listava `title`.
-Corrigido ali — só para TS/JS: em Python `title` é o título do app FastAPI e o backend o lê (podar derrubou o boot; o passo `boot` do autoteste pegou). O "gate apontou pendências" em JS/Python era o item 7 (molde TypeScript num projeto JS).
-`criar-modulo` do autoteste agora reprova com qualquer `N aviso(s)` > 0 e roda **sem** `--binding`.
+Corrigido ali — só para TS/JS: em Python `title` é o título do app FastAPI e o backend o lê (podar derrubou o
+boot; o passo `boot` do autoteste pegou). Os avisos a mais em JS/Python vinham de o molde TypeScript ser
+usado num projeto JS (§7). `criar-modulo` do autoteste reprova com qualquer `N aviso(s)` > 0 e roda **sem**
+`--binding`.
 
 ### 9. Consequências
 
-Contornos da skill `deploy-docker-monolito` tornam-se desnecessários (listados no relatório do lote); a
-skill **não** foi tocada — a fase 2b a atualiza.
+Os contornos que um Dockerfile precisava escrever — `--base` do Vite na linha de comando, lista de `COPY` por
+pasta no JS, instalação manual do driver `pg`/`psycopg`, `CMD` Python montado por função interna, e
+`stop_grace_period` sem relação com o desligamento — deixam de ser necessários. Os arquivos de container que
+os consomem vivem no template (`ADR-022`).
+
+---
+
+## ADR-022 — O template é dockerizado: a unidade de release deixa de ser pergunta aberta
+
+**Status:** 🟢 Aceito — revisa o `ADR-012` (ver "Continua valendo").
+
+**Contexto.** O `ADR-012` deixou a unidade de release como pergunta aberta e do projeto: "o que se versiona e
+se entrega — o repositório inteiro, ou cada módulo?". O `ADR-021` fez o projeto gerado subir e se empacotar de
+verdade, e com isso a pergunta passou a ter resposta: um monólito modular composto **é** uma unidade — um
+processo, uma porta, vários módulos sob `/api/v1/<módulo>` — e o front de cada módulo é publicado por fora
+dele (`00-arquitetura.md` §4.4). Deixar a resposta fora do template obrigava cada projeto a reescrever os
+mesmos arquivos de container, e a cada projeto o mesmo erro (imagem de front servida de dentro do processo,
+`.env` na imagem, base `latest`) tinha de ser descoberto de novo.
+
+**Decisão.**
+
+1. **A unidade de release é uma imagem de backend do monólito composto**, mais **uma imagem de front**
+   quando algum módulo tem `webPath`. As duas saem do mesmo commit e se publicam com a mesma tag. O módulo
+   **extraído** (`ADR-001`) continua possível e se publica pela skill `deploy-docker-microsservico` — uma
+   imagem por módulo, sem o front do monólito.
+2. **Todo projeto gerado nasce dockerizado.** `create-project` instala `Dockerfile`, `.dockerignore`,
+   `compose.yml` (profile padrão = Postgres de dev; profile `app` = paridade), `deploy/.env.example` e, nos
+   bindings que têm `web/` (TS e JS), `front.Dockerfile` e `deploy/nginx.conf`. Não é flag. O que muda com
+   os módulos — a `location` de cada `webPath`, a URL do banco de cada `<MODULE>_DB_URL`, o
+   `stop_grace_period` — é **gerado** por `tools/sync-deploy.mjs` e conferido por `--check` no `verify`
+   (`03-operacao.md` §9.5).
+3. **O ambiente que só o deploy lê mora em `deploy/.env` + `deploy/.env.example`**, fora do `.env` da raiz.
+   O `sync-env` é dono do `.env` da raiz e move para a seção `ORFAS` toda chave que nenhum manifesto exige
+   (`ADR-004`); declarar `DEPLOY_*` em `project.json` faria `env-raiz-declarado` acusar "declarada e sem
+   leitor". `deploy/.env` é gitignored (o padrão `.env` do `.gitignore` casa em qualquer pasta) e fica fora do
+   contexto de build (`**/.env` no `.dockerignore`); o exemplo é versionado e sem valor. Isto é doutrina, não
+   convenção de uma skill.
+4. **O host de escuta no container é propriedade do container.** O `.env` de dev guarda loopback;
+   `compose.yml` o sobrescreve em `environment:` (`ROOT_API_HOST: 0.0.0.0`), que vence `env_file:`. Não
+   fere "zero hardcoded": o valor não é um default de infraestrutura embutido no código — o processo
+   continua **sem default** e cai nomeando a chave se ela faltar (`fallback-raiz`, `ADR-021` §5) —, é a
+   declaração de **como o container expõe o processo**, no único arquivo que descreve o container.
+   Alternativa descartada: `ENV ROOT_API_HOST=0.0.0.0` no `Dockerfile` — o `env_file` do compose a vence, e
+   o `.env` de dev voltaria a ser o que o container lê.
+5. **O gate cobra a presença** (`container-presente`), **a declaração das variáveis do compose**
+   (`compose-variaveis-declaradas`) **e que o `.env` fica fora do contexto de build**
+   (`dockerignore-segredo` — a mesma invariante de `gitignore-segredo` na outra fronteira). Dockerfile
+   **bom** (não-root, sem `:latest`, healthcheck, porta em loopback, digest) não é lei do template: é
+   verificação da skill, por provedor.
+
+**Continua valendo do `ADR-012`:**
+
+- **O template não modela ambientes.** Nada de `staging`/`produção`, nenhum arquivo por ambiente, nenhum
+  segredo de produção guardado. Existe **um** `.env` real por projeto (`ADR-004`) e, agora, o `deploy/.env`
+  do compose local — que é do dev, não de um ambiente nomeado.
+- **O template não traz CD.** O compose de **produção** — registry, digests, entrada (túnel, Caddy, Traefik),
+  servidor — fica na skill `deploy-docker-monolito`, porque muda por provedor e por empresa, pelo mesmo
+  argumento do `ADR-005` sobre pipeline de CI. Publicar imagem (`push`) é ato da skill, com confirmação.
+- **A alternativa rejeitada continua rejeitada:** um `.env.staging`/`.env.production` de exemplo convida a
+  versionar o real — o defeito exato que o `ADR-004` fecha.
+
+**Alternativas descartadas.**
+
+- **Container opt-in por flag de `create-project`.** Um projeto sem os arquivos é um projeto que cada time
+  reescreve — e o gate não teria o que cobrar. O custo de carregar quatro arquivos que um projeto nunca usa
+  é menor que o de cada projeto errar os mesmos três.
+- **O Dockerfile/compose na skill, copiados para o projeto.** É o estado anterior: dois lugares com a mesma
+  lei, que divergem. A skill passa a **consumir** o template (e mantém só o que é por provedor).
+- **Rotas do front escritas à mão no `nginx.conf`.** Um módulo criado sem a `location` dele responde 404 sem
+  que nada reprove. Gerado + `--check` torna o esquecimento um erro de `verify`.
+- **Os tunables do proxy em `config/runtime.json`.** Aquele arquivo o **processo** lê e o artefato carrega;
+  o corpo máximo e o timeout do nginx são lidos só pelo deploy. Vão para `config/deploy.json`.
+
+**Consequências.**
+
+1. A skill `deploy-docker-monolito` deixa de ser dona dos arquivos: em projeto do template ela **aponta**
+   para eles; em monólito composto legado a fonte é `bindings/<binding>/root/`.
+2. Todo projeto que adotou o template **antes** deste ADR precisa de plan para adotar os arquivos de
+   container, a chave `ROOT_API_HOST` no `.env`, `config/runtime.json`, `binding` no `project.json`,
+   `adapters/postgres/package.json` e `react` em `devDependencies` — e passa a reprovar `container-presente`
+   até lá. O template nunca empurra atualização para projeto já criado (`ADR-008`).
+3. O gate passa de 78 para 81 regras (três de escopo `root`, família Operação).
+4. O `autoteste` do template ganha o passo `container-arquivos` (sempre) e `docker` (atrás de `--docker`:
+   builda as duas imagens e sobe o profile `app`, sondando `/healthz` e `<basePath>/health` pela origem
+   única; sem Docker no host, sai **pulado**, visível).

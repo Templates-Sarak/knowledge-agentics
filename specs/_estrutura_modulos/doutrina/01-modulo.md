@@ -370,6 +370,9 @@ nunca o cite em schema de resposta.
 2. `node tools/sync-env.mjs` — regenera os `.env.example`. **Não edite esses arquivos à mão.**
 3. Preencha o valor no `.env` da raiz.
 4. Leia só pelo carregador. Ausência derruba o boot — nunca use `?? 'valor'`.
+5. Chave que **só o compose lê** (`DEPLOY_*`) **não** entra em `requiredEnv`: vai em `deploy/.env.example`
+   ([[03-operacao]] §9.5, ADR-022). E ao mudar `webPath` ou acrescentar um `<MODULE>_DB_URL`, rode
+   `node tools/sync-deploy.mjs` — as rotas do front e a URL do banco do container são geradas.
 
 ## 9.6 Tabela nova
 
