@@ -17,8 +17,8 @@ só, e esta é a que varre e limpa o que **não deveria estar assinado**.
 
 ## Workflow
 
-1. **Varrer** — `python scripts/scan_assinaturas.py --raiz <projeto>`; a saída é candidato, não verdade.
-2. **Triar** — cruze cada achado contra `scripts/config.json` (`autorizados`); descarte quem já está
+1. **Varrer** — `python scripts/scan_signatures.py --root <projeto>`; a saída é candidato, não verdade.
+2. **Triar** — cruze cada achado contra `scripts/config.json` (`authorized`); descarte quem já está
    na lista.
 3. **HITL** — apresente a lista triada (arquivo:linha:trecho) e pergunte: *"Remover estas N assinaturas
    não autorizadas? Além de {autor de `config.json`}, há outro colaborador a creditar?"* Aguarde.
@@ -33,14 +33,14 @@ só, e esta é a que varre e limpa o que **não deveria estar assinado**.
 - **NUNCA** remova assinatura sem o HITL do passo 3.
 - **NUNCA** toque `node_modules`/`vendor` nem remova licenciamento de terceiros — só o código-fonte
   do projeto.
-- **NÃO** trate a saída de `scan_assinaturas.py` como verdade absoluta — são candidatos; confirme o
+- **NÃO** trate a saída de `scan_signatures.py` como verdade absoluta — são candidatos; confirme o
   contexto antes de remover.
 - **NÃO** decida ou aplique licença — isso é da `code-licenca`.
 - **NÃO** escreva `README`/`CODEOWNERS`/`CHANGELOG` — isso é da `code-documentacao`.
 
 ## Checklist "pronta"
 
-- [ ] `scan_assinaturas.py` rodado e os achados triados contra `autorizados`?
+- [ ] `scan_signatures.py` rodado e os achados triados contra `authorized`?
 - [ ] HITL feito e confirmado antes de qualquer remoção?
 - [ ] Assinaturas não autorizadas removidas, sem tocar `node_modules`/`vendor`/terceiros?
 - [ ] Metadados de autoria (`package.json`/`pyproject.toml`) corretos?
@@ -48,5 +48,5 @@ só, e esta é a que varre e limpa o que **não deveria estar assinado**.
 
 ## Referências (Camada 3 — leia sob demanda)
 
-- `scripts/scan_assinaturas.py` + `scripts/config.json` — scanner de assinaturas não autorizadas
+- `scripts/scan_signatures.py` + `scripts/config.json` — scanner de assinaturas não autorizadas
   (padrões de detecção + lista de nomes autorizados).

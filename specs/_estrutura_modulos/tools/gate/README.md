@@ -41,7 +41,7 @@ conformidade morreria exatamente no momento em que a arquitetura foi cobrada. Ve
 Só **quatro** regras precisam de visão global e por isso rodam apenas no `--all`: `lateral-import`,
 `foreign-table`, `consumes-cycle` e `consumes-contract`.
 
-Regra sobre o **projeto** não é global: ela tem escopo `root`, recebe `ctx.projeto` em vez de um contexto de
+Regra sobre o **projeto** não é global: ela tem escopo `root`, recebe `ctx.project` em vez de um contexto de
 módulo e roda **uma vez** por invocação — o fato é um só, e emiti-lo por módulo daria dez mensagens idênticas
 num repositório com dez módulos. O achado sai sob o alvo `(root)`. Quais são elas está no catálogo
 (`specs/arquitetura/04-regras.md`), na coluna **escopo** — enumerá-las aqui é uma lista que envelhece.
@@ -112,29 +112,29 @@ depois da tabela de precisão dos verificadores.
 ```js
 {
   id: 'minha-regra',          // igual ao id no catálogo
-  nivel: 'erro',              // 'erro' reprova; 'aviso' só reporta
-  escopo: 'modulo',           // 'modulo' recebe um ctx; 'global' recebe todos; 'raiz' recebe ctx.projeto
-  verificar(ctx) {
+  severity: 'error',          // 'error' reprova; 'warning' só reporta
+  scope: 'module',            // 'module' recebe um ctx; 'global' recebe todos; 'root' recebe ctx.project
+  check(ctx) {
     return ['mensagem acionável'];   // array vazio = conforme
   },
 }
 ```
 
-3. Regra de escopo `global` devolve `{ module, mensagem }` em vez de string, porque precisa dizer de quem é o
+3. Regra de escopo `global` devolve `{ module, message }` em vez de string, porque precisa dizer de quem é o
    achado. Regra de escopo `root` devolve string: o alvo dela é sempre `(root)`.
 4. **Nenhuma regra lê disco.** Tudo vem do contexto (`tools/gate/context.mjs`) — é o que as mantém
-   rápidas e testáveis. O que é do **projeto**, e não do módulo, chega em `ctx.projeto`
+   rápidas e testáveis. O que é do **projeto**, e não do módulo, chega em `ctx.project`
    (`loadProject`): a política de `config/verification.json` e a config do linter em disco. É lido uma vez
-   por raiz e memoizado — dez módulos não custam dez leituras —, e `ctx.projeto.ehProjeto` diz se a raiz é
+   por raiz e memoizado — dez módulos não custam dez leituras —, e `ctx.project.isProject` diz se a raiz é
    mesmo um projeto (tem `modules/`) ou um módulo solto, caso em que regra de projeto silencia. O **código**
-   da raiz (`adapters/`, `src/`, `packages/`) chega em `ctx.projeto.codigo`, e NUNCA em `ctx.arquivos` ou
-   `ctx.codigo`: essas duas são o material das regras de módulo, cujos textos dizem "no código do módulo".
+   da raiz (`adapters/`, `src/`, `packages/`) chega em `ctx.project.code`, e NUNCA em `ctx.files` ou
+   `ctx.code`: essas duas são o material das regras de módulo, cujos textos dizem "no código do módulo".
 5. **Leitura de `contract/openapi.yaml` já existe** em `tools/gate/spec.mjs` (`specOf`,
-   `specRoutes`, `specOperations`, `normalizar`). Importe de lá — duas famílias a usam, e um segundo
+   `specRoutes`, `specOperations`, `normalize`). Importe de lá — duas famílias a usam, e um segundo
    parser divergiria do primeiro sem ninguém notar.
 6. **Regra que julga CÓDIGO lê `codeText`** (`tools/gate/text.mjs`), nunca
-   `arquivo.conteudo`: comentário e docstring não são código, e a lei escrita num comentário viraria
-   violação dela mesma (`04-regras.md` §7.2). `conteudo` é para quem julga texto que **não** é código —
+   `file.content`: comentário e docstring não são código, e a lei escrita num comentário viraria
+   violação dela mesma (`04-regras.md` §7.2). `content` é para quem julga texto que **não** é código —
    `-- rollback` numa migration, `.env.example`, o próprio `openapi.yaml`.
 
 ## O molde também é validado
@@ -148,7 +148,7 @@ sem ninguém notar, e todo módulo criado a partir dele nasce quebrado (ADR-006 
 
 ## Exceções
 
-Exceção nominal vive em `config/compliance.json` na raiz do projeto e **exige** o campo `decisao`
+Exceção nominal vive em `config/compliance.json` na raiz do projeto e **exige** o campo `decision`
 apontando para um ADR. Sem ele, o gate reporta a própria exceção como inválida e não a aplica. O `rule` de
 cada exceção precisa ser id do catálogo: id renomeado reprova com a dica do id novo
 (`renamed-rules.json`, gerada do ADR-024); id que nunca existiu reprova sem dica.

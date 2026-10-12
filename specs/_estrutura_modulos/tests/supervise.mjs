@@ -100,15 +100,15 @@ export function readArguments(argv) {
  * `status === null` = a conexão não abriu ainda (recusada/timeout) — segue sondando.
  */
 export function decideProbing({ status, exited, overflowed }) {
-  if (status === STATUS_OK) return { end: true, ok: true, motivo: null };
+  if (status === STATUS_OK) return { end: true, ok: true, reason: null };
   if (status !== null && status !== undefined) {
-    return { end: true, ok: false, motivo: `health returned ${status} (expected 200)` };
+    return { end: true, ok: false, reason: `health returned ${status} (expected 200)` };
   }
   if (exited !== null && exited !== undefined) {
-    return { end: true, ok: false, motivo: `process exited before health responded (${exited})` };
+    return { end: true, ok: false, reason: `process exited before health responded (${exited})` };
   }
-  if (overflowed) return { end: true, ok: false, motivo: 'timeout expired before health responded', cap: true };
-  return { end: false, ok: false, motivo: null };
+  if (overflowed) return { end: true, ok: false, reason: 'timeout expired before health responded', cap: true };
+  return { end: false, ok: false, reason: null };
 }
 
 /** As últimas `n` linhas não vazias de `texto`. */
@@ -170,7 +170,7 @@ function startChild(command, probing, state) {
 
 function accumulateTail(child, state) {
   const store = (chunk) => {
-    state.saida += chunk.toString('utf8');
+    state.output += chunk.toString('utf8');
   };
   child.stdout?.on('data', store);
   child.stderr?.on('data', store);
@@ -200,19 +200,19 @@ async function waitForHealth(state, limit, options) {
   for (;;) {
     const status = await probeOnce(options.untilUrl, options.intervalMs);
     const decision = decideProbing({ status, exited: state.exited, overflowed: Date.now() >= limit });
-    if (decision.end) return { code: decision.ok ? 0 : 1, motivo: decision.motivo, overflowed: decision.cap === true };
+    if (decision.end) return { code: decision.ok ? 0 : 1, reason: decision.reason, overflowed: decision.cap === true };
     await waitFor(options.intervalMs);
   }
 }
 
 function reportFailure(reason, state, options) {
-  const lines = tailOf(state.saida, options.tailLines);
+  const lines = tailOf(state.output, options.tailLines);
   process.stderr.write(`[supervise] ${reason}\n`);
   if (lines.length > 0) process.stderr.write(`[supervise] last process lines:\n${lines.map((l) => `  | ${l}`).join('\n')}\n`);
 }
 
 async function supervise(options) {
-  const state = { exited: null, code: null, saida: '' };
+  const state = { exited: null, code: null, output: '' };
   const probing = options.untilUrl !== null;
   const child = startChild(options.command, probing, state);
   if (probing) accumulateTail(child, state);
@@ -224,7 +224,7 @@ async function supervise(options) {
       if (code === EXIT_CAP) process.stderr.write(`[supervise] timeout expired after ${options.capMs / 1000} s\n`);
       return code;
     }
-    const { code, motivo: reason, overflowed } = await waitForHealth(state, limit, options);
+    const { code, reason, overflowed } = await waitForHealth(state, limit, options);
     if (code === 0) return 0;
     reportFailure(reason, state, options);
     return overflowed ? EXIT_CAP : code;
@@ -295,15 +295,15 @@ function pureCases() {
     } },
     { name: 'decideProbing: 404 ends with failure naming the status', fn: () => {
       const d = decideProbing({ status: STATUS_NOT_FOUND, exited: null, overflowed: false });
-      return d.end && !d.ok && d.motivo.includes(String(STATUS_NOT_FOUND));
+      return d.end && !d.ok && d.reason.includes(String(STATUS_NOT_FOUND));
     } },
     { name: 'decideProbing: no response and exited process ends with failure', fn: () => {
       const d = decideProbing({ status: null, exited: 'exit code 1', overflowed: false });
-      return d.end && !d.ok && d.motivo.includes('exited');
+      return d.end && !d.ok && d.reason.includes('exited');
     } },
     { name: 'decideProbing: no response and expired timeout ends with failure', fn: () => {
       const d = decideProbing({ status: null, exited: null, overflowed: true });
-      return d.end && !d.ok && d.motivo.includes('timeout');
+      return d.end && !d.ok && d.reason.includes('timeout');
     } },
     { name: 'decideProbing: no response while alive and within the limit keeps probing', fn: () => (
       decideProbing({ status: null, exited: null, overflowed: false }).end === false
@@ -373,7 +373,7 @@ async function probeCapCase() {
 async function notOwnCommandSelfTestCase() {
   const script = "console.log(process.argv.slice(1).join(' '))";
   const r = runSupervisor(['--timeout-ms', String(TEST_DEATH_WAIT_MS), '--', process.execPath, '-e', script, '--', '--selftest']);
-  return r.status === 0 && r.stdout.trim() === '--selftest' && !r.stdout.includes('autoteste (supervise)');
+  return r.status === 0 && r.stdout.trim() === '--selftest' && !r.stdout.includes('self-test (supervise)');
 }
 
 async function childOutputCase() {

@@ -30,21 +30,21 @@ Trate **um alvo por vez** (um repo ou um módulo).
    | Topologia | Como reconhecer | Alvo da adequação |
    |---|---|---|
    | **template** | `modules/*/module.json` **e** `tools/gate/` | já é o alvo — ver §Atalho abaixo |
-   | **modular-legado** | pasta por domínio: `backend/<m>`, `frontend/<m>`, `src/modules/<m>`, `apps/<m>`, `packages/<m>` | migrar para `modules/<m>/` |
-   | **por-camadas** | `controllers/`, `services/`, `models/`, `repositories/` no topo | fatiar por domínio **antes** de qualquer outra coisa — é a violação-raiz |
-   | **monólito simples** | sem separação reconhecível (script, lib, site) | **o Nível 1 não se aplica.** Diagnostique só Nível 0 e 2, e diga isso no relatório |
+   | **legacy-modular** | pasta por domínio: `backend/<m>`, `frontend/<m>`, `src/modules/<m>`, `apps/<m>`, `packages/<m>` | migrar para `modules/<m>/` |
+   | **layered** | `controllers/`, `services/`, `models/`, `repositories/` no topo | fatiar por domínio **antes** de qualquer outra coisa — é a violação-raiz |
+   | **simple-monolith** | sem separação reconhecível (script, lib, site) | **o Nível 1 não se aplica.** Diagnostique só Nível 0 e 2, e diga isso no relatório |
 
-   Registre a topologia detectada no backlog (`topologia`). Sem ela, quem consome o plano não sabe se as
+   Registre a topologia detectada no backlog (`topology`: `template | legacy-modular | layered | simple-monolith`). Sem ela, quem consome o plano não sabe se as
    tarefas são de refatoração interna ou de mudança de árvore.
 
 2. **Delimitar o alvo** — liste os módulos conforme a topologia e os arquivos de cada um. Numa topologia
-   `por-camadas` **não há módulos**: o alvo é o repositório inteiro, e o primeiro item do backlog é a fatia
+   `layered` **não há módulos**: o alvo é o repositório inteiro, e o primeiro item do backlog é a fatia
    vertical que ainda não existe.
-3. **Varrer por dimensão** — para cada arquivo, classifique violações nas dimensões abaixo. Registre `arquivo:linha`, dimensão, severidade e risco de refatoração. **Use o validador da linguagem como motor das dimensões mecânicas** (limiares, logging, tipagem, segredos, hardcoded) e consuma o JSON; complemente à mão só o que exige julgamento. Validadores: Python → `padrao-python/scripts/validate.py`; TS/JS → `padrao-typescript/scripts/validate.mjs`.
-4. **Avaliar cobertura de testes** — por módulo, verifique se há `tests/` cobrindo o comportamento; marque `cobertura: sem-testes | parcial | ok`. Sem testes eleva o risco de qualquer refatoração do módulo.
+3. **Varrer por dimensão** — para cada arquivo, classifique violações nas dimensões abaixo. Registre `file:line` (`path`/`line`), dimensão, severidade e risco de refatoração. **Use o validador da linguagem como motor das dimensões mecânicas** (`thresholds`, `logging`, `typing`, `secrets`, `hardcoded`) e consuma o JSON (`target`, `findings[]` com `path`/`line`/`dimension`/`severity`/`risk`/`message`/`rule`/`confidence`); complemente à mão só o que exige julgamento. Validadores: Python → `padrao-python/scripts/validate.py`; TS/JS → `padrao-typescript/scripts/validate.mjs`.
+4. **Avaliar cobertura de testes** — por módulo, verifique se há `tests/` cobrindo o comportamento; marque `coverage: untested | partial | ok`. Sem testes eleva o risco de qualquer refatoração do módulo.
 5. **Agrupar por módulo → arquivo** — consolide as violações na hierarquia módulo → arquivo → violações.
 6. **Priorizar** — ordene o backlog por (risco asc, severidade desc): **quick wins primeiro** (segredos/hardcoded — alto valor, baixo risco), depois limiares/SRP, por último desacoplamento estrutural (alto risco).
-7. **Emitir o backlog em JSON** — no formato de `references/backlog-format.md`. Para alimentar a adequação, **decomponha em `tarefas[]`** (átomo + ondas + `risco`-roteador em `references/decomposicao.md`). Esse JSON é o que a `code-adequacao`/orquestração consome.
+7. **Emitir o backlog em JSON** — no formato de `references/backlog-format.md`. Para alimentar a adequação, **decomponha em `tasks[]`** (átomo + ondas + `risk`-roteador em `references/decomposicao.md`). Esse JSON é o que a `code-adequacao`/orquestração consome.
 8. **Resumir** — apresente um sumário legível (X módulos, N violações por dimensão, cobertura, top prioridades). Para uma **consultoria completa**, preencha `assets/auditoria.template.md`.
 
 > **Em escala:** a varredura de um repo inteiro é orquestrada pelo command `/code1-auditar` (fan-out: um agente
@@ -62,7 +62,7 @@ node tools/gate/validate.mjs --all --json
 ```
 
 Cada achado vem em `findings[]`, com `module`, `rule`, `severity` e `message`. Use `rule` como
-o **id da regra** no campo `regra` da violação de backlog. Depois, diagnostique **só o
+o **id da regra** no campo `rule` do achado de backlog. Depois, diagnostique **só o
 que o gate declara não cobrir** (`04-regras.md` §7): cobertura de teste real, SRP e nomes com julgamento,
 documentação de contrato, e campo sensível montado por indireção. Duplicar o gate produz backlog inflado e
 achado que ninguém consegue reproduzir.
@@ -105,12 +105,12 @@ editar uma linha de config" e "trocar de banco é um projeto".
 
 ## Checklist "pronta"
 - [ ] A **topologia** foi identificada e registrada no backlog?
-- [ ] Se nenhum módulo foi encontrado, isso foi **explicado** (topologia `por-camadas` / monólito) e não
+- [ ] Se nenhum módulo foi encontrado, isso foi **explicado** (topologia `layered` / monólito) e não
       reportado como conformidade?
 - [ ] Topologia `template`: o gate rodou com `--json` e o diagnóstico cobriu **só** o que ele declara não cobrir?
 - [ ] O alvo e seus módulos foram delimitados (módulo → arquivo)?
-- [ ] Cada violação tem `arquivo:linha`, dimensão, severidade e risco?
-- [ ] Cada módulo tem o campo `cobertura` (sem-testes/parcial/ok) preenchido?
+- [ ] Cada achado tem `file:line`, dimensão, severidade e risco?
+- [ ] Cada módulo tem o campo `coverage` (untested/partial/ok) preenchido?
 - [ ] Todas as 12 dimensões foram consideradas (incl. infraestrutura acoplada, testes, logging, contrato)?
 - [ ] O backlog está priorizado (quick wins de baixo risco primeiro)?
 - [ ] O JSON segue o formato de `references/backlog-format.md`?
@@ -118,6 +118,6 @@ editar uma linha de config" e "trocar de banco é um projeto".
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/backlog-format.md` — esquema JSON do backlog + detalhe de detecção de cada dimensão.
-- `references/decomposicao.md` — decomposição em `tarefas[]` + ondas + `risco` como roteador (o plano executável).
+- `references/decomposicao.md` — decomposição em `tasks[]` + ondas + `risk` como roteador (o plano executável).
 - `references/examples.md` — exemplo de diagnóstico bom (priorizado) × ruim (lista plana sem risco).
 - `assets/auditoria.template.md` — template da consultoria de adequação (sumário, mapa, tarefas, ondas, recomendações).

@@ -16,7 +16,7 @@ para lá (§4 abaixo).
 ## Camadas
 
 ### 1. `README.md` (raiz) — anatomia fixa
-Seções obrigatórias (template em `assets/README.template.md`; o `auditar_docs.py` checa a presença):
+Seções obrigatórias (template em `assets/README.template.md`; o `audit_docs.py` checa a presença):
 - **Título + 1 linha** — o que o projeto é.
 - **Visão geral** — propósito e contexto.
 - **Stack** — linguagens/frameworks principais.
@@ -50,7 +50,7 @@ Explicam o **porquê** de decisões não óbvias — nunca parafraseiam o códig
 `padrao-escrita/references/comentarios.md`; não redefinida aqui.
 
 ## Como esta skill aplica
-- `auditar_docs.py` reporta lacunas (README ausente, seções faltando, sem `specs/`, sem `LICENSE`,
+- `audit_docs.py` reporta lacunas (README ausente, seções faltando, sem `specs/`, sem `LICENSE`,
   módulos sem README).
 - O `README.md` é **gerado/atualizado** a partir do template, preenchendo o que é factual (nome, stack, módulos, comandos).
 - O que exige conhecimento de negócio (visão, decisões, contrato detalhado) é **apontado como lacuna** ao usuário — não se inventa.

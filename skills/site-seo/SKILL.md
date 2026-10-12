@@ -1,6 +1,6 @@
 ---
 name: site-seo
-description: SEO técnico + SEO local (GEO) + otimização para IA (AEO/GSO) — robots/sitemap, JSON-LD, metadados/OG, NAP e conteúdo answer-ready, com auditoria (auditar_seo.py). Use APENAS em sites, quando pedirem SEO/GEO ou Schema.org. NÃO acione proativamente.
+description: SEO técnico + SEO local (GEO) + otimização para IA (AEO/GSO) — robots/sitemap, JSON-LD, metadados/OG, NAP e conteúdo answer-ready, com auditoria (audit_seo.py). Use APENAS em sites, quando pedirem SEO/GEO ou Schema.org. NÃO acione proativamente.
 ---
 
 # Skill: SEO & GEO (Descoberta)
@@ -22,7 +22,7 @@ Torna um site **encontrável e indexável** — por buscadores tradicionais (SEO
 ## Workflow
 Trate **um site por vez**. Catálogo de schema/GEO/AEO em `references/schema-geo.md`.
 
-1. **Auditar** — rode `python scripts/auditar_seo.py --raiz <projeto>` (robots/sitemap, `<title>`/meta description, OG/Twitter, JSON-LD, canonical, `lang`, `<img>` sem `alt`). Para performance (CWV), use a `otimizacao-nivel-1` (não audite aqui).
+1. **Auditar** — rode `python scripts/audit_seo.py --root <projeto>` (robots/sitemap, `<title>`/meta description, OG/Twitter, JSON-LD, canonical, `lang`, `<img>` sem `alt`). Para performance (CWV), use a `otimizacao-nivel-1` (não audite aqui).
 2. **Rastreio: robots & sitemap** — `robots.txt` (libera geral, bloqueia admin, aponta o sitemap; regra opcional p/ `GPTBot`); `sitemap.xml` dinâmico/no build, só URLs 200.
 3. **Dados estruturados (JSON-LD)** — injete do `assets/`: `Organization`, `LocalBusiness` (NAP + geo + horários — base do GEO), `BreadcrumbList` (reflete as rotas da `site-organizacao`), `FAQPage` (featured snippets/IA).
 4. **Metadados & canonical** — `<title>` e meta description únicos por página (revisão humana p/ CTR/tom); `<link rel="canonical">`; `<html lang>`.
@@ -42,7 +42,7 @@ Trate **um site por vez**. Catálogo de schema/GEO/AEO em `references/schema-geo
 - **NÃO** saia do escopo: performance/imagens → `otimizacao-nivel-1`; rotas/navegação/a11y → `site-organizacao`; bug de código → `code-diagnostico`/`code-adequacao`.
 
 ## Checklist "pronta"
-- [ ] `auditar_seo.py` rodado e a saída triada (robots/sitemap/meta/OG/JSON-LD/alt)?
+- [ ] `audit_seo.py` rodado e a saída triada (robots/sitemap/meta/OG/JSON-LD/alt)?
 - [ ] `robots.txt` + `sitemap.xml` corretos (só URLs 200)?
 - [ ] JSON-LD aplicado (Organization/LocalBusiness/Breadcrumb/FAQ) e validado no Rich Results Test?
 - [ ] `<title>`/meta description únicos + canonical + `lang`?
@@ -53,5 +53,5 @@ Trate **um site por vez**. Catálogo de schema/GEO/AEO em `references/schema-geo
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/schema-geo.md` — catálogo de tipos JSON-LD + guia de GEO local e AEO/GSO + validadores.
-- `scripts/auditar_seo.py` + `scripts/auditar_seo.config.json` — auditoria determinística de SEO on-page.
+- `scripts/audit_seo.py` + `scripts/audit_seo.config.json` — auditoria determinística de SEO on-page.
 - `assets/` — templates JSON-LD: `local_business_schema.json`, `organization_schema.json`, `faq_schema.json`.

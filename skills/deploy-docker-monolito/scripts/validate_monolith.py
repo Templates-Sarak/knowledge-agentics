@@ -1,12 +1,12 @@
 """
-validar_monolito.py — valida o empacotamento Docker de um monólito modular composto: Dockerfile do
+validate_monolith.py — valida o empacotamento Docker de um monólito modular composto: Dockerfile do
 backend, front.Dockerfile, compose local, compose de produção e .dockerignore. Só reporta (não
-builda nada). Complementa — não repete — o validar_docker.py genérico da deploy-docker-microsservico
+builda nada). Complementa — não repete — o validate_docker.py genérico da deploy-docker-microsservico
 (não-root, sem :latest, sem segredo em build).
 
 Uso:
-    python validar_monolito.py --raiz <projeto> [--config config.json]
-    python validar_monolito.py --selftest
+    python validate_monolith.py --root <projeto> [--config config.json]
+    python validate_monolith.py --selftest
 
 Retorno:
     JSON {root, ok, blockers:[{rule, file, line, detail}], warnings:[...], files:{...}}.
@@ -78,7 +78,7 @@ def rule_multistage(stages: list, path: Any) -> list[Finding]:
             "backend_single_stage",
             path,
             0,
-            "Dockerfile do backend precisa de 2+ estágios (FROM)",
+            "backend Dockerfile needs 2+ stages (FROM)",
         )
     ]
 
@@ -89,7 +89,7 @@ def rule_healthcheck(final: list, path: Any) -> list[Finding]:
         for _, instr, args in final
     ):
         return []
-    return [finding("backend_no_healthcheck", path, 0, "estágio final sem HEALTHCHECK")]
+    return [finding("backend_no_healthcheck", path, 0, "final stage has no HEALTHCHECK")]
 
 
 def rule_revision_label(final: list, path: Any, config: Config) -> list[Finding]:
@@ -98,7 +98,7 @@ def rule_revision_label(final: list, path: Any, config: Config) -> list[Finding]
         return []
     return [
         finding(
-            "backend_no_revision_label", path, 0, f"estágio final sem LABEL {label}"
+            "backend_no_revision_label", path, 0, f"final stage has no LABEL {label}"
         )
     ]
 
@@ -117,7 +117,7 @@ def rule_copy_all(final: list, path: Any) -> list[Finding]:
                     "backend_copy_all_in_final",
                     path,
                     line,
-                    f"{instr} {args} no estágio final",
+                    f"{instr} {args} in the final stage",
                 )
             )
     return found
@@ -157,7 +157,7 @@ def rule_front_base(stages: list, path: Any, config: Config) -> list[Finding]:
     image = stages[-1][0][2].split()[0] if stages[-1][0][2] else ""
     if config["front_base_marker"] in image:
         return []
-    detail = f"base final '{image}' não é {config['front_base_marker']}"
+    detail = f"final base '{image}' is not {config['front_base_marker']}"
     return [finding("front_base_not_unprivileged", path, stages[-1][0][0], detail)]
 
 
@@ -169,7 +169,7 @@ def rule_front_destination(stages: list, path: Any, config: Config) -> list[Find
         destination = args.split()[-1] if args.split() else ""
         for forbidden in config["front_forbidden_destinations"]:
             if destination.rstrip("/").startswith(forbidden):
-                detail = f"{instr} para {destination} mescla com o index.html da imagem base"
+                detail = f"{instr} to {destination} merges with the base image index.html"
                 found.append(finding("front_copies_to_default_html_root", path, line, detail))
     return found
 
@@ -177,7 +177,7 @@ def rule_front_destination(stages: list, path: Any, config: Config) -> list[Find
 def check_front_dockerfile(text: str, path: Any, config: Config) -> list[Finding]:
     stages = split_stages(logical_instructions(text))
     if not stages:
-        return [finding("front_not_a_dockerfile", path, 0, "sem FROM")]
+        return [finding("front_not_a_dockerfile", path, 0, "no FROM")]
     return rule_front_base(stages, path, config) + rule_front_destination(stages, path, config)
 
 
@@ -313,7 +313,7 @@ def rule_digest_image(name: str, lines: list, path: Any) -> list[Finding]:
                 "prod_service_without_image",
                 path,
                 0,
-                f"{name}: produção usa imagem do registry, nunca build",
+                f"{name}: production uses a registry image, never build",
             )
         ]
     if "@sha256:" in value or "@${" in value:
@@ -330,7 +330,7 @@ def rule_hardening(name: str, lines: list, path: Any, config: Config) -> list[Fi
                 "prod_cap_drop_all_missing",
                 path,
                 0,
-                f"{name}: cap_drop sem {config['required_cap_drop']}",
+                f"{name}: cap_drop without {config['required_cap_drop']}",
             )
         )
     sec_text = " ".join(t for _, t in nested_block(lines, "security_opt"))
@@ -340,7 +340,7 @@ def rule_hardening(name: str, lines: list, path: Any, config: Config) -> list[Fi
                 "prod_no_new_privileges_missing",
                 path,
                 0,
-                f"{name}: security_opt sem {config['required_security_opt']}",
+                f"{name}: security_opt without {config['required_security_opt']}",
             )
         )
     if nested_block(lines, "ports"):
@@ -349,7 +349,7 @@ def rule_hardening(name: str, lines: list, path: Any, config: Config) -> list[Fi
                 "prod_ports_published",
                 path,
                 0,
-                f"{name}: produção não publica porta no host",
+                f"{name}: production does not publish a host port",
             )
         )
     return found
@@ -388,18 +388,18 @@ def check_dockerignore(text: str, path: Any, config: Config) -> list[Finding]:
     if not any(l in config["dockerignore_env_patterns"] for l in lines):
         found.append(
             finding(
-                "dockerignore_env_not_covered", path, 0, "nenhum padrão cobre .env*"
+                "dockerignore_env_not_covered", path, 0, "no pattern covers .env*"
             )
         )
     if not any(l in config["dockerignore_env_exception_patterns"] for l in lines):
         found.append(
-            finding("dockerignore_env_example_not_kept", path, 0, "falta !.env.example")
+            finding("dockerignore_env_example_not_kept", path, 0, "missing !.env.example")
         )
     normalized = {normalize_ignore(l) for l in lines}
     for name in config["dockerignore_required"]:
         if name not in normalized:
             found.append(
-                finding("dockerignore_missing_entry", path, 0, f"falta {name}")
+                finding("dockerignore_missing_entry", path, 0, f"missing {name}")
             )
     return found
 
@@ -475,12 +475,12 @@ def check_presence(root: Path, groups: dict, config: Config) -> list[Finding]:
                 "backend_dockerfile_missing",
                 root,
                 0,
-                "nenhum Dockerfile de backend encontrado",
+                "no backend Dockerfile found",
             )
         )
     web_modules = modules_with_web(root, config)
     if web_modules and not groups["front"]:
-        detail = f"módulos com webPath: {', '.join(web_modules)}"
+        detail = f"modules with webPath: {', '.join(web_modules)}"
         found.append(finding("front_dockerfile_missing", root, 0, detail))
     return found
 
@@ -488,7 +488,7 @@ def check_presence(root: Path, groups: dict, config: Config) -> list[Finding]:
 def check_ignore_file(root: Path, config: Config) -> list[Finding]:
     ignore_path = root / config["dockerignore_name"]
     if not ignore_path.exists():
-        return [finding("dockerignore_missing", ignore_path, 0, "arquivo ausente")]
+        return [finding("dockerignore_missing", ignore_path, 0, "file missing")]
     return check_dockerignore(read(ignore_path), ignore_path, config)
 
 
@@ -505,7 +505,7 @@ def validate(root: Path, config: Config) -> dict[str, Any]:
     warnings: list[Finding] = []
     if not groups["compose_local"]:
         warnings.append(
-            finding("compose_local_missing", root, 0, "nenhum compose local encontrado")
+            finding("compose_local_missing", root, 0, "no local compose found")
         )
     files: dict[str, Any] = {k: [str(p) for p in v] for k, v in groups.items()}
     files["modules_with_web"] = modules_with_web(root, config)
@@ -593,12 +593,12 @@ def backend_cases(config: Config) -> list[Case]:
             },
         ),
         (
-            "backend sem healthcheck",
+            "backend without healthcheck",
             check(GOOD_BACKEND.replace("HEALTHCHECK", "RUN echo")),
             {"backend_no_healthcheck"},
         ),
         (
-            "backend sem label de revisão",
+            "backend without revision label",
             check(GOOD_BACKEND.replace("org.opencontainers.image.revision", "x.y")),
             {"backend_no_revision_label"},
         ),
@@ -635,12 +635,12 @@ def front_cases(config: Config) -> list[Case]:
             {"front_base_not_unprivileged"},
         ),
         (
-            "front copia para o html padrao",
+            "front copies to the default html",
             check(GOOD_FRONT.replace("/srv/site", "/usr/share/nginx/html")),
             {"front_copies_to_default_html_root"},
         ),
         (
-            "front copia para subpasta do html padrao",
+            "front copies to a subfolder of the default html",
             check(GOOD_FRONT.replace("/srv/site", "/usr/share/nginx/html/app/")),
             {"front_copies_to_default_html_root"},
         ),
@@ -656,14 +656,14 @@ def local_cases(config: Config) -> list[Case]:
     with_default = GOOD_LOCAL.replace("${DB_PORT:?}", "${DB_PORT:-5432}")
     return [
         ("compose local bom passa", check(GOOD_LOCAL), set()),
-        ("compose local porta aberta", check(open_port), {"compose_port_not_loopback"}),
+        ("local compose open port", check(open_port), {"compose_port_not_loopback"}),
         (
-            "compose local porta longa sem host_ip",
+            "local compose long-form port without host_ip",
             check(long_open),
             {"compose_port_not_loopback"},
         ),
         (
-            "compose local default em infra",
+            "local compose default on infra",
             check(with_default),
             {"compose_infra_variable_with_default"},
         ),
@@ -684,10 +684,10 @@ def production_cases(config: Config) -> list[Case]:
     )
     return [
         ("compose prod bom passa", check(GOOD_PROD), set()),
-        ("compose prod imagem por tag", check(by_tag), {"prod_image_not_digest"}),
-        ("compose prod sem cap_drop ALL", check(no_cap), {"prod_cap_drop_all_missing"}),
+        ("prod compose image by tag", check(by_tag), {"prod_image_not_digest"}),
+        ("prod compose without cap_drop ALL", check(no_cap), {"prod_cap_drop_all_missing"}),
         (
-            "compose prod sem no-new-privileges",
+            "prod compose without no-new-privileges",
             check(no_priv),
             {"prod_no_new_privileges_missing"},
         ),
@@ -703,14 +703,14 @@ def ignore_cases(config: Config) -> list[Case]:
     no_exception = GOOD_IGNORE.replace("!.env.example\n", "")
     return [
         ("dockerignore bom passa", check(GOOD_IGNORE), set()),
-        ("dockerignore sem .env", check(no_env), {"dockerignore_env_not_covered"}),
+        ("dockerignore without .env", check(no_env), {"dockerignore_env_not_covered"}),
         (
-            "dockerignore sem exceção do exemplo",
+            "dockerignore without example exception",
             check(no_exception),
             {"dockerignore_env_example_not_kept"},
         ),
         (
-            "dockerignore sem specs",
+            "dockerignore without specs",
             check(GOOD_IGNORE.replace("specs\n", "")),
             {"dockerignore_missing_entry"},
         ),
@@ -728,12 +728,12 @@ def run_selftest(config: Config) -> int:
     for name, got, expected in cases:
         ok = got == expected
         failures += 0 if ok else 1
-        sys.stdout.write(f"  {'ok   ' if ok else 'FALHA'} {name}\n")
+        sys.stdout.write(f"  {'ok   ' if ok else 'FAIL '} {name}\n")
         if not ok:
             sys.stdout.write(
-                f"       esperado: {sorted(expected)} obtido: {sorted(got)}\n"
+                f"       expected: {sorted(expected)} got: {sorted(got)}\n"
             )
-    sys.stdout.write(f"\nautoteste: {len(cases) - failures}/{len(cases)} ok\n")
+    sys.stdout.write(f"\nselftest: {len(cases) - failures}/{len(cases)} ok\n")
     return 0 if failures == 0 else 1
 
 
@@ -741,9 +741,9 @@ def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
-        description="Valida o empacotamento Docker de um monólito modular."
+        description="Validates the Docker packaging of a modular monolith."
     )
-    parser.add_argument("--raiz", default=".")
+    parser.add_argument("--root", default=".")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
@@ -751,12 +751,12 @@ def main() -> None:
     try:
         config = json.loads(Path(args.config).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
-        sys.exit(f"Erro: config inválido em '{args.config}' ({error}).")
+        sys.exit(f"Error: invalid config at '{args.config}' ({error}).")
     if args.selftest:
         sys.exit(run_selftest(config))
-    root = Path(args.raiz)
+    root = Path(args.root)
     if not root.is_dir():
-        sys.exit(f"Erro: raiz '{root}' não existe.")
+        sys.exit(f"Error: root '{root}' does not exist.")
     result = validate(root, config)
     sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     sys.exit(0 if result["ok"] else 1)

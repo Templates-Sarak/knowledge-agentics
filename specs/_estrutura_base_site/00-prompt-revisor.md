@@ -368,7 +368,7 @@ carrega a verdade, que é exatamente o que a síntese promete. **Sintetizou, sai
 
 O `panorama/00-resumo.md` é **gerado**, nunca editado à mão. Rode a skill `spec-panorama` depois de **toda**
 ação que o altera: criar plan, mudar status, sintetizar, editar o horizonte. Ela também confere famílias e
-itens (`--checar`): problema acusado se corrige na origem — plan, spec ou horizonte —, nunca no resumo. Os
+itens (`--check`): problema acusado se corrige na origem — plan, spec ou horizonte —, nunca no resumo. Os
 estados dos itens são seus: `🔷` na primeira plan de um item (§5), `✅` na síntese da última (§7.4).
 
 ---

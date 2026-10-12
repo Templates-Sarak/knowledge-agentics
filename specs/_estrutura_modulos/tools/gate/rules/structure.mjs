@@ -162,8 +162,8 @@ function checkVocabulary(manifest) {
 export default [
   {
     id: 'manifest',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       if (ctx.errorManifest !== null) return [ctx.errorManifest];
       const manifest = ctx.manifest;
@@ -174,8 +174,8 @@ export default [
   },
   {
     id: 'manifest-schema',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       // Sem manifesto legivel, a regra `manifest` ja reprovou — nao empilhamos ruido em cima.
       if (ctx.manifest === null) return [];
@@ -195,8 +195,8 @@ export default [
      * que fechou o do módulo.
      */
     id: 'root-manifest',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       // Modulo solto (extraido e ainda nao religado) nao e projeto e nao tem raiz a declarar — a
       // mesma guarda de `verification-declared` e `derived-lint`.
@@ -213,8 +213,8 @@ export default [
   },
   {
     id: 'structure',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       // `contract/openapi.yaml` NAO entra aqui: a regra `contract` e a dona do arquivo de ponta a
@@ -253,8 +253,8 @@ export default [
      * a partir da própria pasta do módulo é a única forma, e gera o mesmo artefato.
      */
     id: 'strict-structure',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       return ctx.rootEntries
         .filter((name) => !ALLOWED_ENTRIES.has(name) && !name.endsWith('.egg-info'))
@@ -263,8 +263,8 @@ export default [
   },
   {
     id: 'web-declared',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       if (ctx.manifest?.webPath == null) return [];
       const pages = ctx.files.filter((a) => a.rel.startsWith('web/src/pages/') && !a.isTest);
@@ -287,8 +287,8 @@ export default [
      * template (§7.2).
      */
     id: 'navigation-declared',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const navigation = ctx.manifest?.navigation;
       // Forma do objeto e do `manifest-schema`; aqui so importa a declaracao existir.
@@ -300,8 +300,8 @@ export default [
   },
   {
     id: 'artifact-declared',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       // BIDIRECIONAL: `true` exige as tres, `false` proibe as tres. A doutrina autoriza os DOIS
       // consertos ("Descartar e permitido; renomear, nao"), entao a mensagem nomeia os dois — dizer
@@ -326,8 +326,8 @@ export default [
   },
   {
     id: 'tests',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       if (!hasFileIn(ctx, 'tests/domain/')) findings.push('tests/domain/ is empty or missing');
@@ -347,8 +347,8 @@ export default [
      * afirma só o que checa.
      */
     id: 'web-tests',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       if (ctx.manifest?.webPath == null) return [];
       if (hasFileIn(ctx, 'tests/web/')) return [];
@@ -371,8 +371,8 @@ export default [
      * couber (`tests/contract/`, `tests/domain/`) e o que se cobra é o NOME que espelha o gateway.
      */
     id: 'gateway-tests',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       return gatewaysOf(ctx)
         .filter((name) => !hasTestOf(ctx, name))

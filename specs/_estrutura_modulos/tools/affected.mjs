@@ -90,7 +90,7 @@ export function buildGraph(projectRoot) {
     }
   }
 
-  return { modulos: modules, unreadable };
+  return { modules, unreadable };
 }
 
 /**
@@ -151,21 +151,21 @@ function classifyPath(path, graph) {
 
   if (first === 'modules') {
     if (second === undefined) {
-      return { tipo: 'tudo', motivo: `path "${path}" points to modules/ without a specific module` };
+      return { kind: 'all', reason: `path "${path}" points to modules/ without a specific module` };
     }
-    if (!graph.modulos.has(second)) {
+    if (!graph.modules.has(second)) {
       // Armadilhas "arquivo apagado" / "modulo apagado" (Passo 4): a pasta pode ter sumido
       // inteira, ou nunca ter existido sob esse nome. Sem o grafo de ANTES da mudança não há como
       // achar quem consumia este módulo — silenciar seria inventar "ninguém o consumia".
       return {
-        tipo: 'tudo',
-        motivo: `"${second}" does not exist in modules/ today (deleted, renamed, or unknown) —`
+        kind: 'all',
+        reason: `"${second}" does not exist in modules/ today (deleted, renamed, or unknown) —`
           + ' without the previous graph, its consumers cannot be determined',
       };
     }
     const subPath = rest.join('/');
     const testOnly = subPath === 'tests' || subPath.startsWith('tests/');
-    return { tipo: 'module', id: second, testOnly };
+    return { kind: 'module', id: second, testOnly };
   }
 
   if (first === 'adapters' || first === 'src') {
@@ -173,7 +173,7 @@ function classifyPath(path, graph) {
     // (`import-adapter` proíbe até em teste ser a forma recomendada). Mudança aqui não muda o
     // código de NENHUM módulo; muda o sistema COMPOSTO — as regras de escopo `root`. Não é "tudo":
     // é uma resposta calculada, não um escape.
-    return { tipo: 'fiacao' };
+    return { kind: 'wiring' };
   }
 
   if (first === 'packages') {
@@ -184,23 +184,23 @@ function classifyPath(path, graph) {
     // `isolation.mjs`, que este script não deveria duplicar. Sem essa máquina, não dá pra provar
     // que um módulo NÃO importa `packages/`, e por "erra para mais" a resposta segura é afetar a
     // raiz E todos os módulos — computada, não bailout: por isso é um `tipo` próprio, não `tudo`.
-    return { tipo: 'packages' };
+    return { kind: 'packages' };
   }
 
   if (first === 'tools') {
-    return { tipo: 'tudo', motivo: 'tools/ contains the verifier itself — changing the gate can affect ANY check' };
+    return { kind: 'all', reason: 'tools/ contains the verifier itself — changing the gate can affect ANY check' };
   }
 
   return {
-    tipo: 'tudo',
-    motivo: `path is outside the known areas (modules/, adapters/, src/, packages/, tools/): "${path}"`,
+    kind: 'all',
+    reason: `path is outside the known areas (modules/, adapters/, src/, packages/, tools/): "${path}"`,
   };
 }
 
 /** Mapa reverso `id -> [quem declara consumir id]` — a direção em que a mudança se propaga. */
 function buildReverse(graph) {
   const reverse = new Map();
-  for (const [id, { consumes }] of graph.modulos) {
+  for (const [id, { consumes }] of graph.modules) {
     for (const target of consumes) {
       if (!reverse.has(target)) reverse.set(target, []);
       reverse.get(target).push(id);
@@ -224,7 +224,7 @@ function buildReverse(graph) {
  */
 export function computeAffected(graph, rawPaths) {
   if (graph.unreadable) {
-    return { tudo: true, motivo: 'module.json is unreadable in at least one module — the dependency graph is incomplete' };
+    return { all: true, reason: 'module.json is unreadable in at least one module — the dependency graph is incomplete' };
   }
 
   const affected = new Set();
@@ -233,28 +233,28 @@ export function computeAffected(graph, rawPaths) {
 
   for (const path of rawPaths) {
     if (path === null) {
-      return { tudo: true, motivo: 'path is outside the project root (outside modules/, adapters/, src/, packages/, tools/, and the root itself)' };
+      return { all: true, reason: 'path is outside the project root (outside modules/, adapters/, src/, packages/, tools/, and the root itself)' };
     }
 
     const cls = classifyPath(path, graph);
 
-    if (cls.tipo === 'tudo') return { tudo: true, motivo: cls.motivo };
+    if (cls.kind === 'all') return { all: true, reason: cls.reason };
 
-    if (cls.tipo === 'fiacao') {
+    if (cls.kind === 'wiring') {
       root = true;
       continue;
     }
 
-    if (cls.tipo === 'packages') {
+    if (cls.kind === 'packages') {
       root = true;
-      for (const id of graph.modulos.keys()) {
+      for (const id of graph.modules.keys()) {
         affected.add(id);
         triggersPropagation.add(id);
       }
       continue;
     }
 
-    // classe.tipo === 'modulo'
+    // cls.kind === 'module'
     affected.add(cls.id);
     if (!cls.testOnly) triggersPropagation.add(cls.id);
   }
@@ -270,7 +270,7 @@ export function computeAffected(graph, rawPaths) {
     }
   }
 
-  return { tudo: false, raiz: root, modulos: [...affected].sort() };
+  return { all: false, root, modules: [...affected].sort() };
 }
 
 // ================================================================================================
@@ -285,15 +285,15 @@ export function computeAffected(graph, rawPaths) {
  * dois campos (`tudo` e `modules`) que nunca aparecem preenchidos ao mesmo tempo.
  */
 function formatText(result) {
-  if (result.tudo) return '(all)\n';
-  const lines = result.raiz ? ['(root)', ...result.modulos] : [...result.modulos];
+  if (result.all) return '(all)\n';
+  const lines = result.root ? ['(root)', ...result.modules] : [...result.modules];
   return lines.length > 0 ? `${lines.join('\n')}\n` : '';
 }
 
 function formatJson(result) {
-  const object = result.tudo
-    ? { tudo: true, motivo: result.motivo, raiz: null, modulos: null }
-    : { tudo: false, motivo: null, raiz: result.raiz, modulos: result.modulos };
+  const object = result.all
+    ? { all: true, reason: result.reason, root: null, modules: null }
+    : { all: false, reason: null, root: result.root, modules: result.modules };
   return `${JSON.stringify(object, null, 2)}\n`;
 }
 
@@ -306,11 +306,11 @@ function formatJson(result) {
 function testGraph() {
   return {
     unreadable: false,
-    modulos: new Map([
+    modules: new Map([
       ['a', { consumes: [] }],
       ['b', { consumes: ['a'] }],
       ['c', { consumes: ['b'] }],
-      ['solto', { consumes: [] }],
+      ['loose', { consumes: [] }],
     ]),
   };
 }
@@ -318,7 +318,7 @@ function testGraph() {
 function graphWithCycle() {
   return {
     unreadable: false,
-    modulos: new Map([
+    modules: new Map([
       ['a', { consumes: ['b'] }],
       ['b', { consumes: ['a'] }],
     ]),
@@ -332,10 +332,10 @@ function sameSet(list, expected) {
 }
 
 function resultMatches(result, expected) {
-  if (result.tudo !== expected.tudo) return false;
-  if (result.tudo) return true;
-  if (result.raiz !== expected.raiz) return false;
-  return sameSet(result.modulos, expected.modulos);
+  if (result.all !== expected.all) return false;
+  if (result.all) return true;
+  if (result.root !== expected.root) return false;
+  return sameSet(result.modules, expected.modules);
 }
 
 /** Os casos mínimos exigidos pelo plano, mais os que a implementação revelou precisarem de prova. */
@@ -345,85 +345,85 @@ function selfTestCases() {
       name: 'transitive dependency chain affects dependent modules but leaves unrelated modules alone',
       graph: testGraph(),
       paths: ['modules/a/core/domain/index.ts'],
-      expected: { tudo: false, raiz: false, modulos: ['a', 'b', 'c'] },
+      expected: { all: false, root: false, modules: ['a', 'b', 'c'] },
     },
     {
       name: 'unknown path affects everything',
       graph: testGraph(),
       paths: ['docker-compose.yml'],
-      expected: { tudo: true },
+      expected: { all: true },
     },
     {
       name: 'deleted file or removed module affects everything',
       graph: testGraph(),
       paths: ['modules/removed/core/domain/index.ts'],
-      expected: { tudo: true },
+      expected: { all: true },
     },
     {
       name: 'unreadable module.json affects everything despite a healthy remaining graph',
-      graph: { unreadable: true, modulos: new Map() },
+      graph: { unreadable: true, modules: new Map() },
       paths: ['modules/a/core/domain/index.ts'],
-      expected: { tudo: true },
+      expected: { all: true },
     },
     {
       name: 'cycle in consumes does not stall the calculation',
       graph: graphWithCycle(),
       paths: ['modules/a/core/domain/index.ts'],
-      expected: { tudo: false, raiz: false, modulos: ['a', 'b'] },
+      expected: { all: false, root: false, modules: ['a', 'b'] },
     },
     {
       name: 'change in packages/ affects all modules and the root',
       graph: testGraph(),
       paths: ['packages/ports/index.ts'],
-      expected: { tudo: false, raiz: true, modulos: ['a', 'b', 'c', 'solto'] },
+      expected: { all: false, root: true, modules: ['a', 'b', 'c', 'loose'] },
     },
     {
       name: 'change only in a module tests/ directory does not pull in its consumers',
       graph: testGraph(),
       paths: ['modules/a/tests/domain/test_a.py'],
-      expected: { tudo: false, raiz: false, modulos: ['a'] },
+      expected: { all: false, root: false, modules: ['a'] },
     },
     {
       name: 'adapters/ affects the root but no module because adapters are injected, not imported',
       graph: testGraph(),
       paths: ['adapters/memory/index.ts'],
-      expected: { tudo: false, raiz: true, modulos: [] },
+      expected: { all: false, root: true, modules: [] },
     },
     {
       name: 'src/ affects the root but no module because composition is root code',
       graph: testGraph(),
       paths: ['src/composition.ts'],
-      expected: { tudo: false, raiz: true, modulos: [] },
+      expected: { all: false, root: true, modules: [] },
     },
     {
       name: 'tools/ (the verifier itself) affects everything',
       graph: testGraph(),
       paths: ['tools/gate/validate.mjs'],
-      expected: { tudo: true },
+      expected: { all: true },
     },
     {
       name: 'root config/policy affects everything through the default case',
       graph: testGraph(),
       paths: ['config/verification.json'],
-      expected: { tudo: true },
+      expected: { all: true },
     },
     {
       name: 'path outside the project root affects everything',
       graph: testGraph(),
       paths: [null],
-      expected: { tudo: true },
+      expected: { all: true },
     },
     {
       name: 'two independent leaf modules changed together produce the union without a false cycle',
       graph: testGraph(),
-      paths: ['modules/a/core/domain/index.ts', 'modules/solto/core/domain/index.ts'],
-      expected: { tudo: false, raiz: false, modulos: ['a', 'b', 'c', 'solto'] },
+      paths: ['modules/a/core/domain/index.ts', 'modules/loose/core/domain/index.ts'],
+      expected: { all: false, root: false, modules: ['a', 'b', 'c', 'loose'] },
     },
     {
       name: 'an empty path list affects nothing: no full run, root, or module',
       graph: testGraph(),
       paths: [],
-      expected: { tudo: false, raiz: false, modulos: [] },
+      expected: { all: false, root: false, modules: [] },
     },
   ];
 }
@@ -437,7 +437,7 @@ function normalizationCases() {
     { raw: 'C:\\tmp\\project\\modules\\a\\core\\domain\\index.ts', expected: 'modules/a/core/domain/index.ts' },
     { raw: '..\\outside\\file.ts', expected: null },
     { raw: 'C:\\tmp\\another-project\\file.ts', expected: null },
-  ].map((c) => ({ ...c, raiz: root }));
+  ].map((c) => ({ ...c, root }));
 }
 
 function runSelfTest() {
@@ -455,7 +455,7 @@ function runSelfTest() {
   }
 
   for (const testCase of normalizationCases()) {
-    const obtained = normalizePath(testCase.raw, testCase.raiz);
+    const obtained = normalizePath(testCase.raw, testCase.root);
     const ok = obtained === testCase.expected;
     process.stdout.write(`  ${ok ? 'ok   ' : 'FAIL'} normalizePath(${JSON.stringify(testCase.raw)})\n`);
     if (!ok) {
@@ -475,15 +475,14 @@ function runSelfTest() {
 
 function readOptions(argv) {
   const flagsWithValue = new Set(['--since', '--root']);
-  const options = { selfTest: false, json: false, desde: null, raiz: null, paths: [] };
-  const internalName = { since: 'desde', root: 'raiz' };
+  const options = { selfTest: false, json: false, since: null, root: null, paths: [] };
 
   for (let index = 0; index < argv.length; index += 1) {
     const current = argv[index];
     if (current === '--selftest') { options.selfTest = true; continue; }
     if (current === '--json') { options.json = true; continue; }
     if (flagsWithValue.has(current)) {
-      options[internalName[current.slice(2)]] = argv[index + 1] ?? null;
+      options[current.slice(2)] = argv[index + 1] ?? null;
       index += 1;
       continue;
     }
@@ -494,7 +493,7 @@ function readOptions(argv) {
 
 /** `null` quando não há entrada nenhuma (nem argumento, nem `--since`, nem stdin com dado). */
 function readInputPaths(options, projectRoot) {
-  if (options.desde !== null) return changedPathsSince(options.desde, projectRoot);
+  if (options.since !== null) return changedPathsSince(options.since, projectRoot);
   if (options.paths.length > 0) return options.paths;
   if (process.stdin.isTTY) return null;
   return readFileSync(0, 'utf8').split(/\r?\n/).filter((line) => line.trim() !== '');
@@ -504,7 +503,7 @@ function main() {
   const options = readOptions(process.argv.slice(2));
   if (options.selfTest) return runSelfTest();
 
-  const projectRoot = options.raiz !== null ? resolve(process.cwd(), options.raiz) : findProjectRoot(process.cwd());
+  const projectRoot = options.root !== null ? resolve(process.cwd(), options.root) : findProjectRoot(process.cwd());
   const rawArgs = readInputPaths(options, projectRoot);
   if (rawArgs === null) {
     process.stderr.write(

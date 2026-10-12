@@ -58,8 +58,8 @@ Trate **um projeto por vez**. O porquê de cada peça está em `references/`.
    **fora** do `.env` da raiz (ADR-022). `references/compose-local.md`.
 5. **Validar** — projeto do template: `node tools/gate/validate.mjs --all` (o gate cobra presença e variáveis
    do compose). **Legado — e qualquer ajuste que você tenha feito nos arquivos do template**:
-   `python ../deploy-docker-microsservico/scripts/validar_docker.py --raiz <projeto>` (não-root, sem
-   `:latest`, sem segredo em build) **e** `python scripts/validar_monolito.py --raiz <projeto>` (multi-stage,
+   `python ../deploy-docker-microsservico/scripts/validate_docker.py --root <projeto>` (não-root, sem
+   `:latest`, sem segredo em build) **e** `python scripts/validate_monolith.py --root <projeto>` (multi-stage,
    HEALTHCHECK, rótulo, sem `COPY . .` final, front, loopback, digest). Resolva os bloqueios.
 6. **Paridade local** — `node tools/docker-up.mjs up` (`npm run docker:up`; Python:
    `python verify.py --docker up`): builda, sobe o profile `app` com `--wait` e imprime a URL. Confira
@@ -97,7 +97,7 @@ Trate **um projeto por vez**. O porquê de cada peça está em `references/`.
 - [ ] `compose.yml`: portas só em `127.0.0.1`, infra com `:?`, `DEPLOY_*` em `deploy/.env`, `ROOT_API_HOST`
       sobrescrito no serviço `app`, profile `app` sobe verde com `--wait`?
 - [ ] `.dockerignore` cobre `.env*` (com `!.env.example`), `node_modules`, `dist`, `.git`, `tests`, `specs`?
-- [ ] Gate verde (template) ou `validar_docker.py` e `validar_monolito.py` sem bloqueios (legado/ajustado)?
+- [ ] Gate verde (template) ou `validate_docker.py` e `validate_monolith.py` sem bloqueios (legado/ajustado)?
 - [ ] HITL feito; as duas imagens com a mesma tag; digests registrados; produção sem portas, por digest, com
       `stop_grace_period` derivado do teto de desligamento?
 
@@ -108,6 +108,6 @@ Trate **um projeto por vez**. O porquê de cada peça está em `references/`.
 - `references/producao.md` — molde de produção, entrada e registry no HITL, variante Supabase local.
 - `assets/compose.production.yml` — **o único asset**: o molde de produção por digest (por provedor, por isso
   é da skill). Os demais arquivos são do template: `../../specs/_estrutura_modulos/bindings/<binding>/root/`.
-- `scripts/validar_monolito.py` + `scripts/config.json` — validação determinística do empacotamento do monólito
+- `scripts/validate_monolith.py` + `scripts/config.json` — validação determinística do empacotamento do monólito
   **legado** (`--selftest` registrado em `specs/_estrutura_modulos/tests/run-all-selftests.mjs`).
-- `../deploy-docker-microsservico/scripts/validar_docker.py` — o validador genérico, reutilizado por referência.
+- `../deploy-docker-microsservico/scripts/validate_docker.py` — o validador genérico, reutilizado por referência.

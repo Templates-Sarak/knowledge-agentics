@@ -19,7 +19,7 @@ Autoria é da `code-assinatura`; licença é da `code-licenca` — referencie, n
 
 ## Workflow
 
-1. **Auditar** — `python scripts/auditar_docs.py --raiz <projeto>` (README ausente, seções faltando,
+1. **Auditar** — `python scripts/audit_docs.py --root <projeto>` (README ausente, seções faltando,
    `specs/` ausente, `LICENSE` ausente, módulos sem README). Leia o README atual, se existir.
 2. **HITL — lacunas de negócio** — se faltar visão geral, stack ou setup (o que exige conhecimento do
    projeto, não é factual), pergunte ao usuário. **Nunca invente.**
@@ -47,7 +47,7 @@ Autoria é da `code-assinatura`; licença é da `code-licenca` — referencie, n
 
 ## Checklist "pronta"
 
-- [ ] `auditar_docs.py` rodado e as lacunas conferidas contra o README atual?
+- [ ] `audit_docs.py` rodado e as lacunas conferidas contra o README atual?
 - [ ] README no padrão de anatomia — seções obrigatórias presentes, "Arquitetura modular"/"API" como
       ponteiro (não conteúdo repetido de `specs/`/`contract/`)?
 - [ ] `.github/CODEOWNERS` presente e correto?
@@ -60,6 +60,6 @@ Autoria é da `code-assinatura`; licença é da `code-licenca` — referencie, n
 - `references/documentacao.md` — padrão de documentação em camadas (README, módulo, contrato,
   `specs/`, changelog).
 - `references/templates.md` — templates copiáveis de `CODEOWNERS` e `CONTRIBUTING.md`.
-- `scripts/auditar_docs.py` + `scripts/auditar_docs.config.json` — auditoria determinística de
+- `scripts/audit_docs.py` + `scripts/audit_docs.config.json` — auditoria determinística de
   documentação.
 - `assets/README.template.md` — anatomia do README.

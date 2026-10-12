@@ -131,9 +131,9 @@ function readRootManifest(projectRoot) {
 /** Chaves desejadas da raiz, na MESMA order/secao nos dois arquivos (.env.example e .env real). */
 function rootKeysBySection(list, rootEnv) {
   const sections = [];
-  if (rootEnv !== null) sections.push({ titulo: ROOT_SECTION, keys: rootEnv });
+  if (rootEnv !== null) sections.push({ title: ROOT_SECTION, keys: rootEnv });
   for (const { manifest } of list) {
-    sections.push({ titulo: `# --- ${manifest.name} (${manifest.basePath}) ---`, keys: manifest.requiredEnv ?? [] });
+    sections.push({ title: `# --- ${manifest.name} (${manifest.basePath}) ---`, keys: manifest.requiredEnv ?? [] });
   }
   return sections;
 }
@@ -142,7 +142,7 @@ function exampleRootContent(list, rootEnv) {
   const lines = [...EXAMPLE_ENV_HEADER, ''];
   // A secao da raiz vem PRIMEIRO, e aparece mesmo vazia quando ha `project.json`: "a raiz nao exige
   // nada" e uma afirmacao, e o operador precisa distingui-la de "ninguem perguntou".
-  for (const { titulo: title, keys } of rootKeysBySection(list, rootEnv)) {
+  for (const { title, keys } of rootKeysBySection(list, rootEnv)) {
     lines.push(title, ...keys.map((key) => `${key}=`), '');
   }
   lines.push('# --- Exposto ao browser: NUNCA chave, segredo ou token aqui ---');
@@ -175,7 +175,7 @@ function envRealContent(list, rootEnv, existing) {
   const desired = new Set(sections.flatMap((section) => section.keys));
 
   const lines = [...REAL_ENV_HEADER, ''];
-  for (const { titulo: title, keys } of sections) {
+  for (const { title, keys } of sections) {
     lines.push(title, ...keys.map((key) => `${key}=${existing.get(key) ?? ''}`), '');
   }
   lines.push('# --- Exposto ao browser: NUNCA chave, segredo ou token aqui ---');
@@ -192,7 +192,7 @@ function envRealContent(list, rootEnv, existing) {
 
 function buildTargets(projectRoot, list) {
   const moduleEntries = list.map((module) => ({
-    caminho: join(module.dir, '.env.example'),
+    path: join(module.dir, '.env.example'),
     content: moduleContent(module),
   }));
 
@@ -205,7 +205,7 @@ function buildTargets(projectRoot, list) {
   if (real.length === 0 && (rootEnv === null || rootEnv.length === 0)) return moduleEntries;
   return [
     ...moduleEntries,
-    { caminho: join(projectRoot, '.env.example'), content: exampleRootContent(real, rootEnv) },
+    { path: join(projectRoot, '.env.example'), content: exampleRootContent(real, rootEnv) },
   ];
 }
 
@@ -222,7 +222,7 @@ function buildRealEnvTarget(projectRoot, list) {
 
   const path = join(projectRoot, '.env');
   const existing = existsSync(path) ? readEnvRealPairs(readText(path)) : new Map();
-  return { caminho: path, content: envRealContent(real, rootEnv, existing) };
+  return { path, content: envRealContent(real, rootEnv, existing) };
 }
 
 function main() {
@@ -236,7 +236,7 @@ function main() {
     return 0;
   }
 
-  for (const { caminho: path, content } of buildTargets(projectRoot, list)) {
+  for (const { path, content } of buildTargets(projectRoot, list)) {
     const current = existsSync(path) ? readFileSync(path, 'utf8') : '';
     if (current.replace(/\r\n/g, '\n') === content) continue;
     if (check) {
@@ -261,12 +261,12 @@ function main() {
   // sem chave nova nem manifesto mudado, o conteudo mesclado bate com o atual e nada e regravado.
   const realEnvTarget = buildRealEnvTarget(projectRoot, list);
   if (realEnvTarget !== null) {
-    const existedBefore = existsSync(realEnvTarget.caminho);
-    const current = existedBefore ? readFileSync(realEnvTarget.caminho, 'utf8') : '';
+    const existedBefore = existsSync(realEnvTarget.path);
+    const current = existedBefore ? readFileSync(realEnvTarget.path, 'utf8') : '';
     if (current.replace(/\r\n/g, '\n') !== realEnvTarget.content) {
-      writeFileSync(realEnvTarget.caminho, realEnvTarget.content, 'utf8');
+      writeFileSync(realEnvTarget.path, realEnvTarget.content, 'utf8');
       const reason = existedBefore ? 'keys merged; values preserved' : 'created; fill in real values';
-      process.stdout.write(`Updated: ${realEnvTarget.caminho.replace(projectRoot, '.')} (${reason})\n`);
+      process.stdout.write(`Updated: ${realEnvTarget.path.replace(projectRoot, '.')} (${reason})\n`);
     }
   }
   return 0;

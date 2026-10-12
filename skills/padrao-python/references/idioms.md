@@ -38,7 +38,7 @@ a detecta**.
 | Segredo em env | `API_TOKEN = "..."` no código | literal em nome que casa `secretNamePatterns` | alta |
 | Zero hardcoded | número mágico / URL no código | número fora do allowlist + fora de constante; string com prefixo de URL | **baixa** (heurística) |
 
-### Sobre a heurística de hardcoded (por que `confianca: baixa`)
+### Sobre a heurística de hardcoded (por que `confidence: low`)
 - Um número fora de `allowedMagicNumbers` **pode** ser legítimo (ex.: índice, fator matemático). Por isso
   é candidato a revisão, não erro certo. Constantes `UPPER_CASE` são isentas (já são "configuração nomeada").
 - URLs/hosts são sinalizados mesmo como constante, porque tipicamente são **valores por-ambiente** que

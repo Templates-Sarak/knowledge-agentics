@@ -29,7 +29,7 @@ afirmar que a fronteira do módulo é real — e a skill inteira depende dessa f
 ## §1 — Inventário: o que o script vê e o que ele não vê
 
 ```
-python scripts/inventariar_origem.py --modulo <caminho-do-modulo> --json
+python scripts/inventory_source.py --module <caminho-do-modulo> --json
 ```
 
 Ele lê `module.json`, `contract/openapi.yaml`, `database/**.sql` e `.env.example`, e varre o código
@@ -42,7 +42,7 @@ sobre um termo — e o termo esquecido é sempre o mesmo tipo: o que virou nome 
 parece técnico dentro do contexto de origem.
 
 **Vocabulário do projeto.** Se o alvo é PT puro ou tem jargão técnico próprio, estenda com
-`--vocabulario <arquivo>` (uma palavra por linha) em vez de ignorar a lista na leitura — o que se
+`--vocabulary <arquivo>` (uma palavra por linha) em vez de ignorar a lista na leitura — o que se
 ignora uma vez, ignora-se sempre.
 
 **Parse raso, declarado.** O OpenAPI é lido por regex na seção `paths:`, sem resolver `$ref`. Serve
@@ -95,7 +95,7 @@ regra é da lei (`04-regras.md`), e o gate cobra.
 
 ```
 python meta-iniciar-repositorio/scripts/init_repo.py --target <repo> --name "<capacidade>" \
-       --binding <typescript|javascript|python> --scope <scope> --modulos <id>:<role> --git-init
+       --binding <typescript|javascript|python> --scope <scope> --modules <id>:<role> --git-init
 ```
 
 **Por que repositório próprio, e não uma pasta numa biblioteca comum.** A unidade de verificação do
@@ -107,7 +107,7 @@ destino, não apenas copiável — e continua verificável depois de copiado.
 **`role`:** `domain` na esmagadora maioria; `gateway` só se a capacidade for embrulhar um fornecedor
 externo pago. **`connector` nunca** — ele agrega outros módulos, e aqui não há outros.
 
-**Colisão:** se o `init_repo.py` abortar por `package.json` existente, **pare e pergunte**. `--forcar`
+**Colisão:** se o `init_repo.py` abortar por `package.json` existente, **pare e pergunte**. `--force`
 sobrescreve manifesto, e essa decisão é do usuário.
 
 ---
@@ -145,16 +145,16 @@ lê fixture.
 ## §7 — Os seis degraus, e a denylist que não pode morar dentro do repo
 
 ```
-python scripts/verificar_entregavel.py --repo <repo> --modulo <id> --denylist <arquivo-fora-do-repo>
+python scripts/verify_deliverable.py --repo <repo> --module <id> --denylist <arquivo-fora-do-repo>
 ```
 
 **A denylist fica FORA do repositório verificado** — o script recusa uma que esteja sob `--repo`,
 antes de varrer. Um arquivo listando os termos da origem, versionado dentro do entregável, **é** o
 vazamento que o degrau 6 existe para pegar. Guarde-a no diretório de trabalho da conversa.
 
-**Os degraus 4 e 5 são declarados, não adivinhados.** O script lê `config/verificacao.json` do repo
+**Os degraus 4 e 5 são declarados, não adivinhados.** O script lê `config/verification.json` do repo
 verificado (molde em `templates.md`) para saber qual compose subir e quais comandos rodar. Sem essa
-declaração, os dois degraus voltam como `NAO EXECUTADO` — e `NAO EXECUTADO` **reprova**. É a regra
+declaração, os dois degraus voltam como `NOT EXECUTED` — e `NOT EXECUTED` **reprova**. É a regra
 central: gate verde prova conformidade estática, nunca funcionamento, e tratar um pelo outro já fez,
 num sistema real, um comando de extração "passar" sem ter rodado um teste sequer.
 

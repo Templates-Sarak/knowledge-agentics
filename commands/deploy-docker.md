@@ -26,8 +26,8 @@ Este command **roteia** entre duas skills e mantém o HITL; a lógica vive nelas
    extraído: Dockerfile multi-stage (versão fixada, não-root, `HEALTHCHECK`) pela skill dele.
 3. **Validar** — projeto do template: `node tools/gate/validate.mjs --all` (o gate cobra a presença e as
    variáveis do compose). Legado, ou arquivo do template ajustado:
-   `deploy-docker-monolito/scripts/validar_monolito.py --raiz $1` **e**
-   `deploy-docker-microsservico/scripts/validar_docker.py --raiz $1`; módulo extraído: só o segundo.
+   `deploy-docker-monolito/scripts/validate_monolith.py --root $1` **e**
+   `deploy-docker-microsservico/scripts/validate_docker.py --root $1`; módulo extraído: só o segundo.
    Resolva os bloqueios.
 4. **Paridade local** — suba o compose (monólito: `node tools/docker-up.mjs up`, que passa os dois
    `--env-file` — `.env` e `deploy/.env` — e exige Compose 2.23+) e confira o healthcheck verde.

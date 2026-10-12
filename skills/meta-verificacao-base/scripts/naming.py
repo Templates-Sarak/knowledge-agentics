@@ -7,92 +7,92 @@ Separado de `audit_base.py` por SRP: aquele orquestra e imprime; este só compar
 
 POLÍTICA: falha fechada. Se `nomenclatura.md` mudar de forma e o parser abaixo não extrair NENHUM
 prefixo, a checagem inteira reprova — nunca passa em silêncio como se o vocabulário estivesse
-vazio (mesmo defeito de fail-open que `limiares.py`/Tarefa 1 evita para `thresholds.mjs`).
+vazio (mesmo defeito de fail-open que `thresholds.py`/Tarefa 1 evita para `thresholds.mjs`).
 
-Núcleo × casca: `prefixos_do_texto`/`raiz_do_prefixo`/`fora_do_vocabulario` são puros (recebem
+Núcleo × casca: `prefixes_of_text`/`prefix_root`/`outside_vocabulary` são puros (recebem
 texto/lista já lidos, nunca tocam `fs`) — é o que o `--selftest` de `audit_base.py` prova com
-fixtures em memória. `auditar_nomenclatura` é a casca fina que lê `fs` e delega.
+fixtures em memória. `audit_naming` é a casca fina que lê `fs` e delega.
 """
 
 import os
 import re
 
-_LINHA_DE_PREFIXO = re.compile(r"^\|\s*`([a-z]+-)`\s*\|")
-_PREFIXO_DO_NOME = re.compile(r"^([a-z]+)\d*-")
+_PREFIX_LINE = re.compile(r"^\|\s*`([a-z]+-)`\s*\|")
+_NAME_PREFIX = re.compile(r"^([a-z]+)\d*-")
 
 
-def prefixos_do_texto(texto):
+def prefixes_of_text(text):
     """Núcleo: os prefixos declarados na tabela de `nomenclatura.md` — linhas no formato
     '| `xxx-` | ...'. Lista VAZIA (nunca `None`) quando nada bate; quem chama decide o fail-closed."""
     return [
         m.group(1)
-        for linha in texto.split("\n")
-        for m in [_LINHA_DE_PREFIXO.match(linha)]
+        for line in text.split("\n")
+        for m in [_PREFIX_LINE.match(line)]
         if m
     ]
 
 
-def raiz_do_prefixo(nome):
+def prefix_root(name):
     """Núcleo: a raiz alfabética do prefixo de um NOME de artefato, sem o `\\d*` do fluxo
     numerado (`code1-auditar` -> `code`) e sem o traço. `None` se o nome não começa com
     letras seguidas de traço (com dígitos opcionais no meio)."""
-    m = _PREFIXO_DO_NOME.match(nome)
+    m = _NAME_PREFIX.match(name)
     return m.group(1) if m else None
 
 
-def fora_do_vocabulario(nomes, prefixos):
+def outside_vocabulary(names, prefixes):
     """Núcleo: os `nomes` cuja raiz de prefixo não está no vocabulário (`prefixos`, cada um já
     com o traço, ex. `'code-'`)."""
-    raizes_validas = {p.rstrip("-") for p in prefixos}
-    return [nome for nome in nomes if raiz_do_prefixo(nome) not in raizes_validas]
+    valid_roots = {p.rstrip("-") for p in prefixes}
+    return [name for name in names if prefix_root(name) not in valid_roots]
 
 
-def _nomes_de_skills(base_dir):
-    pasta = os.path.join(base_dir, "skills")
-    if not os.path.isdir(pasta):
+def _skill_names(base_dir):
+    directory = os.path.join(base_dir, "skills")
+    if not os.path.isdir(directory):
         return []
-    return sorted(n for n in os.listdir(pasta) if os.path.isdir(os.path.join(pasta, n)))
+    return sorted(n for n in os.listdir(directory) if os.path.isdir(os.path.join(directory, n)))
 
 
-def _nomes_de_md(base_dir, subpasta):
-    pasta = os.path.join(base_dir, subpasta)
-    if not os.path.isdir(pasta):
+def _md_names(base_dir, subdir):
+    directory = os.path.join(base_dir, subdir)
+    if not os.path.isdir(directory):
         return []
     return sorted(
-        os.path.splitext(n)[0] for n in os.listdir(pasta) if n.endswith(".md")
+        os.path.splitext(n)[0] for n in os.listdir(directory) if n.endswith(".md")
     )
 
 
-def auditar_nomenclatura(base_dir):
+def audit_naming(base_dir):
     """Casca: lê o vocabulário de `nomenclatura.md` e cobra que todo `skills/*`, `commands/*` e
     `agents/*` comece por um prefixo dele."""
-    caminho = os.path.join(
+    path = os.path.join(
         base_dir, "skills", "meta-create-skill", "references", "nomenclatura.md"
     )
     try:
-        texto = open(caminho, encoding="utf-8").read()
+        text = open(path, encoding="utf-8").read()
     except OSError:
         return [
-            "[nomenclatura.md] arquivo não encontrado — checagem de prefixo reprovada (fail-closed)"
+            "[nomenclatura.md] file not found — prefix check failed (fail-closed)"
         ]
 
-    prefixos = prefixos_do_texto(texto)
-    if not prefixos:
+    prefixes = prefixes_of_text(text)
+    if not prefixes:
         return [
-            "[nomenclatura.md] zero prefixos extraídos — formato inesperado, "
-            "checagem reprovada (fail-closed)"
+            "[nomenclatura.md] zero prefixes extracted — unexpected format, "
+            "check failed (fail-closed)"
         ]
 
-    achados = []
-    grupos = {
-        "skills": _nomes_de_skills(base_dir),
-        "commands": _nomes_de_md(base_dir, "commands"),
-        "agents": _nomes_de_md(base_dir, "agents"),
+    findings = []
+    groups = {
+        "skills": _skill_names(base_dir),
+        "commands": _md_names(base_dir, "commands"),
+        "agents": _md_names(base_dir, "agents"),
     }
-    for pasta, nomes in grupos.items():
-        for nome in fora_do_vocabulario(nomes, prefixos):
-            achados.append(
-                "[%s] '%s' não começa com prefixo do vocabulário (%s)"
-                % (pasta, nome, ", ".join(prefixos))
+    for directory, names in groups.items():
+        for name in outside_vocabulary(names, prefixes):
+            findings.append(
+                "[%s] '%s' does not start with a vocabulary prefix (%s)"
+                % (directory, name, ", ".join(prefixes))
             )
-    return achados
+    return findings

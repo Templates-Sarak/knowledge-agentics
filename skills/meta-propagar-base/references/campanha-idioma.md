@@ -35,7 +35,7 @@ já diz o par exato (`rule X was renamed to Y (ADR-024)`).
 
 ### 1.2 `tools/` vendorizado (ondas 1, 2 e 3)
 
-`propagar.py`: em sistema modular, `tools/` divergente vira `substituir-politica`. Renomear id, símbolo e
+`propagate.py` (antes `propagar.py`): em sistema modular, `tools/` divergente vira `replace-policy` (antes `substituir-politica`). Renomear id, símbolo e
 mensagem chega ao sistema pela substituição da pasta inteira — **sem migração de dado**, mas com dois
 efeitos a conferir no plan:
 
@@ -93,7 +93,7 @@ método é este, e qualquer reimplementação que o siga reproduz os totais:
    acoplamento verdadeiro).
 4. **Ids de regra**, independente do script:
    `grep -h "^\s*id: '" specs/_estrutura_modulos/tools/gate/rules/*.mjs | sort -u | wc -l` → 81. A forma
-   pós-onda 1 do catálogo é a que o `audit_base.py` (`ids_citados`) lê do código do gate.
+   pós-onda 1 do catálogo é a que o `audit_base.py` (`cited_ids`, antes `ids_citados`) lê do código do gate.
 5. **Citações de id** — busca por id com fronteira (`(?<![\w-])id(?![\w-])`); os ids de uma palavra
    (`log`, `manifest`, `contract`…) só contam entre crases ou aspas, e a lista de ambíguos é revista à mão.
 
@@ -147,8 +147,8 @@ As sobras, todas justificadas:
 ### O que cruza a fronteira de `tools/`
 
 Quem lê o código de `tools/` por nome foi atualizado junto: `eslint.config.mjs` (`THRESHOLDS` e as chaves
-`functionLines`/`nesting`/`params`), `skills/meta-verificacao-base/scripts/limiares.py` (o parser do
-`thresholds.mjs`), `ids_citados.py` e `audit_base.py` (`EXTRACTION_ID`). Sistema modular recebe tudo isso
+`functionLines`/`nesting`/`params`), `skills/meta-verificacao-base/scripts/thresholds.py` (o parser do
+`thresholds.mjs`), `cited_ids.py` e `audit_base.py` (`EXTRACTION_ID`). Sistema modular recebe tudo isso
 pela substituição de `tools/` (seção 1.2); um sistema que **leia** `THRESHOLDS`/`LIMIARES` do `tools/` por
 conta própria (como o `eslint.config.mjs` da base) precisa do mesmo ajuste no plan.
 
@@ -188,7 +188,7 @@ imprime por escopo (`bindings`, `tools`, `tests`), categoria (`decl`, `member`, 
 anterior dá o "antes" com a **mesma** régua); `--unknown` e `--unknown-strings` listam as palavras que o
 vocabulário ainda não conhece, para revisão; `--selftest` está no `run-all-selftests`.
 
-Origem do vocabulário, por termo (campo `origins`): `earendel-gate` (o vocabulário do sistema adotante),
+Origem do vocabulário, por termo (campo `origins`): `adopter-vocabulary` (o vocabulário do sistema adotante `earendel-erp`; o id se chamava `earendel-gate` até a onda 5, quando passou a rótulo neutro porque o vocabulário viaja),
 `adr-025-dictionary` (o dicionário do `ADR-025`), `adr-024-ids` (palavras dos ids antigos que nenhum id novo
 contém), `adr-023-domain` (o domínio do molde) e `tokenization-review` (levantamento por tokenização dos
 identificadores e dos literais, revisado palavra a palavra). Palavra nova só entra com origem — e a falha mais
@@ -220,3 +220,100 @@ tabela do molde (`<m>_metadados`, `<m>_auditoria`) e coluna (`arquivo`, `aplicad
 |---|---|---|
 | identificadores de `bindings/**` | 4a | plan por binding do sistema (a substituição de `tools/` não os traz) |
 | domínio do molde (rota, schema, permissão, código de erro, valor) | 4b | plan do sistema; **tabela e coluna em produção: migration do dono** |
+
+## 8. Estado depois da onda 5 (código da base, `.sarak/` e sobras do ferramental)
+
+Esta seção registra o que a onda 5 aplicou. Ela é **código da base**, não doutrina do template: nada daqui
+viaja para projeto gerado.
+
+### 8.1 O medidor cobre a base
+
+`measure-language.mjs` mede agora seis raízes: `bindings`, `tools`, `tests` (relativas ao template) e `skills`
+(`skills/*/scripts/**`), `hooks`, `plugin` (relativas à base; `--base-root`). Ganhou `--only <prefixo>`,
+`--check` (exit 1 se sobrar ocorrência não declarada) e `--exceptions`. As **exceções declaradas** moram em
+`specs/_estrutura_modulos/tests/language-exceptions.json`: cada entrada tem arquivo, categoria, nomes ou trechos
+e **motivo** (revisável; mensagem, flag, chave, enum, nome de caso e identificador nunca entram). Não viaja.
+
+| Raiz | Antes (decl / acesso / string / dado) | Depois, não declarado | Declarado |
+|---|---|---|---|
+| `bindings` | 0 / 0 / 0 / 0 | 0 | 0 |
+| `tools` | 77 / 52 / 347 / 70 | 0 | 5 decl, 42 strings, 70 dado |
+| `tests` | 19 / 19 / 120 / 0 | 0 | 77 strings |
+| `skills/*/scripts` | 1.746 / 60 / 1.810 / 70 | 0 | 96 decl, 277 strings, 8 dado |
+| `hooks` | 96 / 17 / 108 / 34 | 0 | 10 decl, 10 strings, 17 dado |
+| `plugin` | 12 / 0 / 49 / 0 | 0 | 1 string |
+
+O que ficou declarado é **dado externo**: títulos e frontmatter em português que `generate_summary.py` e
+`verify_parity.py` leem da documentação dos projetos; vocabulários de detecção sobre código de usuário (`senha`,
+denylist, léxico de negócio); as tabelas `LEGACY_*` de leitura de estado antigo; nomes de pasta de skill e de
+doutrina; e fixtures que provam a detecção de português.
+
+### 8.2 Scripts renomeados (`git mv`)
+
+| Antes | Depois |
+|---|---|
+| `scan_assinaturas.py` | `scan_signatures.py` |
+| `auditar_docs.py` (+`.config.json`) | `audit_docs.py` |
+| `inventariar_origem.py`, `verificar_entregavel.py`, `verificar_neutralidade.py` | `inventory_source.py`, `verify_deliverable.py`, `verify_neutrality.py` |
+| `detectar_lixo.py` | `detect_junk.py` |
+| `scan_segredos.py` | `scan_secrets.py` |
+| `validar_docker.py`, `validar_monolito.py`, `validar_predeploy.py` | `validate_docker.py`, `validate_monolith.py`, `validate_predeploy.py` |
+| `auditar_assets.py`, `auditar_seo.py` (+`.config.json`) | `audit_assets.py`, `audit_seo.py` |
+| `scan_historico.py`, `revisar_diff.py` | `scan_history.py`, `review_diff.py` |
+| `gerar_config.py`, `verificar_commit.py` | `generate_config.py`, `verify_commit.py` |
+| `diagnosticar_terreno.py` | `diagnose_terrain.py` |
+| `carimbo.py`, `comparar_arvore.py` | `stamp.py`, `compare_tree.py` |
+| `propagar.py`, `aplicacao.py`, `relatorio.py` | `propagate.py`, `apply.py`, `report.py` |
+| `ids_citados.py`, `limiares.py`, `contagens.py`, `manifestos.py`, `nomenclatura.py`, `paridade.py`, `ponteiros.py`, `proatividade.py`, `secoes.py` | `cited_ids.py`, `thresholds.py`, `counts.py`, `manifests.py`, `naming.py`, `parity.py`, `pointers.py`, `proactivity.py`, `sections.py` |
+| `mapa.py`, `sistemas_nos_viajantes.py` | `map_schema.py`, `systems_in_shipped_files.py` |
+| `gerar_resumo.py`, `verificar_paridade.py` | `generate_summary.py`, `verify_parity.py` |
+| `.github/workflows/autoteste-template.yml` | `selftest-template.yml` (jobs `base-guard`, `template-selftest`, `template-selftest-docker`, `verify-migrations`) |
+
+Ficam: pastas de skill, commands, agents e arquivos de hook (decisão 4); `init_repo.py`, `audit_base.py`,
+`sast_scan.py`, `check_headers.py`, `parse_audit.py`, `scaffold_skill.py`, `validate.py/.mjs`, `sync_ide.py`,
+`setup_env.py`. **Nomes instalados em projetos vivos ficam** (contrato com o projeto): `.agents/gerar_indice.py`
+e `.githooks/verificar_commit.py` — só o conteúdo foi para o inglês. Renomeá-los exige migração coordenada.
+
+Flags: `--raiz`→`--root` (todos os scanners e `audit_base.py`), `--escopo`→`--scope`, `--modulos`→`--modules`,
+`--forcar`→`--force`, `--registrar`→`--register`, `--tipo`→`--kind`, `--nome`→`--name`, `--mapa`→`--map`,
+`--conferir`/`--checar`→`--check`, `--arquivo`→`--file`, `--modulo`→`--module`, `--vocabulario`→`--vocabulary`,
+`--termo`→`--term`, `--ignorar`→`--ignore`, e as da propagação: `--plano/--relatorio/--aplicar/--desfazer`→
+`--plan/--report/--apply/--undo`, `--incluir-divergentes`→`--include-divergent`, `--adotar/--manter/--motivo`→
+`--adopt/--keep/--reason`, `--permitir-base-suja`→`--allow-dirty-base`.
+
+### 8.3 Estado persistido (decisão 6) e compatibilidade de leitura
+
+Quem **escreve** grava só as chaves novas; quem **lê** aceita as antigas por um mapa centralizado, com teste
+no `--selftest`. Snapshots datados não são reescritos.
+
+| Formato | Quem escreve | Antigo → novo | Mapa de leitura (único) |
+|---|---|---|---|
+| `.sarak/base.json` | `stamp.py`, `apply.py` | `base_com_alteracoes_locais`→`base_dirty`, `data`→`date`, `tipo`→`kind`, `pacotes`→`packages`, `mantidos`→`kept` (`caminho/motivo/sha1_sistema/sha1_referencia`→`path/reason/system_sha1/reference_sha1`); pacote `template-modulos`→`module-template` | `stamp.normalize_stamp` (`LEGACY_STAMP_KEYS`, `LEGACY_KEPT_KEYS`, `LEGACY_PACKAGE_VALUES`) |
+| `mapa.json` (base) | `stamp.py --register`, `apply.py` | `sistemas`→`systems`, `nome`→`name`, `caminho`→`path`, `raiz_git`→`git_root`, `tipo`→`kind`, `situacao`→`lifecycle`, `status_base`→`status_commit`; `ativo/adocao-posterior`→`active/later-adoption`, `desatualizado/pendente/atualizado`→`outdated/pending/updated` | `stamp.normalize_map` e `normalize_map_entry`; `map_schema.LEGACY_FIELDS` só dá a dica no audit |
+| `.sarak/propagacao-<curto>.json` | `apply.py` | arquivo `propagation-<short>.json`; chaves em `LEGACY_MANIFEST_KEYS` e `LEGACY_MANIFEST_FILE_KEYS`; ações em `LEGACY_ACTION_VALUES` | `apply.normalize_manifest` e `manifest_names()` (acha o arquivo pelo nome antigo: o `--undo` de uma propagação feita antes continua funcionando) |
+| backlog `.sarak/audit` | agentes (`code-diagnostico/references/backlog-format.md`) | `regra`→`rule`, `alvo`→`target`, `risco`→`risk`, `familia`→`family`, `catalogo`→`catalog`, `arquivo`→`file`, `achados`→`findings`…; arquivos `auditoria*`→`audit*`, `backlog-<data>`→`backlog-<date>` | instrução em prosa (nenhum script lê o backlog): **sem teste automático** |
+| `.sarak/security`, `.sarak/git-audit` | agentes (`achados-format.md`; `git-especialista-repositorio/SKILL.md`) | `achados-<data>.json`→`findings-<date>.json` etc. (tabela nos próprios formatos) | idem, prosa |
+| `config.json` dos scanners, `hooks/config.json` | scripts e projeto | chaves traduzidas (glossário) | `LEGACY_CONFIG_KEYS` por script; `normalizeLegacyKeys` em `hooks/_lib.js` |
+
+### 8.4 Defeitos achados e corrigidos no caminho
+
+- Os hooks liam `modo/ativo/minima/severidadeMinima` enquanto o `config/verification.json` do molde usa
+  `mode/active/minimum/minimumSeverity`: a política do projeto era **ignorada em silêncio**. Agora é respeitada.
+- `engine.mjs` (`--extraction`) desestruturava `{ modulo }` de `consumes[]`, cujo schema é `module` (lançaria
+  erro). Nenhum caso de teste o cobre: recomendado acrescentar um.
+- `affected.mjs` passava as opções por uma tabela `desde/raiz` obsoleta; `verify-routine.mjs` e a mensagem de
+  `create-module.mjs` ainda usavam `--modulos`/`:artefato`; `padrao-limiares.js` apontava para
+  `ferramentas/gerar-config-lint.mjs`, que não existe.
+- Cinco scripts de skill ganharam `--selftest` (`scan_signatures`, `audit_docs`, `detect_junk`, `scan_history`,
+  `review_diff`) e entram no registro do `run-all-selftests` (de 40 para 45 arquivos).
+
+### 8.5 O que a onda 5 não fez, de propósito
+
+- `tools/gate/renamed-rules.json` (os 70 ids antigos são o dado), `thresholds.mjs`, `EXTRACTION_ID` e
+  `functionLines/nesting/params` mantêm o nome: o `eslint.config.mjs` e o `meta-verificacao-base` os leem por nome.
+- Marcadores `<comando-verificar>`/`<comando-iniciar>` da doutrina: mudam em par com `create-project.mjs`.
+- `ui.modo` (`proprio|kit`) do `module.json` segue em português nas referências do `code-modulo`.
+- Comentários e prosa emitidos em arquivos gerados (`sync-env`, `sync-deploy`): o `--check` compara com a cópia
+  versionada do molde.
+- A propagação (`SYSTEM_AREAS`) não compara `.githooks/`: o par `pre-commit`/`verificar_commit.py` de projetos
+  vivos não é atualizado por ela.

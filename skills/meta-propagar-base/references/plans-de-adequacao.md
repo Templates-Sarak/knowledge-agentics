@@ -1,14 +1,14 @@
 # Moldes — plans de adequação
 
-Um molde por proposta do `--relatorio`. A tabela lacuna/ação → plan vive em `PLANS`, no
-`scripts/relatorio.py`: **título, destino da síntese, ordem e `depende_de`** saem de lá (a ordem também é dado);
+Um molde por proposta do `--report`. A tabela lacuna/ação → plan vive em `PLANS`, no
+`scripts/report.py`: **título, destino da síntese, ordem e `depends_on`** saem de lá (a ordem também é dado);
 aqui só o corpo. Todas são **família `00`** e têm o formato do `_templates/template-plan.md` **do
 repositório** — copie o cabeçalho (frontmatter e nota) e as seções §9–§11 dele; os moldes abaixo preenchem o
 frontmatter e as seções §1 a §8.
 
 **Ordem e dependências:** num repositório com o `00-indice` em formato antigo, **"Converter o `00-indice`" é
-sempre a primeira (`plan-00.01`) e todas as outras dependem dela** (`depende_de`). A decisão sobre
-`divergente`/`conflito` e a migração de famílias vêm depois da lei renomeada (quando ela é proposta). Só
+sempre a primeira (`plan-00.01`) e todas as outras dependem dela** (`depends_on`). A decisão sobre
+`divergent`/`conflict` e a migração de famílias vêm depois da lei renomeada (quando ela é proposta). Só
 valem as dependências de plans que o HITL aceitou.
 
 **Antes de escrever, no repositório alvo:**
@@ -18,11 +18,11 @@ valem as dependências de plans que o HITL aceitou.
   troca o campo; as demais entram na tabela com o `NN` sugerido);
 - a forma da plan, da spec e do ADR é da skill **`spec-write`**; o catálogo de famílias, do
   `panorama/00-planejamento.md` §1; a numeração, do `00-indice` §4. **Aponte para eles, não os copie.**
-- **o `--aplicar` exige worktree limpo:** o usuário commita as plans (e o índice) antes de levá-las ao executor.
+- **o `--apply` exige worktree limpo:** o usuário commita as plans (e o índice) antes de levá-las ao executor.
 
-**Convenções dos moldes:** `<…>` = preencher com o que o `--plano --id <id>` mostrou; **a lista de arquivos vai
+**Convenções dos moldes:** `<…>` = preencher com o que o `--plan --id <id>` mostrou; **a lista de arquivos vai
 inteira na §3.1** (o executor não tem outro contexto); toda plan referencia, na §4, o `00-contexto`, o
-`00-knowledge`, `padrao-escrita` e as fontes citadas; a §7 sempre fecha com `propagar.py --plano --id <id>` (o
+`00-knowledge`, `padrao-escrita` e as fontes citadas; a §7 sempre fecha com `propagate.py --plan --id <id>` (o
 item da proposta some do plano) e a linha **Gate:** (`nenhum` quando o repositório não é modular). **O
 executor não decide nada que dependa do usuário:** catálogo, mapeamento e decisões chegam prontos na §3.1.
 
@@ -67,13 +67,13 @@ Molde atual: na base, `specs/_estrutura_base/00-indice.md` (campo `proximo_numer
 
 # 7. Como verificar
 - `git diff -- specs/00-indice.md` → só frontmatter e tabela.
-- `propagar.py --plano --id <id>` → lacuna `molde em formato antigo` vazia. **Gate:** `nenhum`.
+- `propagate.py --plan --id <id>` → lacuna `template in old format` vazia. **Gate:** `nenhum`.
 
 # 8. Destino da síntese
 **Destino:** `—` (ajuste de formato do molde de processo).
 ````
 
-## 2. Reconciliar a lei do template renomeada (destrava os `bloqueado`)
+## 2. Reconciliar a lei do template renomeada (destrava os `blocked`)
 
 ````md
 ---
@@ -88,7 +88,7 @@ destino_sintese: "—"
 ---
 # 1. Objetivo
 Cada arquivo de `specs/arquitetura/` com nome fora do reservado tem destino decidido — vira a lei do template
-sob o nome reservado, a fundação tecnológica ou conteúdo do projeto —, e o plano deixa de listar `bloqueado`.
+sob o nome reservado, a fundação tecnológica ou conteúdo do projeto —, e o plano deixa de listar `blocked`.
 
 # 3. Escopo
 ## 3.1 Dentro
@@ -102,7 +102,7 @@ Tabela decidida pelo revisor **antes de liberar a plan**:
 # 4. Referências obrigatórias
 `panorama/00-planejamento.md` §1 (nomes reservados da família `00`) · `00-contexto.md` · `00-knowledge.md` ·
 `padrao-escrita` · na base, `specs/_estrutura_modulos/doutrina/` (a lei de referência) · saída de
-`propagar.py --plano --id <id>`.
+`propagate.py --plan --id <id>`.
 
 # 5. Instruções de execução
 1. Aplique a tabela da §3.1: `git mv` para o nome reservado, onde a decisão é "lei renomeada".
@@ -117,12 +117,12 @@ Tabela decidida pelo revisor **antes de liberar a plan**:
 
 # 7. Como verificar
 - `git diff --stat` → só renomes da tabela e links.
-- `propagar.py --plano --id <id>` → `bloqueado 0`; lacuna `lei/fundação` vazia (ou só o conteúdo do projeto declarado).
+- `propagate.py --plan --id <id>` → `blocked 0`; lacuna `law/foundation with a non-reserved name` vazia (ou só o conteúdo do projeto declarado).
 - **Gate:** `nenhum — conformidade de nomes, sem regra nova`.
 
 # 8. Destino da síntese
 **Destino:** `—` (nenhuma verdade nova; a lei já é a da base).
-**Nota:** depois do renome, uma lei renomeada cujo conteúdo difere do template aparece como `divergente` no
+**Nota:** depois do renome, uma lei renomeada cujo conteúdo difere do template aparece como `divergent` no
 plano — o que é esperado: ela cai na plan de decisão (§4), que depende desta.
 ````
 
@@ -155,7 +155,7 @@ destino_sintese: "—"
 | 00 | Fundação | <o texto já existente do molde> |
 | <FF> | <nome> | <scope> |
 
-**Mapeamento aprovado** (todo arquivo da lacuna `migracao-de-familias-pendente`, sem exceção):
+**Mapeamento aprovado** (todo arquivo da lacuna `family-migration-pending`, sem exceção):
 | Nome atual | Novo nome | `familia` |
 |---|---|---|
 | `specs/specs/<NN-slug>.md` | `specs/specs/<FF.NN-slug>.md` | `"<FF>"` |
@@ -187,18 +187,18 @@ Também: `specs/panorama/00-planejamento.md` (catálogo), `specs/00-indice.md` (
 
 # 7. Como verificar
 - `git diff --stat --find-renames` → só renomes, frontmatter, links, catálogo e índice.
-- `propagar.py --plano --id <id>` → lacuna `migração de famílias` vazia.
+- `propagate.py --plan --id <id>` → lacuna `family migration pending` vazia.
 - Validador da `spec-panorama` sem erro. **Gate:** `nenhum — sem regra de gate`.
 
 # 8. Destino da síntese
 **Destino:** `—` (o catálogo vive no `00-planejamento`, que não é síntese de plan).
 ````
 
-## 4. Decidir arquivo a arquivo: adotar a versão da base ou manter (`divergente`)
+## 4. Decidir arquivo a arquivo: adotar a versão da base ou manter (`divergent`)
 
 A decisão é **do usuário**, tomada com o revisor **antes de liberar a plan** e escrita na tabela da §3.1. A §5
-é **um comando**: nada de copiar corpo à mão — o `--adotar` faz a mesma escrita do aplicar (corpo da referência,
-título e fim de linha do sistema) e o `--manter` registra a decisão no carimbo.
+é **um comando**: nada de copiar corpo à mão — o `--adopt` faz a mesma escrita do aplicar (corpo da referência,
+título e fim de linha do sistema) e o `--keep` registra a decisão no carimbo.
 
 ````md
 ---
@@ -223,38 +223,38 @@ Tabela de decisão (preenchida com o usuário **antes** de liberar a plan):
 | `<caminho>` | adotar | — |
 | `<caminho>` | manter | <texto dito pelo usuário> |
 
-Escrevem-se apenas: os "adotar", `.sarak/base.json` (entradas `mantidos`), `.sarak/propagacao-<curto>.json`
+Escrevem-se apenas: os "adotar", `.sarak/base.json` (entradas `kept`), `.sarak/propagation-<curto>.json`
 e o que o aplicar escreve por rotina (carimbo, `00-resumo`) — nada além.
 ## 3.2 Fora
 - Qualquer arquivo fora da tabela; moldes personalizados; código; decidir por conta própria.
 
 # 4. Referências obrigatórias
-Saída de `propagar.py --plano --id <id>` · skill `meta-propagar-base` (`SKILL.md`: ações `divergente`,
-`conflito`, `mantido`) · `00-contexto.md` · `padrao-escrita`.
+Saída de `propagate.py --plan --id <id>` · skill `meta-propagar-base` (`SKILL.md`: ações `divergent`,
+`conflict`, `kept`) · `00-contexto.md` · `padrao-escrita`.
 
 # 5. Instruções de execução
 1. Com o worktree limpo, rode, da raiz da base, **um** comando com as decisões da tabela:
-   `python <caminho da base>/skills/meta-propagar-base/scripts/propagar.py --aplicar --id <id> --adotar <caminho> [--adotar …] --manter <caminho> --motivo "<texto>" [--manter … --motivo "…"]`
-2. Caminho com `[ERRO]` (não está em `divergente`/`conflito`): pare e reporte; não improvise.
+   `python <caminho da base>/skills/meta-propagar-base/scripts/propagate.py --apply --id <id> --adopt <caminho> [--adopt …] --keep <caminho> --reason "<texto>" [--keep … --reason "…"]`
+2. Caminho com `[ERROR]` (não está em `divergent`/`conflict`): pare e reporte; não improvise.
 3. Não commite.
 
 # 6. Critérios de aceite
-- [ ] O comando terminou sem `[ERRO]`.
+- [ ] O comando terminou sem `[ERROR]`.
 - [ ] Todo "adotar" idêntico à base (descontado o título); todo "manter" intocado.
-- [ ] Cada "manter" tem entrada em `mantidos` no `.sarak/base.json`, com o motivo da tabela.
+- [ ] Cada "manter" tem entrada em `kept` no `.sarak/base.json`, com o motivo da tabela.
 
 # 7. Como verificar
 - `git diff --stat` → só os "adotar" e `.sarak/`.
-- `propagar.py --plano --id <id>` → os "adotar" saíram de `divergente`; os "manter" aparecem como `mantido`.
+- `propagate.py --plan --id <id>` → os "adotar" saíram de `divergent`; os "manter" aparecem como `kept`.
 - **Gate:** `nenhum`.
 
 # 8. Destino da síntese
 **Destino:** `—` (alinhamento com a base; a decisão vive no carimbo).
 ````
 
-## 5. Decidir arquivo a arquivo (com carimbo) — `conflito`
+## 5. Decidir arquivo a arquivo (com carimbo) — `conflict`
 
-Mesmo molde do item 4 (a §5 também é **um comando** `--aplicar … --adotar … --manter … --motivo …`), com
+Mesmo molde do item 4 (a §5 também é **um comando** `--apply … --adopt … --keep … --reason …`), com
 estas diferenças:
 
 - **Título e §1:** "Decidir arquivo a arquivo (com carimbo): adotar a versão da base ou manter" — o arquivo foi
@@ -264,8 +264,8 @@ estas diferenças:
   usuário **antes** da decisão.
 - **Decisões possíveis na tabela:** adotar a base · manter o local. **Mesclar** não cabe no comando: se o
   usuário quer mesclar, o revisor faz a mescla na própria plan (passos de edição explícitos na §5, arquivo a
-  arquivo) e o arquivo sai da tabela; depois o `--manter` o registra com o motivo "mesclado".
-- **§7:** os "adotar" saem de `conflito`; os "manter" aparecem como `mantido`.
+  arquivo) e o arquivo sai da tabela; depois o `--keep` o registra com o motivo "mesclado".
+- **§7:** os "adotar" saem de `conflict`; os "manter" aparecem como `kept`.
 
 ## 6. Criar a base de linguagem que falta
 
@@ -286,7 +286,7 @@ projeto.
 
 # 3. Escopo
 ## 3.1 Dentro
-- `specs/arquitetura/00-base-<binding>.md` — <um por binding sem base: lacuna `binding-sem-base`>
+- `specs/arquitetura/00-base-<binding>.md` — <um por binding sem base: lacuna `binding-without-base`>
 ## 3.2 Fora
 - Outras arquiteturas; o conteúdo da base além do título; `tools/` e código.
 
@@ -305,7 +305,7 @@ Na base: `specs/_bases_arquiteturais/00-base-<binding>.md` (a fonte) e `instalar
 
 # 7. Como verificar
 - `git diff --stat` → só os arquivos novos de §3.1.
-- `propagar.py --plano --id <id>` → lacuna `binding sem 00-base` vazia. **Gate:** `nenhum` (ou o do repositório, se modular).
+- `propagate.py --plan --id <id>` → lacuna `binding without 00-base` vazia. **Gate:** `nenhum` (ou o do repositório, se modular).
 
 # 8. Destino da síntese
 **Destino:** `arquitetura/00-base-<binding>.md` — a própria base criada é a verdade; nada mais a transportar.
@@ -340,7 +340,7 @@ O `.sarak/base.json` (o carimbo) deixa de ser ignorado pelo git, para que a prop
 
 # 5. Instruções de execução
 1. Rode `git check-ignore -v .sarak/base.json` e anote o arquivo e a linha da regra.
-2. Remova só essa regra (ou troque-a por uma que não alcance `.sarak/base.json` nem `.sarak/propagacao-*.json`).
+2. Remova só essa regra (ou troque-a por uma que não alcance `.sarak/base.json` nem `.sarak/propagation-*.json` (nem o antigo `propagacao-*.json`)).
 3. Confirme que nada em `.sarak/` é segredo antes de seguir.
 
 # 6. Critérios de aceite
@@ -348,7 +348,7 @@ O `.sarak/base.json` (o carimbo) deixa de ser ignorado pelo git, para que a prop
 
 # 7. Como verificar
 - `git diff -- .gitignore` → só a regra de §5.
-- `propagar.py --plano --id <id>` → sem a lacuna `.sarak/ ignorado`. **Gate:** `nenhum`.
+- `propagate.py --plan --id <id>` → sem a lacuna `.sarak/ ignored`. **Gate:** `nenhum`.
 
 # 8. Destino da síntese
 **Destino:** `—` (higiene de repositório).

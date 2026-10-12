@@ -47,7 +47,7 @@ a detecta**. TS é superset; **JS = TS sem tipos**.
 - **Tipagem** só é avaliada em `.ts/.tsx`. Em `.js/.jsx` o validador pula essa dimensão (JS não tem tipos).
 - Todas as outras dimensões valem igual para os dois (a sintaxe é a mesma família).
 
-### Sobre a heurística de hardcoded (por que `confianca: baixa`)
+### Sobre a heurística de hardcoded (por que `confidence: low`)
 - Número fora de `allowedMagicNumbers` pode ser legítimo; constantes `UPPER_CASE` são isentas.
 - URLs/hosts são sinalizados mesmo como constante (são valores por-ambiente → `config.json`/`.env`).
 - O agente / `code-diagnostico` decide o que é violação real e o que é falso positivo.

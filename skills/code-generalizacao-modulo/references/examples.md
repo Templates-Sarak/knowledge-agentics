@@ -60,7 +60,7 @@ Note o que **não** aconteceu: `loja_empresas` não virou `store_companies`. O n
 
 ```
 init_repo.py --target ../modulo-identidade --name "Identidade" --binding typescript \
-             --escopo acme --modulos identidade:domain --git-init
+             --scope acme --modules identidade:domain --git-init
 ```
 
 ADR: *"a verificação de credencial é uma porta (`core/ports/autenticador`) porque cada consumidor
@@ -72,15 +72,15 @@ Migration nova, com `-- rollback`. Fixtures inventadas.
 ### Passo 7 — os seis degraus
 
 ```
---- Verificacao do entregavel: identidade ---
-  1. conforme                     verde
-  2. extraivel                    verde
-  3. funciona sem infra           verde
-  4. o schema funciona            verde
-  5. cumpre o contrato            verde
-  6. e generico                   verde
+--- Deliverable verification: identidade ---
+  1. compliant                    green
+  2. extractable                  green
+  3. works without infra          green
+  4. schema works                 green
+  5. meets the contract           green
+  6. is generic                   green
 
-[OK] APROVADO — os 6 degraus verdes
+[OK] APPROVED — all 6 steps green
 ```
 
 **Resultado:** o módulo sobe em qualquer projeto, o consumidor escolhe o provedor de identidade, e
@@ -99,7 +99,7 @@ nada no repositório diz de onde a capacidade veio.
 | **Deixou o SDK do provedor de identidade dentro do módulo** | "é o provedor que a gente usa" | o consumidor seguinte usava outro; o módulo teve de ser aberto e refeito, que é exatamente o que o padrão de portas existe para evitar |
 | **Copiou a migration com o `INSERT` de seed** | "os dados de exemplo ajudam" | nomes e e-mails reais de clientes da origem versionados num repositório novo — vazamento de negócio e de PII na mesma linha |
 | **Aceitou gate verde como entrega** | "o gate passou, está pronto" | o gate é estático e nunca roda o módulo; a migration tinha erro de sintaxe e o `/summary` devolvia campo fora do contrato. Os degraus 4 e 5 pegariam os dois |
-| **Versionou a `denylist-origem.txt` dentro do repo novo** | "assim fica junto do projeto" | um arquivo listando o nome da origem, dentro do entregável — o `verificar_entregavel.py` recusa antes de varrer, e a razão é o próprio degrau 6 |
+| **Versionou a `denylist-origem.txt` dentro do repo novo** | "assim fica junto do projeto" | um arquivo listando o nome da origem, dentro do entregável — o `verify_deliverable.py` recusa antes de varrer, e a razão é o próprio degrau 6 |
 
 ---
 

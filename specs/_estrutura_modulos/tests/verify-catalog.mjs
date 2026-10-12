@@ -110,17 +110,17 @@ const RE_MODULE_CITATION = /\b(\d+)\s+regras\s+suas\b/g;
 /**
  * `{ arquivo, linha, numero, tipo }` de cada citação de contagem em `textosPorArquivo` (já lidos
  * pela casca — este núcleo não decide QUAIS arquivos ler, só extrai o que está no texto dado).
- * `tipo` é `'total'` (o catálogo inteiro) ou `'modulo'` (só o escopo `module`).
+ * `kind` é `'total'` (o catálogo inteiro) ou `'module'` (só o escopo `module`).
  */
 export function countCitations(textsByFile) {
   const findings = [];
-  for (const { arquivo: file, text } of textsByFile) {
+  for (const { file, text } of textsByFile) {
     text.split('\n').forEach((line, index) => {
       for (const matched of line.matchAll(RE_TOTAL_CITATION)) {
-        findings.push({ arquivo: file, linha: index + 1, number: Number(matched[1]), tipo: 'total' });
+        findings.push({ file, line: index + 1, number: Number(matched[1]), kind: 'total' });
       }
       for (const matched of line.matchAll(RE_MODULE_CITATION)) {
-        findings.push({ arquivo: file, linha: index + 1, number: Number(matched[1]), tipo: 'modulo' });
+        findings.push({ file, line: index + 1, number: Number(matched[1]), kind: 'module' });
       }
     });
   }
@@ -130,7 +130,7 @@ export function countCitations(textsByFile) {
 /** As citações cujo número diverge do esperado para o `tipo` — o que a CASCA reprova. `esperado` é
  * `{ total, modulo }`, os dois valores de verdade (importados do `engine.mjs`, nunca hardcoded aqui). */
 export function staleCitations(citations, expected) {
-  return citations.filter((c) => c.number !== expected[c.tipo]);
+  return citations.filter((c) => c.number !== expected[c.kind]);
 }
 
 const RE_PORT_BETWEEN_QUOTES = /['"]([a-zA-Z][a-zA-Z0-9_]*)['"]/g;
@@ -241,7 +241,7 @@ function readCodeTree(root) {
       const path = join(current, entry.name);
       if (entry.isDirectory()) { stack.push(path); continue; }
       if (!EXT_SCAN.has(extname(entry.name))) continue;
-      findings.push({ arquivo: relative(root, path).split('\\').join('/'), text: readText(path) });
+      findings.push({ file: relative(root, path).split('\\').join('/'), text: readText(path) });
     }
   }
   return findings;
@@ -251,14 +251,14 @@ function readCodeTree(root) {
  * contagens de verdade, total e `module`, que a checagem 2 usa como denominador. */
 async function ruleIds(enginePath) {
   const module = await import(pathToFileURL(enginePath).href);
-  return module.RULES.map((rule) => ({ id: rule.id, escopo: rule.escopo }));
+  return module.RULES.map((rule) => ({ id: rule.id, scope: rule.scope }));
 }
 
 /** O veredito completo para um par real `(04-regras.md, engine.mjs)`, mais a checagem de contagem
  * em `tools/**` quando `raizTools` é dado — `undefined` pula essa metade sem reprovar por falta. */
 async function check(doctrinePath, enginePath, toolsRoot) {
-  if (!existsSync(doctrinePath)) return { ok: false, motivo: `doctrine not found: ${doctrinePath}` };
-  if (!existsSync(enginePath)) return { ok: false, motivo: `engine not found: ${enginePath}` };
+  if (!existsSync(doctrinePath)) return { ok: false, reason: `doctrine not found: ${doctrinePath}` };
+  if (!existsSync(enginePath)) return { ok: false, reason: `engine not found: ${enginePath}` };
 
   const lawIds = extractLawIds(readText(doctrinePath));
   const codeRules = (await ruleIds(enginePath));
@@ -271,31 +271,31 @@ async function check(doctrinePath, enginePath, toolsRoot) {
   if (duplicatesInLaw.length > 0) lines.push(`  duplicate rule IDs in doctrine table: ${duplicatesInLaw.join(', ')}`);
 
   if (toolsRoot !== undefined) {
-    if (!existsSync(toolsRoot)) return { ok: false, motivo: `tools/ root not found: ${toolsRoot}` };
-    const expected = { total: codeIds.length, modulo: codeRules.filter((r) => r.escopo === 'module').length };
+    if (!existsSync(toolsRoot)) return { ok: false, reason: `tools/ root not found: ${toolsRoot}` };
+    const expected = { total: codeIds.length, module: codeRules.filter((r) => r.scope === 'module').length };
     const stale = staleCitations(countCitations(readCodeTree(toolsRoot)), expected);
     for (const d of stale) {
-      lines.push(`  ${d.arquivo}:${d.linha} cites "${d.number} ${d.tipo === 'total' ? 'catalog rules with cases' : 'module rules'}",`
-        + ` expected ${expected[d.tipo]}`);
+      lines.push(`  ${d.file}:${d.line} cites "${d.number} ${d.kind === 'total' ? 'catalog rules with cases' : 'module rules'}",`
+        + ` expected ${expected[d.kind]}`);
     }
   }
 
-  if (lines.length === 0) return { ok: true, motivo: null, total: codeIds.length };
-  return { ok: false, motivo: lines.join('\n') };
+  if (lines.length === 0) return { ok: true, reason: null, total: codeIds.length };
+  return { ok: false, reason: lines.join('\n') };
 }
 
 /** Gera (`escrever`) ou confere `renamed-rules.json` contra a tabela do ADR-024 e o catálogo do engine. */
 async function checkRenames(decisionsPath, jsonPath, enginePath, writeOut) {
   for (const [label, path] of [['decisions', decisionsPath], ['engine', enginePath]]) {
-    if (!existsSync(path)) return { ok: false, motivo: `${label} not found: ${path}` };
+    if (!existsSync(path)) return { ok: false, reason: `${label} not found: ${path}` };
   }
   const expected = extractRenames(readText(decisionsPath));
-  if (Object.keys(expected).length === 0) return { ok: false, motivo: 'ADR-024 contains no renamed rule IDs' };
+  if (Object.keys(expected).length === 0) return { ok: false, reason: 'ADR-024 contains no renamed rule IDs' };
   if (writeOut) {
     const previous = existsSync(jsonPath) ? JSON.parse(readText(jsonPath)) : {};
     writeFileSync(jsonPath, `${JSON.stringify({ ...previous, renamed: expected }, null, 2)}\n`);
   }
-  if (!existsSync(jsonPath)) return { ok: false, motivo: `rename table not found: ${jsonPath}` };
+  if (!existsSync(jsonPath)) return { ok: false, reason: `rename table not found: ${jsonPath}` };
   const codeIds = (await ruleIds(enginePath)).map((r) => r.id);
   const current = JSON.parse(readText(jsonPath)).renamed ?? {};
   const { outdated, phantomDestination, oldAlive } = compareRenames(expected, current, [...codeIds, 'extraction']);
@@ -303,8 +303,8 @@ async function checkRenames(decisionsPath, jsonPath, enginePath, writeOut) {
   if (outdated.length > 0) lines.push(`  table differs from ADR-024 (regenerate with --write): ${outdated.join(', ')}`);
   if (phantomDestination.length > 0) lines.push(`  destination IDs missing from the catalog: ${phantomDestination.join(', ')}`);
   if (oldAlive.length > 0) lines.push(`  old IDs still identify active rules: ${oldAlive.join(', ')}`);
-  if (lines.length === 0) return { ok: true, motivo: null, total: Object.keys(current).length };
-  return { ok: false, motivo: lines.join('\n') };
+  if (lines.length === 0) return { ok: true, reason: null, total: Object.keys(current).length };
+  return { ok: false, reason: lines.join('\n') };
 }
 
 /** Os cinco lugares que repetem o vocabulário de portas à mão — caminho relativo à raiz do TEMPLATE
@@ -312,40 +312,40 @@ async function checkRenames(decisionsPath, jsonPath, enginePath, writeOut) {
  * primeira é o CANÔNICO que `compareVocabularies` usa (ver o comentário dela). */
 function vocabularySources(templateRoot) {
   return [
-    { source: 'tools/gate/ports-vocabulary.mjs', caminho: join(templateRoot, 'tools', 'gate', 'ports-vocabulary.mjs'), format: 'texto' },
-    { source: 'tools/gate/schemas/module.schema.json', caminho: join(templateRoot, 'tools', 'gate', 'schemas', 'module.schema.json'), format: 'schema' },
-    { source: 'bindings/typescript/root/packages/ports/index.ts', caminho: join(templateRoot, 'bindings', 'typescript', 'root', 'packages', 'ports', 'index.ts'), format: 'texto' },
-    { source: 'bindings/javascript/root/packages/ports/index.js', caminho: join(templateRoot, 'bindings', 'javascript', 'root', 'packages', 'ports', 'index.js'), format: 'texto' },
-    { source: 'bindings/python/root/packages/ports/__init__.py', caminho: join(templateRoot, 'bindings', 'python', 'root', 'packages', 'ports', '__init__.py'), format: 'texto' },
+    { source: 'tools/gate/ports-vocabulary.mjs', path: join(templateRoot, 'tools', 'gate', 'ports-vocabulary.mjs'), format: 'text' },
+    { source: 'tools/gate/schemas/module.schema.json', path: join(templateRoot, 'tools', 'gate', 'schemas', 'module.schema.json'), format: 'schema' },
+    { source: 'bindings/typescript/root/packages/ports/index.ts', path: join(templateRoot, 'bindings', 'typescript', 'root', 'packages', 'ports', 'index.ts'), format: 'text' },
+    { source: 'bindings/javascript/root/packages/ports/index.js', path: join(templateRoot, 'bindings', 'javascript', 'root', 'packages', 'ports', 'index.js'), format: 'text' },
+    { source: 'bindings/python/root/packages/ports/__init__.py', path: join(templateRoot, 'bindings', 'python', 'root', 'packages', 'ports', '__init__.py'), format: 'text' },
   ];
 }
 
 /** O veredito completo para as cinco fontes de vocabulário de um template real. */
 function checkVocabulary(templateRoot) {
   const listsBySource = [];
-  for (const { source, caminho: path, format } of vocabularySources(templateRoot)) {
-    if (!existsSync(path)) return { ok: false, motivo: `source not found (${source}): ${path}` };
+  for (const { source, path, format } of vocabularySources(templateRoot)) {
+    if (!existsSync(path)) return { ok: false, reason: `source not found (${source}): ${path}` };
     if (format === 'schema') {
       const schema = JSON.parse(readText(path));
       const ports = schema.properties?.ports?.items?.enum;
-      if (!Array.isArray(ports)) return { ok: false, motivo: `${source}: properties.ports.items.enum is missing` };
+      if (!Array.isArray(ports)) return { ok: false, reason: `${source}: properties.ports.items.enum is missing` };
       listsBySource.push({ source, ports });
       continue;
     }
     const ports = extractSourcePorts(readText(path));
-    if (ports === null) return { ok: false, motivo: `${source}: KNOWN_PORTS list not found or missing a [...] / (...) block` };
+    if (ports === null) return { ok: false, reason: `${source}: KNOWN_PORTS list not found or missing a [...] / (...) block` };
     listsBySource.push({ source, ports });
   }
 
   const divergences = compareVocabularies(listsBySource);
-  if (divergences.length === 0) return { ok: true, motivo: null, total: listsBySource[0].ports.length };
+  if (divergences.length === 0) return { ok: true, reason: null, total: listsBySource[0].ports.length };
   const lines = divergences.map(({ source, missing, leftover }) => {
     const parts = [];
     if (missing.length > 0) parts.push(`missing: ${missing.join(', ')}`);
     if (leftover.length > 0) parts.push(`extra: ${leftover.join(', ')}`);
     return `  ${source}: ${parts.join(' | ')}`;
   });
-  return { ok: false, motivo: lines.join('\n') };
+  return { ok: false, reason: lines.join('\n') };
 }
 
 // ================================================================================================
@@ -436,46 +436,46 @@ function selfTestCases() {
       name: 'countCitations: reads rule counts with their file and line',
       fn: () => {
         const c = countCitations([
-          { arquivo: 'a.mjs', text: 'linha 1\nnao conta para as 73 regras com caso do catalogo\n' },
-          { arquivo: 'b.mjs', text: 'ja tem 57 regras suas' },
+          { file: 'a.mjs', text: 'linha 1\nnao conta para as 73 regras com caso do catalogo\n' },
+          { file: 'b.mjs', text: 'ja tem 57 regras suas' },
         ]);
         return c.length === 2
-          && c[0].arquivo === 'a.mjs' && c[0].linha === 2 && c[0].number === 73 && c[0].tipo === 'total'
-          && c[1].arquivo === 'b.mjs' && c[1].linha === 1 && c[1].number === 57 && c[1].tipo === 'modulo';
+          && c[0].file === 'a.mjs' && c[0].line === 2 && c[0].number === 73 && c[0].kind === 'total'
+          && c[1].file === 'b.mjs' && c[1].line === 1 && c[1].number === 57 && c[1].kind === 'module';
       },
     },
     {
       name: 'countCitations: does not match historical count transitions',
       fn: () => countCitations([
-        { arquivo: 'notas.md', text: '75 -> 76 regras, com caso novo em cases.mjs' },
+        { file: 'notas.md', text: '75 -> 76 regras, com caso novo em cases.mjs' },
       ]).length === 0,
     },
     {
       name: 'countCitations: does not match prose saying an item does not count without a number',
       fn: () => countCitations([
-        { arquivo: 'verify-commit.mjs', text: 'nao tem id, nao conta para as regras com caso do catalogo' },
+        { file: 'verify-commit.mjs', text: 'nao tem id, nao conta para as regras com caso do catalogo' },
       ]).length === 0,
     },
     {
       name: 'countCitations: does not match a count of a different thing',
       fn: () => countCitations([
-        { arquivo: '04-regras.md', text: '33 regras citam (§7.2) na linha de catalogo' },
+        { file: '04-regras.md', text: '33 regras citam (§7.2) na linha de catalogo' },
       ]).length === 0,
     },
     {
       name: 'staleCitations: matching expected count is not stale',
       fn: () => staleCitations(
-        [{ arquivo: 'a.mjs', linha: 1, number: 76, tipo: 'total' }],
-        { total: 76, modulo: 58 },
+        [{ file: 'a.mjs', line: 1, number: 76, kind: 'total' }],
+        { total: 76, module: 58 },
       ).length === 0,
     },
     {
       name: 'staleCitations: a count different from the expected value is stale',
       fn: () => {
         const r = staleCitations(
-          [{ arquivo: 'affected.mjs', linha: 5, number: 73, tipo: 'total' },
-            { arquivo: 'context.mjs', linha: 39, number: 57, tipo: 'modulo' }],
-          { total: 76, modulo: 58 },
+          [{ file: 'affected.mjs', line: 5, number: 73, kind: 'total' },
+            { file: 'context.mjs', line: 39, number: 57, kind: 'module' }],
+          { total: 76, module: 58 },
         );
         return r.length === 2;
       },
@@ -483,15 +483,15 @@ function selfTestCases() {
     {
       name: 'extractSourcePorts: JS/TS array between brackets',
       fn: () => {
-        const r = extractSourcePorts("export const KNOWN_PORTS = [\n  'repositorio',\n  'storage',\n] as const;");
-        return r.length === 2 && r[0] === 'repositorio' && r[1] === 'storage';
+        const r = extractSourcePorts("export const KNOWN_PORTS = [\n  'repository',\n  'storage',\n] as const;");
+        return r.length === 2 && r[0] === 'repository' && r[1] === 'storage';
       },
     },
     {
       name: 'extractSourcePorts: Python tuple between parentheses, double quotes',
       fn: () => {
-        const r = extractSourcePorts('KNOWN_PORTS = (\n    "repositorio",\n    "storage",\n)');
-        return r.length === 2 && r[0] === 'repositorio' && r[1] === 'storage';
+        const r = extractSourcePorts('KNOWN_PORTS = (\n    "repository",\n    "storage",\n)');
+        return r.length === 2 && r[0] === 'repository' && r[1] === 'storage';
       },
     },
     {
@@ -501,33 +501,33 @@ function selfTestCases() {
     {
       name: 'compareVocabularies: matching sets in different orders have no differences',
       fn: () => compareVocabularies([
-        { source: 'a', ports: ['repositorio', 'storage'] },
-        { source: 'b', ports: ['storage', 'repositorio'] },
+        { source: 'a', ports: ['repository', 'storage'] },
+        { source: 'b', ports: ['storage', 'repository'] },
       ]).length === 0,
     },
     {
       name: 'compareVocabularies: reports a missing port in one source and an extra port in another',
       fn: () => {
         const r = compareVocabularies([
-          { source: 'canonico', ports: ['repositorio', 'storage', 'auth'] },
-          { source: 'incompleta', ports: ['repositorio', 'storage'] },
-          { source: 'com-extra', ports: ['repositorio', 'storage', 'auth', 'fila'] },
+          { source: 'canonical', ports: ['repository', 'storage', 'auth'] },
+          { source: 'incomplete', ports: ['repository', 'storage'] },
+          { source: 'with-extra', ports: ['repository', 'storage', 'auth', 'queue'] },
         ]);
-        const incomplete = r.find((d) => d.source === 'incompleta');
-        const withExtra = r.find((d) => d.source === 'com-extra');
+        const incomplete = r.find((d) => d.source === 'incomplete');
+        const withExtra = r.find((d) => d.source === 'with-extra');
         return r.length === 2
           && incomplete.missing.includes('auth') && incomplete.leftover.length === 0
-          && withExtra.leftover.includes('fila') && withExtra.missing.length === 0;
+          && withExtra.leftover.includes('queue') && withExtra.missing.length === 0;
       },
     },
     {
       name: 'extractRenames: reads column B and ignores unchanged ids',
       fn: () => {
         const text = [
-          '## ADR-024 — x', '| id atual | A | B | n |', '|---|---|---|---|',
+          '## ADR-024 — x', '| current id | A | B | n |', '|---|---|---|---|',
           '| `old-one` | `old-id` | `one-old` ◄ | 3/1 |',
           '| `log` | `log` | `log` | 9/2 |',
-          '## ADR-025 — y', '| `outro` | `a` | `b` | 1/1 |',
+          '## ADR-025 — y', '| `other` | `a` | `b` | 1/1 |',
         ].join('\n');
         const r = extractRenames(text);
         return Object.keys(r).length === 1 && r['old-one'] === 'one-old';
@@ -592,7 +592,7 @@ async function main() {
     const result = checkVocabulary(resolve(argv[vocabularyIndex + 1]));
     process.stdout.write(result.ok
       ? `vocabulary: OK — ${result.total} ports; all five sources match\n`
-      : `vocabulary: FAILED —\n${result.motivo}\n`);
+      : `vocabulary: FAILED —\n${result.reason}\n`);
     return result.ok ? 0 : 1;
   }
 
@@ -603,7 +603,7 @@ async function main() {
     const result = await checkRenames(resolve(decisions), resolve(json), resolve(engine), argv.includes('--write'));
     process.stdout.write(result.ok
       ? `renames: OK — ${result.total} ids; the shipped table matches ADR-024\n`
-      : `renames: FAILED —\n${result.motivo}\n`);
+      : `renames: FAILED —\n${result.reason}\n`);
     return result.ok ? 0 : 1;
   }
 
@@ -616,7 +616,7 @@ async function main() {
   const result = await check(doctrinePath, enginePath, toolsRoot);
   process.stdout.write(result.ok
     ? `catalog: OK — ${result.total} ids; doctrine and code match\n`
-    : `catalog: FAILED —\n${result.motivo}\n`);
+    : `catalog: FAILED —\n${result.reason}\n`);
   return result.ok ? 0 : 1;
 }
 

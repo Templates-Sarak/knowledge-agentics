@@ -1,30 +1,30 @@
 {
-  "_doc": "Tunables não-secretos dos hooks de QUALIDADE — FALLBACK, usado só quando o projeto não tem config/verification.json. Projeto vindo do template de módulos declara a política DELE ali, e ela vence esta. Segurança (cyber-git-seguro) é fail-closed fixo e NÃO depende deste arquivo.",
-  "qualidade": {
-    "modo": "warn",
-    "_modo_doc": "block = bloqueia/cobra correção | warn = só avisa o modelo | off = ignora",
-    "_sem_limiares_nem_proibir_doc": "`qualidade` tem `modo` e nada mais. `limiares` saiu porque os limiares de escrita são LEI, com fonte única em tools/gate/thresholds.mjs, de onde a config do linter é gerada — enquanto o número morava aqui, ele VENCIA a config gerada. `proibir` saiu pelo mesmo argumento com o sinal trocado: o gerador emite no-console/no-empty/T20/E sem ler política nenhuma, então o campo nunca acrescentava cobertura, só escondia do agente um erro que o lint acusava."
+  "_doc": "Tunables não-secretos dos hooks de QUALIDADE — FALLBACK, usado só quando o projeto não tem config/verification.json. Projeto vindo do template de módulos declara a política DELE ali, e ela vence esta. Segurança (cyber-git-seguro) é fail-closed fixo e NÃO depende deste arquivo. Chaves no vocabulário antigo (qualidade/modo/formatacao/ativo/escopo/cobertura/minima/ferramentas/dependencias/severidadeMinima/linguagens) continuam aceitas: o _lib.js as traduz (LEGACY_KEYS).",
+  "quality": {
+    "mode": "warn",
+    "_mode_doc": "block = bloqueia/cobra correção | warn = só avisa o modelo | off = ignora",
+    "_no_thresholds_nor_forbidden_doc": "`quality` tem `mode` e nada mais. Os limiares saíram porque os limiares de escrita são LEI, com fonte única em tools/gate/thresholds.mjs, de onde a config do linter é gerada — enquanto o número morava aqui, ele VENCIA a config gerada. A lista de proibições saiu pelo mesmo argumento com o sinal trocado: o gerador emite no-console/no-empty/T20/E sem ler política nenhuma, então o campo nunca acrescentava cobertura, só escondia do agente um erro que o lint acusava."
   },
-  "formatacao": {
-    "ativo": true,
-    "escopo": "conformes",
-    "_escopo_doc": "conformes = só reformata arquivo fora de git, novo, ou cujo HEAD já estava formatado (legado fica intacto, sem diff ruidoso) | arquivo = sempre formata o arquivo inteiro"
+  "formatting": {
+    "active": true,
+    "scope": "conforming",
+    "_scope_doc": "conforming = só reformata arquivo fora de git, novo, ou cujo HEAD já estava formatado (legado fica intacto, sem diff ruidoso) | file = sempre formata o arquivo inteiro"
   },
-  "cobertura": {
-    "modo": "ask",
-    "_modo_doc": "ask = pede aprovação do usuário se abaixo do mínimo | block = bloqueia o push | warn = avisa e prossegue | off = ignora",
-    "minima": 80,
-    "_minima_doc": "% mínimo por projeto (alinhado a padrao-escrita §9). Roda só no push e só onde há ferramenta + testes.",
-    "ferramentas": { "python": "pytest", "js": "vitest", "go": "go", "java": "jacoco" }
+  "coverage": {
+    "mode": "ask",
+    "_mode_doc": "ask = pede aprovação do usuário se abaixo do mínimo | block = bloqueia o push | warn = avisa e prossegue | off = ignora",
+    "minimum": 80,
+    "_minimum_doc": "% mínimo por projeto (alinhado a padrao-escrita §9). Roda só no push e só onde há ferramenta + testes.",
+    "tools": { "python": "pytest", "js": "vitest", "go": "go", "java": "jacoco" }
   },
-  "dependencias": {
-    "modo": "warn",
-    "_modo_doc": "block = bloqueia o push | warn = avisa e prossegue | off = ignora. Missing-tool segue o modo (não trava em warn).",
-    "severidadeMinima": "high",
-    "_sev_doc": "low | moderate | high | critical — aplicado nativamente pelo npm; pip-audit/govulncheck reportam qualquer achado.",
-    "ferramentas": { "node": "npm", "python": "pip-audit", "go": "govulncheck" }
+  "dependencies": {
+    "mode": "warn",
+    "_mode_doc": "block = bloqueia o push | warn = avisa e prossegue | off = ignora. Missing-tool segue o modo (não trava em warn).",
+    "minimumSeverity": "high",
+    "_severity_doc": "low | moderate | high | critical — aplicado nativamente pelo npm; pip-audit/govulncheck reportam qualquer achado.",
+    "tools": { "node": "npm", "python": "pip-audit", "go": "govulncheck" }
   },
-  "linguagens": {
+  "languages": {
     "python": { "linter": "ruff", "formatter": "ruff" },
     "js": { "linter": "eslint", "formatter": "prettier" },
     "go": { "linter": "golangci-lint", "formatter": "gofmt" },

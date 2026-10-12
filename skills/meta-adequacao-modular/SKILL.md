@@ -38,9 +38,9 @@ existem plans "xx-*" em specs/plan/ ?
 
 ```
 caminho (do diagnóstico) ?
-   "sem-specs"          → sem specs SDD                 → passos 1–2 são no-op DECLARADO
-   "specs-divergentes"  → specs SDD, não a canônica      → regra de absorção (workflow.md §1–§2)
-   "com-specs"          → specs SDD canônicas            → passos 1–2 são trabalho real
+   "no-specs"          → sem specs SDD                 → passos 1–2 são no-op DECLARADO
+   "divergent-specs"  → specs SDD, não a canônica      → regra de absorção (workflow.md §1–§2)
+   "with-specs"          → specs SDD canônicas            → passos 1–2 são trabalho real
 ```
 
 Rode o diagnóstico mecânico da skill antes de perguntar qualquer coisa ao usuário — ele já responde fase,
@@ -48,13 +48,13 @@ caminho, **em que branch o alvo está**, **se o aparato do template já está in
 candidatos a módulo:
 
 ```
-python scripts/diagnosticar_terreno.py --raiz <alvo> --json
+python scripts/diagnose_terrain.py --root <alvo> --json
 ```
 
 **Os candidatos a módulo são descobertos**, varrendo a raiz de módulos do alvo — `modules/` e o nome de
-geração antiga que aponta para ela (`modulos/`). `--modulos <pasta> ...` continua existindo como
+geração antiga que aponta para ela (`modulos/`). `--modules <pasta> ...` continua existindo como
 **override explícito**, para topologia que o script não decide (monólito, por-camadas, `apps/`). O campo
-`modulos_origem` diz qual dos dois produziu a lista: `[]` com origem `varredura` é *"não há candidato"*;
+`modules_origin` diz qual dos dois produziu a lista: `[]` com origem `scan` é *"não há candidato"*;
 `[]` com origem `flag` é *"ninguém apontou"* — não confunda os dois.
 
 Confirme o resultado com o usuário em uma linha (fato, não escolha) e siga. Detalhe de cada campo do
@@ -62,15 +62,15 @@ relatório em `references/workflow.md` §0.
 
 ## O aparato do template já está aqui? — terceiro sinal, obrigatório antes do Passo 3
 
-`template_instalado.estado` responde uma pergunta que fase/caminho **não** respondem — e confundi-la com
+`template_installed.state` responde uma pergunta que fase/caminho **não** respondem — e confundi-la com
 "é legado" foi um defeito medido desta skill (um projeto 100% gerado por `create-project.mjs` +
 `create-module.mjs` era diagnosticado como legado colidindo, pelos próprios arquivos do template):
 
 ```
-"nao-instalado"  → nenhuma peça do template presente. O fluxo normal (Passo 3, instalar tudo) está certo.
-"parcial"        → algumas peças já existem. NÃO reinstale por cima — o Passo 3 instala só o que
-                   `template_instalado.faltando` lista.
-"completo"       → nada a instalar. Se, além disso, `fase == "A"` e `modulos_candidatos` veio vazio,
+"not-installed"  → nenhuma peça do template presente. O fluxo normal (Passo 3, instalar tudo) está certo.
+"partial"        → algumas peças já existem. NÃO reinstale por cima — o Passo 3 instala só o que
+                   `template_installed.missing` lista.
+"complete"       → nada a instalar. Se, além disso, `phase == "A"` e `module_candidates` veio vazio,
                    PARE: não há nada a planejar — o alvo já é (ou já foi) um projeto do template.
                    Confirme com o usuário se a campanha já terminou ou se a skill foi apontada para o
                    projeto errado, antes de seguir.
@@ -78,7 +78,7 @@ relatório em `references/workflow.md` §0.
 
 Se o dono seguir **mesmo assim**, registre a decisão e o parecer contrário no ADR — portão de HITL.
 
-Enquanto `template_instalado.estado != "nao-instalado"`, **`colisao_raiz` e `workspaces_legado` já vêm
+Enquanto `template_installed.state != "not-installed"`, **`root_collision` e `legacy_workspaces` já vêm
 filtrados** pelo próprio script (o que é do template não conta como legado) — não repita esse julgamento
 por conta própria.
 
@@ -87,40 +87,40 @@ por conta própria.
 ### Passo 0 — abrir
 Usuário abre conversa nova como **revisor** e invoca esta skill. Rode o diagnóstico acima.
 
-**Se `branch.e_padrao` for `true`, PARE** — a campanha não roda em `main`/`master` (é o `NUNCA` das regras
+**Se `branch.is_default` for `true`, PARE** — a campanha não roda em `main`/`master` (é o `NUNCA` das regras
 abaixo, agora com verificador). Vá ao portão de HITL de branch: peça o nome, crie-a e só então siga.
-`branch.atual` vazio (`""`) ou `"(destacado)"` significa **não foi possível determinar** — pergunte, nunca
-presuma que está seguro. `arvore_suja: null` é *"não consegui verificar"*, jamais *"está limpa"*.
+`branch.current` vazio (`""`) ou `"(detached)"` significa **não foi possível determinar** — pergunte, nunca
+presuma que está seguro. `dirty_tree: null` é *"não consegui verificar"*, jamais *"está limpa"*.
 
 ### Passo 1 — sintetizar e limpar `plan/`
-- **`sem-specs`:** no-op declarado — diga em voz alta *"não havia plan/spec: nada a sintetizar"*. Nunca
+- **`no-specs`:** no-op declarado — diga em voz alta *"não havia plan/spec: nada a sintetizar"*. Nunca
   invente trabalho aqui.
-- **`specs-divergentes`:** regra de absorção — nada se remove antes de o conteúdo não-obsoleto ter
+- **`divergent-specs`:** regra de absorção — nada se remove antes de o conteúdo não-obsoleto ter
   destino escrito. Mecânica em `references/workflow.md` §1.
-- **`com-specs`:** `plan/` **tem** de ficar sem nenhuma plan `🟢 Aprovada` pendente de síntese — o revisor
+- **`with-specs`:** `plan/` **tem** de ficar sem nenhuma plan `🟢 Aprovada` pendente de síntese — o revisor
   sintetiza na própria conversa e, na mesma ação, **remove** a plan e a linha do índice
   (`00-prompt-revisor` §7.4) — não há etapa de expurgo depois, e `plan/` fica só com o que está aberto.
 
 ### Passo 2 — specs vs código
-- **`sem-specs`:** a adequação **inclui instalar** a pasta de specs. Só `00-contexto.md` e `00-indice.md`
+- **`no-specs`:** a adequação **inclui instalar** a pasta de specs. Só `00-contexto.md` e `00-indice.md`
   recebem conteúdo do alvo; `00-knowledge.md` + os dois `00-prompt-*.md` são **copiados sem reescrever**
   (leia-os no estado em que estiverem — essa área evolui). `specs/specs/` **nasce vazia** — não infira
   regra de negócio do código; o `00-contexto.md` declara a fronteira: *"specs documentam deste ponto em
   diante; o comportamento anterior está em `tests/`, não em prosa"*.
-- **`specs-divergentes`:** leia `_estrutura_base/` inteira e confira arquivo a arquivo antes de decidir
+- **`divergent-specs`:** leia `_estrutura_base/` inteira e confira arquivo a arquivo antes de decidir
   o que absorver (checklist: `templates.md` item 7). **`INDEX.md` ≠ `00-indice.md`** (mapa de leitura ×
   fila de execução) — compare também a **legenda de status** com a canônica, reportando colisão.
-- **`com-specs`:** confira **cada** spec fixa contra o código real. Divergência não é só relatada — **gera
+- **`with-specs`:** confira **cada** spec fixa contra o código real. Divergência não é só relatada — **gera
   uma plan** `xx-nn-specs-<assunto>` que atualiza a spec (nunca uma edição silenciosa).
 
 ### Passo 3 — avaliar a adequação necessária (a régua ANTES da execução)
 Ordem, e nenhuma delas espera pelo passo 5:
-1. Compare a árvore atual × a que o template produziria: `comparar_arvore.py` (de
+1. Compare a árvore atual × a que o template produziria: `compare_tree.py` (de
    `meta-iniciar-repositorio/scripts/`) contra um `create-project.mjs` de referência.
-2. **Instale o aparato de verificação como ato próprio — só o que `template_instalado` diz que falta**.
+2. **Instale o aparato de verificação como ato próprio — só o que `template_installed` diz que falta**.
 
-   **Antes de instalar, pergunte se o que "falta" já existe sob outro nome.** `equivalentes_suspeitos`
-   aponta os candidatos, **sem afirmar equivalência nem mudar `template_instalado`**. Medido num legado
+   **Antes de instalar, pergunte se o que "falta" já existe sob outro nome.** `suspected_equivalents`
+   aponta os candidatos, **sem afirmar equivalência nem mudar `template_installed`**. Medido num legado
    real: um gate próprio de 544 linhas, mais estrito que o canônico, seria duplicado (ou, pior,
    substituído — perdendo regra em nome de conformidade). Se houver equivalente funcional:
    - **não instale o segundo** — a convergência é por **renomeação, em plan** (`scripts/` → `tools/`),
@@ -134,14 +134,14 @@ Ordem, e nenhuma delas espera pelo passo 5:
    É portão de HITL (mapa abaixo): equivalência exige julgamento — "mais estrito" não é "igual" —, e é
    por isso que a máquina pergunta em vez de decidir.
 
-   Não havendo equivalente, siga por `template_instalado.estado`:
-   - `estado == "nao-instalado"` → instale tudo (`tools/`, `modules/_template`, `specs/`, `config/`,
+   Não havendo equivalente, siga por `template_installed.state`:
+   - `state == "not-installed"` → instale tudo (`tools/`, `modules/_template`, `specs/`, `config/`,
      `project.json`, `packages/ports/`, `adapters/memory/`, `.githooks/`), na **raiz de verdade** do
      repositório, mesclando e nunca sobrescrevendo. **Estrutura de `specs/` é ato do revisor; conteúdo de
      código é plan.**
-   - `estado == "parcial"` → instale **apenas** as peças de `template_instalado.faltando` — reinstalar o
+   - `state == "partial"` → instale **apenas** as peças de `template_installed.missing` — reinstalar o
      que já existe arrisca sobrescrever configuração já ajustada.
-   - `estado == "completo"` → **nada a instalar**; siga direto para o item 3 (o gate ainda roda, mesmo
+   - `state == "complete"` → **nada a instalar**; siga direto para o item 3 (o gate ainda roda, mesmo
      sem instalar nada — é a verificação, não a instalação, que nunca se pula).
    **Nunca aninhe numa subpasta** (regras de escopo `root` leem a raiz; `core.hooksPath` aceita um valor
    só; `ENV_ROOT=../../.env` quebra com um nível a mais).
@@ -156,7 +156,7 @@ Ordem, e nenhuma delas espera pelo passo 5:
    itens + **raio de alcance de cada renomeação** (`grep -c`) em `references/templates.md` item 2.
 6. **Molde do alvo: prova de vida (ADR-006) e comparação com o binding.** Se `modules/_template` existe,
    rode o ciclo completo — criar, validar, buildar, testar, descartar — antes de qualquer plan
-   (`exists()` não é "conforme") — e compare com `bindings/<binding>/_template/`, sem instalar por cima.
+   (`exists()` não é "compliant") — e compare com `bindings/<binding>/_template/`, sem instalar por cima.
    **Binding é fonte para o que falta, não para o que diverge por decisão registrada**: com ADR
    permanece, sem ADR é achado. Portão de HITL (armadilha #5; `workflow.md` §3).
 
@@ -214,8 +214,8 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 
 | Portão | Por quê |
 |---|---|
-| fase (A/B) e caminho (`sem-specs`/`specs-divergentes`/`com-specs`) detectados | confirmar o fato antes de agir; `specs-divergentes` decide o que absorver — nada se remove sem destino escrito |
-| `template_instalado.estado == "completo"` e sem módulos candidatos | confirmar que não há nada a planejar; se o dono seguir mesmo assim, registrar decisão e parecer contrário em ADR |
+| fase (A/B) e caminho (`no-specs`/`divergent-specs`/`with-specs`) detectados | confirmar o fato antes de agir; `divergent-specs` decide o que absorver — nada se remove sem destino escrito |
+| `template_installed.state == "complete"` e sem módulos candidatos | confirmar que não há nada a planejar; se o dono seguir mesmo assim, registrar decisão e parecer contrário em ADR |
 | aparato equivalente encontrado sob outro nome | instalar o canônico ao lado ou convergir por renomeação — "mais estrito" não é "igual"; enumerar as garantias canônicas que o equivalente NÃO dá |
 | molde (prova de vida ADR-006 + comparação com o binding) e norma do alvo proibindo exceção | molde que não sobrevive é achado da Fase A; divergência sem ADR é achado; proibição é portão antes de plan que dependa disso |
 | lista de módulos e o nome de cada um | qual capacidade vira qual `id` — o portão central |
@@ -224,7 +224,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 | a fronteira da área legada (fora de lint/tipos) | define o que fica sem cobertura, e por quanto tempo |
 | ordem de execução (o `nn` das plans) | trade-off risco × valor |
 | antes de qualquer migração SQL | backup — já é regra da `db-migrations` |
-| colisão de `package.json`/`pyproject.toml` (só quando `template_instalado.estado == "nao-instalado"`) | mesclar scripts; **NUNCA `--force`** sem autorização |
+| colisão de `package.json`/`pyproject.toml` (só quando `template_installed.state == "not-installed"`) | mesclar scripts; **NUNCA `--force`** sem autorização |
 | branch e primeiro commit da campanha | irreversível e externo |
 | o plano completo, antes de escrever qualquer plan | o gate de "confirma?" que encerra a Fase A |
 
@@ -233,7 +233,7 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 
 ## Regras e limites
 - **NUNCA** rode a Fase A e a Fase B na mesma conversa — destrói a independência do revisor da Fase B.
-- **NUNCA** infira spec de negócio a partir do código em `sem-specs` — spec errada é pior que spec
+- **NUNCA** infira spec de negócio a partir do código em `no-specs` — spec errada é pior que spec
   ausente, porque é autoritativa. `specs/specs/` nasce vazia, e isso é correto.
 - **NÃO** escreva prompt de execução/correção/conclusão em arquivo — só na conversa; o resto vai na §4.
 - **NUNCA** trabalhe em `main` — a campanha roda em branch; o commit é sempre do usuário.
@@ -249,19 +249,19 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
 - **NÃO** saia do escopo: segurança de segredos/dependências é `cyber-*`; performance é `otimizacao-*`.
 
 ## Checklist "pronta"
-- [ ] Fase (A/B) e caminho (`sem-specs`/`specs-divergentes`/`com-specs`) detectados **mecanicamente**?
-- [ ] `branch.e_padrao` conferido no Passo 0 — a campanha está em branch própria, e não em `main`/`master`?
-- [ ] `template_instalado` lido **antes** do Passo 3 — e, se `completo` sem módulos candidatos, a skill
+- [ ] Fase (A/B) e caminho (`no-specs`/`divergent-specs`/`with-specs`) detectados **mecanicamente**?
+- [ ] `branch.is_default` conferido no Passo 0 — a campanha está em branch própria, e não em `main`/`master`?
+- [ ] `template_installed` lido **antes** do Passo 3 — e, se `complete` sem módulos candidatos, a skill
       parou e disse "nada a planejar" (ou, se o dono seguiu mesmo assim, isso está no ADR)?
-- [ ] `faltando` conferido contra **equivalente sob outro nome** (`equivalentes_suspeitos`) antes de
+- [ ] `missing` conferido contra **equivalente sob outro nome** (`suspected_equivalents`) antes de
       instalar — decisão e garantias canônicas perdidas declaradas no índice e num ADR?
-- [ ] `colisao_raiz`/`workspaces_legado` não foram tratados como legado quando eram o próprio scaffold do
-      template (`template_instalado.estado != "nao-instalado"`)?
-- [ ] `sem-specs`: specs instaladas, `00-contexto`/`00-indice` preenchidos, `specs/specs/` vazia?
-      `com-specs`: `plan/` sem `🟢` pendente, divergências viraram plan? `specs-divergentes`:
+- [ ] `root_collision`/`legacy_workspaces` não foram tratados como legado quando eram o próprio scaffold do
+      template (`template_installed.state != "not-installed"`)?
+- [ ] `no-specs`: specs instaladas, `00-contexto`/`00-indice` preenchidos, `specs/specs/` vazia?
+      `with-specs`: `plan/` sem `🟢` pendente, divergências viraram plan? `divergent-specs`:
       `_estrutura_base` conferida arquivo a arquivo, legenda comparada, antes da primeira plan?
 - [ ] O aparato de gate foi instalado **antes** de qualquer plan de execução (nunca depois, como plan), e
-      só nas peças que `template_instalado.faltando` listava — incluindo `modules/_template` e `specs/`?
+      só nas peças que `template_installed.missing` listava — incluindo `modules/_template` e `specs/`?
 - [ ] `compliance.json` tem uma exceção nominal (com ADR real) por violação aceita, nenhuma sem motivo,
       e nenhuma contra norma própria do alvo que as proíba?
 - [ ] Molde do alvo (se houver) passou pela prova de vida ADR-006 e foi comparado com o do binding
@@ -279,8 +279,8 @@ verdadeiras em relação ao código?** Aprove ou reprove — reportando os dois 
   `eslint`/`tsc`/`prettier`, e as seis armadilhas medidas.
 - `references/templates.md` — os sete itens de renomeação (+ raio de alcance), checklist de
   `_estrutura_base`, esqueleto de plan `xx-*`, exceção em `compliance.json` e relatório da Fase B.
-- `references/examples.md` — os três caminhos (`sem-specs`/`specs-divergentes`/`com-specs`) percorridos
+- `references/examples.md` — os três caminhos (`no-specs`/`divergent-specs`/`with-specs`) percorridos
   ponta a ponta, e o resultado do legado sintético usado para validar esta skill.
-- `scripts/diagnosticar_terreno.py` — diagnóstico mecânico: fase, caminho tri-estado (`sinais_sdd`),
-  branch/árvore suja, aparato do template (oito peças, `equivalentes_suspeitos` sob outro nome), colisão
+- `scripts/diagnose_terrain.py` — diagnóstico mecânico: fase, caminho tri-estado (`sdd_signals`),
+  branch/árvore suja, aparato do template (oito peças, `suspected_equivalents` sob outro nome), colisão
   só quando é legado de verdade, geração do template e candidatos a módulo. `--selftest` prova o núcleo.

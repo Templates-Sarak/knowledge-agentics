@@ -1,18 +1,18 @@
-"""verificar_entregavel.py — roda os SEIS degraus de verificacao do modulo generico e da o veredito.
+"""verify_deliverable.py — roda os SEIS degraus de verificacao do modulo generico e da o veredito.
 
-    python verificar_entregavel.py --repo <repo> --modulo <id> --denylist <arquivo-fora-do-repo> [--json]
-    python verificar_entregavel.py --selftest
+    python verify_deliverable.py --repo <repo> --module <id> --denylist <arquivo-fora-do-repo> [--json]
+    python verify_deliverable.py --selftest
 
 Os seis degraus, cada um afirmando uma coisa DIFERENTE (a tabela vive no SKILL.md):
 
-    1 conforme            node tools/gate/validate.mjs modules/<id>
-    2 extraivel           node tools/gate/validate.mjs --extraction modules/<id>
-    3 funciona sem infra  o comando `verificar` do binding (tipos + testes com adapters/memory)
-    4 o schema funciona   migration up + rollback em banco efemero (Docker)
-    5 cumpre o contrato   boot no compose efemero + /health, /meta e /resumo contra o openapi.yaml
-    6 e generico          verificar_neutralidade.py com a denylist da origem
+    1 compliant           node tools/gate/validate.mjs modules/<id>
+    2 extractable         node tools/gate/validate.mjs --extraction modules/<id>
+    3 works without infra o comando `verify` do binding (tipos + testes com adapters/memory)
+    4 schema works        migration up + rollback em banco efemero (Docker)
+    5 meets the contract  boot no compose efemero + /health, /meta e /resumo contra o openapi.yaml
+    6 is generic          verify_neutrality.py com a denylist da origem
 
-**A regra que este script existe para impedir:** degrau NAO EXECUTADO nunca vira verde. Gate verde
+**A regra que este script existe para impedir:** degrau NOT EXECUTED nunca vira verde. Gate verde
 prova conformidade ESTATICA — o gate le arquivo e nunca roda o modulo, por contrato. Confundir as duas
 coisas ja fez, num sistema real, um comando de extracao "passar" sem nunca ter rodado um teste sequer.
 Aqui, ausencia de comando declarado, Docker fora do ar ou compose faltando REPROVAM, com a razao dita.
@@ -21,7 +21,7 @@ Aqui, ausencia de comando declarado, Docker fora do ar ou compose faltando REPRO
 arquivo com os termos da origem, versionado dentro do entregavel, E o vazamento que o degrau 6 existe
 para pegar. O script recusa uma denylist que esteja sob `--repo`, antes de varrer qualquer coisa.
 
-**Os comandos dos degraus 4 e 5 sao declarados, nao adivinhados** — em `config/verificacao.json` do
+**Os comandos dos degraus 4 e 5 sao declarados, nao adivinhados** — em `config/verification.json` do
 repositorio verificado (molde em `references/templates.md`). Zero hardcoded de infraestrutura: o
 script nao inventa nome de compose nem de script npm; sem a declaracao, o degrau reprova por falta.
 """
@@ -33,56 +33,59 @@ import subprocess
 import sys
 from pathlib import Path
 
-OK, FALHOU, NAO_EXECUTADO = "ok", "falhou", "nao_executado"
-CONFIG_VERIFICACAO = "config/verificacao.json"
+OK, FAILED, NOT_EXECUTED = "ok", "failed", "not_executed"
+VERIFICATION_CONFIG = "config/verification.json"
+# Nome e chaves antigos (repositorios que ja declararam a config): aceitos por mapa centralizado.
+LEGACY_VERIFICATION_CONFIG = "config/verificacao.json"
+LEGACY_CONFIG_KEYS = {"contrato": "contract"}
 
 # ==================================================================================================
 # NUCLEO — puro. Nada daqui ate a marca "CASCA" toca disco, rede ou processo.
 # ==================================================================================================
 
 
-def decidir_veredito(degraus: list[dict]) -> tuple[int, str]:
+def decide_verdict(steps: list[dict]) -> tuple[int, str]:
     """Exit code + frase. `nao_executado` REPROVA junto com `falhou` — nunca e reportado como verde."""
-    vermelhos = [d for d in degraus if d["estado"] == FALHOU]
-    ausentes = [d for d in degraus if d["estado"] == NAO_EXECUTADO]
-    if vermelhos or ausentes:
-        partes = []
-        if vermelhos:
-            partes.append(
-                f"{len(vermelhos)} degrau(s) vermelho(s): {', '.join(str(d['n']) for d in vermelhos)}"
+    reds = [d for d in steps if d["state"] == FAILED]
+    absent = [d for d in steps if d["state"] == NOT_EXECUTED]
+    if reds or absent:
+        parts = []
+        if reds:
+            parts.append(
+                f"{len(reds)} red step(s): {', '.join(str(d['n']) for d in reds)}"
             )
-        if ausentes:
-            partes.append(
-                f"{len(ausentes)} nao executado(s): {', '.join(str(d['n']) for d in ausentes)}"
+        if absent:
+            parts.append(
+                f"{len(absent)} not executed: {', '.join(str(d['n']) for d in absent)}"
             )
-        return 1, "REPROVADO — " + "; ".join(partes)
-    return 0, f"APROVADO — os {len(degraus)} degraus verdes"
+        return 1, "REJECTED — " + "; ".join(parts)
+    return 0, f"APPROVED — all {len(steps)} steps green"
 
 
-def montar_relatorio(degraus: list[dict]) -> str:
+def build_report(steps: list[dict]) -> str:
     """Tabela legivel dos degraus, na ordem, com o motivo de cada um que nao ficou verde."""
-    simbolo = {OK: "verde", FALHOU: "VERMELHO", NAO_EXECUTADO: "NAO EXECUTADO"}
-    linhas = [
-        f"  {d['n']}. {d['nome']:<28} {simbolo[d['estado']]}"
-        + (f"  <- {d['motivo']}" if d.get("motivo") else "")
-        for d in degraus
+    symbol = {OK: "green", FAILED: "RED", NOT_EXECUTED: "NOT EXECUTED"}
+    lines = [
+        f"  {d['n']}. {d['name']:<28} {symbol[d['state']]}"
+        + (f"  <- {d['reason']}" if d.get("reason") else "")
+        for d in steps
     ]
-    return "\n".join(linhas)
+    return "\n".join(lines)
 
 
-def comando_do_binding(tem_package_json: bool, tem_verify_py: bool) -> list[str] | None:
+def binding_command(has_package_json: bool, has_verify_py: bool) -> list[str] | None:
     """Comando `verificar` do binding do repositorio, ou None se nenhum dos dois manifestos existir."""
-    if tem_package_json:
+    if has_package_json:
         return ["npm", "run", "verify"]
-    if tem_verify_py:
+    if has_verify_py:
         return [sys.executable, "verify.py"]
     return None
 
 
-def denylist_dentro_do_repo(caminho_denylist: Path, repo: Path) -> bool:
+def denylist_inside_repo(denylist_path: Path, repo: Path) -> bool:
     """True quando a denylist esta sob o repositorio verificado — a origem vazando para o entregavel."""
     try:
-        caminho_denylist.resolve().relative_to(repo.resolve())
+        denylist_path.resolve().relative_to(repo.resolve())
         return True
     except ValueError:
         return False
@@ -93,202 +96,212 @@ def denylist_dentro_do_repo(caminho_denylist: Path, repo: Path) -> bool:
 # ==================================================================================================
 
 
-def _rodar(comando: list[str], cwd: Path) -> tuple[bool, str]:
+def _run(command: list[str], cwd: Path) -> tuple[bool, str]:
     """Executa e devolve (sucesso, ultima linha util da saida). Binario ausente nao explode: reprova."""
-    executavel = shutil.which(comando[0]) or comando[0]
+    executable = shutil.which(command[0]) or command[0]
     try:
         proc = subprocess.run(
-            [executavel, *comando[1:]],
+            [executable, *command[1:]],
             cwd=cwd,
             capture_output=True,
             text=True,
             timeout=1800,
         )
-    except (OSError, subprocess.SubprocessError) as erro:
-        return False, f"nao foi possivel executar {comando[0]}: {erro}"
-    saida = (proc.stdout + proc.stderr).strip().splitlines()
-    return proc.returncode == 0, (saida[-1][:160] if saida else "")
+    except (OSError, subprocess.SubprocessError) as error:
+        return False, f"could not run {command[0]}: {error}"
+    output = (proc.stdout + proc.stderr).strip().splitlines()
+    return proc.returncode == 0, (output[-1][:160] if output else "")
 
 
-def _degrau(n: int, nome: str, estado: str, motivo: str = "") -> dict:
-    return {"n": n, "nome": nome, "estado": estado, "motivo": motivo}
+def _step(n: int, name: str, state: str, reason: str = "") -> dict:
+    return {"n": n, "name": name, "state": state, "reason": reason}
 
 
-def _degrau_de_comando(n: int, nome: str, comando: list[str], repo: Path) -> dict:
-    sucesso, saida = _rodar(comando, repo)
-    return _degrau(n, nome, OK if sucesso else FALHOU, "" if sucesso else saida)
+def _command_step(n: int, name: str, command: list[str], repo: Path) -> dict:
+    success, output = _run(command, repo)
+    return _step(n, name, OK if success else FAILED, "" if success else output)
 
 
-def degraus_do_gate(repo: Path, modulo: str) -> list[dict]:
+def gate_steps(repo: Path, module: str) -> list[dict]:
     """Degraus 1 e 2 — conformidade e extraibilidade, os dois estaticos."""
     validate = "tools/gate/validate.mjs"
-    alvo = f"modules/{modulo}"
+    target = f"modules/{module}"
     return [
-        _degrau_de_comando(1, "conforme", ["node", validate, alvo], repo),
-        _degrau_de_comando(
-            2, "extraivel", ["node", validate, "--extraction", alvo], repo
+        _command_step(1, "compliant", ["node", validate, target], repo),
+        _command_step(
+            2, "extractable", ["node", validate, "--extraction", target], repo
         ),
     ]
 
 
-def degrau_sem_infra(repo: Path) -> dict:
+def no_infra_step(repo: Path) -> dict:
     """Degrau 3 — tipos e testes com adapters de memoria, sem rede e sem banco."""
-    comando = comando_do_binding(
+    command = binding_command(
         (repo / "package.json").is_file(), (repo / "verify.py").is_file()
     )
-    if comando is None:
-        return _degrau(
+    if command is None:
+        return _step(
             3,
-            "funciona sem infra",
-            NAO_EXECUTADO,
-            "sem package.json nem verify.py na raiz",
+            "works without infra",
+            NOT_EXECUTED,
+            "no package.json nor verify.py at the root",
         )
-    return _degrau_de_comando(3, "funciona sem infra", comando, repo)
+    return _command_step(3, "works without infra", command, repo)
 
 
-def degraus_efemeros(repo: Path, config: dict | None) -> list[dict]:
+def ephemeral_steps(repo: Path, config: dict | None) -> list[dict]:
     """Degraus 4 e 5 — schema e contrato, compartilhando UM ambiente efemero (sobe, roda, derruba)."""
     if config is None:
-        motivo = f"{CONFIG_VERIFICACAO} ausente — declare compose, schema e contrato"
+        reason = f"{VERIFICATION_CONFIG} missing — declare compose, schema and contract"
         return [
-            _degrau(4, "o schema funciona", NAO_EXECUTADO, motivo),
-            _degrau(5, "cumpre o contrato", NAO_EXECUTADO, motivo),
+            _step(4, "schema works", NOT_EXECUTED, reason),
+            _step(5, "meets the contract", NOT_EXECUTED, reason),
         ]
     if not shutil.which("docker"):
         return [
-            _degrau(4, "o schema funciona", NAO_EXECUTADO, "docker ausente"),
-            _degrau(5, "cumpre o contrato", NAO_EXECUTADO, "docker ausente"),
+            _step(4, "schema works", NOT_EXECUTED, "docker missing"),
+            _step(5, "meets the contract", NOT_EXECUTED, "docker missing"),
         ]
 
     compose = ["docker", "compose", "-f", config["compose"]]
-    subiu, saida = _rodar([*compose, "up", "-d", "--wait"], repo)
-    if not subiu:
-        motivo = f"ambiente efemero nao subiu: {saida}"
+    came_up, output = _run([*compose, "up", "-d", "--wait"], repo)
+    if not came_up:
+        reason = f"ephemeral environment did not come up: {output}"
         return [
-            _degrau(4, "o schema funciona", FALHOU, motivo),
-            _degrau(5, "cumpre o contrato", FALHOU, motivo),
+            _step(4, "schema works", FAILED, reason),
+            _step(5, "meets the contract", FAILED, reason),
         ]
     try:
         return [
-            _degrau_de_comando(4, "o schema funciona", config["schema"], repo),
-            _degrau_de_comando(5, "cumpre o contrato", config["contrato"], repo),
+            _command_step(4, "schema works", config["schema"], repo),
+            _command_step(5, "meets the contract", config["contract"], repo),
         ]
     finally:
-        _rodar([*compose, "down", "-v"], repo)
+        _run([*compose, "down", "-v"], repo)
 
 
-def degrau_neutralidade(repo: Path, denylist: Path) -> dict:
-    """Degrau 6 — delega ao verificar_neutralidade.py, que e quem sabe casar variante de escrita."""
-    script = Path(__file__).with_name("verificar_neutralidade.py")
-    comando = [
+def neutrality_step(repo: Path, denylist: Path) -> dict:
+    """Degrau 6 — delega ao verify_neutrality.py, que e quem sabe casar variante de escrita."""
+    script = Path(__file__).with_name("verify_neutrality.py")
+    command = [
         sys.executable,
         str(script),
-        "--raiz",
+        "--root",
         str(repo),
         "--denylist",
         str(denylist),
     ]
-    sucesso, saida = _rodar(comando, repo)
-    return _degrau(6, "e generico", OK if sucesso else FALHOU, "" if sucesso else saida)
+    success, output = _run(command, repo)
+    return _step(6, "is generic", OK if success else FAILED, "" if success else output)
 
 
-def carregar_config(repo: Path) -> dict | None:
-    """`config/verificacao.json` do repo verificado. None se ausente ou incompleto — o degrau reprova."""
-    caminho = repo / CONFIG_VERIFICACAO
-    if not caminho.is_file():
+def normalize_config(config: dict) -> dict:
+    """Aceita as chaves antigas da config declarada, convertendo-as pelo mapa centralizado."""
+    return {LEGACY_CONFIG_KEYS.get(key, key): value for key, value in config.items()}
+
+
+def load_config(repo: Path) -> dict | None:
+    """`config/verification.json` (ou o nome antigo) do repo verificado. None se ausente ou incompleto."""
+    path = repo / VERIFICATION_CONFIG
+    if not path.is_file():
+        path = repo / LEGACY_VERIFICATION_CONFIG
+    if not path.is_file():
         return None
-    dados = json.loads(caminho.read_text(encoding="utf-8"))
-    if not all(chave in dados for chave in ("compose", "schema", "contrato")):
+    data = normalize_config(json.loads(path.read_text(encoding="utf-8")))
+    if not all(key in data for key in ("compose", "schema", "contract")):
         return None
-    return dados
+    return data
 
 
-def _casos_veredito() -> list[str]:
-    """Casos do veredito — e aqui que mora a regra central: NAO EXECUTADO nunca e verde."""
-    falhas = []
-    verdes = [_degrau(n, f"d{n}", OK) for n in range(1, 7)]
+def _verdict_cases() -> list[str]:
+    """Casos do veredito — e aqui que mora a regra central: NOT EXECUTED nunca e verde."""
+    failures = []
+    greens = [_step(n, f"d{n}", OK) for n in range(1, 7)]
 
-    if decidir_veredito(verdes)[0] != 0:
-        falhas.append("seis verdes deveriam aprovar")
-    if decidir_veredito(verdes[:5] + [_degrau(6, "d6", FALHOU)])[0] != 1:
-        falhas.append("degrau vermelho nao reprovou")
+    if decide_verdict(greens)[0] != 0:
+        failures.append("six greens should approve")
+    if decide_verdict(greens[:5] + [_step(6, "d6", FAILED)])[0] != 1:
+        failures.append("red step did not reject")
 
-    codigo, frase = decidir_veredito(
-        verdes[:5] + [_degrau(6, "d6", NAO_EXECUTADO, "docker ausente")]
+    code, phrase = decide_verdict(
+        greens[:5] + [_step(6, "d6", NOT_EXECUTED, "docker missing")]
     )
-    if codigo != 1 or "nao executado" not in frase:
-        falhas.append(
-            f"NAO EXECUTADO virou verde — o fail-open que este script impede: {frase}"
+    if code != 1 or "not executed" not in phrase:
+        failures.append(
+            f"NOT EXECUTED turned green — the fail-open this script prevents: {phrase}"
         )
 
-    if "NAO EXECUTADO" not in montar_relatorio(
-        [_degrau(4, "x", NAO_EXECUTADO, "sem docker")]
+    if "NOT EXECUTED" not in build_report(
+        [_step(4, "x", NOT_EXECUTED, "no docker")]
     ):
-        falhas.append("montar_relatorio escondeu um degrau nao executado")
-    return falhas
+        failures.append("build_report hid a step that was not executed")
+    return failures
 
 
-def _casos_ambiente() -> list[str]:
+def _environment_cases() -> list[str]:
     """Casos de ambiente — deteccao do binding e a denylist que nao pode morar dentro do repo."""
-    falhas = []
+    failures = []
 
     if (
-        comando_do_binding(True, False) != ["npm", "run", "verify"]
-        or comando_do_binding(False, False) is not None
+        binding_command(True, False) != ["npm", "run", "verify"]
+        or binding_command(False, False) is not None
     ):
-        falhas.append("comando_do_binding errou a deteccao")
+        failures.append("binding_command got the detection wrong")
 
     repo = Path("/tmp/repo") if sys.platform != "win32" else Path("C:/repo")
-    if not denylist_dentro_do_repo(repo / "config" / "deny.txt", repo):
-        falhas.append(
-            "denylist dentro do repo nao foi detectada — a origem vazaria no entregavel"
+    if not denylist_inside_repo(repo / "config" / "deny.txt", repo):
+        failures.append(
+            "denylist inside the repo was not detected — the source would leak into the deliverable"
         )
-    if denylist_dentro_do_repo(repo.parent / "deny.txt", repo):
-        falhas.append("falso positivo: denylist fora do repo acusada como dentro")
-    return falhas
+    if denylist_inside_repo(repo.parent / "deny.txt", repo):
+        failures.append("false positive: denylist outside the repo flagged as inside")
+    legacy = normalize_config({"compose": "c.yml", "contrato": ["x"]})
+    if legacy != {"compose": "c.yml", "contract": ["x"]}:
+        failures.append(f"legacy config keys not normalized: {legacy}")
+    return failures
 
 
-def autoteste() -> int:
+def run_selftest() -> int:
     """Prova o NUCLEO com fixtures em memoria, sem tocar disco nem subir container."""
-    falhas = _casos_veredito() + _casos_ambiente()
-    for falha in falhas:
-        print(f"[FALHA] {falha}")
+    failures = _verdict_cases() + _environment_cases()
+    for failure in failures:
+        print(f"[FAIL] {failure}")
     print(
-        f"[{'OK' if not falhas else 'ERRO'}] autoteste de verificar_entregavel: {len(falhas)} falha(s)"
+        f"[{'OK' if not failures else 'ERROR'}] selftest of verify_deliverable: {len(failures)} failure(s)"
     )
-    return 1 if falhas else 0
+    return 1 if failures else 0
 
 
 def _parser() -> argparse.ArgumentParser:
     """CLI do script. Separada do `main` para manter as duas dentro do limiar de tamanho."""
     parser = argparse.ArgumentParser(
-        description="Roda os seis degraus de verificacao do modulo generico."
+        description="Runs the six verification steps of the generic module."
     )
-    parser.add_argument("--repo", help="Raiz do repositorio do modulo generico.")
-    parser.add_argument("--modulo", help="Id do modulo (a pasta em modules/).")
+    parser.add_argument("--repo", help="Root of the generic module repository.")
+    parser.add_argument("--module", help="Module id (the folder under modules/).")
     parser.add_argument(
         "--denylist",
-        help="Arquivo com os termos da origem — FORA do repositorio verificado.",
+        help="File with the source terms — OUTSIDE the verified repository.",
     )
     parser.add_argument(
-        "--json", action="store_true", help="Imprime o resultado como JSON."
+        "--json", action="store_true", help="Print the result as JSON."
     )
     parser.add_argument(
         "--selftest",
         action="store_true",
-        help="Prova o nucleo com fixtures em memoria.",
+        help="Prove the core with in-memory fixtures.",
     )
     return parser
 
 
-def _recusar_alvo(repo: Path, modulo: str, denylist: Path) -> str:
+def _refuse_target(repo: Path, module: str, denylist: Path) -> str:
     """Motivo para recusar o alvo antes de rodar qualquer degrau, ou string vazia se ele serve."""
-    if not (repo / "modules" / modulo).is_dir():
-        return f"modules/{modulo} nao existe em {repo}."
-    if denylist_dentro_do_repo(denylist, repo):
+    if not (repo / "modules" / module).is_dir():
+        return f"modules/{module} does not exist in {repo}."
+    if denylist_inside_repo(denylist, repo):
         return (
-            "a denylist esta DENTRO do repositorio verificado — ela lista os termos da origem, "
-            "e versiona-la ali e exatamente o vazamento que o degrau 6 procura."
+            "the denylist is INSIDE the verified repository — it lists the source terms, "
+            "and versioning it there is exactly the leak that step 6 looks for."
         )
     return ""
 
@@ -298,40 +311,40 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.selftest:
-        return autoteste()
-    if not (args.repo and args.modulo and args.denylist):
+        return run_selftest()
+    if not (args.repo and args.module and args.denylist):
         parser.error(
-            "--repo, --modulo e --denylist sao obrigatorios (ou use --selftest)"
+            "--repo, --module and --denylist are required (or use --selftest)"
         )
 
     repo, denylist = Path(args.repo).resolve(), Path(args.denylist)
-    recusa = _recusar_alvo(repo, args.modulo, denylist)
-    if recusa:
-        print(f"[ERRO] {recusa}", file=sys.stderr)
+    refusal = _refuse_target(repo, args.module, denylist)
+    if refusal:
+        print(f"[ERROR] {refusal}", file=sys.stderr)
         return 2
 
-    degraus = [
-        *degraus_do_gate(repo, args.modulo),
-        degrau_sem_infra(repo),
-        *degraus_efemeros(repo, carregar_config(repo)),
-        degrau_neutralidade(repo, denylist),
+    steps = [
+        *gate_steps(repo, args.module),
+        no_infra_step(repo),
+        *ephemeral_steps(repo, load_config(repo)),
+        neutrality_step(repo, denylist),
     ]
-    codigo, veredito = decidir_veredito(degraus)
+    code, verdict = decide_verdict(steps)
 
     if args.json:
         print(
             json.dumps(
-                {"veredito": veredito, "codigo": codigo, "degraus": degraus},
+                {"verdict": verdict, "code": code, "steps": steps},
                 indent=2,
                 ensure_ascii=False,
             )
         )
-        return codigo
+        return code
 
-    print(f"\n--- Verificacao do entregavel: {args.modulo} ---")
-    print(montar_relatorio(degraus))
-    print(f"\n[{'OK' if codigo == 0 else 'ERRO'}] {veredito}")
-    return codigo
+    print(f"\n--- Deliverable verification: {args.module} ---")
+    print(build_report(steps))
+    print(f"\n[{'OK' if code == 0 else 'ERROR'}] {verdict}")
+    return code
 
 
 if __name__ == "__main__":

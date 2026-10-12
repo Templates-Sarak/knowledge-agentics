@@ -46,7 +46,7 @@ Trate **um módulo/imagem por vez**. Templates em `assets/docker-templates/`; ta
 5. **`docker-compose` (orquestração local)** — **um serviço por módulo** (mesma malha/rede), `env_file: .env`
    (nunca valores inline), volumes só para dev, `depends_on` para ordem. Mantém os módulos desacoplados como em
    produção (comunicação pelo `api/`, não por banco compartilhado direto).
-6. **Validar (determinístico)** — `python scripts/validar_docker.py --raiz <módulo>` (JSON: não-root,
+6. **Validar (determinístico)** — `python scripts/validate_docker.py --root <módulo>` (JSON: não-root,
    `.dockerignore` presente, sem `:latest`, sem `COPY .env`/segredo). Resolva os alertas. Depois `docker build`
    e cheque o tamanho/camadas; rode o container e o healthcheck localmente.
 7. **HITL — plano de build/push** — apresente: módulo, stack/base fixada, resultado da validação, tag
@@ -76,11 +76,11 @@ Trate **um módulo/imagem por vez**. Templates em `assets/docker-templates/`; ta
 - [ ] `.dockerignore` presente cobrindo `.git`/`.env*`/artefatos/`tests`?
 - [ ] Porta/tunables vêm de `ENV`/`ARG`/`config` (zero-hardcoded), **sem segredo** na imagem?
 - [ ] `docker-compose` com **um serviço por módulo**, `env_file` (sem valor inline)?
-- [ ] `validar_docker.py` sem alertas; tag **semântica** (sem `latest`)?
+- [ ] `validate_docker.py` sem alertas; tag **semântica** (sem `latest`)?
 - [ ] HITL apresentado e build/push confirmado; healthcheck validado; imagem/tag/porta/env documentados?
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/docker-stacks.md` — tabela stack→imagem base + template, e notas (multi-stage, não-root, healthcheck).
 - `../deploy-vercel/references/predeploy-comum.md` — checklist genérico de pré-deploy, reutilizável por `deploy-*`.
-- `scripts/validar_docker.py` + `scripts/config.json` — validação determinística da imagem (listas no config).
+- `scripts/validate_docker.py` + `scripts/config.json` — validação determinística da imagem (listas no config).
 - `assets/docker-templates/` — `Dockerfile` por stack, `docker-compose.yml` e `.dockerignore` copiáveis.

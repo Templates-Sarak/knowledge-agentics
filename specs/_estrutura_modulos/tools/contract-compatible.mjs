@@ -79,12 +79,12 @@ function compareRoutes(before, after) {
   for (const [route, methods] of specOperations(before)) {
     const methodsAfter = specOperations(after).get(route);
     if (methodsAfter === undefined) {
-      findings.push({ tipo: 'removed-route', mensagem: `route "${route}" existed and was removed — this breaks consumers` });
+      findings.push({ kind: 'removed-route', message: `route "${route}" existed and was removed — this breaks consumers` });
       continue;
     }
     for (const method of methods) {
       if (!methodsAfter.has(method)) {
-        findings.push({ tipo: 'removed-method', mensagem: `${method} "${route}" existed and was removed — this breaks consumers` });
+        findings.push({ kind: 'removed-method', message: `${method} "${route}" existed and was removed — this breaks consumers` });
       }
     }
   }
@@ -96,7 +96,7 @@ function compareServer(before, after) {
   const urlBefore = specServer(before);
   const urlAfter = specServer(after);
   if (urlBefore === null || urlAfter === null || urlBefore === urlAfter) return [];
-  return [{ tipo: 'changed-server', mensagem: `servers[0].url changed from "${urlBefore}" to "${urlAfter}" — the module prefix changed and breaks every consumer` }];
+  return [{ kind: 'changed-server', message: `servers[0].url changed from "${urlBefore}" to "${urlAfter}" — the module prefix changed and breaks every consumer` }];
 }
 
 /**
@@ -142,8 +142,8 @@ function compareResponseFields(before, after, operation) {
   for (const field of propsBefore) {
     if (!propsAfter.has(field)) {
       findings.push({
-        tipo: 'removed-response-field',
-        mensagem: `${method} "${route}" ${status}: response field "${field}" existed and was removed — this breaks consumers`,
+        kind: 'removed-response-field',
+        message: `${method} "${route}" ${status}: response field "${field}" existed and was removed — this breaks consumers`,
       });
     }
   }
@@ -163,8 +163,8 @@ function fieldFindingsInRequest(route, method, beforeRequired, afterRequired) {
   for (const field of afterRequired) {
     if (!beforeRequired.has(field)) {
       findings.push({
-        tipo: 'required-request-field-added',
-        mensagem: `${method} "${route}": request field "${field}" is now required — consumers that omit it will be rejected`,
+        kind: 'required-request-field-added',
+        message: `${method} "${route}": request field "${field}" is now required — consumers that omit it will be rejected`,
       });
     }
   }
@@ -199,16 +199,16 @@ function compareRequests(before, after) {
  */
 export function compareContracts(yamlBefore, yamlAfter) {
   if (yamlBefore === null && yamlAfter === null) {
-    return { status: 'new-contract', compativel: true, achados: [] };
+    return { status: 'new-contract', compatible: true, findings: [] };
   }
   if (yamlBefore === null) {
-    return { status: 'new-contract', compativel: true, achados: [] };
+    return { status: 'new-contract', compatible: true, findings: [] };
   }
   if (yamlAfter === null) {
     return {
       status: 'removed',
-      compativel: false,
-      achados: [{ tipo: 'removed-spec', mensagem: 'contract/openapi.yaml existed in the baseline and was removed — consumers lost the contract' }],
+      compatible: false,
+      findings: [{ kind: 'removed-spec', message: 'contract/openapi.yaml existed in the baseline and was removed — consumers lost the contract' }],
     };
   }
 
@@ -217,10 +217,10 @@ export function compareContracts(yamlBefore, yamlAfter) {
   if (failuresBefore.length > 0 || failuresAfter.length > 0) {
     return {
       status: 'unreadable',
-      compativel: false,
-      achados: [
-        ...failuresBefore.map((section) => ({ tipo: 'unreadable', mensagem: `baseline: section "${section}:" cannot be read — compatibility cannot be determined` })),
-        ...failuresAfter.map((section) => ({ tipo: 'unreadable', mensagem: `current: section "${section}:" cannot be read — compatibility cannot be determined` })),
+      compatible: false,
+      findings: [
+        ...failuresBefore.map((section) => ({ kind: 'unreadable', message: `baseline: section "${section}:" cannot be read — compatibility cannot be determined` })),
+        ...failuresAfter.map((section) => ({ kind: 'unreadable', message: `current: section "${section}:" cannot be read — compatibility cannot be determined` })),
       ],
     };
   }
@@ -231,7 +231,7 @@ export function compareContracts(yamlBefore, yamlAfter) {
     ...compareResponses(yamlBefore, yamlAfter),
     ...compareRequests(yamlBefore, yamlAfter),
   ];
-  return { status: 'comparado', compativel: findings.length === 0, achados: findings };
+  return { status: 'compared', compatible: findings.length === 0, findings };
 }
 
 // ================================================================================================
@@ -322,7 +322,7 @@ function modulesWithChangedContract(ref) {
  * pergunta mais ampla que "quem depende DIRETO deste contrato"). */
 function directConsumers(graph, id) {
   const consumers = [];
-  for (const [otherId, { consumes }] of graph.modulos) {
+  for (const [otherId, { consumes }] of graph.modules) {
     if (consumes.includes(id)) consumers.push(otherId);
   }
   return consumers.sort();
@@ -332,9 +332,9 @@ function compareModule(ref, graph, id) {
   const before = readInRef(ref, join('modules', id, 'contract', 'openapi.yaml'));
   const after = readCurrent(id);
   const result = compareContracts(before, after);
-  const consumers = result.compativel ? [] : directConsumers(graph, id);
+  const consumers = result.compatible ? [] : directConsumers(graph, id);
   const moduleStillExists = existsSync(join(ROOT, 'modules', id));
-  return { modulo: id, moduloExisteAinda: moduleStillExists, consumidores: consumers, ...result };
+  return { module: id, moduleStillExists, consumers, ...result };
 }
 
 // ================================================================================================
@@ -350,26 +350,26 @@ function printHuman(ref, results) {
   }
   for (const r of results) {
     if (r.status === 'new-contract') {
-      process.stdout.write(`  ${r.modulo}: new contract (no baseline) — there is nothing to break\n`);
+      process.stdout.write(`  ${r.module}: new contract (no baseline) — there is nothing to break\n`);
       continue;
     }
-    const mark = r.compativel ? 'ok   ' : 'FAIL ';
+    const mark = r.compatible ? 'ok   ' : 'FAIL ';
     const qualifier = r.status === 'removed'
-      ? (r.moduloExisteAinda ? ' (module remains; its contract is gone)' : ' (module was removed)')
+      ? (r.moduleStillExists ? ' (module remains; its contract is gone)' : ' (module was removed)')
       : '';
-    process.stdout.write(`  ${mark} ${r.modulo}${qualifier}\n`);
-    for (const finding of r.achados) process.stdout.write(`        [${finding.tipo}] ${finding.mensagem}\n`);
-    if (r.consumidores.length > 0) {
-      process.stdout.write(`        affected consumers: ${r.consumidores.join(', ')}\n`);
-    } else if (!r.compativel) {
+    process.stdout.write(`  ${mark} ${r.module}${qualifier}\n`);
+    for (const finding of r.findings) process.stdout.write(`        [${finding.kind}] ${finding.message}\n`);
+    if (r.consumers.length > 0) {
+      process.stdout.write(`        affected consumers: ${r.consumers.join(', ')}\n`);
+    } else if (!r.compatible) {
       process.stdout.write('        affected consumers: no current module declares "consumes" for this contract\n');
     }
   }
 }
 
 function printJson(ref, results) {
-  const errors = results.filter((r) => !r.compativel).length;
-  process.stdout.write(`${JSON.stringify({ desde: ref, modulos: results, erros: errors }, null, 2)}\n`);
+  const errors = results.filter((r) => !r.compatible).length;
+  process.stdout.write(`${JSON.stringify({ since: ref, modules: results, errors }, null, 2)}\n`);
 }
 
 // ================================================================================================
@@ -377,11 +377,11 @@ function printJson(ref, results) {
 // ================================================================================================
 
 function readOptions(argv) {
-  const options = { desde: null, modulo: null, json: false, selfTest: false };
+  const options = { since: null, module: null, json: false, selfTest: false };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--selftest') { options.selfTest = true; continue; }
     if (argv[i] === '--json') { options.json = true; continue; }
-    if (argv[i] === '--since') { options.desde = argv[i + 1] ?? null; i += 1; continue; }
+    if (argv[i] === '--since') { options.since = argv[i + 1] ?? null; i += 1; continue; }
     if (!argv[i].startsWith('--')) { options.module = argv[i]; continue; }
   }
   return options;
@@ -401,7 +401,7 @@ function main() {
   const options = readOptions(process.argv.slice(2));
   if (options.selfTest) return runSelfTest();
 
-  const ref = effectiveRef(options.desde);
+  const ref = effectiveRef(options.since);
   if (!validRef(ref)) {
     process.stderr.write(`Error: invalid or missing ref "${ref}" — compatibility cannot be determined without a baseline\n`);
     return 1;
@@ -414,7 +414,7 @@ function main() {
   if (options.json) printJson(ref, results);
   else printHuman(ref, results);
 
-  const failed = results.some((r) => !r.compativel);
+  const failed = results.some((r) => !r.compatible);
   if (!options.json) {
     process.stdout.write(`\ncontract-compatible: ${failed ? 'FAILED' : 'OK'}\n`);
   }
@@ -482,81 +482,81 @@ function selfTestCases() {
       name: 'removed route: BREAKING',
       before: BASE,
       after: BASE.replace(/ {2}\/entries\/\{hash\}:[\s\S]*?(?=\ncomponents:)/, ''),
-      expected: { compativel: false, tipo: 'removed-route' },
+      expected: { compatible: false, kind: 'removed-route' },
     },
     {
       name: 'added route: compatible',
       before: BASE,
       after: `${BASE.replace('components:', '  /status:\n    get:\n      responses:\n        \'200\':\n          content: {}\ncomponents:')}`,
-      expected: { compativel: true },
+      expected: { compatible: true },
     },
     {
       name: 'method removed from a retained route: BREAKING',
       before: BASE,
       after: BASE.replace(/ {4}post:[\s\S]*?(?=\n {2}\/entries\/)/, ''),
-      expected: { compativel: false, tipo: 'removed-method' },
+      expected: { compatible: false, kind: 'removed-method' },
     },
     {
       name: 'response field removed: BREAKING',
       before: BASE,
       after: BASE.replace('                  total: { type: integer }\n', ''),
-      expected: { compativel: false, tipo: 'removed-response-field' },
+      expected: { compatible: false, kind: 'removed-response-field' },
     },
     {
       name: 'response field added: compatible',
       before: BASE,
       after: BASE.replace('                  total: { type: integer }', '                  total: { type: integer }\n                  page: { type: integer }'),
-      expected: { compativel: true },
+      expected: { compatible: true },
     },
     {
       name: 'required request field added: BREAKING',
       before: BASE,
       after: BASE.replace('required: [title]', 'required: [title, status]'),
-      expected: { compativel: false, tipo: 'required-request-field-added' },
+      expected: { compatible: false, kind: 'required-request-field-added' },
     },
     {
       name: 'required request field removed: compatible',
       before: BASE.replace('required: [title]', 'required: [title, status]'),
       after: BASE,
-      expected: { compativel: true },
+      expected: { compatible: true },
     },
     {
       name: 'servers[0].url changed: BREAKING',
       before: BASE,
       after: BASE.replace('/api/v1/orders', '/api/v1/orders-v2'),
-      expected: { compativel: false, tipo: 'changed-server' },
+      expected: { compatible: false, kind: 'changed-server' },
     },
     {
       name: 'unreadable before spec: fails and names the section, never "compatible"',
       before: UNREADABLE,
       after: BASE,
-      expected: { compativel: false, status: 'unreadable' },
+      expected: { compatible: false, status: 'unreadable' },
     },
     {
       name: 'unreadable after spec: fails and names the section, never "compatible"',
       before: BASE,
       after: UNREADABLE,
-      expected: { compativel: false, status: 'unreadable' },
+      expected: { compatible: false, status: 'unreadable' },
     },
     {
       name: 'new spec without a baseline does NOT fail (creation, not breaking)',
       before: null,
       after: BASE,
-      expected: { compativel: true, status: 'new-contract' },
+      expected: { compatible: true, status: 'new-contract' },
     },
     {
       name: 'removed spec: BREAKING',
       before: BASE,
       after: null,
-      expected: { compativel: false, status: 'removed' },
+      expected: { compatible: false, status: 'removed' },
     },
   ];
 }
 
 function resultMatches(result, expected) {
-  if (result.compativel !== expected.compativel) return false;
+  if (result.compatible !== expected.compatible) return false;
   if (expected.status !== undefined && result.status !== expected.status) return false;
-  if (expected.tipo !== undefined && !result.achados.some((a) => a.tipo === expected.tipo)) return false;
+  if (expected.kind !== undefined && !result.findings.some((a) => a.kind === expected.kind)) return false;
   return true;
 }
 
@@ -569,7 +569,7 @@ function runSelfTest() {
     if (!ok) {
       failures += 1;
       process.stdout.write(`       expected: ${JSON.stringify(testCase.expected)}\n`);
-      process.stdout.write(`       received: compatible=${result.compativel} status=${result.status} findings=${JSON.stringify(result.achados)}\n`);
+      process.stdout.write(`       received: compatible=${result.compatible} status=${result.status} findings=${JSON.stringify(result.findings)}\n`);
     }
   }
   const total = selfTestCases().length;

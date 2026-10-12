@@ -330,7 +330,7 @@ function packBackend(projectRoot, destination) {
     ...adaptersInUsage(projectRoot, modules).map((a) => readJsonIfExists(join(a, 'package.json'))?.dependencies),
   ];
   const pkg = {
-    name: 'artefato-backend',
+    name: 'backend-artifact',
     version: '0.0.0',
     private: true,
     type: 'module',

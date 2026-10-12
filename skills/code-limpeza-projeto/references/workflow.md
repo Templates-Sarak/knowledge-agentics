@@ -14,7 +14,7 @@ antes de qualquer remoção. A limpeza é atômica — **só deletar**, nunca re
 3. Se forem lixo, adicione à lista de remoção do HITL.
 
 ### 1.1 Detecção de padrões irrelevantes
-Rode `python scripts/detectar_lixo.py --raiz <projeto>` para o levantamento determinístico (arquivos de
+Rode `python scripts/detect_junk.py --root <projeto>` para o levantamento determinístico (arquivos de
 lixo, marcadores `TODO`/`console.log`, arquivos grandes — saída JSON). Confirme/localize com `Glob`:
 - **Pastas de backup:** `old/`, `backup/`, `legacy/`, `_bkp/`, `v1_trash/`.
 - **Scripts de debug local:** `test_api.py`, `check_connection.js`, `debug_script.ts`.

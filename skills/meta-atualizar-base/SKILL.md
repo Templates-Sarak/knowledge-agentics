@@ -20,7 +20,7 @@ Esta skill orquestra a distribuição de novas features, correções ou ajustes 
    - **Ferramenta:** terminal
    - **Ação:** No diretório raiz do `knowledge-agentics`, valide que tudo foi criado dentro do padrão rodando a auditoria da skill irmã:
      ```bash
-     python skills/meta-verificacao-base/scripts/audit_base.py --raiz .
+     python skills/meta-verificacao-base/scripts/audit_base.py --root .
      ```
    - **Critério:** O script sai com código **≠ 0** quando acha qualquer coisa. Se apontar **qualquer** erro estrutural (YAML, vazamentos, contratos quebrados), **PARE/ABORTE** o processo imediatamente e notifique o usuário para correção. Nunca propague uma base quebrada.
 

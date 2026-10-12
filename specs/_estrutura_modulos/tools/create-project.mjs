@@ -58,7 +58,7 @@ function readOptions() {
   return {
     destination: rawArgs.find((a) => !a.startsWith('--')),
     binding: flagValue('binding', 'typescript'),
-    escopo: flagValue('scope', null),
+    scope: flagValue('scope', null),
     force: rawArgs.includes('--force'),
   };
 }
@@ -315,7 +315,7 @@ function printNextSteps(destination, options, scope, collisions) {
   process.stdout.write('  6. on the FIRST commit (once): git update-index --chmod=+x'
     + ' .githooks/pre-commit .githooks/pre-push\n');
   process.stdout.write('     (on Windows with "core.filemode=false", a common default, "git add" records the hook'
-    + ' without its executable bit. Without it, Git on Linux/macOS silently skips the hook. Run this once'
+    + ' without its executable bit. Without it, Git on Linux and Mac silently skips the hook. Run this once'
     + ' so the commit records the correct bit)\n');
 }
 
@@ -335,7 +335,7 @@ function main() {
     abort(`The destination already contains ${collisions.join(', ')} — move them or use --force to overwrite`);
   }
 
-  const scope = options.escopo ?? basename(destination).toLowerCase();
+  const scope = options.scope ?? basename(destination).toLowerCase();
   mkdirSync(join(destination, 'modules'), { recursive: true });
   const previousGitignore = readGitignore(destination);
   copyTemplate(destination, options.binding);

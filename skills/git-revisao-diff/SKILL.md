@@ -1,6 +1,6 @@
 ---
 name: git-revisao-diff
-description: Revisão de qualidade do diff staged antes do commit — checa só o que mudou contra o padrao-escrita e marca debug/TODO/conflito (revisar_diff.py). Complementar à git-verificacao-commit (segredos). Use ao revisar um diff/PR ou quando o gate bloquear. NÃO acione proativamente.
+description: Revisão de qualidade do diff staged antes do commit — checa só o que mudou contra o padrao-escrita e marca debug/TODO/conflito (review_diff.py). Complementar à git-verificacao-commit (segredos). Use ao revisar um diff/PR ou quando o gate bloquear. NÃO acione proativamente.
 ---
 
 # Skill: Revisão de Diff (gate de qualidade pré-commit)
@@ -16,8 +16,13 @@ parte de **julgamento** (conformidade/clareza, feita pelo agente quando invocada
 > validadores de linguagem (`padrao-python`/`padrao-typescript`) e do hook `padrao-limiares`, que cobra os
 > mesmos limiares também em `.go` e `.java`. Globais em `padrao-escrita`.
 
+> **Formato:** a saída é `{blocked, findings:[{file, kind, severity, snippet}]}`; severidades `block` (impede o
+> commit) e `warning`; flag `--root`. Compatibilidade de leitura: o `config.json` antigo (`padroes`, `severidade`,
+> `bloquear_em`, valores `bloqueio`/`aviso`) e as saídas antigas (`bloqueado`, `achados`, `arquivo`, `tipo`,
+> `trecho`) continuam aceitos pela tabela antigo → novo do script.
+
 ## Quando usar
-- Ao revisar um diff/PR antes do commit, quando o gate `revisar_diff.py` bloquear, ou para checar o staged manualmente.
+- Ao revisar um diff/PR antes do commit, quando o gate `review_diff.py` bloquear, ou para checar o staged manualmente.
 - Roda no **pre-commit hook** (parte determinística). A revisão profunda (julgamento) é quando o agente é chamado.
 
 > **Delegável:** a revisão de julgamento pode ser delegada ao agente **`code-revisor`** (perspectiva independente,
@@ -25,33 +30,33 @@ parte de **julgamento** (conformidade/clareza, feita pelo agente quando invocada
 > rodar em **fan-out por lente** (bugs / padrão / segurança). Esta skill é a **lógica e os critérios** que ele aplica.
 
 ## Como o gate é acionado
-- **Determinístico (hook):** o `pre-commit` roda `revisar_diff.py` no staged → **exit 1** bloqueia em conflito de merge / breakpoint de debug. É instalado junto com o gate de segredos (ver `git-commit-inicial`), encadeado no mesmo `pre-commit`.
+- **Determinístico (hook):** o `pre-commit` roda `review_diff.py` no staged → **exit 1** bloqueia em conflito de merge / breakpoint de debug. É instalado junto com o gate de segredos (ver `git-commit-inicial`), encadeado no mesmo `pre-commit`.
 - **Julgamento (agente):** a conformidade fina (limiares, SRP, clareza) é o modelo lendo o diff — invocada manualmente, ou via `claude -p` no hook se você quiser revisão por modelo a cada commit (mais lento).
 
 ## Workflow (revisão pelo agente)
 Trate **um diff por vez**. Critérios em `references/criterios.md`.
 
 1. **Pegar o diff e os arquivos alterados** — `git diff --cached` e `git diff --cached --name-only`.
-2. **Gate determinístico** — `python scripts/revisar_diff.py` (conflito de merge, breakpoint, log de debug, TODO, `.only`/`.skip`). Bloqueio → resolver antes.
+2. **Gate determinístico** — `python scripts/review_diff.py` (conflito de merge, breakpoint, log de debug, TODO, `.only`/`.skip`). Bloqueio → resolver antes.
 3. **Limiares por linguagem** — rode o validador da stack **nos arquivos alterados**: `padrao-python` (`validate.py`), `padrao-typescript` (`validate.mjs`); em `.go` e `.java` os mesmos limiares saem do hook `padrao-limiares` (`golangci-lint` / `checkstyle`). Função ≤40, aninhamento ≤3, ≤4 params. **Linguagem que nem a skill nem o hook cobrem** — confira lendo o diff e **registre no relatório que a checagem foi humana**. Silêncio aqui faz "não verificado" passar por "conforme".
 4. **Conformidade & clareza (julgamento)** — no que mudou: SRP (a mudança faz uma coisa?), nomes claros, sem hardcoded (config/.env), validação na borda, testes acompanham (norma §9), sem lógica em dumb component. Ver `references/criterios.md`.
-5. **Classificar & reportar** — achados com `arquivo:linha`, severidade e correção. **Bloqueio** (impede commit) × **aviso** (registrar).
+5. **Classificar & reportar** — achados com `file:line`, severidade e correção. **Bloqueio** (`block`, impede commit) × **aviso** (`warning`, registrar).
 6. **(Se gate bloqueou)** — orientar a correção; nunca `--no-verify` para burlar achado real.
 
 ## Regras e limites
 - **NÃO** revise o repo inteiro aqui — só o **diff staged**; auditoria completa é da `code-diagnostico`.
 - **NUNCA** oriente `git commit --no-verify` para passar por cima de um bloqueio real (conflito/debug) — resolva.
 - **NÃO** duplique os limiares — eles vêm dos validadores de `padrao-*` (rode-os nos arquivos alterados).
-- **NÃO** trate `aviso` como bloqueio nem `bloqueio` como opcional — respeite a severidade do config.
+- **NÃO** trate `warning` como `block` nem `block` como opcional — respeite a severidade do config.
 - **NÃO** saia do escopo: segredo no staged → `git-verificacao-commit`; histórico → `git-especialista-repositorio`; backlog do repo → `code-diagnostico`.
 
 ## Checklist "pronta"
 - [ ] Diff e arquivos alterados obtidos (escopo = só o staged)?
-- [ ] `revisar_diff.py` rodado; conflito de merge/breakpoint resolvidos (sem bloqueio)?
+- [ ] `review_diff.py` rodado; conflito de merge/breakpoint resolvidos (sem bloqueio)?
 - [ ] Validador da linguagem rodado nos arquivos alterados (limiares ok)?
 - [ ] Conformidade/clareza revisada no que mudou (SRP, nomes, hardcoded, testes)?
 - [ ] Achados reportados com severidade e correção; nada de `--no-verify` em bloqueio real?
 
 ## Referências (Camada 3 — leia sob demanda)
-- `scripts/revisar_diff.py` + `scripts/config.json` — gate determinístico do diff (conflito/debug/TODO; exit 1 bloqueia).
+- `scripts/review_diff.py` + `scripts/config.json` — gate determinístico do diff (conflito/debug/TODO; exit 1 bloqueia).
 - `references/criterios.md` — o que revisar num diff (conformidade `padrao-escrita` focada na mudança) + como rodar os validadores nos arquivos alterados.

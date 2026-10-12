@@ -108,17 +108,17 @@ export function mask(snippet) {
  */
 export function scanSecrets(files) {
   const findings = [];
-  for (const { caminho: path, content } of files) {
+  for (const { path, content } of files) {
     content.split(/\r?\n/).forEach((line, index) => {
       const number = index + 1;
       const byValue = VALUE_VOCABULARY.find(([, pattern]) => pattern.test(line));
       if (byValue !== undefined) {
-        findings.push({ caminho: path, linha: number, tipo: byValue[0], trecho: mask(line.match(byValue[1])[0]) });
+        findings.push({ path, line: number, kind: byValue[0], snippet: mask(line.match(byValue[1])[0]) });
         return;
       }
       const matchedByKey = line.match(ASSIGNED_CREDENTIAL_KEY);
       if (matchedByKey !== null) {
-        findings.push({ caminho: path, linha: number, tipo: 'assigned credential key', trecho: mask(matchedByKey[0]) });
+        findings.push({ path, line: number, kind: 'assigned credential key', snippet: mask(matchedByKey[0]) });
       }
     });
   }
@@ -228,11 +228,11 @@ function runGitleaks(ref) {
     execFileSync('gitleaks', ['detect', '--log-opts', `${ref}..HEAD`, '--redact', '--no-banner'], {
       cwd: ROOT, encoding: 'utf8',
     });
-    return { rodou: true, achados: false, saida: '' };
+    return { ran: true, findings: false, output: '' };
   } catch (error) {
     // gitleaks sai != 0 tanto por ACHADO quanto por erro de uso — a saída é quem distingue.
     const output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
-    return { rodou: true, achados: true, saida: output.slice(0, 1500) };
+    return { ran: true, findings: true, output: output.slice(0, 1500) };
   }
 }
 
@@ -240,7 +240,7 @@ function collectDelta(ref) {
   const paths = changedFiles(ref);
   if (paths === null) return null;
   return paths
-    .map((path) => ({ caminho: path, content: readCurrentContent(path) }))
+    .map((path) => ({ path, content: readCurrentContent(path) }))
     .filter((a) => a.content !== null);
 }
 
@@ -251,40 +251,40 @@ function collectDelta(ref) {
 function analyze(ref) {
   const tracked = trackedFiles();
   if (tracked === null) {
-    return { situacao: 'git-unavailable', ref, compativel: false, envs: [], segredos: [], gitleaks: null };
+    return { status: 'git-unavailable', ref, compatible: false, envs: [], secrets: [], gitleaks: null };
   }
   if (!validRef(ref)) {
-    return { situacao: 'invalid-ref', ref, compativel: false, envs: [], segredos: [], gitleaks: null };
+    return { status: 'invalid-ref', ref, compatible: false, envs: [], secrets: [], gitleaks: null };
   }
 
   const envs = versionedEnv(tracked);
   const delta = collectDelta(ref);
   const emptyDelta = delta !== null && delta.length === 0;
   const secrets = delta === null ? [] : scanSecrets(delta);
-  const gitleaks = availableGitleaks() ? runGitleaks(ref) : { rodou: false };
+  const gitleaks = availableGitleaks() ? runGitleaks(ref) : { ran: false };
 
   return {
-    situacao: emptyDelta ? 'empty-delta' : 'compared',
+    status: emptyDelta ? 'empty-delta' : 'compared',
     ref,
-    compativel: envs.length === 0 && secrets.length === 0 && !(gitleaks.rodou && gitleaks.achados),
+    compatible: envs.length === 0 && secrets.length === 0 && !(gitleaks.ran && gitleaks.findings),
     envs,
-    segredos: secrets,
+    secrets,
     gitleaks,
   };
 }
 
 function printHuman(r) {
-  if (r.situacao === 'git-unavailable') {
+  if (r.status === 'git-unavailable') {
     process.stdout.write('  x Git did not respond (outside a repository or index is corrupted) — FAIL-CLOSED: secret absence cannot be proven\n');
     return;
   }
-  if (r.situacao === 'invalid-ref') {
+  if (r.status === 'invalid-ref') {
     process.stdout.write(`  x invalid or missing ref: "${r.ref}" — FAIL-CLOSED: there is no baseline to compare\n`);
     return;
   }
   const refLabel = r.ref === EMPTY_TREE ? `${r.ref} (empty tree — no HEAD~1, new repository)` : r.ref;
   process.stdout.write(`ci-security: comparing with --since ${refLabel}\n`);
-  if (r.situacao === 'empty-delta') {
+  if (r.status === 'empty-delta') {
     process.stdout.write('  empty delta — nothing changed in this run (Git responded; this differs from "not checked")\n');
   }
   if (r.envs.length > 0) {
@@ -292,15 +292,15 @@ function printHuman(r) {
   } else {
     process.stdout.write('  ok   no tracked .env files\n');
   }
-  if (r.segredos.length > 0) {
-    for (const s of r.segredos) process.stdout.write(`  x ${s.caminho}:${s.linha}: ${s.tipo} — ${s.trecho}\n`);
+  if (r.secrets.length > 0) {
+    for (const s of r.secrets) process.stdout.write(`  x ${s.path}:${s.line}: ${s.kind} — ${s.snippet}\n`);
   } else {
     process.stdout.write('  ok   no recognized secrets in the delta\n');
   }
-  if (!r.gitleaks.rodou) {
+  if (!r.gitleaks.ran) {
     process.stdout.write('  !    gitleaks not found — optional second opinion skipped (absence does not fail)\n');
-  } else if (r.gitleaks.achados) {
-    process.stdout.write(`  x gitleaks (second opinion) found a secret:\n${r.gitleaks.saida}\n`);
+  } else if (r.gitleaks.findings) {
+    process.stdout.write(`  x gitleaks (second opinion) found a secret:\n${r.gitleaks.output}\n`);
   } else {
     process.stdout.write('  ok   gitleaks (second opinion): no findings\n');
   }
@@ -317,11 +317,11 @@ function printJson(r) {
 const DEFAULT_REF = 'HEAD~1';
 
 function readOptions(argv) {
-  const options = { desde: null, json: false, selfTest: false };
+  const options = { since: null, json: false, selfTest: false };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--selftest') { options.selfTest = true; continue; }
     if (argv[i] === '--json') { options.json = true; continue; }
-    if (argv[i] === '--since') { options.desde = argv[i + 1] ?? null; i += 1; continue; }
+    if (argv[i] === '--since') { options.since = argv[i + 1] ?? null; i += 1; continue; }
   }
   return options;
 }
@@ -330,13 +330,13 @@ function main() {
   const options = readOptions(process.argv.slice(2));
   if (options.selfTest) return runSelfTest();
 
-  const result = analyze(effectiveRef(options.desde));
+  const result = analyze(effectiveRef(options.since));
   if (options.json) printJson(result);
   else {
     printHuman(result);
-    process.stdout.write(`\nci-security: ${result.compativel ? 'OK' : 'FAILED'}\n`);
+    process.stdout.write(`\nci-security: ${result.compatible ? 'OK' : 'FAILED'}\n`);
   }
-  return result.compativel ? 0 : 1;
+  return result.compatible ? 0 : 1;
 }
 
 // ================================================================================================
@@ -346,7 +346,7 @@ function main() {
 function selfTestCases() {
   return [
     { name: 'tracked root .env is reported', tracked: ['.env', 'src/x.ts'], expected: ['.env'] },
-    { name: 'tracked module .env is reported', tracked: ['modules/pedidos/.env'], expected: ['modules/pedidos/.env'] },
+    { name: 'tracked module .env is reported', tracked: ['modules/orders/.env'], expected: ['modules/orders/.env'] },
     { name: '.env.example is not a real .env file', tracked: ['.env.example', 'modules/x/.env.example'], expected: [] },
     { name: 'no sensitive files are tracked returns an empty list', tracked: ['src/x.ts', 'README.md'], expected: [] },
   ];
@@ -372,27 +372,27 @@ function databaseUrlCases({ databaseUrl, interpolatedUsername, environmentCreden
   return [
     {
       name: 'connection URL: both credentials use environment interpolation -> ignored',
-      files: [{ caminho: 'compose.yml', content: databaseUrl(interpolatedUsername, environmentCredential) }],
+      files: [{ path: 'compose.yml', content: databaseUrl(interpolatedUsername, environmentCredential) }],
       expectedType: null,
     },
     {
       name: 'connection URL: shell environment credentials -> ignored',
-      files: [{ caminho: 'compose.yml', content: databaseUrl('$DB_USER', '$DB_PASSWORD') }],
+      files: [{ path: 'compose.yml', content: databaseUrl('$DB_USER', '$DB_PASSWORD') }],
       expectedType: null,
     },
     {
       name: 'connection URL: literal password -> detected',
-      files: [{ caminho: 'compose.yml', content: databaseUrl('app', literalCredential) }],
+      files: [{ path: 'compose.yml', content: databaseUrl('app', literalCredential) }],
       expectedType: 'Connection string',
     },
     {
       name: 'connection URL: environment username and literal password -> detected',
-      files: [{ caminho: 'compose.yml', content: databaseUrl(interpolatedUsername, literalCredential) }],
+      files: [{ path: 'compose.yml', content: databaseUrl(interpolatedUsername, literalCredential) }],
       expectedType: 'Connection string',
     },
     {
       name: 'connection URL: literal username and environment password -> detected',
-      files: [{ caminho: 'compose.yml', content: databaseUrl('app', environmentCredential) }],
+      files: [{ path: 'compose.yml', content: databaseUrl('app', environmentCredential) }],
       expectedType: 'Connection string',
     },
   ];
@@ -400,9 +400,9 @@ function databaseUrlCases({ databaseUrl, interpolatedUsername, environmentCreden
 
 function adversarialInputCases() {
   return [
-    { name: 'semicolon injection input is treated as text, never executed', files: [{ caminho: 'a.ts', content: 'const cmd = "; echo INJECTED";' }], expectedType: null },
-    { name: 'command substitution input is treated as text, never executed', files: [{ caminho: 'a.ts', content: 'const cmd = "$(echo INJECTED)";' }], expectedType: null },
-    { name: 'shell operator input is treated as text, never executed', files: [{ caminho: 'a.ts', content: 'const cmd = "& echo INJECTED";' }], expectedType: null },
+    { name: 'semicolon injection input is treated as text, never executed', files: [{ path: 'a.ts', content: 'const cmd = "; echo INJECTED";' }], expectedType: null },
+    { name: 'command substitution input is treated as text, never executed', files: [{ path: 'a.ts', content: 'const cmd = "$(echo INJECTED)";' }], expectedType: null },
+    { name: 'shell operator input is treated as text, never executed', files: [{ path: 'a.ts', content: 'const cmd = "& echo INJECTED";' }], expectedType: null },
   ];
 }
 
@@ -414,22 +414,22 @@ function scanCases() {
   return [
     {
       name: 'AWS Access Key: finding',
-      files: [{ caminho: 'a.ts', content: `const k = "${TEST_AWS_KEY}";` }],
+      files: [{ path: 'a.ts', content: `const k = "${TEST_AWS_KEY}";` }],
       expectedType: 'AWS Access Key',
     },
     {
       name: 'assigned credential key is reported through CREDENTIAL_PATTERN',
-      files: [{ caminho: 'a.ts', content: `const ${TEST_KEY} = "real-value-here";` }],
+      files: [{ path: 'a.ts', content: `const ${TEST_KEY} = "real-value-here";` }],
       expectedType: 'assigned credential key',
     },
     {
       name: 'reading an environment variable without assigning it is not reported',
-      files: [{ caminho: 'a.ts', content: 'const x = process.env.MODULE_API_KEY;' }],
+      files: [{ path: 'a.ts', content: 'const x = process.env.MODULE_API_KEY;' }],
       expectedType: null,
     },
     {
       name: '.env.example with an empty key is not reported',
-      files: [{ caminho: '.env.example', content: 'MODULE_API_KEY=\n' }],
+      files: [{ path: '.env.example', content: 'MODULE_API_KEY=\n' }],
       expectedType: null,
     },
     ...databaseUrlCases({ databaseUrl, interpolatedUsername, environmentCredential, literalCredential }),
@@ -455,7 +455,7 @@ function runSelfTest() {
 
   for (const testCase of scanCases()) {
     const findings = scanSecrets(testCase.files);
-    const ok = testCase.expectedType === null ? findings.length === 0 : findings.some((a) => a.tipo === testCase.expectedType);
+    const ok = testCase.expectedType === null ? findings.length === 0 : findings.some((a) => a.kind === testCase.expectedType);
     register(testCase.name, ok, `findings: ${JSON.stringify(findings)}`);
   }
 
@@ -467,7 +467,7 @@ function runSelfTest() {
   const okMasking = trulyMasked.includes('...')
     && trulyMasked.length < TEST_AWS_KEY.length
     && !trulyMasked.includes(TEST_AWS_KEY)
-    && mask('curto') === '****';
+    && mask('short') === '****';
   register('mask() never exposes the full secret', okMasking);
 
   const total = selfTestCases().length + scanCases().length + 1;

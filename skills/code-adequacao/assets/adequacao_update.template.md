@@ -1,15 +1,15 @@
 # Log de Adequação: code-adequacao
 
 > **Append-only.** Cada tarefa concluída adiciona uma entrada; nada é reescrito. Persiste em
-> `.sarak/adequacao_update.md` no projeto-alvo (versionável — o git é o histórico). Snapshot da auditoria
-> (`.sarak/audit/auditoria-<data>.md`) permanece congelado; aqui acumula-se o "depois".
+> `.sarak/adequation_update.md` no projeto-alvo (versionável — o git é o histórico). Snapshot da auditoria
+> (`.sarak/audit/audit-<date>.md`) permanece congelado; aqui acumula-se o "depois".
 
-**Campanha:** [ALVO] · **Backlog:** `.sarak/audit/backlog-[DATA].json`
+**Campanha:** [ALVO] · **Backlog:** `.sarak/audit/backlog-[DATE].json`
 
 ---
 
 ## Resumo (atualize ao fim de cada onda)
-- **Tarefas:** [done]/[total] · pulada [n] · invalidada [n] · nova [n]
+- **Tarefas:** [done]/[total] · skipped [n] · invalidated [n] · new [n]
 - **Ondas concluídas:** [1, 2, ...]
 - **Cobertura:** [X]% → [Y]%
 
@@ -17,13 +17,13 @@
 
 ## Entradas (uma por tarefa concluída — append)
 
-### [id] — [modulo] · [risco] · onda [N]
-- **Arquivo:** [caminho:linhas]
-- **Mudança:** [estadoAtual] → [estadoAlvo]
-- **Dimensão/regra:** [dimensao] — [regra]
+### [id] — [module] · [risk] · onda [N]
+- **Arquivo:** [file:lines]
+- **Mudança:** [currentState] → [targetState]
+- **Dimensão/regra:** [dimension] — [rule]
 - **Caracterização:** [verde antes/depois | já havia testes]
 - **Verificação:** [testes + validator: verde]
-- **Commit:** [hash] — `adequa [modulo]: [estadoAtual] → [estadoAlvo] [[id]]`
+- **Commit:** [hash] — `adequa [module]: [currentState] → [targetState] [[id]]`
 - **Modo:** [code-adequador (baixo/médio) | thread principal + HITL (alto)]
 
 <!-- próxima entrada abaixo (append) -->
@@ -32,6 +32,6 @@
 
 ## Reconciliação (registre ao fim de cada onda)
 ### Onda [N] — módulos tocados: [lista]
-- **Resolvidas de tabela (invalidada):** [ids]
+- **Resolvidas de tabela (invalidated):** [ids]
 - **Novas surgidas:** [ids — risco]
 - **Alto risco novo → subiu ao usuário?** [Sim/Não]

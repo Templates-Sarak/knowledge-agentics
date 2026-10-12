@@ -52,7 +52,7 @@ devolve um **relatório de divergências**. Entrega achado, nunca conserto.
      escopo. Se o mapa não cobre a área, isso já é achado (`lacuna-de-roteamento`).
    - **Critério:** a lista de specs lidas é **declarada ao usuário**. Área não lida não vira veredito.
 3. **Rodar a camada mecânica**
-   - **Ferramenta:** `scripts/verificar_paridade.py --raiz <repo> [--json]`.
+   - **Ferramenta:** `scripts/verify_parity.py --root <repo> [--json]`.
    - **Ação:** colete ponteiro morto, wikilink órfão, `00-indice` × `plan/`, status divergente e módulo
      sem spec — o que é determinístico sai daqui, e não do seu julgamento.
    - **Critério:** a saída é **primeira passada**, não veredito. Triar no passo 5 antes de reportar.
@@ -87,7 +87,7 @@ devolve um **relatório de divergências**. Entrega achado, nunca conserto.
 | `afirmacao-sem-codigo` | a spec afirma algo que **não existe** no worktree | 🔴 bloqueio |
 | `incoerencia-interna` | spec × arquitetura × ADR × `00-indice`/`plan/` se contradizem entre si | 🔴 bloqueio |
 | `codigo-sem-spec` | comportamento ou regra viva **sem verdade documentada** | 🟡 aviso |
-| `ponteiro-morto` | a spec cita arquivo, módulo, símbolo ou `[[wikilink]]` que não existe mais | 🟡 aviso |
+| `ponteiro-morto` (no script: `dead-pointer`) | a spec cita arquivo, módulo, símbolo ou `[[wikilink]]` que não existe mais | 🟡 aviso |
 | `lacuna-de-roteamento` | o mapa do `00-contexto` §4 não cobre uma área que existe no repositório | 🟡 aviso |
 
 **Bloqueio** é o achado que faria um agente agir errado lendo a spec. **Aviso** é o que o deixa
@@ -100,7 +100,7 @@ desinformado, sem induzi-lo ao erro.
   destrói a evidência do achado e atropela a triagem do revisor.
 - **NUNCA** reporte achado sem o **par de evidências** (`spec:linha` + `arquivo:linha`). Divergência
   afirmada sem os dois lados é opinião, e opinião com cara de veredito é pior que silêncio.
-- **NÃO** trate a saída do `verificar_paridade.py` como relatório final — molde, exemplo e prosa
+- **NÃO** trate a saída do `verify_parity.py` como relatório final — molde, exemplo e prosa
   instrucional citam caminho fictício por ofício, e o script não distingue todos. Triagem é sua.
 - **NÃO** decida **plan** ou **prompt direto** no lugar do revisor — proponha o canal e pare.
 - **NÃO** julgue qualidade de código (limiares, SRP, nomes) — isso é `code-diagnostico`; nem forma de
@@ -113,7 +113,7 @@ desinformado, sem induzi-lo ao erro.
 
 - [ ] Escopo confirmado com o usuário e declarado antes da primeira leitura?
 - [ ] Specs lidas listadas na resposta, e o que ficou fora do escopo declarado?
-- [ ] `verificar_paridade.py` executado, e a saída dele **triada** (não copiada) para o relatório?
+- [ ] `verify_parity.py` executado, e a saída dele **triada** (não copiada) para o relatório?
 - [ ] Gate do template rodado quando o projeto o adota (`node tools/gate/validate.mjs`)?
 - [ ] Todo achado tem classe, severidade e as **duas** evidências com caminho e linha?
 - [ ] Todo achado tem canal proposto (plan / prompt direto / `00-backlog`) com motivo em uma linha?
@@ -121,6 +121,6 @@ desinformado, sem induzi-lo ao erro.
 
 ## Referências (Camada 3 — leia sob demanda)
 
-- `scripts/verificar_paridade.py` — a camada mecânica das seis checagens determinísticas (ponteiro
+- `scripts/verify_parity.py` — a camada mecânica das seis checagens determinísticas (ponteiro
   morto, wikilink órfão, `00-indice` × `plan/`, status divergente, módulo sem spec). `--selftest`
-  prova os núcleos puros; `--json` é o contrato de máquina do passo 3.
+  prova os núcleos puros; `--json` é o contrato de máquina do passo 3 (chaves `total` e `findings`; cada achado traz `kind`, `file`, `line`, `detail`; classes `dead-pointer`, `orphan-wikilink`, `plan-without-index`, `index-without-plan`, `status-mismatch`, `module-without-spec`, `plan-outside-format`).

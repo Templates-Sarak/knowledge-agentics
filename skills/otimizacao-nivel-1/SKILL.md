@@ -23,7 +23,7 @@ perceptível**, usando recursos nativos do navegador e ferramentas gratuitas. É
 ## Workflow
 Trate **uma página/rota por vez**. Táticas são candidatas — confirme cada uma no HITL.
 
-1. **Medir baseline** — siga `references/diagnostico-performance.md`. **Frontend:** Lighthouse + `python scripts/auditar_assets.py --raiz <projeto>` + peso do build (LCP/CLS/INP/TBT, bundle). **Backend:** latência de API (**p95**), **tempo de query** (slow-query log) e throughput.
+1. **Medir baseline** — siga `references/diagnostico-performance.md`. **Frontend:** Lighthouse + `python scripts/audit_assets.py --root <projeto>` + peso do build (LCP/CLS/INP/TBT, bundle). **Backend:** latência de API (**p95**), **tempo de query** (slow-query log) e throughput.
 2. **Selecionar táticas (custo zero)** pelo que o diagnóstico apontou:
    - **Imagens (front):** PNG/JPG → **WebP/AVIF**; `loading="lazy"` fora da dobra; `fetchpriority="high"` na imagem LCP; **`width`/`height`** (mata CLS).
    - **Cache/dados (front):** SWR/React Query com `staleTime` agressivo; revalidação sob demanda.
@@ -41,12 +41,12 @@ Trate **uma página/rota por vez**. Táticas são candidatas — confirme cada u
 - **NÃO** aplique nada sem o HITL do passo 3.
 - **NÃO** aceite regressão de métrica (ex.: lazy na imagem LCP piora o LCP; `<img>` sem dimensão piora o CLS) — re-meça e reverta.
 - **NÃO** confunda tree-shaking de bundle com faxina de repo (`code-limpeza-projeto`) nem com a config de deploy (`deploy-vercel`).
-- **NÃO** trate a saída de `auditar_assets.py` como verdade absoluta — é candidata; confirme antes de aplicar.
+- **NÃO** trate a saída de `audit_assets.py` como verdade absoluta — é candidata; confirme antes de aplicar.
 - **NÃO** saia do escopo: concessão de qualidade → `otimizacao-nivel-2`; infra paga → `otimizacao-nivel-3`.
 
 ## Checklist "pronta"
 - [ ] Baseline medida **antes** de agir? Front: LCP/CLS/INP/TBT + bundle. Back: latência p95/tempo de query/throughput.
-- [ ] `auditar_assets.py` rodado (front) e a saída triada?
+- [ ] `audit_assets.py` rodado (front) e a saída triada?
 - [ ] Front: imagens WebP/AVIF com `width`/`height`, lazy + `fetchpriority`; cache/fontes/code-splitting?
 - [ ] Back: índices, N+1 corrigido, query tunada, cache em memória, pooling — conforme o diagnóstico?
 - [ ] HITL apresentado e só o aprovado aplicado?
@@ -55,5 +55,5 @@ Trate **uma página/rota por vez**. Táticas são candidatas — confirme cada u
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/diagnostico-performance.md` — medição compartilhada (CWV, como medir, escada de níveis). **Usado pelos 3 níveis.**
-- `scripts/auditar_assets.py` + `scripts/auditar_assets.config.json` — auditoria determinística de assets/bundle (limites/libs no config).
+- `scripts/audit_assets.py` + `scripts/audit_assets.config.json` — auditoria determinística de assets/bundle (limites/libs no config).
 - `assets/plano_otimizacao.md` — template do plano de otimização (HITL).

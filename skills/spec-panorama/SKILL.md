@@ -21,27 +21,27 @@ coerência de famílias e itens. O resumo é **saída de script**: determinísti
 
 1. **Localizar o projeto** — *listagem de arquivos.* Confirme `specs/panorama/00-planejamento.md`.
    **Critério:** sem ele, pare — o projeto ainda não tem catálogo de famílias; não crie um por conta própria.
-2. **Checar** — *terminal.* Rode `scripts/gerar_resumo.py --specs specs --checar` (o caminho do script é
+2. **Checar** — *terminal.* Rode `scripts/generate_summary.py --specs specs --check` (o caminho do script é
    relativo a esta skill, resolvido a partir de onde ela foi carregada). **Critério:** exit 0 segue para o
-   passo 4. Exit 1: leia cada `[PROBLEMA]` e corrija **na origem** — o frontmatter da plan ou da spec, ou o
+   passo 4. Exit 1: leia cada `[PROBLEM]` e corrija **na origem** — o frontmatter da plan ou da spec, ou o
    horizonte. Só "resumo desatualizado" é resolvido pelo passo 4.
 3. **HITL de horizonte** — *resposta ao usuário.* Se a correção pede família nova ou item novo no
    `00-planejamento`, apresente a proposta e **pare** até o usuário aprovar. Corrigir estado (`⬜`/`🔷`/`✅`)
    que diverge das plans é trabalho do revisor e não exige aprovação.
-4. **Gerar** — *terminal.* Rode `scripts/gerar_resumo.py --specs specs`. **Critério:** `[OK] … (N linhas)`,
+4. **Gerar** — *terminal.* Rode `scripts/generate_summary.py --specs specs`. **Critério:** `[OK] … (N lines)`,
    com N ≤ 70.
-5. **Confirmar** — *terminal.* `--checar` de novo. **Critério:** exit 0. O resumo entra no mesmo commit da
+5. **Confirmar** — *terminal.* `--check` de novo. **Critério:** exit 0. O resumo entra no mesmo commit da
    mudança que o motivou.
 
-O que o `--checar` acusa: família (de spec, arquitetura ou plan) fora do catálogo; nome `FF.NN` /
+O que o `--check` acusa: família (de spec, arquitetura ou plan) fora do catálogo; nome `FF.NN` /
 `plan-FF.NN` incoerente com o `familia:` do frontmatter; `item:` que não existe no horizonte, item repetido,
 item com família fora do catálogo ou sob o título de outra família; `🔷` sem plan aberta apontando para ele;
 plan aberta apontando para item `⬜`/`✅`; e o `00-resumo.md` desatualizado em relação ao que seria gerado.
 
 ## Regras e limites
-- **NUNCA** edite o `00-resumo.md` à mão — ele é sobrescrito na próxima geração, e o `--checar` acusa a
+- **NUNCA** edite o `00-resumo.md` à mão — ele é sobrescrito na próxima geração, e o `--check` acusa a
   divergência.
-- **NÃO** invente família nem item para o `--checar` passar — catálogo e horizonte são decisão do usuário.
+- **NÃO** invente família nem item para o `--check` passar — catálogo e horizonte são decisão do usuário.
 - **NÃO** conte progresso por plan — a plan some na síntese; a unidade durável é o item do horizonte.
 - **NÃO** use esta skill no papel de executor — `panorama/` é do revisor, que a roda na mesma ação da mudança.
 - **NÃO** saia do escopo: divergência entre spec e código é da `spec-revisao`; a forma de spec/plan, da
@@ -49,10 +49,10 @@ plan aberta apontando para item `⬜`/`✅`; e o `00-resumo.md` desatualizado em
 
 ## Checklist
 - [ ] `specs/panorama/00-planejamento.md` existe e foi a base da conferência?
-- [ ] `--checar` rodado antes, e cada problema corrigido na origem (não no resumo)?
+- [ ] `--check` rodado antes, e cada problema corrigido na origem (não no resumo)?
 - [ ] Família ou item novos só depois da aprovação do usuário?
-- [ ] Resumo regenerado com ≤ 70 linhas e `--checar` final com exit 0?
+- [ ] Resumo regenerado com ≤ 70 linhas e `--check` final com exit 0?
 
 ## Referências (Camada 3 — leia sob demanda)
-- `scripts/gerar_resumo.py` — gerador e verificador (só biblioteca padrão). `--selftest` prova o núcleo
+- `scripts/generate_summary.py` — gerador e verificador (só biblioteca padrão). `--selftest` prova o núcleo
   com fixtures em memória, inclusive um projeto grande truncado dentro das 70 linhas.

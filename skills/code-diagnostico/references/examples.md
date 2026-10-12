@@ -10,35 +10,35 @@ Repo `loja` com dois módulos backend (`orders`, `users`), **nenhum com testes**
 ### Saída (backlog)
 ```json
 {
-  "alvo": "./loja",
-  "geradoEm": "2026-06-03",
-  "resumo": {
-    "modulos": 2,
-    "violacoes": 5,
-    "porDimensao": { "hardcoded": 1, "limiares": 1, "logging": 1, "api": 1, "validacao": 1 },
-    "modulosSemTestes": 2
+  "target": "./loja",
+  "generatedAt": "2026-06-03",
+  "summary": {
+    "modules": 2,
+    "findings": 5,
+    "byDimension": { "hardcoded": 1, "thresholds": 1, "logging": 1, "api": 1, "validation": 1 },
+    "modulesWithoutTests": 2
   },
-  "itens": [
-    { "id": "orders", "tipo": "modulo", "status": "pending", "risco": "baixo", "cobertura": "sem-testes",
-      "arquivos": [{ "caminho": "backend/orders/order_service.py", "violacoes": [
-        { "linha": 12, "dimensao": "hardcoded", "severidade": "alta", "risco": "baixo",
-          "descricao": "timeout 30 fixo", "regra": "zero hardcoded → config.json" },
-        { "linha": 28, "dimensao": "logging", "severidade": "media", "risco": "baixo",
-          "descricao": "print() no lugar de logger", "regra": "logger estruturado, sem print" },
-        { "linha": 45, "dimensao": "limiares", "severidade": "media", "risco": "medio",
-          "descricao": "função de 70 linhas", "regra": "função ≤ 40 linhas" } ]}]},
-    { "id": "users", "tipo": "modulo", "status": "pending", "risco": "alto", "cobertura": "sem-testes",
-      "arquivos": [{ "caminho": "backend/users/api/routes.py", "violacoes": [
-        { "linha": 8, "dimensao": "api", "severidade": "media", "risco": "medio",
-          "descricao": "POST /api/createUser — verbo no path, sem /v1", "regra": "REST /api/v1/, sem verbo" },
-        { "linha": 15, "dimensao": "validacao", "severidade": "alta", "risco": "medio",
-          "descricao": "SQL montado por concatenação de input não validado", "regra": "validar na borda + query parametrizada" } ]}]}
+  "items": [
+    { "id": "orders", "kind": "module", "status": "pending", "risk": "low", "coverage": "untested",
+      "files": [{ "path": "backend/orders/order_service.py", "findings": [
+        { "line": 12, "dimension": "hardcoded", "severity": "high", "risk": "low",
+          "message": "timeout 30 fixo", "rule": "zero hardcoded → config.json" },
+        { "line": 28, "dimension": "logging", "severity": "medium", "risk": "low",
+          "message": "print() no lugar de logger", "rule": "logger estruturado, sem print" },
+        { "line": 45, "dimension": "thresholds", "severity": "medium", "risk": "medium",
+          "message": "função de 70 linhas", "rule": "função ≤ 40 linhas" } ]}]},
+    { "id": "users", "kind": "module", "status": "pending", "risk": "high", "coverage": "untested",
+      "files": [{ "path": "backend/users/api/routes.py", "findings": [
+        { "line": 8, "dimension": "api", "severity": "medium", "risk": "medium",
+          "message": "POST /api/createUser — verbo no path, sem /v1", "rule": "REST /api/v1/, sem verbo" },
+        { "line": 15, "dimension": "validation", "severity": "high", "risk": "medium",
+          "message": "SQL montado por concatenação de input não validado", "rule": "validar na borda + query parametrizada" } ]}]}
   ]
 }
 ```
 
-**Por que é bom:** agrupado por módulo→arquivo; cada violação com `linha`, dimensão, severidade, risco e a
-regra violada; cada módulo com `cobertura` (`sem-testes` aqui — sobe o risco e avisa que a adequação
+**Por que é bom:** agrupado por módulo→arquivo; cada achado com `line`, dimensão, severidade, risco e a
+regra violada; cada módulo com `coverage` (`untested` aqui — sobe o risco e avisa que a adequação
 precisará de caracterização); ordenado com os quick wins de baixo risco (hardcoded, logging) antes do
 módulo de risco alto; resumo quantitativo por dimensão no topo. A `code-adequacao` pega item a item daqui.
 
@@ -57,10 +57,10 @@ módulo de risco alto; resumo quantitativo por dimensão no topo. A `code-adequa
 **Por que é ruim:**
 | Problema | Impacto |
 |----------|---------|
-| Sem `arquivo:linha` | A remediação não sabe onde agir; precisa re-investigar tudo. |
+| Sem `file:line` | A remediação não sabe onde agir; precisa re-investigar tudo. |
 | Sem dimensão/regra | Não dá para saber qual padrão foi violado nem como corrigir. |
 | Sem severidade/risco | Impossível priorizar; pode-se atacar o item arriscado primeiro e quebrar o sistema. |
 | Lista plana (sem módulo) | Perde a unidade de trabalho (módulo→arquivo) que a adequação usa. |
-| Sem `cobertura` por módulo | Não sinaliza falta de testes — a adequação não sabe que precisa de caracterização nem ajusta o risco. |
+| Sem `coverage` por módulo | Não sinaliza falta de testes — a adequação não sabe que precisa de caracterização nem ajusta o risco. |
 | "código ruim", "por aí" | Vago — diagnóstico subjetivo, não acionável. |
 | Não é JSON | A orquestração não consegue consumir programaticamente. |

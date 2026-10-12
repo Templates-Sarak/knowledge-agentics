@@ -5,15 +5,15 @@
 
 if command -v python >/dev/null 2>&1; then PY=python; else PY=python3; fi
 
-"$PY" .githooks/verificar_commit.py --raiz .
+"$PY" .githooks/verify_commit.py --root .
 status=$?
 
 if [ "$status" -ne 0 ]; then
   echo ""
-  echo "⛔ COMMIT BLOQUEADO — segredo ou arquivo sensível detectado no staged (ver acima)."
-  echo "   • Corrija: mova o segredo para .env (e adicione ao .gitignore) e re-stage."
-  echo "   • Histórico/branches: rode a skill git-especialista-repositorio."
-  echo "   • Falso positivo? ajuste .githooks/config.json (allowlist)."
+  echo "⛔ COMMIT BLOCKED — secret or sensitive file detected in the staged changes (see above)."
+  echo "   • Fix it: move the secret to .env (and add it to .gitignore) and re-stage."
+  echo "   • History/branches: run the git-especialista-repositorio skill."
+  echo "   • False positive? Adjust .githooks/config.json (allowlist)."
   exit 1
 fi
 exit 0

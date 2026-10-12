@@ -4,7 +4,7 @@ O scan de código pega o óbvio. Estes são os pontos que **escapam** e precisam
 
 ## 1. Bundle do front (crítico)
 Tudo que vai para o cliente é **público**. Um segredo importado num componente acaba no JS servido.
-- Rode o scanner no build: `scan_segredos.py --raiz dist` (ou `build`/`.next`).
+- Rode o scanner no build: `scan_secrets.py --root dist` (ou `build`/`.next`).
 - `NEXT_PUBLIC_*` / `VITE_*` / `REACT_APP_*` são **embutidas no bundle** → só para valores não-secretos.
 - Chave de API de terceiro "no front" = exposta. O correto é um proxy no backend.
 

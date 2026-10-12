@@ -43,6 +43,6 @@ mvn jacoco:report               # gera target/site/jacoco/jacoco.csv|html (cober
 ## Cobertura
 - Meta **~80% por módulo** (sinal de saúde, não gate dogmático). Olhe `term-missing`/relatório para caminhos críticos descobertos.
 - Cobertura alta com asserts fracos não vale — priorize asserts significativos.
-- **Gate no push (hook `test-cobertura`)**: o mínimo vem de `hooks/config.json → cobertura.minima` (default 80).
+- **Gate no push (hook `test-cobertura`)**: o mínimo vem de `hooks/config.json → coverage.minimum` (default 80).
   No modo `ask` (default), abaixo do mínimo o push **pede aprovação do usuário** — não é bloqueio dogmático.
   Comandos acima são os que o hook usa para medir; mantenha-os funcionando para o gate medir certo.

@@ -7,327 +7,357 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ponteiros import alvo_de_caminho, auditar_ponteiros  # noqa: E402
-from contagens import (  # noqa: E402
-    auditar_contagens,
-    contagens_do_texto,
-    divergencias as divergencias_de_contagem,
-    hooks_wireados,
+from pointers import path_target, audit_pointers  # noqa: E402
+from counts import (  # noqa: E402
+    audit_counts,
+    counts_of_text,
+    divergences as count_divergences,
+    wired_hooks,
 )
-from limiares import (  # noqa: E402
-    auditar_limiares,
-    divergencias,
-    limiares_de_dict_config,
-    limiares_de_texto_mjs,
+from thresholds import (  # noqa: E402
+    audit_thresholds,
+    divergences,
+    thresholds_of_config_dict,
+    thresholds_of_mjs_text,
 )
-from nomenclatura import (  # noqa: E402
-    auditar_nomenclatura,
-    fora_do_vocabulario,
-    prefixos_do_texto,
-    raiz_do_prefixo,
+from naming import (  # noqa: E402
+    audit_naming,
+    outside_vocabulary,
+    prefixes_of_text,
+    prefix_root,
 )
-from paridade import auditar_paridade, divergencias as divergencias_de_paridade  # noqa: E402
-from ids_citados import ids_do_catalogo, ids_invalidos  # noqa: E402
-from ids_citados import auditar_ids_citados  # noqa: E402
-from sistemas_nos_viajantes import (  # noqa: E402
-    auditar_sistemas_nos_viajantes,
-    divergencias as divergencias_de_sistemas,
-    termos_dos_sistemas,
+from parity import audit_parity, divergences as parity_divergences  # noqa: E402
+from cited_ids import catalog_ids, invalid_ids  # noqa: E402
+from cited_ids import audit_cited_ids  # noqa: E402
+from systems_in_shipped_files import (  # noqa: E402
+    audit_systems_in_shipped_files,
+    is_shipped,
+    divergences as systems_divergences,
+    system_terms,
 )
-from mapa import auditar_mapa, divergencias as divergencias_de_mapa
-from manifestos import (
-    FONTE as FONTE_DE_MANIFESTO,
-    auditar_manifestos,
-    divergencias as divergencias_de_manifesto,
+from map_schema import audit_map, divergences as map_divergences
+from manifests import (
+    SOURCE as MANIFEST_SOURCE,
+    audit_manifests,
+    divergences as manifest_divergences,
 )
-from proatividade import (  # noqa: E402
-    PROATIVAS,
-    auditar_proatividade,
-    descricao_do_frontmatter,
-    skills_sem_trava,
+from proactivity import (  # noqa: E402
+    PROACTIVE,
+    audit_proactivity,
+    frontmatter_description,
+    skills_without_guard,
 )
-from secoes import SECOES_OBRIGATORIAS, auditar_secoes, secoes_faltando  # noqa: E402
+from sections import REQUIRED_SECTIONS, audit_sections, missing_sections  # noqa: E402
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Auditoria Sarak knowledge-agentics Base")
-    parser.add_argument("--raiz", help="Caminho raiz do repositório knowledge-agentics")
+    parser = argparse.ArgumentParser(description="Sarak knowledge-agentics base audit")
+    parser.add_argument("--root", help="Root path of the knowledge-agentics repository")
     parser.add_argument(
         "--selftest",
         action="store_true",
-        help="Roda a suite interna, nao toca disco fora do repo",
+        help="Runs the internal suite, does not touch disk outside the repo",
     )
     return parser.parse_args()
 
 
-_CASOS = {"rodados": 0, "aprovados": 0}
+_CASES = {"ran": 0, "passed": 0}
 
 
-def _caso(falhas, ok, mensagem):
-    """Registra UM caso do autoteste: conta rodado e aprovado; o reprovado entra em `falhas`."""
-    _CASOS["rodados"] += 1
+def _case(failures, ok, message):
+    """Registra UM caso do selftest: conta rodado e aprovado; o reprovado entra em `failures`."""
+    _CASES["ran"] += 1
     if ok:
-        _CASOS["aprovados"] += 1
+        _CASES["passed"] += 1
     else:
-        falhas.append(mensagem)
+        failures.append(message)
 
 
-def _autoteste_manifestos():
+def _selftest_manifests():
     """Manifestos do plugin: identidade igual nao acusa; `version` divergente, `description`
     divergente no marketplace e manifesto ausente acusam, nomeando o arquivo; excecao declarada
     isenta o ausente."""
-    falhas = []
-    codex, raiz, mkt = ".codex-plugin/plugin.json", "plugin.json", ".claude-plugin/marketplace.json"
-    fonte = {"name": "sarak", "version": "1.0.0", "description": "d", "author": {"name": "a"}}
-    iguais = {
-        FONTE_DE_MANIFESTO: fonte,
-        codex: dict(fonte),
-        raiz: dict(fonte),
+    failures = []
+    codex, root, mkt = ".codex-plugin/plugin.json", "plugin.json", ".claude-plugin/marketplace.json"
+    source = {"name": "sarak", "version": "1.0.0", "description": "d", "author": {"name": "a"}}
+    equal = {
+        MANIFEST_SOURCE: source,
+        codex: dict(source),
+        root: dict(source),
         mkt: {"plugins": [{"name": "sarak", "description": "d"}]},
     }
-    casos = [
-        ("identidade igual nao acusa", iguais, {}, lambda r: r == []),
-        ("version divergente acusa o espelho", {**iguais, codex: {**fonte, "version": "2.0.0"}}, {},
+    cases = [
+        ("equal identity does not report", equal, {}, lambda r: r == []),
+        ("divergent version reports the mirror", {**equal, codex: {**source, "version": "2.0.0"}}, {},
          lambda r: len(r) == 1 and "version" in r[0] and codex in r[0]),
-        ("description divergente no marketplace acusa", {**iguais, mkt: {"plugins": [{"name": "sarak", "description": "x"}]}}, {},
+        ("divergent description in the marketplace reports", {**equal, mkt: {"plugins": [{"name": "sarak", "description": "x"}]}}, {},
          lambda r: len(r) == 1 and "description" in r[0] and mkt in r[0]),
-        ("manifesto ausente acusa", {k: v for k, v in iguais.items() if k != raiz}, {},
-         lambda r: len(r) == 1 and raiz in r[0] and "ausente" in r[0]),
-        ("excecao declarada isenta o ausente", {k: v for k, v in iguais.items() if k != raiz}, {raiz: "motivo"},
+        ("missing manifest reports", {k: v for k, v in equal.items() if k != root}, {},
+         lambda r: len(r) == 1 and root in r[0] and "missing" in r[0]),
+        ("declared exception exempts the missing one", {k: v for k, v in equal.items() if k != root}, {root: "reason"},
          lambda r: r == []),
     ]
-    for nome, manifestos, excecoes, esperado in casos:
-        achados = divergencias_de_manifesto(manifestos, excecoes=excecoes)
-        _caso(falhas, esperado(achados),
-              f"divergencias (manifestos): {nome} (achou {achados!r})")
-    return falhas
+    for name, manifests, exceptions, expected in cases:
+        findings = manifest_divergences(manifests, exceptions=exceptions)
+        _case(failures, expected(findings),
+              f"divergences (manifests): {name} (found {findings!r})")
+    return failures
 
 
-def _autoteste_mapa():
+def _selftest_map():
     """Schema do mapa.json: valido nao acusa; id duplicado, tipo invalido e caminho absoluto acusam."""
-    sistema = {
-        "id": "earendel-erp", "nome": "ERP", "caminho": "../Earendel/ERP", "repo": None,
-        "raiz_git": "../Earendel/ERP", "tipo": "app", "modular": True, "bindings": ["typescript"],
-        "situacao": "ativo", "status": "desatualizado", "status_base": None,
+    system = {
+        "id": "earendel-erp", "name": "ERP", "path": "../Earendel/ERP", "repo": None,
+        "git_root": "../Earendel/ERP", "kind": "app", "modular": True, "bindings": ["typescript"],
+        "lifecycle": "active", "status": "outdated", "status_commit": None,
     }
-    outro = {**sistema, "id": "outro", "caminho": "../Outro", "bindings": ["typescript", "python"]}
-    casos = [
-        ("mapa valido (lista com dois bindings) nao acusa", [sistema, outro], lambda r: r == []),
-        ("lista vazia de bindings nao acusa", [{**sistema, "bindings": []}], lambda r: r == []),
-        ("binding invalido na lista acusa", [{**sistema, "bindings": ["go"]}], lambda r: len(r) == 1 and "fora de" in r[0]),
-        ("binding repetido acusa", [{**sistema, "bindings": ["python", "python"]}], lambda r: len(r) == 1 and "repetido" in r[0]),
-        ("campo antigo binding acusa", [{**sistema, "binding": "typescript"}], lambda r: len(r) == 1 and "campo antigo" in r[0]),
-        ("id duplicado acusa", [sistema, {**outro, "id": "earendel-erp"}], lambda r: len(r) == 1 and "id 'earendel-erp' repetido" in r[0]),
-        ("tipo invalido acusa", [{**sistema, "tipo": "lib"}], lambda r: len(r) == 1 and "'tipo'" in r[0]),
-        ("status atualizado com commit curto nao acusa", [{**sistema, "status": "atualizado", "status_base": "973a0f5"}], lambda r: r == []),
-        ("status invalido acusa", [{**sistema, "status": "ok"}], lambda r: len(r) == 1 and "'status'" in r[0]),
-        ("status_base fora de commit acusa", [{**sistema, "status_base": "ontem"}], lambda r: len(r) == 1 and "status_base" in r[0]),
-        ("caminho absoluto acusa", [{**sistema, "caminho": "C:/Code/Earendel/ERP"}], lambda r: len(r) == 1 and "'caminho'" in r[0]),
+    other = {**system, "id": "other", "path": "../Other", "bindings": ["typescript", "python"]}
+    cases = [
+        ("valid map (list with two bindings) does not report", [system, other], lambda r: r == []),
+        ("empty bindings list does not report", [{**system, "bindings": []}], lambda r: r == []),
+        ("invalid binding in the list reports", [{**system, "bindings": ["go"]}], lambda r: len(r) == 1 and "outside" in r[0]),
+        ("duplicate binding reports", [{**system, "bindings": ["python", "python"]}], lambda r: len(r) == 1 and "duplicate" in r[0]),
+        ("legacy binding field reports", [{**system, "binding": "typescript"}], lambda r: len(r) == 1 and "legacy field" in r[0]),
+        ("duplicate id reports", [system, {**other, "id": "earendel-erp"}], lambda r: len(r) == 1 and "id 'earendel-erp' duplicate" in r[0]),
+        ("invalid kind reports", [{**system, "kind": "lib"}], lambda r: len(r) == 1 and "'kind'" in r[0]),
+        ("updated status with short commit does not report", [{**system, "status": "updated", "status_commit": "973a0f5"}], lambda r: r == []),
+        ("invalid status reports", [{**system, "status": "ok"}], lambda r: len(r) == 1 and "'status'" in r[0]),
+        ("status_commit outside commit form reports", [{**system, "status_commit": "yesterday"}], lambda r: len(r) == 1 and "status_commit" in r[0]),
+        ("absolute path reports", [{**system, "path": "C:/Code/Earendel/ERP"}], lambda r: len(r) == 1 and "'path'" in r[0]),
     ]
-    falhas = []
-    for nome, sistemas, esperado in casos:
-        achados = divergencias_de_mapa({"sistemas": sistemas})
-        _caso(falhas, esperado(achados),
-              f"divergencias (mapa): {nome} (achou {achados!r})")
-    return falhas
+    failures = []
+    for name, systems, expected in cases:
+        findings = map_divergences({"systems": systems})
+        _case(failures, expected(findings),
+              f"divergences (map): {name} (found {findings!r})")
+    legacy_system = {
+        "id": "old-sys", "nome": "Old", "caminho": "../Old", "repo": None, "raiz_git": None,
+        "tipo": "app", "modular": False, "bindings": [], "situacao": "ativo",
+        "status": "atualizado", "status_base": None,
+    }
+    legacy = map_divergences({"sistemas": [legacy_system]})
+    _case(failures, len(legacy) > 1 and all("legacy" in item for item in legacy)
+          and any("'sistemas'" in item for item in legacy),
+          f"divergences (map): legacy keys and values report only as legacy (found {legacy!r})")
+    return failures
 
 
-def _autoteste_sistemas_nos_viajantes():
+def _selftest_systems_in_shipped_files():
     """Guarda do vazamento de sistema: arquivo que viaja citando o id OU o nome de um sistema do mapa
     acusa (nomeando arquivo e linha); texto limpo passa; palavra que apenas CONTEM o id nao casa; a
     lista de sistemas vem do mapa lido, nao de constante."""
-    mapa = {"sistemas": [
-        {"id": "sistema-alfa", "nome": "Alfa — Painel"},
-        {"id": "beta-sys", "nome": "Outro Sistema"},
+    map_data = {"systems": [
+        {"id": "system-alpha", "name": "Alpha — Panel"},
+        {"id": "beta-sys", "name": "Other System"},
     ]}
-    termos = termos_dos_sistemas(mapa)
-    casos = [
-        ("texto limpo nao acusa", {"a.md": "nada de sistema aqui\n"}, lambda r: r == []),
-        ("id citado acusa, com arquivo e linha", {"d/adr.md": "x\nveja `sistema-alfa` la\n"},
-         lambda r: len(r) == 1 and "d/adr.md:2" in r[0] and "sistema-alfa" in r[0]),
-        ("nome citado acusa (caixa diferente tambem)", {"b.md": "o ALFA — painel decidiu\n"},
+    terms = system_terms(map_data)
+    cases = [
+        ("clean text does not report", {"a.md": "no system named here\n"}, lambda r: r == []),
+        ("cited id reports, with file and line", {"d/adr.md": "x\nsee `system-alpha` there\n"},
+         lambda r: len(r) == 1 and "d/adr.md:2" in r[0] and "system-alpha" in r[0]),
+        ("cited name reports (different case too)", {"b.md": "the ALPHA — panel decided\n"},
          lambda r: len(r) == 1 and "b.md:1" in r[0]),
-        ("id dentro de outro id kebab-case nao casa", {"c.md": "sistema-alfa-novo e outro-caso\n"}, lambda r: r == []),
-        ("mapa novo e coberto sem tocar o modulo", {"e.md": "Outro Sistema\n"}, lambda r: len(r) == 1),
+        ("id inside another kebab-case id does not match", {"c.md": "system-alpha-new and other-case\n"}, lambda r: r == []),
+        ("new map is covered without touching the module", {"e.md": "Other System\n"}, lambda r: len(r) == 1),
     ]
-    falhas = []
-    for nome, textos, esperado in casos:
-        achados = divergencias_de_sistemas(textos, termos)
-        _caso(falhas, esperado(achados),
-              f"sistemas_nos_viajantes: {nome} (achou {achados!r})")
-    _caso(falhas, not (termos_dos_sistemas({"sistemas": []}) != []),
-          "sistemas_nos_viajantes: mapa sem sistema deveria dar zero termos (a casca reprova)")
-    return falhas
+    failures = []
+    for name, texts, expected in cases:
+        findings = systems_divergences(texts, terms)
+        _case(failures, expected(findings),
+              f"systems_in_shipped_files: {name} (found {findings!r})")
+    _case(failures, not (system_terms({"systems": []}) != []),
+          "systems_in_shipped_files: map without systems should give zero terms (the shell fails it)")
+    legacy_terms = system_terms({"sistemas": [{"id": "old-sys", "nome": "Old Name"}]})
+    _case(failures, legacy_terms == [("old-sys", "old-sys"), ("Old Name", "old-sys")],
+          f"systems_in_shipped_files: legacy map keys are read too (found {legacy_terms!r})")
+    tests_dir = "specs/_estrutura_modulos/tests"
+    covered = [is_shipped(f"{tests_dir}/language-vocabulary.json"), is_shipped(f"{tests_dir}/x/y.json")]
+    _case(failures, all(covered) and not is_shipped("skills/x/SKILL.md")
+          and not is_shipped(f"{tests_dir}-other/x.json"),
+          f"systems_in_shipped_files: tests/** ships and the rest does not (found {covered!r})")
+    with tempfile.TemporaryDirectory() as tmp_base:
+        os.makedirs(os.path.join(tmp_base, *tests_dir.split("/")))
+        os.makedirs(os.path.join(tmp_base, "skills", "x"))
+        with open(os.path.join(tmp_base, "mapa.json"), "w", encoding="utf-8") as f:
+            json.dump({"systems": [{"id": "system-alpha", "name": "Alpha — Panel"}]}, f)
+        with open(os.path.join(tmp_base, *tests_dir.split("/"), "fixture.json"), "w", encoding="utf-8") as f:
+            f.write('{"origin": "system-alpha"}\n')
+        with open(os.path.join(tmp_base, "skills", "x", "SKILL.md"), "w", encoding="utf-8") as f:
+            f.write("system-alpha is cited here and does not ship\n")
+        on_disk = audit_systems_in_shipped_files(tmp_base)
+    _case(failures, len(on_disk) == 1 and f"{tests_dir}/fixture.json:1" in on_disk[0],
+          f"systems_in_shipped_files: a system named in tests/** is reported (found {on_disk!r})")
+    return failures
 
 
-def _autoteste_ids_citados():
+def _selftest_cited_ids():
     """Id de regra citado em documentacao: id valido passa; id antigo acusa com a dica; id que nunca
     existiu depois de 'regra' acusa sem dica; nome de skill entre crases e id de UMA palavra em prosa
     nao sao citacao; o catalogo e lido do texto do gate."""
-    catalogo = ids_do_catalogo(
+    catalog = catalog_ids(
         ["export default [\n  {\n    id: 'manifest',\n  },\n  {\n    id: 'strict-structure',\n  },\n]"],
         "const EXTRACTION_ID = 'extraction';",
     )
-    renomeados = {"estrutura-estrita": "strict-structure", "estrutura": "structure"}
-    nao_regras = {"code-modulo"}
+    renamed = {"estrutura-estrita": "strict-structure", "estrutura": "structure"}
+    non_rules = {"example-skill"}
 
-    def conferir(texto):
-        return ids_invalidos({"skills/x/SKILL.md": texto}, catalogo, renomeados, nao_regras)
+    def check_against(text):
+        return invalid_ids({"skills/x/SKILL.md": text}, catalog, renamed, non_rules)
 
-    casos = [
-        ("catalogo lido do texto do gate (inclui o pseudo-id)", None, lambda _: catalogo == {"manifest", "strict-structure", "extraction"}),
-        ("id valido depois de 'regra' passa", "a regra `strict-structure` cobre isto", lambda r: r == []),
-        ("id antigo com hifen acusa, com a dica do id novo", "veja `estrutura-estrita` na lei",
+    cases = [
+        ("catalog read from the gate text (includes the pseudo-id)", None, lambda _: catalog == {"manifest", "strict-structure", "extraction"}),
+        ("valid id after the rule word passes", "a regra `strict-structure` cobre isto", lambda r: r == []),
+        ("old hyphenated id reports, with the new id hint", "see `estrutura-estrita` in the law",
          lambda r: len(r) == 1 and "`strict-structure`" in r[0] and "skills/x/SKILL.md:1" in r[0]),
-        ("id inexistente depois de 'regra' acusa, sem dica", "a regra `row-level-security` cala",
+        ("nonexistent id after the rule word reports, without hint", "the rule `row-level-security` is silent",
          lambda r: len(r) == 1 and "row-level-security" in r[0] and "renomeado" not in r[0]),
-        ("enumeracao: o segundo id da lista tambem e conferido", "regras `manifest`, `fantasma` e `extraction`",
-         lambda r: len(r) == 1 and "fantasma" in r[0]),
-        ("linha de tabela de catalogo e citacao", "| `inventado` | erro | descricao |", lambda r: len(r) == 1),
-        ("nome de skill entre crases nao e id de regra", "use `code-modulo` para isto", lambda r: r == []),
-        ("kebab-case fora de contexto de regra nao e citacao", "o arquivo `config-qualquer` existe", lambda r: r == []),
-        ("id de uma palavra antigo em prosa nao acusa", "o contrato e a estrutura do modulo", lambda r: r == []),
+        ("enumeration: the second id of the list is checked too", "regras `manifest`, `ghost` e `extraction`",
+         lambda r: len(r) == 1 and "ghost" in r[0]),
+        ("catalog table line is a citation", "| `invented` | erro | description |", lambda r: len(r) == 1),
+        ("skill name in backticks is not a rule id", "use `example-skill` for this", lambda r: r == []),
+        ("kebab-case outside a rule context is not a citation", "the file `any-config` exists", lambda r: r == []),
+        ("old one-word id in prose does not report", "the contract and the structure of the module", lambda r: r == []),
     ]
-    falhas = []
-    for nome, texto, esperado in casos:
-        achados = None if texto is None else conferir(texto)
-        _caso(falhas, esperado(achados),
-              f"ids_citados: {nome} (achou {achados!r})")
-    return falhas
+    failures = []
+    for name, text, expected in cases:
+        findings = None if text is None else check_against(text)
+        _case(failures, expected(findings),
+              f"cited_ids: {name} (found {findings!r})")
+    return failures
 
 
-def autoteste():
-    """Prova que `alvo_de_caminho` trata caminho de PROJETO GERADO (`specs/arquitetura/`,
+def selftest():
+    """Prova que `path_target` trata caminho de PROJETO GERADO (`specs/arquitetura/`,
     `contract/`, `core/`, `modules/`, `api/`, `tools/` — a mesma lista do comentario acima de
-    PREFIXOS_DA_BASE) como fora de alcance, e caminho da BASE como resolvivel."""
-    _CASOS["rodados"] = _CASOS["aprovados"] = 0
-    falhas = []
-    de_projeto_gerado = (
+    BASE_PREFIXES) como fora de alcance, e caminho da BASE como resolvivel."""
+    _CASES["ran"] = _CASES["passed"] = 0
+    failures = []
+    generated_project_paths = (
         "specs/arquitetura/04-regras.md",
         "contract/openapi.yaml",
         "core/domain/item.ts",
-        "modules/catalogo/module.json",
+        "modules/catalog/module.json",
         "api/src/index.ts",
         "tools/gate/validate.mjs",
     )
-    for token in de_projeto_gerado:
-        alvo = alvo_de_caminho(token, dono=None)
-        _caso(falhas, not (alvo is not None),
-              f"caminho de projeto gerado deveria ficar fora de alcance: {token!r} -> {alvo!r}")
-    da_base = "skills/git-verificacao-commit/scripts/gerar_config.py"
-    _caso(falhas, not (alvo_de_caminho(da_base, dono=None) != da_base),
-          f"caminho da base deveria resolver identico: {da_base!r}")
+    for token in generated_project_paths:
+        target = path_target(token, owner=None)
+        _case(failures, not (target is not None),
+              f"generated-project path should stay out of reach: {token!r} -> {target!r}")
+    base_path = "skills/example-skill/scripts/tool.py"
+    _case(failures, not (path_target(base_path, owner=None) != base_path),
+          f"base path should resolve identically: {base_path!r}")
 
     # Tarefa 1: comparador de limiares (thresholds.mjs vs config.json) tem que pegar divergencia
     # E reprovar quando o formato de thresholds.mjs muda de jeito inesperado (fail-closed).
     mjs_ok = "export const THRESHOLDS = {\n  functionLines: 40,\n  nesting: 3,\n  params: 4,\n};\n"
-    esperado = {"functionLines": 40, "nesting": 3, "params": 4}
-    _caso(falhas, not (limiares_de_texto_mjs(mjs_ok) != esperado),
-          "limiares_de_texto_mjs deveria extrair o trio de um thresholds.mjs valido")
-    _caso(falhas, not (limiares_de_texto_mjs("export const OUTRACOISA = { x: 1 };") is not None),
-          "limiares_de_texto_mjs deveria reprovar (None) quando THRESHOLDS nao existe")
-    _caso(falhas, not (limiares_de_texto_mjs("export const THRESHOLDS = { functionLines: 40 };")
+    expected = {"functionLines": 40, "nesting": 3, "params": 4}
+    _case(failures, not (thresholds_of_mjs_text(mjs_ok) != expected),
+          "thresholds_of_mjs_text should extract the trio from a valid thresholds.mjs")
+    _case(failures, not (thresholds_of_mjs_text("export const OUTRACOISA = { x: 1 };") is not None),
+          "thresholds_of_mjs_text should fail (None) when THRESHOLDS does not exist")
+    _case(failures, not (thresholds_of_mjs_text("export const THRESHOLDS = { functionLines: 40 };")
         is not None),
-          "limiares_de_texto_mjs deveria reprovar (None) quando falta uma das tres chaves")
-    config_igual = {"maxFunctionLines": 40, "maxNesting": 3, "maxParams": 4}
-    _caso(falhas, not (divergencias(esperado, limiares_de_dict_config(config_igual), "fixture") != []),
-          "divergencias nao deveria achar nada quando os trios sao iguais")
-    config_diferente = {"maxFunctionLines": 50, "maxNesting": 3, "maxParams": 4}
-    achado_divergente = divergencias(
-        esperado, limiares_de_dict_config(config_diferente), "fixture"
+          "thresholds_of_mjs_text should fail (None) when one of the three keys is missing")
+    config_equal = {"maxFunctionLines": 40, "maxNesting": 3, "maxParams": 4}
+    _case(failures, not (divergences(expected, thresholds_of_config_dict(config_equal), "fixture") != []),
+          "divergences should find nothing when the trios are equal")
+    config_different = {"maxFunctionLines": 50, "maxNesting": 3, "maxParams": 4}
+    divergent_finding = divergences(
+        expected, thresholds_of_config_dict(config_different), "fixture"
     )
-    _caso(falhas, not (len(achado_divergente) != 1 or "functionLines" not in achado_divergente[0]),
-          "divergencias deveria achar exatamente a chave que diverge (functionLines)")
-    _caso(falhas, not (len(divergencias(esperado, None, "fixture")) != 1),
-          "divergencias deveria reprovar quando o config.json nao resolve")
+    _case(failures, not (len(divergent_finding) != 1 or "functionLines" not in divergent_finding[0]),
+          "divergences should find exactly the key that diverges (functionLines)")
+    _case(failures, not (len(divergences(expected, None, "fixture")) != 1),
+          "divergences should fail when config.json does not resolve")
 
     # Tarefa 4: vocabulario de prefixos (nomenclatura.md) tem que pegar nome fora do vocabulario
     # E reprovar (fail-closed) quando o parser extrai ZERO prefixos do arquivo.
-    tabela_ok = "# Nomenclatura\n\n| Prefixo | Area | Exemplos |\n|---|---|---|\n| `code-` | X | Y |\n| `cyber-` | Z | W |\n"
-    prefixos_ok = prefixos_do_texto(tabela_ok)
-    _caso(falhas, not (prefixos_ok != ["code-", "cyber-"]),
-          "prefixos_do_texto deveria extrair os dois prefixos da tabela valida")
-    _caso(falhas, not (prefixos_do_texto("# Nomenclatura\n\nsem tabela nenhuma aqui\n") != []),
-          "prefixos_do_texto deveria devolver lista vazia quando nao ha tabela")
-    _caso(falhas, not (raiz_do_prefixo("code1-auditar") != "code"),
-          "raiz_do_prefixo deveria descartar o digito do fluxo numerado (code1- -> code)")
-    _caso(falhas, not (raiz_do_prefixo("cyber-segredos") != "cyber"),
-          "raiz_do_prefixo deveria extrair a raiz de um prefixo simples")
-    fora = fora_do_vocabulario(
-        ["code-diagnostico", "api-fantasma", "code1-auditar"], prefixos_ok
+    table_ok = "# Naming\n\n| Prefix | Area | Examples |\n|---|---|---|\n| `code-` | X | Y |\n| `cyber-` | Z | W |\n"
+    prefixes_ok = prefixes_of_text(table_ok)
+    _case(failures, not (prefixes_ok != ["code-", "cyber-"]),
+          "prefixes_of_text should extract the two prefixes of the valid table")
+    _case(failures, not (prefixes_of_text("# Naming\n\nno table here at all\n") != []),
+          "prefixes_of_text should return an empty list when there is no table")
+    _case(failures, not (prefix_root("code1-audit") != "code"),
+          "prefix_root should drop the digit of the numbered flow (code1- -> code)")
+    _case(failures, not (prefix_root("cyber-secrets") != "cyber"),
+          "prefix_root should extract the root of a simple prefix")
+    outside = outside_vocabulary(
+        ["code-diagnose", "api-ghost", "code1-audit"], prefixes_ok
     )
-    _caso(falhas, not (fora != ["api-fantasma"]),
-          "fora_do_vocabulario deveria achar so o nome com prefixo fora da lista "
-            f"(achou {fora!r})")
+    _case(failures, not (outside != ["api-ghost"]),
+          "outside_vocabulary should find only the name with a prefix outside the list "
+            f"(found {outside!r})")
 
     # Tarefa 5: toda skill precisa da trava "NAO acione proativamente", exceto a lista fechada
-    # PROATIVAS (com justificativa por entrada).
-    com_trava = "description: Faz X. Use ao Y. NÃO acione proativamente."
-    _caso(falhas, not (descricao_do_frontmatter(f"---\nname: x\n{com_trava}\n---\n")
-        != com_trava[len("description: ") :]),
-          "descricao_do_frontmatter deveria extrair a linha description inteira")
-    _caso(falhas, not (descricao_do_frontmatter("---\nname: x\n---\n") is not None),
-          "descricao_do_frontmatter deveria devolver None sem linha description")
-    pares = [
-        ("code-comtrava", "Faz X. Use ao Y. NÃO acione proativamente."),
-        ("code-semtrava", "Faz X. Use ao Y."),
-        ("padrao-escrita", "Norma sempre-referenciada, sem a trava por desenho."),
-        ("code-semdescricao", None),
+    # PROACTIVE (com justificativa por entrada).
+    with_guard = "description: Does X. Use for Y. NÃO acione proativamente."
+    _case(failures, not (frontmatter_description(f"---\nname: x\n{with_guard}\n---\n")
+        != with_guard[len("description: ") :]),
+          "frontmatter_description should extract the whole description line")
+    _case(failures, not (frontmatter_description("---\nname: x\n---\n") is not None),
+          "frontmatter_description should return None without a description line")
+    pairs = [
+        ("code-withguard", "Does X. Use for Y. NÃO acione proativamente."),
+        ("code-noguard", "Does X. Use for Y."),
+        ("padrao-escrita", "Always-referenced norm, no guard by design."),
+        ("code-nodescription", None),
     ]
-    faltantes = skills_sem_trava(pares, PROATIVAS)
-    _caso(falhas, not (faltantes != ["code-semtrava", "code-semdescricao"]),
-          "skills_sem_trava deveria achar so quem falta a trava E nao esta em PROATIVAS "
-            f"(achou {faltantes!r})")
-    _caso(falhas, not ("padrao-escrita" not in PROATIVAS or "code-auditoria-padrao" not in PROATIVAS),
-          "PROATIVAS deveria listar padrao-escrita e code-auditoria-padrao com justificativa")
+    missing = skills_without_guard(pairs, PROACTIVE)
+    _case(failures, not (missing != ["code-noguard", "code-nodescription"]),
+          "skills_without_guard should find only who lacks the guard AND is not in PROACTIVE "
+            f"(found {missing!r})")
+    _case(failures, not ("padrao-escrita" not in PROACTIVE or "code-auditoria-padrao" not in PROACTIVE),
+          "PROACTIVE should list the writing norm and the end-of-task gatekeeper with a justification")
 
     # Tarefa 6: SKILL.md precisa das secoes obrigatorias do molde (nao cobra "## Workflow" —
-    # ver a nota de secoes.py sobre as 6 skills legitimas sem essa secao).
-    skill_completa = (
+    # ver a nota de sections.py sobre as 6 skills legitimas sem essa secao).
+    complete_skill = (
         '## Quando usar\nx\n## Regras e limites\nx\n## Checklist "pronta"\nx\n'
     )
-    _caso(falhas, not (secoes_faltando(skill_completa, SECOES_OBRIGATORIAS) != []),
-          "secoes_faltando nao deveria achar nada num SKILL.md com as tres secoes")
+    _case(failures, not (missing_sections(complete_skill, REQUIRED_SECTIONS) != []),
+          "missing_sections should find nothing in a SKILL.md with the three sections")
     # "## Regras de Ouro" (o molde antigo) casa o prefixo "## Regras" de proposito — o defeito
     # real do molde antigo era a falta de "## Quando usar" (tinha "## O Gatilho") e a falta TOTAL
     # de checklist, nao o nome da secao de regras.
-    skill_velha = "## O Gatilho\nx\n## Workflow\nx\n## Regras de Ouro\nx\n"
-    faltando_velha = secoes_faltando(skill_velha, SECOES_OBRIGATORIAS)
-    _caso(falhas, not (faltando_velha != ["## Quando usar", "## Checklist"]),
-          "secoes_faltando deveria reprovar 'Quando usar' e 'Checklist' no molde antigo "
-            f"(O Gatilho/Regras de Ouro, sem Checklist) — achou {faltando_velha!r}")
-    _caso(falhas, not (secoes_faltando(skill_completa, ("## Workflow",)) != ["## Workflow"]),
-          "secoes_faltando deveria achar 'Workflow' faltando quando so ele e cobrado")
+    old_skill = "## O Gatilho\nx\n## Workflow\nx\n## Regras de Ouro\nx\n"
+    old_missing = missing_sections(old_skill, REQUIRED_SECTIONS)
+    _case(failures, not (old_missing != ["## Quando usar", "## Checklist"]),
+          "missing_sections should flag the when-to-use and checklist sections in the old template "
+            f"(old template with no checklist) — found {old_missing!r}")
+    _case(failures, not (missing_sections(complete_skill, ("## Workflow",)) != ["## Workflow"]),
+          "missing_sections should find 'Workflow' missing when only it is required")
 
     # Tarefa 7: contagem do cabecalho do roteador de capacidades (00-knowledge.md) tem que bater
     # com a contagem real de commands/agents/hooks — e "Hooks" conta pelo wireado em hooks.json,
     # nao por arquivo .js solto (a pasta tem _lib.js, que nao e um hook).
-    texto_cabecalhos = (
+    headers_text = (
         "# 5. Commands (13) — disparo manual\n"
         "# 6. Agents (5) — subagentes\n"
         "# 7. Hooks (5) — garantias\n"
     )
-    citadas = contagens_do_texto(texto_cabecalhos)
-    _caso(falhas, not (citadas != {"Commands": 13, "Agents": 5, "Hooks": 5}),
-          f"contagens_do_texto deveria extrair os tres cabecalhos com numero (achou {citadas!r})")
-    _caso(falhas, not (contagens_do_texto("# 4. Catalogo de skills\n") != {}),
-          "contagens_do_texto nao deveria achar nada num cabecalho sem numero entre parenteses")
-    sem_divergencia = divergencias_de_contagem(
+    cited = counts_of_text(headers_text)
+    _case(failures, not (cited != {"Commands": 13, "Agents": 5, "Hooks": 5}),
+          f"counts_of_text should extract the three headers with a number (found {cited!r})")
+    _case(failures, not (counts_of_text("# 4. Catalogo de skills\n") != {}),
+          "counts_of_text should find nothing in a header without a number in parentheses")
+    no_divergence = count_divergences(
         {"Commands": 13}, {"Commands": 13, "Agents": 5}
     )
-    _caso(falhas, not (sem_divergencia != []),
-          "divergencias (contagens) nao deveria achar nada quando o numero citado bate")
-    com_divergencia = divergencias_de_contagem({"Commands": 12}, {"Commands": 13})
-    _caso(falhas, not (len(com_divergencia) != 1 or "Commands" not in com_divergencia[0]),
-          f"divergencias (contagens) deveria achar a divergencia de Commands (achou {com_divergencia!r})")
+    _case(failures, not (no_divergence != []),
+          "divergences (counts) should find nothing when the cited number matches")
+    with_divergence = count_divergences({"Commands": 12}, {"Commands": 13})
+    _case(failures, not (len(with_divergence) != 1 or "Commands" not in with_divergence[0]),
+          f"divergences (counts) should find the Commands divergence (found {with_divergence!r})")
     hooks_json_fixture = {
         "hooks": {
             "PreToolUse": [
-                {"hooks": [{"command": 'node "${X}/hooks/cyber-git-seguro.js"'}]}
+                {"hooks": [{"command": 'node "${X}/hooks/git-guard.js"'}]}
             ],
             "PostToolUse": [
-                {"hooks": [{"command": 'node "${X}/hooks/cyber-git-seguro.js"'}]},
-                {"hooks": [{"command": 'node "${X}/hooks/padrao-format.js"'}]},
+                {"hooks": [{"command": 'node "${X}/hooks/git-guard.js"'}]},
+                {"hooks": [{"command": 'node "${X}/hooks/format-check.js"'}]},
             ],
         }
     }
@@ -337,58 +367,58 @@ def autoteste():
             os.path.join(tmp_hooks, "hooks", "hooks.json"), "w", encoding="utf-8"
         ) as f:
             json.dump(hooks_json_fixture, f)
-        nomes = hooks_wireados(tmp_hooks)
-    _caso(falhas, not (nomes != {"cyber-git-seguro", "padrao-format"}),
-          f"hooks_wireados deveria dedupar o hook repetido em dois eventos (achou {nomes!r})")
+        names = wired_hooks(tmp_hooks)
+    _case(failures, not (names != {"git-guard", "format-check"}),
+          f"wired_hooks should dedupe the hook repeated in two events (found {names!r})")
 
-    # Tarefa 8: paridade entre specs/_estrutura_base e specs/_estrutura_base_site — par identico
+    # Tarefa 8: parity entre specs/_estrutura_base e specs/_estrutura_base_site — par identico
     # nao acusa, CRLF vs LF do MESMO conteudo nao e divergencia real, arquivo que so existe de um
     # lado nao acusa (e o desenho, nao defeito), excecao declarada nao acusa mesmo divergindo, e
     # par realmente divergente acusa nomeando o arquivo.
-    par_identico = divergencias_de_paridade(
-        {"x.md": "igual\n"}, {"x.md": "igual\n"}, excecoes={}
+    identical_pair = parity_divergences(
+        {"x.md": "same\n"}, {"x.md": "same\n"}, exceptions={}
     )
-    _caso(falhas, not (par_identico != []),
-          f"divergencias (paridade) nao deveria acusar par identico (achou {par_identico!r})")
-    so_fim_de_linha = divergencias_de_paridade(
-        {"x.md": "um\r\ndois\r\n"}, {"x.md": "um\ndois\n"}, excecoes={}
+    _case(failures, not (identical_pair != []),
+          f"divergences (parity) should not report an identical pair (found {identical_pair!r})")
+    only_line_ending = parity_divergences(
+        {"x.md": "one\r\ntwo\r\n"}, {"x.md": "one\ntwo\n"}, exceptions={}
     )
-    _caso(falhas, not (so_fim_de_linha != []),
-          f"divergencias (paridade) nao deveria acusar CRLF vs LF do mesmo conteudo (achou {so_fim_de_linha!r})")
-    so_de_um_lado = divergencias_de_paridade(
-        {"x.md": "a", "so-aqui.md": "y"}, {"x.md": "a"}, excecoes={}
+    _case(failures, not (only_line_ending != []),
+          f"divergences (parity) should not report CRLF vs LF of the same content (found {only_line_ending!r})")
+    one_side_only = parity_divergences(
+        {"x.md": "a", "only-here.md": "y"}, {"x.md": "a"}, exceptions={}
     )
-    _caso(falhas, not (so_de_um_lado != []),
-          f"divergencias (paridade) nao deveria acusar arquivo que so existe de um lado (achou {so_de_um_lado!r})")
-    isento = divergencias_de_paridade(
-        {"README.md": "a"}, {"README.md": "b"}, excecoes={"README.md": "motivo"}
+    _case(failures, not (one_side_only != []),
+          f"divergences (parity) should not report a file that exists on one side only (found {one_side_only!r})")
+    exempt = parity_divergences(
+        {"README.md": "a"}, {"README.md": "b"}, exceptions={"README.md": "reason"}
     )
-    _caso(falhas, not (isento != []),
-          f"divergencias (paridade) nao deveria acusar arquivo isento por excecao (achou {isento!r})")
-    par_divergente = divergencias_de_paridade({"x.md": "a"}, {"x.md": "b"}, excecoes={})
-    _caso(falhas, not (len(par_divergente) != 1 or "x.md" not in par_divergente[0]),
-          f"divergencias (paridade) deveria acusar par divergente, nomeando o arquivo (achou {par_divergente!r})")
+    _case(failures, not (exempt != []),
+          f"divergences (parity) should not report a file exempt by exception (found {exempt!r})")
+    divergent_pair = parity_divergences({"x.md": "a"}, {"x.md": "b"}, exceptions={})
+    _case(failures, not (len(divergent_pair) != 1 or "x.md" not in divergent_pair[0]),
+          f"divergences (parity) should report a divergent pair, naming the file (found {divergent_pair!r})")
     # Achado da rodada de correção: filtro por extensão ".md" contradizia a docstring ("arquivo
     # compartilhado NOVO nasce COBRADO por default"). Agora o recorte é por PASTA, nunca por
     # extensão — par não-`.md` divergente tem de acusar, texto ou binário (bytes).
-    par_nao_md_diverge = divergencias_de_paridade(
-        {"config.json": '{"a": 1}'}, {"config.json": '{"a": 2}'}, excecoes={}
+    non_md_divergent_pair = parity_divergences(
+        {"config.json": '{"a": 1}'}, {"config.json": '{"a": 2}'}, exceptions={}
     )
-    _caso(falhas, not (len(par_nao_md_diverge) != 1 or "config.json" not in par_nao_md_diverge[0]),
-          f"divergencias (paridade) deveria acusar par nao-.md divergente (achou {par_nao_md_diverge!r})")
+    _case(failures, not (len(non_md_divergent_pair) != 1 or "config.json" not in non_md_divergent_pair[0]),
+          f"divergences (parity) should report a divergent non-.md pair (found {non_md_divergent_pair!r})")
 
-    falhas += _autoteste_manifestos()
-    falhas += _autoteste_mapa()
-    falhas += _autoteste_sistemas_nos_viajantes()
-    falhas += _autoteste_ids_citados()
+    failures += _selftest_manifests()
+    failures += _selftest_map()
+    failures += _selftest_systems_in_shipped_files()
+    failures += _selftest_cited_ids()
 
-    for falha in falhas:
-        print(f"  falha  {falha}")
-    rodados, aprovados = _CASOS["rodados"], _CASOS["aprovados"]
-    if falhas or rodados == 0:
-        print(f"autoteste (audit_base): {aprovados}/{rodados} ok, {len(falhas)} falha(s)")
+    for failure in failures:
+        print(f"  fail  {failure}")
+    ran, passed = _CASES["ran"], _CASES["passed"]
+    if failures or ran == 0:
+        print(f"selftest (audit_base): {passed}/{ran} ok, {len(failures)} failure(s)")
         return 1
-    print(f"autoteste (audit_base): {aprovados}/{rodados} ok")
+    print(f"selftest (audit_base): {passed}/{ran} ok")
     return 0
 
 
@@ -398,18 +428,18 @@ def audit_base(base_dir):
         "commands": [],
         "hooks": [],
         "skills": [],
-        "ponteiros": [],
-        "contagens": [],
-        "vazamentos": [],
-        "limiares": [],
-        "nomenclatura": [],
-        "proatividade": [],
-        "secoes": [],
-        "paridade": [],
-        "manifestos": [],
-        "mapa": [],
-        "sistemas_nos_viajantes": [],
-        "ids_citados": [],
+        "pointers": [],
+        "counts": [],
+        "leaks": [],
+        "thresholds": [],
+        "naming": [],
+        "proactivity": [],
+        "sections": [],
+        "parity": [],
+        "manifests": [],
+        "map": [],
+        "systems_in_shipped_files": [],
+        "cited_ids": [],
     }
 
     # 1. Agents
@@ -423,11 +453,11 @@ def audit_base(base_dir):
                 content = f.read()
             if "EXCLUSIVAMENTE" not in content and "JSON" not in content:
                 report["agents"].append(
-                    f"[{file}] Faltando contrato estrito de saída JSON."
+                    f"[{file}] Missing strict JSON output contract."
                 )
             if "name:" not in content or "description:" not in content:
                 report["agents"].append(
-                    f"[{file}] Frontmatter incompleto (name/description)."
+                    f"[{file}] Incomplete frontmatter (name/description)."
                 )
 
     # 2. Commands
@@ -443,7 +473,7 @@ def audit_base(base_dir):
                 if line.startswith("description:"):
                     if ": " in line[12:].strip():
                         report["commands"].append(
-                            f"[{file}] Armadilha YAML na description (dois pontos seguidos de espaço)."
+                            f"[{file}] YAML trap in description (colon followed by space)."
                         )
 
     # 3. Hooks
@@ -456,7 +486,7 @@ def audit_base(base_dir):
                     with open(path, "r", encoding="utf-8") as f:
                         json.load(f)
                 except Exception as e:
-                    report["hooks"].append(f"[{file}] JSON inválido: {str(e)}")
+                    report["hooks"].append(f"[{file}] Invalid JSON: {str(e)}")
             elif file.endswith(".js"):
                 try:
                     subprocess.run(
@@ -464,7 +494,7 @@ def audit_base(base_dir):
                     )
                 except subprocess.CalledProcessError as e:
                     report["hooks"].append(
-                        f"[{file}] Erro sintático JS: {e.stderr.strip()}"
+                        f"[{file}] JS syntax error: {e.stderr.strip()}"
                     )
 
     # 4. Skills
@@ -479,51 +509,51 @@ def audit_base(base_dir):
                     if line.startswith("description:"):
                         if ": " in line[12:].strip():
                             report["skills"].append(
-                                f"[{skill_folder}] Armadilha YAML na description."
+                                f"[{skill_folder}] YAML trap in description."
                             )
 
-    # 5. Ponteiros orfaos (caminho citado e nome de artefato citado) — ver ponteiros.py
-    report["ponteiros"] = auditar_ponteiros(base_dir)
+    # 5. Ponteiros orfaos (caminho citado e nome de artefato citado) — ver pointers.py
+    report["pointers"] = audit_pointers(base_dir)
 
     # 5a. Contagem defasada nos cabecalhos do roteador de capacidades (00-knowledge.md) — ver
-    # contagens.py. Complementa o ponteiros.py: aquele cobra NOME citado, este cobra o NUMERO.
-    report["contagens"] = auditar_contagens(base_dir)
+    # counts.py. Complementa o pointers.py: aquele cobra NOME citado, este cobra o NUMERO.
+    report["counts"] = audit_counts(base_dir)
 
     # 5b. Limiares 40/3/4: thresholds.mjs (fonte unica) vs config.json de cada padrao-<linguagem>
-    report["limiares"] = auditar_limiares(base_dir)
+    report["thresholds"] = audit_thresholds(base_dir)
 
     # 5c. Nomenclatura: todo skills/*, commands/*, agents/* comeca por um prefixo do vocabulario
     # declarado em skills/meta-create-skill/references/nomenclatura.md (fonte unica)
-    report["nomenclatura"] = auditar_nomenclatura(base_dir)
+    report["naming"] = audit_naming(base_dir)
 
     # 5d. Proatividade: toda skill tem a trava "NAO acione proativamente", exceto a lista fechada
-    # e justificada de excecoes (PROATIVAS) em proatividade.py
-    report["proatividade"] = auditar_proatividade(base_dir)
+    # e justificada de excecoes (PROACTIVE) em proactivity.py
+    report["proactivity"] = audit_proactivity(base_dir)
 
     # 5e. Secoes obrigatorias do molde: "## Quando usar", "## Regras...", "## Checklist..."
-    report["secoes"] = auditar_secoes(base_dir)
+    report["sections"] = audit_sections(base_dir)
 
     # 5f. Paridade: specs/_estrutura_base/ e specs/_estrutura_base_site/ ensinam o MESMO fluxo
     # SDD — todo .md presente nas duas arvores tem de ser identico, exceto a divergencia
-    # declarada em paridade.EXCECOES (ver paridade.py)
-    report["paridade"] = auditar_paridade(base_dir)
+    # declarada em parity.EXCEPTIONS (ver parity.py)
+    report["parity"] = audit_parity(base_dir)
 
     # 5g. Manifestos: a identidade do plugin (name/version/description/author) vive em
-    # .claude-plugin/plugin.json; os outros manifestos a repetem (ver manifestos.py)
-    report["manifestos"] = auditar_manifestos(base_dir)
+    # .claude-plugin/plugin.json; os outros manifestos a repetem (ver manifests.py)
+    report["manifests"] = audit_manifests(base_dir)
 
     # 5h. Mapa de sistemas: schema do mapa.json da raiz (campos, tipos, id/caminho unicos, valores
-    # aceitos, caminho relativo com /). Nao cobra que o caminho exista — ver mapa.py
-    report["mapa"] = auditar_mapa(base_dir)
+    # aceitos, caminho relativo com /). Nao cobra que o caminho exista — ver map_schema.py
+    report["map"] = audit_map(base_dir)
 
     # 5i. Sistemas do mapa.json nomeados em arquivo que VIAJA para o projeto gerado (doutrina,
     # bindings, tools, moldes do fluxo SDD) — a lista vem do mapa lido em runtime. Ver
-    # sistemas_nos_viajantes.py
-    report["sistemas_nos_viajantes"] = auditar_sistemas_nos_viajantes(base_dir)
+    # systems_in_shipped_files.py
+    report["systems_in_shipped_files"] = audit_systems_in_shipped_files(base_dir)
 
     # 5j. Id de regra citado em skill/command/agent/hook/README que o catalogo do gate nao tem. O
-    # catalogo e lido do codigo do gate. Ver ids_citados.py
-    report["ids_citados"] = auditar_ids_citados(base_dir)
+    # catalogo e lido do codigo do gate. Ver cited_ids.py
+    report["cited_ids"] = audit_cited_ids(base_dir)
 
     # 6. Vazamentos
     patterns = {
@@ -534,7 +564,7 @@ def audit_base(base_dir):
 
     # Este arquivo DEFINE os padroes acima — varre-lo faz cada padrao casar consigo mesmo e
     # reportar um vazamento que nao existe. Auto-deteccao e falso positivo, nao achado.
-    eu_mesmo = os.path.abspath(__file__)
+    this_file = os.path.abspath(__file__)
 
     for root, _, files in os.walk(base_dir):
         if (
@@ -548,23 +578,23 @@ def audit_base(base_dir):
             if not file.endswith((".md", ".js", ".json", ".py")):
                 continue
             path = os.path.join(root, file)
-            if os.path.abspath(path) == eu_mesmo:
+            if os.path.abspath(path) == this_file:
                 continue
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     content = f.read()
                     for name, pat in patterns.items():
                         if re.search(pat, content):
-                            report["vazamentos"].append(
-                                f"{name} encontrado em {os.path.relpath(path, base_dir)}"
+                            report["leaks"].append(
+                                f"{name} found in {os.path.relpath(path, base_dir)}"
                             )
             except:
                 pass
 
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    total = sum(len(achados) for achados in report.values())
+    total = sum(len(findings) for findings in report.values())
     if total > 0:
-        print(f"audit_base: {total} achado(s) (exit 1)", file=sys.stderr)
+        print(f"audit_base: {total} finding(s) (exit 1)", file=sys.stderr)
         return 1
     return 0
 
@@ -572,8 +602,8 @@ def audit_base(base_dir):
 if __name__ == "__main__":
     args = get_args()
     if args.selftest:
-        exit(autoteste())
-    if not args.raiz or not os.path.exists(args.raiz):
-        print(json.dumps({"error": "Caminho raiz não encontrado"}))
+        exit(selftest())
+    if not args.root or not os.path.exists(args.root):
+        print(json.dumps({"error": "Root path not found"}))
         exit(1)
-    exit(audit_base(args.raiz))
+    exit(audit_base(args.root))

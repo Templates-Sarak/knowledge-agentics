@@ -1,5 +1,5 @@
 {
-  "headers_seguranca": [
+  "security_headers": [
     "content-security-policy",
     "strict-transport-security",
     "x-content-type-options",
@@ -7,7 +7,7 @@
     "referrer-policy",
     "permissions-policy"
   ],
-  "paths_sensiveis": [
+  "sensitive_paths": [
     "/.git/config", "/.git/HEAD", "/.env", "/.env.local", "/.env.production",
     "/backup.zip", "/backup.sql", "/dump.sql", "/.DS_Store", "/config.json", "/phpinfo.php"
   ],

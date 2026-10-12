@@ -1,0 +1,1166 @@
+{
+ "_doc": "Exceções DECLARADAS da medição de idioma (ADR-023, decisão 6). Cada entrada diz arquivo, categoria, nomes ou trechos e o MOTIVO: dado externo em português que o código precisa manter (texto de documentação que um parser lê, vocabulário de detecção de código de usuário, tabela de leitura de estado antigo, fixture que prova a detecção de português). `file` é relativo à raiz do template (tools/, tests/, bindings/) ou à raiz da base (skills/, hooks/, plugin/); termina em `/` = pasta. Mensagem, flag, chave, enum, nome de caso e identificador nunca entram aqui. Revisável: `node tests/measure-language.mjs --check`.",
+ "exceptions": [
+  {
+   "file": "hooks/_lib.js",
+   "category": "member",
+   "names": [
+    "modo",
+    "ativo",
+    "escopo",
+    "cobertura",
+    "minima",
+    "ferramentas",
+    "dependencias",
+    "severidadeMinima",
+    "formatador",
+    "arquivo"
+   ],
+   "reason": "chaves de LEGACY_KEYS/LEGACY_VALUES: o vocabulário antigo (português) que projetos já instanciados podem ter em hooks/config.json; o mapa antigo→novo é a compatibilidade exigida pela decisão 6"
+  },
+  {
+   "file": "hooks/_lib.js",
+   "category": "decl",
+   "names": [
+    "modo",
+    "ativo",
+    "escopo",
+    "cobertura",
+    "minima",
+    "ferramentas",
+    "dependencias",
+    "severidadeMinima",
+    "formatador",
+    "arquivo"
+   ],
+   "reason": "chaves de LEGACY_KEYS/LEGACY_VALUES (vocabulário antigo aceito na leitura de config de projeto)"
+  },
+  {
+   "file": "hooks/_lib.js",
+   "category": "string",
+   "contains": [
+    "arquivo",
+    "os"
+   ],
+   "reason": "'arquivo' é o valor antigo de formatting.scope aceito pelo mapa de compatibilidade (fixture do selftest); 'os' é o módulo nativo do Node"
+  },
+  {
+   "file": "hooks/cyber-dependencias.js",
+   "category": "string",
+   "contains": [
+    "[cyber-dependencias]"
+   ],
+   "reason": "prefixo com o nome do arquivo do hook, que fica em português (decisão 4)"
+  },
+  {
+   "file": "hooks/test-cobertura.js",
+   "category": "string",
+   "contains": [
+    "[test-cobertura]"
+   ],
+   "reason": "prefixo com o nome do arquivo do hook, que fica em português (decisão 4)"
+  },
+  {
+   "file": "hooks/padrao-format.js",
+   "category": "string",
+   "contains": [
+    "padrao-format.js"
+   ],
+   "reason": "rótulo do selftest com o nome do arquivo do hook, que fica em português (decisão 4)"
+  },
+  {
+   "file": "hooks/padrao-limiares.js",
+   "category": "string",
+   "contains": [
+    "padrao-limiares.js",
+    "padrao-escrita",
+    "_estrutura_modulos"
+   ],
+   "reason": "nome do arquivo do hook (decisão 4), nome da skill padrao-escrita (pasta de skill não muda) e a pasta real specs/_estrutura_modulos"
+  },
+  {
+   "file": "hooks/config.json",
+   "category": "data",
+   "reason": "valores das chaves *_doc são documentação em português dentro do JSON; chaves e valores de política já estão em inglês"
+  },
+  {
+   "file": "hooks/hooks.json",
+   "category": "data",
+   "reason": "comandos apontam para os arquivos de hook, cujos nomes ficam (decisão 4)"
+  },
+  {
+   "file": "hooks/settings.template.json",
+   "category": "data",
+   "reason": "comandos apontam para os arquivos de hook, cujos nomes ficam (decisão 4)"
+  },
+  {
+   "file": "plugin/sync_ide.py",
+   "category": "string",
+   "contains": [
+    "_estrutura_base"
+   ],
+   "reason": "nome real da pasta specs/_estrutura_base/_templates que a tabela de roteamento lista"
+  },
+  {
+   "file": "skills/meta-iniciar-repositorio/scripts/stamp.py",
+   "category": "decl",
+   "names": [
+    "tipo",
+    "pacotes",
+    "caminho",
+    "motivo",
+    "sha1_sistema",
+    "sistemas",
+    "nome",
+    "raiz_git",
+    "situacao",
+    "ativo",
+    "template-modulos"
+   ],
+   "reason": "tabelas LEGACY_*: chaves e valores antigos (PT) que o estado ja gravado em .sarak/base.json e mapa.json contem; so a leitura os traduz (decisao 6)"
+  },
+  {
+   "file": "skills/meta-iniciar-repositorio/scripts/stamp.py",
+   "category": "string",
+   "contains": [
+    "mapa.json",
+    "template-modulos",
+    "sistemas",
+    "nome"
+   ],
+   "reason": "mapa.json e o nome do arquivo de dado versionado na raiz da base; 'template-modulos'/'sistemas'/'nome' sao fixtures do estado antigo que provam a leitura de mapa/carimbo legados"
+  },
+  {
+   "file": "skills/meta-iniciar-repositorio/scripts/init_repo.py",
+   "category": "string",
+   "contains": [
+    "gerar_indice.py — catalogo",
+    "if command -v python",
+    "verificar_commit.py",
+    "gerar_indice.py"
+   ],
+   "reason": "nomes de arquivo instalados em projetos vivos (.agents/gerar_indice.py, .githooks/verificar_commit.py) sao contrato com o projeto e o pre-commit ja instalado; o conteudo do index.md gerado e documentacao em portugues"
+  },
+  {
+   "file": "skills/meta-iniciar-repositorio/scripts/init_repo.py",
+   "category": "string",
+   "contains": [
+    "regra local",
+    "Atencao (IA)",
+    "Arquitetura de modulos",
+    "titulo: ",
+    "arquitetura",
+    "_estrutura_modulos",
+    "_estrutura_base",
+    "git-commit-inicial",
+    "git-verificacao-commit",
+    "00-contexto",
+    "ui.modo",
+    "mapa.json"
+   ],
+   "reason": "texto de documentacao gerado para o projeto (AGENTS.md), chave 'titulo:' e titulos de specs em portugues que o script reescreve, nomes reais de pasta/skill/arquivo da base e de specs (_estrutura_*, git-*, 00-contexto.md, mapa.json, ui.modo)"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/propagate.py",
+   "category": "string",
+   "contains": [
+    "specs/arquitetura/",
+    "specs/_estrutura_",
+    "_estrutura_base_site",
+    "specs/adr/000-decisoes-do-template",
+    "doutrina/",
+    "decisoes.md",
+    "specs/panorama/00-resumo",
+    "specs/00-indice",
+    "specs/00-contexto",
+    "00-contexto|indice|backlog",
+    "gerar_indice",
+    "meta-iniciar-repositorio",
+    "00-arquitetura|01-modulo",
+    "00-fundacao-tecnologica",
+    "(arquitetura|specs|plan)",
+    "(specs|arquitetura)",
+    "contexto|indice"
+   ],
+   "reason": "regex/caminhos que casam a ESTRUTURA DE PASTAS DE PROJETOS GERADOS (specs/arquitetura, 00-indice, 00-contexto, 00-resumo, .agents/gerar_indice.py, ADR 000) e do template (_estrutura_*, doutrina/); sao dado externo cujos nomes sao contrato com projetos vivos"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/propagate.py",
+   "category": "string",
+   "contains": [
+    "modulo",
+    "contrato-e-dados",
+    "operacao",
+    "regras",
+    "arquitetura"
+   ],
+   "reason": "RESERVED_LAWS: slugs (em portugues) dos arquivos de lei do template, usados para reconhecer arquivo de projeto; dado externo"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/propagate.py",
+   "category": "string",
+   "contains": [
+    "titulo:",
+    "doutrina|funda",
+    "proximo_numero_plan",
+    "escopo",
+    "mapa.json"
+   ],
+   "reason": "casa texto em portugues de arquivos de usuario: linha `titulo:` do frontmatter, titulo com doutrina/fundacao, chave `proximo_numero_plan` do 00-indice, marcador `escopo` do create-project.mjs antigo; `mapa.json` e o nome do arquivo (contrato B1: nao muda)"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/propagate.py",
+   "category": "string",
+   "contains": [
+    "instalar_base_de_linguagem",
+    "--escopo",
+    "template-modulos",
+    "ativo",
+    "tipo: ",
+    "titulo: ",
+    "<escopo>",
+    "proximo_numero_plan",
+    "00-indice"
+   ],
+   "reason": "fixtures do --selftest que PROVAM a leitura de estado antigo (init_repo antigo, base.json antigo, mapa.json antigo, frontmatter em portugues) e dos nomes legados em INSTALLER_NAMES"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/propagate.py",
+   "category": "string",
+   "contains": [
+    "nome"
+   ],
+   "reason": "assinatura da funcao legada do init_repo antigo dentro da fixture de INSTALLER_NAMES"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/propagate.py",
+   "category": "decl",
+   "names": [
+    "specs/00-contexto.md",
+    "specs/00-indice.md",
+    "specs/arquitetura/01.01-y.md",
+    "specs/arquitetura/README.md",
+    "specs/arquitetura/00-base-typescript.md",
+    "specs/arquitetura/01-modulo.md",
+    "specs/arquitetura/00-arquitetura-erp.md",
+    "specs/arquitetura/05-regras-e-gate.md",
+    "specs/arquitetura/02-interface.md",
+    "specs/arquitetura/00-fundacao-tecnologica.md",
+    "specs/arquitetura/04-regras.md",
+    "specs/arquitetura/00-base-python.md",
+    "tipo",
+    "pacotes",
+    "caminho",
+    "motivo",
+    "sha1_sistema",
+    "sistemas",
+    "nome",
+    "raiz_git",
+    "situacao",
+    "mantidos",
+    "status_base",
+    "base_com_alteracoes_locais",
+    "data",
+    "sha1_referencia"
+   ],
+   "reason": "chaves de fixture: caminhos de specs de projetos (dado externo) e chaves do .sarak/base.json e do mapa.json ANTIGOS, no --selftest que prova a compatibilidade de leitura"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/apply.py",
+   "category": "string",
+   "contains": [
+    "specs/arquitetura/",
+    "specs/panorama/00-resumo",
+    "titulo:",
+    "titulo: ",
+    "mapa.json",
+    "propagacao-",
+    "00-indice"
+   ],
+   "reason": "caminhos da estrutura de projetos gerados, linha `titulo:` do frontmatter, nome `mapa.json` e nome ANTIGO do manifesto (`propagacao-*`, lido por compatibilidade)"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/apply.py",
+   "category": "string",
+   "contains": [
+    "substituir",
+    "adicionar",
+    "divergente",
+    "adotar",
+    "carimbo",
+    "manifesto",
+    "regenerar",
+    "arquivos",
+    "caminho",
+    "acao",
+    "existia",
+    "no_head",
+    "anterior",
+    "head_no_aplicar",
+    "status_anterior",
+    "status_base_anterior",
+    "desatualizado",
+    "specs/arquitetura"
+   ],
+   "reason": "LEGACY_MANIFEST_*/LEGACY_ACTION_VALUES: o mapa antigo->novo do manifesto de propagacao, centralizado, e a fixture que o prova — estado persistido de sistemas vivos"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/apply.py",
+   "category": "decl",
+   "names": [
+    "arquivos",
+    "caminho",
+    "acao",
+    "existia",
+    "no_head",
+    "anterior",
+    "head_no_aplicar",
+    "status_anterior",
+    "status_base_anterior",
+    "substituir",
+    "substituir-politica",
+    "adicionar",
+    "adicionar?",
+    "divergente",
+    "adotar",
+    "carimbo",
+    "manifesto",
+    "regenerar",
+    "specs/arquitetura/00-base-typescript.md",
+    "specs/arquitetura/00-base-python.md"
+   ],
+   "reason": "chaves e valores do manifesto ANTIGO (LEGACY_*) e da fixture de teste; so a leitura os aceita"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/report.py",
+   "category": "string",
+   "contains": [
+    "00-indice",
+    "proximo_numero_plan",
+    "tipo: ",
+    "mapa.json",
+    "sistemas",
+    "situacao",
+    "specs/arquitetura/",
+    "arquitetura/00-base-"
+   ],
+   "reason": "nomes de arquivo/chave do 00-indice de projetos gerados e fixtures do --selftest (mapa.json antigo, frontmatter em portugues)"
+  },
+  {
+   "file": "skills/meta-propagar-base/scripts/report.py",
+   "category": "decl",
+   "names": [
+    "specs/arquitetura/00-arquitetura-erp.md"
+   ],
+   "reason": "caminho de fixture da estrutura de projetos gerados"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/audit_base.py",
+   "category": "string",
+   "contains": [
+    "NÃO acione proativamente"
+   ],
+   "reason": "fixture da trava que o verificador procura nas description de SKILL.md (texto em português dos arquivos auditados)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/audit_base.py",
+   "category": "string",
+   "contains": [
+    "a regra `strict-structure` cobre isto",
+    "regras `manifest`, `ghost` e `extraction`",
+    "| erro |",
+    "see `estrutura-estrita` in the law",
+    "valid id after the rule word passes"
+   ],
+   "reason": "fixtures em prosa portuguesa: provam que o verificador reconhece 'regra(s)', ' e ' e a coluna 'erro' dos catálogos de specs e o id antigo (PT) da tabela renamed-rules.json"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/audit_base.py",
+   "category": "string",
+   "contains": [
+    "specs/arquitetura/04-regras.md",
+    "specs/_estrutura_modulos/tests",
+    "mapa.json",
+    "'sistemas'",
+    "padrao-escrita",
+    "code-auditoria-padrao",
+    "Quando usar",
+    "Regras de Ouro",
+    "O Gatilho"
+   ],
+   "reason": "caminhos e nomes reais de dado externo (pasta de projeto gerado, arquivo mapa.json na raiz da base, skill padrao-escrita, títulos de seção PT do molde antigo de SKILL.md)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/audit_base.py",
+   "category": "decl",
+   "names": [
+    "nome",
+    "caminho",
+    "raiz_git",
+    "tipo",
+    "situacao",
+    "sistemas",
+    "estrutura-estrita",
+    "estrutura"
+   ],
+   "reason": "chaves do mapa.json legado (fixture do teste de leitura do mapa antigo) e ids antigos PT da renamed-rules.json (dado externo)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/audit_base.py",
+   "category": "string",
+   "contains": [
+    "ativo",
+    "estrutura-estrita"
+   ],
+   "reason": "valor/id legado em português (fixture do mapa antigo e da tabela renamed-rules.json)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/cited_ids.py",
+   "category": "string",
+   "contains": [
+    "skills/meta-verificacao-base/scripts/",
+    "specs/_estrutura_modulos/",
+    "mapa.json",
+    "erro|aviso",
+    "regras?|ids?|rule",
+    "\\s+ou\\s+"
+   ],
+   "reason": "caminhos reais de pasta/arquivo; regex que casa a prosa portuguesa dos documentos auditados ('regra(s)', 'e', 'ou') e a coluna 'erro|aviso' do catálogo 04-regras.md"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/cited_ids.py",
+   "category": "decl",
+   "names": [
+    "skills/meta-verificacao-base/scripts/audit_base.py",
+    "skills/meta-verificacao-base/scripts/cited_ids.py"
+   ],
+   "reason": "chaves da tabela EXCEPTIONS são caminhos reais de arquivo"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/counts.py",
+   "category": "string",
+   "contains": [
+    "specs/_estrutura_base"
+   ],
+   "reason": "caminho real do roteador de capacidades (pasta em português)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/map_schema.py",
+   "category": "decl",
+   "names": [
+    "sistemas",
+    "nome",
+    "caminho",
+    "raiz_git",
+    "tipo",
+    "situacao",
+    "ativo"
+   ],
+   "reason": "tabela centralizada antigo->novo do mapa.json (chaves/valores legados lidos só para migrar)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/map_schema.py",
+   "category": "string",
+   "contains": [
+    "mapa.json",
+    "sistemas",
+    "nome",
+    "caminho",
+    "raiz_git",
+    "tipo",
+    "situacao",
+    "ativo",
+    "adocao-posterior",
+    "desatualizado",
+    "pendente",
+    "atualizado"
+   ],
+   "reason": "nome real do arquivo mapa.json e tabela antigo->novo de chaves/valores legados (leitura compatível, centralizada)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/map_schema.py",
+   "category": "string",
+   "contains": [
+    "legacy field 'sistemas'"
+   ],
+   "reason": "a mensagem cita a chave legada literal que o usuário encontrará no mapa.json antigo"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/naming.py",
+   "category": "string",
+   "contains": [
+    "nomenclatura.md"
+   ],
+   "reason": "nome real do arquivo-fonte do vocabulário de prefixos (skills/meta-create-skill/references/nomenclatura.md)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/parity.py",
+   "category": "decl",
+   "names": [
+    "00-contexto.md"
+   ],
+   "reason": "chave da tabela EXCEPTIONS é o nome real do arquivo das specs"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/parity.py",
+   "category": "string",
+   "contains": [
+    "specs/_estrutura_base"
+   ],
+   "reason": "caminhos reais das árvores de specs (pastas em português)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/pointers.py",
+   "category": "string",
+   "contains": [
+    "specs/_estrutura",
+    "padrao",
+    "por exemplo",
+    "exemplo",
+    "para/"
+   ],
+   "reason": "caminhos reais; prefixo de área de skill (padrao-*); marcas que o verificador procura na prosa portuguesa ('por exemplo', 'exemplo') e o molde 'caminho/para/x'"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/proactivity.py",
+   "category": "string",
+   "contains": [
+    "NÃO acione proativamente"
+   ],
+   "reason": "trava que o verificador procura nas description de SKILL.md (texto português dos arquivos auditados)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/proactivity.py",
+   "category": "decl",
+   "names": [
+    "padrao-escrita",
+    "padrao-python",
+    "padrao-typescript",
+    "code-auditoria-padrao"
+   ],
+   "reason": "chaves da tabela PROACTIVE são nomes reais de pasta de skill (nomes de skill são mantidos)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/systems_in_shipped_files.py",
+   "category": "string",
+   "contains": [
+    "mapa.json",
+    "specs/_estrutura"
+   ],
+   "reason": "nome real do arquivo mapa.json e caminhos reais das pastas que viajam (em português)"
+  },
+  {
+   "file": "skills/meta-verificacao-base/scripts/thresholds.py",
+   "category": "string",
+   "contains": [
+    "_estrutura_modulos",
+    "padrao-python",
+    "padrao-typescript"
+   ],
+   "reason": "caminho real do gate e nomes reais de pasta de skill"
+  },
+  {
+   "file": "skills/cyber-codigo/scripts/config.json",
+   "category": "data",
+   "contains": [
+    "os\\.system"
+   ],
+   "reason": "regex de varredura de codigo de usuario; 'os' e o modulo Python os, falso positivo do vocabulario"
+  },
+  {
+   "file": "skills/cyber-segredos/scripts/config.json",
+   "category": "data",
+   "contains": [
+    "CANONICAL CATALOG"
+   ],
+   "reason": "texto em ingles que cita nomes de skills (pastas, mantem o nome portugues)"
+  },
+  {
+   "file": "skills/git-especialista-repositorio/scripts/scan_history.py",
+   "category": "decl",
+   "names": [
+    "_fonte",
+    "padroes",
+    "arquivos_sensiveis",
+    "arquivos_permitidos",
+    "entropia_ativa",
+    "entropia_min",
+    "Segredo atribuido",
+    "String de conexao"
+   ],
+   "reason": "mapa de compatibilidade de leitura antigo->novo: chaves/rotulos antigos em portugues sao o dado lido do config ja instalado"
+  },
+  {
+   "file": "skills/git-revisao-diff/scripts/review_diff.py",
+   "category": "decl",
+   "names": [
+    "padroes",
+    "bloquear_em",
+    "severidade",
+    "bloqueio",
+    "aviso",
+    "Conflito de merge nao resolvido",
+    "Breakpoint de debug",
+    "Log de debug",
+    "Marcador pendente",
+    "skip de teste"
+   ],
+   "reason": "mapa de compatibilidade de leitura antigo->novo do config.json ja instalado"
+  },
+  {
+   "file": "skills/git-verificacao-commit/scripts/verify_commit.py",
+   "category": "decl",
+   "names": [
+    "_fonte",
+    "padroes",
+    "arquivos_sensiveis",
+    "arquivos_permitidos",
+    "Segredo atribuido",
+    "String de conexao"
+   ],
+   "reason": "mapa de compatibilidade de leitura antigo->novo do config.json instalado em .githooks"
+  },
+  {
+   "file": "skills/git-verificacao-commit/scripts/generate_config.py",
+   "category": "decl",
+   "names": [
+    "padroes",
+    "arquivos_sensiveis",
+    "arquivos_permitidos",
+    "extensoes_texto",
+    "Segredo atribuido",
+    "String de conexao"
+   ],
+   "reason": "mapa de compatibilidade de leitura do catalogo canonico ainda em formato antigo"
+  },
+  {
+   "file": "skills/git-verificacao-commit/scripts/generate_config.py",
+   "category": "string",
+   "contains": [
+    "cyber-segredos"
+   ],
+   "reason": "nome da pasta da skill cyber-segredos (mantem o nome)"
+  },
+  {
+   "file": "skills/git-verificacao-commit/scripts/config.json",
+   "category": "data",
+   "contains": [
+    "cyber-segredos"
+   ],
+   "reason": "nome da pasta da skill cyber-segredos (mantem o nome)"
+  },
+  {
+   "file": "skills/git-especialista-repositorio/scripts/config.json",
+   "category": "data",
+   "contains": [
+    "cyber-segredos"
+   ],
+   "reason": "nome da pasta da skill cyber-segredos (mantem o nome)"
+  },
+  {
+   "file": "skills/code-assinatura/scripts/scan_signatures.py",
+   "category": "decl",
+   "names": [
+    "padroes_assinatura",
+    "autorizados",
+    "extensoes",
+    "ignorar_dirs"
+   ],
+   "reason": "mapa centralizado LEGACY_CONFIG_KEYS: chaves antigas do config.json que projetos ja carregam localmente (decisao 6)"
+  },
+  {
+   "file": "skills/code-documentacao/scripts/audit_docs.py",
+   "category": "decl",
+   "names": [
+    "readme_nome",
+    "secoes_obrigatorias"
+   ],
+   "reason": "mapa centralizado LEGACY_CONFIG_KEYS: chaves antigas do config de projetos que ja carregam copia local (decisao 6)"
+  },
+  {
+   "file": "skills/code-limpeza-projeto/scripts/detect_junk.py",
+   "category": "decl",
+   "names": [
+    "padroes_nome_lixo",
+    "dirs_lixo",
+    "marcadores",
+    "extensoes_codigo",
+    "ignorar_dirs",
+    "tamanho_grande_bytes"
+   ],
+   "reason": "mapa centralizado LEGACY_CONFIG_KEYS: chaves antigas do config de projetos que ja carregam copia local (decisao 6)"
+  },
+  {
+   "file": "skills/code-generalizacao-modulo/scripts/verify_deliverable.py",
+   "category": "decl",
+   "names": [
+    "contrato"
+   ],
+   "reason": "mapa centralizado LEGACY_CONFIG_KEYS: chave antiga de config/verificacao.json ja declarada em repositorios (decisao 6)"
+  },
+  {
+   "file": "skills/code-generalizacao-modulo/scripts/verify_deliverable.py",
+   "category": "string",
+   "contains": [
+    "config/verificacao.json"
+   ],
+   "reason": "nome antigo do arquivo de config declarado em repositorios existentes; aceito como fallback de leitura (decisao 6)"
+  },
+  {
+   "file": "skills/code-generalizacao-modulo/scripts/inventory_source.py",
+   "category": "string",
+   "contains": [
+    "auditoria contrato dado dados"
+   ],
+   "reason": "lexico de varredura: palavras genericas em portugues que nao contam como candidato a negocio em modulos de origem escritos em portugues"
+  },
+  {
+   "file": "skills/code-assinatura/scripts/config.json",
+   "category": "data",
+   "contains": [
+    "gerado por",
+    "criado por",
+    "ajudado por"
+   ],
+   "reason": "padroes de varredura de assinaturas em portugues (dado de deteccao sobre arquivos de usuario)"
+  },
+  {
+   "file": "skills/code-documentacao/scripts/audit_docs.config.json",
+   "category": "data",
+   "contains": [
+    "Testes"
+   ],
+   "reason": "titulo de secao em portugues que o README do projeto auditado deve conter (dado de varredura)"
+  },
+  {
+   "file": "skills/meta-adequacao-modular/scripts/diagnose_terrain.py",
+   "category": "decl",
+   "names": [
+    "ferramentas",
+    "modulos",
+    "projeto.json"
+   ],
+   "reason": "nomes de pasta/arquivo de geracao antiga do template (dado externo do repositorio legado que o script detecta)"
+  },
+  {
+   "file": "skills/meta-adequacao-modular/scripts/diagnose_terrain.py",
+   "category": "string",
+   "contains": [
+    "ferramentas",
+    "modulos",
+    "pacotes",
+    "portas",
+    "memoria",
+    "configuracao",
+    "validacao",
+    "validar",
+    "criar-modulo",
+    "projeto.json",
+    "_molde",
+    "modulos/_template",
+    "00-contexto.md",
+    "00-indice.md",
+    "arquitetura",
+    "Em execução"
+   ],
+   "reason": "nomes de pasta/arquivo em portugues de repositorio legado alvo, nomes de arquivos das specs SDD em portugues e status de plan em portugues: dado externo que o diagnostico precisa casar"
+  },
+  {
+   "file": "skills/meta-create-skill/scripts/scaffold_skill.py",
+   "category": "string",
+   "contains": [
+    "padrao-",
+    "description: [O QUE",
+    "Versão expandida",
+    "Blocos copiáveis",
+    "[contexto]",
+    "[o que faz em uma frase]",
+    ".py <target> [--config"
+   ],
+   "reason": "prefixo de area de skill e texto de documentacao em portugues que o template escreve nos .md/docstring gerados (SKILL.md, references) e docstring do stub; o codigo embutido do stub esta em ingles"
+  },
+  {
+   "file": "skills/spec-panorama/scripts/generate_summary.py",
+   "category": "string",
+   "contains": [
+    "titulo",
+    "00-resumo",
+    "00-indice",
+    "00-planejamento",
+    "arquitetura",
+    "tipo: ",
+    "dominio:",
+    "processo",
+    "Generates and checks"
+   ],
+   "reason": "nomes de arquivo, pastas e campos de frontmatter em portugues do projeto-alvo (dado externo lido/gravado pelo script)"
+  },
+  {
+   "file": "skills/spec-panorama/scripts/generate_summary.py",
+   "category": "string",
+   "contains": [
+    "Gerado por",
+    "Por família",
+    "sem horizonte definido",
+    " itens ✅",
+    " achado(s)",
+    "| FF | Família",
+    "| Plans abertas"
+   ],
+   "reason": "conteudo do 00-resumo.md gerado: documentacao em portugues gravada no projeto"
+  },
+  {
+   "file": "skills/spec-panorama/scripts/generate_summary.py",
+   "category": "string",
+   "contains": [
+    "Conexão",
+    "Base de dados",
+    "Fundação",
+    "Famílias",
+    "Em execução",
+    "Bloqueada",
+    "| FF | Família | Escopo",
+    "| # | Achado |",
+    "To run",
+    "Índices",
+    "04-regras",
+    "\"lei\"",
+    "lei"
+   ],
+   "reason": "fixtures do selftest que reproduzem documentacao em portugues (planejamento, indice) que o parser le"
+  },
+  {
+   "file": "skills/spec-panorama/scripts/generate_summary.py",
+   "category": "decl",
+   "names": [
+    "arquitetura/04-regras.md"
+   ],
+   "reason": "chave de fixture: caminho do documento em portugues do projeto"
+  },
+  {
+   "file": "skills/spec-revisao/scripts/verify_parity.py",
+   "category": "string",
+   "contains": [
+    "00-indice",
+    "00-contexto",
+    "04-regras",
+    "arquitetura/FF.NN"
+   ],
+   "reason": "nomes de arquivo de spec em portugues do projeto-alvo (dado externo)"
+  },
+  {
+   "file": "tools/gate/renamed-rules.json",
+   "category": "data",
+   "reason": "keys are the OLD Portuguese rule ids of ADR-024 (migration table old->new); the data is exactly what must keep the old spelling so existing exceptions resolve to a rename hint",
+   "names": [
+    "adapter-isolado",
+    "artefato-declarado",
+    "compose-variaveis-declaradas",
+    "composicao-descoberta",
+    "config-morta",
+    "config-valida",
+    "conformidade-declarada",
+    "consome-ciclo",
+    "consome-contrato",
+    "container-presente",
+    "contrato",
+    "contrato-sincronizado",
+    "cookie-seguro",
+    "cors-aberto",
+    "determinismo",
+    "dockerignore-segredo",
+    "entrada-allowlist",
+    "env-declarado",
+    "env-exemplo",
+    "env-fora-do-carregador",
+    "env-modulo",
+    "env-raiz-declarado",
+    "estrutura",
+    "estrutura-estrita",
+    "excecao-engolida",
+    "extracao",
+    "fallback-raiz",
+    "fallback-silencioso",
+    "gateway-credencial",
+    "gateway-declarado",
+    "gitignore-segredo",
+    "hardcode-numero",
+    "hardcode-url-raiz",
+    "limiar-aninhamento",
+    "limiar-funcao",
+    "limiar-parametros",
+    "lint-derivado",
+    "manifesto",
+    "manifesto-raiz",
+    "mapeador-nomenclatura",
+    "navegacao-declarada",
+    "permissao-literal",
+    "porta-declarada",
+    "portas-pura",
+    "pre-commit-instalado",
+    "projecao-contrato",
+    "random-inseguro",
+    "resumo-exportado",
+    "rota-nomenclatura",
+    "rota-publica-autenticada",
+    "saida-crua",
+    "saida-sensivel",
+    "schema-espelha-migrations",
+    "schema-manifesto",
+    "sdk-fornecedor",
+    "segredo-em-log",
+    "segredo-em-publico",
+    "sensivel-em-saida",
+    "sql-concatenado",
+    "sql-no-modulo",
+    "tabela-alheia",
+    "tabela-declarada",
+    "tabela-nao-declarada",
+    "tabela-prefixo",
+    "testes",
+    "testes-gateway",
+    "testes-web",
+    "token-em-armazenamento",
+    "verificacao-declarada",
+    "web-declarado"
+   ]
+  },
+  {
+   "file": "tools/create-module.mjs",
+   "category": "decl",
+   "reason": "keys of PT_LEGACY_ROLE: legacy Portuguese role values (dominio/conector) detected in order to reject them with a hint",
+   "names": [
+    "dominio",
+    "conector"
+   ]
+  },
+  {
+   "file": "tools/create-module.mjs",
+   "category": "string",
+   "reason": "comment line written into the generated module .env (generated-file prose, comments stay Portuguese; the template copies carry the same text)",
+   "contains": [
+    "NAO versionado"
+   ]
+  },
+  {
+   "file": "tools/create-project.mjs",
+   "category": "decl",
+   "reason": "template markers <comando-verificar>/<comando-iniciar> are syntax of the Portuguese doctrine README that this tool substitutes; renaming needs the doctrine README renamed in the same change",
+   "names": [
+    "<comando-verificar>",
+    "<comando-iniciar>"
+   ]
+  },
+  {
+   "file": "tools/create-project.mjs",
+   "category": "string",
+   "reason": "names of Portuguese doctrine files/dirs copied into the generated project (000-decisoes-do-template.md, decisoes.md, specs/arquitetura)",
+   "contains": [
+    "000-decisoes-do-template.md",
+    "decisoes.md",
+    "arquitetura",
+    "doutrina"
+   ]
+  },
+  {
+   "file": "tools/gate/rules/configuration.mjs",
+   "category": "string",
+   "reason": "message cites Portuguese doctrine paths (specs/arquitetura/04-regras.md, 03-operacao.md)",
+   "contains": [
+    "specs/arquitetura/04-regras.md",
+    "03-operacao.md",
+    " is not a catalog rule id"
+   ]
+  },
+  {
+   "file": "tools/gate/rules/contract.mjs",
+   "category": "string",
+   "reason": "FORBIDDEN_VERBS: Portuguese verbs the rule must recognise in route segments (detection vocabulary for user routes, not code of this tool)",
+   "contains": [
+    "criar",
+    "listar",
+    "buscar",
+    "novo",
+    "nova",
+    "salvar",
+    "inserir",
+    "gerar"
+   ]
+  },
+  {
+   "file": "tools/gate/rules/data.mjs",
+   "category": "string",
+   "reason": "message cites Portuguese doctrine path specs/arquitetura/02",
+   "contains": [
+    "specs/arquitetura/02"
+   ]
+  },
+  {
+   "file": "tools/gate/rules/operation.mjs",
+   "category": "string",
+   "reason": "SECRET_WORDS: Portuguese secret words the weak-RNG rule must recognise in user code; message cites 03-operacao.md",
+   "contains": [
+    "segredo",
+    "senha",
+    "sessao",
+    "credencial",
+    "03-operacao.md",
+    " is missing from the project root"
+   ]
+  },
+  {
+   "file": "tools/gate/tests/cases.mjs",
+   "category": "decl",
+   "reason": "fixture of compliance-declared that proves a Portuguese key ('regra') in the exception list is rejected",
+   "names": [
+    "regra"
+   ]
+  },
+  {
+   "file": "tools/gate/tests/cases.mjs",
+   "category": "string",
+   "reason": "fixtures that exercise Portuguese detection: 'regra' key; `linha` is the Portuguese row name RETURN_MAPPER_PATTERN recognises; `os` is Python's stdlib module (false positive of the vocabulary)",
+   "contains": [
+    "\"regra\"",
+    "linha",
+    "os.environ",
+    "import os"
+   ]
+  },
+  {
+   "file": "tools/generate-lint-config.mjs",
+   "category": "string",
+   "reason": "SIM is the ruff rule family id (flake8-simplify), not Portuguese",
+   "contains": [
+    "\"SIM\""
+   ]
+  },
+  {
+   "file": "tools/generate-port-schemas.mjs",
+   "category": "string",
+   "reason": "text of the $comment emitted into config-ports.schema.json (documentation in the generated JSON, comments stay Portuguese; --check compares with the committed schema)",
+   "contains": [
+    "UNICO lugar do modulo",
+    "fecha o vocabulario de portas",
+    "amarrar este arquivo ao manifesto",
+    "reprova. O que ele NAO faz",
+    "enxerga o module.json",
+    "04-regras.md §4.4",
+    "la e ausente daqui"
+   ]
+  },
+  {
+   "file": "tools/package.mjs",
+   "category": "string",
+   "reason": "message cites Portuguese doctrine file 03-operacao.md",
+   "contains": [
+    "03-operacao.md"
+   ]
+  },
+  {
+   "file": "tools/sync-deploy.mjs",
+   "category": "string",
+   "reason": "comments inside the generated nginx/compose files (comments stay Portuguese; sync-deploy --check compares with the generated copies)",
+   "contains": [
+    "GERADO por `node tools/sync-deploy.mjs`",
+    "Incluído por deploy/nginx.conf",
+    "Dentro do container o banco",
+    "aqui, a partir das chaves DEPLOY_",
+    "fallback de SPA",
+    "a entrada HTML nunca",
+    "arquivo com hash no nome",
+    "folga",
+    "arredondado para cima"
+   ]
+  },
+  {
+   "file": "tools/sync-env.mjs",
+   "category": "string",
+   "reason": "header comment of the generated .env.example (comments stay Portuguese; --check compares with the committed copies)",
+   "contains": [
+    "GERADO por tools/sync-env.mjs"
+   ]
+  },
+  {
+   "file": "tests/run-all-selftests.mjs",
+   "category": "string",
+   "reason": "registry paths: the folder name _estrutura_modulos and the names of skill/hook folders (which keep their names)",
+   "contains": [
+    "_estrutura_modulos",
+    "git-verificacao-commit",
+    "meta-iniciar-repositorio",
+    "meta-verificacao-base",
+    "code-generalizacao-modulo",
+    "cyber-segredos",
+    "spec-revisao",
+    "padrao-python",
+    "padrao-typescript",
+    "padrao-limiares",
+    "padrao-format",
+    "spec-panorama",
+    "deploy-docker-monolito",
+    "code-limpeza-projeto",
+    "git-especialista-repositorio",
+    "code-documentacao",
+    "code-assinatura",
+    "git-revisao-diff"
+   ]
+  },
+  {
+   "file": "tests/template-self-test.mjs",
+   "category": "string",
+   "reason": "folder names that keep their name: skill git-verificacao-commit and the generated specs/arquitetura",
+   "contains": [
+    "git-verificacao-commit",
+    "arquitetura"
+   ]
+  },
+  {
+   "file": "tests/verify-catalog.mjs",
+   "category": "string",
+   "reason": "fixtures that mimic the Portuguese doctrine syntax the parser reads (table headers/cells erro|aviso, 'regras com caso', '04-regras.md', catalog folder names)",
+   "contains": [
+    "| Elemento | Padr",
+    "Pasta de m",
+    "| id | n",
+    "| Regra | n",
+    "| `manifest` | erro",
+    "| `structure` | erro",
+    "| `function-threshold` | erro",
+    "nao-e-regra",
+    "modules/catalogo/",
+    "regras com caso",
+    "regras suas",
+    "regras, com caso",
+    "04-regras.md",
+    "regras citam",
+    "# 4. O cat",
+    "# 5. A cadeia",
+    "complexidade ciclom"
+   ]
+  },
+  {
+   "file": "tests/verify-map.mjs",
+   "category": "string",
+   "reason": "fixtures cite the Portuguese doctrine file name 01-modulo.md that the map parser reads",
+   "contains": [
+    "01-modulo.md"
+   ]
+  },
+  {
+   "file": "tests/verify-routine.mjs",
+   "category": "string",
+   "reason": "names of Portuguese doctrine files/dirs and of the meta-iniciar-repositorio skill folder that keep their names",
+   "contains": [
+    "04-regras.md",
+    "decisoes.md",
+    "000-decisoes-do-template.md",
+    "meta-iniciar-repositorio",
+    "arquitetura",
+    "_estrutura_modulos",
+    "catalogo",
+    "doutrina"
+   ]
+  }
+ ]
+}

@@ -2,7 +2,7 @@
 
 Revise **só o que mudou** contra o `padrao-escrita`. Foco na mudança, não no repo (isso é `code-diagnostico`).
 
-## Determinístico (o `revisar_diff.py` cobre)
+## Determinístico (o `review_diff.py` cobre)
 - **Conflito de merge** (`<<<<<<<`/`>>>>>>>`) → bloqueio.
 - **Breakpoint de debug** (`debugger;`, `pdb.set_trace`, `breakpoint()`, `dd(`) → bloqueio.
 - **Log de debug** (`console.log`, `print(`, `System.out.print`, `fmt.Print`) → aviso (norma: logger estruturado, ver `obs-logs`).

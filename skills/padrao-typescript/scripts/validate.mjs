@@ -2,16 +2,16 @@
  * validate.mjs — valida código TypeScript/JavaScript contra os limiares do padrao-escrita.
  *
  * Uso:
- *   node validate.mjs <arquivo-ou-pasta> [--config config.json]
+ *   node validate.mjs <file-or-dir> [--config config.json]
  *
  * Retorno (stdout):
- *   JSON { "alvo", "violacoes": [ {caminho, linha, dimensao, severidade, risco,
- *   descricao, regra, confianca} ] } — formato consumível pelo code-diagnostico.
+ *   JSON { "target", "findings": [ {path, line, dimension, severity, risk,
+ *   message, rule, confidence} ] } — formato consumível pelo code-diagnostico.
  *
  * Detecta (mecânico, via API do compilador TypeScript): limiares (tamanho de função,
  * aninhamento, nº de parâmetros), logging (console.* / catch vazio), tipagem (assinatura
  * pública sem tipo — só .ts/.tsx), segredos (literal em nome sensível) e hardcoded
- * heurístico (número mágico / URL) — este marcado com confianca "baixa".
+ * heurístico (número mágico / URL) — este marcado com confidence "low".
  *
  * Dependência: pacote `typescript`, resolvido a partir do PROJETO-ALVO (ou do cwd) — usa a API
  * CLÁSSICA do compilador (`createSourceFile`/`forEachChild`/`ScriptTarget`). LIMITE DECLARADO:
@@ -36,14 +36,14 @@ import process from "node:process";
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 
 function parseArgs(argv) {
-  const alvo = argv.find((a) => !a.startsWith("--"));
+  const target = argv.find((a) => !a.startsWith("--"));
   const i = argv.indexOf("--config");
   const config = i >= 0 ? argv[i + 1] : join(SCRIPT_DIR, "config.json");
-  return { alvo, config };
+  return { target, config };
 }
 
 /** Resolve o pacote `typescript` a partir do projeto-alvo; cai para o cwd. */
-function carregarTypescript(baseDir) {
+function loadTypescript(baseDir) {
   for (const base of [baseDir, process.cwd()]) {
     try {
       const req = createRequire(pathToFileURL(join(base, "__resolve__.js")));
@@ -52,25 +52,25 @@ function carregarTypescript(baseDir) {
       /* tenta o próximo */
     }
   }
-  console.error("erro: pacote 'typescript' não encontrado no projeto-alvo nem no cwd. Rode: npm i -D typescript");
+  console.error("error: package 'typescript' not found in the target project or in the cwd. Run: npm i -D typescript");
   process.exit(2);
 }
 
-function carregarConfig(caminho) {
-  return JSON.parse(readFileSync(caminho, "utf-8"));
+function loadConfig(filePath) {
+  return JSON.parse(readFileSync(filePath, "utf-8"));
 }
 
-function coletarArquivos(alvo, cfg) {
+function collectFiles(target, cfg) {
   const skip = new Set(cfg.skipDirs);
   const exts = new Set(cfg.extensions);
-  const st = statSync(alvo);
-  if (st.isFile()) return exts.has(extname(alvo)) ? [alvo] : [];
+  const stat = statSync(target);
+  if (stat.isFile()) return exts.has(extname(target)) ? [target] : [];
   const out = [];
-  for (const nome of readdirSync(alvo)) {
-    if (skip.has(nome)) continue;
-    const p = join(alvo, nome);
+  for (const name of readdirSync(target)) {
+    if (skip.has(name)) continue;
+    const p = join(target, name);
     const s = statSync(p);
-    if (s.isDirectory()) out.push(...coletarArquivos(p, cfg));
+    if (s.isDirectory()) out.push(...collectFiles(p, cfg));
     else if (exts.has(extname(p))) out.push(p);
   }
   return out;
@@ -81,147 +81,147 @@ function scriptKind(ts, ext) {
     ".jsx": ts.ScriptKind.JSX, ".mjs": ts.ScriptKind.JS, ".cjs": ts.ScriptKind.JS }[ext] ?? ts.ScriptKind.TS;
 }
 
-const norm = (nome) => nome.toLowerCase().replace(/[^a-z0-9]/g, "");
+const norm = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-function violacao(caminho, linha, dimensao, severidade, risco, descricao, regra, confianca = "alta") {
-  return { caminho, linha, dimensao, severidade, risco, descricao, regra, confianca };
+function violation(filePath, line, dimension, severity, risk, message, rule, confidence = "high") {
+  return { path: filePath, line, dimension, severity, risk, message, rule, confidence };
 }
 
 /** Núcleo: valida um TEXTO TS/JS já lido contra `cfg`. Puro — não toca `fs`. É o que o
  * `--selftest` prova com fixtures em memória (a única entrada externa é o compilador `ts`,
- * carregado uma vez, do mesmo jeito que o autoteste de `validate.py` usa o `ast` da stdlib). */
-function validarTexto(ts, caminho, texto, cfg) {
-  const ext = extname(caminho);
-  const ehTs = ext === ".ts" || ext === ".tsx";
-  const sf = ts.createSourceFile(caminho, texto, ts.ScriptTarget.Latest, true, scriptKind(ts, ext));
-  const viol = [];
-  const linhaDe = (no) => sf.getLineAndCharacterOfPosition(no.getStart(sf)).line + 1;
+ * carregado uma vez, do mesmo jeito que o selftest de `validate.py` usa o `ast` da stdlib). */
+function validateText(ts, filePath, text, cfg) {
+  const ext = extname(filePath);
+  const isTs = ext === ".ts" || ext === ".tsx";
+  const sf = ts.createSourceFile(filePath, text, ts.ScriptTarget.Latest, true, scriptKind(ts, ext));
+  const findings = [];
+  const lineOf = (node) => sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
 
-  const ehControle = (n) =>
+  const isControl = (n) =>
     ts.isIfStatement(n) || ts.isForStatement(n) || ts.isForInStatement(n) || ts.isForOfStatement(n) ||
     ts.isWhileStatement(n) || ts.isDoStatement(n) || ts.isSwitchStatement(n) || ts.isTryStatement(n);
 
-  const profundidade = (no, atual = 0) => {
-    let max = atual;
-    ts.forEachChild(no, (filho) => {
-      const prox = ehControle(filho) ? atual + 1 : atual;
-      max = Math.max(max, profundidade(filho, prox));
+  const depth = (node, current = 0) => {
+    let max = current;
+    ts.forEachChild(node, (child) => {
+      const next = isControl(child) ? current + 1 : current;
+      max = Math.max(max, depth(child, next));
     });
     return max;
   };
 
-  const ehFuncao = (n) =>
+  const isFunction = (n) =>
     ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n) ||
     ts.isMethodDeclaration(n) || ts.isConstructorDeclaration(n) || ts.isGetAccessor(n) || ts.isSetAccessor(n);
 
-  function nomeFuncao(no) {
-    if (no.name && ts.isIdentifier(no.name)) return no.name.text;
-    if (no.parent && ts.isVariableDeclaration(no.parent) && ts.isIdentifier(no.parent.name)) return no.parent.name.text;
+  function functionName(node) {
+    if (node.name && ts.isIdentifier(node.name)) return node.name.text;
+    if (node.parent && ts.isVariableDeclaration(node.parent) && ts.isIdentifier(node.parent.name)) return node.parent.name.text;
     return undefined;
   }
 
-  function checarFuncao(no) {
-    const ini = sf.getLineAndCharacterOfPosition(no.getStart(sf)).line;
-    const fim = sf.getLineAndCharacterOfPosition(no.getEnd()).line;
-    const linhas = fim - ini + 1;
-    const linha = ini + 1;
-    const nome = nomeFuncao(no) ?? "<anônima>";
+  function checkFunction(node) {
+    const startLine = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line;
+    const endLine = sf.getLineAndCharacterOfPosition(node.getEnd()).line;
+    const lineCount = endLine - startLine + 1;
+    const line = startLine + 1;
+    const name = functionName(node) ?? "<anonymous>";
 
-    if (linhas > cfg.maxFunctionLines)
-      viol.push(violacao(caminho, linha, "limiares", "media", "medio",
-        `função '${nome}' com ${linhas} linhas`, `função <= ${cfg.maxFunctionLines} linhas`));
+    if (lineCount > cfg.maxFunctionLines)
+      findings.push(violation(filePath, line, "thresholds", "medium", "medium",
+        `function '${name}' with ${lineCount} lines`, `function <= ${cfg.maxFunctionLines} lines`));
 
-    const params = (no.parameters ?? []).filter((p) => !cfg.ignoreParamNames.includes(p.name?.getText?.(sf)));
+    const params = (node.parameters ?? []).filter((p) => !cfg.ignoreParamNames.includes(p.name?.getText?.(sf)));
     if (params.length > cfg.maxParams)
-      viol.push(violacao(caminho, linha, "limiares", "media", "baixo",
-        `função '${nome}' com ${params.length} parâmetros`, `<= ${cfg.maxParams} parâmetros`));
+      findings.push(violation(filePath, line, "thresholds", "medium", "low",
+        `function '${name}' with ${params.length} parameters`, `<= ${cfg.maxParams} parameters`));
 
-    const prof = profundidade(no);
-    if (prof > cfg.maxNesting)
-      viol.push(violacao(caminho, linha, "limiares", "media", "medio",
-        `função '${nome}' com aninhamento de ${prof} níveis`, `aninhamento <= ${cfg.maxNesting} (use guard clauses)`));
+    const nestingDepth = depth(node);
+    if (nestingDepth > cfg.maxNesting)
+      findings.push(violation(filePath, line, "thresholds", "medium", "medium",
+        `function '${name}' with nesting of ${nestingDepth} levels`, `nesting <= ${cfg.maxNesting} (use guard clauses)`));
 
     // tipagem: só TS, só função nomeada pública, ignora construtor
-    if (ehTs && nomeFuncao(no) && !nome.startsWith("_") && !ts.isConstructorDeclaration(no)) {
-      const semRetorno = !no.type && !ts.isSetAccessor(no);
-      const semParam = (no.parameters ?? []).some((p) => !p.type && p.name?.getText?.(sf) !== "this");
-      if (semRetorno || semParam)
-        viol.push(violacao(caminho, linha, "tipagem", "baixa", "baixo",
-          `função pública '${nome}' sem anotação de tipo completa`, "tipar assinaturas públicas (api/contrato)"));
+    if (isTs && functionName(node) && !name.startsWith("_") && !ts.isConstructorDeclaration(node)) {
+      const missingReturn = !node.type && !ts.isSetAccessor(node);
+      const missingParam = (node.parameters ?? []).some((p) => !p.type && p.name?.getText?.(sf) !== "this");
+      if (missingReturn || missingParam)
+        findings.push(violation(filePath, line, "typing", "low", "low",
+          `public function '${name}' without complete type annotations`, "type public signatures (api/contract)"));
     }
   }
 
-  function checarConsole(no) {
-    const e = no.expression;
+  function checkConsole(node) {
+    const e = node.expression;
     if (ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === "console")
-      viol.push(violacao(caminho, linhaDe(no), "logging", "media", "baixo",
-        `uso de console.${e.name.text}`, "usar logger estruturado, sem console.*"));
+      findings.push(violation(filePath, lineOf(node), "logging", "medium", "low",
+        `use of console.${e.name.text}`, "use a structured logger, no console.*"));
   }
 
-  function checarCatch(no) {
-    if (no.block && no.block.statements.length === 0)
-      viol.push(violacao(caminho, linhaDe(no), "logging", "media", "baixo",
-        "catch vazio (exceção engolida)", "não engolir exceção; tratar/registrar"));
+  function checkCatch(node) {
+    if (node.block && node.block.statements.length === 0)
+      findings.push(violation(filePath, lineOf(node), "logging", "medium", "low",
+        "empty catch (swallowed exception)", "do not swallow exceptions; handle/log"));
   }
 
-  function checarLiteralNomeado(nome, init, linha) {
+  function checkNamedLiteral(name, init, line) {
     if (!init) return;
-    const n = norm(nome);
+    const n = norm(name);
     if (ts.isStringLiteral(init)) {
       if (cfg.secretNamePatterns.some((p) => n.includes(p)) && init.text) {
-        viol.push(violacao(caminho, linha, "segredos", "alta", "baixo",
-          `possível segredo embutido em '${nome}'`, "segredos em .env (prefixado por módulo), nunca no código"));
+        findings.push(violation(filePath, line, "secrets", "high", "low",
+          `possible embedded secret in '${name}'`, "secrets in .env (prefixed by module), never in code"));
         return;
       }
     }
     if (!cfg.hardcodedHeuristic) return;
-    const ehConstante = nome === nome.toUpperCase() && /[A-Z]/.test(nome);
+    const isConstant = name === name.toUpperCase() && /[A-Z]/.test(name);
     if (ts.isNumericLiteral(init)) {
       const v = Number(init.text);
-      if (!cfg.allowedMagicNumbers.includes(v) && !ehConstante)
-        viol.push(violacao(caminho, linha, "hardcoded", "baixa", "baixo",
-          `número mágico ${init.text}`, "valores de config em config.json", "baixa"));
+      if (!cfg.allowedMagicNumbers.includes(v) && !isConstant)
+        findings.push(violation(filePath, line, "hardcoded", "low", "low",
+          `magic number ${init.text}`, "config values in config.json", "low"));
     } else if (ts.isStringLiteral(init) && cfg.urlLikePrefixes.some((p) => init.text.startsWith(p))) {
-      viol.push(violacao(caminho, linha, "hardcoded", "media", "baixo",
-        `URL/host embutido '${init.text}'`, "URLs/hosts em config.json/.env", "baixa"));
+      findings.push(violation(filePath, line, "hardcoded", "medium", "low",
+        `embedded URL/host '${init.text}'`, "URLs/hosts in config.json/.env", "low"));
     }
   }
 
-  function visit(no) {
-    if (ehFuncao(no)) checarFuncao(no);
-    if (ts.isCallExpression(no)) checarConsole(no);
-    if (ts.isCatchClause(no)) checarCatch(no);
-    if (ts.isVariableDeclaration(no) && ts.isIdentifier(no.name) && no.initializer)
-      checarLiteralNomeado(no.name.text, no.initializer, linhaDe(no));
-    if (ts.isPropertyAssignment(no) && ts.isIdentifier(no.name) && no.initializer)
-      checarLiteralNomeado(no.name.text, no.initializer, linhaDe(no));
-    ts.forEachChild(no, visit);
+  function visit(node) {
+    if (isFunction(node)) checkFunction(node);
+    if (ts.isCallExpression(node)) checkConsole(node);
+    if (ts.isCatchClause(node)) checkCatch(node);
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer)
+      checkNamedLiteral(node.name.text, node.initializer, lineOf(node));
+    if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name) && node.initializer)
+      checkNamedLiteral(node.name.text, node.initializer, lineOf(node));
+    ts.forEachChild(node, visit);
   }
 
   visit(sf);
-  return viol;
+  return findings;
 }
 
 /** Núcleo: valida um TEXTO já lido, e nunca deixa uma exceção do AST-walk escapar sem virar
  * violação — qualquer erro de parsing vira uma violação de dimensão "parse", a MESMA regra que
  * `main()` aplicava só para I/O. Extraído para o núcleo para o `--selftest` provar o item sem
  * tocar disco: injeta um `ts` que sempre falha e confere que o resultado é fatal. */
-function validarComFallbackDeParse(ts, caminho, texto, cfg) {
+function validateWithParseFallback(ts, filePath, text, cfg) {
   try {
-    return validarTexto(ts, caminho, texto, cfg);
+    return validateText(ts, filePath, text, cfg);
   } catch (e) {
-    return [violacao(caminho, 0, "parse", "alta", "baixo", `falha ao parsear: ${e.message}`, "arquivo válido")];
+    return [violation(filePath, 0, "parse", "high", "low", `failed to parse: ${e.message}`, "valid file")];
   }
 }
 
 /** Núcleo: violação de dimensão "parse" é SEMPRE fatal — ver o LIMITE DECLARADO no cabeçalho. */
-function temFalhaDeParse(violacoes) {
-  return violacoes.some((v) => v.dimensao === "parse");
+function hasParseFailure(findings) {
+  return findings.some((v) => v.dimension === "parse");
 }
 
 /** Casca: lê o arquivo do disco e delega ao núcleo. */
-function validarArquivo(ts, caminho, cfg) {
-  return validarComFallbackDeParse(ts, caminho, readFileSync(caminho, "utf-8"), cfg);
+function validateFile(ts, filePath, cfg) {
+  return validateWithParseFallback(ts, filePath, readFileSync(filePath, "utf-8"), cfg);
 }
 
 function _cfgFixture() {
@@ -239,93 +239,93 @@ function _cfgFixture() {
   };
 }
 
-function autoteste() {
-  const falhas = [];
-  const ts = carregarTypescript(process.cwd());
+function selftest() {
+  const failures = [];
+  const ts = loadTypescript(process.cwd());
   const cfg = _cfgFixture();
-  const tem = (viol, dimensao) => viol.some((v) => v.dimensao === dimensao);
+  const has = (findings, dimension) => findings.some((v) => v.dimension === dimension);
 
-  const funcaoGrande = "function f(a, b, c) {\n  const x = 1;\n  const y = 2;\n  return x + y + a + b + c;\n}\n";
-  if (!tem(validarTexto(ts, "f.ts", funcaoGrande, cfg), "limiares"))
-    falhas.push("validarTexto deveria achar violacao de limiares (funcao/parametros grandes)");
+  const largeFunction = "function f(a, b, c) {\n  const x = 1;\n  const y = 2;\n  return x + y + a + b + c;\n}\n";
+  if (!has(validateText(ts, "f.ts", largeFunction, cfg), "thresholds"))
+    failures.push("validateText should find a thresholds violation (large function/parameters)");
 
-  const cfgAninhamento = { ..._cfgFixture(), maxFunctionLines: 10, maxParams: 10 };
-  const aninhado = "function f() {\n if (1) {\n  if (1) {\n   if (1) { }\n  }\n }\n}\n";
-  const violAninhado = validarTexto(ts, "f.ts", aninhado, cfgAninhamento);
-  if (!violAninhado.some((v) => v.descricao.includes("aninhamento")))
-    falhas.push("validarTexto deveria achar violacao de aninhamento (3 niveis > limite 2)");
+  const nestingCfg = { ..._cfgFixture(), maxFunctionLines: 10, maxParams: 10 };
+  const nested = "function f() {\n if (1) {\n  if (1) {\n   if (1) { }\n  }\n }\n}\n";
+  const nestedFindings = validateText(ts, "f.ts", nested, nestingCfg);
+  if (!nestedFindings.some((v) => v.message.includes("nesting")))
+    failures.push("validateText should find a nesting violation (3 levels > limit 2)");
 
-  const semTipo = "export function publica(a) {\n  return a;\n}\n";
-  if (!tem(validarTexto(ts, "f.ts", semTipo, cfg), "tipagem"))
-    falhas.push("validarTexto deveria achar violacao de tipagem em funcao publica sem anotacao (.ts)");
+  const untyped = "export function public(a) {\n  return a;\n}\n";
+  if (!has(validateText(ts, "f.ts", untyped, cfg), "typing"))
+    failures.push("validateText should find a typing violation in a public function without annotation (.ts)");
 
-  const comConsole = "export function publica(a: number): number {\n  console.log(a);\n  return a;\n}\n";
-  if (!tem(validarTexto(ts, "f.ts", comConsole, cfg), "logging"))
-    falhas.push("validarTexto deveria achar violacao de logging (console.*)");
+  const withConsole = "export function public(a: number): number {\n  console.log(a);\n  return a;\n}\n";
+  if (!has(validateText(ts, "f.ts", withConsole, cfg), "logging"))
+    failures.push("validateText should find a logging violation (console.*)");
 
-  const catchVazio = "try { f(); } catch (e) { }\n";
-  if (!tem(validarTexto(ts, "f.ts", catchVazio, cfg), "logging"))
-    falhas.push("validarTexto deveria achar violacao de logging (catch vazio)");
+  const emptyCatch = "try { f(); } catch (e) { }\n";
+  if (!has(validateText(ts, "f.ts", emptyCatch, cfg), "logging"))
+    failures.push("validateText should find a logging violation (empty catch)");
 
   // Concatenado, nao literal: o texto de ORIGEM deste arquivo nao pode conter um segredo-
   // formato contiguo, senao o proprio scan de vazamentos do audit_base.py acha "vazamento"
-  // que e so dado de teste (mesmo cuidado do fixture em scan_segredos.py --selftest).
-  const valorSecreto = "valor-bem" + "-secreto";
-  const segredo = `const token = '${valorSecreto}';\n`;
-  if (!tem(validarTexto(ts, "f.ts", segredo, cfg), "segredos"))
-    falhas.push("validarTexto deveria achar violacao de segredos em nome sensivel");
+  // que e so dado de teste (mesmo cuidado do fixture em scan_secrets.py --selftest).
+  const secretValue = "sample-value" + "-secret";
+  const secret = `const token = '${secretValue}';\n`;
+  if (!has(validateText(ts, "f.ts", secret, cfg), "secrets"))
+    failures.push("validateText should find a secrets violation in a sensitive name");
 
-  const magico = "const limite = 777;\n";
-  if (!tem(validarTexto(ts, "f.ts", magico, cfg), "hardcoded"))
-    falhas.push("validarTexto deveria achar violacao de hardcoded (numero magico)");
+  const magic = "const limit = 777;\n";
+  if (!has(validateText(ts, "f.ts", magic, cfg), "hardcoded"))
+    failures.push("validateText should find a hardcoded violation (magic number)");
 
-  const limpo = "export function publica(a: number): number {\n  return a;\n}\n";
-  if (validarTexto(ts, "f.ts", limpo, cfg).length !== 0)
-    falhas.push("validarTexto nao deveria achar nada em codigo dentro dos limiares");
+  const clean = "export function public(a: number): number {\n  return a;\n}\n";
+  if (validateText(ts, "f.ts", clean, cfg).length !== 0)
+    failures.push("validateText should find nothing in code within the thresholds");
 
   // Item central do fail-open: injeta um `ts` que sempre falha ao parsear (nao depende de achar
   // um snippet real que faca o compilador explodir — o compilador TS e tolerante por design) e
   // confere que (a) o nucleo NUNCA deixa a excecao escapar, sempre devolve uma violacao "parse",
   // e (b) essa violacao decide reprovacao (exit fatal), nunca passa em silencio.
-  const tsQuebrado = { ...ts, createSourceFile: () => { throw new Error("boom simulado"); } };
-  const violQuebrado = validarComFallbackDeParse(tsQuebrado, "f.ts", "qualquer coisa", cfg);
-  if (violQuebrado.length !== 1 || violQuebrado[0].dimensao !== "parse")
-    falhas.push("validarComFallbackDeParse deveria converter excecao de parse em violacao 'parse'");
-  if (!temFalhaDeParse(violQuebrado))
-    falhas.push("temFalhaDeParse deveria reprovar (true) quando ha violacao de dimensao 'parse'");
-  if (temFalhaDeParse(validarTexto(ts, "f.ts", limpo, cfg)))
-    falhas.push("temFalhaDeParse nao deveria reprovar codigo limpo sem violacao de parse");
+  const brokenTs = { ...ts, createSourceFile: () => { throw new Error("simulated boom"); } };
+  const brokenFindings = validateWithParseFallback(brokenTs, "f.ts", "anything", cfg);
+  if (brokenFindings.length !== 1 || brokenFindings[0].dimension !== "parse")
+    failures.push("validateWithParseFallback should convert a parse exception into a 'parse' violation");
+  if (!hasParseFailure(brokenFindings))
+    failures.push("hasParseFailure should fail (true) when there is a 'parse' dimension violation");
+  if (hasParseFailure(validateText(ts, "f.ts", clean, cfg)))
+    failures.push("hasParseFailure should not fail on clean code without a parse violation");
 
-  for (const falha of falhas) process.stdout.write(`  falha  ${falha}\n`);
-  if (falhas.length > 0) {
-    process.stdout.write(`autoteste (validate.mjs): ${falhas.length} falha(s)\n`);
+  for (const failure of failures) process.stdout.write(`  failure  ${failure}\n`);
+  if (failures.length > 0) {
+    process.stdout.write(`selftest (validate.mjs): ${failures.length} failure(s)\n`);
     return 1;
   }
-  process.stdout.write("autoteste (validate.mjs): 11/11 ok\n");
+  process.stdout.write("selftest (validate.mjs): 11/11 ok\n");
   return 0;
 }
 
 function main() {
-  if (process.argv.includes("--selftest")) process.exit(autoteste());
-  const { alvo, config } = parseArgs(process.argv.slice(2));
-  if (!alvo) {
-    console.error("uso: node validate.mjs <arquivo-ou-pasta> [--config config.json]");
+  if (process.argv.includes("--selftest")) process.exit(selftest());
+  const { target, config } = parseArgs(process.argv.slice(2));
+  if (!target) {
+    console.error("usage: node validate.mjs <file-or-dir> [--config config.json]");
     process.exit(2);
   }
-  const alvoAbs = resolve(alvo);
-  const baseDir = statSync(alvoAbs).isDirectory() ? alvoAbs : dirname(alvoAbs);
-  const ts = carregarTypescript(baseDir);
-  const cfg = carregarConfig(config);
+  const absTarget = resolve(target);
+  const baseDir = statSync(absTarget).isDirectory() ? absTarget : dirname(absTarget);
+  const ts = loadTypescript(baseDir);
+  const cfg = loadConfig(config);
 
-  const violacoes = [];
-  for (const arquivo of coletarArquivos(alvoAbs, cfg)) {
-    violacoes.push(...validarArquivo(ts, arquivo, cfg));
+  const findings = [];
+  for (const file of collectFiles(absTarget, cfg)) {
+    findings.push(...validateFile(ts, file, cfg));
   }
-  process.stdout.write(JSON.stringify({ alvo: alvoAbs, violacoes }, null, 2) + "\n");
-  // Fail-open medido: sem isto, um arquivo que falhava ao parsear virava violacao "alta" no
+  process.stdout.write(JSON.stringify({ target: absTarget, findings }, null, 2) + "\n");
+  // Fail-open medido: sem isto, um arquivo que falhava ao parsear virava violation "high" no
   // JSON mas o processo saia com 0 mesmo assim, e quem consome (code-adequador,
   // code-auditoria-padrao) le exit 0 como "conforme" sem olhar o corpo da violacao.
-  process.exitCode = temFalhaDeParse(violacoes) ? 1 : 0;
+  process.exitCode = hasParseFailure(findings) ? 1 : 0;
 }
 
 main();

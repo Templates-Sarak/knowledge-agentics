@@ -137,7 +137,7 @@ const GENERIC_NAME = { typescript: 'createAdapter', javascript: 'createAdapter',
 
 function providerName(binding, provider) {
   const pascal = toPascalCase(provider);
-  return binding === 'python' ? pascal : `criar${pascal}`;
+  return binding === 'python' ? pascal : `create${pascal}`;
 }
 
 function copyAndAdaptTemplate(template, destination, options) {
@@ -328,7 +328,7 @@ const FIXTURE_PY_TEMPLATE_REAL = [
   '',
   '# Fabrica de adapter por (porta, provedor).',
   'FACTORIES: dict[str, dict[str, Callable[[dict[str, Any]], Any]]] = {',
-  '    "repository": {"memory": lambda modulo: InMemoryRepository()},',
+  '    "repository": {"memory": lambda module: InMemoryRepository()},',
   '}',
   '',
 ].join('\n');
@@ -358,16 +358,16 @@ function pureCases() {
   return [
     { name: 'toPascalCase: kebab-case with a hyphen becomes PascalCase', fn: () => toPascalCase('aws-s3') === 'AwsS3' },
     { name: 'toPascalCase: a single word is capitalized', fn: () => toPascalCase('okta') === 'Okta' },
-    { name: 'providerName: TypeScript adds the create prefix', fn: () => providerName('typescript', 'okta') === 'criarOkta' },
-    { name: 'providerName: JavaScript adds the create prefix', fn: () => providerName('javascript', 'okta') === 'criarOkta' },
+    { name: 'providerName: TypeScript adds the create prefix', fn: () => providerName('typescript', 'okta') === 'createOkta' },
+    { name: 'providerName: JavaScript adds the create prefix', fn: () => providerName('javascript', 'okta') === 'createOkta' },
     { name: 'providerName: Python uses PascalCase without a prefix', fn: () => providerName('python', 'okta') === 'Okta' },
-    { name: 'replaceMarkers: replaces <port> and <provider>', fn: () => replaceMarkers('<port> e <provider>', 'auth', 'okta', 'okta') === 'auth e okta' },
+    { name: 'replaceMarkers: replaces <port> and <provider>', fn: () => replaceMarkers('<port> and <provider>', 'auth', 'okta', 'okta') === 'auth and okta' },
     {
       name: 'replaceMarkers: replaces <provider-folder> separately from <provider>',
-      fn: () => replaceMarkers('<provider> em <provider-folder>', 'x', 'disco-frio', 'disco_frio') === 'disco-frio em disco_frio',
+      fn: () => replaceMarkers('<provider> in <provider-folder>', 'x', 'cold-disk', 'cold_disk') === 'cold-disk in cold_disk',
     },
-    { name: 'adapterDir: Python converts hyphens to underscores', fn: () => adapterDir('python', 'disco-frio') === 'disco_frio' },
-    { name: 'adapterDir: TypeScript and JavaScript preserve kebab-case', fn: () => adapterDir('typescript', 'disco-frio') === 'disco-frio' && adapterDir('javascript', 'disco-frio') === 'disco-frio' },
+    { name: 'adapterDir: Python converts hyphens to underscores', fn: () => adapterDir('python', 'cold-disk') === 'cold_disk' },
+    { name: 'adapterDir: TypeScript and JavaScript preserve kebab-case', fn: () => adapterDir('typescript', 'cold-disk') === 'cold-disk' && adapterDir('javascript', 'cold-disk') === 'cold-disk' },
   ];
 }
 
@@ -376,28 +376,28 @@ function registrationCasesTs() {
     {
       name: 'registerFactoryTs: an existing port gains a provider on the same line and an import',
       fn: () => {
-        const r = registerFactoryTs(FIXTURE_TS_TEMPLATE_REAL, factoryParams('repository', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
+        const r = registerFactoryTs(FIXTURE_TS_TEMPLATE_REAL, factoryParams('repository', 'dynamo', 'createDynamo', '../adapters/dynamo/index.js'));
         return r !== null
-          && r.includes("repository: { memory: () => createRepository(), 'dynamo': () => criarDynamo() },")
-          && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
+          && r.includes("repository: { memory: () => createRepository(), 'dynamo': () => createDynamo() },")
+          && r.includes("import { createDynamo } from '../adapters/dynamo/index.js';");
       },
     },
     {
       name: 'registerFactoryTs: a new tokenVerifier port is registered',
       fn: () => {
-        const r = registerFactoryTs(FIXTURE_TS_TEMPLATE_REAL, factoryParams('tokenVerifier', 'okta', 'criarOkta', '../adapters/okta/index.js'));
-        return r !== null && r.includes("tokenVerifier: { 'okta': () => criarOkta() },");
+        const r = registerFactoryTs(FIXTURE_TS_TEMPLATE_REAL, factoryParams('tokenVerifier', 'okta', 'createOkta', '../adapters/okta/index.js'));
+        return r !== null && r.includes("tokenVerifier: { 'okta': () => createOkta() },");
       },
     },
     {
       name: 'registerFactoryTs: returns null when the import line is missing',
-      fn: () => registerFactoryTs('nada de import aqui', factoryParams('repository', 'x', 'y', 'z')) === null,
+      fn: () => registerFactoryTs('no import here', factoryParams('repository', 'x', 'y', 'z')) === null,
     },
     {
       name: 'registerFactoryTs: a hyphenated provider is quoted as a key',
       fn: () => {
-        const r = registerFactoryTs(FIXTURE_TS_TEMPLATE_REAL, factoryParams('repository', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
-        return r !== null && r.includes("repository: { memory: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
+        const r = registerFactoryTs(FIXTURE_TS_TEMPLATE_REAL, factoryParams('repository', 'cold-disk', 'createColdDisk', '../adapters/cold-disk/index.js'));
+        return r !== null && r.includes("repository: { memory: () => createRepository(), 'cold-disk': () => createColdDisk() },");
       },
     },
   ];
@@ -408,24 +408,24 @@ function registrationCasesJs() {
     {
       name: 'registerFactoryJs: an existing port gains a provider and an import',
       fn: () => {
-        const r = registerFactoryJs(FIXTURE_JS_TEMPLATE_REAL, factoryParams('repository', 'dynamo', 'criarDynamo', '../adapters/dynamo/index.js'));
+        const r = registerFactoryJs(FIXTURE_JS_TEMPLATE_REAL, factoryParams('repository', 'dynamo', 'createDynamo', '../adapters/dynamo/index.js'));
         return r !== null
-          && r.includes("repository: { memory: () => createRepository(), 'dynamo': () => criarDynamo() },")
-          && r.includes("import { criarDynamo } from '../adapters/dynamo/index.js';");
+          && r.includes("repository: { memory: () => createRepository(), 'dynamo': () => createDynamo() },")
+          && r.includes("import { createDynamo } from '../adapters/dynamo/index.js';");
       },
     },
     {
       name: 'registerFactoryJs: a new tokenVerifier port works without a type signature',
       fn: () => {
-        const r = registerFactoryJs(FIXTURE_JS_TEMPLATE_REAL, factoryParams('tokenVerifier', 'okta', 'criarOkta', '../adapters/okta/index.js'));
-        return r !== null && r.includes("tokenVerifier: { 'okta': () => criarOkta() },");
+        const r = registerFactoryJs(FIXTURE_JS_TEMPLATE_REAL, factoryParams('tokenVerifier', 'okta', 'createOkta', '../adapters/okta/index.js'));
+        return r !== null && r.includes("tokenVerifier: { 'okta': () => createOkta() },");
       },
     },
     {
       name: 'registerFactoryJs: a hyphenated provider is quoted as a key',
       fn: () => {
-        const r = registerFactoryJs(FIXTURE_JS_TEMPLATE_REAL, factoryParams('repository', 'disco-frio', 'criarDiscoFrio', '../adapters/disco-frio/index.js'));
-        return r !== null && r.includes("repository: { memory: () => createRepository(), 'disco-frio': () => criarDiscoFrio() },");
+        const r = registerFactoryJs(FIXTURE_JS_TEMPLATE_REAL, factoryParams('repository', 'cold-disk', 'createColdDisk', '../adapters/cold-disk/index.js'));
+        return r !== null && r.includes("repository: { memory: () => createRepository(), 'cold-disk': () => createColdDisk() },");
       },
     },
   ];
@@ -438,15 +438,15 @@ function registrationCasesPy() {
       fn: () => {
         const r = registerFactoryPy(FIXTURE_PY_TEMPLATE_REAL, factoryParams('repository', 'dynamo', 'DynamoRepository', 'adapters.dynamo'));
         return r !== null
-          && r.includes('"repository": {"memory": lambda modulo: InMemoryRepository(), "dynamo": DynamoRepository}')
+          && r.includes('"repository": {"memory": lambda module: InMemoryRepository(), "dynamo": DynamoRepository}')
           && r.includes('from adapters.dynamo import DynamoRepository');
       },
     },
     {
       name: 'registerFactoryPy: current template registers a new tokenVerifier port',
       fn: () => {
-        const r = registerFactoryPy(FIXTURE_PY_TEMPLATE_REAL, factoryParams('tokenVerifier', 'okta', 'VerificadorOkta', 'adapters.okta'));
-        return r !== null && r.includes('"tokenVerifier": {"okta": VerificadorOkta}');
+        const r = registerFactoryPy(FIXTURE_PY_TEMPLATE_REAL, factoryParams('tokenVerifier', 'okta', 'OktaTokenVerifier', 'adapters.okta'));
+        return r !== null && r.includes('"tokenVerifier": {"okta": OktaTokenVerifier}');
       },
     },
     {

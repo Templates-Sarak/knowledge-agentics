@@ -52,10 +52,10 @@ export function supportsSelfTest(text) {
  * conjuntos por chave — chave aqui é só o caminho relativo (um arquivo, um comando). */
 export function compareRegistry(findings, registered) {
   const findingsSet = new Set(findings);
-  const registeredSet = new Set(registered.map((r) => r.caminho));
+  const registeredSet = new Set(registered.map((r) => r.path));
   return {
     orphans: findings.filter((c) => !registeredSet.has(c)),
-    obsolete: registered.filter((r) => !findingsSet.has(r.caminho)),
+    obsolete: registered.filter((r) => !findingsSet.has(r.path)),
   };
 }
 
@@ -126,64 +126,66 @@ function filesWithSelfTest() {
  * registrado como pendência, não escondido.
  */
 const REGISTRY = [
-  { caminho: 'specs/_estrutura_modulos/tools/affected.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tools/create-adapter.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tools/ci-dependencies.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tools/ci-security.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tools/contract-compatible.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tools/package.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tools/create-module.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tools/sync-deploy.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tools/verify-commit.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/verify-map.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/verify-catalog.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/verify-routine.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/template-self-test.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/supervise.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/run-all-selftests.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/tests/measure-language.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs', runtime: 'node' },
-  { caminho: 'specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py', runtime: 'python' },
-  { caminho: 'skills/git-verificacao-commit/scripts/gerar_config.py', runtime: 'python' },
-  { caminho: 'skills/git-verificacao-commit/scripts/verificar_commit.py', runtime: 'python' },
-  { caminho: 'skills/meta-iniciar-repositorio/scripts/comparar_arvore.py', runtime: 'python' },
-  { caminho: 'skills/meta-iniciar-repositorio/scripts/init_repo.py', runtime: 'python' },
-  { caminho: 'skills/meta-iniciar-repositorio/scripts/carimbo.py', runtime: 'python' },
-  { caminho: 'skills/meta-propagar-base/scripts/propagar.py', runtime: 'python' },
-  { caminho: 'skills/meta-verificacao-base/scripts/audit_base.py', runtime: 'python' },
-  { caminho: 'skills/meta-adequacao-modular/scripts/diagnosticar_terreno.py', runtime: 'python' },
-  { caminho: 'skills/code-generalizacao-modulo/scripts/inventariar_origem.py', runtime: 'python' },
-  { caminho: 'skills/code-generalizacao-modulo/scripts/verificar_neutralidade.py', runtime: 'python' },
-  { caminho: 'skills/code-generalizacao-modulo/scripts/verificar_entregavel.py', runtime: 'python' },
-  { caminho: 'skills/cyber-segredos/scripts/scan_segredos.py', runtime: 'python' },
-  { caminho: 'skills/spec-revisao/scripts/verificar_paridade.py', runtime: 'python' },
-  { caminho: 'skills/padrao-python/scripts/validate.py', runtime: 'python' },
-  { caminho: 'skills/padrao-typescript/scripts/validate.mjs', runtime: 'node' },
-  { caminho: 'hooks/_lib.js', runtime: 'node' },
-  { caminho: 'hooks/padrao-limiares.js', runtime: 'node' },
-  { caminho: 'hooks/padrao-format.js', runtime: 'node' },
-  { caminho: 'skills/spec-panorama/scripts/gerar_resumo.py', runtime: 'python' },
-  { caminho: 'skills/deploy-docker-monolito/scripts/validar_monolito.py', runtime: 'python' },
-  { caminho: 'plugin/sync_ide.py', runtime: 'python' },
+  { path: 'specs/_estrutura_modulos/tools/affected.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tools/create-adapter.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tools/ci-dependencies.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tools/ci-security.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tools/contract-compatible.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tools/package.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tools/create-module.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tools/sync-deploy.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tools/verify-commit.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tests/verify-map.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tests/verify-catalog.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tests/verify-routine.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tests/template-self-test.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tests/supervise.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tests/run-all-selftests.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/tests/measure-language.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/bindings/typescript/root/scripts/migrations.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/bindings/javascript/root/scripts/migrations.mjs', runtime: 'node' },
+  { path: 'specs/_estrutura_modulos/bindings/python/root/scripts/migrations.py', runtime: 'python' },
+  { path: 'skills/git-verificacao-commit/scripts/generate_config.py', runtime: 'python' },
+  { path: 'skills/git-verificacao-commit/scripts/verify_commit.py', runtime: 'python' },
+  { path: 'skills/meta-iniciar-repositorio/scripts/compare_tree.py', runtime: 'python' },
+  { path: 'skills/meta-iniciar-repositorio/scripts/init_repo.py', runtime: 'python' },
+  { path: 'skills/meta-iniciar-repositorio/scripts/stamp.py', runtime: 'python' },
+  { path: 'skills/meta-propagar-base/scripts/propagate.py', runtime: 'python' },
+  { path: 'skills/meta-verificacao-base/scripts/audit_base.py', runtime: 'python' },
+  { path: 'skills/meta-adequacao-modular/scripts/diagnose_terrain.py', runtime: 'python' },
+  { path: 'skills/code-generalizacao-modulo/scripts/inventory_source.py', runtime: 'python' },
+  { path: 'skills/code-generalizacao-modulo/scripts/verify_neutrality.py', runtime: 'python' },
+  { path: 'skills/code-generalizacao-modulo/scripts/verify_deliverable.py', runtime: 'python' },
+  { path: 'skills/cyber-segredos/scripts/scan_secrets.py', runtime: 'python' },
+  { path: 'skills/spec-revisao/scripts/verify_parity.py', runtime: 'python' },
+  { path: 'skills/padrao-python/scripts/validate.py', runtime: 'python' },
+  { path: 'skills/padrao-typescript/scripts/validate.mjs', runtime: 'node' },
+  { path: 'hooks/_lib.js', runtime: 'node' },
+  { path: 'hooks/padrao-limiares.js', runtime: 'node' },
+  { path: 'hooks/padrao-format.js', runtime: 'node' },
+  { path: 'skills/spec-panorama/scripts/generate_summary.py', runtime: 'python' },
+  { path: 'skills/deploy-docker-monolito/scripts/validate_monolith.py', runtime: 'python' },
+  { path: 'skills/code-assinatura/scripts/scan_signatures.py', runtime: 'python' },
+  { path: 'skills/code-documentacao/scripts/audit_docs.py', runtime: 'python' },
+  { path: 'skills/code-limpeza-projeto/scripts/detect_junk.py', runtime: 'python' },
+  { path: 'skills/git-especialista-repositorio/scripts/scan_history.py', runtime: 'python' },
+  { path: 'skills/git-revisao-diff/scripts/review_diff.py', runtime: 'python' },
+  { path: 'plugin/sync_ide.py', runtime: 'python' },
 ];
 
 /**
  * PENDÊNCIA DECLARADA (não escondida): scripts e hooks que AINDA não têm `--selftest`, listados
  * aqui de propósito para não regredir a decisão sem alguém decidir de novo.
  *
- * 13 scripts de skill sem `--selftest`: `code-documentacao/scripts/auditar_docs.py`,
- * `code-assinatura/scripts/scan_assinaturas.py` (os dois mudaram de pasta numa campanha de
- * decomposição de `code-entrega` — endereço atualizado, nenhum ganhou `--selftest`),
- * `code-limpeza-projeto/scripts/detectar_lixo.py`, `cyber-codigo/scripts/sast_scan.py`,
+ * 8 scripts de skill sem `--selftest`: `cyber-codigo/scripts/sast_scan.py`,
  * `cyber-config/scripts/check_headers.py`, `cyber-dependencias/scripts/parse_audit.py`,
- * `deploy-docker-microsservico/scripts/validar_docker.py`, `deploy-vercel/scripts/validar_predeploy.py`,
- * `git-especialista-repositorio/scripts/scan_historico.py`,
- * `git-revisao-diff/scripts/revisar_diff.py`, `meta-create-skill/scripts/scaffold_skill.py`,
- * `otimizacao-nivel-1/scripts/auditar_assets.py`, `site-seo/scripts/auditar_seo.py` — erram para
- * MENOS gravidade (relatório incompleto), nunca para aprovação falsa, e por isso ficam de fora de
- * propósito nesta rodada. (`meta-verificacao-base/scripts/{limiares,ponteiros,nomenclatura,
- * proatividade,secoes,contagens,paridade,manifestos,verify-map}.py` NÃO entram nesta lista: são módulos importados por
+ * `deploy-docker-microsservico/scripts/validate_docker.py`, `deploy-vercel/scripts/validate_predeploy.py`,
+ * `meta-create-skill/scripts/scaffold_skill.py`, `otimizacao-nivel-1/scripts/audit_assets.py`,
+ * `site-seo/scripts/audit_seo.py` — erram para MENOS gravidade (relatório incompleto), nunca para
+ * aprovação falsa, e por isso ficam de fora de propósito nesta rodada. (`scan_signatures.py`,
+ * `audit_docs.py`, `detect_junk.py`, `scan_history.py` e `review_diff.py` ganharam `--selftest` na onda 5
+ * e estão registrados acima. `meta-verificacao-base/scripts/{thresholds,pointers,naming,proactivity,
+ * sections,counts,parity,manifests,map_schema}.py` NÃO entram nesta lista: são módulos importados por
  * `audit_base.py`, provados pelo `--selftest` DELE, não scripts standalone.)
  *
  * 3 hooks sem `--selftest`: `cyber-git-seguro.js`, `cyber-dependencias.js`, `test-cobertura.js` —
@@ -200,12 +202,12 @@ const DECLARED_OUTSIDE = new Set([
 ]);
 
 function runOne(entry) {
-  const absolutePath = join(BASE_ROOT, entry.caminho);
+  const absolutePath = join(BASE_ROOT, entry.path);
   try {
     execFileSync(entry.runtime, [absolutePath, '--selftest'], { stdio: 'pipe', encoding: 'utf8' });
     return { ok: true };
   } catch (error) {
-    return { ok: false, saida: `${error.stdout ?? ''}${error.stderr ?? ''}` };
+    return { ok: false, output: `${error.stdout ?? ''}${error.stderr ?? ''}` };
   }
 }
 
@@ -215,7 +217,7 @@ function runAll() {
 
   if (obsolete.length > 0) {
     process.stdout.write(`\n=== registered self-tests not found by the scan (${obsolete.length}) — informational ===\n`);
-    for (const o of obsolete) process.stdout.write(`  ${o.caminho}\n`);
+    for (const o of obsolete) process.stdout.write(`  ${o.path}\n`);
   }
   if (orphans.length > 0) {
     process.stdout.write(`\n=== ORPHANS — files with --selftest missing from the registry (${orphans.length}) ===\n`);
@@ -228,10 +230,10 @@ function runAll() {
   let failures = 0;
   for (const entry of REGISTRY) {
     const result = runOne(entry);
-    process.stdout.write(`  ${result.ok ? 'ok   ' : 'FAIL'} ${entry.caminho}\n`);
+    process.stdout.write(`  ${result.ok ? 'ok   ' : 'FAIL'} ${entry.path}\n`);
     if (!result.ok) {
       failures += 1;
-      process.stdout.write(`${result.saida.split('\n').map((line) => `        ${line}`).join('\n')}\n`);
+      process.stdout.write(`${result.output.split('\n').map((line) => `        ${line}`).join('\n')}\n`);
     }
   }
   process.stdout.write(`\nrun-all-selftests: ${REGISTRY.length - failures}/${REGISTRY.length} files passed --selftest\n`);
@@ -251,14 +253,14 @@ function selfTestCases() {
     { name: 'supportsSelfTest: flag declaration in CLI options object is detected', fn: () => supportsSelfTest("const FLAGS = { '--selftest': 'selfTest' }") === true },
     { name: 'supportsSelfTest: a prose mention is not recognized', fn: () => supportsSelfTest('run with --selftest to verify') === false },
     { name: 'compareRegistry: registered file is neither orphan nor obsolete', fn: () => {
-      const r = compareRegistry(['a.mjs'], [{ caminho: 'a.mjs' }]);
+      const r = compareRegistry(['a.mjs'], [{ path: 'a.mjs' }]);
       return r.orphans.length === 0 && r.obsolete.length === 0;
     } },
     { name: 'compareRegistry: discovered file without a registry entry is an orphan', fn: () => (
       compareRegistry(['a.mjs'], []).orphans.length === 1
     ) },
     { name: 'compareRegistry: registry entry without a discovered file is obsolete but not a failure', fn: () => {
-      const r = compareRegistry([], [{ caminho: 'a.mjs' }]);
+      const r = compareRegistry([], [{ path: 'a.mjs' }]);
       return r.orphans.length === 0 && r.obsolete.length === 1;
     } },
   ];

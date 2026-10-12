@@ -12,7 +12,7 @@ Dispara o fluxo da skill **`deploy-vercel`** para levar o projeto a um deploy **
 (publica) → HITL obrigatório antes do `--prod`. A lógica está na skill; aqui você orquestra.
 
 ## Passos (skill `deploy-vercel`)
-1. **Pré-deploy comum** — `references/predeploy-comum.md` + `python skills/deploy-vercel/scripts/validar_predeploy.py --raiz $1`
+1. **Pré-deploy comum** — `references/predeploy-comum.md` + `python skills/deploy-vercel/scripts/validate_predeploy.py --root $1`
    (config de build, env no `.env.example`, sem segredo versionado). Resolva os alertas.
 2. **`vercel.json` por stack** — identifique a stack (`Glob`) e valide/crie o mínimo (`references/vercel-stacks.md`,
    templates em `assets/vercel-templates/`). **Nunca** segredo no `vercel.json`.

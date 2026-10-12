@@ -30,21 +30,21 @@ pelo futuro hook de conformidade.
 Self-contained (stdlib `ast`, **zero dependências**); thresholds em `scripts/config.json` (zero hardcoded).
 
 ```
-python scripts/validate.py <arquivo-ou-pasta> [--config scripts/config.json]
+python scripts/validate.py <file-or-dir> [--config scripts/config.json]
 ```
-Saída: JSON `{ "alvo", "violacoes": [ {caminho, linha, dimensao, severidade, risco, descricao, regra, confianca} ] }`.
+Saída: JSON `{ "target", "findings": [ {path, line, dimension, severity, risk, message, rule, confidence} ] }`. Valores: `severity` high|medium|low, `risk` high|medium|low, `confidence` high|low.
 
 **Dimensões detectadas (mecânicas):**
-- `limiares` — função > maxFunctionLines, aninhamento > maxNesting, params > maxParams.
+- `thresholds` — função > maxFunctionLines, aninhamento > maxNesting, params > maxParams.
 - `logging` — `print(...)`; exceção engolida (`except:` amplo ou `except ...: pass`).
-- `tipagem` — função pública sem anotação completa (params/retorno).
-- `segredos` — literal em nome sensível (`token`, `api_key`, `password`…) → severidade **alta**.
-- `hardcoded` (heurística) — número mágico fora do allowlist (e fora de constante `UPPER_CASE`) e URL/host literal → marcados com `confianca: "baixa"` (o agente triagem os falsos positivos).
+- `typing` — função pública sem anotação completa (params/retorno).
+- `secrets` — literal em nome sensível (`token`, `api_key`, `password`…) → severity **high**.
+- `hardcoded` (heurística) — número mágico fora do allowlist (e fora de constante `UPPER_CASE`) e URL/host literal → marcados com `confidence: "low"` (o agente triagem os falsos positivos).
 
 O que exige **julgamento** (SRP, acoplamento entre módulos, "é segredo de verdade?") **não** é do validador — fica com o agente/`code-diagnostico`.
 
 ## Regras e limites
-- **NÃO** trate a saída de `confianca: "baixa"` (hardcoded heurístico) como verdade absoluta — é candidato a revisão, pode ser falso positivo.
+- **NÃO** trate a saída de `confidence: "low"` (hardcoded heurístico) como verdade absoluta — é candidato a revisão, pode ser falso positivo.
 - **NUNCA** adicione dependência externa ao validador — ele é stdlib puro, roda em qualquer ambiente com Python.
 - **NÃO** embuta limiares no script — todos vêm de `config.json`.
 - **NÃO** redefina as regras universais aqui — em dúvida, leia `padrao-escrita`.
@@ -55,7 +55,7 @@ O que exige **julgamento** (SRP, acoplamento entre módulos, "é segredo de verd
 - [ ] Assinaturas públicas tipadas (passam no `mypy`)?
 - [ ] `validate.py` roda sem dependências externas e lê os limiares do `config.json`?
 - [ ] Saída do validador é JSON no formato de dimensões do `backlog-format.md`?
-- [ ] Hardcoded heurístico marcado com `confianca: "baixa"`?
+- [ ] Hardcoded heurístico marcado com `confidence: "low"`?
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/idioms.md` — idiomas Python detalhados e o mapeamento regra-universal → forma Python / como o validador detecta.

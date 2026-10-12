@@ -22,8 +22,8 @@ Mutativa ao corrigir → HITL antes de refatorar.
 ## Workflow
 Trate **um projeto/módulo por vez**. Significado e correção de cada achado em `references/padroes-sast.md`.
 
-1. **Varrer** — `python scripts/sast_scan.py --raiz <projeto>` (JSON: `tipo`, `confianca`, `arquivo:linha`, trecho).
-2. **Triar pelo fluxo do dado** — `confianca: alta` prioriza; `media`/`baixa` só viram risco se **input externo** alcança o ponto (siga o dado da borda `api/` até o sink). Descarte falsos positivos (ex.: `Math.random` para animação).
+1. **Varrer** — `python scripts/sast_scan.py --root <projeto>` (JSON: `kind`, `confidence`, `file:line`, `snippet`).
+2. **Triar pelo fluxo do dado** — `confidence: high` prioriza; `medium`/`low` só viram risco se **input externo** alcança o ponto (siga o dado da borda `api/` até o sink). Descarte falsos positivos (ex.: `Math.random` para animação).
 3. **Classificar** — para cada confirmado: tipo de falha (injeção/XSS/cripto/…), severidade, e a correção segura do `references/padroes-sast.md`.
 4. **HITL — plano** — apresente os achados confirmados + correção proposta por arquivo. → "⚠️ Confirma os patches?". **Aguarde.**
 5. **Refatorar** — aplique a correção segura (args em array, sanitização, `safe_load`, bcrypt/argon2, CSPRNG, allowlist de host). Preserve comportamento; teste.
@@ -44,5 +44,5 @@ Trate **um projeto/módulo por vez**. Significado e correção de cada achado em
 - [ ] Re-scan limpo dos confirmados; antes/depois reportado?
 
 ## Referências (Camada 3 — leia sob demanda)
-- `scripts/sast_scan.py` + `scripts/config.json` — SAST por padrões (com `confianca`); padrões no config.
+- `scripts/sast_scan.py` + `scripts/config.json` — SAST por padrões (com `confidence`); padrões no config.
 - `references/padroes-sast.md` — risco e **correção segura** de cada tipo + como triar por confiança.

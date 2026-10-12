@@ -1,6 +1,6 @@
 ---
 name: cyber-segredos
-description: Detecção e remediação de segredos vazados — hardcoded no código, no bundle do front e em logs (scan_segredos.py). Dona do catálogo canônico de padrões (git-* referenciam). Use ao auditar segredos ou ao detectar chave fora do .env. NÃO acione proativamente.
+description: Detecção e remediação de segredos vazados — hardcoded no código, no bundle do front e em logs (scan_secrets.py). Dona do catálogo canônico de padrões (git-* referenciam). Use ao auditar segredos ou ao detectar chave fora do .env. NÃO acione proativamente.
 ---
 
 # Skill: Segurança — Segredos
@@ -21,7 +21,7 @@ Caça **segredos expostos** no projeto e conduz a remediação (mover para `.env
 ## Workflow
 Trate **um projeto por vez**. Onde segredos se escondem em `references/onde-escondem.md`.
 
-1. **Varrer** — `python scripts/scan_segredos.py --raiz <projeto>` (código). Repita apontando para o **bundle do front** (`--raiz dist`/`build`/`.next`) e para **logs** (`--raiz logs`) — ali vazam chaves que o scan de código ignora.
+1. **Varrer** — `python scripts/scan_secrets.py --root <projeto>` (código). Repita apontando para o **bundle do front** (`--root dist`/`build`/`.next`) e para **logs** (`--root logs`) — ali vazam chaves que o scan de código ignora.
 2. **Triar** — separe achados reais de falsos positivos (genéricos/hash). Mantenha tudo **mascarado**.
 3. **HITL — plano** — para cada segredo: mover para `.env` (var prefixada por módulo) + `.gitignore` + `.env.example`; trocar o literal por `process.env`/`os.getenv`; e **rotacionar** a credencial se já foi exposta/commitada. → "⚠️ Confirma?". **Aguarde.**
 4. **Aplicar** — mover, ajustar `.env`/`.gitignore`, substituir no código.
@@ -44,5 +44,5 @@ Trate **um projeto por vez**. Onde segredos se escondem em `references/onde-esco
 - [ ] Re-scan `total: 0`?
 
 ## Referências (Camada 3 — leia sob demanda)
-- `scripts/scan_segredos.py` + `scripts/config.json` — scanner + **catálogo canônico** de padrões (fonte única; git-* derivam daqui).
+- `scripts/scan_secrets.py` + `scripts/config.json` — scanner + **catálogo canônico** de padrões (fonte única; git-* derivam daqui).
 - `references/onde-escondem.md` — onde segredos vazam além do código (bundle, logs, env público, CI, config).

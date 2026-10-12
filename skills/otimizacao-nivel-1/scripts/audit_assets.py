@@ -1,15 +1,16 @@
 """
-auditar_assets.py — Auditoria determinística de performance frontend (entrada do diagnóstico).
+audit_assets.py — Auditoria determinística de performance frontend (entrada do diagnóstico).
 
 Uso:
-    python auditar_assets.py --raiz . [--config auditar_assets.config.json]
+    python audit_assets.py --root . [--config audit_assets.config.json]
 
 Retorno:
-    JSON com {imagens_legadas, imagens_grandes, img_sem_dimensao, libs_pesadas}.
+    JSON com {legacy_images, large_images, imgs_without_dimensions, heavy_libs}.
 
 Regras (padrao-escrita): zero hardcoded (extensões/limites/libs no config.json),
 responsabilidade única (apenas detecta — a otimização é decisão com HITL nas skills de nível).
 """
+
 import argparse
 import json
 import re
@@ -17,89 +18,103 @@ import sys
 from pathlib import Path
 
 
-def carregar_config(caminho: Path) -> dict:
-    return json.loads(caminho.read_text(encoding="utf-8"))
+def load_config(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def ignorar(caminho: Path, ignorar_dirs) -> bool:
-    return any(parte in ignorar_dirs for parte in caminho.parts)
+def is_ignored(path: Path, ignore_dirs) -> bool:
+    return any(part in ignore_dirs for part in path.parts)
 
 
-def auditar_imagens(raiz: Path, ext_legadas, ext_imagem, limite_grande, ignorar_dirs) -> tuple:
-    legadas, grandes = [], []
-    for caminho in raiz.rglob("*"):
-        if not caminho.is_file() or ignorar(caminho, ignorar_dirs):
+def audit_images(root: Path, legacy_ext, image_ext, large_limit, ignore_dirs) -> tuple:
+    legacy, large = [], []
+    for path in root.rglob("*"):
+        if not path.is_file() or is_ignored(path, ignore_dirs):
             continue
-        suf = caminho.suffix.lower()
+        suffix = path.suffix.lower()
         try:
-            tamanho = caminho.stat().st_size
+            size = path.stat().st_size
         except OSError:
             continue
-        if suf in ext_legadas:
-            legadas.append({"arquivo": str(caminho), "bytes": tamanho})
-        if suf in ext_imagem and tamanho > limite_grande:
-            grandes.append({"arquivo": str(caminho), "bytes": tamanho})
-    return legadas, grandes
+        if suffix in legacy_ext:
+            legacy.append({"file": str(path), "bytes": size})
+        if suffix in image_ext and size > large_limit:
+            large.append({"file": str(path), "bytes": size})
+    return legacy, large
 
 
-def auditar_markup(raiz: Path, ext_markup, libs_pesadas, ignorar_dirs) -> tuple:
-    sem_dim, libs = [], []
-    tags_img = re.compile(r"<img\b[^>]*>", re.IGNORECASE | re.DOTALL)
-    for caminho in raiz.rglob("*"):
-        if not caminho.is_file() or ignorar(caminho, ignorar_dirs):
+def audit_markup(root: Path, markup_ext, heavy_libs, ignore_dirs) -> tuple:
+    without_dims, libs = [], []
+    img_tags = re.compile(r"<img\b[^>]*>", re.IGNORECASE | re.DOTALL)
+    for path in root.rglob("*"):
+        if not path.is_file() or is_ignored(path, ignore_dirs):
             continue
-        if caminho.suffix.lower() not in ext_markup:
+        if path.suffix.lower() not in markup_ext:
             continue
         try:
-            texto = caminho.read_text(encoding="utf-8", errors="ignore")
+            text = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
-        for tag in tags_img.findall(texto):
+        for tag in img_tags.findall(text):
             if "width" not in tag.lower() or "height" not in tag.lower():
-                sem_dim.append({"arquivo": str(caminho), "trecho": " ".join(tag.split())[:120]})
-        for num, linha in enumerate(texto.splitlines(), start=1):
-            if "import" in linha or "require" in linha:
-                for lib in libs_pesadas:
-                    if lib in linha:
-                        libs.append({"arquivo": str(caminho), "linha": num, "lib": lib})
+                without_dims.append(
+                    {"file": str(path), "snippet": " ".join(tag.split())[:120]}
+                )
+        for number, line in enumerate(text.splitlines(), start=1):
+            if "import" in line or "require" in line:
+                for lib in heavy_libs:
+                    if lib in line:
+                        libs.append({"file": str(path), "line": number, "lib": lib})
                         break
-    return sem_dim, libs
+    return without_dims, libs
 
 
 def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")  # saída UTF-8 mesmo em console cp1252 (Windows/acentos)
-    parser = argparse.ArgumentParser(description="Auditoria de assets/performance frontend.")
-    parser.add_argument("--raiz", default=".")
-    parser.add_argument("--config", default=str(Path(__file__).parent / "auditar_assets.config.json"))
+        sys.stdout.reconfigure(
+            encoding="utf-8"
+        )  # saída UTF-8 mesmo em console cp1252 (Windows/acentos)
+    parser = argparse.ArgumentParser(description="Frontend assets/performance audit.")
+    parser.add_argument("--root", default=".")
+    parser.add_argument(
+        "--config", default=str(Path(__file__).parent / "audit_assets.config.json")
+    )
     args = parser.parse_args()
 
     try:
-        config = carregar_config(Path(args.config))
+        config = load_config(Path(args.config))
     except FileNotFoundError:
-        sys.exit(f"Erro: config nao encontrado em '{args.config}'.")
-    except json.JSONDecodeError as erro:
-        sys.exit(f"Erro: config invalido ({erro}).")
+        sys.exit(f"Error: config not found at '{args.config}'.")
+    except json.JSONDecodeError as error:
+        sys.exit(f"Error: invalid config ({error}).")
 
-    raiz = Path(args.raiz)
-    if not raiz.exists():
-        sys.exit(f"Erro: raiz '{raiz}' nao existe.")
+    root = Path(args.root)
+    if not root.exists():
+        sys.exit(f"Error: root '{root}' does not exist.")
 
-    ignorar_dirs = set(config.get("ignorar_dirs", []))
-    ext_legadas = {e.lower() for e in config.get("extensoes_imagem_legada", [])}
-    ext_imagem = {e.lower() for e in config.get("extensoes_imagem", [])}
-    ext_markup = {e.lower() for e in config.get("extensoes_markup", [])}
+    ignore_dirs = set(config.get("ignore_dirs", []))
+    legacy_ext = {e.lower() for e in config.get("legacy_image_extensions", [])}
+    image_ext = {e.lower() for e in config.get("image_extensions", [])}
+    markup_ext = {e.lower() for e in config.get("markup_extensions", [])}
 
-    legadas, grandes = auditar_imagens(raiz, ext_legadas, ext_imagem, config.get("tamanho_imagem_grande_bytes", 200000), ignorar_dirs)
-    sem_dim, libs = auditar_markup(raiz, ext_markup, config.get("libs_pesadas", []), ignorar_dirs)
+    legacy, large = audit_images(
+        root,
+        legacy_ext,
+        image_ext,
+        config.get("large_image_bytes", 200000),
+        ignore_dirs,
+    )
+    without_dims, libs = audit_markup(
+        root, markup_ext, config.get("heavy_libs", []), ignore_dirs
+    )
 
-    resultado = {
-        "imagens_legadas": legadas,
-        "imagens_grandes": grandes,
-        "img_sem_dimensao": sem_dim,
-        "libs_pesadas": libs,
+    result = {
+        "legacy_images": legacy,
+        "large_images": large,
+        "imgs_without_dimensions": without_dims,
+        "heavy_libs": libs,
     }
-    print(json.dumps(resultado, ensure_ascii=False, indent=2))
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

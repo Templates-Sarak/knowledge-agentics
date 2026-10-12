@@ -1,19 +1,19 @@
-"""gerar_resumo.py — gera `specs/panorama/00-resumo.md` e valida familias e itens do fluxo SDD.
+"""generate_summary.py — gera `specs/panorama/00-resumo.md` e valida familias e itens do fluxo SDD.
 
-    python gerar_resumo.py [--specs <dir>]            escreve <dir>/panorama/00-resumo.md
-    python gerar_resumo.py [--specs <dir>] --checar   nao escreve; exit 1 se houver problema
-    python gerar_resumo.py --selftest                prova o nucleo com fixtures em memoria
+    python generate_summary.py [--specs <dir>]            escreve <dir>/panorama/00-resumo.md
+    python generate_summary.py [--specs <dir>] --check   nao escreve; exit 1 se houver problema
+    python generate_summary.py --selftest                prova o nucleo com fixtures em memoria
 
 Le de <dir> (a pasta `specs/` do projeto): `panorama/00-planejamento.md` (catalogo §1, horizonte §2),
 `00-indice.md` (ordem `#` e motivo), `plan/plan-FF.NN-*.md` (status, titulo, familia, item),
 `specs/` e `arquitetura/` (`FF.NN-*.md` e o campo `familia`) e `00-backlog.md` (quantos achados).
 
 A unidade de progresso e o ITEM do horizonte, nao a plan: a plan some na sintese, o item fica ✅.
-Saida deterministica (sem data, ordem fixa) — e isso que deixa o `--checar` acusar resumo
+Saida deterministica (sem data, ordem fixa) — e isso que deixa o `--check` acusar resumo
 desatualizado. Teto de 70 linhas: cada lista mostra no maximo N entradas e depois `… +K`.
 
-Nucleo x casca: `montar_projeto`, `checagens` e `renderizar` (e o que chamam) sao PURAS — recebem
-texto, nunca tocam `fs`; sao o que o `--selftest` prova. `ler_textos`/`main` sao a casca. So
+Nucleo x casca: `build_project`, `checks` e `render` (e o que chamam) sao PURAS — recebem
+texto, nunca tocam `fs`; sao o que o `--selftest` prova. `read_texts`/`main` sao a casca. So
 biblioteca padrao: o frontmatter e lido por um parser minimo dos campos usados, sem PyYAML.
 """
 
@@ -23,329 +23,329 @@ import re
 import sys
 
 STATUS = ("🔴", "🟡", "🟠", "🔵", "🟢", "⛔")
-EM_TRABALHO = ("🟡", "🟠", "🔵")
-TETO_DE_LINHAS = 70
+IN_PROGRESS = ("🟡", "🟠", "🔵")
+LINE_CEILING = 70
 # No maximo N entradas por lista antes do `… +K`. Dimensionado para o pior caso caber no teto.
-LIMITES = {"agora": 8, "proximas": 8, "familias": 12, "bloqueadas": 5, "aprovadas": 5}
-CAMPOS_DE_FRONTMATTER = ("status", "titulo", "familia", "item")
-ARQUIVO_DO_RESUMO = os.path.join("panorama", "00-resumo.md")
+LIMITS = {"now": 8, "next": 8, "families": 12, "blocked": 5, "approved": 5}
+FRONTMATTER_FIELDS = ("status", "titulo", "familia", "item")
+SUMMARY_FILE = os.path.join("panorama", "00-resumo.md")
 
-COMENTARIO_HTML = re.compile(r"<!--.*?-->", re.DOTALL)
-LINHA_DO_CATALOGO = re.compile(r"^\|\s*(\d{2})\s*\|\s*([^|]+?)\s*\|", re.MULTILINE)
-TITULO_DE_FAMILIA = re.compile(r"^##\s+(\d{2})\s*·\s*(.+?)\s*$")
-LINHA_DE_ITEM = re.compile(r"^- (⬜|🔷|✅) \*\*R(\d{2})\.(\d+)\*\*\s*(.*)$")
-DATA_DE_CONCLUSAO = re.compile(r"\s*\(✅[^)]*\)\s*$")
-NOME_DE_PLAN = re.compile(r"^plan-(\d{2})\.(\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
-NOME_DE_FIXA = re.compile(r"^(\d{2})\.(\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
-PLAN_NA_LINHA = re.compile(r"plan-(\d{2}\.\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*")
-CAMPO_YAML = re.compile(r'^(\w+):\s*(?:"([^"]*)"|([^#\n]*?))\s*(?:#.*)?$')
-ACHADO_DO_BACKLOG = re.compile(r"^\|\s*\d+\s*\|")
-SEM_POSICAO = 10**6
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+CATALOG_ROW = re.compile(r"^\|\s*(\d{2})\s*\|\s*([^|]+?)\s*\|", re.MULTILINE)
+FAMILY_HEADING = re.compile(r"^##\s+(\d{2})\s*·\s*(.+?)\s*$")
+ITEM_LINE = re.compile(r"^- (⬜|🔷|✅) \*\*R(\d{2})\.(\d+)\*\*\s*(.*)$")
+COMPLETION_DATE = re.compile(r"\s*\(✅[^)]*\)\s*$")
+PLAN_NAME = re.compile(r"^plan-(\d{2})\.(\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
+FIXED_NAME = re.compile(r"^(\d{2})\.(\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
+PLAN_IN_LINE = re.compile(r"plan-(\d{2}\.\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*")
+YAML_FIELD = re.compile(r'^(\w+):\s*(?:"([^"]*)"|([^#\n]*?))\s*(?:#.*)?$')
+BACKLOG_FINDING = re.compile(r"^\|\s*\d+\s*\|")
+NO_POSITION = 10**6
 
 
 # ------------------------------------------------------------------ nucleo: leitura
 
 
-def frontmatter(texto: str) -> dict:
-    """Os campos de `CAMPOS_DE_FRONTMATTER` do bloco `---` do topo (aspas e comentario `#` saem)."""
-    linhas = texto.replace("\r\n", "\n").split("\n")
-    if not linhas or linhas[0].strip() != "---":
+def frontmatter(text: str) -> dict:
+    """Os campos de `FRONTMATTER_FIELDS` do bloco `---` do topo (aspas e comentario `#` saem)."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    if not lines or lines[0].strip() != "---":
         return {}
-    campos = {}
-    for linha in linhas[1:]:
-        if linha.strip() == "---":
+    fields = {}
+    for line in lines[1:]:
+        if line.strip() == "---":
             break
-        achado = CAMPO_YAML.match(linha)
-        if achado and achado.group(1) in CAMPOS_DE_FRONTMATTER:
-            valor = achado.group(2) if achado.group(2) is not None else achado.group(3)
-            campos[achado.group(1)] = valor.strip()
-    return campos
+        match = YAML_FIELD.match(line)
+        if match and match.group(1) in FRONTMATTER_FIELDS:
+            value = match.group(2) if match.group(2) is not None else match.group(3)
+            fields[match.group(1)] = value.strip()
+    return fields
 
 
-def emoji_de_status(texto: str) -> str:
+def status_emoji(text: str) -> str:
     """O primeiro emoji de status presente no texto, ou `""`."""
-    return next((emoji for emoji in STATUS if emoji in texto), "")
+    return next((emoji for emoji in STATUS if emoji in text), "")
 
 
-def parse_catalogo(texto: str) -> dict:
+def parse_catalog(text: str) -> dict:
     """`{FF: nome}` das linhas da tabela de familias (§1). Comentario HTML nao conta."""
-    return dict(LINHA_DO_CATALOGO.findall(COMENTARIO_HTML.sub("", texto)))
+    return dict(CATALOG_ROW.findall(HTML_COMMENT.sub("", text)))
 
 
-def _item(achado, secao: str | None) -> dict:
-    estado, ff, n, resto = achado.groups()
-    titulo = DATA_DE_CONCLUSAO.sub("", resto.split(" — ")[0]).strip()
+def _item(match, section: str | None) -> dict:
+    state, ff, n, rest = match.groups()
+    title = COMPLETION_DATE.sub("", rest.split(" — ")[0]).strip()
     return {
         "id": f"R{ff}.{n}",
         "ff": ff,
-        "estado": estado,
-        "titulo": titulo,
-        "secao": secao,
+        "state": state,
+        "title": title,
+        "section": section,
     }
 
 
-def parse_itens(texto: str) -> list:
+def parse_items(text: str) -> list:
     """Os itens do horizonte (§2), com a familia do titulo `## FF · Nome` sob o qual estao."""
-    itens, secao = [], None
-    for linha in COMENTARIO_HTML.sub("", texto).replace("\r\n", "\n").split("\n"):
-        titulo = TITULO_DE_FAMILIA.match(linha)
-        if titulo:
-            secao = titulo.group(1)
+    items, section = [], None
+    for line in HTML_COMMENT.sub("", text).replace("\r\n", "\n").split("\n"):
+        title = FAMILY_HEADING.match(line)
+        if title:
+            section = title.group(1)
             continue
-        achado = LINHA_DE_ITEM.match(linha.strip())
-        if achado:
-            itens.append(_item(achado, secao))
-    return itens
+        match = ITEM_LINE.match(line.strip())
+        if match:
+            items.append(_item(match, section))
+    return items
 
 
-def _posicao(celula: str) -> int:
-    return int(celula) if celula.isdigit() else SEM_POSICAO
+def _position(cell: str) -> int:
+    return int(cell) if cell.isdigit() else NO_POSITION
 
 
-def parse_indice(texto: str) -> dict:
+def parse_index(text: str) -> dict:
     """`{FF.NN: {posicao, objetivo, status}}` das linhas da fila do `00-indice`."""
-    fila = {}
-    for linha in texto.replace("\r\n", "\n").split("\n"):
-        achado = PLAN_NA_LINHA.search(linha) if linha.lstrip().startswith("|") else None
-        celulas = [c.strip() for c in linha.strip().strip("|").split("|")]
-        if achado and len(celulas) >= 6:
-            fila[achado.group(1)] = {
-                "posicao": _posicao(celulas[0]),
-                "objetivo": celulas[2],
-                "status": celulas[-2],
+    queue = {}
+    for line in text.replace("\r\n", "\n").split("\n"):
+        match = PLAN_IN_LINE.search(line) if line.lstrip().startswith("|") else None
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if match and len(cells) >= 6:
+            queue[match.group(1)] = {
+                "position": _position(cells[0]),
+                "objective": cells[2],
+                "status": cells[-2],
             }
-    return fila
+    return queue
 
 
-def contar_backlog(texto: str) -> int:
+def count_backlog(text: str) -> int:
     """Quantos achados a tabela do `00-backlog` tem (linha cuja primeira celula e um numero)."""
     return sum(
-        1 for linha in texto.split("\n") if ACHADO_DO_BACKLOG.match(linha.strip())
+        1 for line in text.split("\n") if BACKLOG_FINDING.match(line.strip())
     )
 
 
-def _plan(nome: str, achado, texto: str, indice: dict) -> dict:
-    campos, codigo = frontmatter(texto), f"{achado.group(1)}.{achado.group(2)}"
-    linha = indice.get(codigo, {})
+def _plan(name: str, match, text: str, index: dict) -> dict:
+    fields, code = frontmatter(text), f"{match.group(1)}.{match.group(2)}"
+    line = index.get(code, {})
     return {
-        "codigo": codigo,
-        "nome": nome,
-        "ff": achado.group(1),
-        "familia": campos.get("familia", ""),
-        "item": campos.get("item", ""),
-        "status": emoji_de_status(campos.get("status") or linha.get("status", "")),
-        "titulo": campos.get("titulo") or linha.get("objetivo", ""),
-        "objetivo": linha.get("objetivo", ""),
-        "posicao": linha.get("posicao", SEM_POSICAO),
+        "code": code,
+        "name": name,
+        "ff": match.group(1),
+        "family": fields.get("familia", ""),
+        "item": fields.get("item", ""),
+        "status": status_emoji(fields.get("status") or line.get("status", "")),
+        "title": fields.get("titulo") or line.get("objective", ""),
+        "objective": line.get("objective", ""),
+        "position": line.get("position", NO_POSITION),
     }
 
 
-def parse_plans(plans: dict, indice: dict) -> list:
+def parse_plans(plans: dict, index: dict) -> list:
     """As plans em disco (`{nome: texto}`), na ordem da fila do indice."""
-    lidas = []
-    for nome in sorted(plans):
-        achado = NOME_DE_PLAN.match(nome)
-        if achado:
-            lidas.append(_plan(nome, achado, plans[nome], indice))
-    return sorted(lidas, key=lambda p: (p["posicao"], p["codigo"]))
+    parsed = []
+    for name in sorted(plans):
+        match = PLAN_NAME.match(name)
+        if match:
+            parsed.append(_plan(name, match, plans[name], index))
+    return sorted(parsed, key=lambda p: (p["position"], p["code"]))
 
 
-def parse_fixas(fixas: dict) -> list:
+def parse_fixed(fixed: dict) -> list:
     """As specs fixas `FF.NN-*.md` (`{caminho relativo: texto}`); nome reservado da 00 nao casa."""
-    lidas = []
-    for rel in sorted(fixas):
-        achado = NOME_DE_FIXA.match(rel.rsplit("/", 1)[-1])
-        if achado:
-            lidas.append(
+    parsed = []
+    for rel in sorted(fixed):
+        match = FIXED_NAME.match(rel.rsplit("/", 1)[-1])
+        if match:
+            parsed.append(
                 {
                     "rel": rel,
-                    "ff": achado.group(1),
-                    "familia": frontmatter(fixas[rel]).get("familia", ""),
+                    "ff": match.group(1),
+                    "family": frontmatter(fixed[rel]).get("familia", ""),
                 }
             )
-    return lidas
+    return parsed
 
 
-def montar_projeto(textos: dict) -> dict:
-    """Nucleo: o projeto inteiro a partir dos textos ja lidos (ver `ler_textos`)."""
-    indice = parse_indice(textos.get("indice", ""))
+def build_project(texts: dict) -> dict:
+    """Nucleo: o projeto inteiro a partir dos textos ja lidos (ver `read_texts`)."""
+    index = parse_index(texts.get("index", ""))
     return {
-        "catalogo": parse_catalogo(textos.get("planejamento", "")),
-        "itens": parse_itens(textos.get("planejamento", "")),
-        "plans": parse_plans(textos.get("plans", {}), indice),
-        "fixas": parse_fixas(textos.get("fixas", {})),
-        "backlog": contar_backlog(textos.get("backlog", "")),
+        "catalog": parse_catalog(texts.get("planning", "")),
+        "items": parse_items(texts.get("planning", "")),
+        "plans": parse_plans(texts.get("plans", {}), index),
+        "fixed": parse_fixed(texts.get("fixed", {})),
+        "backlog": count_backlog(texts.get("backlog", "")),
     }
 
 
 # ------------------------------------------------------------------ nucleo: checagens
 
 
-def _checar_arquivo(rotulo: str, ff: str, familia: str, catalogo: dict) -> list:
-    problemas = []
-    if ff not in catalogo:
-        problemas.append(f"{rotulo}: família {ff} fora do catálogo")
-    if familia != ff:
-        problemas.append(
-            f"{rotulo}: o nome diz família {ff}, o frontmatter diz familia '{familia}'"
+def _check_file(label: str, ff: str, family: str, catalog: dict) -> list:
+    problems = []
+    if ff not in catalog:
+        problems.append(f"{label}: family {ff} not in the catalog")
+    if family != ff:
+        problems.append(
+            f"{label}: the name says family {ff}, the frontmatter says familia '{family}'"
         )
-    return problemas
+    return problems
 
 
-def _checar_familias(projeto: dict) -> list:
-    catalogo, problemas = projeto["catalogo"], []
-    for fixa in projeto["fixas"]:
-        problemas += _checar_arquivo(fixa["rel"], fixa["ff"], fixa["familia"], catalogo)
-    for plan in projeto["plans"]:
-        problemas += _checar_arquivo(
-            f"plan/{plan['nome']}", plan["ff"], plan["familia"], catalogo
+def _check_families(project: dict) -> list:
+    catalog, problems = project["catalog"], []
+    for fixed_spec in project["fixed"]:
+        problems += _check_file(fixed_spec["rel"], fixed_spec["ff"], fixed_spec["family"], catalog)
+    for plan in project["plans"]:
+        problems += _check_file(
+            f"plan/{plan['name']}", plan["ff"], plan["family"], catalog
         )
-    return problemas
+    return problems
 
 
-def _checar_itens(projeto: dict) -> list:
-    problemas, vistos = [], set()
-    for item in projeto["itens"]:
-        if item["id"] in vistos:
-            problemas.append(f"item {item['id']}: ID repetido no horizonte")
-        vistos.add(item["id"])
-        if item["ff"] not in projeto["catalogo"]:
-            problemas.append(
-                f"item {item['id']}: família {item['ff']} fora do catálogo"
+def _check_items(project: dict) -> list:
+    problems, seen = [], set()
+    for item in project["items"]:
+        if item["id"] in seen:
+            problems.append(f"item {item['id']}: ID repetido no horizonte")
+        seen.add(item["id"])
+        if item["ff"] not in project["catalog"]:
+            problems.append(
+                f"item {item['id']}: family {item['ff']} not in the catalog"
             )
-        if item["secao"] != item["ff"]:
-            problemas.append(
-                f"item {item['id']}: está sob o título da família {item['secao']}"
+        if item["section"] != item["ff"]:
+            problems.append(
+                f"item {item['id']}: sits under the heading of family {item['section']}"
             )
-    return problemas
+    return problems
 
 
-def _checar_ligacoes(projeto: dict) -> list:
-    itens = {item["id"]: item for item in projeto["itens"]}
-    apontados, problemas = set(), []
-    for plan in (p for p in projeto["plans"] if p["item"]):
-        apontados.add(plan["item"])
-        item = itens.get(plan["item"])
+def _check_links(project: dict) -> list:
+    items = {item["id"]: item for item in project["items"]}
+    pointed, problems = set(), []
+    for plan in (p for p in project["plans"] if p["item"]):
+        pointed.add(plan["item"])
+        item = items.get(plan["item"])
         if item is None:
-            problemas.append(
-                f"plan-{plan['codigo']}: item {plan['item']} não existe no horizonte"
+            problems.append(
+                f"plan-{plan['code']}: item {plan['item']} does not exist in the horizon"
             )
-        elif item["estado"] != "🔷":
-            problemas.append(
-                f"plan-{plan['codigo']}: aponta para {item['id']}, que está {item['estado']} (deveria estar 🔷)"
+        elif item["state"] != "🔷":
+            problems.append(
+                f"plan-{plan['code']}: points to {item['id']}, which is {item['state']} (should be 🔷)"
             )
-    for item in itens.values():
-        if item["estado"] == "🔷" and item["id"] not in apontados:
-            problemas.append(
-                f"item {item['id']}: está 🔷 sem nenhuma plan aberta apontando para ele"
+    for item in items.values():
+        if item["state"] == "🔷" and item["id"] not in pointed:
+            problems.append(
+                f"item {item['id']}: is 🔷 with no open plan pointing to it"
             )
-    return problemas
+    return problems
 
 
-def checagens(projeto: dict) -> list:
+def checks(project: dict) -> list:
     """Nucleo: os problemas de familia e de item do projeto (o resumo desatualizado e da casca)."""
     return (
-        _checar_familias(projeto) + _checar_itens(projeto) + _checar_ligacoes(projeto)
+        _check_families(project) + _check_items(project) + _check_links(project)
     )
 
 
 # ------------------------------------------------------------------ nucleo: resumo
 
 
-def barra(feitos: int, total: int, largura: int) -> str:
-    cheias = feitos * largura // total if total else 0
-    return "█" * cheias + "░" * (largura - cheias)
+def bar(done: int, total: int, width: int) -> str:
+    filled = done * width // total if total else 0
+    return "█" * filled + "░" * (width - filled)
 
 
-def _truncar(linhas: list, limite: int, marcador) -> list:
-    if len(linhas) <= limite:
-        return linhas
-    return linhas[:limite] + [marcador(len(linhas) - limite)]
+def _truncate(lines: list, limit: int, marker) -> list:
+    if len(lines) <= limit:
+        return lines
+    return lines[:limit] + [marker(len(lines) - limit)]
 
 
-def _em_lista(linhas: list, limite: int) -> list:
-    return _truncar(linhas, limite, lambda resto: f"- … +{resto}")
+def _as_list(lines: list, limit: int) -> list:
+    return _truncate(lines, limit, lambda rest: f"- … +{rest}")
 
 
-def _linha_de_plan(plan: dict) -> str:
-    partes = [plan["status"], f"plan-{plan['codigo']}", plan["item"], plan["titulo"]]
-    return "- " + " · ".join(parte for parte in partes if parte)
+def _plan_line(plan: dict) -> str:
+    parts = [plan["status"], f"plan-{plan['code']}", plan["item"], plan["title"]]
+    return "- " + " · ".join(part for part in parts if part)
 
 
-def _progresso(itens: list) -> list:
-    total = len(itens)
+def _progress(items: list) -> list:
+    total = len(items)
     if not total:
         return ["sem horizonte definido"]
-    feitos = sum(1 for item in itens if item["estado"] == "✅")
+    done = sum(1 for item in items if item["state"] == "✅")
     return [
-        f"{barra(feitos, total, 10)} {feitos * 100 // total}% · {feitos}/{total} itens ✅"
+        f"{bar(done, total, 10)} {done * 100 // total}% · {done}/{total} itens ✅"
     ]
 
 
-def _por_status(plans: list, status: tuple, limite: int) -> list:
-    return _em_lista(
-        [_linha_de_plan(p) for p in plans if p["status"] in status], limite
+def _by_status(plans: list, status: tuple, limit: int) -> list:
+    return _as_list(
+        [_plan_line(p) for p in plans if p["status"] in status], limit
     )
 
 
-def _linha_de_familia(ff: str, nome: str, projeto: dict) -> str | None:
+def _family_row(ff: str, name: str, project: dict) -> str | None:
     """A linha da familia na tabela, ou `None` se ela nao tem item nem plan aberta (ruido)."""
-    itens = [item for item in projeto["itens"] if item["ff"] == ff]
-    feitos = sum(1 for item in itens if item["estado"] == "✅")
-    abertas = sum(1 for plan in projeto["plans"] if plan["ff"] == ff)
-    if not itens and not abertas:
+    items = [item for item in project["items"] if item["ff"] == ff]
+    done = sum(1 for item in items if item["state"] == "✅")
+    open_plans = sum(1 for plan in project["plans"] if plan["ff"] == ff)
+    if not items and not open_plans:
         return None
-    curta = barra(feitos, len(itens), 5) if itens else "—"
-    return f"| {ff} | {nome} | {feitos}/{len(itens)} | {curta} | {abertas} |"
+    short = bar(done, len(items), 5) if items else "—"
+    return f"| {ff} | {name} | {done}/{len(items)} | {short} | {open_plans} |"
 
 
-def _familias(projeto: dict) -> list:
-    candidatas = (
-        _linha_de_familia(ff, nome, projeto)
-        for ff, nome in sorted(projeto["catalogo"].items())
+def _families(project: dict) -> list:
+    candidates = (
+        _family_row(ff, name, project)
+        for ff, name in sorted(project["catalog"].items())
     )
-    linhas = [linha for linha in candidatas if linha]
-    if not linhas:
+    lines = [line for line in candidates if line]
+    if not lines:
         return []
-    cabecalho = [
+    header = [
         "| FF | Família | Itens ✅/total | Progresso | Plans abertas |",
         "|---|---|---|---|---|",
     ]
-    resto = _truncar(
-        linhas, LIMITES["familias"], lambda k: f"| … | +{k} famílias | | | |"
+    rest = _truncate(
+        lines, LIMITS["families"], lambda k: f"| … | +{k} famílias | | | |"
     )
-    return cabecalho + resto
+    return header + rest
 
 
-def _atencao(projeto: dict, n_problemas: int) -> list:
-    plans = projeto["plans"]
-    bloqueadas = [
-        f"- ⛔ plan-{p['codigo']} · {p['objetivo'] or p['titulo']}"
+def _attention(project: dict, n_problems: int) -> list:
+    plans = project["plans"]
+    blocked = [
+        f"- ⛔ plan-{p['code']} · {p['objective'] or p['title']}"
         for p in plans
         if p["status"] == "⛔"
     ]
-    aprovadas = [
-        f"- 🟢 plan-{p['codigo']} · {p['titulo']} — aguardando síntese"
+    approved = [
+        f"- 🟢 plan-{p['code']} · {p['title']} — aguardando síntese"
         for p in plans
         if p["status"] == "🟢"
     ]
-    linhas = _em_lista(bloqueadas, LIMITES["bloqueadas"]) + _em_lista(
-        aprovadas, LIMITES["aprovadas"]
+    lines = _as_list(blocked, LIMITS["blocked"]) + _as_list(
+        approved, LIMITS["approved"]
     )
-    if projeto["backlog"]:
-        linhas.append(f"- 📋 {projeto['backlog']} achado(s) no `00-backlog`")
-    if n_problemas:
-        linhas.append(
-            f"- ⚠️ {n_problemas} problema(s) de família/item — rode `gerar_resumo.py --checar`"
+    if project["backlog"]:
+        lines.append(f"- 📋 {project['backlog']} achado(s) no `00-backlog`")
+    if n_problems:
+        lines.append(
+            f"- ⚠️ {n_problems} problema(s) de família/item — rode `generate_summary.py --check`"
         )
-    return linhas
+    return lines
 
 
-def _secao(titulo: str, linhas: list) -> list:
-    return [f"## {titulo}", *(linhas or ["—"]), ""]
+def _section(title: str, lines: list) -> list:
+    return [f"## {title}", *(lines or ["—"]), ""]
 
 
-CABECALHO = [
+HEADER = [
     "---",
     'tipo: "processo"',
     'titulo: "Resumo — Panorama do Projeto"',
@@ -361,86 +361,86 @@ CABECALHO = [
 ]
 
 
-def renderizar(projeto: dict, n_problemas: int = 0) -> str:
+def render(project: dict, n_problems: int = 0) -> str:
     """Nucleo: o `00-resumo.md` inteiro. Deterministico: mesma entrada, mesmo texto."""
-    plans = projeto["plans"]
-    linhas = (
-        CABECALHO
-        + _secao("Progresso", _progresso(projeto["itens"]))
-        + _secao("Agora", _por_status(plans, EM_TRABALHO, LIMITES["agora"]))
-        + _secao("Próximas", _por_status(plans, ("🔴",), LIMITES["proximas"]))
-        + _secao("Por família", _familias(projeto))
-        + _secao("Atenção", _atencao(projeto, n_problemas))
+    plans = project["plans"]
+    lines = (
+        HEADER
+        + _section("Progresso", _progress(project["items"]))
+        + _section("Agora", _by_status(plans, IN_PROGRESS, LIMITS["now"]))
+        + _section("Próximas", _by_status(plans, ("🔴",), LIMITS["next"]))
+        + _section("Por família", _families(project))
+        + _section("Atenção", _attention(project, n_problems))
     )
-    return "\n".join(linhas[:-1]) + "\n"
+    return "\n".join(lines[:-1]) + "\n"
 
 
 # ------------------------------------------------------------------ casca
 
 
-def _ler(caminho: str) -> str:
-    if not os.path.isfile(caminho):
+def _read(path: str) -> str:
+    if not os.path.isfile(path):
         return ""
-    with open(caminho, encoding="utf-8") as arquivo:
-        return arquivo.read()
+    with open(path, encoding="utf-8") as file:
+        return file.read()
 
 
-def _markdowns(pasta: str, prefixo: str) -> dict:
-    if not os.path.isdir(pasta):
+def _markdowns(dir: str, prefix: str) -> dict:
+    if not os.path.isdir(dir):
         return {}
-    nomes = sorted(n for n in os.listdir(pasta) if n.endswith(".md"))
-    return {f"{prefixo}{nome}": _ler(os.path.join(pasta, nome)) for nome in nomes}
+    names = sorted(n for n in os.listdir(dir) if n.endswith(".md"))
+    return {f"{prefix}{name}": _read(os.path.join(dir, name)) for name in names}
 
 
-def ler_textos(specs_dir: str) -> dict:
+def read_texts(specs_dir: str) -> dict:
     """Casca: tudo que o nucleo le, a partir da pasta `specs/` do projeto."""
-    fixas = {
+    fixed = {
         **_markdowns(os.path.join(specs_dir, "specs"), "specs/"),
         **_markdowns(os.path.join(specs_dir, "arquitetura"), "arquitetura/"),
     }
     return {
-        "planejamento": _ler(os.path.join(specs_dir, "panorama", "00-planejamento.md")),
-        "indice": _ler(os.path.join(specs_dir, "00-indice.md")),
-        "backlog": _ler(os.path.join(specs_dir, "00-backlog.md")),
+        "planning": _read(os.path.join(specs_dir, "panorama", "00-planejamento.md")),
+        "index": _read(os.path.join(specs_dir, "00-indice.md")),
+        "backlog": _read(os.path.join(specs_dir, "00-backlog.md")),
         "plans": _markdowns(os.path.join(specs_dir, "plan"), ""),
-        "fixas": fixas,
+        "fixed": fixed,
     }
 
 
-def _checar(destino: str, conteudo: str, problemas: list) -> int:
-    if _ler(destino).replace("\r\n", "\n") != conteudo:
-        problemas = problemas + [
-            "panorama/00-resumo.md: desatualizado — rode gerar_resumo.py sem --checar"
+def _check_summary(target: str, content: str, problems: list) -> int:
+    if _read(target).replace("\r\n", "\n") != content:
+        problems = problems + [
+            "panorama/00-resumo.md: outdated — run generate_summary.py without --check"
         ]
-    for problema in problemas:
-        print(f"  [PROBLEMA] {problema}")
-    print(f"\n[{'ERRO' if problemas else 'OK'}] {len(problemas)} problema(s)")
-    return 1 if problemas else 0
+    for problem in problems:
+        print(f"  [PROBLEM] {problem}")
+    print(f"\n[{'ERROR' if problems else 'OK'}] {len(problems)} problem(s)")
+    return 1 if problems else 0
 
 
-def _escrever(destino: str, conteudo: str, problemas: list) -> int:
-    with open(destino, "w", encoding="utf-8", newline="\n") as arquivo:
-        arquivo.write(conteudo)
-    print(f"[OK] {destino} gerado ({conteudo.count(chr(10))} linhas)")
-    if problemas:
+def _write(target: str, content: str, problems: list) -> int:
+    with open(target, "w", encoding="utf-8", newline="\n") as file:
+        file.write(content)
+    print(f"[OK] {target} generated ({content.count(chr(10))} lines)")
+    if problems:
         print(
-            f"[AVISO] {len(problemas)} problema(s) de família/item — rode com --checar"
+            f"[WARNING] {len(problems)} family/item problem(s) — run with --check"
         )
     return 0
 
 
 def _parser():
     parser = argparse.ArgumentParser(
-        description="Gera e confere o panorama/00-resumo.md do fluxo SDD."
+        description="Generates and checks the SDD flow panorama/00-resumo.md."
     )
     parser.add_argument(
-        "--specs", default="specs", help="Pasta specs/ do projeto (padrao: specs)."
+        "--specs", default="specs", help="Project specs/ directory (default: specs)."
     )
     parser.add_argument(
-        "--checar", action="store_true", help="Nao escreve; exit 1 se houver problema."
+        "--check", action="store_true", help="Does not write; exit 1 on any problem."
     )
     parser.add_argument(
-        "--selftest", action="store_true", help="Prova o nucleo com fixtures."
+        "--selftest", action="store_true", help="Proves the core with fixtures."
     )
     return parser
 
@@ -450,24 +450,24 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     args = _parser().parse_args()
     if args.selftest:
-        return autoteste()
+        return run_selftest()
     if not os.path.isfile(os.path.join(args.specs, "panorama", "00-planejamento.md")):
         print(
-            f"[ERRO] sem panorama/00-planejamento.md em {args.specs}", file=sys.stderr
+            f"[ERROR] no panorama/00-planejamento.md in {args.specs}", file=sys.stderr
         )
         return 2
-    projeto = montar_projeto(ler_textos(args.specs))
-    problemas = checagens(projeto)
-    conteudo = renderizar(projeto, len(problemas))
-    destino = os.path.join(args.specs, ARQUIVO_DO_RESUMO)
-    if args.checar:
-        return _checar(destino, conteudo, problemas)
-    return _escrever(destino, conteudo, problemas)
+    project = build_project(read_texts(args.specs))
+    problems = checks(project)
+    content = render(project, len(problems))
+    target = os.path.join(args.specs, SUMMARY_FILE)
+    if args.check:
+        return _check_summary(target, content, problems)
+    return _write(target, content, problems)
 
 
 # ------------------------------------------------------------------ autoteste (fixtures em memoria)
 
-PLANEJAMENTO = """# 1. Famílias
+PLANNING = """# 1. Famílias
 | FF | Família | Escopo |
 |---|---|---|
 | 00 | Fundação | reservada |
@@ -486,40 +486,40 @@ PLANEJAMENTO = """# 1. Famílias
 """
 
 
-def _plan_fixture(familia: str, status: str, item: str = "") -> str:
-    return f'---\ntipo: "plan"\nfamilia: "{familia}"\ntitulo: "Titulo {status}"\nstatus: "{status} x" # opcoes\nitem: "{item}"\n---\n'
+def _plan_fixture(family: str, status: str, item: str = "") -> str:
+    return f'---\ntipo: "plan"\nfamilia: "{family}"\ntitulo: "Title {status}"\nstatus: "{status} x" # options\nitem: "{item}"\n---\n'
 
 
-def _textos_ok() -> dict:
+def _texts_ok() -> dict:
     return {
-        "planejamento": PLANEJAMENTO,
-        "indice": "| 2 | [plan-01.01-sso](plan/plan-01.01-sso.md) | Fazer SSO | — | 🟡 Em execução | — |\n"
-        "| 1 | [plan-02.01-idx](plan/plan-02.01-idx.md) | Aguarda o DBA | — | ⛔ Bloqueada | — |\n",
-        "backlog": "| # | Achado |\n|---|---|\n| 1 | algo |\n| 2 | outro |\n| — | _(vazio)_ |\n",
+        "planning": PLANNING,
+        "index": "| 2 | [plan-01.01-sso](plan/plan-01.01-sso.md) | Do SSO | — | 🟡 Em execução | — |\n"
+        "| 1 | [plan-02.01-idx](plan/plan-02.01-idx.md) | Waits for the DBA | — | ⛔ Bloqueada | — |\n",
+        "backlog": "| # | Achado |\n|---|---|\n| 1 | a |\n| 2 | b |\n| — | _(empty)_ |\n",
         "plans": {
             "plan-01.01-sso.md": _plan_fixture("01", "🟡", "R01.2"),
             "plan-02.01-idx.md": _plan_fixture("02", "⛔"),
         },
-        "fixas": {
+        "fixed": {
             "specs/01.01-login.md": '---\nfamilia: "01"\n---\n',
             "arquitetura/04-regras.md": "lei",
         },
     }
 
 
-def _com(**mudancas) -> dict:
-    textos = _textos_ok()
-    textos.update(mudancas)
-    return textos
+def _with(**changes) -> dict:
+    texts = _texts_ok()
+    texts.update(changes)
+    return texts
 
 
-def _problemas(**mudancas) -> list:
-    return checagens(montar_projeto(_com(**mudancas)))
+def _problems(**changes) -> list:
+    return checks(build_project(_with(**changes)))
 
 
-def _projeto_grande() -> dict:
-    catalogo = "".join(f"| {ff:02d} | Fam {ff} | x |\n" for ff in range(30))
-    itens = "".join(
+def _big_project() -> dict:
+    catalog = "".join(f"| {ff:02d} | Fam {ff} | x |\n" for ff in range(30))
+    items = "".join(
         f"## {ff:02d} · Fam\n"
         + "".join(f"- ✅ **R{ff:02d}.{n}** I\n" for n in range(1, 8))
         for ff in range(30)
@@ -529,128 +529,128 @@ def _projeto_grande() -> dict:
         for ff in range(1, 4)
         for n, s in enumerate(STATUS * 4)
     }
-    return montar_projeto(
-        {"planejamento": catalogo + itens, "plans": plans, "backlog": "| 1 | a |\n"}
+    return build_project(
+        {"planning": catalog + items, "plans": plans, "backlog": "| 1 | a |\n"}
     )
 
 
-def _linhas(projeto: dict, n: int = 0) -> list:
-    return renderizar(projeto, n).split("\n")[:-1]
+def _lines(project: dict, n: int = 0) -> list:
+    return render(project, n).split("\n")[:-1]
 
 
-CASOS = [
+CASES = [
     (
-        "catalogo le a tabela e ignora o cabecalho",
+        "catalog reads the table and ignores the header",
         lambda: (
-            parse_catalogo(PLANEJAMENTO)
+            parse_catalog(PLANNING)
             == {"00": "Fundação", "01": "Conexão", "02": "Base de dados"}
         ),
     ),
     (
-        "itens: 5, o do comentario HTML fica de fora",
+        "items: 5, the one in the HTML comment is left out",
         lambda: (
-            [i["id"] for i in parse_itens(PLANEJAMENTO)]
+            [i["id"] for i in parse_items(PLANNING)]
             == ["R01.1", "R01.2", "R02.1", "R02.2", "R02.3"]
         ),
     ),
     (
-        "titulo do item sem frase e sem data",
-        lambda: parse_itens(PLANEJAMENTO)[0]["titulo"] == "Login",
+        "item title without phrase and without date",
+        lambda: parse_items(PLANNING)[0]["title"] == "Login",
     ),
     (
-        "frontmatter tira aspas e comentario",
+        "frontmatter strips quotes and comment",
         lambda: (
-            frontmatter('---\nstatus: "🔴 A executar" # opcoes\nitem: ""\n---\n')
-            == {"status": "🔴 A executar", "item": ""}
+            frontmatter('---\nstatus: "🔴 To run" # options\nitem: ""\n---\n')
+            == {"status": "🔴 To run", "item": ""}
         ),
     ),
     (
-        "indice: posicao e objetivo da fila",
+        "index: position and objective of the queue",
         lambda: (
-            parse_indice(_textos_ok()["indice"])["02.01"]["objetivo"] == "Aguarda o DBA"
+            parse_index(_texts_ok()["index"])["02.01"]["objective"] == "Waits for the DBA"
         ),
     ),
     (
-        "backlog conta so linhas numeradas",
-        lambda: contar_backlog(_textos_ok()["backlog"]) == 2,
+        "backlog counts only numbered rows",
+        lambda: count_backlog(_texts_ok()["backlog"]) == 2,
     ),
     (
-        "progresso 40% com barra de 10",
+        "progress 40% with a 10-wide bar",
         lambda: (
-            _progresso(parse_itens(PLANEJAMENTO)) == ["████░░░░░░ 40% · 2/5 itens ✅"]
+            _progress(parse_items(PLANNING)) == ["████░░░░░░ 40% · 2/5 itens ✅"]
         ),
     ),
     (
-        "sem itens: sem horizonte definido",
-        lambda: _progresso([]) == ["sem horizonte definido"],
+        "no items: no horizon defined",
+        lambda: _progress([]) == ["sem horizonte definido"],
     ),
-    ("projeto limpo nao tem problema", lambda: _problemas() == []),
+    ("clean project has no problem", lambda: _problems() == []),
     (
-        "plans seguem a ordem # do indice",
+        "plans follow the # order of the index",
         lambda: (
-            [p["codigo"] for p in montar_projeto(_textos_ok())["plans"]]
+            [p["code"] for p in build_project(_texts_ok())["plans"]]
             == ["02.01", "01.01"]
         ),
     ),
     (
-        "resumo deterministico",
+        "deterministic summary",
         lambda: (
-            renderizar(montar_projeto(_textos_ok()))
-            == renderizar(montar_projeto(_textos_ok()))
+            render(build_project(_texts_ok()))
+            == render(build_project(_texts_ok()))
         ),
     ),
     (
-        "secao vazia vira —",
-        lambda: "## Próximas\n—\n" in renderizar(montar_projeto(_textos_ok())),
+        "empty section becomes —",
+        lambda: "## Próximas\n—\n" in render(build_project(_texts_ok())),
     ),
     (
-        "agora traz status, plan, item e titulo",
+        "now brings status, plan, item and title",
         lambda: (
-            "- 🟡 · plan-01.01 · R01.2 · Titulo 🟡"
-            in renderizar(montar_projeto(_textos_ok()))
+            "- 🟡 · plan-01.01 · R01.2 · Title 🟡"
+            in render(build_project(_texts_ok()))
         ),
     ),
     (
-        "atencao traz o motivo do bloqueio e o backlog",
+        "attention brings the block reason and the backlog",
         lambda: all(
-            t in renderizar(montar_projeto(_textos_ok()))
-            for t in ("⛔ plan-02.01 · Aguarda o DBA", "📋 2 achado(s)")
+            t in render(build_project(_texts_ok()))
+            for t in ("⛔ plan-02.01 · Waits for the DBA", "📋 2 achado(s)")
         ),
     ),
     (
-        "familia de plan fora do catalogo",
+        "plan family outside the catalog",
         lambda: any(
-            "família 07 fora do catálogo" in p
-            for p in _problemas(plans={"plan-07.01-x.md": _plan_fixture("07", "🔴")})
+            "family 07 not in the catalog" in p
+            for p in _problems(plans={"plan-07.01-x.md": _plan_fixture("07", "🔴")})
         ),
     ),
     (
-        "nome incoerente com o campo familia",
+        "name inconsistent with the family field",
         lambda: any(
-            "frontmatter diz familia '02'" in p
-            for p in _problemas(fixas={"specs/01.01-x.md": '---\nfamilia: "02"\n---\n'})
+            "frontmatter says familia '02'" in p
+            for p in _problems(fixed={"specs/01.01-x.md": '---\nfamilia: "02"\n---\n'})
         ),
     ),
     (
-        "item inexistente no horizonte",
+        "item missing from the horizon",
         lambda: any(
-            "R01.9 não existe" in p
-            for p in _problemas(
+            "R01.9 does not exist" in p
+            for p in _problems(
                 plans={"plan-01.01-sso.md": _plan_fixture("01", "🟡", "R01.9")}
             )
         ),
     ),
     (
-        "🔷 orfao e acusado",
+        "orphan 🔷 is flagged",
         lambda: any(
-            "R01.2: está 🔷 sem nenhuma plan" in p for p in _problemas(plans={})
+            "R01.2: is 🔷 with no open plan" in p for p in _problems(plans={})
         ),
     ),
     (
-        "plan apontando para item ⬜ e acusada",
+        "plan pointing to a ⬜ item is flagged",
         lambda: any(
-            "que está ⬜" in p
-            for p in _problemas(
+            "which is ⬜" in p
+            for p in _problems(
                 plans={
                     "plan-02.01-idx.md": _plan_fixture("02", "🟡", "R02.2"),
                     "plan-01.01-sso.md": _plan_fixture("01", "🟡", "R01.2"),
@@ -659,51 +659,51 @@ CASOS = [
         ),
     ),
     (
-        "item sob o titulo de outra familia",
+        "item under the heading of another family",
         lambda: any(
-            "sob o título da família 01" in p
-            for p in _problemas(
-                planejamento=PLANEJAMENTO.replace("R02.1", "R02.1").replace(
-                    "## 01 · Conexão\n", "## 01 · Conexão\n- ⬜ **R02.9** fora\n"
+            "under the heading of family 01" in p
+            for p in _problems(
+                planning=PLANNING.replace("R02.1", "R02.1").replace(
+                    "## 01 · Conexão\n", "## 01 · Conexão\n- ⬜ **R02.9** outside\n"
                 )
             )
         ),
     ),
     (
-        "projeto grande: cabe em 70 linhas e trunca",
+        "big project: fits in 70 lines and truncates",
         lambda: (
-            len(_linhas(_projeto_grande(), 3)) <= TETO_DE_LINHAS
-            and "- … +" in renderizar(_projeto_grande())
+            len(_lines(_big_project(), 3)) <= LINE_CEILING
+            and "- … +" in render(_big_project())
         ),
     ),
     (
-        "projeto grande: tabela de familias truncada",
-        lambda: "| … | +18 famílias | | | |" in renderizar(_projeto_grande()),
+        "big project: families table truncated",
+        lambda: "| … | +18 famílias | | | |" in render(_big_project()),
     ),
     (
-        "familia sem item e sem plan aberta sai da tabela",
-        lambda: "| 00 | Fundação |" not in renderizar(montar_projeto(_textos_ok())),
+        "family with no item and no open plan leaves the table",
+        lambda: "| 00 | Fundação |" not in render(build_project(_texts_ok())),
     ),
     (
-        "familia com item continua na tabela",
-        lambda: "| 01 | Conexão | 1/2 |" in renderizar(montar_projeto(_textos_ok())),
+        "family with an item stays in the table",
+        lambda: "| 01 | Conexão | 1/2 |" in render(build_project(_texts_ok())),
     ),
     (
-        "tabela sem nenhuma familia com conteudo vira —",
-        lambda: "## Por família\n—\n" in renderizar(montar_projeto({"planejamento": "| 00 | Fundação | x |\n"})),
+        "table with no family with content becomes —",
+        lambda: "## Por família\n—\n" in render(build_project({"planning": "| 00 | Fundação | x |\n"})),
     ),
 ]
 
 
-def autoteste() -> int:
+def run_selftest() -> int:
     """Prova o nucleo com fixtures em memoria. Exit 0 se todos passarem."""
-    falhas = [nome for nome, caso in CASOS if not caso()]
-    for nome in falhas:
-        print(f"[FALHA] {nome}", file=sys.stderr)
+    failures = [name for name, case in CASES if not case()]
+    for name in failures:
+        print(f"[FAIL] {name}", file=sys.stderr)
     print(
-        f"gerar_resumo --selftest: {len(CASOS) - len(falhas)}/{len(CASOS)} caso(s) verde"
+        f"generate_summary --selftest: {len(CASES) - len(failures)}/{len(CASES)} case(s) green"
     )
-    return 1 if falhas else 0
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

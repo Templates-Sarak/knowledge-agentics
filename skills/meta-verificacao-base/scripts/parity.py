@@ -11,7 +11,7 @@ mesma lógica de `config/compliance.json` do template (exceção nominal, nunca 
 **"Por default" é TODO arquivo, de QUALQUER extensão — não só `.md`.** Uma versão anterior deste
 módulo filtrava por `.md` sem declarar o recorte em lugar nenhum, e isso contradizia esta própria
 docstring: um `config-compartilhada.json` divergente nas duas árvores passava calado. Medido, e
-corrigido — não é mais recorte por extensão, é recorte por PASTA (`PASTAS_IGNORADAS`, abaixo), e
+corrigido — não é mais recorte por extensão, é recorte por PASTA (`IGNORED_DIRS`, abaixo), e
 esse sim está declarado: pastas geradas/cache nunca são conteúdo do repositório, e comparar duas
 execuções independentes de ferramenta (ex.: `.ruff_cache/`, criado a cada `ruff` rodado) produziria
 divergência falsa a cada rodada — falso positivo, não sinal. Hoje as duas árvores só têm
@@ -30,21 +30,21 @@ acusaria fim-de-linha como se fosse divergência de conteúdo. Arquivo que não 
 (binário) é comparado por BYTES CRUS, sem essa normalização — binário não tem "fim de linha", e
 bytes-crus-contra-bytes-crus ainda pega a divergência real.
 
-Núcleo × casca, o padrão das irmãs (`contagens.py` é o molde de forma): `divergencias` é pura —
+Núcleo × casca, o padrão das irmãs (`counts.py` é o molde de forma): `divergences` é pura —
 recebe dois dicts `{caminho: conteúdo}` (texto `str` ou binário `bytes`) e o dict de exceções,
 nunca toca `fs` — e é o que o `--selftest` de `audit_base.py` prova com fixtures em memória.
-`conteudos_da_arvore`/`auditar_paridade` são a casca fina que lê `fs`.
+`tree_contents`/`audit_parity` são a casca fina que lê `fs`.
 """
 
 import os
 
-ARVORE_A = "specs/_estrutura_base"
-ARVORE_B = "specs/_estrutura_base_site"
+TREE_A = "specs/_estrutura_base"
+TREE_B = "specs/_estrutura_base_site"
 
 # Pasta gerada/cache/vendorizada — nunca conteúdo do repositório. Mesmo vocabulário de exclusão
 # que `run-all-selftests.mjs:IGNORAR` e `gate/context.mjs:SKIP_WALK` usam pelo mesmo motivo,
 # ampliado só com o que já apareceu NESTAS duas árvores especificamente (`.ruff_cache`).
-PASTAS_IGNORADAS = {
+IGNORED_DIRS = {
     "__pycache__",
     ".venv",
     "node_modules",
@@ -56,74 +56,74 @@ PASTAS_IGNORADAS = {
 
 # Caminho relativo à raiz de CADA árvore (as duas compartilham a mesma estrutura de nomes) -> o
 # MOTIVO da divergência declarada, ao lado do nome — nunca uma lista muda sem explicação.
-EXCECOES = {
-    "00-contexto.md": "o briefing de entrada narra o tipo de repositório — projeto com template de "
-    "modulos versus site — e o texto e legitimamente diferente",
-    "INDEX.md": "o mapa de leitura aponta para as specs de arquitetura proprias de cada tipo de "
-    "projeto (arquitetura/, specs/ do site nao existem no lado projeto)",
-    "README.md": "o manual descreve o fluxo no vocabulario do tipo de projeto — 'sistema'/'modulo' "
-    "de um lado, 'site'/'pagina' do outro",
-    "panorama/00-planejamento.md": "o catalogo de familias da base de projeto nasce so com a familia 00 "
-    "(fundacao); o do site ja traz as familias dos moldes de site (01 Identidade e conteudo, 02 "
-    "Engenharia, 03 Paginas)",
+EXCEPTIONS = {
+    "00-contexto.md": "the entry briefing narrates the repository kind — project with the module template "
+    "versus site — and the text is legitimately different",
+    "INDEX.md": "the reading map points to the architecture specs of each project kind "
+    "(the architecture and specs folders of the site do not exist on the project side)",
+    "README.md": "the manual describes the flow in the vocabulary of the project kind — 'system'/'module' "
+    "on one side, 'site'/'page' on the other",
+    "panorama/00-planejamento.md": "the family catalog of the project base is born with family 00 only "
+    "(foundation); the site one already brings the families of the site templates (01 Identity and "
+    "content, 02 Engineering, 03 Pages)",
 }
 
 
-def normalizar(texto):
+def normalize(text):
     """CRLF -> LF antes de comparar: fim de linha não é divergência de CONTEÚDO. Só se aplica a
-    TEXTO — binário (`bytes`) não passa por aqui, ver `divergencias`."""
-    return texto.replace("\r\n", "\n")
+    TEXTO — binário (`bytes`) não passa por aqui, ver `divergences`."""
+    return text.replace("\r\n", "\n")
 
 
-def divergencias(conteudos_a, conteudos_b, excecoes=EXCECOES):
+def divergences(contents_a, contents_b, exceptions=EXCEPTIONS):
     """Núcleo: nomes presentes NOS DOIS dicts, fora das exceções, cujo conteúdo difere. Valor
     `str` é normalizado (CRLF -> LF) antes de comparar; valor `bytes` (binário) é comparado cru.
     A mensagem nomeia o arquivo — qual lado editar é decisão humana, o verificador não escolhe."""
-    comuns = sorted(set(conteudos_a) & set(conteudos_b))
-    achados = []
-    for nome in comuns:
-        if nome in excecoes:
+    common = sorted(set(contents_a) & set(contents_b))
+    findings = []
+    for name in common:
+        if name in exceptions:
             continue
-        a = conteudos_a[nome]
-        b = conteudos_b[nome]
-        a_cmp = normalizar(a) if isinstance(a, str) else a
-        b_cmp = normalizar(b) if isinstance(b, str) else b
+        a = contents_a[name]
+        b = contents_b[name]
+        a_cmp = normalize(a) if isinstance(a, str) else a
+        b_cmp = normalize(b) if isinstance(b, str) else b
         if a_cmp != b_cmp:
-            achados.append(f"{nome}: diverge entre {ARVORE_A} e {ARVORE_B}")
-    return achados
+            findings.append(f"{name}: diverges between {TREE_A} and {TREE_B}")
+    return findings
 
 
-def _ler_para_comparar(caminho):
+def _read_for_comparison(path):
     """Texto (decodificado UTF-8) quando o arquivo decodifica — o formato de tudo que vive aqui
-    hoje —, ou bytes crus quando não decodifica (binário): `divergencias` sabe tratar os dois."""
-    bruto = open(caminho, "rb").read()
+    hoje —, ou bytes crus quando não decodifica (binário): `divergences` sabe tratar os dois."""
+    raw = open(path, "rb").read()
     try:
-        return bruto.decode("utf-8")
+        return raw.decode("utf-8")
     except UnicodeDecodeError:
-        return bruto
+        return raw
 
 
-def conteudos_da_arvore(base_dir, arvore_rel):
-    """Casca: `{caminho relativo à ÁRVORE: conteúdo}` de TODO arquivo sob `arvore_rel`, fora das
-    pastas geradas/cache (`PASTAS_IGNORADAS`)."""
-    raiz = os.path.join(base_dir, arvore_rel)
-    conteudos = {}
-    if not os.path.isdir(raiz):
-        return conteudos
-    for atual, pastas, arquivos in os.walk(raiz):
-        pastas[:] = [p for p in pastas if p not in PASTAS_IGNORADAS]
-        for nome in arquivos:
-            caminho = os.path.join(atual, nome)
-            rel = os.path.relpath(caminho, raiz).replace("\\", "/")
+def tree_contents(base_dir, tree_rel):
+    """Casca: `{caminho relativo à ÁRVORE: conteúdo}` de TODO arquivo sob `tree_rel`, fora das
+    pastas geradas/cache (`IGNORED_DIRS`)."""
+    root = os.path.join(base_dir, tree_rel)
+    contents = {}
+    if not os.path.isdir(root):
+        return contents
+    for current, dirs, files in os.walk(root):
+        dirs[:] = [p for p in dirs if p not in IGNORED_DIRS]
+        for name in files:
+            path = os.path.join(current, name)
+            rel = os.path.relpath(path, root).replace("\\", "/")
             try:
-                conteudos[rel] = _ler_para_comparar(caminho)
+                contents[rel] = _read_for_comparison(path)
             except OSError:
                 continue
-    return conteudos
+    return contents
 
 
-def auditar_paridade(base_dir):
-    """Casca: compara as duas árvores e devolve os achados de `divergencias`."""
-    conteudos_a = conteudos_da_arvore(base_dir, ARVORE_A)
-    conteudos_b = conteudos_da_arvore(base_dir, ARVORE_B)
-    return divergencias(conteudos_a, conteudos_b)
+def audit_parity(base_dir):
+    """Casca: compara as duas árvores e devolve os achados de `divergences`."""
+    contents_a = tree_contents(base_dir, TREE_A)
+    contents_b = tree_contents(base_dir, TREE_B)
+    return divergences(contents_a, contents_b)

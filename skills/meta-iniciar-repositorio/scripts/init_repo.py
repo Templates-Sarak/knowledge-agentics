@@ -1,16 +1,16 @@
 """init_repo.py — inicializacao completa de um repositorio Sarak.
 
-    python init_repo.py --target <caminho> [--binding typescript] [--escopo acme]
-                        [--modulos catalogo:domain hub:connector pagamentos:gateway]
-                        [--name "Meu Sistema"] [--git-init] [--registrar --id meu-sistema]
-    python init_repo.py --selftest   prova compor_pre_commit, validar_modulos e compor_claude_md
+    python init_repo.py --target <caminho> [--binding typescript] [--scope acme]
+                        [--modules catalog:domain hub:connector pagamentos:gateway]
+                        [--name "Meu Sistema"] [--git-init] [--register --id meu-sistema]
+    python init_repo.py --selftest   prova compose_pre_commit, validate_modules e compose_claude_md
                                       com fixtures em memoria (sem --target)
 
-Cada item de --modulos e "<id>:<role>[:artefato]" — o sufixo de papel e OBRIGATORIO (role em
+Cada item de --modules e "<id>:<role>[:artifact]" — o sufixo de papel e OBRIGATORIO (role em
 domain|gateway|connector, o vocabulario do proprio manifesto). Sem ele, erro — nunca um papel
 adivinhado pelo nome do id. O terceiro token so existe para "domain": presente, o modulo nasce
 COM core/engine/core/templates/generated; ausente, nasce sem (a direcao conservadora). Declarar
-":artefato" em "gateway"/"connector" reprova — os dois nao geram artefato por arquitetura (agregam
+":artifact" em "gateway"/"connector" reprova — os dois nao geram artefato por arquitetura (agregam
 ou traduzem, nunca publicam).
 
 Monta, nesta ordem:
@@ -20,10 +20,10 @@ Monta, nesta ordem:
        + a doutrina em specs/arquitetura/ e specs/adr/  (so com --binding)
     3. specs/ do fluxo SDD (00-*, _templates, plan/, adr/)
     4. a base da linguagem em specs/arquitetura/00-base-<binding>.md
-    5. os primeiros modulos                              (so com --modulos)
+    5. os primeiros modulos                              (so com --modules)
     6. .agents/ + gerador de indice + entrypoints (AGENTS.md; CLAUDE.md com @AGENTS.md)
        + hook de pre-commit
-       + carimbo .sarak/base.json (sempre) e a entrada no mapa.json da base (so com --registrar)
+       + carimbo .sarak/base.json (sempre) e a entrada no mapa.json da base (so com --register)
     7. verificacao: gate --all
 
 NAO commita e NAO cria remoto: isso e HITL, e fica com a skill (git-commit-inicial).
@@ -39,23 +39,23 @@ import subprocess
 import sys
 from pathlib import Path
 
-import carimbo  # mesmo diretorio: carimbo .sarak/base.json + registro no mapa.json da base
+import stamp  # mesmo diretorio: carimbo .sarak/base.json + registro no mapa.json da base
 
 BINDINGS = ("typescript", "javascript", "python")
-SUBPASTAS_AGENTS = ("skills", "commands", "agents", "hooks")
-LINHA_IMPORT_AGENTS = "@AGENTS.md"
+AGENTS_SUBDIRS = ("skills", "commands", "agents", "hooks")
+AGENTS_IMPORT_LINE = "@AGENTS.md"
 
-GERADOR_INDICE = '''"""gerar_indice.py — catalogo da inteligencia local (.agents). Gerado pelo init_repo do Sarak."""
+INDEX_GENERATOR = '''"""gerar_indice.py — catalogo da inteligencia local (.agents). Gerado pelo init_repo do Sarak."""
 import os
 import re
 from pathlib import Path
 
 
-def extrair_description(skill_md_path: Path) -> str:
+def extract_description(skill_md_path: Path) -> str:
     """Le o campo `description` do frontmatter de um SKILL.md."""
     try:
-        with open(skill_md_path, "r", encoding="utf-8") as arquivo:
-            match = re.search(r'^description:\\s*(.+)$', arquivo.read(), re.MULTILINE)
+        with open(skill_md_path, "r", encoding="utf-8") as file:
+            match = re.search(r'^description:\\s*(.+)$', file.read(), re.MULTILINE)
             return match.group(1).strip() if match else "Descricao nao encontrada."
     except OSError:
         return "Descricao nao encontrada."
@@ -72,7 +72,7 @@ def main() -> None:
         for skill_folder in sorted(os.listdir(skills_dir)):
             skill_md = skills_dir / skill_folder / "SKILL.md"
             if skill_md.exists():
-                desc = extrair_description(skill_md)
+                desc = extract_description(skill_md)
                 lines.append(f"- **{skill_folder}**: {desc}\\n  - *Caminho*: `.agents/skills/{skill_folder}/SKILL.md`\\n")
 
     lines.append("\\n## Comandos Customizados\\n")
@@ -90,7 +90,7 @@ def main() -> None:
                 lines.append(f"- **{agent_file[:-3]}**: `.agents/agents/{agent_file}`\\n")
 
     (base_dir / "index.md").write_text("\\n".join(lines), encoding="utf-8")
-    print("[OK] Indice gerado em .agents/index.md")
+    print("[OK] Index generated at .agents/index.md")
 
 if __name__ == "__main__":
     main()
@@ -100,17 +100,17 @@ HOOK_PRE_COMMIT = """#!/bin/sh
 # --- Sarak Git Hook (Pre-Commit) ---
 if command -v python >/dev/null 2>&1; then PY=python; else PY=python3; fi
 
-echo "[Sarak] Verificando vazamento de segredos no staged..."
-"$PY" .githooks/verificar_commit.py --raiz .
+echo "[Sarak] Checking staged files for leaked secrets..."
+"$PY" .githooks/verificar_commit.py --root .
 if [ "$?" -ne 0 ]; then
   echo ""
-  echo "COMMIT BLOQUEADO - segredo ou arquivo sensivel detectado no staged."
-  echo "   Corrija: mova o segredo para .env (e adicione ao .gitignore) e re-stage."
+  echo "COMMIT BLOCKED - secret or sensitive file detected in staged files."
+  echo "   Fix: move the secret to .env (and add it to .gitignore), then re-stage."
   exit 1
 fi
 
 if [ -f .agents/gerar_indice.py ]; then
-  echo "[Sarak] Atualizando indice local de agentes..."
+  echo "[Sarak] Updating the local agents index..."
   "$PY" .agents/gerar_indice.py
   git add .agents/index.md
 fi
@@ -120,31 +120,31 @@ exit 0
 
 # A linha que o template instala em `.githooks/pre-commit` (raiz/.githooks/pre-commit dos tres
 # bindings — byte a byte igual, conforme tools/verify-commit.mjs). Constante aqui porque
-# `compor_pre_commit` as vezes precisa dela sem ter o arquivo do template em mao (estado C: so o
+# `compose_pre_commit` as vezes precisa dela sem ter o arquivo do template em mao (estado C: so o
 # nosso hook existe, nada para extrair).
-LINHA_HOOK_TEMPLATE = "node tools/verify-commit.mjs pre-commit || exit 1"
-MARCADOR_HOOK_NOSSO = "verificar_commit.py"
-MARCADOR_HOOK_TEMPLATE = "verify-commit.mjs"
+TEMPLATE_HOOK_LINE = "node tools/verify-commit.mjs pre-commit || exit 1"
+OWN_HOOK_MARKER = "verificar_commit.py"
+TEMPLATE_HOOK_MARKER = "verify-commit.mjs"
 
 
-def _sem_shebang(texto: str) -> str:
+def _strip_shebang(text: str) -> str:
     """Remove a primeira linha se for `#!...` — os dois hooks (nosso e do template) tem a mesma."""
-    linhas = texto.splitlines(keepends=True)
-    if linhas and linhas[0].startswith("#!"):
-        return "".join(linhas[1:])
-    return texto
+    lines = text.splitlines(keepends=True)
+    if lines and lines[0].startswith("#!"):
+        return "".join(lines[1:])
+    return text
 
 
-def _sem_exit0_final(texto: str) -> str:
+def _strip_final_exit0(text: str) -> str:
     """Remove o `exit 0` final (e a linha em branco antes dele), se houver — para nao duplicar
     quando outro trecho for acrescentado depois."""
-    semquebra = texto.rstrip("\n")
-    if semquebra.endswith("exit 0"):
-        semquebra = semquebra[: -len("exit 0")].rstrip("\n")
-    return semquebra + "\n" if semquebra else ""
+    stripped = text.rstrip("\n")
+    if stripped.endswith("exit 0"):
+        stripped = stripped[: -len("exit 0")].rstrip("\n")
+    return stripped + "\n" if stripped else ""
 
 
-def compor_pre_commit(existente: str | None, nosso: str) -> str:
+def compose_pre_commit(existing: str | None, ours: str) -> str:
     """Compoe o `.githooks/pre-commit` do template (gate de conformidade) com o nosso (gate de
     segredos + auto-indice de `.agents/`) — nunca um sobrescrevendo o outro. PURA: nao toca disco,
     o `--selftest` prova os quatro estados sem escrever arquivo nenhum.
@@ -158,316 +158,316 @@ def compor_pre_commit(existente: str | None, nosso: str) -> str:
       (c) existente so tem o nosso     -> acrescenta a cadeia do template antes do exit 0
       (d) existente ja tem os dois     -> nao muda nada
     """
-    if existente is None:
-        return nosso
+    if existing is None:
+        return ours
 
-    tem_nosso = MARCADOR_HOOK_NOSSO in existente
-    tem_template = MARCADOR_HOOK_TEMPLATE in existente
+    has_ours = OWN_HOOK_MARKER in existing
+    has_template = TEMPLATE_HOOK_MARKER in existing
 
-    if tem_nosso and tem_template:
-        return existente
+    if has_ours and has_template:
+        return existing
 
-    corpo_nosso = _sem_exit0_final(_sem_shebang(nosso))
+    our_body = _strip_final_exit0(_strip_shebang(ours))
 
-    if tem_template and not tem_nosso:
-        corpo_template = _sem_shebang(existente).rstrip("\n")
-        return f"#!/bin/sh\n{corpo_nosso}{corpo_template}\n\nexit 0\n"
+    if has_template and not has_ours:
+        template_body = _strip_shebang(existing).rstrip("\n")
+        return f"#!/bin/sh\n{our_body}{template_body}\n\nexit 0\n"
 
-    corpo_existente = _sem_exit0_final(_sem_shebang(existente)).rstrip("\n")
-    return f"#!/bin/sh\n{corpo_existente}\n\n{LINHA_HOOK_TEMPLATE}\n\nexit 0\n"
+    existing_body = _strip_final_exit0(_strip_shebang(existing)).rstrip("\n")
+    return f"#!/bin/sh\n{existing_body}\n\n{TEMPLATE_HOOK_LINE}\n\nexit 0\n"
 
 
-def _casos_de_autoteste_pre_commit() -> list[dict]:
+def _pre_commit_selftest_cases() -> list[dict]:
     """Os quatro estados exigidos, mais o caso de idempotencia."""
-    template_isolado = (
+    template_alone = (
         "#!/bin/sh\n"
         "# Sarak - pre-commit (gate de conformidade)\n"
         "node tools/verify-commit.mjs pre-commit || exit 1\n"
     )
     return [
         {
-            "nome": "(a) nao existe -> escreve o nosso, sem alteracao",
-            "existente": None,
-            "esperado_igual_a": "nosso",
+            "name": "(a) does not exist -> writes ours, unchanged",
+            "existing": None,
+            "expected_equal_to": "ours",
         },
         {
-            "nome": "(b) existe so o do template -> compoe os dois, segredo primeiro",
-            "existente": template_isolado,
-            "esperado_contem_ambos": True,
+            "name": "(b) only the template hook exists -> composes both, secrets first",
+            "existing": template_alone,
+            "expected_contains_both": True,
         },
         {
-            "nome": "(c) existe so o nosso -> acrescenta a cadeia do template",
-            "existente": HOOK_PRE_COMMIT,
-            "esperado_contem_ambos": True,
+            "name": "(c) only ours exists -> appends the template chain",
+            "existing": HOOK_PRE_COMMIT,
+            "expected_contains_both": True,
         },
         {
-            "nome": "(d) ja tem os dois -> idempotente, nao muda nada",
-            "existente": f"{HOOK_PRE_COMMIT}\n{LINHA_HOOK_TEMPLATE}\n",
-            "esperado_igual_a": "existente",
+            "name": "(d) already has both -> idempotent, changes nothing",
+            "existing": f"{HOOK_PRE_COMMIT}\n{TEMPLATE_HOOK_LINE}\n",
+            "expected_equal_to": "existing",
         },
     ]
 
 
-def rodar_autoteste_pre_commit() -> int:
-    """`--selftest`: prova `compor_pre_commit` com fixtures em memoria, sem tocar disco."""
-    falhas = 0
-    for caso in _casos_de_autoteste_pre_commit():
-        resultado = compor_pre_commit(caso["existente"], HOOK_PRE_COMMIT)
-        if caso.get("esperado_igual_a") == "nosso":
-            ok = resultado == HOOK_PRE_COMMIT
-        elif caso.get("esperado_igual_a") == "existente":
-            ok = resultado == caso["existente"]
+def run_pre_commit_selftest() -> int:
+    """`--selftest`: prova `compose_pre_commit` com fixtures em memoria, sem tocar disco."""
+    failures = 0
+    for case in _pre_commit_selftest_cases():
+        result = compose_pre_commit(case["existing"], HOOK_PRE_COMMIT)
+        if case.get("expected_equal_to") == "ours":
+            ok = result == HOOK_PRE_COMMIT
+        elif case.get("expected_equal_to") == "existing":
+            ok = result == case["existing"]
         else:
             ok = (
-                MARCADOR_HOOK_NOSSO in resultado
-                and MARCADOR_HOOK_TEMPLATE in resultado
-                and resultado.index(MARCADOR_HOOK_NOSSO) < resultado.index(MARCADOR_HOOK_TEMPLATE)
-                and resultado.startswith("#!/bin/sh\n")
-                and resultado.rstrip("\n").endswith("exit 0")
+                OWN_HOOK_MARKER in result
+                and TEMPLATE_HOOK_MARKER in result
+                and result.index(OWN_HOOK_MARKER) < result.index(TEMPLATE_HOOK_MARKER)
+                and result.startswith("#!/bin/sh\n")
+                and result.rstrip("\n").endswith("exit 0")
             )
-        print(f"  {'ok   ' if ok else 'FALHA'} {caso['nome']}")
+        print(f"  {'ok   ' if ok else 'FAIL'} {case['name']}")
         if not ok:
-            falhas += 1
+            failures += 1
 
     # Recompor um resultado ja composto tem de devolver o MESMO texto (idempotencia real, nao so o
     # caso "ja tem os dois" isolado): prova que compor(compor(x)) == compor(x) para os estados b e c.
-    for rotulo, existente in (
-        ("b recomposto", compor_pre_commit(_casos_de_autoteste_pre_commit()[1]["existente"], HOOK_PRE_COMMIT)),
-        ("c recomposto", compor_pre_commit(HOOK_PRE_COMMIT, HOOK_PRE_COMMIT)),
+    for label, existing in (
+        ("b recomposed", compose_pre_commit(_pre_commit_selftest_cases()[1]["existing"], HOOK_PRE_COMMIT)),
+        ("c recomposed", compose_pre_commit(HOOK_PRE_COMMIT, HOOK_PRE_COMMIT)),
     ):
-        segunda_vez = compor_pre_commit(existente, HOOK_PRE_COMMIT)
-        ok = segunda_vez == existente
-        print(f"  {'ok   ' if ok else 'FALHA'} idempotencia: recompor ({rotulo}) nao muda nada")
+        second_time = compose_pre_commit(existing, HOOK_PRE_COMMIT)
+        ok = second_time == existing
+        print(f"  {'ok   ' if ok else 'FAIL'} idempotency: recomposing ({label}) changes nothing")
         if not ok:
-            falhas += 1
+            failures += 1
 
-    total = len(_casos_de_autoteste_pre_commit()) + 2
-    print(f"\nautoteste (compor_pre_commit): {total - falhas}/{total} ok")
-    return 0 if falhas == 0 else 1
+    total = len(_pre_commit_selftest_cases()) + 2
+    print(f"\nselftest (compose_pre_commit): {total - failures}/{total} ok")
+    return 0 if failures == 0 else 1
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Inicializa um repositorio Sarak completo.")
-    parser.add_argument("--target", required=True, help="Caminho do repositorio-alvo.")
-    parser.add_argument("--name", default="Sistema Sarak", help="Nome do sistema")
-    parser.add_argument("--binding", choices=BINDINGS, help="Binding do template de modulos")
-    parser.add_argument("--escopo", help="Escopo dos packages (ex: acme)")
+    parser = argparse.ArgumentParser(description="Initializes a complete Sarak repository.")
+    parser.add_argument("--target", required=True, help="Path of the target repository.")
+    parser.add_argument("--name", default="Sarak System", help="System name")
+    parser.add_argument("--binding", choices=BINDINGS, help="Binding of the module template")
+    parser.add_argument("--scope", help="Scope of the packages (e.g. acme)")
     parser.add_argument(
-        "--modulos", nargs="*", default=[],
-        help='Primeiros modulos, um "<id>:<role>[:artefato]" por item (role obrigatorio: '
+        "--modules", nargs="*", default=[],
+        help='First modules, one "<id>:<role>[:artifact]" per item (role required: '
              "domain|gateway|connector)",
     )
-    parser.add_argument("--git-init", action="store_true", help="Roda git init se nao houver .git")
-    parser.add_argument("--forcar", action="store_true", help="Sobrescreve arquivos de raiz existentes")
-    parser.add_argument("--registrar", action="store_true", help="Registra o sistema no mapa.json da base")
-    parser.add_argument("--id", help="Id kebab-case do sistema no mapa (obrigatorio com --registrar)")
+    parser.add_argument("--git-init", action="store_true", help="Runs git init when there is no .git")
+    parser.add_argument("--force", action="store_true", help="Overwrites existing root files")
+    parser.add_argument("--register", action="store_true", help="Registers the system in the base mapa.json")
+    parser.add_argument("--id", help="Kebab-case id of the system in the map (required with --register)")
     return parser.parse_args()
 
 
-def _motivo_alvo_perigoso(target: Path) -> str | None:
+def _dangerous_target_reason(target: Path) -> str | None:
     """`None` quando o alvo e seguro para criar; senao, o motivo para a mensagem de erro nomear
     (o mesmo cuidado que a skill ja exige na entrevista HITL: nunca raiz do
     SO, nunca HOME, so pasta especifica confirmada)."""
     if target.parent == target:
-        return "raiz do sistema de arquivos"
+        return "filesystem root"
     if target == Path.home():
-        return "pasta HOME do usuario"
+        return "user HOME folder"
     return None
 
 
-def raiz_da_base() -> Path:
+def base_root() -> Path:
     """Raiz da base Sarak, deduzida deste arquivo. Funciona no repo e no cache do plugin."""
     return Path(__file__).parent.parent.parent.parent.resolve()
 
 
-def caminho_do_template(xskills_root: Path) -> Path:
+def template_path(base_dir: Path) -> Path:
     """O template de modulos vive dentro de specs/ — e o unico topo que o sync_ide espelha."""
-    return xskills_root / "specs" / "_estrutura_modulos"
+    return base_dir / "specs" / "_estrutura_modulos"
 
 
-def rodar(rotulo: str, comando: list, pasta: Path) -> bool:
+def run(label: str, command: list, folder: Path) -> bool:
     """Executa um comando externo e reporta. Ferramenta ausente e AVISO, nao excecao."""
-    if shutil.which(comando[0]) is None:
-        print(f"[AVISO] '{comando[0]}' nao encontrado - {rotulo} pulado.")
+    if shutil.which(command[0]) is None:
+        print(f"[WARNING] '{command[0]}' not found - {label} skipped.")
         return False
-    resultado = subprocess.run(comando, cwd=str(pasta), check=False)
-    marca = "OK" if resultado.returncode == 0 else "FALHA"
-    print(f"[{marca}] {rotulo}")
-    return resultado.returncode == 0
+    result = subprocess.run(command, cwd=str(folder), check=False)
+    mark = "OK" if result.returncode == 0 else "FAIL"
+    print(f"[{mark}] {label}")
+    return result.returncode == 0
 
 
-def instalar_projeto_modular(target: Path, template: Path, args) -> bool:
+def install_modular_project(target: Path, template: Path, args) -> bool:
     """Passo 2: tools, packages, adapters, molde de modulo e a doutrina em specs/."""
-    criar_projeto = template / "tools" / "create-project.mjs"
-    if not criar_projeto.exists():
-        print(f"[ERRO] Template de modulos nao encontrado em {template}")
+    create_project = template / "tools" / "create-project.mjs"
+    if not create_project.exists():
+        print(f"[ERROR] Module template not found at {template}")
         return False
-    # `args.escopo`/`args.forcar` sao a CLI da skill (fica em portugues); o repasse abaixo e para a
-    # CLI do template (specs/_estrutura_modulos/), em ingles desde o ADR-020 — "--scope"/"--force".
-    comando = ["node", str(criar_projeto), ".", "--binding", args.binding]
-    if args.escopo:
-        comando += ["--scope", args.escopo]
-    if args.forcar:
-        comando.append("--force")
-    return rodar(f"Projeto modular ({args.binding})", comando, target)
+    # `args.scope`/`args.force` sao a CLI da skill; o repasse abaixo e para a CLI do template
+    # (specs/_estrutura_modulos/), tambem em ingles — "--scope"/"--force".
+    command = ["node", str(create_project), ".", "--binding", args.binding]
+    if args.scope:
+        command += ["--scope", args.scope]
+    if args.force:
+        command.append("--force")
+    return run(f"Modular project ({args.binding})", command, target)
 
 
-def instalar_specs(target: Path, xskills_root: Path, nome: str) -> None:
+def install_specs(target: Path, base_dir: Path, name: str) -> None:
     """Passo 3: o fluxo SDD. Mescla com specs/arquitetura e specs/adr ja criados pelo passo 2."""
-    origem = xskills_root / "specs" / "_estrutura_base"
-    if not origem.exists():
-        print(f"[AVISO] Estrutura de specs nao encontrada em {origem}")
+    source = base_dir / "specs" / "_estrutura_base"
+    if not source.exists():
+        print(f"[WARNING] Specs structure not found at {source}")
         return
-    destino = target / "specs"
-    destino.mkdir(exist_ok=True)
-    shutil.copytree(origem, destino, dirs_exist_ok=True)
-    print("[OK] Estrutura de specs (SDD) injetada.")
+    destination = target / "specs"
+    destination.mkdir(exist_ok=True)
+    shutil.copytree(source, destination, dirs_exist_ok=True)
+    print("[OK] Specs structure (SDD) injected.")
 
-    index_spec = destino / "INDEX.md"
+    index_spec = destination / "INDEX.md"
     if index_spec.exists():
-        conteudo = index_spec.read_text(encoding="utf-8")
+        content = index_spec.read_text(encoding="utf-8")
         index_spec.write_text(
-            conteudo.replace("# 🧭 Mapa de Especificações (Bússola da IA)", f"# 🧭 Mapa de Especificações: {nome}"),
+            content.replace("# 🧭 Mapa de Especificações (Bússola da IA)", f"# 🧭 Mapa de Especificações: {name}"),
             encoding="utf-8",
         )
 
 
-def instalar_base_de_linguagem(target: Path, xskills_root: Path, binding: str, nome: str) -> None:
+def install_language_base(target: Path, base_dir: Path, binding: str, name: str) -> None:
     """Passo 4: a prosa da linguagem, ao lado das leis, em specs/arquitetura/."""
-    origem = xskills_root / "specs" / "_bases_arquiteturais" / f"00-base-{binding}.md"
-    if not origem.exists():
-        print(f"[AVISO] Base arquitetural nao encontrada para o binding: {binding}")
+    source = base_dir / "specs" / "_bases_arquiteturais" / f"00-base-{binding}.md"
+    if not source.exists():
+        print(f"[WARNING] Architectural base not found for the binding: {binding}")
         return
-    pasta = target / "specs" / "arquitetura"
-    pasta.mkdir(parents=True, exist_ok=True)
-    destino = pasta / origem.name
-    conteudo = origem.read_text(encoding="utf-8")
-    rotulo = binding.capitalize() if binding != "typescript" else "TypeScript"
-    conteudo = conteudo.replace(
-        f'titulo: "Arquitetura Base: {rotulo}"', f'titulo: "Arquitetura: {nome} ({rotulo})"'
+    folder = target / "specs" / "arquitetura"
+    folder.mkdir(parents=True, exist_ok=True)
+    destination = folder / source.name
+    content = source.read_text(encoding="utf-8")
+    label = binding.capitalize() if binding != "typescript" else "TypeScript"
+    content = content.replace(
+        f'titulo: "Arquitetura Base: {label}"', f'titulo: "Arquitetura: {name} ({label})"'
     )
-    destino.write_text(conteudo, encoding="utf-8")
-    print(f"[OK] Base arquitetural injetada: {destino.name}")
+    destination.write_text(content, encoding="utf-8")
+    print(f"[OK] Architectural base injected: {destination.name}")
 
 
-ROLES_VALIDOS = ("domain", "gateway", "connector")
+VALID_ROLES = ("domain", "gateway", "connector")
 # UM vocabulario so, do manifesto ao `--role` de create-module.mjs (ADR-009 decisao 8). Aqui havia
 # uma tabela PT<->EN traduzindo `domain`->`dominio` na chamada, so para create-module.mjs traduzir
 # de volta ao gravar module.json: duas conversoes que se anulavam, e duas portas do mesmo produto
 # pedindo palavras diferentes. O role viaja como esta.
 
 
-def _parse_modulo_spec(spec: str) -> tuple[str, str, bool] | None:
-    """Decompoe um item de --modulos ("<id>:<role>[:artefato]"). `None` = formato invalido — o
+def _parse_module_spec(spec: str) -> tuple[str, str, bool] | None:
+    """Decompoe um item de --modules ("<id>:<role>[:artifact]"). `None` = formato invalido — o
     chamador imprime o erro e ABORTA antes de criar qualquer modulo (nunca aplica parte da lista)."""
-    partes = spec.split(":")
-    if len(partes) not in (2, 3):
+    parts = spec.split(":")
+    if len(parts) not in (2, 3):
         return None
-    id_modulo, role = partes[0], partes[1]
-    if role not in ROLES_VALIDOS:
+    module_id, role = parts[0], parts[1]
+    if role not in VALID_ROLES:
         return None
-    if len(partes) == 3 and partes[2] != "artefato":
+    if len(parts) == 3 and parts[2] != "artifact":
         return None
-    return id_modulo, role, len(partes) == 3
+    return module_id, role, len(parts) == 3
 
 
-def validar_modulos(modulos: list) -> list | None:
-    """Valida e decompoe cada item de --modulos. `None` (com o erro ja impresso) se algum item for
+def validate_modules(modules: list) -> list | None:
+    """Valida e decompoe cada item de --modules. `None` (com o erro ja impresso) se algum item for
     invalido — a lista so volta preenchida quando TODOS os itens estao corretos, porque criar metade
     dos modulos e abortar no meio deixaria o projeto num estado que ninguem pediu."""
-    decompostos = []
-    for spec in modulos:
-        parseado = _parse_modulo_spec(spec)
-        if parseado is None:
+    decomposed = []
+    for spec in modules:
+        parsed = _parse_module_spec(spec)
+        if parsed is None:
             print(
-                f'[ERRO] "--modulos {spec}" invalido. Forma exigida: <id>:<role>[:artefato], com '
-                f'role em {{{", ".join(ROLES_VALIDOS)}}} — nunca um id sozinho (o papel adivinhado '
-                "pelo nome e o defeito que esta forma existe para fechar)."
+                f'[ERROR] "--modules {spec}" is invalid. Required form: <id>:<role>[:artifact], with '
+                f'role in {{{", ".join(VALID_ROLES)}}} — never a bare id (a role guessed '
+                "from the name is the defect this form exists to close)."
             )
             return None
-        id_modulo, role, quer_artefato = parseado
-        if quer_artefato and role != "domain":
+        module_id, role, wants_artifact = parsed
+        if wants_artifact and role != "domain":
             print(
-                f'[ERRO] "--modulos {spec}": {role} nao gera artefato por arquitetura (agrega ou '
-                'traduz, nunca publica) — ":artefato" so vale para domain.'
+                f'[ERROR] "--modules {spec}": {role} does not generate an artifact by architecture (it '
+                'aggregates or translates, never publishes) — ":artifact" only applies to domain.'
             )
             return None
-        decompostos.append((id_modulo, role, quer_artefato))
-    return decompostos
+        decomposed.append((module_id, role, wants_artifact))
+    return decomposed
 
 
-def criar_modulos(target: Path, template: Path, modulos: list, binding: str) -> None:
+def create_modules(target: Path, template: Path, modules: list, binding: str) -> None:
     """Passo 5: os primeiros modulos, um por vez, na ordem PELO PAPEL declarado — connector por
     ultimo, porque agrega o que os outros publicam. `modulos` ja chegou validado por
-    `validar_modulos`: cada item e (id, role, quer_artefato), role no vocabulario do manifesto — o
+    `validate_modules`: cada item e (id, role, wants_artifact), role no vocabulario do manifesto — o
     MESMO que `create-module.mjs --role` exige, entao passa direto, sem traducao."""
-    criar_modulo = target / "tools" / "create-module.mjs"
-    if not criar_modulo.exists():
-        criar_modulo = template / "tools" / "create-module.mjs"
-    ordenados = sorted(modulos, key=lambda m: m[1] == "connector")
-    for id_modulo, role, quer_artefato in ordenados:
-        comando = ["node", str(criar_modulo), id_modulo, "--binding", binding, "--role", role]
-        # `quer_artefato` so e True quando role == "domain" (validar_modulos ja recusa ":artefato"
+    create_module = target / "tools" / "create-module.mjs"
+    if not create_module.exists():
+        create_module = template / "tools" / "create-module.mjs"
+    ordered = sorted(modules, key=lambda m: m[1] == "connector")
+    for module_id, role, wants_artifact in ordered:
+        command = ["node", str(create_module), module_id, "--binding", binding, "--role", role]
+        # `wants_artifact` so e True quando role == "domain" (validate_modules ja recusa ":artifact"
         # em gateway/connector) — entao "nao quer artefato" cobre os dois casos sozinho: domain sem
         # o token, e gateway/connector, que NUNCA geram artefato por arquitetura.
-        # Repasse para a CLI do template (ingles desde o ADR-020): "--no-artifact", nao ":artefato".
-        if not quer_artefato:
-            comando.append("--no-artifact")
-        rodar(f"Modulo '{id_modulo}' ({role})", comando, target)
+        # Repasse para a CLI do template (ingles desde o ADR-020): "--no-artifact", nao ":artifact".
+        if not wants_artifact:
+            command.append("--no-artifact")
+        run(f"Module '{module_id}' ({role})", command, target)
 
 
-def _casos_de_autoteste_modulos() -> list[dict]:
+def _modules_selftest_cases() -> list[dict]:
     """Cobre a contraprova por reversao do defeito original (papel adivinhado pelo nome do id) e as
-    duas formas de erro que substituem o chute: sufixo ausente, e ":artefato" fora de "domain"."""
+    duas formas de erro que substituem o chute: sufixo ausente, e ":artifact" fora de "domain"."""
     return [
         {
-            "nome": "sem sufixo de papel -> None, nunca um default silencioso",
-            "fn": lambda: _parse_modulo_spec("catalogo") is None,
+            "name": "no role suffix -> None, never a silent default",
+            "fn": lambda: _parse_module_spec("catalog") is None,
         },
         {
-            "nome": "role fora do vocabulario -> None",
-            "fn": lambda: _parse_modulo_spec("catalogo:dominio") is None,
+            "name": "role outside the vocabulary -> None",
+            "fn": lambda: _parse_module_spec("catalog:invalid-role") is None,
         },
         {
-            "nome": "id com nome de agregador mas SEM role declarado -> None (reversao do defeito original: nao adivinha mais pelo nome)",
-            "fn": lambda: _parse_modulo_spec("conector") is None,
+            "name": "id named like an aggregator but WITHOUT a declared role -> None (reversal of the original defect: no longer guesses from the name)",
+            "fn": lambda: _parse_module_spec("connector") is None,
         },
         {
-            "nome": "id que PARECE dominio mas declara gateway -> respeita o declarado, nao o nome",
-            "fn": lambda: _parse_modulo_spec("catalogo:gateway") == ("catalogo", "gateway", False),
+            "name": "id that LOOKS like a domain but declares gateway -> respects the declared role, not the name",
+            "fn": lambda: _parse_module_spec("catalog:gateway") == ("catalog", "gateway", False),
         },
         {
-            "nome": "terceiro token ':artefato' em domain -> aceito, quer_artefato=True",
-            "fn": lambda: _parse_modulo_spec("catalogo:domain:artefato") == ("catalogo", "domain", True),
+            "name": "third token ':artifact' on domain -> accepted, wants_artifact=True",
+            "fn": lambda: _parse_module_spec("catalog:domain:artifact") == ("catalog", "domain", True),
         },
         {
-            "nome": "domain sem terceiro token -> quer_artefato=False (direcao conservadora)",
-            "fn": lambda: _parse_modulo_spec("catalogo:domain") == ("catalogo", "domain", False),
+            "name": "domain without a third token -> wants_artifact=False (conservative direction)",
+            "fn": lambda: _parse_module_spec("catalog:domain") == ("catalog", "domain", False),
         },
         {
-            "nome": "terceiro token que nao e 'artefato' -> None",
-            "fn": lambda: _parse_modulo_spec("catalogo:domain:x") is None,
+            "name": "third token that is not 'artifact' -> None",
+            "fn": lambda: _parse_module_spec("catalog:domain:x") is None,
         },
         {
-            "nome": "validar_modulos: ':artefato' em connector -> None, gateway/connector nao geram artefato",
-            "fn": lambda: validar_modulos(["hub:connector:artefato"]) is None,
+            "name": "validate_modules: ':artifact' on connector -> None, gateway/connector do not generate an artifact",
+            "fn": lambda: validate_modules(["hub:connector:artifact"]) is None,
         },
         {
-            "nome": "validar_modulos: ':artefato' em gateway -> None",
-            "fn": lambda: validar_modulos(["pagamentos:gateway:artefato"]) is None,
+            "name": "validate_modules: ':artifact' on gateway -> None",
+            "fn": lambda: validate_modules(["pagamentos:gateway:artifact"]) is None,
         },
         {
-            "nome": "validar_modulos: um item invalido reprova a lista INTEIRA, nunca aplica so os validos",
-            "fn": lambda: validar_modulos(["catalogo:domain", "semrole"]) is None,
+            "name": "validate_modules: one invalid item rejects the WHOLE list, never applies only the valid ones",
+            "fn": lambda: validate_modules(["catalog:domain", "norole"]) is None,
         },
         {
-            "nome": "validar_modulos: lista toda valida -> decompoe todos, na ordem digitada",
-            "fn": lambda: validar_modulos(["catalogo:domain", "hub:connector"]) == [
-                ("catalogo", "domain", False), ("hub", "connector", False),
+            "name": "validate_modules: fully valid list -> decomposes all, in the typed order",
+            "fn": lambda: validate_modules(["catalog:domain", "hub:connector"]) == [
+                ("catalog", "domain", False), ("hub", "connector", False),
             ],
         },
         {
-            "nome": "ordem de criacao: connector no MEIO da lista vai para o FIM (agrega os outros, precisa que existam)",
+            "name": "creation order: connector in the MIDDLE of the list goes to the END (aggregates the others, they must exist)",
             "fn": lambda: [
                 m[0] for m in sorted(
                     [("a", "domain", False), ("hub", "connector", False), ("b", "domain", False)],
@@ -478,273 +478,275 @@ def _casos_de_autoteste_modulos() -> list[dict]:
     ]
 
 
-def rodar_autoteste_modulos() -> int:
-    """`--selftest`: prova `_parse_modulo_spec`/`validar_modulos`/a ordem de `criar_modulos` com
+def run_modules_selftest() -> int:
+    """`--selftest`: prova `_parse_module_spec`/`validate_modules`/a ordem de `create_modules` com
     fixtures em memoria — a contraprova por reversao do defeito original fica registrada aqui, nao
     só no relatorio do bloco, porque relatorio nao roda em CI e --selftest roda."""
-    falhas = 0
-    casos = _casos_de_autoteste_modulos()
-    for caso in casos:
-        ok = caso["fn"]() is True
-        print(f"  {'ok   ' if ok else 'FALHA'} {caso['nome']}")
+    failures = 0
+    cases = _modules_selftest_cases()
+    for case in cases:
+        ok = case["fn"]() is True
+        print(f"  {'ok   ' if ok else 'FAIL'} {case['name']}")
         if not ok:
-            falhas += 1
-    print(f"\nautoteste (validar_modulos/ordem): {len(casos) - falhas}/{len(casos)} ok")
-    return 0 if falhas == 0 else 1
+            failures += 1
+    print(f"\nselftest (validate_modules/order): {len(cases) - failures}/{len(cases)} ok")
+    return 0 if failures == 0 else 1
 
 
-def instalar_estrutura_agents(target: Path, xskills_root: Path) -> Path:
+def install_agents_structure(target: Path, base_dir: Path) -> Path:
     """Passo 6a: .agents/ com a meta-create-skill injetada e o gerador de indice."""
     agents_dir = target / ".agents"
     agents_dir.mkdir(exist_ok=True)
-    for sub in SUBPASTAS_AGENTS:
+    for sub in AGENTS_SUBDIRS:
         (agents_dir / sub).mkdir(exist_ok=True)
 
-    origem = xskills_root / "skills" / "meta-create-skill"
-    destino = agents_dir / "skills" / "meta-create-skill"
-    if origem.exists():
-        if destino.exists():
-            shutil.rmtree(destino)
-        shutil.copytree(origem, destino)
-        print("[OK] Skill 'meta-create-skill' injetada localmente.")
+    source = base_dir / "skills" / "meta-create-skill"
+    destination = agents_dir / "skills" / "meta-create-skill"
+    if source.exists():
+        if destination.exists():
+            shutil.rmtree(destination)
+        shutil.copytree(source, destination)
+        print("[OK] Skill 'meta-create-skill' injected locally.")
     else:
-        print(f"[AVISO] meta-create-skill nao encontrada em {origem}.")
+        print(f"[WARNING] meta-create-skill not found at {source}.")
 
-    (agents_dir / "gerar_indice.py").write_text(GERADOR_INDICE, encoding="utf-8")
-    print("[OK] Estrutura .agents/ criada.")
+    (agents_dir / "gerar_indice.py").write_text(INDEX_GENERATOR, encoding="utf-8")
+    print("[OK] .agents/ structure created.")
     return agents_dir
 
 
-def compor_claude_md(existente: str | None) -> str | None:
+def compose_claude_md(existing: str | None) -> str | None:
     """Decide o `CLAUDE.md` do projeto-alvo: so o import `@AGENTS.md` (o `AGENTS.md` e a fonte).
     Devolve o conteudo novo, ou `None` quando o import ja existe e nao ha o que mudar."""
-    if existente is None:
-        return f"{LINHA_IMPORT_AGENTS}\n"
-    if any(linha.strip() == LINHA_IMPORT_AGENTS for linha in existente.splitlines()):
+    if existing is None:
+        return f"{AGENTS_IMPORT_LINE}\n"
+    if any(line.strip() == AGENTS_IMPORT_LINE for line in existing.splitlines()):
         return None
-    corpo = existente.rstrip("\n")
-    return f"{corpo}\n\n{LINHA_IMPORT_AGENTS}\n" if corpo else f"{LINHA_IMPORT_AGENTS}\n"
+    body = existing.rstrip("\n")
+    return f"{body}\n\n{AGENTS_IMPORT_LINE}\n" if body else f"{AGENTS_IMPORT_LINE}\n"
 
 
-def _casos_de_autoteste_claude_md() -> list[dict]:
+def _claude_md_selftest_cases() -> list[dict]:
     """Os tres estados do `CLAUDE.md` no alvo, mais a idempotencia do caso anexado."""
-    sem_import = "# CLAUDE.md do projeto\n\n- regra local\n"
+    without_import = "# CLAUDE.md do projeto\n\n- regra local\n"
     return [
         {
-            "nome": "inexistente -> cria so com @AGENTS.md",
-            "fn": lambda: compor_claude_md(None) == f"{LINHA_IMPORT_AGENTS}\n",
+            "name": "missing -> creates with only @AGENTS.md",
+            "fn": lambda: compose_claude_md(None) == f"{AGENTS_IMPORT_LINE}\n",
         },
         {
-            "nome": "existente sem import -> preserva o conteudo e anexa @AGENTS.md",
-            "fn": lambda: compor_claude_md(sem_import) == f"{sem_import}\n{LINHA_IMPORT_AGENTS}\n",
+            "name": "existing without import -> preserves the content and appends @AGENTS.md",
+            "fn": lambda: compose_claude_md(without_import) == f"{without_import}\n{AGENTS_IMPORT_LINE}\n",
         },
         {
-            "nome": "existente com import -> None, nao toca",
-            "fn": lambda: compor_claude_md(f"# CLAUDE.md\n\n{LINHA_IMPORT_AGENTS}\n") is None,
+            "name": "existing with import -> None, untouched",
+            "fn": lambda: compose_claude_md(f"# CLAUDE.md\n\n{AGENTS_IMPORT_LINE}\n") is None,
         },
         {
-            "nome": "idempotencia: recompor o anexado -> None",
-            "fn": lambda: compor_claude_md(compor_claude_md(sem_import)) is None,
+            "name": "idempotency: recomposing the appended one -> None",
+            "fn": lambda: compose_claude_md(compose_claude_md(without_import)) is None,
         },
     ]
 
 
-def rodar_autoteste_claude_md() -> int:
-    """`--selftest`: prova `compor_claude_md` com fixtures em memoria, sem tocar disco."""
-    falhas = 0
-    casos = _casos_de_autoteste_claude_md()
-    for caso in casos:
-        ok = caso["fn"]() is True
-        print(f"  {'ok   ' if ok else 'FALHA'} {caso['nome']}")
+def run_claude_md_selftest() -> int:
+    """`--selftest`: prova `compose_claude_md` com fixtures em memoria, sem tocar disco."""
+    failures = 0
+    cases = _claude_md_selftest_cases()
+    for case in cases:
+        ok = case["fn"]() is True
+        print(f"  {'ok   ' if ok else 'FAIL'} {case['name']}")
         if not ok:
-            falhas += 1
-    print(f"\nautoteste (compor_claude_md): {len(casos) - falhas}/{len(casos)} ok")
-    return 0 if falhas == 0 else 1
+            failures += 1
+    print(f"\nselftest (compose_claude_md): {len(cases) - failures}/{len(cases)} ok")
+    return 0 if failures == 0 else 1
 
 
-def _escrever_claude_md(target: Path) -> str:
-    """Grava o `CLAUDE.md` do alvo via `compor_claude_md`; devolve o rotulo do que aconteceu."""
-    caminho = target / "CLAUDE.md"
-    existente = caminho.read_text(encoding="utf-8") if caminho.exists() else None
-    novo = compor_claude_md(existente)
-    if novo is None:
-        return "ja importa @AGENTS.md, intocado"
-    caminho.write_text(novo, encoding="utf-8")
-    return "criado com @AGENTS.md" if existente is None else "@AGENTS.md anexado"
+def _write_claude_md(target: Path) -> str:
+    """Grava o `CLAUDE.md` do alvo via `compose_claude_md`; devolve o rotulo do que aconteceu."""
+    path = target / "CLAUDE.md"
+    existing = path.read_text(encoding="utf-8") if path.exists() else None
+    new = compose_claude_md(existing)
+    if new is None:
+        return "already imports @AGENTS.md, untouched"
+    path.write_text(new, encoding="utf-8")
+    return "created with @AGENTS.md" if existing is None else "@AGENTS.md appended"
 
 
-def escrever_entrypoint(target: Path, modular: bool) -> None:
+def write_entrypoint(target: Path, modular: bool) -> None:
     """Passo 6b: o ponteiro sempre-ativo vai so no `AGENTS.md` (a fonte neutra, lida pelo Codex);
     o `CLAUDE.md` apenas o importa (`@AGENTS.md`), nunca duplica o texto."""
-    texto = (
+    text = (
         "\n\n> **Atencao (IA):** Sou um projeto Sarak. Antes de codificar, leia as regras de negocio "
         "locais em `.agents/index.md`.\n"
     )
     if modular:
-        texto += (
+        text += (
             "> **Arquitetura de modulos:** a lei esta em `specs/arquitetura/` (`04-regras.md` e o catalogo "
             "normativo) e e cobrada por maquina: `node tools/gate/validate.mjs --all`. "
             "Modulo novo so pela skill `code-modulo` — nunca copiando pasta a mao.\n"
         )
-    caminho_agents = target / "AGENTS.md"
-    with open(caminho_agents, "a" if caminho_agents.exists() else "w", encoding="utf-8") as arquivo:
-        arquivo.write(texto)
-    print("[OK] AGENTS.md atualizado (fonte sempre-ativa).")
-    print(f"[OK] CLAUDE.md: {_escrever_claude_md(target)}.")
+    agents_path = target / "AGENTS.md"
+    with open(agents_path, "a" if agents_path.exists() else "w", encoding="utf-8") as file:
+        file.write(text)
+    print("[OK] AGENTS.md updated (always-on source).")
+    print(f"[OK] CLAUDE.md: {_write_claude_md(target)}.")
 
 
-def _marcar_executavel(caminho: Path) -> None:
+def _mark_executable(path: Path) -> None:
     """`--chmod=+x` cobre os DOIS hooks (pre-commit e pre-push) — o segundo tem o mesmo problema
     no Windows com `core.filemode=false`."""
     try:
-        os.chmod(caminho, 0o755)
-    except OSError as erro:
-        print(f"[AVISO] Nao foi possivel marcar '{caminho.name}' como executavel: {erro}")
+        os.chmod(path, 0o755)
+    except OSError as error:
+        print(f"[WARNING] Could not mark '{path.name}' as executable: {error}")
 
 
-def instalar_hooks_git(target: Path, xskills_root: Path) -> None:
+def install_git_hooks(target: Path, base_dir: Path) -> None:
     """Passo 6c: gate de segredos + auto-indexador, COMPOSTO com o pre-commit do template via
-    `compor_pre_commit` (nunca um sobrescrevendo o outro), amarrados via core.hooksPath."""
+    `compose_pre_commit` (nunca um sobrescrevendo o outro), amarrados via core.hooksPath."""
     if not (target / ".git").exists():
-        print("[AVISO] Sem .git - hooks nao amarrados. Use --git-init ou rode 'git init'.")
+        print("[WARNING] No .git - hooks not wired. Use --git-init or run 'git init'.")
         return
     githooks = target / ".githooks"
     githooks.mkdir(exist_ok=True)
 
-    origem = xskills_root / "skills" / "git-verificacao-commit" / "scripts"
-    if origem.exists():
-        shutil.copy2(origem / "verificar_commit.py", githooks / "verificar_commit.py")
-        shutil.copy2(origem / "config.json", githooks / "config.json")
-        print("[OK] Gate de segredos copiado para .githooks/")
+    source = base_dir / "skills" / "git-verificacao-commit" / "scripts"
+    if source.exists():
+        # Origem em ingles (verify_commit.py); o nome instalado no projeto fica `verificar_commit.py` — contrato
+        # com os projetos vivos (o pre-commit deles o chama e `OWN_HOOK_MARKER` o reconhece).
+        shutil.copy2(source / "verify_commit.py", githooks / "verificar_commit.py")
+        shutil.copy2(source / "config.json", githooks / "config.json")
+        print("[OK] Secrets gate copied to .githooks/")
 
-    caminho_pre_commit = githooks / "pre-commit"
-    existente = caminho_pre_commit.read_text(encoding="utf-8") if caminho_pre_commit.exists() else None
-    composto = compor_pre_commit(existente, HOOK_PRE_COMMIT)
-    caminho_pre_commit.write_text(composto, encoding="utf-8")
-    _marcar_executavel(caminho_pre_commit)
-    rotulo = "composto (segredos + conformidade do template)" if existente is not None and MARCADOR_HOOK_TEMPLATE in existente else "gravado"
-    print(f"[OK] .githooks/pre-commit {rotulo}.")
+    pre_commit_path = githooks / "pre-commit"
+    existing = pre_commit_path.read_text(encoding="utf-8") if pre_commit_path.exists() else None
+    composed = compose_pre_commit(existing, HOOK_PRE_COMMIT)
+    pre_commit_path.write_text(composed, encoding="utf-8")
+    _mark_executable(pre_commit_path)
+    label = "composed (secrets + template conformance)" if existing is not None and TEMPLATE_HOOK_MARKER in existing else "written"
+    print(f"[OK] .githooks/pre-commit {label}.")
 
-    caminho_pre_push = githooks / "pre-push"
-    if caminho_pre_push.exists():
-        _marcar_executavel(caminho_pre_push)
+    pre_push_path = githooks / "pre-push"
+    if pre_push_path.exists():
+        _mark_executable(pre_push_path)
 
-    rodar("git config core.hooksPath", ["git", "config", "core.hooksPath", ".githooks"], target)
+    run("git config core.hooksPath", ["git", "config", "core.hooksPath", ".githooks"], target)
 
 
-def verificar(target: Path) -> None:
+def verify(target: Path) -> None:
     """Passo 7: o gate global. Reprovar aqui e informacao, nao acidente."""
-    validar = target / "tools" / "gate" / "validate.mjs"
-    if not validar.exists():
+    validate_path = target / "tools" / "gate" / "validate.mjs"
+    if not validate_path.exists():
         return
     # Repasse para a CLI do template (ingles desde o ADR-020): "--all", nao "--todos" (o rotulo
     # abaixo acompanha, para nao divergir do comando que de fato roda).
-    rodar("Gate de conformidade (--all)", ["node", str(validar), "--all"], target)
+    run("Conformance gate (--all)", ["node", str(validate_path), "--all"], target)
 
 
-def proximos_passos(modular: bool) -> None:
-    print("\n--- Repositorio Sarak-Ready! ---")
-    print("Proximos passos (HITL - nao automatizados de proposito):")
+def next_steps(modular: bool) -> None:
+    print("\n--- Sarak-Ready repository! ---")
+    print("Next steps (HITL - deliberately not automated):")
     if modular:
-        print("  1. preencher o .env da raiz com os valores reais")
-        print("  2. preencher specs/00-contexto.md (primeira plan do repositorio)")
-        print("  3. registrar em specs/adr/ as decisoes do projeto (idioma, schema, ui.modo)")
-    print("  4. primeiro commit + remoto: skill 'git-commit-inicial'")
+        print("  1. fill in the root .env with the real values")
+        print("  2. fill in specs/00-contexto.md (the repository's first plan)")
+        print("  3. record the project decisions in specs/adr/ (language, schema, ui.modo)")
+    print("  4. first commit + remote: skill 'git-commit-inicial'")
 
 
-def _preparar_alvo(target: Path, args) -> tuple[bool, list | None]:
-    """Antes de escrever qualquer coisa: recusa alvo perigoso, valida `--modulos` e `--registrar`, e
-    cria o diretorio. Devolve `(ok, modulos_validados)`."""
-    perigo = _motivo_alvo_perigoso(target)
-    if perigo is not None:
-        print(f"[ERRO] Alvo recusado ({perigo}): {target}. Confirme um caminho especifico, nunca este.")
+def _prepare_target(target: Path, args) -> tuple[bool, list | None]:
+    """Antes de escrever qualquer coisa: recusa alvo perigoso, valida `--modules` e `--register`, e
+    cria o diretorio. Devolve `(ok, validated_modules)`."""
+    danger = _dangerous_target_reason(target)
+    if danger is not None:
+        print(f"[ERROR] Target refused ({danger}): {target}. Confirm a specific path, never this one.")
         return False, None
-    if args.registrar and not args.id:
-        print("[ERRO] --registrar exige --id (kebab-case, unico no mapa.json).")
+    if args.register and not args.id:
+        print("[ERROR] --register requires --id (kebab-case, unique in mapa.json).")
         return False, None
-    modulos = validar_modulos(args.modulos) if args.modulos else None
-    if args.modulos and modulos is None:
+    modules = validate_modules(args.modules) if args.modules else None
+    if args.modules and modules is None:
         return False, None
     if not target.exists():
         try:
             target.mkdir(parents=True)
-        except OSError as erro:
-            print(f"[ERRO] Nao foi possivel criar o diretorio alvo {target}: {erro}")
+        except OSError as error:
+            print(f"[ERROR] Could not create the target directory {target}: {error}")
             return False, None
-        print(f"[OK] Diretorio alvo criado: {target}")
-    return True, modulos
+        print(f"[OK] Target directory created: {target}")
+    return True, modules
 
 
-def instalar_conteudo(target: Path, xskills_root: Path, args: argparse.Namespace, modulos: list | None) -> None:
+def install_content(target: Path, base_dir: Path, args: argparse.Namespace, modules: list | None) -> None:
     """Passos 3-5: specs do fluxo SDD, base da linguagem e os primeiros modulos (os dois ultimos so
     com `--binding`)."""
-    instalar_specs(target, xskills_root, args.name)
+    install_specs(target, base_dir, args.name)
     if args.binding:
-        instalar_base_de_linguagem(target, xskills_root, args.binding, args.name)
-    if args.binding and modulos:
-        criar_modulos(target, caminho_do_template(xskills_root), modulos, args.binding)
+        install_language_base(target, base_dir, args.binding, args.name)
+    if args.binding and modules:
+        create_modules(target, template_path(base_dir), modules, args.binding)
 
 
-def carimbar_e_registrar(target: Path, xskills_root: Path, args: argparse.Namespace, modular: bool) -> bool:
-    """Passo 6d: o carimbo `.sarak/base.json` sempre; o `mapa.json` da base so com `--registrar`."""
-    info = {"tipo": "app", "modular": modular, "bindings": [args.binding] if args.binding else []}
+def stamp_and_register(target: Path, base_dir: Path, args: argparse.Namespace, modular: bool) -> bool:
+    """Passo 6d: o carimbo `.sarak/base.json` sempre; o `mapa.json` da base so com `--register`."""
+    info = {"kind": "app", "modular": modular, "bindings": [args.binding] if args.binding else []}
     try:
-        carimbo.carimbar(target, xskills_root, info)
-        if args.registrar:
-            carimbo.registrar(target, xskills_root, {"id": args.id, "nome": args.name, **info})
-    except (ValueError, OSError) as erro:
-        print(f"[ERRO] Carimbo/registro: {erro}")
+        stamp.stamp(target, base_dir, info)
+        if args.register:
+            stamp.register(target, base_dir, {"id": args.id, "name": args.name, **info})
+    except (ValueError, OSError) as error:
+        print(f"[ERROR] Stamp/registration: {error}")
         return False
     return True
 
 
-def rodar_autotestes() -> int:
+def run_selftests() -> int:
     """`--selftest`: roda todos os blocos em sequencia; reprova se qualquer um reprovar."""
-    blocos = (rodar_autoteste_pre_commit, rodar_autoteste_modulos, rodar_autoteste_claude_md)
-    resultados = []
-    for indice, bloco in enumerate(blocos):
-        if indice:
+    blocks = (run_pre_commit_selftest, run_modules_selftest, run_claude_md_selftest)
+    results = []
+    for index, block in enumerate(blocks):
+        if index:
             print()
-        resultados.append(bloco())
-    return 0 if all(r == 0 for r in resultados) else 1
+        results.append(block())
+    return 0 if all(r == 0 for r in results) else 1
 
 
 def main() -> int:
     if "--selftest" in sys.argv[1:]:
-        return rodar_autotestes()
+        return run_selftests()
 
     args = get_args()
     target = Path(args.target).resolve()
 
-    ok, modulos_validados = _preparar_alvo(target, args)
+    ok, validated_modules = _prepare_target(target, args)
     if not ok:
         return 1
 
-    xskills_root = raiz_da_base()
-    template = caminho_do_template(xskills_root)
-    print(f"\n--- Scaffold Sarak em: {target} ---")
+    base_dir = base_root()
+    template = template_path(base_dir)
+    print(f"\n--- Sarak scaffold at: {target} ---")
 
     if args.git_init and not (target / ".git").exists():
-        rodar("git init", ["git", "init"], target)
+        run("git init", ["git", "init"], target)
 
     modular = False
     if args.binding:
-        modular = instalar_projeto_modular(target, template, args)
+        modular = install_modular_project(target, template, args)
         if not modular:
-            print("[ERRO] Projeto modular nao instalado - abortando antes de misturar estruturas.")
+            print("[ERROR] Modular project not installed - aborting before mixing structures.")
             return 1
 
-    instalar_conteudo(target, xskills_root, args, modulos_validados)
+    install_content(target, base_dir, args, validated_modules)
 
-    instalar_estrutura_agents(target, xskills_root)
-    escrever_entrypoint(target, modular)
-    instalar_hooks_git(target, xskills_root)
-    if not carimbar_e_registrar(target, xskills_root, args, modular):
+    install_agents_structure(target, base_dir)
+    write_entrypoint(target, modular)
+    install_git_hooks(target, base_dir)
+    if not stamp_and_register(target, base_dir, args, modular):
         return 1
 
     if modular:
-        verificar(target)
-    proximos_passos(modular)
+        verify(target)
+    next_steps(modular)
     return 0
 
 

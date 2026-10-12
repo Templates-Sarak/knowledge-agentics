@@ -27,7 +27,7 @@ const TOOL_ROOT = join(HERE, '..');
 const ARTIFACT_DIRS = ['core/engine', 'core/templates', 'database', 'generated'];
 const BINDINGS = ['typescript', 'javascript', 'python'];
 // UM vocabulario so, ingles — o mesmo que sai gravado no manifesto e o mesmo que `init_repo.py`
-// exige em `--modulos <id>:<role>`. A ADR-009 decisao 8 e explicita: enum de valor estrutural
+// exige em `--modules <id>:<role>`. A ADR-009 decisao 8 e explicita: enum de valor estrutural
 // "segue a mesma traducao da pasta homonima — e o mesmo conceito, nao uma excecao".
 //
 // Ate aqui esta CLI pedia `dominio|gateway|conector` (PT) e a `init_repo.py` pedia
@@ -35,7 +35,7 @@ const BINDINGS = ['typescript', 'javascript', 'python'];
 // da outra, com o valor traduzido EN->PT so para ser traduzido PT->EN de volta na escrita do
 // manifesto. Quem aprendia uma errava na outra. A forma PT e recusada com a correta na mensagem.
 const ROLES = ['domain', 'gateway', 'connector'];
-const PT_LEGACY_ROLE = { dominio: 'domain', conector: 'connector' };
+const PT_LEGACY_ROLE = { 'dominio': 'domain', 'conector': 'connector' };
 /** Binding assumido quando nem a CLI nem o `project.json` declaram um (projeto legado, sem o campo). */
 const DEFAULT_BINDING = 'typescript';
 
@@ -65,7 +65,7 @@ function readOptions() {
     id: rawArgs.find((a) => !a.startsWith('--') && rawArgs[rawArgs.indexOf(a) - 1]?.startsWith('--') !== true) ?? rawArgs[0],
     binding: flagValue('binding', null),
     role: flagValue('role', undefined),
-    escopo: flagValue('scope', null),
+    scope: flagValue('scope', null),
     withoutArtifact: rawArgs.includes('--no-artifact'),
     withoutWeb: rawArgs.includes('--no-web'),
   };
@@ -346,7 +346,7 @@ function validateOptions(options) {
   }
   if (PT_LEGACY_ROLE[options.role] !== undefined) {
     abort(`role "${options.role}" is the legacy Portuguese form — use "${PT_LEGACY_ROLE[options.role]}",`
-      + ' which matches the vocabulary in the manifest and init_repo.py --modulos');
+      + ' which matches the vocabulary in the manifest and init_repo.py --modules');
   }
   if (!ROLES.includes(options.role)) abort(`role "${options.role}" is invalid — choose from ${ROLES.join(', ')}`);
 }
@@ -381,7 +381,7 @@ function main() {
     rmSync(join(destination, 'tests', 'web'), { recursive: true, force: true });
   }
 
-  applyMarkers(destination, options.id, resolveScope(projectRoot, options.escopo));
+  applyMarkers(destination, options.id, resolveScope(projectRoot, options.scope));
   adjustManifest(destination, options);
   if (options.withoutWeb) pruneScreenTexts(destination, options.binding);
   createLocalEnv(destination, options.id);

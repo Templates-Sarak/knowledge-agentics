@@ -1,14 +1,14 @@
-name: Autoteste do template
+name: Selftest do template
 
 # Sensor de envelhecimento: prova, a cada rodada, que `create-project.mjs` ainda gera projeto que
 # passa na propria cadeia que o template prescreve — gate, formato, lint, tipos, testes, build, nos
 # tres bindings. CVE novo ou breakage de major deixa este workflow vermelho, NUNCA o projeto de quem
 # ja usou o template (o template e copia, nao dependencia — ADR-005).
 #
-# Agenda + manual PARA OS DOIS JOBS DE BAIXO (autoteste-template, verificar-migrations, via o `if`
+# Agenda + manual PARA OS DOIS JOBS DE BAIXO (template-selftest, verify-migrations, via o `if`
 # de cada um): o `--fast` (so typescript/javascript) e quem cabe em pre-commit; o binding python
 # sozinho mede ~2m40s e por isso so roda aqui, nao no pre-commit da base. O `on: push`/`pull_request`
-# abaixo existe só para o job `guarda-base` — ver o comentário dele para o porquê da separação.
+# abaixo existe só para o job `base-guard` — ver o comentário dele para o porquê da separação.
 
 on:
   push:
@@ -25,10 +25,10 @@ jobs:
   # divergentes), tipo estatico de tools/** e todo --selftest registrado (skills/ + hooks/
   # inclusos). main e o artefato de distribuicao (`/plugin marketplace add .../knowledge-agentics`
   # le o repo direto) e, antes deste job, NENHUM commit rodava isto — so o pre-commit LOCAL da
-  # maquina do Igor, que nao e versionado. O caro (selftest:template, verificar-migrations) fica
+  # maquina do Igor, que nao e versionado. O caro (selftest:template, verify-migrations) fica
   # no CALENDARIO porque o que ele mede so muda com o tempo (CVE novo, breakage de major); o barato
   # fica no EVENTO porque o que ele mede muda a cada commit.
-  guarda-base:
+  base-guard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,17 +39,17 @@ jobs:
         with:
           python-version: '3.11'
       - run: npm ci
-      - run: python skills/meta-verificacao-base/scripts/audit_base.py --raiz .
+      - run: python skills/meta-verificacao-base/scripts/audit_base.py --root .
       - run: npm run typecheck:tools
       - run: npm run selftest:all
       - run: npm run lint
 
-  autoteste-template:
+  template-selftest:
     # `on:` no GitHub Actions e do WORKFLOW inteiro, nao por job — nao existe gatilho por job nesta
-    # plataforma. O `push`/`pull_request` que o `guarda-base` precisa, acrescentado acima, faria
+    # plataforma. O `push`/`pull_request` que o `base-guard` precisa, acrescentado acima, faria
     # ESTE job (que so deve rodar por agenda/manual, como sempre foi) tambem disparar a cada
     # push/PR sem este `if`. O gatilho EFETIVO deste job continua schedule+workflow_dispatch,
-    # identico a antes do guarda-base existir.
+    # identico a antes do base-guard existir.
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
@@ -71,10 +71,10 @@ jobs:
   # O projeto gerado SOBE em container de verdade (ADR-022): builda as duas imagens, sobe o profile `app`
   # com Postgres e sonda a origem unica, nos tres bindings. O runner Linux do GitHub traz Docker, entao o
   # passo `docker` roda de verdade aqui — o que na maquina de dev pode sair PULADO. Job separado do
-  # `autoteste-template`: o build frio custa minutos por binding, e nao deve atrasar nem avermelhar o
+  # `template-selftest`: o build frio custa minutos por binding, e nao deve atrasar nem avermelhar o
   # sensor barato (CVE e breakage de major) quando o que quebrou foi so a imagem.
-  autoteste-template-docker:
-    # Mesmo motivo do `if` de autoteste-template: gatilho efetivo continua schedule+workflow_dispatch.
+  template-selftest-docker:
+    # Mesmo motivo do `if` de template-selftest: gatilho efetivo continua schedule+workflow_dispatch.
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -95,8 +95,8 @@ jobs:
   # (up -> up[pula] -> down -> up) e o estado no banco (tabelas, indice, unique, RLS, tabela de
   # controle) batem nos dois bindings. Job separado de proposito — nao arrisca o 13/13 ja provado
   # só para acrescentar uma dependencia de servico.
-  verificar-migrations:
-    # Mesmo motivo do `if` de autoteste-template: gatilho efetivo continua schedule+workflow_dispatch.
+  verify-migrations:
+    # Mesmo motivo do `if` de template-selftest: gatilho efetivo continua schedule+workflow_dispatch.
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     services:
@@ -121,41 +121,41 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Scaffold projeto javascript + modulo itens
+      - name: Scaffold projeto javascript + modulo items
         run: |
           python skills/meta-iniciar-repositorio/scripts/init_repo.py \
             --target /tmp/ci-migrations-js --name "CI Migrations JS" \
-            --binding javascript --escopo cimig --modulos itens:domain --git-init
+            --binding javascript --scope cimig --modules items:domain --git-init
 
       - name: Configurar .env (javascript)
         run: |
-          sed -i 's/^ITENS_API_PORT=.*/ITENS_API_PORT=4001/' /tmp/ci-migrations-js/.env
-          sed -i 's#^ITENS_DB_URL=.*#ITENS_DB_URL=postgres://postgres:postgres@localhost:5432/sarak#' /tmp/ci-migrations-js/.env
+          sed -i 's/^ITEMS_API_PORT=.*/ITEMS_API_PORT=4001/' /tmp/ci-migrations-js/.env
+          sed -i 's#^ITEMS_DB_URL=.*#ITEMS_DB_URL=postgres://postgres:postgres@localhost:5432/sarak#' /tmp/ci-migrations-js/.env
 
       - name: Migrations javascript — up -> up (pula) -> down -> up
         working-directory: /tmp/ci-migrations-js
         run: |
-          node scripts/migrations.mjs up itens
-          node scripts/migrations.mjs up itens
-          node scripts/migrations.mjs down itens
-          node scripts/migrations.mjs up itens
+          node scripts/migrations.mjs up items
+          node scripts/migrations.mjs up items
+          node scripts/migrations.mjs down items
+          node scripts/migrations.mjs up items
 
-      - name: Scaffold projeto python + modulo itens
+      - name: Scaffold projeto python + modulo items
         run: |
           python skills/meta-iniciar-repositorio/scripts/init_repo.py \
             --target /tmp/ci-migrations-py --name "CI Migrations PY" \
-            --binding python --escopo cimig --modulos itens:domain --git-init
+            --binding python --scope cimig --modules items:domain --git-init
 
       - name: Configurar .env e instalar dependencias (python)
         run: |
-          sed -i 's/^ITENS_API_PORT=.*/ITENS_API_PORT=4002/' /tmp/ci-migrations-py/.env
-          sed -i 's#^ITENS_DB_URL=.*#ITENS_DB_URL=postgres://postgres:postgres@localhost:5432/sarak#' /tmp/ci-migrations-py/.env
+          sed -i 's/^ITEMS_API_PORT=.*/ITEMS_API_PORT=4002/' /tmp/ci-migrations-py/.env
+          sed -i 's#^ITEMS_DB_URL=.*#ITEMS_DB_URL=postgres://postgres:postgres@localhost:5432/sarak#' /tmp/ci-migrations-py/.env
           cd /tmp/ci-migrations-py && pip install -e ".[dev]"
 
       - name: Migrations python — up -> up (pula) -> down -> up
         working-directory: /tmp/ci-migrations-py
         run: |
-          python scripts/migrations.py up itens
-          python scripts/migrations.py up itens
-          python scripts/migrations.py down itens
-          python scripts/migrations.py up itens
+          python scripts/migrations.py up items
+          python scripts/migrations.py up items
+          python scripts/migrations.py down items
+          python scripts/migrations.py up items

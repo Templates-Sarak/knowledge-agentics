@@ -132,7 +132,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 | **specs/** | A **doutrina** e o **template** replicável (§2) | Copiado no início do projeto + `validate.mjs` | `specs/` |
 | **plugin/** | Sincronizador para IDEs sem marketplace | **Manual** (`sync_ide.py`) | `plugin/` |
 | **settings / config** | Configuração (permissões, env, model, hooks) | **Automático** | `.claude/settings.json` (Claude) · `.codex/config.toml` (Codex) |
-| **mapa.json** | Lista dos **sistemas** que adotam a base (não guarda versão — ver "Mapa de sistemas") | **HITL** — `carimbo.py --registrar` | `mapa.json` na raiz |
+| **mapa.json** | Lista dos **sistemas** que adotam a base (não guarda versão — ver "Mapa de sistemas") | **HITL** — `stamp.py --register` | `mapa.json` na raiz |
 | **MCP** | Servidores de **ferramentas externas** | Ferramentas ficam disponíveis ao modelo | `.mcp.json` (Claude) · `config.toml` (Codex) |
 
 > **Regra de ouro do disparo:** **hooks garantem** (determinístico) · **skills/agents o modelo decide**
@@ -357,7 +357,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 ### Verificar a integridade da base
 
 ```bash
-python skills/meta-verificacao-base/scripts/audit_base.py --raiz .   # YAML, contratos, ponteiros órfãos, ids de regra citados, sistema em arquivo que viaja — exit 1 com qualquer achado
+python skills/meta-verificacao-base/scripts/audit_base.py --root .   # YAML, contratos, ponteiros órfãos, ids de regra citados, sistema em arquivo que viaja — exit 1 com qualquer achado
 npm run selftest:all                                              # todo --selftest registrado
 node specs/_estrutura_modulos/tests/verify-routine.mjs               # o template inteiro, ponta a ponta
 npm run selftest:template:docker                                   # o projeto gerado SOBE em container (exige Docker)
@@ -425,7 +425,7 @@ próxima atualização pelo app o substitui pela versão do remoto.
 
 **Identidade do plugin.** `name`, `version`, `description` e `author` vivem em `.claude-plugin/plugin.json`;
 `.codex-plugin/plugin.json`, `plugin.json` e `.claude-plugin/marketplace.json` os repetem, e a paridade é
-cobrada pelo `audit_base.py` (categoria `manifestos`).
+cobrada pelo `audit_base.py` (categoria `manifests`).
 
 ### Mapa de sistemas e carimbo
 
@@ -433,23 +433,23 @@ Duas fontes, uma para cada coisa — é o que a **propagação** de atualizaçõ
 
 | Arquivo | Onde | O quê | Quem escreve |
 |---|---|---|---|
-| `mapa.json` | raiz desta base (versionado) | **quais** sistemas adotam a base: caminho e `raiz_git` relativos a esta raiz, `repo`, `tipo` (`app`\|`site`), `modular`, `bindings` (lista — projeto modular pode ser poliglota; `[]` = não se aplica), `situacao` (`ativo`\|`adocao-posterior`). **Não guarda versão.** | `meta-iniciar-repositorio/scripts/carimbo.py --registrar`, com HITL — pelo `init_repo.py` e pela `spec-site-fundacao` |
-| `.sarak/base.json` | dentro de cada sistema | o **carimbo**: `base_repo`, `base_commit` (e se a base tinha alteração local), `data`, `tipo`, `modular`, `bindings` (lista) e os **pacotes** recebidos. É a fonte da versão. | o mesmo script, **sempre**, ao criar o sistema |
+| `mapa.json` | raiz desta base (versionado) | **quais** sistemas adotam a base: `path` e `git_root` relativos a esta raiz, `repo`, `kind` (`app`\|`site`), `modular`, `bindings` (lista — projeto modular pode ser poliglota; `[]` = não se aplica), `lifecycle` (`active`\|`later-adoption`). **Não guarda versão.** | `meta-iniciar-repositorio/scripts/stamp.py --register`, com HITL — pelo `init_repo.py` e pela `spec-site-fundacao` |
+| `.sarak/base.json` | dentro de cada sistema | o **carimbo**: `base_repo`, `base_commit` (e `base_dirty`: se a base tinha alteração local), `date`, `kind`, `modular`, `bindings` (lista) e os `packages` recebidos (e, após uma propagação, os `kept`). É a fonte da versão. | o mesmo script, **sempre**, ao criar o sistema |
 
 **Pacotes:** `specs-sdd-app` ou `specs-sdd-site` (os moldes do fluxo SDD) e, em sistema modular,
-`template-modulos`. O schema do `mapa.json` é cobrado pelo `audit_base.py` (categoria `mapa`); que os caminhos
+`module-template`. O schema do `mapa.json` é cobrado pelo `audit_base.py` (categoria `map`); que os caminhos
 existam, não — o mapa vale também em CI e em outras máquinas.
 
-**Status de cada sistema** (`status` + `status_base`, o commit curto da base em que foi definido) — é o
+**Status de cada sistema** (`status` + `status_commit`, o commit curto da base em que foi definido) — é o
 resultado da **última propagação**, não uma comparação ao vivo com o HEAD:
 
 | `status` | Significa | Quem escreve |
 |---|---|---|
-| `desatualizado` | nunca recebeu propagação nem adoção (o valor inicial dos sistemas que já existiam) | à mão, no cadastro inicial |
-| `pendente` | recebeu propagação, mas sobraram itens de decisão humana (conflito, divergente, `adicionar?`) | o aplicar da `meta-propagar-base` |
-| `atualizado` | a última propagação fechou sem pendências — ou o sistema acabou de ser instalado | o aplicar; e o `carimbo.py --registrar` na instalação |
+| `outdated` | nunca recebeu propagação nem adoção (o valor inicial dos sistemas que já existiam) | à mão, no cadastro inicial |
+| `pending` | recebeu propagação, mas sobraram itens de decisão humana (`conflict`, `divergent`, `add?`) | o aplicar da `meta-propagar-base` |
+| `updated` | a última propagação fechou sem pendências — ou o sistema acabou de ser instalado | o aplicar; e o `stamp.py --register` na instalação |
 
-O `--plano` e o `--relatorio` da `meta-propagar-base` só **leem** o status; o `--aplicar` e o `--desfazer` o escrevem. `situacao` (`ativo` \| `adocao-posterior`)
+O `--plan` e o `--report` da `meta-propagar-base` só **leem** o status; o `--apply` e o `--undo` o escrevem. `lifecycle` (`active` \| `later-adoption`)
 e `status` são independentes.
 
 **Propagação.** A skill `meta-propagar-base` lê os dois e compara cada sistema com uma **instalação de
@@ -457,23 +457,23 @@ referência** — o que a base instalaria hoje, gerada em temporário pelos pró
 crua) —, classificando cada arquivo como universal, molde de projeto ou gerado. O fluxo é o de **revisor →
 executor**, **sem branch**:
 
-1. **Analisar:** `scripts/propagar.py --relatorio` — um bloco curto por sistema: o status, a **atualização
-   direta** (contagens e até 5 nomes) e as **plans propostas** para o que precisa de adequação (`--plano`
+1. **Analisar:** `scripts/propagate.py --report` — um bloco curto por sistema: o status, a **atualização
+   direta** (contagens e até 5 nomes) e as **plans propostas** para o que precisa de adequação (`--plan`
    dá o detalhe, somente leitura; sem carimbo, a adoção por histórico reconhece o universal igual a alguma
-   versão da base e o que sobra sai `divergente`).
+   versão da base e o que sobra sai `divergent`).
 2. **HITL de seleção:** o usuário escolhe os repositórios (e pode recusar plans propostas).
 3. **Revisor:** para cada repositório escolhido, escreve o **prompt de atualização direta** e as **plans de
    adequação** no `specs/plan/` dele (com a linha no `00-indice`), na forma daquele repositório.
-4. **Executor** (outra conversa): roda o `--aplicar --id <id>` — escreve `adicionar`, `substituir` e
-   `substituir-politica` (`divergente` e `adicionar?` só com flag explícita) **no branch corrente**, **sem
+4. **Executor** (outra conversa): roda o `--apply --id <id>` — escreve `add`, `replace` e
+   `replace-policy` (`divergent` e `add?` só com flag explícita) **no branch corrente**, **sem
    commit**: carimba, regenera o `00-resumo`, roda o gate (modular), grava o manifesto
-   `.sarak/propagacao-<curto>.json` e o `status` no mapa — e executa cada plan no fluxo SDD do repositório.
+   `.sarak/propagation-<short>.json` e o `status` no mapa — e executa cada plan no fluxo SDD do repositório.
 5. **Revisar e aprovar:** o revisor confere a atualização direta e as plans; aprovado, o **usuário** commita
-   no repositório e o `mapa.json` na base. Com todas as plans sintetizadas, um novo `--aplicar` fecha o
-   `status` em `atualizado`.
+   no repositório e o `mapa.json` na base. Com todas as plans sintetizadas, um novo `--apply` fecha o
+   `status` em `updated`.
 
-Arquivo personalizado, `conflito`, `obsoleto?` e `bloqueado` nunca são escritos pela atualização direta — só
-por plan. Mudança relevante nunca vira branch. O **desfazer** (`--desfazer --id <id>`) restaura pelo manifesto
+Arquivo personalizado, `conflict`, `obsolete?` e `blocked` nunca são escritos pela atualização direta — só
+por plan. Mudança relevante nunca vira branch. O **desfazer** (`--undo --id <id>`) restaura pelo manifesto
 e devolve o status; **recusa** se o HEAD do sistema mudou desde o aplicar (o usuário já commitou).
 
 ### Iniciar um projeto a partir do template
@@ -483,8 +483,8 @@ fluxo SDD, primeiros módulos, `.agents/` e os hooks de git, e termina com o gat
 
 ```bash
 python skills/meta-iniciar-repositorio/scripts/init_repo.py \
-  --target <caminho> --name "<nome>" --binding typescript --escopo acme \
-  --modulos catalogo:domain hub:connector --git-init
+  --target <caminho> --name "<nome>" --binding typescript --scope acme \
+  --modules catalogo:domain hub:connector --git-init
 ```
 
 Depois dele restam quatro pendências de HITL, de propósito: preencher os **valores** do `.env`, escrever

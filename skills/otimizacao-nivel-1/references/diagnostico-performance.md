@@ -30,7 +30,7 @@ Regra de ouro: **medir → agir → re-medir**. Sem número de baseline e númer
 **Frontend:**
 - **Lighthouse** (Chrome DevTools) ou **PageSpeed Insights** → anote LCP/CLS/INP/TBT e a nota.
 - **Bundle:** `npm run build` (tamanho por rota) ou bundle analyzer.
-- **Assets/código:** `python scripts/auditar_assets.py --raiz <projeto>` → JSON (`imagens_legadas` PNG/JPG→WebP, `imagens_grandes`, `img_sem_dimensao` risco de CLS, `libs_pesadas`).
+- **Assets/código:** `python scripts/audit_assets.py --root <projeto>` → JSON (`legacy_images` PNG/JPG→WebP, `large_images`, `imgs_without_dimensions` risco de CLS, `heavy_libs`).
 
 **Backend:**
 - **Latência (p95/p99):** APM (Datadog/New Relic/OTel — ver `obs-monitoramento`) ou medir nos logs.

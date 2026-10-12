@@ -95,7 +95,7 @@ da campanha, ao lado do número de exceções em `compliance.json`.
 ```markdown
 ## Plano de adequação modular — <nome do sistema>
 
-**Fase/caminho detectados:** Fase A · caminho (<sem-specs|specs-divergentes|com-specs>) — <justificativa em uma linha>
+**Fase/caminho detectados:** Fase A · caminho (<no-specs|divergent-specs|with-specs>) — <justificativa em uma linha>
 
 **Módulos e nomes decididos:**
 
@@ -129,7 +129,7 @@ da campanha, ao lado do número de exceções em `compliance.json`.
 **Veredito final:** <aprovado / reprovado, com o motivo>
 ```
 
-## 7. Checklist de leitura de `_estrutura_base` (Passo 2, `specs-divergentes`, antes do Passo 3)
+## 7. Checklist de leitura de `_estrutura_base` (Passo 2, `divergent-specs`, antes do Passo 3)
 
 Confira arquivo a arquivo, **antes de escrever qualquer plan** — pular este passo produziu, medido, onze
 plans reescritas do zero por não baterem com o molde canônico:
@@ -145,4 +145,4 @@ plans reescritas do zero por não baterem com o molde canônico:
       `destino_sintese`, blocos append-only §9/§10/§11. Confira contra o molde local do alvo, se houver um
       — é a divergência que mais custa descobrir tarde.
 - [ ] `_templates/template-spec.md`, `template-arquitetura.md`, `template-adr.md` — forma de cada spec
-      fixa que o Passo 2 (`com-specs`) vai conferir contra o código.
+      fixa que o Passo 2 (`with-specs`) vai conferir contra o código.

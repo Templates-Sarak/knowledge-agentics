@@ -1,17 +1,17 @@
-"""verificar_paridade.py — a camada MECANICA da contraprova specs x realidade.
+"""verify_parity.py — a camada MECANICA da contraprova specs x realidade.
 
-    python verificar_paridade.py --raiz <repo> [--specs <dir>] [--json]
-    python verificar_paridade.py --selftest
+    python verify_parity.py --root <repo> [--specs <dir>] [--json]
+    python verify_parity.py --selftest
 
 Cobre so o que e deterministico (mesma entrada -> mesma saida) na skill `spec-revisao`:
 
-  1. `ponteiro-morto`    — caminho citado numa spec que nao existe no repositorio.
-  2. `wikilink-orfao`    — `[[nome]]` que nao resolve para nenhuma spec da arvore.
-  3. `plan-sem-indice`   — `plan/plan-FF.NN-*.md` em disco sem linha no `00-indice`.
-  4. `indice-sem-plan`   — linha no `00-indice` cuja plan nao existe mais em disco.
-  5. `status-divergente` — status do frontmatter da plan != status citado no `00-indice`.
-  6. `modulo-sem-spec`   — `modules/<m>/module.json` em disco que nenhuma spec cita.
-  7. `plan-fora-do-formato` — `plan/plan-*.md` cujo nome nao e `plan-FF.NN-<slug>.md` (ex.: o
+  1. `dead-pointer`    — caminho citado numa spec que nao existe no repositorio.
+  2. `orphan-wikilink`    — `[[nome]]` que nao resolve para nenhuma spec da arvore.
+  3. `plan-without-index`   — `plan/plan-FF.NN-*.md` em disco sem linha no `00-indice`.
+  4. `index-without-plan`   — linha no `00-indice` cuja plan nao existe mais em disco.
+  5. `status-mismatch` — status do frontmatter da plan != status citado no `00-indice`.
+  6. `module-without-spec`   — `modules/<m>/module.json` em disco que nenhuma spec cita.
+  7. `plan-outside-format` — `plan/plan-*.md` cujo nome nao e `plan-FF.NN-<slug>.md` (ex.: o
      formato antigo `plan-07-x.md`). Sem esta checagem, o arquivo deixaria de casar o regex de plan e
      sumiria das checagens 3-5 em silencio — invisivel e trabalho perdido.
 
@@ -22,9 +22,9 @@ sobre semantica daria falso veredito com cara de verde.
 Fora de fence: citacao dentro de bloco ``` e exemplo de comando, nao ponteiro a seguir. Contar
 como ponteiro produziria ruido justamente nas specs que ensinam a rodar alguma coisa.
 
-Nucleo x casca: `citacoes_de_texto`, `wikilinks_de_texto`, `plans_do_indice`,
-`status_do_frontmatter`, `divergencias_de_plan` e `plan_fora_do_formato` sao PURAS (recebem texto, nunca tocam `fs`) — sao
-o que o `--selftest` prova com fixtures em memoria. `auditar_*` sao a casca fina que le o disco.
+Nucleo x casca: `citations_from_text`, `wikilinks_from_text`, `plans_from_index`,
+`status_from_frontmatter`, `plan_divergences` e `plan_outside_format` sao PURAS (recebem texto, nunca tocam `fs`) — sao
+o que o `--selftest` prova com fixtures em memoria. `audit_*` sao a casca fina que le o disco.
 
 Read-only por construcao: abre arquivo em modo leitura e nunca escreve. Exit 0 sem achado, 1 com
 achado, 2 em erro de uso.
@@ -36,30 +36,30 @@ import os
 import re
 import sys
 
-EXTENSOES_DE_SPEC = (".md",)
+SPEC_EXTENSIONS = (".md",)
 # Molde exibe caminho ficticio por oficio (`caminho/do/arquivo.ext`) — mesma isencao que o
-# `ponteiros.py` da `meta-verificacao-base` da a `examples.md`/`templates.md`.
-PASTAS_DE_MOLDE = frozenset({"_templates"})
+# `pointers.py` da `meta-verificacao-base` da a `examples.md`/`templates.md`.
+TEMPLATE_DIRS = frozenset({"_templates"})
 # Pasta gerada/cache nunca e conteudo do repositorio.
-PASTAS_IGNORADAS = frozenset(
+IGNORED_DIRS = frozenset(
     {".git", "node_modules", "__pycache__", ".venv", "dist", ".ruff_cache"}
 )
 # Um candidato a ponteiro: link markdown `](caminho)` ou trecho em crase com barra/extensao.
-LINK_MD = re.compile(r"\]\(([^)\s]+)\)")
-EM_CRASE = re.compile(r"`([^`\n]+)`")
+MD_LINK = re.compile(r"\]\(([^)\s]+)\)")
+IN_BACKTICKS = re.compile(r"`([^`\n]+)`")
 WIKILINK = re.compile(r"\[\[([^\]\n|]+)")
 # Plan por familia: `plan-FF.NN-<slug>` — dois digitos de familia, ponto, dois digitos de contador.
-PLAN_NO_TEXTO = re.compile(r"plan-\d{2}\.\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*")
-PLAN_ARQUIVO = re.compile(r"plan-\d{2}\.\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.md")
-STATUS_NO_FRONTMATTER = re.compile(r"^status:\s*[\"']?([^\"'\n]+?)[\"']?\s*$", re.M)
+PLAN_IN_TEXT = re.compile(r"plan-\d{2}\.\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*")
+PLAN_FILE = re.compile(r"plan-\d{2}\.\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.md")
+STATUS_IN_FRONTMATTER = re.compile(r"^status:\s*[\"']?([^\"'\n]+?)[\"']?\s*$", re.M)
 FENCE = re.compile(r"^\s*```")
 # `.py`/`.env` sozinhos sao a EXTENSAO citada em prosa, nunca um arquivo do repo. E `NN` e o
 # placeholder de numeracao do proprio molde (`plan-FF.NN-slug`, `arquitetura/FF.NN-api.md`).
-SO_EXTENSAO = re.compile(r"^\.\w{1,5}$")
+EXTENSION_ONLY = re.compile(r"^\.\w{1,5}$")
 # Placeholder, glob e URL nao sao caminho a resolver. Trecho iniciado por `/` tambem nao: numa spec
 # de site, `/servicos` e ROTA HTTP, e cobrar um arquivo com esse nome acusaria a spec inteira.
-NAO_E_CAMINHO = ("http://", "https://", "<", ">", "*", "$", "{", "…", "...")
-EXTENSOES_CITAVEIS = (
+NOT_A_PATH = ("http://", "https://", "<", ">", "*", "$", "{", "…", "...")
+CITABLE_EXTENSIONS = (
     ".md",
     ".py",
     ".mjs",
@@ -72,126 +72,126 @@ EXTENSOES_CITAVEIS = (
 )
 
 
-def _e_candidato(bruto):
+def _is_candidate(raw):
     """Nucleo: o trecho parece um caminho de arquivo que da para resolver no disco?"""
-    alvo = bruto.strip()
-    if not alvo or any(marca in alvo for marca in NAO_E_CAMINHO):
+    target = raw.strip()
+    if not target or any(mark in target for mark in NOT_A_PATH):
         return False
-    if " " in alvo or alvo.startswith(("#", "/")):
+    if " " in target or target.startswith(("#", "/")):
         return False
-    if "NN" in alvo or SO_EXTENSAO.match(alvo):
+    if "NN" in target or EXTENSION_ONLY.match(target):
         return False
-    return "/" in alvo or alvo.endswith(EXTENSOES_CITAVEIS)
+    return "/" in target or target.endswith(CITABLE_EXTENSIONS)
 
 
-def _linhas_fora_de_fence(texto):
+def _lines_outside_fence(text):
     """Nucleo: `(numero, linha)` de cada linha do texto que nao esta dentro de um bloco ```."""
-    dentro = False
-    saida = []
-    for numero, linha in enumerate(texto.split("\n"), start=1):
-        if FENCE.match(linha):
-            dentro = not dentro
+    inside = False
+    output = []
+    for number, line in enumerate(text.split("\n"), start=1):
+        if FENCE.match(line):
+            inside = not inside
             continue
-        if not dentro:
-            saida.append((numero, linha))
-    return saida
+        if not inside:
+            output.append((number, line))
+    return output
 
 
-def citacoes_de_texto(texto: str) -> list[tuple[int, str]]:
+def citations_from_text(text: str) -> list[tuple[int, str]]:
     """Nucleo: `[(linha, caminho)]` de todo caminho citado fora de bloco de codigo."""
-    achados = []
-    for numero, linha in _linhas_fora_de_fence(texto):
-        brutos = LINK_MD.findall(linha) + EM_CRASE.findall(linha)
-        achados.extend(
-            (numero, bruto.strip()) for bruto in brutos if _e_candidato(bruto)
+    findings = []
+    for number, line in _lines_outside_fence(text):
+        raws = MD_LINK.findall(line) + IN_BACKTICKS.findall(line)
+        findings.extend(
+            (number, raw.strip()) for raw in raws if _is_candidate(raw)
         )
-    return achados
+    return findings
 
 
-def wikilinks_de_texto(texto: str) -> list[tuple[int, str]]:
+def wikilinks_from_text(text: str) -> list[tuple[int, str]]:
     """Nucleo: `[(linha, nome)]` de cada `[[nome]]` fora de bloco de codigo."""
-    achados = []
-    for numero, linha in _linhas_fora_de_fence(texto):
-        achados.extend((numero, nome.strip()) for nome in WIKILINK.findall(linha))
-    return achados
+    findings = []
+    for number, line in _lines_outside_fence(text):
+        findings.extend((number, name.strip()) for name in WIKILINK.findall(line))
+    return findings
 
 
-def plans_do_indice(texto: str) -> dict[str, str]:
+def plans_from_index(text: str) -> dict[str, str]:
     """Nucleo: `{plan: status}` das linhas de tabela do `00-indice`.
 
     Status e a penultima celula da linha (a ultima e o Destino), como manda o molde do indice.
     Linha sem plan reconhecivel nao entra — cabecalho e legenda nao sao fila.
     """
-    fila = {}
-    for _, linha in _linhas_fora_de_fence(texto):
-        if not linha.strip().startswith("|"):
+    queue = {}
+    for _, line in _lines_outside_fence(text):
+        if not line.strip().startswith("|"):
             continue
-        celulas = [c.strip() for c in linha.strip().strip("|").split("|")]
-        nomes = PLAN_NO_TEXTO.findall(linha)
-        if nomes and len(celulas) >= 2:
-            fila[nomes[0]] = celulas[-2]
-    return fila
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        names = PLAN_IN_TEXT.findall(line)
+        if names and len(cells) >= 2:
+            queue[names[0]] = cells[-2]
+    return queue
 
 
-def status_do_frontmatter(texto: str) -> str | None:
+def status_from_frontmatter(text: str) -> str | None:
     """Nucleo: o valor do campo `status` do frontmatter YAML, ou `None` se nao houver."""
-    achado = STATUS_NO_FRONTMATTER.search(texto)
-    return achado.group(1).strip() if achado else None
+    match = STATUS_IN_FRONTMATTER.search(text)
+    return match.group(1).strip() if match else None
 
 
-def divergencias_de_plan(
-    no_indice: dict[str, str], em_disco: dict[str, str]
+def plan_divergences(
+    in_index: dict[str, str], on_disk: dict[str, str]
 ) -> list[tuple[str, str, str]]:
     """Nucleo: as tres divergencias entre `{plan: status}` do indice e `{plan: status}` do disco."""
-    achados = []
-    for plan in sorted(set(em_disco) - set(no_indice)):
-        achados.append(
-            ("plan-sem-indice", plan, "existe em plan/ e nao esta no 00-indice")
+    findings = []
+    for plan in sorted(set(on_disk) - set(in_index)):
+        findings.append(
+            ("plan-without-index", plan, "exists in plan/ and is not in 00-indice")
         )
-    for plan in sorted(set(no_indice) - set(em_disco)):
-        achados.append(
-            ("indice-sem-plan", plan, "citada no 00-indice e nao existe em plan/")
+    for plan in sorted(set(in_index) - set(on_disk)):
+        findings.append(
+            ("index-without-plan", plan, "cited in 00-indice and does not exist in plan/")
         )
-    for plan in sorted(set(no_indice) & set(em_disco)):
-        if no_indice[plan] != em_disco[plan]:
-            detalhe = "indice diz '%s', a plan diz '%s'" % (
-                no_indice[plan],
-                em_disco[plan],
+    for plan in sorted(set(in_index) & set(on_disk)):
+        if in_index[plan] != on_disk[plan]:
+            detail = "index says '%s', the plan says '%s'" % (
+                in_index[plan],
+                on_disk[plan],
             )
-            achados.append(("status-divergente", plan, detalhe))
-    return achados
+            findings.append(("status-mismatch", plan, detail))
+    return findings
 
 
-def plan_fora_do_formato(nome: str) -> bool:
+def plan_outside_format(name: str) -> bool:
     """Nucleo: o arquivo de `plan/` se diz plan (`plan-*.md`) mas nao segue `plan-FF.NN-<slug>.md`?"""
-    return nome.startswith("plan-") and nome.endswith(".md") and not PLAN_ARQUIVO.fullmatch(nome)
+    return name.startswith("plan-") and name.endswith(".md") and not PLAN_FILE.fullmatch(name)
 
 
-def _achado(classe, arquivo, linha, detalhe):
-    return {"classe": classe, "arquivo": arquivo, "linha": linha, "detalhe": detalhe}
+def _finding(kind, file, line, detail):
+    return {"kind": kind, "file": file, "line": line, "detail": detail}
 
 
-def _arquivos_de_spec(specs_dir):
+def _spec_files(specs_dir):
     """Casca: o caminho absoluto de toda spec da arvore, fora das pastas de molde."""
-    encontrados = []
-    for pasta, subpastas, nomes in os.walk(specs_dir):
-        subpastas[:] = [s for s in subpastas if s not in PASTAS_DE_MOLDE]
-        for nome in sorted(nomes):
-            if nome.endswith(EXTENSOES_DE_SPEC):
-                encontrados.append(os.path.join(pasta, nome))
-    return sorted(encontrados)
+    found = []
+    for dir, subdirs, names in os.walk(specs_dir):
+        subdirs[:] = [s for s in subdirs if s not in TEMPLATE_DIRS]
+        for name in sorted(names):
+            if name.endswith(SPEC_EXTENSIONS):
+                found.append(os.path.join(dir, name))
+    return sorted(found)
 
 
-def _basenames_do_repo(raiz):
+def _repo_basenames(root):
     """Casca: o nome de todo arquivo do repositorio, fora das pastas geradas/cache."""
-    nomes = set()
-    for pasta, subpastas, arquivos in os.walk(raiz):
-        subpastas[:] = [s for s in subpastas if s not in PASTAS_IGNORADAS]
-        nomes.update(arquivos)
-    return nomes
+    names = set()
+    for dir, subdirs, files in os.walk(root):
+        subdirs[:] = [s for s in subdirs if s not in IGNORED_DIRS]
+        names.update(files)
+    return names
 
 
-def _resolve(candidato, bases, basenames):
+def _resolve(candidate, bases, basenames):
     """Casca: a citacao aponta para algo que existe?
 
     Citacao COM barra e caminho: resolve estrito, a partir de cada base. Citacao SEM barra e
@@ -200,273 +200,273 @@ def _resolve(candidato, bases, basenames):
     TERMINADA em `/` e PASTA (`arquitetura/`): resolve se for diretorio a partir de alguma base —
     a barra final e o sinal; sem ela, vale a regra de arquivo acima.
     """
-    alvo = candidato.rstrip("/")
-    if candidato.endswith("/"):
-        return any(os.path.isdir(os.path.join(base, alvo)) for base in bases)
-    if "/" not in alvo:
-        return alvo in basenames
-    return any(os.path.exists(os.path.join(base, alvo)) for base in bases)
+    target = candidate.rstrip("/")
+    if candidate.endswith("/"):
+        return any(os.path.isdir(os.path.join(base, target)) for base in bases)
+    if "/" not in target:
+        return target in basenames
+    return any(os.path.exists(os.path.join(base, target)) for base in bases)
 
 
-def auditar_ponteiros(
-    arquivos: list[str], bases: tuple, raiz: str, basenames: set[str]
+def audit_pointers(
+    files: list[str], bases: tuple, root: str, basenames: set[str]
 ) -> list[dict]:
     """Casca: caminho citado numa spec que nao existe a partir de nenhuma base."""
-    achados = []
-    for caminho in arquivos:
-        texto = open(caminho, encoding="utf-8", errors="replace").read()
-        rel = os.path.relpath(caminho, raiz)
-        for linha, citado in citacoes_de_texto(texto):
-            if not _resolve(citado, bases + (os.path.dirname(caminho),), basenames):
-                achados.append(_achado("ponteiro-morto", rel, linha, citado))
-    return achados
+    findings = []
+    for path in files:
+        text = open(path, encoding="utf-8", errors="replace").read()
+        rel = os.path.relpath(path, root)
+        for line, cited in citations_from_text(text):
+            if not _resolve(cited, bases + (os.path.dirname(path),), basenames):
+                findings.append(_finding("dead-pointer", rel, line, cited))
+    return findings
 
 
-def auditar_wikilinks(arquivos: list[str], raiz: str) -> list[dict]:
+def audit_wikilinks(files: list[str], root: str) -> list[dict]:
     """Casca: `[[nome]]` que nao casa com o nome de nenhuma spec da arvore."""
-    nomes = {os.path.splitext(os.path.basename(c))[0] for c in arquivos}
-    achados = []
-    for caminho in arquivos:
-        texto = open(caminho, encoding="utf-8", errors="replace").read()
-        rel = os.path.relpath(caminho, raiz)
-        for linha, alvo in wikilinks_de_texto(texto):
-            if alvo not in nomes:
-                achados.append(_achado("wikilink-orfao", rel, linha, "[[%s]]" % alvo))
-    return achados
+    names = {os.path.splitext(os.path.basename(c))[0] for c in files}
+    findings = []
+    for path in files:
+        text = open(path, encoding="utf-8", errors="replace").read()
+        rel = os.path.relpath(path, root)
+        for line, target in wikilinks_from_text(text):
+            if target not in names:
+                findings.append(_finding("orphan-wikilink", rel, line, "[[%s]]" % target))
+    return findings
 
 
-def _plans_em_disco(specs_dir):
+def _plans_on_disk(specs_dir):
     """Casca: `{plan: status}` lido de cada `plan/plan-FF.NN-*.md`."""
-    pasta = os.path.join(specs_dir, "plan")
-    if not os.path.isdir(pasta):
+    dir = os.path.join(specs_dir, "plan")
+    if not os.path.isdir(dir):
         return {}
-    em_disco = {}
-    for nome in sorted(os.listdir(pasta)):
-        achado = PLAN_NO_TEXTO.match(nome)
-        if not achado or not nome.endswith(".md"):
+    on_disk = {}
+    for name in sorted(os.listdir(dir)):
+        match = PLAN_IN_TEXT.match(name)
+        if not match or not name.endswith(".md"):
             continue
-        texto = open(
-            os.path.join(pasta, nome), encoding="utf-8", errors="replace"
+        text = open(
+            os.path.join(dir, name), encoding="utf-8", errors="replace"
         ).read()
-        em_disco[achado.group(0)] = status_do_frontmatter(texto) or "(sem status)"
-    return em_disco
+        on_disk[match.group(0)] = status_from_frontmatter(text) or "(no status)"
+    return on_disk
 
 
-def auditar_fila(specs_dir: str) -> list[dict]:
+def audit_queue(specs_dir: str) -> list[dict]:
     """Casca: confronta o `00-indice` com os arquivos de `plan/`."""
-    indice = os.path.join(specs_dir, "00-indice.md")
-    if not os.path.isfile(indice):
+    index = os.path.join(specs_dir, "00-indice.md")
+    if not os.path.isfile(index):
         return []
-    no_indice = plans_do_indice(open(indice, encoding="utf-8", errors="replace").read())
-    triplas = divergencias_de_plan(no_indice, _plans_em_disco(specs_dir))
+    in_index = plans_from_index(open(index, encoding="utf-8", errors="replace").read())
+    triples = plan_divergences(in_index, _plans_on_disk(specs_dir))
     return [
-        _achado(classe, "specs/00-indice.md", 0, "%s: %s" % (plan, detalhe))
-        for classe, plan, detalhe in triplas
+        _finding(kind, "specs/00-indice.md", 0, "%s: %s" % (plan, detail))
+        for kind, plan, detail in triples
     ]
 
 
-def auditar_nomes_de_plan(specs_dir: str) -> list[dict]:
+def audit_plan_names(specs_dir: str) -> list[dict]:
     """Casca: arquivo de `plan/` fora do formato `plan-FF.NN-<slug>.md` (ex.: o antigo `plan-07-x.md`)."""
-    pasta = os.path.join(specs_dir, "plan")
-    if not os.path.isdir(pasta):
+    dir = os.path.join(specs_dir, "plan")
+    if not os.path.isdir(dir):
         return []
     return [
-        _achado("plan-fora-do-formato", f"specs/plan/{nome}", 0, "esperado plan-FF.NN-<slug>.md")
-        for nome in sorted(os.listdir(pasta))
-        if plan_fora_do_formato(nome)
+        _finding("plan-outside-format", f"specs/plan/{name}", 0, "expected plan-FF.NN-<slug>.md")
+        for name in sorted(os.listdir(dir))
+        if plan_outside_format(name)
     ]
 
 
-def _modulos_em_disco(raiz):
+def _modules_on_disk(root):
     """Casca: o nome de cada `modules/<m>/` que tem manifesto."""
-    pasta = os.path.join(raiz, "modules")
-    if not os.path.isdir(pasta):
+    dir = os.path.join(root, "modules")
+    if not os.path.isdir(dir):
         return []
     return sorted(
-        nome
-        for nome in os.listdir(pasta)
-        if os.path.isfile(os.path.join(pasta, nome, "module.json"))
+        name
+        for name in os.listdir(dir)
+        if os.path.isfile(os.path.join(dir, name, "module.json"))
     )
 
 
-def auditar_modulos(arquivos: list[str], raiz: str) -> list[dict]:
+def audit_modules(files: list[str], root: str) -> list[dict]:
     """Casca: modulo com manifesto que nenhuma spec da arvore cita pelo nome."""
-    modulos = _modulos_em_disco(raiz)
-    if not modulos:
+    modules = _modules_on_disk(root)
+    if not modules:
         return []
     corpus = "\n".join(
-        open(c, encoding="utf-8", errors="replace").read() for c in arquivos
+        open(c, encoding="utf-8", errors="replace").read() for c in files
     )
     return [
-        _achado(
-            "modulo-sem-spec",
-            "modules/%s/" % m,
+        _finding(
+            "module-without-spec",
+            "modules/%s/" % module,
             0,
-            "nenhuma spec cita o modulo '%s'" % m,
+            "no spec cites module '%s'" % module,
         )
-        for m in modulos
-        if m not in corpus
+        for module in modules
+        if module not in corpus
     ]
 
 
-def auditar(raiz: str, specs_dir: str) -> list[dict]:
+def audit(root: str, specs_dir: str) -> list[dict]:
     """Casca: as sete checagens, na ordem em que o relatorio as apresenta."""
-    arquivos = _arquivos_de_spec(specs_dir)
-    bases = (raiz, specs_dir, os.path.dirname(specs_dir))
+    files = _spec_files(specs_dir)
+    bases = (root, specs_dir, os.path.dirname(specs_dir))
     return (
-        auditar_ponteiros(arquivos, bases, raiz, _basenames_do_repo(raiz))
-        + auditar_wikilinks(arquivos, raiz)
-        + auditar_fila(specs_dir)
-        + auditar_nomes_de_plan(specs_dir)
-        + auditar_modulos(arquivos, raiz)
+        audit_pointers(files, bases, root, _repo_basenames(root))
+        + audit_wikilinks(files, root)
+        + audit_queue(specs_dir)
+        + audit_plan_names(specs_dir)
+        + audit_modules(files, root)
     )
 
 
-def _imprimir_humano(specs_dir, achados):
+def _print_human(specs_dir, findings):
     """Relatorio legivel — o `--json` continua sendo a saida para maquina."""
-    print("\n--- Paridade mecanica: %s ---" % specs_dir)
-    for a in achados:
-        local = "%s:%s" % (a["arquivo"], a["linha"]) if a["linha"] else a["arquivo"]
-        print("  [%s] %s  %s" % (a["classe"], local, a["detalhe"]))
-    veredito = (
-        "sem divergencia mecanica"
-        if not achados
-        else "%d divergencia(s)" % len(achados)
+    print("\n--- Mechanical parity: %s ---" % specs_dir)
+    for a in findings:
+        location = "%s:%s" % (a["file"], a["line"]) if a["line"] else a["file"]
+        print("  [%s] %s  %s" % (a["kind"], location, a["detail"]))
+    verdict = (
+        "no mechanical divergence"
+        if not findings
+        else "%d divergence(s)" % len(findings)
     )
-    print("\n[%s] %s" % ("OK" if not achados else "ERRO", veredito))
+    print("\n[%s] %s" % ("OK" if not findings else "ERROR", verdict))
 
 
 # Diretorio desta skill (pai de `scripts/`): ancora real, e somente leitura, para os casos de pasta.
-_DIR_DA_SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Fixtures do `--selftest`: `(rotulo, predicado)` por invariante de nucleo. Constante de
 # modulo, e nao corpo de funcao, para a prova crescer sem estourar o limiar de 40 linhas.
-CASOS = [
+CASES = [
     (
-        "citacao fora de fence",
-        lambda: citacoes_de_texto("ver `a/b.md` aqui") == [(1, "a/b.md")],
+        "citation outside fence",
+        lambda: citations_from_text("see `a/b.md` here") == [(1, "a/b.md")],
     ),
     (
-        "citacao dentro de fence e ignorada",
-        lambda: citacoes_de_texto("```\n`a/b.md`\n```") == [],
+        "citation inside fence is ignored",
+        lambda: citations_from_text("```\n`a/b.md`\n```") == [],
     ),
     (
-        "placeholder nao e candidato",
-        lambda: _e_candidato("<caminho>/x.md") is False,
+        "placeholder is not a candidate",
+        lambda: _is_candidate("<path>/x.md") is False,
     ),
     (
-        "rota http nao e candidato",
-        lambda: _e_candidato("/servicos") is False,
+        "http route is not a candidate",
+        lambda: _is_candidate("/servicos") is False,
     ),
     (
-        "nome sem barra resolve por basename",
+        "name without slash resolves by basename",
         lambda: _resolve("04-regras.md", (), {"04-regras.md"}) is True,
     ),
     (
-        "pasta existente citada com barra final resolve",
-        lambda: _resolve("scripts/", (_DIR_DA_SKILL,), set()) is True,
+        "existing dir cited with trailing slash resolves",
+        lambda: _resolve("scripts/", (_SKILL_DIR,), set()) is True,
     ),
     (
-        "pasta inexistente citada com barra final e ponteiro morto",
-        lambda: _resolve("pasta-que-nao-existe/", (_DIR_DA_SKILL,), set()) is False,
+        "missing dir cited with trailing slash is a dead pointer",
+        lambda: _resolve("dir-that-does-not-exist/", (_SKILL_DIR,), set()) is False,
     ),
     (
-        "nome sem barra ausente reprova",
-        lambda: _resolve("99-inexistente.md", (), {"04-regras.md"}) is False,
+        "missing name without slash fails",
+        lambda: _resolve("99-missing.md", (), {"04-regras.md"}) is False,
     ),
     (
-        "wikilink extraido",
-        lambda: wikilinks_de_texto("veja [[00-contexto]]") == [(1, "00-contexto")],
+        "wikilink extracted",
+        lambda: wikilinks_from_text("see [[00-context]]") == [(1, "00-context")],
     ),
     (
-        "indice le plan e status",
+        "index reads plan and status",
         lambda: (
-            plans_do_indice(
+            plans_from_index(
                 "| 1 | [plan-01.02-x](plan/plan-01.02-x.md) | ob | - | ROXO | specs/ |"
             )
             == {"plan-01.02-x": "ROXO"}
         ),
     ),
     (
-        "status do frontmatter",
-        lambda: status_do_frontmatter('---\nstatus: "VERDE"\n---\n') == "VERDE",
+        "frontmatter status",
+        lambda: status_from_frontmatter('---\nstatus: "VERDE"\n---\n') == "VERDE",
     ),
     (
-        "plan sem indice",
+        "plan without index",
         lambda: (
-            divergencias_de_plan({}, {"plan-01.02-x": "A"})[0][0] == "plan-sem-indice"
+            plan_divergences({}, {"plan-01.02-x": "A"})[0][0] == "plan-without-index"
         ),
     ),
     (
-        "indice sem plan",
+        "index without plan",
         lambda: (
-            divergencias_de_plan({"plan-01.02-x": "A"}, {})[0][0] == "indice-sem-plan"
+            plan_divergences({"plan-01.02-x": "A"}, {})[0][0] == "index-without-plan"
         ),
     ),
     (
-        "status divergente",
+        "status mismatch",
         lambda: (
-            divergencias_de_plan({"plan-01.02-x": "A"}, {"plan-01.02-x": "B"})[0][0]
-            == "status-divergente"
+            plan_divergences({"plan-01.02-x": "A"}, {"plan-01.02-x": "B"})[0][0]
+            == "status-mismatch"
         ),
     ),
     (
-        "paridade de status nao acusa",
-        lambda: divergencias_de_plan({"plan-01.02-x": "A"}, {"plan-01.02-x": "A"}) == [],
+        "status parity is not flagged",
+        lambda: plan_divergences({"plan-01.02-x": "A"}, {"plan-01.02-x": "A"}) == [],
     ),
     (
-        "plan por familia e reconhecida",
-        lambda: PLAN_NO_TEXTO.fullmatch("plan-02.07-ajustar-cache") is not None,
+        "plan by family is recognized",
+        lambda: PLAN_IN_TEXT.fullmatch("plan-02.07-ajustar-cache") is not None,
     ),
     (
-        "formato antigo plan-07-x.md e acusado como fora do formato",
-        lambda: plan_fora_do_formato("plan-07-x.md") is True,
+        "old format plan-07-x.md is flagged as outside the format",
+        lambda: plan_outside_format("plan-07-x.md") is True,
     ),
     (
-        "formato por familia nao e acusado",
-        lambda: plan_fora_do_formato("plan-02.07-x.md") is False,
+        "family format is not flagged",
+        lambda: plan_outside_format("plan-02.07-x.md") is False,
     ),
     (
-        "arquivo que nao se diz plan (.gitkeep) nao e acusado",
-        lambda: plan_fora_do_formato(".gitkeep") is False,
+        "file that does not call itself a plan (.gitkeep) is not flagged",
+        lambda: plan_outside_format(".gitkeep") is False,
     ),
     (
-        "indice ignora linha no formato antigo",
-        lambda: plans_do_indice(
+        "index ignores line in the old format",
+        lambda: plans_from_index(
             "| 1 | [plan-07-x](plan/plan-07-x.md) | ob | - | ROXO | specs/ |"
         )
         == {},
     ),
     (
-        "placeholder FF.NN do molde nao e candidato a caminho",
-        lambda: _e_candidato("arquitetura/FF.NN-api.md") is False,
+        "template FF.NN placeholder is not a path candidate",
+        lambda: _is_candidate("arquitetura/FF.NN-api.md") is False,
     ),
 ]
 
 
-def autoteste() -> int:
+def run_selftest() -> int:
     """Prova os nucleos puros com fixtures em memoria. Exit 0 se todos passarem."""
-    falhas = [nome for nome, fn in CASOS if not fn()]
-    for nome in falhas:
-        print("[FALHA] %s" % nome, file=sys.stderr)
+    failures = [name for name, fn in CASES if not fn()]
+    for name in failures:
+        print("[FAIL] %s" % name, file=sys.stderr)
     print(
-        "verificar_paridade --selftest: %d/%d caso(s) verde"
-        % (len(CASOS) - len(falhas), len(CASOS))
+        "verify_parity --selftest: %d/%d case(s) green"
+        % (len(CASES) - len(failures), len(CASES))
     )
-    return 1 if falhas else 0
+    return 1 if failures else 0
 
 
 def _parser():
     parser = argparse.ArgumentParser(
-        description="Paridade mecanica entre specs e repositorio."
+        description="Mechanical parity between specs and repository."
     )
-    parser.add_argument("--raiz", help="Raiz do repositorio-alvo.")
-    parser.add_argument("--specs", help="Pasta das specs. Padrao: <raiz>/specs.")
+    parser.add_argument("--root", help="Root of the target repository.")
+    parser.add_argument("--specs", help="Specs directory. Default: <root>/specs.")
     parser.add_argument(
-        "--json", action="store_true", help="Imprime os achados como JSON."
+        "--json", action="store_true", help="Prints the findings as JSON."
     )
     parser.add_argument(
-        "--selftest", action="store_true", help="Prova o nucleo com fixtures."
+        "--selftest", action="store_true", help="Proves the core with fixtures."
     )
     return parser
 
@@ -477,30 +477,30 @@ def main() -> int:
     parser = _parser()
     args = parser.parse_args()
     if args.selftest:
-        return autoteste()
-    if not args.raiz:
-        parser.error("--raiz e obrigatorio (ou use --selftest)")
+        return run_selftest()
+    if not args.root:
+        parser.error("--root is required (or use --selftest)")
 
-    raiz = os.path.abspath(args.raiz)
+    root = os.path.abspath(args.root)
     specs_dir = (
-        os.path.abspath(args.specs) if args.specs else os.path.join(raiz, "specs")
+        os.path.abspath(args.specs) if args.specs else os.path.join(root, "specs")
     )
     if not os.path.isdir(specs_dir):
-        print("[ERRO] %s nao e um diretorio de specs." % specs_dir, file=sys.stderr)
+        print("[ERROR] %s is not a specs directory." % specs_dir, file=sys.stderr)
         return 2
 
-    achados = auditar(raiz, specs_dir)
+    findings = audit(root, specs_dir)
     if args.json:
         print(
             json.dumps(
-                {"total": len(achados), "achados": achados},
+                {"total": len(findings), "findings": findings},
                 indent=2,
                 ensure_ascii=False,
             )
         )
     else:
-        _imprimir_humano(specs_dir, achados)
-    return 1 if achados else 0
+        _print_human(specs_dir, findings)
+    return 1 if findings else 0
 
 
 if __name__ == "__main__":

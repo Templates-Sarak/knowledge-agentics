@@ -1,15 +1,16 @@
 """
-validar_predeploy.py — Validacao pre-deploy: config de build, env vars exigidas e segredos versionados.
+validate_predeploy.py — Validacao pre-deploy: config de build, env vars exigidas e segredos versionados.
 
 Uso:
-    python validar_predeploy.py --raiz . [--config config.json]
+    python validate_predeploy.py --root . [--config config.json]
 
 Retorno:
-    JSON com {config_build, env_requeridas, alertas}.
+    JSON com {build_config, required_env, warnings}.
 
 Regras (padrao-escrita): zero hardcoded (listas no config.json),
 responsabilidade única (apenas valida e reporta — não publica nada).
 """
+
 import argparse
 import json
 import re
@@ -18,73 +19,81 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 
-def carregar_config(caminho: Path) -> dict:
-    return json.loads(caminho.read_text(encoding="utf-8"))
+def load_config(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def checar_config_build(raiz: Path, arquivos) -> dict:
-    return {nome: (raiz / nome).exists() for nome in arquivos}
+def check_build_config(root: Path, files) -> dict:
+    return {name: (root / name).exists() for name in files}
 
 
-def ler_env_requeridas(raiz: Path, env_example: str) -> list:
-    caminho = raiz / env_example
-    if not caminho.exists():
+def read_required_env(root: Path, env_example: str) -> list:
+    path = root / env_example
+    if not path.exists():
         return []
-    variaveis = []
-    for linha in caminho.read_text(encoding="utf-8", errors="ignore").splitlines():
-        linha = linha.strip()
-        if linha and not linha.startswith("#") and "=" in linha:
-            variaveis.append(linha.split("=", 1)[0].strip())
-    return variaveis
+    variables = []
+    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            variables.append(line.split("=", 1)[0].strip())
+    return variables
 
 
-def detectar_segredos_versionados(raiz: Path, proibidos, padroes, ignorar_dirs) -> list:
-    alertas = []
-    for caminho in raiz.rglob("*"):
-        if any(parte in ignorar_dirs for parte in caminho.parts):
+def detect_versioned_secrets(root: Path, forbidden, patterns, ignore_dirs) -> list:
+    warnings = []
+    for path in root.rglob("*"):
+        if any(part in ignore_dirs for part in path.parts):
             continue
-        if caminho.is_file() and any(fnmatch(caminho.name, p) for p in proibidos):
-            alertas.append({"tipo": "arquivo_proibido", "arquivo": str(caminho)})
+        if path.is_file() and any(fnmatch(path.name, p) for p in forbidden):
+            warnings.append({"kind": "forbidden_file", "file": str(path)})
 
-    regex = [re.compile(rx) for rx in padroes]
-    alvo = raiz / "vercel.json"
-    if alvo.exists():
-        for num, linha in enumerate(alvo.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
-            if any(r.search(linha) for r in regex):
-                alertas.append({"tipo": "segredo_em_config", "arquivo": str(alvo), "linha": num})
-    return alertas
+    regexes = [re.compile(rx) for rx in patterns]
+    target = root / "vercel.json"
+    if target.exists():
+        for number, line in enumerate(
+            target.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1
+        ):
+            if any(r.search(line) for r in regexes):
+                warnings.append(
+                    {"kind": "secret_in_config", "file": str(target), "line": number}
+                )
+    return warnings
 
 
 def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")  # saída UTF-8 mesmo em console cp1252 (Windows/acentos)
-    parser = argparse.ArgumentParser(description="Validacao pre-deploy Vercel.")
-    parser.add_argument("--raiz", default=".")
+        sys.stdout.reconfigure(
+            encoding="utf-8"
+        )  # saída UTF-8 mesmo em console cp1252 (Windows/acentos)
+    parser = argparse.ArgumentParser(description="Vercel pre-deploy validation.")
+    parser.add_argument("--root", default=".")
     parser.add_argument("--config", default=str(Path(__file__).parent / "config.json"))
     args = parser.parse_args()
 
     try:
-        config = carregar_config(Path(args.config))
+        config = load_config(Path(args.config))
     except FileNotFoundError:
-        sys.exit(f"Erro: config nao encontrado em '{args.config}'.")
-    except json.JSONDecodeError as erro:
-        sys.exit(f"Erro: config invalido ({erro}).")
+        sys.exit(f"Error: config not found at '{args.config}'.")
+    except json.JSONDecodeError as error:
+        sys.exit(f"Error: invalid config ({error}).")
 
-    raiz = Path(args.raiz)
-    if not raiz.exists():
-        sys.exit(f"Erro: raiz '{raiz}' nao existe.")
+    root = Path(args.root)
+    if not root.exists():
+        sys.exit(f"Error: root '{root}' does not exist.")
 
-    resultado = {
-        "config_build": checar_config_build(raiz, config.get("arquivos_config_build", [])),
-        "env_requeridas": ler_env_requeridas(raiz, config.get("env_example", ".env.example")),
-        "alertas": detectar_segredos_versionados(
-            raiz,
-            config.get("arquivos_segredo_proibidos", []),
-            config.get("padroes_segredo", []),
-            set(config.get("ignorar_dirs", [])),
+    result = {
+        "build_config": check_build_config(root, config.get("build_config_files", [])),
+        "required_env": read_required_env(
+            root, config.get("env_example", ".env.example")
+        ),
+        "warnings": detect_versioned_secrets(
+            root,
+            config.get("forbidden_secret_files", []),
+            config.get("secret_patterns", []),
+            set(config.get("ignore_dirs", [])),
         ),
     }
-    print(json.dumps(resultado, ensure_ascii=False, indent=2))
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

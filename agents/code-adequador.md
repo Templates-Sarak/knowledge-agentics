@@ -19,27 +19,28 @@ NÃO vêm a você — elas rodam na thread principal com HITL.
 > da tarefa vem do schema em `code-diagnostico/references/decomposicao.md`. Critério = `padrao-escrita`.
 
 ## Entrada
-- **Uma tarefa** (JSON do backlog): `id`, `arquivo`, `linhas`, `dimensao`, `regra`, `estadoAtual`, `estadoAlvo`,
-  `risco` (baixo/médio), `verificacao`. Se vier risco **alto** por engano, **recuse e devolva ao orquestrador**.
+- **Uma tarefa** (JSON do backlog): `id`, `file`, `lines`, `dimension`, `rule`, `currentState`, `targetState`,
+  `risk` (`low`/`medium`), `verification`. Aceita também as chaves antigas em português (`arquivo`, `estadoAtual`…;
+  tabela em `code-diagnostico/references/backlog-format.md` §Compatibilidade de leitura). Se vier risco **alto** (`high`) por engano, **recuse e devolva ao orquestrador**.
 
 ## Workflow
-1. **Confirmar a violação** — leia o `arquivo` e confirme que `estadoAtual`/`dimensao`/`regra` batem com o código.
+1. **Confirmar a violação** — leia o `file` e confirme que `currentState`/`dimension`/`rule` batem com o código.
 2. **Verificar a rede ANTES de mexer** — rode os testes do módulo (caracterização + existentes). **Tem que estar
-   verde.** Se não há rede (testes ausentes/vermelhos) → **NÃO refatore**: devolva `status: pulado` com o motivo
+   verde.** Se não há rede (testes ausentes/vermelhos) → **NÃO refatore**: devolva `status: skipped` com o motivo
    (a Fase 1 precisa rodar antes).
 3. **Refatorar (mudança pequena)** — aplique `code-adequacao`/`padrao-escrita` ao alvo para alcançar o
-   `estadoAlvo`, **preservando o comportamento**: extrair config para `config.json`/`.env`, quebrar função, guard
+   `targetState`, **preservando o comportamento**: extrair config para `config.json`/`.env`, quebrar função, guard
    clauses, trocar `print`/`console.log` por logger, expor via `api/`, prefixar tabela, ajustar rota/casing —
-   conforme a `dimensao`. **Só o que a tarefa pede** (não amplie o escopo).
+   conforme a `dimension`. **Só o que a tarefa pede** (não amplie o escopo).
 4. **Verificar DEPOIS** — rode de novo os testes + o validator da linguagem no arquivo (Python `validate.py`,
-   TS `validate.mjs`, Go/Java linter). **Verde = aceita; vermelho = reverta a mudança** e devolva `status: pulado`.
-5. **Devolver** — relatório compacto + o diff (NÃO commite): `{ id, status, oQueMudou, verificacao }`.
+   TS `validate.mjs`, Go/Java linter). **Verde = aceita; vermelho = reverta a mudança** e devolva `status: skipped`.
+5. **Devolver** — relatório compacto + o diff (NÃO commite): `{ id, status, whatChanged, verification }`.
 
 ## Regras e limites
 - **NUNCA** mude comportamento — é refatoração (estrutura), não correção. Bug encontrado → **registre como item à
   parte** no relatório; não conserte.
-- **NUNCA** refatore sem a rede verde (passo 2) — sem rede, `status: pulado`.
-- **NÃO** trate mais de uma tarefa, nem amplie além do `estadoAlvo` — escopo da tarefa, e só.
+- **NUNCA** refatore sem a rede verde (passo 2) — sem rede, `status: skipped`.
+- **NÃO** trate mais de uma tarefa, nem amplie além do `targetState` — escopo da tarefa, e só.
 - **NÃO** commite — quem commita é o command `/code3-adequar`, após o gate `git-revisao-diff`.
 - **NÃO** aceite tarefa de **alto risco** — devolva ao orquestrador (alto risco é thread principal + HITL).
 - **NÃO** redefina o padrão — em dúvida, leia `padrao-escrita`/`code-adequacao`, não improvise.
@@ -49,10 +50,10 @@ Retorne **EXCLUSIVAMENTE** um bloco de código JSON válido contendo o resumo es
 ```json
 {
   "id": "...",
-  "status": "conforme | parcial | pulado",
-  "oQueMudou": "...",
-  "verificacao": "testes+validator verde|vermelho",
-  "bugsRegistrados": [],
+  "status": "compliant | partial | skipped",
+  "whatChanged": "...",
+  "verification": "testes+validator verde|vermelho",
+  "loggedBugs": [],
   "diff": "..."
 }
 ```

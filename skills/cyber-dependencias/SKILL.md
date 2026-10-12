@@ -20,7 +20,7 @@ suprimentos** (lockfile, abandono, typosquat, `postinstall`). Mutativa ao corrig
 ## Workflow
 Trate **um projeto por vez**. Detalhe dos vetores em `references/supply-chain.md`.
 
-1. **Auditar CVEs** — rode a ferramenta da stack: `npm audit --json > audit.json` (Node), `pip-audit` (Python) ou `osv-scanner -r .`. Para Node, normalize com `python scripts/parse_audit.py --arquivo audit.json` (resumo por severidade).
+1. **Auditar CVEs** — rode a ferramenta da stack: `npm audit --json > audit.json` (Node), `pip-audit` (Python) ou `osv-scanner -r .`. Para Node, normalize com `python scripts/parse_audit.py --file audit.json` (resumo por severidade).
 2. **Supply chain** — verifique lockfile (presente/íntegro), pacotes **abandonados**, **typosquatting** (nome/publisher), e scripts `postinstall`/`preinstall` suspeitos (ver `references/supply-chain.md`).
 3. **Priorizar** — ordene `critical > high > moderate > low`; separe o que tem fix do que não tem.
 4. **HITL — plano** — apresente: vulnerabilidades por severidade, fixes propostos (`npm audit fix`, updates, overrides) e **quais podem quebrar** (major/`--force`). → "⚠️ Confirma os updates?". **Aguarde.**

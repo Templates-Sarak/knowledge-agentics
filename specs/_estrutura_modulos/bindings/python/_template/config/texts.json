@@ -1,5 +1,5 @@
 {
-  "_comment": "Rotulos e mensagens. Nenhum texto literal no codigo. Modulo Python e backend: se ganhar tela, ela vem do web/ do binding TypeScript, com os textos dela.",
+  "_comment": "Rótulos e mensagens. Nenhum texto literal no código. Módulo Python é backend: se ganhar tela, ela vem do web/ do binding TypeScript, com os textos dela.",
   "title": "<Module>",
-  "genericError": "Nao foi possivel processar a requisicao."
+  "genericError": "Não foi possível processar a requisição."
 }

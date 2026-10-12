@@ -26,7 +26,7 @@
  * sem shell `npm` no Windows dá `ENOENT` (resolve para `.cmd`, que `spawnSync` sem shell não
  * encontra). Mas `shell: true` concatena `args` numa STRING ÚNICA sem citação, e o id do módulo —
  * nome de PASTA, vindo de `readdirSync` via `listModules`, nunca validado antes de virar
- * argumento — entraria ali inteiro. Uma pasta `modules/x&echo INJETADO/` bastaria para rodar `echo
+ * argumento — entraria ali inteiro. Uma pasta `modules/x&echo INJECTED/` bastaria para rodar `echo
  * INJETADO` como comando separado, E o resultado ainda sairia "ok" — porque com shell o `status` é
  * do ÚLTIMO comando da cadeia (`echo`, que sempre sai 0), não do `validate.mjs` que já teria
  * falhado. Ferramenta ausente/comando errado virando "ok" quebraria a lei 7 do gate por dentro do
@@ -135,12 +135,12 @@ function execute(executable, args, extraOptions = {}) {
  */
 function evaluateResult(result) {
   if (result.error !== undefined) {
-    return { ok: false, motivo: `tool is missing or not executable — ${result.error.code ?? result.error.message}` };
+    return { ok: false, reason: `tool is missing or not executable — ${result.error.code ?? result.error.message}` };
   }
   if (result.status === null) {
-    return { ok: false, motivo: `process terminated by signal ${result.signal ?? '?'} — it did not finish` };
+    return { ok: false, reason: `process terminated by signal ${result.signal ?? '?'} — it did not finish` };
   }
-  return { ok: result.status === 0, motivo: result.status === 0 ? null : `exited with code ${result.status}` };
+  return { ok: result.status === 0, reason: result.status === 0 ? null : `exited with code ${result.status}` };
 }
 
 function report(label, ok, reason) {
@@ -151,7 +151,7 @@ function report(label, ok, reason) {
 
 /** Roda um passo já resolvido para um executável real (nunca um nome que precise de PATH+shell). */
 function run(label, executable, args, cwd = ROOT) {
-  const { ok, motivo: reason } = evaluateResult(execute(executable, args, { cwd }));
+  const { ok, reason } = evaluateResult(execute(executable, args, { cwd }));
   return report(label, ok, reason);
 }
 
@@ -252,13 +252,13 @@ function moduleIds() {
  */
 function runGate(result) {
   const validate = join('tools', 'gate', 'validate.mjs');
-  if (result.tudo) {
-    writeOut(`  (all) — ${result.motivo}\n`);
+  if (result.all) {
+    writeOut(`  (all) — ${result.reason}\n`);
     return run('gate (--all)', NODE, [validate, '--all']);
   }
 
-  const targets = [...result.modulos];
-  if (targets.length === 0 && result.raiz) {
+  const targets = [...result.modules];
+  if (targets.length === 0 && result.root) {
     const reference = firstModuleId();
     if (reference !== null) targets.push(reference);
     else writeOut('  (root) — project has no modules yet; root rules remain pending until the first module\n');
@@ -268,7 +268,7 @@ function runGate(result) {
     return true;
   }
 
-  writeOut(`  affected module(s): ${targets.join(', ')}${result.raiz ? ' + (root)' : ''}\n`);
+  writeOut(`  affected module(s): ${targets.join(', ')}${result.root ? ' + (root)' : ''}\n`);
   return targets.every((id) => run(`gate: ${id}`, NODE, [validate, id]));
 }
 
@@ -329,7 +329,7 @@ function pythonModuleTypesAndTests(id) {
 function prePush() {
   const ref = upstreamRef();
   const result = ref === null
-    ? { tudo: true, motivo: 'no upstream (@{u}) — first push of this branch; checking all modules' }
+    ? { all: true, reason: 'no upstream (@{u}) — first push of this branch; checking all modules' }
     : computeAffectedOf(lines(git(['diff', '--name-only', '--no-renames', ref])));
 
   writeOut('[pre-push] types and tests for affected modules\n');
@@ -345,9 +345,9 @@ function prePush() {
   // sem nada errado no molde. `create-module.mjs`/`create-project.mjs` já tratam `_template` como não
   // sendo um pacote publicável pelo mesmo motivo — aqui é a mesma exclusão, não uma nova regra.
   const withoutTemplate = (id) => !id.startsWith('_');
-  const targets = (result.tudo ? moduleIds() : [...result.modulos]).filter(withoutTemplate);
-  const coversRoot = result.tudo || result.raiz;
-  if (result.tudo) writeOut(`  (all) — ${result.motivo}\n`);
+  const targets = (result.all ? moduleIds() : [...result.modules]).filter(withoutTemplate);
+  const coversRoot = result.all || result.root;
+  if (result.all) writeOut(`  (all) — ${result.reason}\n`);
   else writeOut(`  affected module(s): ${targets.join(', ') || '(none)'}${coversRoot ? ' + (root)' : ''}\n`);
 
   const steps = [];
@@ -399,7 +399,7 @@ function evaluateResultCases() {
  * false` para `true` em `executar()`, este caso passa a FALHAR (ver relatório da correção).
  */
 function hostileTargetCase() {
-  const hostile = 'x&echo INJETADO';
+  const hostile = 'x&echo INJECTED';
   const result = execute(NODE, ['-e', 'process.stdout.write(process.argv[1] ?? "")', hostile], {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',

@@ -8,137 +8,181 @@ O que NAO se cobra, de proposito: que o `caminho` exista. O `audit_base` roda em
 maquinas, onde os sistemas nao estao clonados ao lado da base — exigir o caminho reprovaria o mapa
 inteiro em todo lugar menos aqui. Os caminhos sao relativos a raiz desta base, com `/`.
 
-Nucleo x casca, o padrao das irmas (`manifestos.py` e o molde de forma): `divergencias` e pura —
-recebe o mapa ja lido, nunca toca `fs` — e e o que o autoteste de `audit_base.py` prova com fixtures
-em memoria. `auditar_mapa` e a casca fina que le o disco.
+Nucleo x casca, o padrao das irmas (`manifests.py` e o molde de forma): `divergences` e pura —
+recebe o mapa ja lido, nunca toca `fs` — e e o que o selftest de `audit_base.py` prova com fixtures
+em memoria. `audit_map` e a casca fina que le o disco.
 """
 
 import json
 import os
 import re
 
-ARQUIVO = "mapa.json"
+FILE = "mapa.json"
+
+# Chaves e valores que o `mapa.json` usava antes da lei de idioma (ADR-023): lidos so para dar a dica
+# da migracao e para o leitor de sistemas aceitar o mapa antigo. UM mapa antigo->novo, centralizado.
+LEGACY_FIELDS = {
+    "sistemas": "systems", "nome": "name", "caminho": "path", "raiz_git": "git_root",
+    "tipo": "kind", "situacao": "lifecycle", "binding": "bindings", "status_base": "status_commit",
+}
+LEGACY_VALUES = {
+    "ativo": "active", "adocao-posterior": "later-adoption", "desatualizado": "outdated",
+    "pendente": "pending", "atualizado": "updated",
+}
+LEGACY_BY_NEW = {new: old for old, new in LEGACY_FIELDS.items()}
 
 # Campo -> tipos aceitos (`None` = o campo pode ser nulo: sistema ainda sem remoto ou sem git).
 # `bindings` e lista (projeto modular pode ser poliglota); `[]` = nao se aplica ou nao da para saber.
-CAMPOS = {
+FIELDS = {
     "id": (str,),
-    "nome": (str,),
-    "caminho": (str,),
+    "name": (str,),
+    "path": (str,),
     "repo": (str, type(None)),
-    "raiz_git": (str, type(None)),
-    "tipo": (str,),
+    "git_root": (str, type(None)),
+    "kind": (str,),
     "modular": (bool,),
     "bindings": (list,),
-    "situacao": (str,),
+    "lifecycle": (str,),
     "status": (str,),
-    "status_base": (str, type(None)),
+    "status_commit": (str, type(None)),
 }
-VALORES = {
-    "tipo": ("app", "site"),
-    "situacao": ("ativo", "adocao-posterior"),
-    "status": ("desatualizado", "pendente", "atualizado"),
+VALUES = {
+    "kind": ("app", "site"),
+    "lifecycle": ("active", "later-adoption"),
+    "status": ("outdated", "pending", "updated"),
 }
 BINDINGS = ("typescript", "javascript", "python")
-COMMIT_CURTO = re.compile(r"^[0-9a-f]{7,40}$")
-ID_KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+SHORT_COMMIT = re.compile(r"^[0-9a-f]{7,40}$")
+KEBAB_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 DRIVE = re.compile(r"^[A-Za-z]:")
 
 
-def _caminho_relativo_com_barra(valor: str) -> bool:
-    return "\\" not in valor and not valor.startswith("/") and not DRIVE.match(valor)
+def _relative_path_with_slash(value: str) -> bool:
+    return "\\" not in value and not value.startswith("/") and not DRIVE.match(value)
 
 
-def _checar_campos(rotulo: str, sistema: dict) -> list:
-    achados = []
-    for campo, tipos in CAMPOS.items():
-        if campo not in sistema:
-            achados.append(f"{rotulo}: falta o campo '{campo}'")
-        elif type(sistema[campo]) not in tipos:
-            achados.append(
-                f"{rotulo}: '{campo}' com tipo {type(sistema[campo]).__name__}"
+def _check_fields(label: str, system: dict) -> list:
+    findings = []
+    for field, types in FIELDS.items():
+        if field not in system:
+            if LEGACY_BY_NEW.get(field) in system:
+                continue  # o campo antigo presente e acusado por _check_legacy
+            findings.append(f"{label}: missing field '{field}'")
+        elif type(system[field]) not in types:
+            findings.append(
+                f"{label}: '{field}' with type {type(system[field]).__name__}"
             )
-    return achados
+    return findings
 
 
-def _checar_bindings(rotulo: str, sistema: dict) -> list:
-    achados = []
-    if "binding" in sistema:
-        achados.append(f"{rotulo}: campo antigo 'binding'; use 'bindings' (lista)")
-    bindings = sistema.get("bindings")
+def _check_legacy(label: str, system: dict) -> list:
+    return [
+        f"{label}: legacy field '{old}'; use '{new}'"
+        for old, new in LEGACY_FIELDS.items()
+        if old in system
+    ]
+
+
+def _check_bindings(label: str, system: dict) -> list:
+    findings = []
+    bindings = system.get("bindings")
     if not isinstance(bindings, list):
-        return achados
-    fora = [b for b in bindings if b not in BINDINGS]
-    if fora:
-        achados.append(f"{rotulo}: bindings {fora} fora de {BINDINGS}")
+        return findings
+    outside = [b for b in bindings if b not in BINDINGS]
+    if outside:
+        findings.append(f"{label}: bindings {outside} outside {BINDINGS}")
     if len(set(map(str, bindings))) != len(bindings):
-        achados.append(f"{rotulo}: bindings {bindings} com valor repetido")
-    return achados
+        findings.append(f"{label}: bindings {bindings} with duplicate value")
+    return findings
 
 
-def _checar_valores(rotulo: str, sistema: dict) -> list:
-    achados = []
-    for campo, aceitos in VALORES.items():
-        if campo in sistema and sistema[campo] not in aceitos:
-            achados.append(
-                f"{rotulo}: '{campo}' = {sistema[campo]!r} fora de {aceitos}"
+def _check_values(label: str, system: dict) -> list:
+    findings = []
+    for field, accepted in VALUES.items():
+        if field in system and system[field] not in accepted:
+            legacy = LEGACY_VALUES.get(system[field])
+            hint = f" (legacy value; use '{legacy}')" if legacy else ""
+            findings.append(
+                f"{label}: '{field}' = {system[field]!r} outside {accepted}{hint}"
             )
-    if isinstance(sistema.get("id"), str) and not ID_KEBAB.match(sistema["id"]):
-        achados.append(f"{rotulo}: id '{sistema['id']}' fora de kebab-case")
-    base = sistema.get("status_base")
-    if isinstance(base, str) and not COMMIT_CURTO.match(base):
-        achados.append(f"{rotulo}: status_base '{base}' — use um commit da base (7 a 40 hexadecimais) ou null")
-    for campo in ("caminho", "raiz_git"):
-        valor = sistema.get(campo)
-        if isinstance(valor, str) and not _caminho_relativo_com_barra(valor):
-            achados.append(
-                f"{rotulo}: '{campo}' = '{valor}' — use caminho relativo a raiz da base, com /"
+    if isinstance(system.get("id"), str) and not KEBAB_ID.match(system["id"]):
+        findings.append(f"{label}: id '{system['id']}' outside kebab-case")
+    base = system.get("status_commit")
+    if isinstance(base, str) and not SHORT_COMMIT.match(base):
+        findings.append(f"{label}: status_commit '{base}' — use a base commit (7 to 40 hexadecimals) or null")
+    for field in ("path", "git_root"):
+        value = system.get(field)
+        if isinstance(value, str) and not _relative_path_with_slash(value):
+            findings.append(
+                f"{label}: '{field}' = '{value}' — use a path relative to the base root, with /"
             )
-    return achados
+    return findings
 
 
-def _repetidos(sistemas: list, campo: str) -> list:
-    vistos, achados = set(), []
-    for sistema in sistemas:
-        valor = sistema.get(campo) if isinstance(sistema, dict) else None
-        if valor in vistos:
-            achados.append(f"{ARQUIVO}: {campo} '{valor}' repetido")
-        if valor is not None:
-            vistos.add(valor)
-    return achados
+def _duplicates(systems: list, field: str) -> list:
+    seen, findings = set(), []
+    for system in systems:
+        value = system.get(field) if isinstance(system, dict) else None
+        if value in seen:
+            findings.append(f"{FILE}: {field} '{value}' duplicate")
+        if value is not None:
+            seen.add(value)
+    return findings
 
 
-def divergencias(mapa: dict) -> list:
+def systems_of(map_data) -> list:
+    """Os sistemas do mapa ja lido; aceita tambem a chave antiga `sistemas` (ver LEGACY_FIELDS).
+    Lista vazia se o mapa nao tem a lista."""
+    if not isinstance(map_data, dict):
+        return []
+    for key in ("systems", "sistemas"):
+        if isinstance(map_data.get(key), list):
+            return map_data[key]
+    return []
+
+
+def system_name(system: dict):
+    """O `name` do sistema; aceita tambem a chave antiga `nome`. `None` se nao houver."""
+    return system.get("name", system.get("nome"))
+
+
+def divergences(map_data: dict) -> list:
     """Nucleo: os problemas de schema do mapa ja lido (`dict`)."""
-    if not isinstance(mapa, dict) or not isinstance(mapa.get("sistemas"), list):
-        return [f"{ARQUIVO}: falta a lista 'sistemas'"]
-    achados = []
-    for indice, sistema in enumerate(mapa["sistemas"]):
-        rotulo = f"{ARQUIVO} sistemas[{indice}]"
-        if not isinstance(sistema, dict):
-            achados.append(f"{rotulo}: nao e um objeto")
+    if not isinstance(map_data, dict) or not isinstance(map_data.get("systems"), list):
+        legacy = isinstance(map_data, dict) and isinstance(map_data.get("sistemas"), list)
+        if not legacy:
+            return [f"{FILE}: missing the 'systems' list"]
+        return [f"{FILE}: legacy field 'sistemas'; use 'systems'"] + divergences(
+            {"systems": map_data["sistemas"]}
+        )
+    findings = []
+    for index, system in enumerate(map_data["systems"]):
+        label = f"{FILE} systems[{index}]"
+        if not isinstance(system, dict):
+            findings.append(f"{label}: is not an object")
             continue
-        rotulo += f" ({sistema.get('id', '?')})"
-        achados += (
-            _checar_campos(rotulo, sistema)
-            + _checar_valores(rotulo, sistema)
-            + _checar_bindings(rotulo, sistema)
+        label += f" ({system.get('id', '?')})"
+        findings += (
+            _check_fields(label, system)
+            + _check_legacy(label, system)
+            + _check_values(label, system)
+            + _check_bindings(label, system)
         )
     return (
-        achados
-        + _repetidos(mapa["sistemas"], "id")
-        + _repetidos(mapa["sistemas"], "caminho")
+        findings
+        + _duplicates(map_data["systems"], "id")
+        + _duplicates(map_data["systems"], "path")
     )
 
 
-def auditar_mapa(base_dir: str) -> list:
-    """Casca: le o `mapa.json` da raiz da base e devolve os achados de `divergencias`."""
-    caminho = os.path.join(base_dir, ARQUIVO)
-    if not os.path.isfile(caminho):
-        return [f"{ARQUIVO}: ausente na raiz da base"]
+def audit_map(base_dir: str) -> list:
+    """Casca: le o `mapa.json` da raiz da base e devolve os achados de `divergences`."""
+    path = os.path.join(base_dir, FILE)
+    if not os.path.isfile(path):
+        return [f"{FILE}: missing at the base root"]
     try:
-        with open(caminho, encoding="utf-8") as arquivo:
-            mapa = json.load(arquivo)
-    except (OSError, json.JSONDecodeError) as erro:
-        return [f"{ARQUIVO}: ilegivel ({erro})"]
-    return divergencias(mapa)
+        with open(path, encoding="utf-8") as file:
+            map_data = json.load(file)
+    except (OSError, json.JSONDecodeError) as error:
+        return [f"{FILE}: unreadable ({error})"]
+    return divergences(map_data)

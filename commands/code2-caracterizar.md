@@ -14,8 +14,10 @@ A lógica é da skill `code-adequacao` (`references/caracterizacao.md`) + `test-
 
 ## Passos
 
-1. **Ler o backlog** — abra `.sarak/audit/backlog-<data>.json` (o mais recente, ou o do `$1`). Selecione os
-   módulos com `cobertura: sem-testes` ou `parcial` e as tarefas com `precisaCaracterizacao: true`.
+1. **Ler o backlog** — abra `.sarak/audit/backlog-<date>.json` (o mais recente, ou o do `$1`). Selecione os
+   módulos com `coverage: untested` ou `partial` e as tarefas com `needsCharacterization: true`.
+   (Backlog antigo com chaves em português — `cobertura`, `precisaCaracterizacao`… — é aceito na leitura; a tabela de
+   equivalência está em `code-diagnostico/references/backlog-format.md` §Compatibilidade de leitura.)
 
 2. **HITL leve (escopo)** — liste os módulos a cobrir e confirme o escopo. Aditivo → sem HITL pesado.
 
@@ -26,7 +28,7 @@ A lógica é da skill `code-adequacao` (`references/caracterizacao.md`) + `test-
    - Ferramenta da stack via `test-unitario/references/ferramentas.md`; testes em `tests/` do módulo.
    - **Rode verde.** Verde = rede montada.
 
-4. **Atualizar o backlog** — nas tarefas agora cobertas: `cobertura → ok|parcial`, `precisaCaracterizacao → false`.
+4. **Atualizar o backlog** — nas tarefas agora cobertas: `coverage → ok|partial`, `needsCharacterization → false` (grave as chaves novas, mesmo ao atualizar backlog antigo).
    (Assim a Fase 2 sabe que a rede existe.)
 
 5. **Reportar** — módulos cobertos, **cobertura antes/depois** (o gate `test-cobertura` se beneficia), e os

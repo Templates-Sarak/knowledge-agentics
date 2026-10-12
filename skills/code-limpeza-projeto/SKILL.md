@@ -1,6 +1,6 @@
 ---
 name: code-limpeza-projeto
-description: Higieniza um projeto para produção — remove arquivos órfãos, código morto, backups e deps não usadas, e sanitiza segredos, sempre com HITL e Grep antes de deletar (detector = scripts/detectar_lixo.py). Use APENAS quando pedirem limpeza/faxina de projeto. NÃO acione proativamente.
+description: Higieniza um projeto para produção — remove arquivos órfãos, código morto, backups e deps não usadas, e sanitiza segredos, sempre com HITL e Grep antes de deletar (detector = scripts/detect_junk.py). Use APENAS quando pedirem limpeza/faxina de projeto. NÃO acione proativamente.
 ---
 
 # Skill: Limpeza de Projeto (Pré-Produção)
@@ -25,7 +25,7 @@ deixando a base **Production Ready**. É **mutativa e destrutiva** → toda remo
 ## Workflow
 Três fases em ordem; **nada é removido sem o HITL da fase**. Detalhe em `references/workflow.md`.
 
-1. **Levantamento determinístico** — rode `python scripts/detectar_lixo.py --raiz <projeto>` (saída JSON: arquivos de lixo, marcadores `TODO`/`console.log`, arquivos grandes). É o ponto de partida factual.
+1. **Levantamento determinístico** — rode `python scripts/detect_junk.py --root <projeto>` (saída JSON: arquivos de lixo, marcadores `TODO`/`console.log`, arquivos grandes). É o ponto de partida factual.
 2. **Fase 1 — estrutural/espacial** — audite os maiores arquivos (`Bash` `ls -lhS` ou equivalente), localize pastas órfãs/backup (`old/`, `backup/`, `legacy/`) e temporários (`*.log`, `temp/`) com `Glob`, e prepare a atualização do `.gitignore`. **HITL:** Top-10 + órfãos + proposta de ignore → "⚠️ Confirma a remoção estrutural?".
 3. **Fase 2 — analítica/segurança** — rode o linter/`depcheck` se houver (imports e deps mortas); busque segredos com `Grep` (`API_KEY`, `SECRET`, `PASSWORD`, `DATABASE_URL`, `.env`/`.pem` commitados); remova código comentado sem nota. **HITL:** segredos (mascarados) + deps a remover + código morto → "⚠️ Confirma a sanitização?".
 4. **Fase 3 — verificação** — rode o build (`npm run build`/`go build`/etc.) e a suíte de testes para garantir que nada essencial saiu. **Vermelho = reverta** a remoção correspondente.
@@ -41,7 +41,7 @@ Três fases em ordem; **nada é removido sem o HITL da fase**. Detalhe em `refer
 - **NÃO** saia do escopo: adequar ao padrão é da `code-adequacao`; diagnosticar é da `code-diagnostico`.
 
 ## Checklist "pronta"
-- [ ] `detectar_lixo.py` rodado e a saída triada (lixo, marcadores, grandes)?
+- [ ] `detect_junk.py` rodado e a saída triada (lixo, marcadores, grandes)?
 - [ ] Top-10 maiores auditados; órfãos/backups/temporários removidos só após HITL?
 - [ ] `.gitignore` atualizado para cobrir os padrões de lixo encontrados?
 - [ ] Segredos identificados e sanitizados (mascarados no relatório; movidos p/ `.env`)?
@@ -52,5 +52,5 @@ Três fases em ordem; **nada é removido sem o HITL da fase**. Detalhe em `refer
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/workflow.md` — as 3 fases detalhadas, passo a passo, com os HITL.
-- `scripts/detectar_lixo.py` + `scripts/config.json` — detector determinístico (padrões/limites no config, zero hardcoded).
+- `scripts/detect_junk.py` + `scripts/config.json` — detector determinístico (padrões/limites no config, zero hardcoded).
 - `assets/checklist_limpeza.md` — template do relatório/auditoria de limpeza.

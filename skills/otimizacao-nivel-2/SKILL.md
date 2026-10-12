@@ -12,7 +12,7 @@ velocidade** de forma deliberada. Toda concessão é **perceptível** pelo usuá
 nada é sacrificado sem autorização explícita item a item. Mutativa.
 
 > Medição e a escada de níveis estão em `references/diagnostico-performance.md` (mora em `otimizacao-nivel-1`;
-> rode o `auditar_assets.py` de lá). Cobre **frontend e backend**. Princípios globais em `padrao-escrita`.
+> rode o `audit_assets.py` de lá). Cobre **frontend e backend**. Princípios globais em `padrao-escrita`.
 > Pré-requisito: ter passado pelo `otimizacao-nivel-1` e ainda não bater as metas.
 
 ## Quando usar
@@ -23,7 +23,7 @@ nada é sacrificado sem autorização explícita item a item. Mutativa.
 ## Workflow
 Trate **uma página/rota por vez**. Cada concessão é uma decisão do usuário, não sua.
 
-1. **Medir baseline** — `references/diagnostico-performance.md` (Lighthouse + `auditar_assets.py` do `otimizacao-nivel-1`). Registre LCP/CLS/INP/TBT e bundle, e o que já foi feito no Nível 1.
+1. **Medir baseline** — `references/diagnostico-performance.md` (Lighthouse + `audit_assets.py` do `otimizacao-nivel-1`). Registre LCP/CLS/INP/TBT e bundle, e o que já foi feito no Nível 1.
 2. **Auditar concessões** — liste candidatos a sacrifício:
    - **Frontend:** libs de animação pesadas (`framer-motion`, `gsap`), imagens de alta resolução reduzíveis, UI "premium" (sombras/gradientes dinâmicos), scripts 3rd-party não essenciais (chat, analytics granular, mapas, vídeos embed).
    - **Backend:** **cache agressivo com staleness** (servir dado levemente desatualizado), **denormalização** (duplicar p/ evitar JOIN/computação cara), **consistência eventual** (processar async em vez de síncrono), **desligar/limitar feature cara** (relatório pesado, busca ampla), reduzir precisão (amostragem/aproximação).
@@ -51,5 +51,5 @@ Trate **uma página/rota por vez**. Cada concessão é uma decisão do usuário,
 
 ## Referências (Camada 3 — leia sob demanda)
 - `../otimizacao-nivel-1/references/diagnostico-performance.md` — medição compartilhada (CWV, como medir, escada).
-- `../otimizacao-nivel-1/scripts/auditar_assets.py` — auditoria de assets/bundle (compartilhada).
+- `../otimizacao-nivel-1/scripts/audit_assets.py` — auditoria de assets/bundle (compartilhada).
 - `assets/plano_concessoes.md` — template da tabela de concessões (HITL decisivo).

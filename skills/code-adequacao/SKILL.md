@@ -34,9 +34,9 @@ Trate **um item por vez** (um módulo; dentro dele, arquivo a arquivo). Não ava
 > Antes/depois por dimensão de violação em `references/examples.md`.
 
 > **Em escala:** a campanha de adequação é orquestrada pelo command `/code3-adequar` (roteia cada tarefa pelo
-> `risco`: baixo/médio → agente `code-adequador`; alto → thread principal com HITL), com a **rede de testes
+> `risk`: `low`/`medium` → agente `code-adequador`; `high` → thread principal com HITL), com a **rede de testes
 > construída antes** por `/code2-caracterizar`, **reconciliação entre ondas** reusando o agente `code-auditor`, e
-> o **log append-only** em `.sarak/adequacao_update.md` (template em `assets/`). Esta skill é a **lógica por item**.
+> o **log append-only** em `.sarak/adequation_update.md` (template em `assets/`). Esta skill é a **lógica por item**.
 
 ## Regras e limites
 - **NUNCA** refatore sem rede de testes — sem suíte, escreva caracterização **antes** (passo 3).
@@ -58,4 +58,4 @@ Trate **um item por vez** (um módulo; dentro dele, arquivo a arquivo). Não ava
 ## Referências (Camada 3 — leia sob demanda)
 - `references/caracterizacao.md` — como escrever testes de caracterização quando não há suíte.
 - `references/examples.md` — adequação de item bem-feita (com rede) × malfeita (refatorou às cegas).
-- `assets/adequacao_update.template.md` — log append-only da campanha (persiste em `.sarak/adequacao_update.md`).
+- `assets/adequacao_update.template.md` — log append-only da campanha (persiste em `.sarak/adequation_update.md`).

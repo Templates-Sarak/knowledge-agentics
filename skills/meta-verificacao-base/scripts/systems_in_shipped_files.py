@@ -9,30 +9,34 @@ A lista de sistemas vem do `mapa.json` lido em runtime, nunca escrita aqui: sist
 passa a ser coberto sem tocar este arquivo. Documentacao que NAO viaja (`skills/**`, `README.md` da
 base, o `mapa.json`) pode citar sistema a vontade — e la que o detalhe por sistema mora.
 
-Nucleo x casca, o padrao das irmas (`mapa.py`, `manifestos.py`): `divergencias` e pura — recebe os
-textos e os sistemas ja lidos, nunca toca `fs` — e e o que o autoteste de `audit_base.py` prova com
-fixtures. `auditar_sistemas_nos_viajantes` e a casca fina que le o disco.
+Nucleo x casca, o padrao das irmas (`map_schema.py`, `manifests.py`): `divergences` e pura — recebe os
+textos e os sistemas ja lidos, nunca toca `fs` — e e o que o selftest de `audit_base.py` prova com
+fixtures. `audit_systems_in_shipped_files` e a casca fina que le o disco.
 """
 
 import json
 import os
 import re
 
-ARQUIVO_DO_MAPA = "mapa.json"
+from map_schema import system_name, systems_of
+
+MAP_FILE = "mapa.json"
 
 # Pastas da base cujo conteudo e copiado para o projeto gerado. Relativas a raiz da base, com `/`.
-# `specs/_estrutura_base*/` sao os moldes do fluxo SDD; as tres de `_estrutura_modulos/` sao o que o
-# `create-project` instala (doutrina -> specs/arquitetura, bindings, tools).
-VIAJANTES = (
+# `specs/_estrutura_base*/` sao os moldes do fluxo SDD; as de `_estrutura_modulos/` sao o que o
+# `create-project` instala (doutrina -> specs/arquitetura, bindings, tools) mais `tests/`, cujo
+# vocabulario e fixtures alimentam o gate no projeto gerado.
+SHIPPED = (
     "specs/_estrutura_modulos/doutrina",
     "specs/_estrutura_modulos/bindings",
     "specs/_estrutura_modulos/tools",
+    "specs/_estrutura_modulos/tests",
     "specs/_estrutura_base",
     "specs/_estrutura_base_site",
 )
 
-PASTAS_IGNORADAS = {"node_modules", ".git", "__pycache__", ".venv", ".ruff_cache"}
-EXTENSOES_BINARIAS = {
+IGNORED_DIRS = {"node_modules", ".git", "__pycache__", ".venv", ".ruff_cache"}
+BINARY_EXTENSIONS = {
     ".png",
     ".jpg",
     ".jpeg",
@@ -46,81 +50,85 @@ EXTENSOES_BINARIAS = {
 }
 
 
-def _padrao_do_termo(termo: str):
+def _term_pattern(term: str):
     """O termo inteiro, sem colar em outra palavra nem em outro id kebab-case (`recorta-site` nao casa
     dentro de `recorta-site-novo`). Maiusculas e minusculas valem igual: o nome cita-se de qualquer jeito."""
-    return re.compile(r"(?<![\w-])" + re.escape(termo) + r"(?![\w-])", re.IGNORECASE)
+    return re.compile(r"(?<![\w-])" + re.escape(term) + r"(?![\w-])", re.IGNORECASE)
 
 
-def termos_dos_sistemas(mapa: dict) -> list:
-    """`[(termo, id_do_sistema)]` — o `id` e o `nome` de cada sistema. Vazio se o mapa nao tem sistemas."""
-    termos = []
-    for sistema in mapa.get("sistemas", []):
-        if not isinstance(sistema, dict) or not isinstance(sistema.get("id"), str):
+def system_terms(map_data: dict) -> list:
+    """`[(termo, system_id)]` — o `id` e o `nome` de cada sistema. Vazio se o mapa nao tem sistemas."""
+    terms = []
+    for system in systems_of(map_data):
+        if not isinstance(system, dict) or not isinstance(system.get("id"), str):
             continue
-        for campo in ("id", "nome"):
-            valor = sistema.get(campo)
-            if isinstance(valor, str) and valor.strip():
-                termos.append((valor.strip(), sistema["id"]))
-    return termos
+        for value in (system.get("id"), system_name(system)):
+            if isinstance(value, str) and value.strip():
+                terms.append((value.strip(), system["id"]))
+    return terms
 
 
-def divergencias(textos_por_arquivo: dict, termos: list) -> list:
-    """Uma mensagem por (arquivo, linha, termo). `textos_por_arquivo` e `{caminho_relativo: texto}`."""
-    padroes = [
-        (termo, id_do_sistema, _padrao_do_termo(termo))
-        for termo, id_do_sistema in termos
+def divergences(texts_by_file: dict, terms: list) -> list:
+    """Uma mensagem por (arquivo, linha, termo). `texts_by_file` e `{caminho_relativo: texto}`."""
+    patterns = [
+        (term, system_id, _term_pattern(term))
+        for term, system_id in terms
     ]
-    achados = []
-    for arquivo, texto in textos_por_arquivo.items():
-        for numero, linha in enumerate(texto.split("\n"), start=1):
-            for termo, id_do_sistema, padrao in padroes:
-                if padrao.search(linha):
-                    achados.append(
-                        f"{arquivo}:{numero}: cita o sistema '{id_do_sistema}' (\"{termo}\") - "
-                        "arquivo que viaja para o projeto gerado nao nomeia sistema"
+    findings = []
+    for file, text in texts_by_file.items():
+        for number, line in enumerate(text.split("\n"), start=1):
+            for term, system_id, pattern in patterns:
+                if pattern.search(line):
+                    findings.append(
+                        f"{file}:{number}: cites the system '{system_id}' (\"{term}\") - "
+                        "a file that ships to the generated project does not name a system"
                     )
-    return achados
+    return findings
 
 
-def _ler_mapa(base_dir: str):
-    caminho = os.path.join(base_dir, ARQUIVO_DO_MAPA)
+def is_shipped(rel_path: str) -> bool:
+    """Nucleo: o caminho relativo a raiz da base (com `/`) esta sob uma pasta que viaja?"""
+    return any(rel_path == d or rel_path.startswith(d + "/") for d in SHIPPED)
+
+
+def _read_map(base_dir: str):
+    path = os.path.join(base_dir, MAP_FILE)
     try:
-        with open(caminho, "r", encoding="utf-8") as arquivo:
-            return json.load(arquivo), None
-    except (OSError, ValueError) as erro:
-        return None, f"{ARQUIVO_DO_MAPA}: nao foi possivel ler ({erro})"
+        with open(path, "r", encoding="utf-8") as file:
+            return json.load(file), None
+    except (OSError, ValueError) as error:
+        return None, f"{MAP_FILE}: could not be read ({error})"
 
 
-def _textos_dos_viajantes(base_dir: str) -> dict:
-    textos = {}
-    for pasta in VIAJANTES:
-        raiz = os.path.join(base_dir, *pasta.split("/"))
-        for atual, subpastas, arquivos in os.walk(raiz):
-            subpastas[:] = [p for p in subpastas if p not in PASTAS_IGNORADAS]
-            for nome in arquivos:
-                if os.path.splitext(nome)[1].lower() in EXTENSOES_BINARIAS:
+def _shipped_texts(base_dir: str) -> dict:
+    texts = {}
+    for directory in SHIPPED:
+        root = os.path.join(base_dir, *directory.split("/"))
+        for current, subdirs, files in os.walk(root):
+            subdirs[:] = [p for p in subdirs if p not in IGNORED_DIRS]
+            for name in files:
+                if os.path.splitext(name)[1].lower() in BINARY_EXTENSIONS:
                     continue
-                caminho = os.path.join(atual, nome)
+                path = os.path.join(current, name)
                 try:
-                    with open(caminho, "r", encoding="utf-8") as arquivo:
-                        textos[
-                            os.path.relpath(caminho, base_dir).replace(os.sep, "/")
-                        ] = arquivo.read()
+                    with open(path, "r", encoding="utf-8") as file:
+                        texts[
+                            os.path.relpath(path, base_dir).replace(os.sep, "/")
+                        ] = file.read()
                 except (OSError, UnicodeDecodeError):
                     continue
-    return textos
+    return texts
 
 
-def auditar_sistemas_nos_viajantes(base_dir: str) -> list:
+def audit_systems_in_shipped_files(base_dir: str) -> list:
     """Casca: le o mapa e os arquivos que viajam. Fail-closed: mapa ilegivel ou sem sistema nenhum e
     achado — uma guarda que nao tem o que procurar passaria em silencio, o defeito que ela evita."""
-    mapa, erro = _ler_mapa(base_dir)
-    if erro is not None:
-        return [f"{erro} - a guarda de sistemas nos arquivos que viajam nao rodou"]
-    termos = termos_dos_sistemas(mapa)
-    if not termos:
+    map_data, error = _read_map(base_dir)
+    if error is not None:
+        return [f"{error} - the guard of systems in shipped files did not run"]
+    terms = system_terms(map_data)
+    if not terms:
         return [
-            f"{ARQUIVO_DO_MAPA}: nenhum sistema com id/nome - a guarda nao tem o que procurar"
+            f"{MAP_FILE}: no system with id/name - the guard has nothing to look for"
         ]
-    return divergencias(_textos_dos_viajantes(base_dir), termos)
+    return divergences(_shipped_texts(base_dir), terms)

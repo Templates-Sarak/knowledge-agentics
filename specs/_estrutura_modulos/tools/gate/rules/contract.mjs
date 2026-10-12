@@ -398,7 +398,7 @@ function regionKeys(file, region, seen) {
     const pair = `${file.rel}|${finding[1]}`;
     if (seen.has(pair)) continue;
     seen.add(pair);
-    keys.push({ key: finding[1], arquivo: file.rel });
+    keys.push({ key: finding[1], file: file.rel });
   }
   return keys;
 }
@@ -434,7 +434,7 @@ function projectionKeys(ctx) {
 function projectionDivergences(projected, declared) {
   const seen = new Set();
   const findings = [];
-  for (const { key, arquivo: file } of projected) {
+  for (const { key, file } of projected) {
     // Chave fora de camelCase e do `payload-camelcase`. Ela JAMAIS estara no contrato (que fala
     // camelCase por regra), entao acusa-la aqui daria dois erros para um defeito so — e o segundo
     // apontaria para o conserto errado ("declare no contrato" em vez de "renomeie o campo").
@@ -513,8 +513,8 @@ function mapperExportedFunctions(file) {
 export default [
   {
     id: 'contract',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const spec = specOf(ctx);
       if (spec === null) return ['contract/openapi.yaml is missing'];
@@ -530,8 +530,8 @@ export default [
   },
   {
     id: 'route-naming',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const spec = specOf(ctx);
       // Spec ausente OU ilegivel e do `contract`; acusar aqui tambem so duplica o mesmo defeito.
@@ -548,8 +548,8 @@ export default [
   },
   {
     id: 'synchronized-contract',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const spec = specOf(ctx);
       // Spec ausente OU com `paths:` ilegivel e do `contract`. Sem este silencio, uma spec que o
@@ -580,8 +580,8 @@ export default [
   },
   {
     id: 'contract-projection',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const spec = specOf(ctx);
       // Spec ausente OU com `paths:` ilegivel e do `contract`; acusar aqui so duplica o defeito.
@@ -606,11 +606,11 @@ export default [
   },
   {
     id: 'payload-camelcase',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
-      for (const { key, arquivo: file } of projectionKeys(ctx)) {
+      for (const { key, file } of projectionKeys(ctx)) {
         if (!/^[a-z][A-Za-z0-9]*$/.test(key)) {
           findings.push(`${file}: field "${key}" in the projection is not camelCase — the contract uses camelCase`);
         }
@@ -627,8 +627,8 @@ export default [
   },
   {
     id: 'sensitive-output',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const sensitive = ctx.manifest?.sensitiveFields ?? [];
       const spec = specOf(ctx);
@@ -641,14 +641,14 @@ export default [
   },
   {
     id: 'sensitive-in-output',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const sensitive = new Set(ctx.manifest?.sensitiveFields ?? []);
       if (sensitive.size === 0) return [];
       const findings = [];
 
-      for (const { key, arquivo: file } of projectionKeys(ctx)) {
+      for (const { key, file } of projectionKeys(ctx)) {
         if (sensitive.has(key)) {
           findings.push(`${file}: sensitive field "${key}" appears in the output projection — omit it or publish a masked value`);
         }
@@ -666,8 +666,8 @@ export default [
   },
   {
     id: 'mapper-naming',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -684,8 +684,8 @@ export default [
   },
   {
     id: 'exported-summary',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       // UMA direcao so, como `contract-projection`: `false` nao proibe nada. O modulo que nao entra
       // no dashboard pode ter `total` no `/summary` dele sem que isso seja defeito de coisa alguma.
@@ -706,8 +706,8 @@ export default [
   },
   {
     id: 'input-allowlist',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       // A simetrica da `raw-output`, na direcao da ENTRADA (02-contrato-e-dados §3.2: "allowlist de
       // campos — payload com campo desconhecido e rejeitado, nao ignorado").
@@ -739,8 +739,8 @@ export default [
   },
   {
     id: 'raw-output',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {

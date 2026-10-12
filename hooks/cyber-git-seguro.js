@@ -29,9 +29,9 @@ const isRealEnv = (f) => /(^|\/)\.env($|\.)/.test(f) && !/\.env\.example$/.test(
 const offenders = (isCommit ? list(["diff", "--cached", "--name-only"]) : list(["ls-files"])).filter(isRealEnv);
 if (offenders.length) {
   denyPreTool(
-    `.env prestes a ir para o GitHub: ${offenders.join(", ")}. ` +
-      `Adicione '.env' ao .gitignore e remova do controle com 'git rm --cached <arquivo>'. ` +
-      `Só o .env.example deve ser versionado.`
+    `.env about to go to GitHub: ${offenders.join(", ")}. ` +
+      `Add '.env' to .gitignore and untrack it with 'git rm --cached <file>'. ` +
+      `Only .env.example should be versioned.`
   );
 }
 
@@ -40,8 +40,8 @@ if (fs.existsSync(path.join(cwd, ".env"))) {
   const exampleTracked = list(["ls-files"]).some((f) => /(^|\/)\.env\.example$/.test(f));
   if (!exampleTracked) {
     denyPreTool(
-      "Há um .env local, mas não existe .env.example versionado. " +
-        "Crie um .env.example com as mesmas chaves (valores vazios/fake) e versione — é o template que o time precisa."
+      "There is a local .env, but no versioned .env.example. " +
+        "Create a .env.example with the same keys (empty/fake values) and version it — it is the template the team needs."
     );
   }
 }
@@ -49,8 +49,8 @@ if (fs.existsSync(path.join(cwd, ".env"))) {
 // 3) Segredos (fail-closed).
 if (!commandExists("gitleaks")) {
   denyPreTool(
-    "gitleaks não instalado — verificação de segredos fail-closed bloqueou o envio. " +
-      "Instale: https://github.com/gitleaks/gitleaks (ex.: scoop/choco install gitleaks)."
+    "gitleaks not installed — the fail-closed secret check blocked the push. " +
+      "Install: https://github.com/gitleaks/gitleaks (e.g. scoop/choco install gitleaks)."
   );
 }
 let gl;
@@ -67,7 +67,7 @@ if (isCommit) {
 }
 if (gl.status === 1) {
   const out = `${gl.stdout || ""}${gl.stderr || ""}`.trim().slice(0, 1500);
-  denyPreTool(`gitleaks detectou possível segredo:\n${out}\nMova o valor para .env (gitignored) antes de enviar.`);
+  denyPreTool(`gitleaks detected a possible secret:\n${out}\nMove the value to .env (gitignored) before pushing.`);
 }
 
 allow();

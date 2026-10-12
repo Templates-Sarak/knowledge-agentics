@@ -22,7 +22,7 @@
 |---|---|---|---|
 | [hash] | [arquivo] | [ab12...yz] | [segredo real \| falso positivo] |
 
-> Fonte: `scan_historico.py` (+ cross-check, se usado).
+> Fonte: `scan_history.py` (+ cross-check, se usado).
 
 ## 4. Plano de remediação (ver references/remediacao.md)
 - [ ] Working tree: mover segredos vivos para `.env`/`process.env`.

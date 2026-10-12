@@ -58,13 +58,13 @@ function askPreTool(reason) {
  */
 function editedFiles(input) {
   const base = input?.cwd || process.cwd();
-  const legacyPath = input?.tool_input?.file_path;
-  if (typeof legacyPath === "string" && legacyPath) return [path.resolve(base, legacyPath)];
+  const claudePath = input?.tool_input?.file_path;
+  if (typeof claudePath === "string" && claudePath) return [path.resolve(base, claudePath)];
 
   const patch = input?.tool_input?.command;
   if (typeof patch !== "string") return [];
 
-  return [...new Set(arquivosDoPatch(patch).map((rel) => path.resolve(base, rel)))];
+  return [...new Set(patchFiles(patch).map((rel) => path.resolve(base, rel)))];
 }
 
 /**
@@ -72,16 +72,16 @@ function editedFiles(input) {
  * a regra é a gramática do patch, não o disco: `Add File` entra; `Update File` entra; um `Move to` logo
  * após um `Update File` troca a origem (que deixa de existir) pelo destino; `Delete File` não entra.
  */
-function arquivosDoPatch(patch) {
-  const finais = [];
-  let ultimoUpdate = -1;
-  for (const [, tipo, alvo] of patch.matchAll(/^\*\*\* (Add File|Update File|Delete File|Move to): (.+)$/gm)) {
-    const caminho = alvo.trim();
-    if (tipo === "Move to" && ultimoUpdate >= 0) finais[ultimoUpdate] = caminho;
-    if (tipo === "Add File" || tipo === "Update File") finais.push(caminho);
-    ultimoUpdate = tipo === "Update File" ? finais.length - 1 : -1;
+function patchFiles(patch) {
+  const finals = [];
+  let lastUpdate = -1;
+  for (const [, kind, target] of patch.matchAll(/^\*\*\* (Add File|Update File|Delete File|Move to): (.+)$/gm)) {
+    const filePath = target.trim();
+    if (kind === "Move to" && lastUpdate >= 0) finals[lastUpdate] = filePath;
+    if (kind === "Add File" || kind === "Update File") finals.push(filePath);
+    lastUpdate = kind === "Update File" ? finals.length - 1 : -1;
   }
-  return finais;
+  return finals;
 }
 
 /**
@@ -133,54 +133,88 @@ function emit(obj) {
  *
  * `CLAUDE_PROJECT_DIR` primeiro porque é o contrato do ambiente de hook do Claude Code e é
  * literalmente "o projeto em que o agente está" — o mesmo que `settings.template.json` já usa. Depois
- * o `cwd` do PAYLOAD (`cwdDoPayload`, opcional): no Codex não há `CLAUDE_PROJECT_DIR`, e o processo do
+ * o `cwd` do PAYLOAD (`payloadCwd`, opcional): no Codex não há `CLAUDE_PROJECT_DIR`, e o processo do
  * hook não nasce necessariamente na sessão — o payload é quem diz onde ela está. `process.cwd()` por
  * último, porque o hook pode ser invocado à mão, sem variável nem payload.
  */
-function projectRoot(cwdDoPayload) {
-  const partidas = [];
-  if (process.env.CLAUDE_PROJECT_DIR) partidas.push(process.env.CLAUDE_PROJECT_DIR);
-  if (cwdDoPayload) partidas.push(cwdDoPayload);
-  partidas.push(process.cwd());
-  for (const partida of partidas) {
-    let atual = path.resolve(partida);
-    for (let nivel = 0; nivel < 8; nivel += 1) {
-      if (fs.existsSync(path.join(atual, "config", "verification.json"))) return atual;
-      const pai = path.dirname(atual);
-      if (pai === atual) break;
-      atual = pai;
+function projectRoot(payloadCwd) {
+  const starts = [];
+  if (process.env.CLAUDE_PROJECT_DIR) starts.push(process.env.CLAUDE_PROJECT_DIR);
+  if (payloadCwd) starts.push(payloadCwd);
+  starts.push(process.cwd());
+  for (const start of starts) {
+    let current = path.resolve(start);
+    for (let level = 0; level < 8; level += 1) {
+      if (fs.existsSync(path.join(current, "config", "verification.json"))) return current;
+      const parent = path.dirname(current);
+      if (parent === current) break;
+      current = parent;
     }
   }
   return null;
 }
 
 /**
- * Traduz `config/verification.json` (vocabulário do TEMPLATE, em inglês desde a Onda 2b) para o
- * vocabulário interno dos hooks (permanece em português).
- *
- * Os dois arquivos falam línguas diferentes de propósito — o template nomeia BINDING
- * (`typescript`/`javascript`/`python`) e usa `quality`/`coverage`/`dependencies`/`languages`; os
- * hooks nomeiam ÁREA (`js`/`python`) e usam `qualidade`/`cobertura`/`dependencias`/`linguagens`,
- * porque `langOf` mapeia extensão para área. A ponte fica AQUI, num lugar só, e é o que permite os
- * quatro hooks consumirem `cfg` sem saber de onde a política veio.
- *
- * `typescript` e `javascript` colapsam na mesma área `js`: quem linta `.ts` e `.js` no projeto é o
- * mesmo eslint. `typescript` tem precedência quando os dois estão declarados.
+ * Vocabulário ANTIGO (português) das chaves de política → o atual (inglês). Projetos que já têm cópia ou
+ * override local de `hooks/config.json` podem trazer as chaves antigas; `normalizeLegacyKeys` as traduz
+ * num lugar só, e nenhum hook precisa saber que elas existiram.
  */
-function politicaDoProjeto(raiz) {
-  const bruto = JSON.parse(fs.readFileSync(path.join(raiz, "config", "verification.json"), "utf8"));
-  const linguagens = {};
-  const doJs = bruto.languages?.typescript ?? bruto.languages?.javascript;
-  if (doJs) linguagens.js = { linter: doJs.linter, formatter: doJs.formatter };
-  if (bruto.languages?.python) {
-    linguagens.python = { linter: bruto.languages.python.linter, formatter: bruto.languages.python.formatter };
+const LEGACY_KEYS = {
+  qualidade: "quality",
+  modo: "mode",
+  formatacao: "formatting",
+  ativo: "active",
+  escopo: "scope",
+  cobertura: "coverage",
+  minima: "minimum",
+  ferramentas: "tools",
+  dependencias: "dependencies",
+  severidadeMinima: "minimumSeverity",
+  linguagens: "languages",
+  formatador: "formatter",
+};
+
+/** Valores enumerados antigos (português) → atuais, por chave já traduzida. */
+const LEGACY_VALUES = {
+  scope: { conformes: "conforming", arquivo: "file" },
+};
+
+/** Núcleo: devolve a política com as chaves/valores antigos traduzidos. Pura; chave atual vence a antiga. */
+function normalizeLegacyKeys(raw) {
+  if (Array.isArray(raw) || raw === null || typeof raw !== "object") return raw;
+  const out = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const renamed = LEGACY_KEYS[key] ?? key;
+    if (renamed !== key && Object.hasOwn(raw, renamed)) continue;
+    const normalized = normalizeLegacyKeys(value);
+    out[renamed] = LEGACY_VALUES[renamed]?.[normalized] ?? normalized;
+  }
+  return out;
+}
+
+/**
+ * Lê `config/verification.json` (vocabulário do TEMPLATE, o mesmo dos hooks desde a Onda 5) e devolve a
+ * política no formato interno dos hooks.
+ *
+ * O único trabalho da ponte: o template nomeia BINDING (`typescript`/`javascript`/`python`) e os hooks
+ * nomeiam ÁREA (`js`/`python`), porque `langOf` mapeia extensão para área. `typescript` e `javascript`
+ * colapsam na mesma área `js` (quem linta `.ts` e `.js` no projeto é o mesmo eslint); `typescript` tem
+ * precedência quando os dois estão declarados.
+ */
+function projectPolicy(root) {
+  const raw = normalizeLegacyKeys(JSON.parse(fs.readFileSync(path.join(root, "config", "verification.json"), "utf8")));
+  const languages = {};
+  const forJs = raw.languages?.typescript ?? raw.languages?.javascript;
+  if (forJs) languages.js = { linter: forJs.linter, formatter: forJs.formatter };
+  if (raw.languages?.python) {
+    languages.python = { linter: raw.languages.python.linter, formatter: raw.languages.python.formatter };
   }
   return {
-    qualidade: bruto.quality,
-    formatacao: bruto.formatting,
-    cobertura: bruto.coverage,
-    dependencias: bruto.dependencies,
-    linguagens: Object.keys(linguagens).length > 0 ? linguagens : undefined,
+    quality: raw.quality,
+    formatting: raw.formatting,
+    coverage: raw.coverage,
+    dependencies: raw.dependencies,
+    languages: Object.keys(languages).length > 0 ? languages : undefined,
   };
 }
 
@@ -190,66 +224,66 @@ function politicaDoProjeto(raiz) {
  * DUAS fontes, e a ordem é a decisão: quando existe `config/verification.json` no projeto, a política
  * é a DELE — o repositório que os hooks protegem é quem diz como quer ser protegido. Só na ausência
  * dele vale o `config.json` da base, que é o caso da própria base e de projeto que não veio do
- * template.
+ * template. Em ambas, chaves no vocabulário antigo (português) são aceitas via `normalizeLegacyKeys`.
  *
- * `qualidade` tem `modo` e NADA MAIS. Nem `limiares` nem `proibir`: os limiares são LEI, com fonte única
- * em `ferramentas/gate/limiares.mjs`. O hook não carrega mais número nenhum — ele roda o linter do
+ * `quality` tem `mode` e NADA MAIS. Nem limiares nem lista de proibições: os limiares são LEI, com fonte
+ * única em `tools/gate/thresholds.mjs`. O hook não carrega mais número nenhum — ele roda o linter do
  * projeto com a config do projeto, que é derivada daquela fonte. Enquanto o número morava aqui, ele
- * VENCIA a config gerada, e o hook podia discordar do `npm run lint` do mesmo projeto. `proibir` saiu
- * pelo mesmo argumento com o sinal trocado: o gerador emite `no-console`/`no-empty`/`T20`/`E` sem ler
- * política nenhuma, então o campo nunca acrescentava cobertura — só escondia do agente um erro que o
- * lint acusava.
+ * VENCIA a config gerada, e o hook podia discordar do `npm run lint` do mesmo projeto. A lista de
+ * proibições saiu pelo mesmo argumento com o sinal trocado: o gerador emite `no-console`/`no-empty`/
+ * `T20`/`E` sem ler política nenhuma, então o campo nunca acrescentava cobertura — só escondia do agente
+ * um erro que o lint acusava.
  *
- * `cwdDoPayload` (opcional) é repassado ao `projectRoot`: a política vem do mesmo projeto que o hook
+ * `payloadCwd` (opcional) é repassado ao `projectRoot`: a política vem do mesmo projeto que o hook
  * inspeciona, não de onde o processo nasceu.
  */
-function loadConfig(cwdDoPayload) {
+function loadConfig(payloadCwd) {
   const defaults = {
-    qualidade: {
-      modo: "warn", // block | warn | off
+    quality: {
+      mode: "warn", // block | warn | off
     },
-    formatacao: { ativo: true, escopo: "conformes" }, // escopo: conformes | arquivo
-    cobertura: {
-      modo: "ask", // ask | block | warn | off
-      minima: 80,
-      ferramentas: { python: "pytest", js: "vitest", go: "go", java: "jacoco" },
+    formatting: { active: true, scope: "conforming" }, // scope: conforming | file
+    coverage: {
+      mode: "ask", // ask | block | warn | off
+      minimum: 80,
+      tools: { python: "pytest", js: "vitest", go: "go", java: "jacoco" },
     },
-    dependencias: {
-      modo: "warn", // block | warn | off
-      severidadeMinima: "high",
-      ferramentas: { node: "npm", python: "pip-audit", go: "govulncheck" },
+    dependencies: {
+      mode: "warn", // block | warn | off
+      minimumSeverity: "high",
+      tools: { node: "npm", python: "pip-audit", go: "govulncheck" },
     },
-    linguagens: {
+    languages: {
       python: { linter: "ruff", formatter: "ruff" },
       js: { linter: "eslint", formatter: "prettier" },
       go: { linter: "golangci-lint", formatter: "gofmt" },
       java: { linter: "checkstyle", formatter: "google-java-format" },
     },
   };
-  return mesclar(defaults, lerPolitica(cwdDoPayload));
+  return mergePolicy(defaults, readPolicy(payloadCwd));
 }
 
 /** A política crua, do projeto quando houver, da base quando não. Nunca lança. */
-function lerPolitica(cwdDoPayload) {
-  const raiz = projectRoot(cwdDoPayload);
+function readPolicy(payloadCwd) {
+  const root = projectRoot(payloadCwd);
   try {
-    if (raiz !== null) return politicaDoProjeto(raiz);
-    return JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
+    if (root !== null) return projectPolicy(root);
+    return normalizeLegacyKeys(JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8")));
   } catch {
     return {};
   }
 }
 
 /** Mescla a política crua sobre os defaults, um nível abaixo onde a forma é aninhada. */
-function mesclar(defaults, raw) {
+function mergePolicy(defaults, raw) {
   return {
-    qualidade: { ...defaults.qualidade, ...raw.qualidade },
-    formatacao: { ...defaults.formatacao, ...raw.formatacao },
-    cobertura: { ...defaults.cobertura, ...raw.cobertura,
-      ferramentas: { ...defaults.cobertura.ferramentas, ...(raw.cobertura?.ferramentas) } },
-    dependencias: { ...defaults.dependencias, ...raw.dependencias,
-      ferramentas: { ...defaults.dependencias.ferramentas, ...(raw.dependencias?.ferramentas) } },
-    linguagens: { ...defaults.linguagens, ...raw.linguagens },
+    quality: { ...defaults.quality, ...raw.quality },
+    formatting: { ...defaults.formatting, ...raw.formatting },
+    coverage: { ...defaults.coverage, ...raw.coverage,
+      tools: { ...defaults.coverage.tools, ...(raw.coverage?.tools) } },
+    dependencies: { ...defaults.dependencies, ...raw.dependencies,
+      tools: { ...defaults.dependencies.tools, ...(raw.dependencies?.tools) } },
+    languages: { ...defaults.languages, ...raw.languages },
   };
 }
 
@@ -263,94 +297,145 @@ function langOf(file) {
   return null;
 }
 
+/** Acumulador de casos do `--selftest`: `check(ok, name)` conta cada caso e guarda os que falham. */
+function newChecks() {
+  const failures = [];
+  let total = 0;
+  const check = (ok, name) => {
+    total += 1;
+    if (!ok) failures.push(name);
+  };
+  return { check, failures, count: () => total };
+}
+
 /** `editedFiles`: patch relativo resolvido contra o `cwd` do payload; absoluto e Claude intactos. */
-function autotesteEditedFiles(falhas) {
+function selftestEditedFiles(check) {
   const proj = path.resolve("/proj");
-  const arquivosCodex = editedFiles({
+  const codexFiles = editedFiles({
     cwd: proj,
     tool_input: { command: "*** Update File: src/a.ts\n*** Add File: tests/a.test.ts\n" },
   });
-  if (arquivosCodex.join(",") !== [path.resolve(proj, "src/a.ts"), path.resolve(proj, "tests/a.test.ts")].join(","))
-    falhas.push("editedFiles deveria resolver o patch do Codex contra o cwd do payload");
-  const absoluto = path.resolve("/outro/b.py");
-  if (editedFiles({ cwd: proj, tool_input: { command: `*** Add File: ${absoluto}\n` } }).join() !== absoluto)
-    falhas.push("editedFiles deveria deixar intacto um caminho absoluto no patch");
-  const doClaude = path.resolve("/proj/src/a.py");
-  if (editedFiles({ tool_input: { file_path: doClaude } }).join() !== doClaude)
-    falhas.push("editedFiles deveria preservar o file_path absoluto do Claude");
-  autotestePatchComDeleteEMove(falhas, proj);
+  check(
+    codexFiles.join(",") === [path.resolve(proj, "src/a.ts"), path.resolve(proj, "tests/a.test.ts")].join(","),
+    "editedFiles should resolve the Codex patch against the payload cwd",
+  );
+  const absolute = path.resolve("/other/b.py");
+  check(
+    editedFiles({ cwd: proj, tool_input: { command: `*** Add File: ${absolute}\n` } }).join() === absolute,
+    "editedFiles should leave an absolute path in the patch intact",
+  );
+  const fromClaude = path.resolve("/proj/src/a.py");
+  check(
+    editedFiles({ tool_input: { file_path: fromClaude } }).join() === fromClaude,
+    "editedFiles should preserve Claude's absolute file_path",
+  );
+  selftestPatchWithDeleteAndMove(check, proj);
 }
 
 /** `editedFiles` no patch do Codex: só o que existe DEPOIS da edição — Delete fora, Move pelo destino. */
-function autotestePatchComDeleteEMove(falhas, proj) {
-  const doPatch = (command) => editedFiles({ cwd: proj, tool_input: { command } }).join(",");
-  const em = (...rels) => rels.map((rel) => path.resolve(proj, rel)).join(",");
-  if (doPatch("*** Begin Patch\n*** Delete File: legado.py\n*** End Patch\n") !== "")
-    falhas.push("editedFiles deveria deixar de fora o arquivo de um Delete File");
-  if (doPatch("*** Update File: velho.py\n*** Move to: novo.py\n@@\n-a\n+b\n") !== em("novo.py"))
-    falhas.push("editedFiles deveria trocar a origem de um Update + Move to pelo destino");
-  const misto = "*** Begin Patch\n*** Add File: add.py\n+x\n*** Update File: mod.py\n@@\n-a\n+b\n"
-    + "*** Delete File: apagado.py\n*** Update File: velho.py\n*** Move to: dir/renomeado.py\n@@\n-c\n+d\n"
+function selftestPatchWithDeleteAndMove(check, proj) {
+  const fromPatch = (command) => editedFiles({ cwd: proj, tool_input: { command } }).join(",");
+  const resolved = (...rels) => rels.map((rel) => path.resolve(proj, rel)).join(",");
+  check(
+    fromPatch("*** Begin Patch\n*** Delete File: legacy.py\n*** End Patch\n") === "",
+    "editedFiles should leave out the file of a Delete File",
+  );
+  check(
+    fromPatch("*** Update File: old.py\n*** Move to: new.py\n@@\n-a\n+b\n") === resolved("new.py"),
+    "editedFiles should swap the source of an Update + Move to for the destination",
+  );
+  const mixed = "*** Begin Patch\n*** Add File: add.py\n+x\n*** Update File: mod.py\n@@\n-a\n+b\n"
+    + "*** Delete File: deleted.py\n*** Update File: old.py\n*** Move to: dir/renamed.py\n@@\n-c\n+d\n"
     + "*** Update File: mod.py\n@@\n-e\n+f\n*** End Patch\n";
-  if (doPatch(misto) !== em("add.py", "mod.py", "dir/renomeado.py"))
-    falhas.push("editedFiles deveria, num patch misto, trazer Add + Update + destino do Move, sem Delete e sem duplicata");
+  check(
+    fromPatch(mixed) === resolved("add.py", "mod.py", "dir/renamed.py"),
+    "editedFiles should, in a mixed patch, bring Add + Update + Move destination, without Delete or duplicates",
+  );
 }
 
 /** `projectRoot(cwd)`: acha a raiz partindo do `cwd` do payload, sem `CLAUDE_PROJECT_DIR` mascarando. */
-function autotesteProjectRoot(falhas) {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sarak-raiz-"));
-  const salvo = process.env.CLAUDE_PROJECT_DIR;
+function selftestProjectRoot(check) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sarak-root-"));
+  const saved = process.env.CLAUDE_PROJECT_DIR;
   delete process.env.CLAUDE_PROJECT_DIR;
   try {
     fs.mkdirSync(path.join(tmp, "config"));
     fs.writeFileSync(path.join(tmp, "config", "verification.json"), "{}");
     const sub = path.join(tmp, "src", "mod");
     fs.mkdirSync(sub, { recursive: true });
-    if (projectRoot(sub) !== path.resolve(tmp))
-      falhas.push("projectRoot deveria achar a raiz partindo do cwd do payload");
+    check(projectRoot(sub) === path.resolve(tmp), "projectRoot should find the root starting from the payload cwd");
   } finally {
-    if (salvo !== undefined) process.env.CLAUDE_PROJECT_DIR = salvo;
+    if (saved !== undefined) process.env.CLAUDE_PROJECT_DIR = saved;
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 }
 
-function autoteste() {
-  const falhas = [];
-  if (langOf("a.py") !== "python") falhas.push("langOf deveria reconhecer .py como python");
-  if (langOf("a.ts") !== "js") falhas.push("langOf deveria colapsar .ts na area js");
-  if (langOf("A.TSX") !== "js") falhas.push("langOf deveria ser case-insensitive (.TSX)");
-  if (langOf("a.go") !== "go") falhas.push("langOf deveria reconhecer .go como go");
-  if (langOf("a.rb") !== null) falhas.push("langOf deveria devolver null para extensao sem area");
-  autotesteEditedFiles(falhas);
-  autotesteProjectRoot(falhas);
-
+/** `mergePolicy`: o valor do projeto vence, o default não sobrescrito fica, `tools` mescla por chave. */
+function selftestMergePolicy(check) {
   const defaults = {
-    qualidade: { modo: "warn" },
-    cobertura: { modo: "ask", ferramentas: { python: "pytest" } },
-    dependencias: { modo: "warn", ferramentas: { node: "npm" } },
-    linguagens: { python: { linter: "ruff" } },
+    quality: { mode: "warn" },
+    coverage: { mode: "ask", tools: { python: "pytest" } },
+    dependencies: { mode: "warn", tools: { node: "npm" } },
+    languages: { python: { linter: "ruff" } },
   };
-  const sobrepondoModo = mesclar(defaults, { qualidade: { modo: "block" } });
-  if (sobrepondoModo.qualidade.modo !== "block")
-    falhas.push("mesclar deveria sobrescrever qualidade.modo com o valor do projeto");
-  if (sobrepondoModo.cobertura.modo !== "ask")
-    falhas.push("mesclar deveria preservar default nao sobrescrito (cobertura.modo)");
+  const overridingMode = mergePolicy(defaults, { quality: { mode: "block" } });
+  check(overridingMode.quality.mode === "block", "mergePolicy should override quality.mode with the project value");
+  check(overridingMode.coverage.mode === "ask", "mergePolicy should preserve a non-overridden default (coverage.mode)");
+  const overridingTool = mergePolicy(defaults, { dependencies: { tools: { python: "pip-audit" } } });
+  check(
+    overridingTool.dependencies.tools.node === "npm" && overridingTool.dependencies.tools.python === "pip-audit",
+    "mergePolicy should merge tools by key, not replace the whole object",
+  );
+}
 
-  const sobrepondoFerramenta = mesclar(defaults, { dependencias: { ferramentas: { python: "pip-audit" } } });
-  if (sobrepondoFerramenta.dependencias.ferramentas.node !== "npm"
-    || sobrepondoFerramenta.dependencias.ferramentas.python !== "pip-audit")
-    falhas.push("mesclar deveria mesclar ferramentas por chave, nao substituir o objeto inteiro");
+/** `normalizeLegacyKeys`: política com chaves antigas (português) chega ao hook já no vocabulário atual. */
+function selftestLegacyKeys(check) {
+  const legacy = normalizeLegacyKeys({
+    qualidade: { modo: "block" },
+    formatacao: { ativo: false, escopo: "arquivo" },
+    cobertura: { minima: 70, ferramentas: { python: "pytest" } },
+    dependencias: { severidadeMinima: "critical" },
+    linguagens: { python: { linter: "ruff" } },
+  });
+  check(legacy.quality?.mode === "block", "normalizeLegacyKeys should translate the legacy quality key to quality.mode");
+  check(
+    legacy.formatting?.active === false && legacy.formatting?.scope === "file",
+    "normalizeLegacyKeys should translate the legacy formatting keys and scope value to formatting.active/scope",
+  );
+  check(
+    legacy.coverage?.minimum === 70 && legacy.coverage?.tools?.python === "pytest",
+    "normalizeLegacyKeys should translate the legacy coverage keys to coverage.minimum/tools",
+  );
+  check(
+    legacy.dependencies?.minimumSeverity === "critical" && legacy.languages?.python?.linter === "ruff",
+    "normalizeLegacyKeys should translate the legacy dependencies and languages keys",
+  );
+  const current = normalizeLegacyKeys({ quality: { mode: "off" }, qualidade: { modo: "block" } });
+  check(current.quality.mode === "off", "normalizeLegacyKeys: the current key should win over the legacy one");
+}
 
-  for (const falha of falhas) process.stdout.write(`  falha  ${falha}\n`);
-  if (falhas.length > 0) {
-    process.stdout.write(`autoteste (_lib.js): ${falhas.length} falha(s)\n`);
+function selftest() {
+  const { check, failures, count } = newChecks();
+  check(langOf("a.py") === "python", "langOf should recognize .py as python");
+  check(langOf("a.ts") === "js", "langOf should collapse .ts into the js area");
+  check(langOf("A.TSX") === "js", "langOf should be case-insensitive (.TSX)");
+  check(langOf("a.go") === "go", "langOf should recognize .go as go");
+  check(langOf("a.rb") === null, "langOf should return null for an extension without an area");
+  selftestEditedFiles(check);
+  selftestProjectRoot(check);
+  selftestMergePolicy(check);
+  selftestLegacyKeys(check);
+
+  for (const failure of failures) process.stdout.write(`  failure  ${failure}\n`);
+  if (failures.length > 0) {
+    process.stdout.write(`selftest (_lib.js): ${failures.length} failure(s)\n`);
     return 1;
   }
-  process.stdout.write("autoteste (_lib.js): 15/15 ok\n");
+  process.stdout.write(`selftest (_lib.js): ${count()}/${count()} ok\n`);
   return 0;
 }
 
-if (require.main === module && process.argv.includes("--selftest")) process.exit(autoteste());
+if (require.main === module && process.argv.includes("--selftest")) process.exit(selftest());
 
 module.exports = {
   readInput,
@@ -367,5 +452,6 @@ module.exports = {
   allow,
   loadConfig,
   langOf,
-  mesclar,
+  mergePolicy,
+  normalizeLegacyKeys,
 };

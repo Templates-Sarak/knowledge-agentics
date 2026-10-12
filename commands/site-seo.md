@@ -1,5 +1,5 @@
 ---
-description: Torna um site encontrável e indexável via o fluxo da skill site-seo — SEO técnico + GEO local + AEO/GSO (robots/sitemap, JSON-LD, metadados/OG, NAP, conteúdo answer-ready), com auditoria (auditar_seo.py) e HITL. Mutativo. Use apenas em sites.
+description: Torna um site encontrável e indexável via o fluxo da skill site-seo — SEO técnico + GEO local + AEO/GSO (robots/sitemap, JSON-LD, metadados/OG, NAP, conteúdo answer-ready), com auditoria (audit_seo.py) e HITL. Mutativo. Use apenas em sites.
 argument-hint: [alvo]
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash
 ---
@@ -12,7 +12,7 @@ Dispara o fluxo da skill **`site-seo`** para tornar o site encontrável por busc
 resposta de IA. Premissa: web React/Next. É **mutativo** → HITL antes de aplicar.
 
 ## Passos (skill `site-seo`)
-1. **Auditar** — `python skills/site-seo/scripts/auditar_seo.py --raiz $1` (robots/sitemap, title/meta, OG/Twitter, JSON-LD, canonical, `lang`, `alt`). Performance (CWV) é da `otimizacao-nivel-1`.
+1. **Auditar** — `python skills/site-seo/scripts/audit_seo.py --root $1` (robots/sitemap, title/meta, OG/Twitter, JSON-LD, canonical, `lang`, `alt`). Performance (CWV) é da `otimizacao-nivel-1`.
 2. **Robots & sitemap** — `robots.txt` (libera geral, bloqueia admin, aponta o sitemap) + `sitemap.xml` (só URLs 200).
 3. **JSON-LD** — injete de `assets/`: `Organization`, `LocalBusiness` (NAP + geo + horários), `BreadcrumbList` (rotas da `site-organizacao`), `FAQPage`.
 4. **Metadados & canonical** — `<title>`/meta description únicos por página, `canonical`, `<html lang>`.

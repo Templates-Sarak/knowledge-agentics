@@ -2,7 +2,7 @@
 
 **Projeto:** [NOME]
 **Data:** [AAAA-MM-DD]
-**Fonte automática:** `detectar_lixo.py` (arquivos de lixo, marcadores, arquivos grandes)
+**Fonte automática:** `detect_junk.py` (arquivos de lixo, marcadores, arquivos grandes)
 
 ---
 

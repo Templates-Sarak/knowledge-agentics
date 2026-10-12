@@ -9,7 +9,11 @@
  *   node tests/measure-language.mjs --list                  + cada ocorrência (arquivo:linha, nome, termos)
  *   node tests/measure-language.mjs --full                  com --list, o texto inteiro do literal (sem corte em 80)
  *   node tests/measure-language.mjs --json                  saída de máquina
- *   node tests/measure-language.mjs --scope bindings,tools  restringe os escopos (bindings|tools|tests)
+ *   node tests/measure-language.mjs --scope bindings,tools  restringe os escopos (bindings|tools|tests|skills|hooks|plugin)
+ *   node tests/measure-language.mjs --check                 exit 1 se restar ocorrência NÃO declarada (language-exceptions.json)
+ *   node tests/measure-language.mjs --base-root <dir>       outra raiz da base (a que contém skills/, hooks/, plugin/)
+ *   node tests/measure-language.mjs --only <prefixo,...>    só os arquivos cujo caminho relativo começa com o prefixo
+ *   node tests/measure-language.mjs --exceptions <a.json,..> outros arquivos de exceção (padrão: language-exceptions.json)
  *   node tests/measure-language.mjs --unknown               palavras fora do vocabulário (para revisão)
  *   node tests/measure-language.mjs --root <dir>            outro template (a raiz que contém bindings/, tools/, tests/)
  *   node tests/measure-language.mjs --selftest              prova o núcleo com fixtures em memória
@@ -42,7 +46,12 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = join(HERE, '..');
 const VOCABULARY_FILE = join(HERE, 'language-vocabulary.json');
-const SCOPES = ['bindings', 'tools', 'tests'];
+const DEFAULT_BASE_ROOT = join(HERE, '..', '..', '..');
+const EXCEPTIONS_FILE = join(HERE, 'language-exceptions.json');
+/** Escopos do template (relativos a `--root`) e da base (relativos a `--base-root`; globs `*` por pasta). */
+const TEMPLATE_SCOPES = ['bindings', 'tools', 'tests'];
+const BASE_SCOPES = { skills: 'skills/*/scripts', hooks: 'hooks', plugin: 'plugin' };
+const SCOPES = [...TEMPLATE_SCOPES, ...Object.keys(BASE_SCOPES)];
 const SKIP_DIRS = new Set(['node_modules', '.git', '__pycache__', '.venv', 'dist', 'generated']);
 const CODE_EXT = ['.mjs', '.js', '.ts', '.tsx', '.jsx'];
 const DATA_EXT = ['.sql', '.yml', '.yaml', '.json', '.toml'];
@@ -52,7 +61,7 @@ function isDocKey(key) {
   return key.startsWith('//') || DOC_ONLY_KEYS.has(key);
 }
 /** O medidor não se mede: o vocabulário e as fixtures do próprio selftest são português de propósito. */
-const SELF_DATA = new Set(['language-vocabulary.json', 'measure-language.mjs']);
+const SELF_DATA = new Set(['language-vocabulary.json', 'language-exceptions.json', 'measure-language.mjs']);
 let nameWidth = 80;
 const GENERATED_COMMENT = /^\s*(#|\/\/|--|\/\*|\*)/;
 
@@ -244,7 +253,8 @@ export function uniqueDeclarations(items) {
 /** Agrega ocorrências já classificadas (`terms` não vazio = português) por categoria e raiz. */
 export function summarize(occurrences, vocabulary) {
   const total = occurrences.length;
-  const matched = occurrences.filter((o) => o.terms.length > 0);
+  const declared = occurrences.filter((o) => o.terms.length > 0 && o.declared !== undefined).length;
+  const matched = occurrences.filter((o) => o.terms.length > 0 && o.declared === undefined);
   const byRoot = new Map();
   for (const occurrence of matched) {
     for (const root of new Set(occurrence.terms.map((t) => vocabulary.rootOf(t)))) {
@@ -252,7 +262,35 @@ export function summarize(occurrences, vocabulary) {
     }
   }
   const roots = [...byRoot.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  return { total, matched: matched.length, roots };
+  return { total, matched: matched.length, declared, roots };
+}
+
+/**
+ * Exceção declarada: `{ file, category?, names?, contains?, reason }`. `file` é o caminho relativo (termina em
+ * `/` = pasta inteira); `category` é decl|member|string|data (omitida = todas); `names` casa o nome exato
+ * (decl/member/data) e `contains` um trecho do literal (string). Sem `names` nem `contains` = o arquivo todo
+ * naquela categoria. `reason` é obrigatório: a exceção é revisável, nunca silenciosa.
+ */
+export function findException(exceptions, category, item) {
+  return exceptions.find((e) => {
+    if (e.category !== undefined && e.category !== category) return false;
+    const fileOk = e.file.endsWith('/') ? item.file.startsWith(e.file) : item.file === e.file;
+    if (!fileOk) return false;
+    if (e.names !== undefined) return e.names.includes(item.name);
+    if (e.contains !== undefined) return e.contains.some((part) => item.name.includes(part));
+    return true;
+  });
+}
+
+/** Marca (`declared = reason`) as ocorrências cobertas por exceção; as demais seguem como achado. */
+export function applyExceptions(buckets, exceptions) {
+  for (const [category, items] of Object.entries(buckets)) {
+    for (const item of items) {
+      if (item.terms.length === 0) continue;
+      const hit = findException(exceptions, category, item);
+      if (hit !== undefined) item.declared = hit.reason;
+    }
+  }
 }
 
 // ================================================================================================
@@ -338,8 +376,17 @@ function walkFiles(dir, exts, out = []) {
   return out;
 }
 
-function scopeDirs(root, scope) {
-  return [join(root, scope)];
+// Pastas de um escopo: o padrão da base (skills, asterisco, scripts) expande o asterisco pelas pastas de skill.
+function scopeDirs(root, baseRoot, scope) {
+  if (!(scope in BASE_SCOPES)) return [join(root, scope)];
+  const pattern = BASE_SCOPES[scope];
+  if (!pattern.includes('*')) return [join(baseRoot, pattern)];
+  const [head, tail] = pattern.split('*');
+  const parent = join(baseRoot, head);
+  if (!existsSync(parent)) return [];
+  return readdirSync(parent, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(parent, entry.name, tail));
 }
 
 /** Lê o arquivo e devolve `{ kind, items }` de ocorrências brutas (sem classificar). */
@@ -377,18 +424,37 @@ function classify(extracted, file, vocabulary) {
   return { decl: uniqueDeclarations(decl), member: uniqueDeclarations(member), string, data };
 }
 
-function measureScope(root, scope, vocabulary, ts) {
-  const files = walkFiles(scopeDirs(root, scope)[0], [...CODE_EXT, '.py', ...DATA_EXT]);
+function loadExceptions(files) {
+  const list = [];
+  for (const file of files) {
+    if (!existsSync(file)) continue;
+    const raw = JSON.parse(readFileSync(file, 'utf8'));
+    const entries = raw.exceptions ?? [];
+    const bad = entries.filter((e) => typeof e.file !== 'string' || typeof e.reason !== 'string' || e.reason.trim() === '');
+    if (bad.length > 0) throw new Error(`${file}: ${bad.length} entries without file/reason`);
+    list.push(...entries);
+  }
+  return list;
+}
+
+function measureScope(root, baseRoot, scope, vocabulary, ts, exceptions, only = []) {
+  const exts = [...CODE_EXT, '.py', ...DATA_EXT];
+  const anchor = scope in BASE_SCOPES ? baseRoot : root;
+  const relOf = (path) => relative(anchor, path).split('\\').join('/');
+  const files = scopeDirs(root, baseRoot, scope)
+    .flatMap((dir) => walkFiles(dir, exts))
+    .filter((path) => only.length === 0 || only.some((prefix) => relOf(path).startsWith(prefix)));
   const pyFiles = files.filter((f) => f.endsWith('.py'));
   const pythonByFile = pyFiles.length > 0 ? runPython(pyFiles) : {};
   if (pythonByFile === null) throw new Error('python was not found on PATH (needed to read .py with ast)');
   const buckets = { decl: [], member: [], string: [], data: [] };
   for (const path of files) {
-    const rel = relative(root, path).split('\\').join('/');
+    const rel = relOf(path);
     const extracted = extractFile(ts, path, pythonByFile);
     const classified = classify(extracted, rel, vocabulary);
     for (const key of Object.keys(buckets)) buckets[key].push(...classified[key]);
   }
+  applyExceptions(buckets, exceptions);
   return { scope, files: files.length, buckets };
 }
 
@@ -404,7 +470,8 @@ function printScope(result, vocabulary, options) {
     const items = result.buckets[key];
     const summary = summarize(items, vocabulary);
     const pct = summary.total === 0 ? '0.0' : ((100 * summary.matched) / summary.total).toFixed(1);
-    out.push(`  ${label}: ${summary.matched} Portuguese of ${summary.total} (${pct}%)`);
+    const declared = summary.declared > 0 ? `, ${summary.declared} declared` : '';
+    out.push(`  ${label}: ${summary.matched} Portuguese of ${summary.total} (${pct}%)${declared}`);
     if (result.scope === 'bindings') {
       for (const binding of ['typescript', 'javascript', 'python']) {
         const sub = items.filter((i) => bindingOf(i.file) === binding);
@@ -415,7 +482,7 @@ function printScope(result, vocabulary, options) {
     const top = summary.roots.slice(0, options.top);
     if (top.length > 0) out.push(`      by root: ${top.map(([r, n]) => `${r} ${n}`).join(', ')}${summary.roots.length > top.length ? `, … (+${summary.roots.length - top.length} roots)` : ''}`);
     if (options.list) {
-      for (const item of items.filter((i) => i.terms.length > 0)) {
+      for (const item of items.filter((i) => i.terms.length > 0 && i.declared === undefined)) {
         out.push(`      ${item.file}:${item.line}  ${item.role}  ${JSON.stringify(item.name)}  [${[...new Set(item.terms)].join(', ')}]`);
       }
     }
@@ -438,15 +505,32 @@ function unknownWords(results, vocabulary, keys = ['decl', 'data']) {
   return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
+/** `--check`: exit 1 se sobrou ocorrência em português que nenhuma exceção declarada cobre. */
+function checkExit(results, vocabulary) {
+  let undeclared = 0;
+  for (const result of results) {
+    for (const items of Object.values(result.buckets)) undeclared += summarize(items, vocabulary).matched;
+  }
+  process.stdout.write(`\nundeclared Portuguese occurrences: ${undeclared}\n`);
+  return undeclared === 0 ? 0 : 1;
+}
+
 function parseArgs(argv) {
-  const options = { list: false, json: false, unknown: false, unknownKeys: ['decl', 'data'], root: DEFAULT_ROOT, scopes: SCOPES, top: 40 };
+  const options = {
+    list: false, json: false, unknown: false, check: false, unknownKeys: ['decl', 'data'],
+    root: DEFAULT_ROOT, baseRoot: DEFAULT_BASE_ROOT, scopes: SCOPES, top: 40, only: [], exceptionFiles: [EXCEPTIONS_FILE],
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--list') options.list = true;
     else if (arg === '--json') options.json = true;
     else if (arg === '--unknown') options.unknown = true;
     else if (arg === '--unknown-strings') { options.unknown = true; options.unknownKeys = ['string']; }
+    else if (arg === '--check') options.check = true;
+    else if (arg === '--only') { options.only = argv[i + 1].split(','); i += 1; }
+    else if (arg === '--exceptions') { options.exceptionFiles = argv[i + 1].split(','); i += 1; }
     else if (arg === '--root') { options.root = argv[i + 1]; i += 1; }
+    else if (arg === '--base-root') { options.baseRoot = argv[i + 1]; i += 1; }
     else if (arg === '--scope') { options.scopes = argv[i + 1].split(','); i += 1; }
     else if (arg === '--top') { options.top = Number(argv[i + 1]); i += 1; }
     else if (arg === '--full') nameWidth = Number.POSITIVE_INFINITY;
@@ -458,7 +542,9 @@ function runMeasure(argv) {
   const options = parseArgs(argv);
   const vocabulary = buildVocabulary(JSON.parse(readFileSync(VOCABULARY_FILE, 'utf8')));
   const ts = loadTypeScript();
-  const results = options.scopes.map((scope) => measureScope(options.root, scope, vocabulary, ts));
+  const exceptions = loadExceptions(options.exceptionFiles);
+  const results = options.scopes.map((scope) => measureScope(
+    options.root, options.baseRoot, scope, vocabulary, ts, exceptions, options.only));
   if (options.unknown) {
     for (const [word, count] of unknownWords(results, vocabulary, options.unknownKeys)) process.stdout.write(`${word} ${count}\n`);
     return 0;
@@ -469,7 +555,7 @@ function runMeasure(argv) {
       files: r.files,
       categories: Object.fromEntries(Object.entries(r.buckets).map(([key, items]) => {
         const s = summarize(items, vocabulary);
-        return [key, { total: s.total, portuguese: s.matched, roots: Object.fromEntries(s.roots) }];
+        return [key, { total: s.total, portuguese: s.matched, declared: s.declared, roots: Object.fromEntries(s.roots) }];
       })),
     }));
     process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
@@ -477,7 +563,7 @@ function runMeasure(argv) {
   }
   process.stdout.write(`vocabulary: ${vocabulary.terms.size} terms, ${vocabulary.cognates.size} cognates excluded\n`);
   for (const result of results) process.stdout.write(`${printScope(result, vocabulary, options)}\n`);
-  return 0;
+  return options.check ? checkExit(results, vocabulary) : 0;
 }
 
 // ================================================================================================
@@ -552,6 +638,15 @@ function selfTestCases() {
       const origins = new Set(Object.keys(raw.origins));
       const cognates = new Set(raw.cognates);
       return Object.entries(raw.terms).every(([term, origin]) => origins.has(origin) && !cognates.has(term) && term === fold(term));
+    } },
+    { name: 'applyExceptions: a declared occurrence leaves the count, an undeclared one stays', fn: () => {
+      const buckets = { string: [
+        { file: 'skills/x/a.py', name: '## Decisão', terms: ['decisao'] },
+        { file: 'skills/x/a.py', name: 'mensagem solta', terms: ['mensagem'] },
+      ] };
+      applyExceptions(buckets, [{ file: 'skills/x/', category: 'string', contains: ['## Decis'], reason: 'doc heading' }]);
+      const s = summarize(buckets.string, vocabulary);
+      return s.matched === 1 && s.declared === 1 && buckets.string[0].declared === 'doc heading';
     } },
     { name: 'python extraction: ast declarations, docstring and dict keys', fn: () => {
       const tmp = join(mkdtempSync(join(tmpdir(), 'measure-language-')), 'fixture.py');

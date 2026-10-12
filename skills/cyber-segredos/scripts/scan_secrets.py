@@ -1,15 +1,15 @@
 """
-scan_segredos.py — Varre arquivos do projeto (working tree) em busca de segredos hardcoded.
+scan_secrets.py — Varre arquivos do projeto (working tree) em busca de segredos hardcoded.
 
 Lê o CATÁLOGO CANÔNICO de padrões (config.json desta skill) — a mesma fonte que os scanners do git
 (git-verificacao-commit, git-especialista-repositorio) referenciam.
 
 Uso:
-    python scan_segredos.py --raiz . [--config config.json]
-    # para o bundle do front, aponte para a pasta de build: --raiz dist  (ou build/.next)
+    python scan_secrets.py --root . [--config config.json]
+    # para o bundle do front, aponte para a pasta de build: --root dist  (ou build/.next)
 
 Retorno:
-    JSON {total, achados:[{arquivo, linha, tipo, trecho_mascarado}]}. Segredos sempre mascarados.
+    JSON {total, findings:[{file, line, kind, masked_snippet}]}. Segredos sempre mascarados.
 
 Regras (padrao-escrita): zero hardcoded (padrões no config.json), nenhum segredo exposto no output,
 responsabilidade única (apenas detecta — a correção/rotação é decisão com HITL na skill).
@@ -22,71 +22,71 @@ import sys
 from pathlib import Path
 
 
-def carregar_config(caminho: Path) -> dict:
-    return json.loads(caminho.read_text(encoding="utf-8"))
+def load_config(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def listar_arquivos(raiz: Path, extensoes, ignorar_dirs, tam_max):
-    for caminho in raiz.rglob("*"):
-        if not caminho.is_file():
+def list_files(root: Path, extensions, ignore_dirs, max_size):
+    for path in root.rglob("*"):
+        if not path.is_file():
             continue
-        if any(parte in ignorar_dirs for parte in caminho.parts):
+        if any(part in ignore_dirs for part in path.parts):
             continue
         if (
-            extensoes
-            and caminho.suffix not in extensoes
-            and caminho.name not in extensoes
+            extensions
+            and path.suffix not in extensions
+            and path.name not in extensions
         ):
             continue
         try:
-            if tam_max and caminho.stat().st_size > tam_max:
+            if max_size and path.stat().st_size > max_size:
                 continue
         except OSError:
             continue
-        yield caminho
+        yield path
 
 
-def mascarar(trecho: str) -> str:
-    trecho = trecho.strip()
-    return "****" if len(trecho) <= 8 else f"{trecho[:4]}...{trecho[-2:]}"
+def mask(snippet: str) -> str:
+    snippet = snippet.strip()
+    return "****" if len(snippet) <= 8 else f"{snippet[:4]}...{snippet[-2:]}"
 
 
-def achados_do_texto(nome_arquivo: str, texto: str, padroes) -> list:
-    """Núcleo: acha os `padroes` (lista de `(tipo, regex_compilado)`) no TEXTO já lido, linha
+def findings_from_text(file_name: str, text: str, patterns) -> list:
+    """Núcleo: acha os `patterns` (lista de `(kind, compiled_regex)`) no TEXTO já lido, linha
     a linha. Puro — não toca `fs`. É o que o `--selftest` prova com fixtures em memória."""
-    achados = []
-    for num, linha in enumerate(texto.splitlines(), start=1):
-        for tipo, regex in padroes:
-            m = regex.search(linha)
+    findings = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        for kind, regex in patterns:
+            m = regex.search(line)
             if m:
-                achados.append(
+                findings.append(
                     {
-                        "arquivo": nome_arquivo,
-                        "linha": num,
-                        "tipo": tipo,
-                        "trecho_mascarado": mascarar(m.group(0)),
+                        "file": file_name,
+                        "line": number,
+                        "kind": kind,
+                        "masked_snippet": mask(m.group(0)),
                     }
                 )
                 break
-    return achados
+    return findings
 
 
-def escanear(caminho: Path, padroes) -> list:
+def scan_file(path: Path, patterns) -> list:
     """Casca: lê o arquivo do disco e delega ao núcleo."""
     try:
-        texto = caminho.read_text(encoding="utf-8", errors="ignore")
+        text = path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return []
-    return achados_do_texto(str(caminho), texto, padroes)
+    return findings_from_text(str(path), text, patterns)
 
 
-def autoteste() -> int:
+def selftest() -> int:
     """Núcleo puro contra fixtures em memória — nenhuma linha toca `fs`."""
-    falhas = []
-    padroes = [
+    failures = []
+    patterns = [
         ("AWS Access Key", re.compile(r"AKIA[0-9A-Z]{16}")),
         (
-            "Segredo atribuido",
+            "Assigned secret",
             re.compile(r"(?i)(api[_-]?key|secret|token)\s*[:=]\s*['\"][^'\"]{8,}['\"]"),
         ),
     ]
@@ -94,53 +94,53 @@ def autoteste() -> int:
     # Fixture montada por concatenacao, nao literal: o texto de ORIGEM deste arquivo nao pode
     # conter um segredo-formato contiguo, senao o proprio scan de vazamentos do audit_base.py
     # (que le este arquivo como QUALQUER OUTRO) acha um "vazamento" que e so dado de teste.
-    chave_aws = "AKIA" + "ABCDEFGHIJ12KLMN"
-    achados = achados_do_texto("app.py", f"aws_key = '{chave_aws}'\n", padroes)
-    if len(achados) != 1 or achados[0]["tipo"] != "AWS Access Key":
-        falhas.append("achados_do_texto deveria achar a AWS Access Key na linha 1")
+    aws_key = "AKIA" + "ABCDEFGHIJ12KLMN"
+    findings = findings_from_text("app.py", f"aws_key = '{aws_key}'\n", patterns)
+    if len(findings) != 1 or findings[0]["kind"] != "AWS Access Key":
+        failures.append("findings_from_text should find the AWS Access Key on line 1")
 
-    achados_limpo = achados_do_texto(
-        "app.py", "def soma(a, b):\n    return a + b\n", padroes
+    clean_findings = findings_from_text(
+        "app.py", "def add(a, b):\n    return a + b\n", patterns
     )
-    if achados_limpo != []:
-        falhas.append("achados_do_texto nao deveria achar nada em texto sem segredo")
+    if clean_findings != []:
+        failures.append("findings_from_text should find nothing in text without a secret")
 
-    valor_secreto = "valor-bem" + "-secreto-123"
-    multilinha = f"linha sem segredo\napi_key = '{valor_secreto}'\n"
-    achados_linha = achados_do_texto("cfg.py", multilinha, padroes)
-    if len(achados_linha) != 1 or achados_linha[0]["linha"] != 2:
-        falhas.append("achados_do_texto deveria reportar o numero de linha correto (2)")
+    secret_value = "very-much" + "-secret-123"
+    multiline = f"line without secret\napi_key = '{secret_value}'\n"
+    line_findings = findings_from_text("cfg.py", multiline, patterns)
+    if len(line_findings) != 1 or line_findings[0]["line"] != 2:
+        failures.append("findings_from_text should report the correct line number (2)")
 
-    if mascarar("abc") != "****":
-        falhas.append("mascarar deveria colapsar trecho curto em '****'")
-    if mascarar(chave_aws) != "AKIA...MN":
-        falhas.append("mascarar deveria manter só prefixo/sufixo de trecho longo")
+    if mask("abc") != "****":
+        failures.append("mask should collapse a short snippet into '****'")
+    if mask(aws_key) != "AKIA...MN":
+        failures.append("mask should keep only prefix/suffix of a long snippet")
 
-    catalogo = carregar_config(Path(__file__).with_name("config.json"))
-    padrao_conexao = re.compile(catalogo["padroes"]["String de conexao"])
+    catalog = load_config(Path(__file__).with_name("config.json"))
+    connection_pattern = re.compile(catalog["patterns"]["Connection string"])
     def database_url(user, password):
         return f'DATABASE_URL="postgres://{user}:{password}@db:5432/app"'
-    conexao_interpolada = database_url(
+    interpolated_connection = database_url(
         "${DEPLOY_DB_USER:?required}", "${DEPLOY_DB_PASSWORD:?required}"
     )
-    conexao_variavel = database_url("$DB_USER", "$DB_PASSWORD")
-    senha_literal = "-".join(("literal", "password"))
-    conexao_literal = database_url("app", senha_literal)
-    conexao_senha_variavel = database_url("app", "$DB_PASSWORD")
-    conexao_usuario_variavel = database_url("$DB_USER", senha_literal)
-    if padrao_conexao.search(conexao_interpolada) or padrao_conexao.search(conexao_variavel):
-        falhas.append("connection-string rule should ignore environment-variable interpolation")
-    if any(padrao_conexao.search(value) is None for value in (
-        conexao_literal, conexao_senha_variavel, conexao_usuario_variavel
+    variable_connection = database_url("$DB_USER", "$DB_PASSWORD")
+    literal_password = "-".join(("literal", "password"))
+    literal_connection = database_url("app", literal_password)
+    variable_password_connection = database_url("app", "$DB_PASSWORD")
+    variable_user_connection = database_url("$DB_USER", literal_password)
+    if connection_pattern.search(interpolated_connection) or connection_pattern.search(variable_connection):
+        failures.append("connection-string rule should ignore environment-variable interpolation")
+    if any(connection_pattern.search(value) is None for value in (
+        literal_connection, variable_password_connection, variable_user_connection
     )):
-        falhas.append("connection-string rule should detect a literal password")
+        failures.append("connection-string rule should detect a literal password")
 
-    for falha in falhas:
-        print(f"  falha  {falha}")
-    if falhas:
-        print(f"self-test (scan_segredos): {len(falhas)} failure(s)")
+    for failure in failures:
+        print(f"  failure  {failure}")
+    if failures:
+        print(f"self-test (scan_secrets): {len(failures)} failure(s)")
         return 1
-    print("self-test (scan_segredos): 8/8 passed")
+    print("self-test (scan_secrets): 8/8 passed")
     return 0
 
 
@@ -150,44 +150,44 @@ def main() -> None:
             encoding="utf-8"
         )  # saída UTF-8 mesmo em console cp1252 (Windows/acentos)
     parser = argparse.ArgumentParser(
-        description="Scanner de segredos hardcoded (working tree)."
+        description="Hardcoded secret scanner (working tree)."
     )
     parser.add_argument(
-        "--raiz", default=".", help="Raiz a varrer (ex.: . ou dist/ para o bundle)"
+        "--root", default=".", help="Root to scan (e.g. . or dist/ for the bundle)"
     )
     parser.add_argument("--config", default=str(Path(__file__).parent / "config.json"))
     parser.add_argument(
-        "--selftest", action="store_true", help="Roda a suite interna, nao toca disco"
+        "--selftest", action="store_true", help="Runs the internal suite, does not touch disk"
     )
     args = parser.parse_args()
 
     if args.selftest:
-        sys.exit(autoteste())
+        sys.exit(selftest())
 
     try:
-        config = carregar_config(Path(args.config))
+        config = load_config(Path(args.config))
     except FileNotFoundError:
-        sys.exit(f"Erro: config nao encontrado em '{args.config}'.")
-    except json.JSONDecodeError as erro:
-        sys.exit(f"Erro: config invalido ({erro}).")
+        sys.exit(f"Error: config not found at '{args.config}'.")
+    except json.JSONDecodeError as error:
+        sys.exit(f"Error: invalid config ({error}).")
 
-    raiz = Path(args.raiz)
-    if not raiz.exists():
-        sys.exit(f"Erro: raiz '{raiz}' nao existe.")
+    root = Path(args.root)
+    if not root.exists():
+        sys.exit(f"Error: root '{root}' does not exist.")
 
-    padroes = [(tipo, re.compile(rx)) for tipo, rx in config["padroes"].items()]
-    achados = []
-    for caminho in listar_arquivos(
-        raiz,
-        config.get("extensoes_texto", []),
-        set(config.get("ignorar_dirs", [])),
-        config.get("tamanho_max_arquivo_bytes"),
+    patterns = [(kind, re.compile(rx)) for kind, rx in config["patterns"].items()]
+    findings = []
+    for path in list_files(
+        root,
+        config.get("text_extensions", []),
+        set(config.get("ignore_dirs", [])),
+        config.get("max_file_size_bytes"),
     ):
-        achados.extend(escanear(caminho, padroes))
+        findings.extend(scan_file(path, patterns))
 
     print(
         json.dumps(
-            {"total": len(achados), "achados": achados}, ensure_ascii=False, indent=2
+            {"total": len(findings), "findings": findings}, ensure_ascii=False, indent=2
         )
     )
 

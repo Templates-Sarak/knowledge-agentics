@@ -1,8 +1,8 @@
-"""verificar_neutralidade.py — degrau 6: o modulo generico nao carrega rastro da origem.
+"""verify_neutrality.py — degrau 6: o modulo generico nao carrega rastro da origem.
 
-    python verificar_neutralidade.py --raiz <repo-ou-modulo> --denylist <arquivo> [--json]
-    python verificar_neutralidade.py --raiz <caminho> --termo loja --termo "Minha Loja" [--json]
-    python verificar_neutralidade.py --selftest
+    python verify_neutrality.py --root <repo-ou-modulo> --denylist <arquivo> [--json]
+    python verify_neutrality.py --root <caminho> --term shop --term "My Shop" [--json]
+    python verify_neutrality.py --selftest
 
 Varre TODO texto do entregavel — codigo, teste, fixture, seed, migration, contrato, README, ADR,
 `.env.example`, JSON de config — atras dos termos da denylist, e devolve exit 1 na primeira ocorrencia.
@@ -10,11 +10,11 @@ E a unica prova mecanica de que "generico" nao e opiniao: sem ela, "sem rastro d
 afirmacao que ninguem conferiu, e o rastro que sobrevive e sempre o mesmo — comentario, exemplo de
 `openapi.yaml`, nome em fixture e dado de seed, onde ninguem olha depois do primeiro dia.
 
-**Por que casa variante, e nao a string crua.** O termo "Minha Loja" aparece no codigo como
-`minhaLoja`, `minha_loja`, `minha-loja`, `MINHA_LOJA` e `minhaloja`. Uma denylist que so casasse a
+**Por que casa variante, e nao a string crua.** O termo "My Shop" aparece no codigo como
+`myShop`, `my_shop`, `my-shop`, `MY_SHOP` e `myshop`. Uma denylist que so casasse a
 forma escrita passaria por todas elas — e daria verde justamente onde o vazamento e mais provavel.
 Por isso cada termo vira um padrao com separador opcional entre as palavras, ancorado em fronteira
-alfanumerica (para `loja` nao acusar `relojoaria`).
+alfanumerica (para `shop` nao acusar `reshopping`).
 
 **Fail-closed:** denylist vazia REPROVA. Uma varredura sem termo nenhum acha zero ocorrencia e
 pareceria verde — o resultado mais perigoso que este script poderia produzir.
@@ -28,7 +28,7 @@ from pathlib import Path
 
 # Extensoes de texto que entram na varredura. O resto (binario, imagem, lockfile) fica de fora: nao
 # guarda prosa e infla o ruido. `sem sufixo` (Dockerfile, LICENSE) entra pela lista de nomes abaixo.
-EXTENSOES_TEXTO = frozenset(
+TEXT_EXTENSIONS = frozenset(
     {
         ".ts",
         ".tsx",
@@ -55,10 +55,10 @@ EXTENSOES_TEXTO = frozenset(
         ".csv",
     }
 )
-NOMES_SEM_SUFIXO = frozenset(
+SUFFIXLESS_NAMES = frozenset(
     {"Dockerfile", "Makefile", ".env.example", ".gitignore", ".dockerignore"}
 )
-PASTAS_IGNORADAS = frozenset(
+IGNORED_DIRS = frozenset(
     {
         "node_modules",
         "dist",
@@ -76,55 +76,55 @@ PASTAS_IGNORADAS = frozenset(
 # ==================================================================================================
 
 
-def variantes(termo: str) -> str:
+def variants(term: str) -> str:
     """Padrao que casa o termo em qualquer convencao de escrita de codigo.
 
-    "Minha Loja" -> casa minhaLoja, minha_loja, minha-loja, MINHA LOJA e minhaloja; NAO casa
-    "relojoaria" (a ancora exige fronteira alfanumerica dos dois lados).
+    "My Shop" -> casa myShop, my_shop, my-shop, MY SHOP e myshop; NAO casa
+    "reshopping" (a ancora exige fronteira alfanumerica dos dois lados).
     """
-    palavras = [re.escape(p) for p in re.split(r"[\s_\-]+", termo.strip()) if p]
-    if not palavras:
+    words = [re.escape(p) for p in re.split(r"[\s_\-]+", term.strip()) if p]
+    if not words:
         return ""
-    return r"(?<![A-Za-z0-9])" + r"[\s_\-]?".join(palavras) + r"(?![A-Za-z0-9])"
+    return r"(?<![A-Za-z0-9])" + r"[\s_\-]?".join(words) + r"(?![A-Za-z0-9])"
 
 
-def compilar_denylist(termos: list[str]) -> list[tuple[str, re.Pattern]]:
+def compile_denylist(terms: list[str]) -> list[tuple[str, re.Pattern]]:
     """Cada termo vira (termo original, padrao compilado case-insensitive). Termo vazio e descartado."""
-    compilados = []
-    for termo in termos:
-        padrao = variantes(termo)
-        if padrao:
-            compilados.append((termo.strip(), re.compile(padrao, re.IGNORECASE)))
-    return compilados
+    compiled = []
+    for term in terms:
+        pattern = variants(term)
+        if pattern:
+            compiled.append((term.strip(), re.compile(pattern, re.IGNORECASE)))
+    return compiled
 
 
-def varrer_texto(texto: str, denylist: list[tuple[str, re.Pattern]]) -> list[dict]:
+def scan_text(text: str, denylist: list[tuple[str, re.Pattern]]) -> list[dict]:
     """Ocorrencias de qualquer termo da denylist, com numero de linha e o trecho onde caiu."""
-    achados = []
-    for numero, linha in enumerate(texto.splitlines(), start=1):
-        for termo, padrao in denylist:
-            if padrao.search(linha):
-                achados.append(
-                    {"linha": numero, "termo": termo, "trecho": linha.strip()[:120]}
+    findings = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        for term, pattern in denylist:
+            if pattern.search(line):
+                findings.append(
+                    {"line": number, "term": term, "snippet": line.strip()[:120]}
                 )
-    return achados
+    return findings
 
 
-def e_arquivo_de_texto(nome: str, sufixo: str) -> bool:
+def is_text_file(name: str, suffix: str) -> bool:
     """Decide se o arquivo entra na varredura, pelo nome exato ou pela extensao."""
-    return nome in NOMES_SEM_SUFIXO or sufixo.lower() in EXTENSOES_TEXTO
+    return name in SUFFIXLESS_NAMES or suffix.lower() in TEXT_EXTENSIONS
 
 
-def decidir_veredito(achados: list[dict], denylist_vazia: bool) -> tuple[int, str]:
+def decide_verdict(findings: list[dict], denylist_empty: bool) -> tuple[int, str]:
     """Exit code + frase do veredito. Denylist vazia REPROVA — zero achado ali nao e verde, e cegueira."""
-    if denylist_vazia:
+    if denylist_empty:
         return (
             2,
-            "REPROVADO — denylist vazia: varredura sem termo nenhum nao prova nada",
+            "REJECTED — empty denylist: a scan with no term proves nothing",
         )
-    if achados:
-        return 1, f"REPROVADO — {len(achados)} ocorrencia(s) da origem no entregavel"
-    return 0, "OK — nenhum termo da origem encontrado no entregavel"
+    if findings:
+        return 1, f"REJECTED — {len(findings)} occurrence(s) of the source in the deliverable"
+    return 0, "OK — no source term found in the deliverable"
 
 
 # ==================================================================================================
@@ -132,133 +132,133 @@ def decidir_veredito(achados: list[dict], denylist_vazia: bool) -> tuple[int, st
 # ==================================================================================================
 
 
-def _arquivos_de_texto(raiz: Path):
+def _text_files(root: Path):
     """Todo arquivo de texto sob a raiz, pulando pasta de build e de dependencia."""
-    for caminho in raiz.rglob("*"):
-        if not caminho.is_file() or PASTAS_IGNORADAS & set(caminho.parts):
+    for path in root.rglob("*"):
+        if not path.is_file() or IGNORED_DIRS & set(path.parts):
             continue
-        if e_arquivo_de_texto(caminho.name, caminho.suffix):
-            yield caminho
+        if is_text_file(path.name, path.suffix):
+            yield path
 
 
-def varrer_arvore(raiz: Path, denylist: list[tuple[str, re.Pattern]]) -> list[dict]:
+def scan_tree(root: Path, denylist: list[tuple[str, re.Pattern]]) -> list[dict]:
     """Aplica a denylist a arvore inteira, devolvendo os achados com o caminho relativo de cada um."""
-    achados = []
-    for caminho in _arquivos_de_texto(raiz):
+    findings = []
+    for path in _text_files(root):
         try:
-            texto = caminho.read_text(encoding="utf-8", errors="replace")
+            text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        for achado in varrer_texto(texto, denylist):
-            achados.append(
-                {"arquivo": str(caminho.relative_to(raiz)).replace("\\", "/"), **achado}
+        for finding in scan_text(text, denylist):
+            findings.append(
+                {"file": str(path.relative_to(root)).replace("\\", "/"), **finding}
             )
-    return achados
+    return findings
 
 
-def carregar_termos(caminho_denylist: str | None, termos_cli: list[str]) -> list[str]:
-    """Termos do arquivo (um por linha, `#` e comentario) somados aos passados em `--termo`."""
-    termos = list(termos_cli)
-    if caminho_denylist:
-        bruto = Path(caminho_denylist).read_text(encoding="utf-8", errors="replace")
-        termos += [
+def load_terms(denylist_path: str | None, cli_terms: list[str]) -> list[str]:
+    """Termos do arquivo (um por linha, `#` e comentario) somados aos passados em `--term`."""
+    terms = list(cli_terms)
+    if denylist_path:
+        raw = Path(denylist_path).read_text(encoding="utf-8", errors="replace")
+        terms += [
             ln.strip()
-            for ln in bruto.splitlines()
+            for ln in raw.splitlines()
             if ln.strip() and not ln.strip().startswith("#")
         ]
-    return termos
+    return terms
 
 
-def _casos_casamento(deny: list[tuple[str, re.Pattern]]) -> list[str]:
+def _matching_cases(deny: list[tuple[str, re.Pattern]]) -> list[str]:
     """Casos de casamento — as variantes de escrita que precisam cair, e as que nao podem cair."""
-    falhas = []
+    failures = []
 
-    positivos = [
-        "const minhaLoja = 1",
-        "MINHA_LOJA=x",
-        "-- minha-loja",
-        "url: minhaloja.com",
-        "// checkout aqui",
+    positives = [
+        "const myShop = 1",
+        "MY_SHOP=x",
+        "-- my-shop",
+        "url: myshop.com",
+        "// checkout here",
     ]
-    for caso in positivos:
-        if not varrer_texto(caso, deny):
-            falhas.append(f"variante nao detectada: {caso!r}")
+    for case in positives:
+        if not scan_text(case, deny):
+            failures.append(f"variant not detected: {case!r}")
 
-    for caso in ["const relojoaria = 1", "precheckoutx", "loja generica"]:
-        if varrer_texto(caso, deny):
-            falhas.append(f"falso positivo: {caso!r}")
+    for case in ["const reshopping = 1", "precheckoutx", "shop generic"]:
+        if scan_text(case, deny):
+            failures.append(f"false positive: {case!r}")
 
-    achado = varrer_texto("linha um\nconst checkout = 2\n", deny)
-    if achado != [{"linha": 2, "termo": "checkout", "trecho": "const checkout = 2"}]:
-        falhas.append(f"varrer_texto perdeu o numero da linha: {achado}")
-    return falhas
+    finding = scan_text("line one\nconst checkout = 2\n", deny)
+    if finding != [{"line": 2, "term": "checkout", "snippet": "const checkout = 2"}]:
+        failures.append(f"scan_text lost the line number: {finding}")
+    return failures
 
 
-def _casos_veredito() -> list[str]:
+def _verdict_cases() -> list[str]:
     """Casos do veredito — o fail-closed da denylist vazia e os exit codes."""
-    falhas = []
+    failures = []
 
-    if compilar_denylist(["", "   "]):
-        falhas.append("compilar_denylist aceitou termo vazio")
+    if compile_denylist(["", "   "]):
+        failures.append("compile_denylist accepted an empty term")
 
-    if decidir_veredito([], True)[0] != 2:
-        falhas.append(
-            "denylist vazia nao reprovou — o fail-open que este script existe para impedir"
+    if decide_verdict([], True)[0] != 2:
+        failures.append(
+            "empty denylist did not reject — the fail-open this script exists to prevent"
         )
     if (
-        decidir_veredito([], False)[0] != 0
-        or decidir_veredito([{"x": 1}], False)[0] != 1
+        decide_verdict([], False)[0] != 0
+        or decide_verdict([{"x": 1}], False)[0] != 1
     ):
-        falhas.append("decidir_veredito errou o exit code")
-    return falhas
+        failures.append("decide_verdict got the exit code wrong")
+    return failures
 
 
-def autoteste() -> int:
+def run_selftest() -> int:
     """Prova o NUCLEO com fixtures em memoria, sem tocar disco."""
-    deny = compilar_denylist(["Minha Loja", "checkout"])
-    falhas = _casos_casamento(deny) + _casos_veredito()
-    for falha in falhas:
-        print(f"[FALHA] {falha}")
+    deny = compile_denylist(["My Shop", "checkout"])
+    failures = _matching_cases(deny) + _verdict_cases()
+    for failure in failures:
+        print(f"[FAIL] {failure}")
     print(
-        f"[{'OK' if not falhas else 'ERRO'}] autoteste de verificar_neutralidade: {len(falhas)} falha(s)"
+        f"[{'OK' if not failures else 'ERROR'}] selftest of verify_neutrality: {len(failures)} failure(s)"
     )
-    return 1 if falhas else 0
+    return 1 if failures else 0
 
 
 def _parser() -> argparse.ArgumentParser:
     """CLI do script. Separada do `main` para manter as duas dentro do limiar de tamanho."""
     parser = argparse.ArgumentParser(
-        description="Degrau 6 — prova que o entregavel nao cita a origem."
+        description="Step 6 — proves the deliverable does not cite the source."
     )
-    parser.add_argument("--raiz", help="Repositorio (ou pasta do modulo) a varrer.")
+    parser.add_argument("--root", help="Repository (or module directory) to scan.")
     parser.add_argument(
-        "--denylist", help="Arquivo com os termos da origem, um por linha."
-    )
-    parser.add_argument(
-        "--termo", action="append", default=[], help="Termo avulso (repetivel)."
+        "--denylist", help="File with the source terms, one per line."
     )
     parser.add_argument(
-        "--json", action="store_true", help="Imprime os achados como JSON."
+        "--term", action="append", default=[], help="Single term (repeatable)."
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Print the findings as JSON."
     )
     parser.add_argument(
         "--selftest",
         action="store_true",
-        help="Prova o nucleo com fixtures em memoria.",
+        help="Prove the core with in-memory fixtures.",
     )
     return parser
 
 
-def _imprimir_humano(
-    raiz: Path, denylist: list, achados: list[dict], veredito: tuple[int, str]
+def _print_human(
+    root: Path, denylist: list, findings: list[dict], verdict: tuple[int, str]
 ) -> None:
     """Relatorio legivel dos achados — o `--json` continua sendo a saida para maquina."""
-    codigo, frase = veredito
-    print(f"\n--- Neutralidade: {raiz.name} ({len(denylist)} termo(s) na denylist) ---")
-    for achado in achados:
+    code, phrase = verdict
+    print(f"\n--- Neutrality: {root.name} ({len(denylist)} term(s) in the denylist) ---")
+    for finding in findings:
         print(
-            f"  {achado['arquivo']}:{achado['linha']}  [{achado['termo']}]  {achado['trecho']}"
+            f"  {finding['file']}:{finding['line']}  [{finding['term']}]  {finding['snippet']}"
         )
-    print(f"\n[{'OK' if codigo == 0 else 'ERRO'}] {frase}")
+    print(f"\n[{'OK' if code == 0 else 'ERROR'}] {phrase}")
 
 
 def main() -> int:
@@ -266,31 +266,31 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.selftest:
-        return autoteste()
-    if not args.raiz:
-        parser.error("--raiz e obrigatorio (ou use --selftest)")
+        return run_selftest()
+    if not args.root:
+        parser.error("--root is required (or use --selftest)")
 
-    raiz = Path(args.raiz).resolve()
-    if not raiz.is_dir():
-        print(f"[ERRO] {raiz} nao e um diretorio.", file=sys.stderr)
+    root = Path(args.root).resolve()
+    if not root.is_dir():
+        print(f"[ERROR] {root} is not a directory.", file=sys.stderr)
         return 2
 
-    denylist = compilar_denylist(carregar_termos(args.denylist, args.termo))
-    achados = varrer_arvore(raiz, denylist) if denylist else []
-    codigo, veredito = decidir_veredito(achados, not denylist)
+    denylist = compile_denylist(load_terms(args.denylist, args.term))
+    findings = scan_tree(root, denylist) if denylist else []
+    code, verdict = decide_verdict(findings, not denylist)
 
     if args.json:
         print(
             json.dumps(
-                {"veredito": veredito, "codigo": codigo, "achados": achados},
+                {"verdict": verdict, "code": code, "findings": findings},
                 indent=2,
                 ensure_ascii=False,
             )
         )
-        return codigo
+        return code
 
-    _imprimir_humano(raiz, denylist, achados, (codigo, veredito))
-    return codigo
+    _print_human(root, denylist, findings, (code, verdict))
+    return code
 
 
 if __name__ == "__main__":

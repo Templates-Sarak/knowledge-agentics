@@ -58,7 +58,7 @@ const FALLBACK_PATTERNS = [
 const LOADER_FILES = ['api/src/config.ts', 'api/src/config.js', 'api/src/config.py'];
 
 /** Os dois caminhos que o `.gitignore` do projeto TEM de cobrir. `modules/*` vale por qualquer id. */
-const SECRETS_TO_IGNORE = ['.env', 'modules/qualquer-modulo/.env'];
+const SECRETS_TO_IGNORE = ['.env', 'modules/any-module/.env'];
 
 /**
  * Prefixos que o bundler EXPÕE no bundle do front. Vocabulário fechado — quem decide o que é
@@ -194,8 +194,8 @@ function exceptionsWithUnknownId(value, renamed, catalogIds) {
 export default [
   {
     id: 'valid-config',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       return CONFIGS
         .filter((topic) => ctx.configs[topic].present && ctx.configs[topic].value === null)
@@ -204,8 +204,8 @@ export default [
   },
   {
     id: 'config-schema',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const topic of CONFIGS) {
@@ -233,8 +233,8 @@ export default [
      * e não declarada é config morta, um provedor escolhido para uma porta que ninguém exige.
      */
     id: 'port-declared',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const declared = ctx.manifest?.ports;
       const { present, value } = ctx.configs.ports;
@@ -260,8 +260,8 @@ export default [
   },
   {
     id: 'open-cors',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const cors = ctx.configs.security.value?.cors;
       if (cors === undefined) return [];
@@ -274,8 +274,8 @@ export default [
   },
   {
     id: 'dead-config',
-    nivel: 'aviso',
-    escopo: 'module',
+    severity: 'warning',
+    scope: 'module',
     check(ctx) {
       const code = ctx.code.filter((a) => !a.isTest).map((a) => a.content).join('\n');
       const findings = [];
@@ -292,8 +292,8 @@ export default [
   },
   {
     id: 'hardcode-url',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -310,8 +310,8 @@ export default [
   },
   {
     id: 'hardcode-number',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       // Nome que denuncia valor de INFRAESTRUTURA. Numero de negocio (aliquota, prazo) tem nome
       // de negocio e mora em config/domain.json — nao entra neste padrao.
@@ -338,8 +338,8 @@ export default [
   },
   {
     id: 'silent-fallback',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -355,8 +355,8 @@ export default [
   },
   {
     id: 'env-declared',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const id = ctx.manifest?.id;
       if (id === undefined) return [];
@@ -375,8 +375,8 @@ export default [
   },
   {
     id: 'env-example',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const file = fileByName(ctx, '.env.example');
       if (file === null) return ['.env.example is missing — generate it with tools/sync-env.mjs'];
@@ -394,8 +394,8 @@ export default [
   },
   {
     id: 'env-module',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const file = fileByName(ctx, '.env');
       if (file === null) return [];
@@ -408,8 +408,8 @@ export default [
   },
   {
     id: 'gitignore-secret',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       // Mesma guarda das outras duas regras de projeto: modulo solto nao tem `.gitignore` de
       // projeto, e cobrar um dele seria falso positivo garantido.
@@ -428,8 +428,8 @@ export default [
   },
   {
     id: 'secret-in-public',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       // No MANIFESTO: e a declaracao, e onde o defeito nasce. Sem excecao por `role` — o
@@ -456,8 +456,8 @@ export default [
   },
   {
     id: 'verification-declared',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       // Modulo solto (extraido e ainda nao religado a um esqueleto) ou fixture nao e projeto —
       // cobrar politica de projeto de quem nao tem `modules/` seria falso positivo garantido.
@@ -477,8 +477,8 @@ export default [
   },
   {
     id: 'compliance-declared',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     // Ate esta regra, `config/compliance.json` era o unico config sem schema e sem dono: JSON
     // malformado caia num catch silencioso de `loadExceptions` (exit 0, exececoes todas
     // descartadas caladas) e chave em ingles (`module`/`rule`) so falhava calada tambem — a
@@ -504,8 +504,8 @@ export default [
   },
   {
     id: 'derived-lint',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
 
@@ -517,7 +517,7 @@ export default [
       const derived = BINDINGS.map((binding) => outputOf(binding));
       const rootLintConfigs = Object.entries(project.lintConfigs).filter(([, text]) => text !== null);
       if (rootLintConfigs.length === 0) {
-        const names = [...new Set(derived.map((d) => d.name))].join(' ou ');
+        const names = [...new Set(derived.map((d) => d.name))].join(' or ');
         return [`no linter configuration in the project root (${names}) — without it, the 40/3/4 thresholds`
           + ' are enforced only by the gate. Generate it with: node tools/generate-lint-config.mjs'];
       }
@@ -552,8 +552,8 @@ export default [
      * mensagens para um conserto só.
      */
     id: 'root-env-declared',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       const declared = project.manifest.value?.requiredEnv;
@@ -587,8 +587,8 @@ export default [
      * onde a raiz declara o que exige do ambiente.
      */
     id: 'root-hardcode-url',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       return scanRoot(project, (text) => {
@@ -612,8 +612,8 @@ export default [
      * `env-outside-loader` cobra no módulo. O que esta regra proíbe é o DEFAULT, nunca a leitura.
      */
     id: 'root-fallback',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       return scanRoot(project, (text) => {
@@ -640,8 +640,8 @@ export default [
      * são desenho, e um projeto pode legitimamente só ter a primeira.
      */
     id: 'pre-commit-installed',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       // Mesma guarda de `verification-declared`/`derived-lint`: módulo solto (extraído e ainda não
       // religado a um esqueleto de projeto) não tem raiz de projeto a cobrar, e exigir o hook dele
@@ -668,8 +668,8 @@ export default [
   },
   {
     id: 'env-outside-loader',
-    nivel: 'aviso',
-    escopo: 'module',
+    severity: 'warning',
+    scope: 'module',
     check(ctx) {
       return ctx.code
         .filter((a) => !a.isTest && !isLoader(a.rel))

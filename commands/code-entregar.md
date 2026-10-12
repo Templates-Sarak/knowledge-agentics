@@ -13,11 +13,11 @@ pilares — **autoria**, **licença** e **documentação** — cada um com dono 
 → HITL obrigatório em cada pilar. A lógica está nas skills; aqui você orquestra.
 
 ## Passos (skill `code-entrega`)
-1. **`code-assinatura`** — `python skills/code-assinatura/scripts/scan_assinaturas.py --raiz $1`,
+1. **`code-assinatura`** — `python skills/code-assinatura/scripts/scan_signatures.py --root $1`,
    tria contra os autorizados, HITL antes de remover, limpa e acerta metadados de autoria.
 2. **`code-licenca`** — apresente a tabela-resumo de `skills/code-licenca/references/licencas.md`,
    HITL da escolha, aplique `LICENSE` + SPDX id.
-3. **`code-documentacao`** — `python skills/code-documentacao/scripts/auditar_docs.py --raiz $1`,
+3. **`code-documentacao`** — `python skills/code-documentacao/scripts/audit_docs.py --root $1`,
    gere/atualize README/CONTRIBUTING/CHANGELOG/CODEOWNERS a partir dos templates.
 4. **Consolidar** — reúna o resultado dos três num relato único.
 5. **Reportar** — gere `skills/code-entrega/assets/entrega_update.md` preenchido; comunique que o

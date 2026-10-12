@@ -38,7 +38,7 @@
  * `.gitignore` comeu estrutura, ele reprova ali, não aqui.
  *
  * `first-commit` — a EXCEÇÃO deliberada de fronteira deste arquivo: é o único passo que sai de
- * `specs/_estrutura_modulos/` e chama `skills/git-verificacao-commit/scripts/verificar_commit.py`,
+ * `specs/_estrutura_modulos/` e chama `skills/git-verificacao-commit/scripts/verify_commit.py`,
  * na BASE. Todo o resto deste script só toca o TEMPLATE (tools/, bindings/) porque só ele decide se
  * um projeto gerado nasce verde; mas "o repositório nasce COMMITÁVEL?" é uma pergunta sobre o
  * template **e** o gate de segredos **compostos** — e a base é dona dos dois. Medir isso sem sair
@@ -120,25 +120,25 @@ export const MODULE_COMBINATIONS = [
   // manifesto válido possível — `table-prefix` exigia `nota-fiscal_` e `manifest-schema` proibia
   // o hífen na tabela que começa por ele. O defeito sobreviveu justamente porque todo id daqui era
   // de uma palavra só: o teste foi ajustado para desviar dele em vez de acusá-lo. Tirar
-  // `sonda-hifen` desta lista devolve o ponto cego inteiro.
+  // `probe-hyphen` desta lista devolve o ponto cego inteiro.
   //
   // CURTO de propósito, e é a SEGUNDA medição, não só a primeira: `<module>` entra em comentário de
   // CABEÇALHO em vários arquivos do molde Python (`api/src/errors.py:1`, o mais apertado, tem só 13
-  // caracteres de folga antes de estourar os 110 do ruff). Ids mais longos ("sondasemartifact",
+  // caracteres de folga antes de estourar os 110 do ruff). Ids mais longos ("probewithoutartifact",
   // 16 chars) reprovam `ruff check` (E501) e `ruff format --check` no binding Python, sem relação
   // nenhuma com a flag testada — o comprimento do id é que importa. `sonda` (5) tinha
   // folga; estes quatro (6–8) mantêm a mesma folga.
-  { id: 'sondapad', flags: [] },
-  { id: 'sondaart', flags: ['--no-artifact'] },
-  { id: 'sondaweb', flags: ['--no-web'] },
-  { id: 'sondaamb', flags: ['--no-artifact', '--no-web'] },
+  { id: 'probepad', flags: [] },
+  { id: 'probeart', flags: ['--no-artifact'] },
+  { id: 'probeweb', flags: ['--no-web'] },
+  { id: 'probeamb', flags: ['--no-artifact', '--no-web'] },
   // O id COM HÍFEN, e com 8 chars pelo mesmo motivo dos quatro acima: medido, a linha mais longa
   // que carrega o id (`api/src/errors.py`) fica em 105/110 com 8 chars — a MESMA folga de 5 que
-  // `sondapad` tem. (`sonda-hifen`, 11, cabia em 108/110, mas com folga 2: passa hoje e quebra no
+  // `probepad` tem. (`probe-hyphen`, 11, cabia em 108/110, mas com folga 2: passa hoje e quebra no
   // primeiro caractere que alguém acrescentar àquela linha, e o vermelho apontaria para o hífen,
   // que não é a causa.) Exercita a cadeia inteira — gate, migrations, `.env`, tipos, testes —
-  // sobre `data.prefix` = `sonda_hi_`.
-  { id: 'sonda-hi', flags: [] },
+  // sobre `data.prefix` = `probe_hi_`.
+  { id: 'probe-hi', flags: [] },
 ];
 
 /**
@@ -171,7 +171,7 @@ function toPascalCase(kebab) {
  * mesma regra de `create-adapter.mjs:providerName`. */
 export function symbolName(binding, provider) {
   const pascal = toPascalCase(provider);
-  return binding === 'python' ? pascal : `criar${pascal}`;
+  return binding === 'python' ? pascal : `create${pascal}`;
 }
 
 /**
@@ -182,7 +182,7 @@ export function symbolName(binding, provider) {
 export function adapterSteps() {
   return KNOWN_PORTS.map((port, index) => ({
     name: `create-adapter:${port}`,
-    tipo: 'create-adapter',
+    kind: 'create-adapter',
     port,
     provider: indexProvider(index),
   }));
@@ -226,8 +226,8 @@ const TYPE_CLASS = {
 
 /** O teto, em ms, de um passo — pela CLASSE do tipo dele. Tipo desconhecido LANÇA (nunca "sem teto"). */
 export function stepCap(step) {
-  const cls = TYPE_CLASS[step.tipo];
-  if (cls === undefined) throw new Error(`step has no time-limit class: ${step.tipo}`);
+  const cls = TYPE_CLASS[step.kind];
+  if (cls === undefined) throw new Error(`step has no time-limit class: ${step.kind}`);
   return LIMITS.capSecondsByClass[cls] * 1000;
 }
 
@@ -236,7 +236,7 @@ function moduleSteps(fast) {
   const combinations = fast ? MODULE_COMBINATIONS.slice(0, 1) : MODULE_COMBINATIONS;
   return combinations.map((combination) => ({
     name: `create-module:${combination.id}`,
-    tipo: 'create-module',
+    kind: 'create-module',
     moduleId: combination.id,
     flags: combination.flags,
   }));
@@ -262,10 +262,10 @@ function setupSteps(binding, fast) {
   return [
     ...moduleSteps(fast),
     ...adapterSteps(),
-    { name: 'format-adapters', tipo: format },
-    { name: 'simulated-clone', tipo: 'simulated-clone' },
-    { name: 'first-commit', tipo: 'first-commit' },
-    { name: 'boot', tipo: 'boot' },
+    { name: 'format-adapters', kind: format },
+    { name: 'simulated-clone', kind: 'simulated-clone' },
+    { name: 'first-commit', kind: 'first-commit' },
+    { name: 'boot', kind: 'boot' },
   ];
 }
 
@@ -276,17 +276,17 @@ function setupSteps(binding, fast) {
  */
 function pythonSteps({ fast, docker }) {
   return [
-    { name: 'generate-project', tipo: 'generate-project' },
-    { name: 'venv', tipo: 'venv' },
-    { name: 'upgrade-pip', tipo: 'pip-upgrade' },
-    { name: 'install', tipo: 'pip-install' },
+    { name: 'generate-project', kind: 'generate-project' },
+    { name: 'venv', kind: 'venv' },
+    { name: 'upgrade-pip', kind: 'pip-upgrade' },
+    { name: 'install', kind: 'pip-install' },
     ...setupSteps('python', fast),
-    { name: 'verify', tipo: 'verify-python' },
+    { name: 'verify', kind: 'verify-python' },
     // Depois de `verify`: o verify-map instalado é doutrina, não código do módulo. Sem este passo,
     // `verify-map.mjs --check` seria um `--check` que existe e ninguém chama.
-    { name: 'verify-map', tipo: 'verify-installed-map' },
-    { name: 'container-files', tipo: 'container-files' },
-    { name: 'ci-dependencies', tipo: 'ci-dependencies-python' },
+    { name: 'verify-map', kind: 'verify-installed-map' },
+    { name: 'container-files', kind: 'container-files' },
+    { name: 'ci-dependencies', kind: 'ci-dependencies-python' },
     ...dockerSteps(docker),
     ...runtimeSteps(),
   ];
@@ -301,29 +301,29 @@ function pythonSteps({ fast, docker }) {
  */
 /** O passo `docker` só entra com `--docker`: custa minutos de build e exige um daemon no host. */
 function dockerSteps(docker) {
-  return docker ? [{ name: 'docker', tipo: 'docker' }] : [];
+  return docker ? [{ name: 'docker', kind: 'docker' }] : [];
 }
 
 function runtimeSteps() {
   return [
-    { name: 'composition-selftest', tipo: 'composition-selftest' },
-    { name: 'shutdown', tipo: 'shutdown' },
+    { name: 'composition-selftest', kind: 'composition-selftest' },
+    { name: 'shutdown', kind: 'shutdown' },
   ];
 }
 
 function nodeSteps(binding, { fast, docker }) {
   return [
-    { name: 'generate-project', tipo: 'generate-project' },
-    { name: 'install', tipo: 'npm-install' },
+    { name: 'generate-project', kind: 'generate-project' },
+    { name: 'install', kind: 'npm-install' },
     ...setupSteps(binding, fast),
-    { name: 'verify', tipo: 'npm-script', script: 'verify' },
-    { name: 'verify-map', tipo: 'verify-installed-map' },
-    { name: 'container-files', tipo: 'container-files' },
-    { name: 'build', tipo: 'npm-script', script: 'build' },
-    { name: 'lint', tipo: 'npm-script', script: 'lint' },
-    { name: 'ci-dependencies', tipo: 'npm-script', script: 'ci:dependencies' },
+    { name: 'verify', kind: 'npm-script', script: 'verify' },
+    { name: 'verify-map', kind: 'verify-installed-map' },
+    { name: 'container-files', kind: 'container-files' },
+    { name: 'build', kind: 'npm-script', script: 'build' },
+    { name: 'lint', kind: 'npm-script', script: 'lint' },
+    { name: 'ci-dependencies', kind: 'npm-script', script: 'ci:dependencies' },
     ...dockerSteps(docker),
-    { name: 'artifact', tipo: 'artifact' },
+    { name: 'artifact', kind: 'artifact' },
     ...runtimeSteps(),
   ];
 }
@@ -421,7 +421,7 @@ export const CONTAINER_MARKERS = ['<project>', '<PROJECT>', '<scope>', '<INFRA_D
 /** PURA — `[{ arquivo, marcador }]` do que sobrou nos textos (`{ [arquivo]: texto }`). Vazia = ok. */
 export function leftoverMarkers(texts) {
   return Object.entries(texts).flatMap(([file, text]) => (
-    CONTAINER_MARKERS.filter((marker) => text.includes(marker)).map((marker) => ({ arquivo: file, marker }))
+    CONTAINER_MARKERS.filter((marker) => text.includes(marker)).map((marker) => ({ file, marker }))
   ));
 }
 
@@ -432,7 +432,7 @@ export function leftoverMarkers(texts) {
 export function containerProblems({ present, withFront, texts }) {
   const required = withFront ? [...CONTAINER_FILES, ...FRONT_FILES] : CONTAINER_FILES;
   const missing = required.filter((file) => !present.includes(file)).map((file) => `required file is missing: ${file}`);
-  const leftovers = leftoverMarkers(texts).map(({ arquivo: file, marker }) => `${file}: unresolved marker ${marker}`);
+  const leftovers = leftoverMarkers(texts).map(({ file, marker }) => `${file}: unresolved marker ${marker}`);
   return [...missing, ...leftovers];
 }
 
@@ -508,7 +508,7 @@ export const SLOW_PATH = `/api/v1/${SLOW_MODULE_ID}/slow`;
 
 const SLOW_MANIFEST = JSON.stringify({
   id: SLOW_MODULE_ID,
-  name: 'Lento',
+  name: 'Slow',
   basePath: `/api/v1/${SLOW_MODULE_ID}`,
   role: 'domain',
   ports: [],
@@ -537,7 +537,7 @@ const SLOW_PYTHON_APP = [
   'import core.ports  # noqa: F401 — o composition le `sys.modules["core.ports"].ModuleDependencies`',
   '',
   '',
-  'def load_configuration(pasta):',
+  'def load_configuration(directory):',
   '    return {}',
   '',
   '',
@@ -558,19 +558,19 @@ const SLOW_PYTHON_PORTS = ['from dataclasses import dataclass', '', '', '@datacl
 export function slowFixture(binding) {
   const base = `modules/${SLOW_MODULE_ID}`;
   const common = [
-    { caminho: `${base}/module.json`, content: `${SLOW_MANIFEST}\n` },
-    { caminho: `${base}/config/ports.json`, content: '{}\n' },
+    { path: `${base}/module.json`, content: `${SLOW_MANIFEST}\n` },
+    { path: `${base}/config/ports.json`, content: '{}\n' },
   ];
   if (binding === 'python') {
     return [
       ...common,
-      { caminho: `${base}/core/ports/__init__.py`, content: SLOW_PYTHON_PORTS },
-      { caminho: `${base}/api/__init__.py`, content: '' },
-      { caminho: `${base}/api/src/__init__.py`, content: SLOW_PYTHON_APP },
+      { path: `${base}/core/ports/__init__.py`, content: SLOW_PYTHON_PORTS },
+      { path: `${base}/api/__init__.py`, content: '' },
+      { path: `${base}/api/src/__init__.py`, content: SLOW_PYTHON_APP },
     ];
   }
   const file = binding === 'typescript' ? 'index.ts' : 'index.js';
-  return [...common, { caminho: `${base}/api/src/${file}`, content: SLOW_NODE_APP }];
+  return [...common, { path: `${base}/api/src/${file}`, content: SLOW_NODE_APP }];
 }
 
 /**
@@ -606,22 +606,22 @@ function capReason(capMs) {
  */
 export function classifyStep(result) {
   if (result === null || result === undefined) {
-    return { ok: false, motivo: 'no result; step was not executed' };
+    return { ok: false, reason: 'no result; step was not executed' };
   }
   // PULADO nao e verde: o passo declara que NAO rodou e diz por que, e a saida o conta a parte. So um
   // `pulado` explicito (nunca a ausencia de erro) leva a este ramo.
-  if (typeof result.skipped === 'string') return { ok: true, motivo: null, skipped: result.skipped };
-  if (capOverflowed(result)) return { ok: false, motivo: capReason(result.capMs) };
+  if (typeof result.skipped === 'string') return { ok: true, reason: null, skipped: result.skipped };
+  if (capOverflowed(result)) return { ok: false, reason: capReason(result.capMs) };
   if (result.error !== undefined && result.error !== null) {
-    return { ok: false, motivo: `execution failed: ${result.error.message ?? String(result.error)}` };
+    return { ok: false, reason: `execution failed: ${result.error.message ?? String(result.error)}` };
   }
   if (result.status === null || result.status === undefined) {
-    return { ok: false, motivo: 'process did not exit (no status; signal received)' };
+    return { ok: false, reason: 'process did not exit (no status; signal received)' };
   }
   if (result.status !== 0) {
-    return { ok: false, motivo: `exit status ${result.status}` };
+    return { ok: false, reason: `exit status ${result.status}` };
   }
-  return { ok: true, motivo: null };
+  return { ok: true, reason: null };
 }
 
 /**
@@ -647,7 +647,7 @@ const SHUTDOWN_PROOF = join(HERE, 'shutdown-proof.py');
 // A ÚNICA referência deste arquivo a `skills/` (fora do template) — ver o parágrafo "first-commit"
 // no cabeçalho, a exceção de fronteira declarada por escrito.
 const BASE_ROOT = join(TEMPLATE_ROOT, '..', '..');
-const CHECK_COMMIT_PY = join(BASE_ROOT, 'skills', 'git-verificacao-commit', 'scripts', 'verificar_commit.py');
+const CHECK_COMMIT_PY = join(BASE_ROOT, 'skills', 'git-verificacao-commit', 'scripts', 'verify_commit.py');
 const CONFIG_SECRETS = join(BASE_ROOT, 'skills', 'git-verificacao-commit', 'scripts', 'config.json');
 const NODE = process.execPath;
 
@@ -851,7 +851,7 @@ function simulateClone(destination, exec) {
 }
 
 function runFirstCommit(step, ctx, exec) {
-  const checkerArguments = [CHECK_COMMIT_PY, '--raiz', ctx.destination, '--config', CONFIG_SECRETS];
+  const checkerArguments = [CHECK_COMMIT_PY, '--root', ctx.destination, '--config', CONFIG_SECRETS];
   const python = ctx.pythonBase ?? resolvePythonBase();
   const cleanResult = runPython(python, checkerArguments, { ...exec, cwd: BASE_ROOT });
   if (classifyStep(cleanResult).ok !== true) return cleanResult;
@@ -978,7 +978,7 @@ function runCompositionSelfTest(step, ctx, exec) {
 
 /** Instala o modulo lento descartavel no projeto gerado (ver `slowFixture`). */
 function installSlowModule(destination, binding) {
-  for (const { caminho: path, content } of slowFixture(binding)) {
+  for (const { path, content } of slowFixture(binding)) {
     const target = join(destination, path);
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, content, 'utf8');
@@ -1116,7 +1116,7 @@ export function connectionError(result) {
  * Desktop. Status errado e definitivo — repetir o esconderia.
  */
 function probeUrl(probe, exec) {
-  const { attempts, intervalMs: intervalMs } = LIMITS.dockerProbe;
+  const { attempts, intervalMs } = LIMITS.dockerProbe;
   let result = probeUrlOnce(probe, exec);
   for (let n = 1; n < attempts && classifyStep(result).ok !== true && connectionError(result); n += 1) {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, intervalMs);
@@ -1310,8 +1310,8 @@ const EXECUTORS = { ...COMMON_EXECUTORS, ...NODE_EXECUTORS, ...PYTHON_EXECUTORS 
 
 /** Despacha UM passo para a execução real, sob o teto da CLASSE dele. Único ponto que mapeia `tipo` -> processo. */
 function runStep(step, ctx) {
-  const executor = EXECUTORS[step.tipo];
-  if (executor === undefined) throw new Error(`unknown step: ${step.tipo}`);
+  const executor = EXECUTORS[step.kind];
+  if (executor === undefined) throw new Error(`unknown step: ${step.kind}`);
   return executor(step, ctx, { cwd: ctx.destination, capMs: stepCap(step) });
 }
 
@@ -1328,14 +1328,14 @@ function cleanDestination(destination) {
 function runMeasured(step, ctx) {
   const start = Date.now();
   const result = runStep(step, ctx);
-  return { step, classified: classifyStep(result), saida: result, durationMs: Date.now() - start };
+  return { step, classified: classifyStep(result), output: result, durationMs: Date.now() - start };
 }
 
 /** `venv` sem interpretador resolvido: o passo nem roda, e reprova com a causa. `null` = pode rodar. */
 function stepWithoutInterpreter(step, ctx) {
-  if (ctx.binding !== 'python' || step.tipo !== 'venv' || ctx.pythonBase !== null) return null;
+  if (ctx.binding !== 'python' || step.kind !== 'venv' || ctx.pythonBase !== null) return null;
   const reason = 'no Python interpreter was resolved (SARAK_PYTHON/python/python3)';
-  return { step, classified: { ok: false, motivo: reason }, saida: null, durationMs: 0 };
+  return { step, classified: { ok: false, reason }, output: null, durationMs: 0 };
 }
 
 /** Roda os passos em ordem e PARA no primeiro que reprova (`firstFailed`). */
@@ -1373,8 +1373,8 @@ function runBinding(binding, { keep, fast, docker }) {
 // ================================================================================================
 
 /** A causa da falha e a saída do processo (stdout + stderr), uma linha por linha, recuada. */
-function printFailure({ classified, saida: output }) {
-  process.stdout.write(`       ${classified.motivo}\n`);
+function printFailure({ classified, output }) {
+  process.stdout.write(`       ${classified.reason}\n`);
   const text = [output?.stdout, output?.stderr].filter(Boolean).join('\n').trim();
   if (text === '') return;
   for (const line of text.split('\n')) process.stdout.write(`       | ${line}\n`);
@@ -1511,7 +1511,7 @@ function stepsOrderCases() {
     } },
     { name: 'bindingSteps(python): venv and install run before the first create-module step', fn: () => {
       const steps = bindingSteps('python');
-      const firstModuleIndex = steps.findIndex((p) => p.tipo === 'create-module');
+      const firstModuleIndex = steps.findIndex((p) => p.kind === 'create-module');
       const names = steps.map((p) => p.name);
       return names.indexOf('venv') < firstModuleIndex && names.indexOf('install') < firstModuleIndex;
     } },
@@ -1531,10 +1531,10 @@ function setupAndBootCases() {
       BINDINGS.every((binding) => {
         const steps = bindingSteps(binding);
         const lastSetupIndex = steps.findLastIndex((p) => (
-          p.tipo === 'create-module' || p.tipo === 'create-adapter'
-          || p.tipo === 'format-adapters' || p.tipo === 'format-adapters-python'
+          p.kind === 'create-module' || p.kind === 'create-adapter'
+          || p.kind === 'format-adapters' || p.kind === 'format-adapters-python'
         ));
-        return lastSetupIndex !== -1 && steps.findIndex((p) => p.tipo === 'simulated-clone') === lastSetupIndex + 1;
+        return lastSetupIndex !== -1 && steps.findIndex((p) => p.kind === 'simulated-clone') === lastSetupIndex + 1;
       })
     ) },
     { name: 'bindingSteps: first-commit immediately follows simulated-clone in all three bindings', fn: () => (
@@ -1553,7 +1553,7 @@ function setupAndBootCases() {
     { name: 'bindingSteps: boot follows the final create-module step, including --fast', fn: () => (
       BINDINGS.every((binding) => {
         const steps = bindingSteps(binding, { fast: true });
-        return steps.findIndex((p) => p.tipo === 'boot') > steps.findLastIndex((p) => p.tipo === 'create-module');
+        return steps.findIndex((p) => p.kind === 'boot') > steps.findLastIndex((p) => p.kind === 'create-module');
       })
     ) },
   ];
@@ -1564,7 +1564,7 @@ function combinationsCases() {
   return [
     { name: 'bindingSteps: all MODULE_COMBINATIONS entries are used in all three bindings', fn: () => (
       BINDINGS.every((binding) => {
-        const moduleSteps = bindingSteps(binding).filter((p) => p.tipo === 'create-module');
+        const moduleSteps = bindingSteps(binding).filter((p) => p.kind === 'create-module');
         if (moduleSteps.length !== MODULE_COMBINATIONS.length) return false;
         return MODULE_COMBINATIONS.every((c, i) => (
           moduleSteps[i].moduleId === c.id && sameList(moduleSteps[i].flags, c.flags)
@@ -1585,7 +1585,7 @@ function combinationsCases() {
     ) },
     { name: 'bindingSteps(..., {fast:true}): only the default combination runs in all three bindings', fn: () => (
       BINDINGS.every((binding) => {
-        const moduleSteps = bindingSteps(binding, { fast: true }).filter((p) => p.tipo === 'create-module');
+        const moduleSteps = bindingSteps(binding, { fast: true }).filter((p) => p.kind === 'create-module');
         return moduleSteps.length === 1 && moduleSteps[0].moduleId === MODULE_COMBINATIONS[0].id;
       })
     ) },
@@ -1597,21 +1597,21 @@ function adapterCases() {
   return [
     { name: 'indexProvider: valid kebab-case with a hyphen; uses the repaired path and does not derive from the port name', fn: () => (
       /^[a-z][a-z0-9-]*$/.test(indexProvider(0)) && indexProvider(5).includes('-')
-      && indexProvider(5) !== 'verificadordetoken'
+      && indexProvider(5) !== 'tokenverifier'
     ) },
-    { name: 'indexProvider: um indice, um provedor unico', fn: () => {
+    { name: 'indexProvider: one index, one unique provider', fn: () => {
       const generated = KNOWN_PORTS.map((_, i) => indexProvider(i));
       return new Set(generated).size === KNOWN_PORTS.length;
     } },
     { name: 'symbolName: TypeScript and JavaScript add the create prefix; Python does not', fn: () => (
-      symbolName('typescript', 'prov-a') === 'criarProvA'
-      && symbolName('javascript', 'prov-a') === 'criarProvA'
+      symbolName('typescript', 'prov-a') === 'createProvA'
+      && symbolName('javascript', 'prov-a') === 'createProvA'
       && symbolName('python', 'prov-a') === 'ProvA'
     ) },
     { name: 'adapterSteps: creates one step for every port in the full vocabulary', fn: () => {
       const steps = adapterSteps();
       return steps.length === KNOWN_PORTS.length
-        && steps.every((p, i) => p.tipo === 'create-adapter' && p.port === KNOWN_PORTS[i]);
+        && steps.every((p, i) => p.kind === 'create-adapter' && p.port === KNOWN_PORTS[i]);
     } },
   ];
 }
@@ -1622,21 +1622,21 @@ function adapterPositionCases() {
     { name: 'bindingSteps: create-adapter follows the final create-module in all three bindings', fn: () => (
       BINDINGS.every((binding) => {
         const steps = bindingSteps(binding);
-        return steps.findIndex((p) => p.tipo === 'create-adapter') === steps.findLastIndex((p) => p.tipo === 'create-module') + 1;
+        return steps.findIndex((p) => p.kind === 'create-adapter') === steps.findLastIndex((p) => p.kind === 'create-module') + 1;
       })
     ) },
     { name: 'bindingSteps: format-adapters runs after the final create-adapter and before simulated-clone', fn: () => (
       BINDINGS.every((binding) => {
         const steps = bindingSteps(binding);
         const expectedType = binding === 'python' ? 'format-adapters-python' : 'format-adapters';
-        const formatIndex = steps.findIndex((p) => p.tipo === expectedType);
-        const iClone = steps.findIndex((p) => p.tipo === 'simulated-clone');
-        return formatIndex === steps.findLastIndex((p) => p.tipo === 'create-adapter') + 1 && iClone === formatIndex + 1;
+        const formatIndex = steps.findIndex((p) => p.kind === expectedType);
+        const iClone = steps.findIndex((p) => p.kind === 'simulated-clone');
+        return formatIndex === steps.findLastIndex((p) => p.kind === 'create-adapter') + 1 && iClone === formatIndex + 1;
       })
     ) },
     { name: 'bindingSteps: includes an existing factory port and the one missing port', fn: () => (
       BINDINGS.every((binding) => {
-        const ports = bindingSteps(binding).filter((p) => p.tipo === 'create-adapter').map((p) => p.port);
+        const ports = bindingSteps(binding).filter((p) => p.kind === 'create-adapter').map((p) => p.port);
         return ports.includes('repository') && ports.includes('tokenVerifier');
       })
     ) },
@@ -1654,36 +1654,36 @@ function classificationCases() {
     { name: 'classifyStep: ETIMEDOUT (spawnSync killed it) reports the timeout limit, not a generic failure', fn: () => {
       const error = Object.assign(new Error('spawnSync ETIMEDOUT'), { code: 'ETIMEDOUT' });
       const result = classifyStep({ error, status: null, signal: 'SIGTERM', capMs: TEST_CAP_MS });
-      return result.ok === false && result.motivo === `timeout expired after ${TEST_CAP_MS / 1000} s`;
+      return result.ok === false && result.reason === `timeout expired after ${TEST_CAP_MS / 1000} s`;
     } },
     { name: 'classifyStep: supervisor timeout (EXIT_CAP) reports the configured limit', fn: () => {
       const result = classifyStep({ error: undefined, status: EXIT_CAP, capMs: TEST_SUPERVISOR_CAP_MS });
-      return result.ok === false && result.motivo === `timeout expired after ${TEST_SUPERVISOR_CAP_MS / 1000} s`;
+      return result.ok === false && result.reason === `timeout expired after ${TEST_SUPERVISOR_CAP_MS / 1000} s`;
     } },
     { name: 'classifyStep: timeout without capMs still fails and reports a timeout', fn: () => {
       const result = classifyStep({ error: undefined, status: EXIT_CAP });
-      return result.ok === false && result.motivo.includes('timeout expired');
+      return result.ok === false && result.reason.includes('timeout expired');
     } },
   ];
 }
 
 function bootCases() {
   const manifests = [
-    { id: 'sondapad', basePath: '/api/v1/sondapad', requiredEnv: ['SONDAPAD_API_PORT', 'SONDAPAD_DB_URL'] },
-    { id: 'sonda-hi', basePath: '/api/v1/sonda-hi', requiredEnv: ['SONDA_HI_API_PORT', 'SONDA_HI_DB_URL'] },
+    { id: 'probepad', basePath: '/api/v1/probepad', requiredEnv: ['PROBEPAD_API_PORT', 'PROBEPAD_DB_URL'] },
+    { id: 'probe-hi', basePath: '/api/v1/probe-hi', requiredEnv: ['PROBE_HI_API_PORT', 'PROBE_HI_DB_URL'] },
   ];
   return [
     { name: 'bootEnvironment: sets ROOT_API_PORT and every manifest key; *_PORT gets the port and others get a harmless value', fn: () => {
       const a = bootEnvironment({ rootKeys: ['ROOT_API_PORT'], manifests, port: TEST_PORT });
       const port = String(TEST_PORT);
-      return a.ROOT_API_PORT === port && a.SONDAPAD_API_PORT === port && a.SONDA_HI_API_PORT === port
-        && a.SONDAPAD_DB_URL === LIMITS.boot.harmlessValue && a.SONDA_HI_DB_URL === LIMITS.boot.harmlessValue;
+      return a.ROOT_API_PORT === port && a.PROBEPAD_API_PORT === port && a.PROBE_HI_API_PORT === port
+        && a.PROBEPAD_DB_URL === LIMITS.boot.harmlessValue && a.PROBE_HI_DB_URL === LIMITS.boot.harmlessValue;
     } },
     { name: 'bootEnvironment: ROOT_API_PORT is always present, even when no keys are declared', fn: () => (
       bootEnvironment({ rootKeys: [], manifests: [], port: PORT_WITHOUT_KEYS }).ROOT_API_PORT === String(PORT_WITHOUT_KEYS)
     ) },
     { name: 'healthUrl: combines loopback, the manifest basePath, and /health', fn: () => (
-      healthUrl(manifests[1], TEST_PORT) === `http://127.0.0.1:${TEST_PORT}/api/v1/sonda-hi/health`
+      healthUrl(manifests[1], TEST_PORT) === `http://127.0.0.1:${TEST_PORT}/api/v1/probe-hi/health`
     ) },
     { name: 'chooseBootManifest: selects the first created module; returns null when none exists', fn: () => (
       chooseBootManifest(manifests)?.id === MODULE_COMBINATIONS[0].id && chooseBootManifest([]) === null
@@ -1716,7 +1716,7 @@ function runtimeCases() {
       && countGateWarnings(undefined) === 0
     ) },
     { name: 'slowFixture: creates a manifest, ports.json, and app for each binding; Python uses core/ports and api/src', fn: () => {
-      const paths = (b) => slowFixture(b).map((f) => f.caminho);
+      const paths = (b) => slowFixture(b).map((f) => f.path);
       return paths('typescript').includes('modules/zz-slow/api/src/index.ts')
         && paths('javascript').includes('modules/zz-slow/api/src/index.js')
         && paths('python').includes('modules/zz-slow/core/ports/__init__.py')
@@ -1795,7 +1795,7 @@ function capsCases() {
     ) },
     { name: 'stepCap: a step without a class throws instead of running without a limit', fn: () => {
       try {
-        stepCap({ tipo: 'inventado' });
+        stepCap({ kind: 'invented' });
         return false;
       } catch {
         return true;
@@ -1838,8 +1838,8 @@ function firstFailedCases() {
   return [
     { name: 'firstFailed: returns null when every result succeeds', fn: () => firstFailed([{ ok: true }, { ok: true }]) === null },
     { name: 'firstFailed: stops at the first failure and ignores later results', fn: () => {
-      const r = firstFailed([{ ok: true }, { ok: false, motivo: 'x' }, { ok: false, motivo: 'y' }]);
-      return r !== null && r.motivo === 'x';
+      const r = firstFailed([{ ok: true }, { ok: false, reason: 'x' }, { ok: false, reason: 'y' }]);
+      return r !== null && r.reason === 'x';
     } },
   ];
 }
@@ -1891,7 +1891,7 @@ function containerCases() {
       return r.ok === true && r.skipped === 'Docker unavailable' && classifyStep({ status: 0 }).skipped === undefined;
     } },
     { name: 'stepCap: container-files and docker have time limits, with docker receiving the largest', fn: () => (
-      stepCap({ tipo: 'container-files' }) > 0 && stepCap({ tipo: 'docker' }) > stepCap({ tipo: 'artifact' })
+      stepCap({ kind: 'container-files' }) > 0 && stepCap({ kind: 'docker' }) > stepCap({ kind: 'artifact' })
     ) },
     { name: 'containerProblems: a complete set without markers has no issues; missing required frontend files are reported', fn: () => {
       const present = [...CONTAINER_FILES, ...FRONT_FILES];

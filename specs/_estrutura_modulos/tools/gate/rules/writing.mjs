@@ -149,8 +149,8 @@ function pythonNesting(lines) {
 export default [
   {
     id: 'function-threshold',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of [...filesOf(ctx, true), ...filesOf(ctx, false)]) {
@@ -165,8 +165,8 @@ export default [
   },
   {
     id: 'nesting-threshold',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -181,8 +181,8 @@ export default [
   },
   {
     id: 'parameters-threshold',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -200,8 +200,8 @@ export default [
   },
   {
     id: 'swallowed-exception',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const empty = [
         /catch\s*(?:\([^)]*\))?\s*\{\s*\}/,

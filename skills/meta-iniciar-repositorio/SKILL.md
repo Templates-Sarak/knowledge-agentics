@@ -30,7 +30,7 @@ arquitetura de módulos instalada, o fluxo SDD montado, os primeiros módulos cr
                                 pre-commit/pre-push do template de módulos (§1 do gate) — nunca um
                                 substituindo o outro
                                 + carimbo .sarak/base.json (sempre; bindings = [o --binding]) e a entrada no mapa.json
-                                da base (só com --registrar, depois do HITL)
+                                da base (só com --register, depois do HITL)
 7. gate --all                   não encerra vermelho
 ```
 
@@ -47,7 +47,7 @@ Se você vir uma pasta `doutrina/` na raiz do alvo, algo rodou errado.
 | Nome oficial do sistema | se houver git com remoto, proponha o nome do repo e peça só confirmação |
 | **Binding**: `typescript` \| `javascript` \| `python` | **não há binding para Go/Java** — ver Limites |
 | Escopo dos packages (`@acme`) | derive do nome do sistema e confirme |
-| Registrar o sistema no `mapa.json` da base? Com que `id` (kebab-case, único) | sim → `--registrar --id <id>` (o nome do mapa é o `--name`); não → a recusa é dita na entrega |
+| Registrar o sistema no `mapa.json` da base? Com que `id` (kebab-case, único) | sim → `--register --id <id>` (o nome do mapa é o `--name`); não → a recusa é dita na entrega |
 | Primeiros módulos e o papel de cada um | mínimo um `domain`; um `connector` se houver mais de um módulo com tela — id sugerido: `hub` |
 
 **Sem binding** (repositório que não é um sistema modular — um site, uma lib, uma base de conhecimento):
@@ -63,22 +63,22 @@ Apresente: alvo, binding, escopo, módulos com papel, **se o sistema entra no `m
 python skills/meta-iniciar-repositorio/scripts/init_repo.py \
   --target "<caminho-alvo>" --name "<nome>" \
   --binding <typescript|javascript|python> --scope <scope> \
-  --modulos <id>:<role>[:artefato] [<id>:<role>[:artefato]...] --git-init \
-  [--registrar --id <id-kebab>]
+  --modules <id>:<role>[:artifact] [<id>:<role>[:artifact]...] --git-init \
+  [--register --id <id-kebab>]
 ```
 
-Cada módulo é `<id>:<role>[:artefato]` — o sufixo de papel é **obrigatório**
+Cada módulo é `<id>:<role>[:artifact]` — o sufixo de papel é **obrigatório**
 (`role` em `domain`\|`gateway`\|`connector`, o vocabulário do próprio manifesto). Sem ele, o script
-recusa com a forma correta na mensagem, nunca adivinha pelo nome. `:artefato` só é aceito para
+recusa com a forma correta na mensagem, nunca adivinha pelo nome. `:artifact` só é aceito para
 `domain` — `gateway`/`connector` nunca geram artefato, por arquitetura. Se o sistema tiver um módulo
 agregador (menu + `/summary` cross-módulo), o id sugerido é `hub`: `catalogo:domain hub:connector`.
 
 O script **cria o diretório-alvo** se ele ainda não existir — não precisa de
-`mkdir` manual antes. Ele mesmo recusa (`[ERRO] Alvo recusado`) raiz do sistema de arquivos e a pasta
+`mkdir` manual antes. Ele mesmo recusa (`[ERROR] Target refused`) raiz do sistema de arquivos e a pasta
 HOME, como backstop do que a entrevista já confirmou — mas essa checagem mecânica nunca substitui a
 confirmação HITL do passo 1, que continua obrigatória.
 
-**Se o script abortar por colisão** (`o destino ja tem package.json, ...`): **pare e pergunte**. `--forcar`
+**Se o script abortar por colisão** (`o destino ja tem package.json, ...`): **pare e pergunte**. `--force`
 sobrescreve o manifesto de pacote do projeto — o `.gitignore` é mesclado, mas o `package.json` **não**.
 Essa decisão é do usuário, nunca sua.
 
@@ -87,7 +87,7 @@ O próprio script roda `validate.mjs --all` ao final. Rode também o comando com
 (`npm run verify` ou `python verify.py`) e **leia a saída**. Gate vermelho → corrija antes de entregar.
 
 Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito — o passo 6 do script
-(`instalar_hooks_git`) já compõe sozinho via `compor_pre_commit` (núcleo puro, provado por
+(`install_git_hooks`) já compõe sozinho via `compose_pre_commit` (núcleo puro, provado por
 `python init_repo.py --selftest`), então isto é conferência, não ação manual:
 
 ```bash
@@ -104,8 +104,8 @@ de uma vez sobre o mesmo arquivo).
 
 **Se rodou com `--binding`** (projeto modular): o passo 2 já instalou o `.githooks/pre-commit` e o
 `.githooks/pre-push` do TEMPLATE (a fiação das três camadas, `specs/arquitetura/03-operacao.md` §7.1), e
-o passo 6 do script (`instalar_hooks_git`) já os **compôs** com o próprio (gate de segredos + auto-índice
-de `.agents/`) via `compor_pre_commit` — segredo primeiro (fail-closed), conformidade depois, idempotente.
+o passo 6 do script (`install_git_hooks`) já os **compôs** com o próprio (gate de segredos + auto-índice
+de `.agents/`) via `compose_pre_commit` — segredo primeiro (fail-closed), conformidade depois, idempotente.
 Nenhuma ação manual aqui: o passo 5 já confirmou as duas marcas presentes.
 
 **Sem `--binding`**: o passo 2 nunca rodou, não há hook de template para compor, e o `.githooks/pre-commit`
@@ -120,7 +120,7 @@ que o script escreve já é o final — nada a fazer aqui.
 ## Regras e limites
 - **NUNCA** rode o script num diretório não confirmado pelo usuário (raiz do SO, `~`, pasta de outro projeto).
 - **NUNCA** exclua arquivo pré-existente. O script só acrescenta ou mescla — e aborta quando não consegue.
-- **NUNCA** use `--forcar` sem autorização explícita: ele sobrescreve `package.json`/`pyproject.toml`.
+- **NUNCA** use `--force` sem autorização explícita: ele sobrescreve `package.json`/`pyproject.toml`.
 - **NUNCA** commite nem crie remoto por conta própria — é irreversível e externo. Isso é `git-commit-inicial`.
 - **NÃO** aceite `go` ou `java` como binding: **não existe molde de módulo** para eles — nem doutrina, nem
   gate, nem camada de escrita. Sistema modular nasce em `typescript`, `javascript` ou `python`.

@@ -45,15 +45,15 @@ Segurança não negocia: sem gitleaks, o commit/push é bloqueado. **Não** depe
 | Hook | Evento | Garante |
 |---|---|---|
 | `padrao-limiares.js` | PostToolUse(`Write/Edit`) | Função ≤N linhas, aninhamento ≤N, ≤N params; sem `print`/`console.log`; sem exceção engolida |
-| `padrao-format.js` | PostToolUse(`Write/Edit`) | Formatação consistente (formatter da linguagem), sem reformatar arquivo legado (`formatacao.escopo`) |
+| `padrao-format.js` | PostToolUse(`Write/Edit`) | Formatação consistente (formatter da linguagem), sem reformatar arquivo legado (`formatting.scope`) |
 
-Política em `qualidade.modo`: **block** (cobra correção) · **warn** (só avisa) · **off**.
+Política em `quality.mode`: **block** (cobra correção) · **warn** (só avisa) · **off**.
 `padrao-format` é best-effort (sem formatter, pula). Cobre **Python, JS/TS, Go e Java** — cada um pelo
-linter/formatter de `linguagens`.
+linter/formatter de `languages`.
 
-**`formatacao.escopo` — o que o `padrao-format` reformata.** Formatar o arquivo inteiro a cada edição faz
+**`formatting.scope` — o que o `padrao-format` reformata.** Formatar o arquivo inteiro a cada edição faz
 uma linha mudada num arquivo legado (que nunca passou pelo formatador) virar centenas de linhas de diff de
-formatação. Com `"conformes"` (default), o hook só formata quando isso não gera ruído:
+formatação. Com `"conforming"` (default), o hook só formata quando isso não gera ruído:
 
 - fora de um repositório git → formata;
 - arquivo não rastreado (novo), ou rastreado mas nunca commitado → formata;
@@ -64,7 +64,7 @@ formatação. Com `"conformes"` (default), o hook só formata quando isso não g
 
 A conformidade do HEAD é checada por stdin: `git show HEAD:<arquivo>` passa por `ruff format --check
 --stdin-filename` ou `prettier --check --stdin-filepath`, com o caminho real para a descoberta de config.
-Para voltar ao comportamento antigo (sempre formatar o arquivo inteiro): `"escopo": "arquivo"`. Formatar
+Para voltar ao comportamento antigo (sempre formatar o arquivo inteiro): `"scope": "file"`. Formatar
 nunca bloqueia. Evolução possível: formatar só o trecho editado (`--range`).
 
 **O limiar não vem daqui, e isso é o desenho.** `padrao-limiares` roda o linter do projeto **com a config
@@ -72,14 +72,14 @@ do projeto**, cujos 40/3/4 são derivados de `tools/gate/thresholds.mjs` — a f
 não injeta mais `--rule`/`--config`: enquanto injetava, o número vivia numa quarta cópia dentro de
 `hooks/` e essa cópia **vencia** a config gerada, então o hook e o `npm run lint` do mesmo repositório
 podiam cobrar valores diferentes. **Projeto sem config de linter** não tem limiar a aplicar: o hook
-sinaliza pelo `qualidade.modo` (em `warn`, avisa e segue) e nunca reprova por conta própria — inventar
+sinaliza pelo `quality.mode` (em `warn`, avisa e segue) e nunca reprova por conta própria — inventar
 um número ali seria repor o defeito que a mudança removeu.
 
-**Não há `qualidade.proibir`**, e a ausência é decisão. O gerador emite `no-console`, `no-empty`, `T20`
+**Não há `quality.forbid`**, e a ausência é decisão. O gerador emite `no-console`, `no-empty`, `T20`
 e `E` **incondicionalmente**, sem ler política: um campo que filtrasse essas regras no hook nunca
 acrescentaria cobertura — a única coisa que conseguiria fazer é **esconder do agente um erro que o
 `npm run lint` do mesmo repositório acusa**. Quem decide o que é cobrado é a config do projeto; o hook
-só decide *com que severidade avisar*, e isso é o `modo`.
+só decide *com que severidade avisar*, e isso é o `mode`.
 
 > **O custo desta base, declarado.** Como o repositório da base não tem config de linter na raiz, o
 > `padrao-limiares` aqui **não verifica limiar nenhum** — ele avisa e segue. Antes da mudança havia
@@ -94,7 +94,7 @@ só decide *com que severidade avisar*, e isso é o `modo`.
 |---|---|---|
 | `cyber-dependencias.js` | PreToolUse(`Bash`: `git push`) | Audita os ecossistemas presentes (npm/pip-audit/govulncheck); sinaliza vulnerabilidade ≥ severidade mínima |
 
-Política em `config.json → dependencias.modo`: **block** (bloqueia o push) · **warn** (avisa e prossegue) ·
+Política em `config.json → dependencies.mode`: **block** (bloqueia o push) · **warn** (avisa e prossegue) ·
 **off**. Roda **só no push** e só se houver manifesto — leve por design. Missing-tool segue o modo
 (em `warn`, não trava o dev).
 
@@ -107,10 +107,10 @@ Política em `config.json → dependencias.modo`: **block** (bloqueia o push) ·
 |---|---|---|
 | `test-cobertura.js` | PreToolUse(`Bash`: `git push`) | Mede a cobertura dos ecossistemas presentes; abaixo do mínimo, **pede aprovação do usuário** (ou bloqueia/avisa) |
 
-Política em `config.json → cobertura.modo`: **ask** (pede aprovação — default) · **block** (bloqueia o push) ·
-**warn** (avisa e prossegue) · **off**. Mínimo em `cobertura.minima` (default **80**, alinhado a
+Política em `config.json → coverage.mode`: **ask** (pede aprovação — default) · **block** (bloqueia o push) ·
+**warn** (avisa e prossegue) · **off**. Mínimo em `coverage.minimum` (default **80**, alinhado a
 `padrao-escrita` §9). Roda **só no push** e **só onde há ferramenta + testes** — rodar a suíte é mais pesado que
-os outros hooks, por isso nunca roda a cada edição. Ferramentas em `cobertura.ferramentas` (pytest/vitest/`go`/jacoco);
+os outros hooks, por isso nunca roda a cada edição. Ferramentas em `coverage.tools` (pytest/vitest/`go`/jacoco);
 Java lê um relatório JaCoCo já gerado (`target/site/jacoco/jacoco.csv`), não dispara o build. Operacionaliza a
 norma de testes — **escrever** os testes é da skill `test-unitario`.
 
@@ -130,33 +130,38 @@ Duas fontes, nesta ordem:
 2. **`hooks/config.json`** desta base, como fallback — é o caso da própria base (que não tem
    `config/verification.json`) e de projeto que não veio do template.
 
-O vocabulário difere de propósito entre os dois: o template nomeia **binding**
-(`typescript`/`javascript`/`python`) e usa `formatador`; os hooks nomeiam **área** (`js`/`python`) e usam
-`formatter`, porque é assim que a extensão do arquivo é mapeada. A tradução mora em `_lib.js`
-(`politicaDoProjeto`), num lugar só.
+O vocabulário é o mesmo nos dois (inglês: `quality`/`formatting`/`coverage`/`dependencies`/`languages`).
+A única tradução que sobra mora em `_lib.js` (`projectPolicy`), num lugar só: o template nomeia **binding**
+(`typescript`/`javascript`/`python`) e os hooks nomeiam **área** (`js`/`python`), porque é assim que a
+extensão do arquivo é mapeada.
+
+**Chaves antigas (português) continuam aceitas.** Projeto que já tem cópia ou override local de
+`hooks/config.json` com `qualidade`/`modo`/`formatacao`/`ativo`/`escopo`/`cobertura`/`minima`/`ferramentas`/
+`dependencias`/`severidadeMinima`/`linguagens` (e o valor `escopo: "conformes"|"arquivo"`) não precisa
+migrar de uma vez: `_lib.js` traduz pelo mapa `LEGACY_KEYS` (`normalizeLegacyKeys`), com teste no `--selftest`.
 
 ## `config.json` — tunables (fallback; cada projeto-destino ajusta)
 
 ```jsonc
 {
-  "qualidade": {
-    // `modo` e so. `limiares` esta fora (40/3/4 sao LEI, fonte unica em
-    // tools/gate/thresholds.mjs) e `proibir` tambem (a config gerada ja emite
+  "quality": {
+    // `mode` e so. Limiares estao fora (40/3/4 sao LEI, fonte unica em
+    // tools/gate/thresholds.mjs) e a lista de proibicoes tambem (a config gerada ja emite
     // no-console/no-empty sem ler politica — o campo so escondia erro que o lint acusa)
-    "modo": "warn"                   // block | warn | off
+    "mode": "warn"                   // block | warn | off
   },
-  "formatacao": { "ativo": true, "escopo": "conformes" },  // escopo: conformes | arquivo
-  "cobertura": {
-    "modo": "ask",                   // ask | block | warn | off
-    "minima": 80,                    // % mínimo (padrao-escrita §9)
-    "ferramentas": { "python": "pytest", "js": "vitest", "go": "go", "java": "jacoco" }
+  "formatting": { "active": true, "scope": "conforming" },  // scope: conforming | file
+  "coverage": {
+    "mode": "ask",                   // ask | block | warn | off
+    "minimum": 80,                   // % mínimo (padrao-escrita §9)
+    "tools": { "python": "pytest", "js": "vitest", "go": "go", "java": "jacoco" }
   },
-  "dependencias": {
-    "modo": "warn",                  // block | warn | off
-    "severidadeMinima": "high",      // low | moderate | high | critical (nativo no npm)
-    "ferramentas": { "node": "npm", "python": "pip-audit", "go": "govulncheck" }
+  "dependencies": {
+    "mode": "warn",                  // block | warn | off
+    "minimumSeverity": "high",       // low | moderate | high | critical (nativo no npm)
+    "tools": { "node": "npm", "python": "pip-audit", "go": "govulncheck" }
   },
-  "linguagens": {
+  "languages": {
     "python": { "linter": "ruff", "formatter": "ruff" },
     "js": { "linter": "eslint", "formatter": "prettier" },
     "go": { "linter": "golangci-lint", "formatter": "gofmt" },
@@ -169,7 +174,7 @@ O vocabulário difere de propósito entre os dois: o template nomeia **binding**
 
 1. Garanta os scanners da linguagem instalados (tabela abaixo).
 2. Mescle `hooks/settings.template.json` (bloco `hooks`) no `.claude/settings.json` do projeto-destino.
-3. Ajuste `hooks/config.json` (ex.: `modo: "block"` quando o time estiver pronto).
+3. Ajuste `hooks/config.json` (ex.: `mode: "block"` quando o time estiver pronto).
 
 > Com o **plugin** `sarak` instalado, o passo 2 não se aplica: o wiring do plugin já é o `hooks/hooks.json`
 > (mesmos scripts, com `${CLAUDE_PLUGIN_ROOT}` no lugar de `$CLAUDE_PROJECT_DIR`). O resto não muda.
@@ -209,7 +214,7 @@ O vocabulário difere de propósito entre os dois: o template nomeia **binding**
 ## Arquivos
 
 - `_lib.js` — base compartilhada (I/O do payload, `loadConfig`, detecção de executável/linguagem, helpers de decisão).
-- `config.json` — tunables não-secretos (qualidade + cobertura + dependências).
+- `config.json` — tunables não-secretos (quality + coverage + dependencies).
 - `settings.template.json` — wiring para colar no projeto-destino.
 - `cyber-git-seguro.js`, `cyber-dependencias.js`, `padrao-limiares.js`, `padrao-format.js`, `test-cobertura.js` — os hooks.
 

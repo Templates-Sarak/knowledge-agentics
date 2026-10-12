@@ -28,9 +28,9 @@ from pathlib import Path
 # skill). Mantenha esta tupla em sincronia com aquele arquivo; amplie os dois quando a área ganhar
 # tração. (Achado ao escrever nomenclatura.md: esta tupla tinha 'api-', que nenhuma skill usa mais
 # — a skill que a exemplificava é hoje 'test-api-contrato' — e não tinha 'spec-', que 4 skills usam.)
-PADRAO_NOME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-PREFIXO_PROIBIDO = "skill-"
-PREFIXOS_VALIDOS = (
+NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+FORBIDDEN_PREFIX = "skill-"
+VALID_PREFIXES = (
     "padrao-",
     "code-",
     "spec-",
@@ -46,29 +46,29 @@ PREFIXOS_VALIDOS = (
 )
 
 
-def validar_nome(nome: str) -> None:
+def validate_name(name: str) -> None:
     """Garante kebab-case com prefixo de área válido. Levanta ValueError com a razão se inválido."""
-    if not PADRAO_NOME.match(nome):
+    if not NAME_PATTERN.match(name):
         raise ValueError(
-            f"nome inválido: '{nome}'. Use kebab-case minúsculo "
-            f"(ex.: 'code-review') — sem maiúsculas, espaços ou underscores."
+            f"invalid name: '{name}'. Use lowercase kebab-case "
+            f"(e.g. 'code-review') — no uppercase, spaces or underscores."
         )
-    if nome.startswith(PREFIXO_PROIBIDO):
+    if name.startswith(FORBIDDEN_PREFIX):
         raise ValueError(
-            f"nome inválido: '{nome}'. Não use o prefixo redundante '{PREFIXO_PROIBIDO}' "
-            f"— escolha um prefixo de área: {', '.join(PREFIXOS_VALIDOS)}."
+            f"invalid name: '{name}'. Do not use the redundant prefix '{FORBIDDEN_PREFIX}' "
+            f"— choose an area prefix: {', '.join(VALID_PREFIXES)}."
         )
-    if not nome.startswith(PREFIXOS_VALIDOS):
+    if not name.startswith(VALID_PREFIXES):
         raise ValueError(
-            f"nome inválido: '{nome}'. Falta um prefixo de área válido "
-            f"({', '.join(PREFIXOS_VALIDOS)}) — ex.: 'code-review'."
+            f"invalid name: '{name}'. Missing a valid area prefix "
+            f"({', '.join(VALID_PREFIXES)}) — e.g. 'code-review'."
         )
 
 
-def conteudo_skill_md(nome: str) -> str:
+def skill_md_content(name: str) -> str:
     """Stub do SKILL.md denso (Camada 2) com as seções-padrão e placeholders."""
     return f"""---
-name: {nome}
+name: {name}
 description: [O QUE faz, 1 frase] + [QUANDO/gatilhos: "Use ao…"]. [SE sob demanda: "Use APENAS quando o usuário solicitar explicitamente. NÃO acione proativamente."]
 ---
 
@@ -106,8 +106,8 @@ Trate **um [item] por vez**.
 """
 
 
-def conteudo_workflow_md(nome: str) -> str:
-    return f"""# Workflow Detalhado: {nome}
+def workflow_md_content(name: str) -> str:
+    return f"""# Workflow Detalhado: {name}
 
 Versão expandida do workflow do `SKILL.md`. Leia quando precisar do detalhe de um passo.
 Trate **um [item] por vez**.
@@ -134,16 +134,16 @@ Trate **um [item] por vez**.
 """
 
 
-def conteudo_templates_md(nome: str) -> str:
-    return f"""# Templates de Preenchimento: {nome}
+def templates_md_content(name: str) -> str:
+    return f"""# Templates de Preenchimento: {name}
 
 [Blocos copiáveis dos outputs que esta skill produz. Placeholders em [colchetes].
 Remova este arquivo (e seu ponteiro no SKILL.md) se a skill não produz output.]
 """
 
 
-def conteudo_examples_md(nome: str) -> str:
-    return f"""# Exemplos: {nome}
+def examples_md_content(name: str) -> str:
+    return f"""# Exemplos: {name}
 
 ## Exemplo bom
 ### Cenário
@@ -163,12 +163,12 @@ def conteudo_examples_md(nome: str) -> str:
 """
 
 
-def conteudo_script_stub(nome: str) -> str:
+def script_stub_content(name: str) -> str:
     return f'''"""
-{nome}.py — [o que faz em uma frase].
+{name}.py — [o que faz em uma frase].
 
 Uso:
-    python {nome}.py <alvo> [--config config.json]
+    python {name}.py <target> [--config config.json]
 
 Retorno:
     [o que imprime/gera].
@@ -180,16 +180,16 @@ import json
 from pathlib import Path
 
 
-def executar(alvo: Path) -> list:
+def execute(target: Path) -> list:
     """Faz UMA coisa. Retorna estrutura clara para o agente consumir."""
     return []
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="[descrição]")
-    parser.add_argument("alvo", help="Caminho a processar")
+    parser.add_argument("target", help="Caminho a processar")
     args = parser.parse_args()
-    print(json.dumps(executar(Path(args.alvo)), ensure_ascii=False, indent=2))
+    print(json.dumps(execute(Path(args.target)), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
@@ -197,55 +197,55 @@ if __name__ == "__main__":
 '''
 
 
-def criar_skill(nome: str, destino: Path, com_script: bool) -> dict:
+def create_skill(name: str, dest_dir: Path, with_script: bool) -> dict:
     """Cria a estrutura da skill. Levanta FileExistsError se a pasta-alvo já existir."""
-    raiz = destino / nome
-    if raiz.exists():
-        raise FileExistsError(f"a pasta já existe: {raiz}")
+    root = dest_dir / name
+    if root.exists():
+        raise FileExistsError(f"the folder already exists: {root}")
 
-    arquivos = {
-        raiz / "SKILL.md": conteudo_skill_md(nome),
-        raiz / "references" / "workflow.md": conteudo_workflow_md(nome),
-        raiz / "references" / "templates.md": conteudo_templates_md(nome),
-        raiz / "references" / "examples.md": conteudo_examples_md(nome),
+    files = {
+        root / "SKILL.md": skill_md_content(name),
+        root / "references" / "workflow.md": workflow_md_content(name),
+        root / "references" / "templates.md": templates_md_content(name),
+        root / "references" / "examples.md": examples_md_content(name),
     }
-    if com_script:
-        arquivos[raiz / "scripts" / f"{nome}.py"] = conteudo_script_stub(nome)
+    if with_script:
+        files[root / "scripts" / f"{name}.py"] = script_stub_content(name)
 
-    criados = []
-    for caminho, conteudo in arquivos.items():
-        caminho.parent.mkdir(parents=True, exist_ok=True)
-        caminho.write_text(conteudo, encoding="utf-8")
-        criados.append(str(caminho))
+    created = []
+    for path, content in files.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        created.append(str(path))
 
-    return {"skill": nome, "path": str(raiz), "created": criados}
+    return {"skill": name, "path": str(root), "created": created}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Gera o esqueleto de uma skill nova no padrão de 3 camadas."
+        description="Generates the skeleton of a new skill in the 3-layer pattern."
     )
     parser.add_argument(
-        "skill_name", help="Nome em kebab-case com prefixo de área (ex.: code-review)"
+        "skill_name", help="Name in kebab-case with an area prefix (e.g. code-review)"
     )
     parser.add_argument(
-        "--dir", default=".", help="Diretório de destino (padrão: atual)"
+        "--dir", default=".", help="Destination directory (default: current)"
     )
     parser.add_argument(
         "--with-script",
         action="store_true",
-        help="Também cria scripts/<nome>.py (stub)",
+        help="Also creates scripts/<name>.py (stub)",
     )
     args = parser.parse_args()
 
     try:
-        validar_nome(args.skill_name)
-        resultado = criar_skill(args.skill_name, Path(args.dir), args.with_script)
-    except (ValueError, FileExistsError) as erro:
-        print(f"erro: {erro}", file=sys.stderr)
+        validate_name(args.skill_name)
+        result = create_skill(args.skill_name, Path(args.dir), args.with_script)
+    except (ValueError, FileExistsError) as error:
+        print(f"error: {error}", file=sys.stderr)
         sys.exit(1)
 
-    print(json.dumps(resultado, ensure_ascii=False, indent=2))
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

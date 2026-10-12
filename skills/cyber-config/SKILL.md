@@ -23,11 +23,11 @@ Mutativa ao corrigir → HITL.
 Trate **um app por vez**. Política e valores em `references/hardening.md`.
 
 1. **Confirmar autorização** — a URL é do **próprio app** (staging/local) ou alvo autorizado? Se não, **pare**.
-2. **DAST de headers/paths** — `python scripts/check_headers.py --url <url-propria>` → JSON: headers presentes/faltando + `paths_expostos` (qualquer 200 em `/.git`, `/.env`, `/backup.*` é exposição).
+2. **DAST de headers/paths** — `python scripts/check_headers.py --url <url-propria>` → JSON: headers presentes/faltando (`headers_present`/`headers_missing`) + `paths_exposed` (qualquer 200 em `/.git`, `/.env`, `/backup.*` é exposição).
 3. **Revisar config estática** — `next.config`/`helmet`/servidor: headers, redirect HTTP→HTTPS, HSTS, `Set-Cookie` flags, `NODE_ENV=production`/`DEBUG=false`, sem listagem de diretório.
 4. **Erros & debug** — confirme que erros não retornam stack trace/SQL/caminho; sem endpoints de debug.
 5. **HITL — plano** — headers a adicionar, paths a bloquear, debug a desligar, TLS/HSTS. → "⚠️ Confirma o hardening?". **Aguarde.**
-6. **Aplicar + re-testar** — configure; rode o `check_headers.py` de novo → `headers_faltando: []` e `paths_expostos: []`.
+6. **Aplicar + re-testar** — configure; rode o `check_headers.py` de novo → `headers_missing: []` e `paths_exposed: []`.
 7. **Reportar** — use `assets/relatorio_seguranca.md` (consolidado dos domínios cyber).
 
 ## Regras e limites
@@ -42,16 +42,16 @@ Trate **um app por vez**. Política e valores em `references/hardening.md`.
 - [ ] `check_headers.py` rodado: headers de segurança presentes e nenhum path sensível em 200?
 - [ ] HTTPS forçado + HSTS; cookies com flags (ver `cyber-auth`)?
 - [ ] Erros sem stack trace; debug desligado em produção?
-- [ ] HITL feito; re-teste com `headers_faltando: []` e `paths_expostos: []`?
+- [ ] HITL feito; re-teste com `headers_missing: []` e `paths_exposed: []`?
 - [ ] Relatório consolidado preenchido?
 
 > **Em escala:** a auditoria dos 7 domínios cyber é orquestrada pelo command `/cyber1-auditar` (fan-out: um agente
 > `cyber-auditor` por domínio → relatório consolidado em `.sarak/security/`) e a adequação por `/cyber2-adequar`
 > (HITL por achado, ordenado por severidade, re-scan via `cyber-auditor`). `cyber-config` é o lar do **formato
-> consolidado** (relatório + `achados[]`).
+> consolidado** (relatório + `findings[]`).
 
 ## Referências (Camada 3 — leia sob demanda)
 - `scripts/check_headers.py` + `scripts/config.json` — DAST leve (headers + sondagem de paths) no próprio app.
 - `references/hardening.md` — política de headers (valores), arquivos/paths a bloquear, TLS, debug.
-- `references/achados-format.md` — schema do `achados[]` (fila máquina da correção) + roteador severidade/domínio.
+- `references/achados-format.md` — schema do `findings[]` (fila máquina da correção) + roteador severidade/domínio.
 - `assets/relatorio_seguranca.md` — template do **relatório consolidado** de segurança (todos os domínios cyber).

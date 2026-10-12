@@ -71,11 +71,11 @@ export function normalizeNpm(auditJson) {
     for (const via of entry.via ?? []) {
       if (typeof via === 'string') continue;
       findings.push({
-        ecossistema: 'npm',
-        pacote: pkg,
-        severidade: via.severity ?? entry.severity ?? null,
+        ecosystem: 'npm',
+        package: pkg,
+        severity: via.severity ?? entry.severity ?? null,
         id: urlId(via.url) ?? `npm:${pkg}:${via.source ?? 'missing-id'}`,
-        titulo: via.title ?? `${pkg}: vulnerability title is unavailable`,
+        title: via.title ?? `${pkg}: vulnerability title is unavailable`,
         url: via.url ?? null,
       });
     }
@@ -90,11 +90,11 @@ export function normalizePip(auditJson) {
   for (const dep of auditJson.dependencies) {
     for (const vuln of dep.vulns ?? []) {
       findings.push({
-        ecossistema: 'pip',
-        pacote: dep.name,
-        severidade: null,
+        ecosystem: 'pip',
+        package: dep.name,
+        severity: null,
         id: vuln.id ?? (vuln.aliases ?? [])[0] ?? `pip:${dep.name}:missing-id`,
-        titulo: (vuln.description ?? '').slice(0, 120) || `${dep.name}: vulnerability description is unavailable`,
+        title: (vuln.description ?? '').slice(0, 120) || `${dep.name}: vulnerability description is unavailable`,
         url: null,
       });
     }
@@ -114,7 +114,7 @@ export function floorAbove(severity, min) {
 const DATE_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Calendário de verdade — rejeita "2026-02-30" que `new Date` rolaria em silêncio para março. */
-function dataRealISO(text) {
+function realDateIso(text) {
   if (typeof text !== 'string' || !DATE_FORMAT.test(text)) return false;
   const [year, month, day] = text.split('-').map(Number);
   const data = new Date(Date.UTC(year, month - 1, day));
@@ -128,7 +128,7 @@ function dataRealISO(text) {
  */
 export function exceptionStatus(exception, todayIso) {
   if (!exception || typeof exception !== 'object' || !exception.decision) return 'missing-decision';
-  if (!dataRealISO(exception.expires)) return 'malformed-expiry';
+  if (!realDateIso(exception.expires)) return 'malformed-expiry';
   return exception.expires < todayIso ? 'expired' : 'valid';
 }
 
@@ -139,33 +139,33 @@ export function exceptionStatus(exception, todayIso) {
  */
 export function evaluate({ npm, pip, min, exceptions, todayIso }) {
   if (npm === null && pip === null) {
-    return { status: 'unaudited', compativel: false, achados: [], excecoesProblematicas: [] };
+    return { status: 'unaudited', compatible: false, findings: [], problematicExceptions: [] };
   }
-  const rawArgs = [...(npm ?? []), ...(pip ?? [])].filter((a) => floorAbove(a.severidade, min));
+  const rawArgs = [...(npm ?? []), ...(pip ?? [])].filter((a) => floorAbove(a.severity, min));
 
   const problematicExceptions = [];
   const findings = [];
   for (const finding of rawArgs) {
     const exception = (exceptions ?? []).find((e) => e.id === finding.id);
     if (exception === undefined) {
-      findings.push({ ...finding, perdoado: false });
+      findings.push({ ...finding, waived: false });
       continue;
     }
     const status = exceptionStatus(exception, todayIso);
     if (status === 'valid') {
-      findings.push({ ...finding, perdoado: true });
+      findings.push({ ...finding, waived: true });
       continue;
     }
     problematicExceptions.push({ id: finding.id, status });
-    findings.push({ ...finding, perdoado: false });
+    findings.push({ ...finding, waived: false });
   }
 
-  const failers = findings.filter((a) => !a.perdoado);
+  const failers = findings.filter((a) => !a.waived);
   return {
     status: 'audited',
-    compativel: failers.length === 0,
-    achados: findings,
-    excecoesProblematicas: problematicExceptions,
+    compatible: failers.length === 0,
+    findings,
+    problematicExceptions,
   };
 }
 
@@ -296,15 +296,15 @@ function printHuman(r, bind) {
     process.stdout.write(`  x audit tool is missing or returned unreadable output (binding: ${bind ?? 'unknown'}) — FAIL-CLOSED: unchecked never means "ok"\n`);
     return;
   }
-  if (r.achados.length === 0) {
+  if (r.findings.length === 0) {
     process.stdout.write('  ok   no vulnerabilities at the configured severity floor\n');
   }
-  for (const a of r.achados) {
-    const mark = a.perdoado ? '!' : 'x';
-    const label = a.perdoado ? 'WAIVED (valid exception)' : 'FAILS';
-    process.stdout.write(`  ${mark} [${a.ecossistema}] ${a.pacote} (${a.severidade ?? 'no severity'}) ${a.id}: ${a.titulo} — ${label}\n`);
+  for (const a of r.findings) {
+    const mark = a.waived ? '!' : 'x';
+    const label = a.waived ? 'WAIVED (valid exception)' : 'FAILS';
+    process.stdout.write(`  ${mark} [${a.ecosystem}] ${a.package} (${a.severity ?? 'no severity'}) ${a.id}: ${a.title} — ${label}\n`);
   }
-  for (const p of r.excecoesProblematicas) {
+  for (const p of r.problematicExceptions) {
     process.stdout.write(`  !    exception for "${p.id}" is invalid (${p.status}) — the finding still fails\n`);
   }
 }
@@ -340,16 +340,16 @@ function main() {
   const withoutAudit = (bind === 'node' && normalizedNpm === null) || (bind === 'python' && normalizedPip === null) || bind === null;
 
   const result = withoutAudit
-    ? { status: 'unaudited', compativel: false, achados: [], excecoesProblematicas: [] }
+    ? { status: 'unaudited', compatible: false, findings: [], problematicExceptions: [] }
     : evaluate({ npm: normalizedNpm, pip: normalizedPip, min: minSeverity(), exceptions: cveExceptions(), todayIso: todayIso() });
 
   if (options.json) printJson(result);
   else {
     process.stdout.write(`ci-dependencies: binding ${bind ?? 'unknown'}, severity floor ${minSeverity()}\n`);
     printHuman(result, bind);
-    process.stdout.write(`\nci-dependencies: ${result.compativel ? 'OK' : 'FAILED'}\n`);
+    process.stdout.write(`\nci-dependencies: ${result.compatible ? 'OK' : 'FAILED'}\n`);
   }
-  return result.compativel ? 0 : 1;
+  return result.compatible ? 0 : 1;
 }
 
 // ================================================================================================
@@ -383,7 +383,7 @@ function selfTestCases() {
     { name: 'npm with a broken lockfile returns null, never an empty list', fn: () => normalizeNpm(NPM_WITH_BROKEN_LOCKFILE) === null },
     { name: 'real npm output: reads one finding from an object via entry and ignores the duplicate string entry', fn: () => normalizeNpm(NPM_ONE_VULN).length === 1 },
     { name: 'real npm output: extracts the id from the GHSA URL', fn: () => normalizeNpm(NPM_ONE_VULN)[0].id === 'GHSA-4w7w-66w2-5vf9' },
-    { name: 'real pip output: severity is always null because pip-audit does not report it', fn: () => { const a = normalizePip(PIP_ONE_VULN); return a.length === 1 && a[0].severidade === null; } },
+    { name: 'real pip output: severity is always null because pip-audit does not report it', fn: () => { const a = normalizePip(PIP_ONE_VULN); return a.length === 1 && a[0].severity === null; } },
     { name: 'pip with no vulnerabilities returns an empty list, not null', fn: () => { const r = normalizePip({ dependencies: [{ name: 'x', version: '1', vulns: [] }] }); return Array.isArray(r) && r.length === 0; } },
     { name: 'pip with an invalid shape returns null, not an empty list', fn: () => normalizePip({ oops: true }) === null },
     { name: 'floorAbove: null severity from pip always counts', fn: () => floorAbove(null, 'critical') === true },
@@ -399,14 +399,14 @@ function selfTestCases() {
       name: 'evaluate: a valid exception forgives the finding',
       fn: () => {
         const r = evaluate({ npm: normalizeNpm(NPM_ONE_VULN), pip: [], min: 'low', exceptions: [{ id: 'GHSA-4w7w-66w2-5vf9', decision: 'ADR-9', expires: '2099-01-01' }], todayIso: '2026-01-01' });
-        return r.compativel === true && r.achados.some((a) => a.perdoado);
+        return r.compatible === true && r.findings.some((a) => a.waived);
       },
     },
     {
       name: 'evaluate: an expired exception does not forgive the finding and remains problematic',
       fn: () => {
         const r = evaluate({ npm: normalizeNpm(NPM_ONE_VULN), pip: [], min: 'low', exceptions: [{ id: 'GHSA-4w7w-66w2-5vf9', decision: 'ADR-9', expires: '2020-01-01' }], todayIso: '2026-01-01' });
-        return r.compativel === false && r.excecoesProblematicas.some((p) => p.status === 'expired');
+        return r.compatible === false && r.problematicExceptions.some((p) => p.status === 'expired');
       },
     },
     {

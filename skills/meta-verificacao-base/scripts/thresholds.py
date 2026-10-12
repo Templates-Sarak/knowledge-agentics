@@ -8,104 +8,104 @@ POLÍTICA: falha fechada. Se `thresholds.mjs` mudar de forma e o parser abaixo d
 reconhecer o objeto `THRESHOLDS`, o retorno é reprovação explícita — nunca inferência silenciosa
 (mesmo defeito de fail-open que este repo já mediu e corrigiu em outro lugar).
 
-Núcleo × casca: as funções `_de_texto`/`_de_dict` são puras (recebem texto/estrutura já lidos,
+Núcleo × casca: as funções `thresholds_of_mjs_text`/`thresholds_of_config_dict` são puras (recebem texto/estrutura já lidos,
 nunca tocam `fs`) e são o que o `--selftest` de `audit_base.py` prova com fixtures em memória.
-As funções `_de_arquivo` são a casca fina que só lê o disco e delega.
+As funções `thresholds_from_mjs_file/thresholds_of_config_file` são a casca fina que só lê o disco e delega.
 """
 
 import json
 import os
 import re
 
-CHAVES_MJS = ("functionLines", "nesting", "params")
-CHAVES_CONFIG = ("maxFunctionLines", "maxNesting", "maxParams")
-MAPA_MJS_PARA_CONFIG = dict(zip(CHAVES_MJS, CHAVES_CONFIG))
+MJS_KEYS = ("functionLines", "nesting", "params")
+CONFIG_KEYS = ("maxFunctionLines", "maxNesting", "maxParams")
+MJS_TO_CONFIG_MAP = dict(zip(MJS_KEYS, CONFIG_KEYS))
 
-_BLOCO_LIMIARES = re.compile(r"THRESHOLDS\s*=\s*\{(.*?)\}", re.DOTALL)
+_THRESHOLDS_BLOCK = re.compile(r"THRESHOLDS\s*=\s*\{(.*?)\}", re.DOTALL)
 
 
-def limiares_de_texto_mjs(texto):
+def thresholds_of_mjs_text(text):
     """Núcleo: `{functionLines, nesting, params}` extraído do TEXTO de `thresholds.mjs`,
     ou `None` se o formato não bater — fail-closed, nunca infere valor ausente."""
-    bloco = _BLOCO_LIMIARES.search(texto)
-    if bloco is None:
+    block = _THRESHOLDS_BLOCK.search(text)
+    if block is None:
         return None
-    corpo = bloco.group(1)
-    valores = {}
-    for chave in CHAVES_MJS:
-        m = re.search(r"\b%s\s*:\s*(\d+)" % re.escape(chave), corpo)
+    body = block.group(1)
+    values = {}
+    for key in MJS_KEYS:
+        m = re.search(r"\b%s\s*:\s*(\d+)" % re.escape(key), body)
         if m is None:
             return None
-        valores[chave] = int(m.group(1))
-    return valores
+        values[key] = int(m.group(1))
+    return values
 
 
-def limiares_de_thresholds(caminho):
+def thresholds_from_mjs_file(path):
     """Casca: lê `thresholds.mjs` do disco e delega ao núcleo."""
     try:
-        texto = open(caminho, encoding="utf-8").read()
+        text = open(path, encoding="utf-8").read()
     except OSError:
         return None
-    return limiares_de_texto_mjs(texto)
+    return thresholds_of_mjs_text(text)
 
 
-def limiares_de_dict_config(dados):
+def thresholds_of_config_dict(data):
     """Núcleo: `{maxFunctionLines, maxNesting, maxParams}` de um dict já carregado, ou `None`
     se faltar algum dos três campos esperados."""
-    if not all(chave in dados for chave in CHAVES_CONFIG):
+    if not all(key in data for key in CONFIG_KEYS):
         return None
-    return {chave: dados[chave] for chave in CHAVES_CONFIG}
+    return {key: data[key] for key in CONFIG_KEYS}
 
 
-def limiares_de_config(caminho):
+def thresholds_of_config_file(path):
     """Casca: lê o `config.json` do disco e delega ao núcleo."""
     try:
-        with open(caminho, encoding="utf-8") as f:
-            dados = json.load(f)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
     except (OSError, json.JSONDecodeError):
         return None
-    return limiares_de_dict_config(dados)
+    return thresholds_of_config_dict(data)
 
 
-def divergencias(mjs, config, rotulo):
+def divergences(mjs, config, label):
     """Núcleo: mensagens de divergência entre o trio-fonte (`mjs`, já resolvido e não-`None`)
     e a cópia de `rotulo` (nome da pasta `padrao-<linguagem>`)."""
     if config is None:
         return [
-            "[%s] config.json ilegível ou sem os três campos esperados "
-            "(maxFunctionLines/maxNesting/maxParams)" % rotulo
+            "[%s] config.json unreadable or missing the three expected fields "
+            "(maxFunctionLines/maxNesting/maxParams)" % label
         ]
-    achados = []
-    for chave_mjs, chave_cfg in MAPA_MJS_PARA_CONFIG.items():
-        if mjs[chave_mjs] != config[chave_cfg]:
-            achados.append(
-                "[%s] %s diverge da fonte única: thresholds.mjs.%s=%s vs config.json.%s=%s"
+    findings = []
+    for mjs_key, config_key in MJS_TO_CONFIG_MAP.items():
+        if mjs[mjs_key] != config[config_key]:
+            findings.append(
+                "[%s] %s diverges from the single source: thresholds.mjs.%s=%s vs config.json.%s=%s"
                 % (
-                    rotulo,
-                    chave_mjs,
-                    chave_mjs,
-                    mjs[chave_mjs],
-                    chave_cfg,
-                    config[chave_cfg],
+                    label,
+                    mjs_key,
+                    mjs_key,
+                    mjs[mjs_key],
+                    config_key,
+                    config[config_key],
                 )
             )
-    return achados
+    return findings
 
 
-def auditar_limiares(base_dir):
+def audit_thresholds(base_dir):
     """Casca: compara `thresholds.mjs` contra `padrao-python` e `padrao-typescript`."""
-    caminho_mjs = os.path.join(
+    mjs_path = os.path.join(
         base_dir, "specs", "_estrutura_modulos", "tools", "gate", "thresholds.mjs"
     )
-    mjs = limiares_de_thresholds(caminho_mjs)
+    mjs = thresholds_from_mjs_file(mjs_path)
     if mjs is None:
         return [
-            "[thresholds.mjs] formato inesperado — não foi possível extrair THRESHOLDS; "
-            "comparação reprovada (fail-closed)"
+            "[thresholds.mjs] unexpected format — could not extract THRESHOLDS; "
+            "comparison failed (fail-closed)"
         ]
-    achados = []
-    for pasta in ("padrao-python", "padrao-typescript"):
-        caminho_cfg = os.path.join(base_dir, "skills", pasta, "scripts", "config.json")
-        config = limiares_de_config(caminho_cfg)
-        achados.extend(divergencias(mjs, config, pasta))
-    return achados
+    findings = []
+    for directory in ("padrao-python", "padrao-typescript"):
+        config_path = os.path.join(base_dir, "skills", directory, "scripts", "config.json")
+        config = thresholds_of_config_file(config_path)
+        findings.extend(divergences(mjs, config, directory))
+    return findings

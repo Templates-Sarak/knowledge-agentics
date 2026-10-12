@@ -5,61 +5,61 @@ varredura termina com a trava; proativa é exceção declarada").
 
 Separado de `audit_base.py` por SRP: aquele orquestra e imprime; este só compara.
 
-Núcleo × casca: `descricao_do_frontmatter`/`skills_sem_trava` são puros (recebem texto/lista já
+Núcleo × casca: `frontmatter_description`/`skills_without_guard` são puros (recebem texto/lista já
 lidos, nunca tocam `fs`) — é o que o `--selftest` de `audit_base.py` prova com fixtures em
-memória. `auditar_proatividade` é a casca fina que lê `fs` e delega.
+memória. `audit_proactivity` é a casca fina que lê `fs` e delega.
 """
 
 import os
 
-TRAVA = "NÃO acione proativamente"
+GUARD = "NÃO acione proativamente"
 
 # Exceções declaradas: skill que dispara SEM pedido do usuário, e por quê. Lista FECHADA — uma
-# skill nova entra em PROATIVAS só com justificativa própria, nunca por omissão.
-PROATIVAS = {
-    "padrao-escrita": "norma sempre-referenciada — as demais skills a consultam sem pedir",
-    "padrao-python": "norma sempre-referenciada — a camada Python do padrao-escrita",
-    "padrao-typescript": "norma sempre-referenciada — a camada TS/JS do padrao-escrita",
-    "spec-write": "fonte de forma sempre-referenciada pelas demais skills de spec",
-    "code-auditoria-padrao": "gatekeeper de fim de tarefa — só funciona se dispara sem pedido "
-    "(explicado no corpo do SKILL.md dela)",
+# skill nova entra em PROACTIVE só com justificativa própria, nunca por omissão.
+PROACTIVE = {
+    "padrao-escrita": "always-referenced norm — the other skills consult it without being asked",
+    "padrao-python": "always-referenced norm — the Python layer of the writing norm",
+    "padrao-typescript": "always-referenced norm — the TS/JS layer of the writing norm",
+    "spec-write": "always-referenced source of form for the other spec skills",
+    "code-auditoria-padrao": "end-of-task gatekeeper — it only works if it fires unasked "
+    "(explained in the body of its SKILL.md)",
 }
 
 
-def descricao_do_frontmatter(texto):
+def frontmatter_description(text):
     """Núcleo: a linha `description: ...` inteira do frontmatter YAML, ou `None` se não achar."""
-    for linha in texto.split("\n"):
-        if linha.startswith("description:"):
-            return linha[len("description:") :].strip()
+    for line in text.split("\n"):
+        if line.startswith("description:"):
+            return line[len("description:") :].strip()
     return None
 
 
-def skills_sem_trava(nomes_e_descricoes, proativas):
+def skills_without_guard(names_and_descriptions, proactive):
     """Núcleo: nomes cuja descrição não tem a trava e que não estão na lista de exceções."""
-    achados = []
-    for nome, descricao in nomes_e_descricoes:
-        if descricao is None:
-            achados.append(nome)
+    findings = []
+    for name, description in names_and_descriptions:
+        if description is None:
+            findings.append(name)
             continue
-        if TRAVA not in descricao and nome not in proativas:
-            achados.append(nome)
-    return achados
+        if GUARD not in description and name not in proactive:
+            findings.append(name)
+    return findings
 
 
-def auditar_proatividade(base_dir):
+def audit_proactivity(base_dir):
     """Casca: lê a `description` de cada `skills/*/SKILL.md` e cobra a trava."""
-    pasta = os.path.join(base_dir, "skills")
-    if not os.path.isdir(pasta):
+    directory = os.path.join(base_dir, "skills")
+    if not os.path.isdir(directory):
         return []
-    pares = []
-    for nome in sorted(os.listdir(pasta)):
-        caminho = os.path.join(pasta, nome, "SKILL.md")
-        if not os.path.isfile(caminho):
+    pairs = []
+    for name in sorted(os.listdir(directory)):
+        path = os.path.join(directory, name, "SKILL.md")
+        if not os.path.isfile(path):
             continue
-        texto = open(caminho, encoding="utf-8").read()
-        pares.append((nome, descricao_do_frontmatter(texto)))
+        text = open(path, encoding="utf-8").read()
+        pairs.append((name, frontmatter_description(text)))
     return [
-        "[%s] description sem a trava '%s', e a skill não está na lista de exceções "
-        "declaradas (PROATIVAS)" % (nome, TRAVA)
-        for nome in skills_sem_trava(pares, PROATIVAS)
+        "[%s] description without the guard '%s', and the skill is not in the list of "
+        "declared exceptions (PROACTIVE)" % (name, GUARD)
+        for name in skills_without_guard(pairs, PROACTIVE)
     ]

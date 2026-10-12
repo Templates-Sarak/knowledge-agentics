@@ -52,7 +52,7 @@ não existe: *"não verificado" nunca é reportado como `ok`*.
 
 ## Fluxo
 
-1. **Inventariar a origem** (read-only) — `python scripts/inventariar_origem.py --modulo <caminho> --json`
+1. **Inventariar a origem** (read-only) — `python scripts/inventory_source.py --module <caminho> --json`
    devolve superfície do contrato, tabelas/colunas, chaves de env, `ports`, `consumes`, `permissions`,
    `publicRoutes` e o **léxico**: identificadores por frequência, separando vocabulário de capacidade
    de vocabulário de negócio. Reporte o resultado como fato, em uma linha.
@@ -73,7 +73,7 @@ não existe: *"não verificado" nunca é reportado como `ok`*.
 4. **Criar o repositório do módulo** — um módulo, um repositório. Via `meta-iniciar-repositorio`:
    ```
    python meta-iniciar-repositorio/scripts/init_repo.py --target <repo> --name "<capacidade>" \
-          --binding <typescript|javascript|python> --scope <scope> --modulos <id>:<role> --git-init
+          --binding <typescript|javascript|python> --scope <scope> --modules <id>:<role> --git-init
    ```
    O repo nasce com `tools/`, `packages/ports`, `adapters/memory`, `src/composicao` e
    `specs/arquitetura/` ao redor do módulo — o procedimento de extração da doutrina já vem executado.
@@ -83,7 +83,7 @@ não existe: *"não verificado" nunca é reportado como `ok`*.
 6. **Contrato antes do código** — `contract/openapi.yaml` reescrito a partir da capacidade, com
    `/health`, `/meta` e `/summary` e **exemplos neutros**. Só então: `core/domain` → `api/src/routes` →
    `api/src/mappers` → `database/` (migration **nova**, com `-- rollback`) → `web/` → `tests/`.
-7. **Os seis degraus** — `python scripts/verificar_entregavel.py --repo <repo> --modulo <id>`.
+7. **Os seis degraus** — `python scripts/verify_deliverable.py --repo <repo> --module <id>`.
 8. **Entregar** — ⚠️ HITL final com o relatório dos seis degraus, os pontos de extensão e o que ficou
    pendente. O primeiro commit e o remoto são da `git-commit-inicial`.
 
@@ -93,14 +93,14 @@ não existe: *"não verificado" nunca é reportado como `ok`*.
 |---|---|---|
 | 1 | **Conforme** | `validate.mjs modules/<id>` |
 | 2 | **Extraível** | `validate.mjs --extraction modules/<id>` |
-| 3 | **Funciona sem infra** | o comando `verificar` do binding — tipos + testes com `adapters/memory`, sem rede e sem banco |
+| 3 | **Funciona sem infra** | o comando `verify` do binding — tipos + testes com `adapters/memory`, sem rede e sem banco |
 | 4 | **O schema funciona** | migration `up` **e** `rollback` num banco efêmero (Docker) → `db-migrations` + `test-integracao-api` |
 | 5 | **Sobe e cumpre o contrato** | boot no compose efêmero; `/health`, `/meta` e `/summary` validados contra o `openapi.yaml` → `test-api-contrato` |
-| 6 | **É genérico** | `scripts/verificar_neutralidade.py` — denylist em **todo** texto do módulo, zero ocorrência |
+| 6 | **É genérico** | `scripts/verify_neutrality.py` — denylist em **todo** texto do módulo, zero ocorrência |
 
 O gate (1 e 2) é **estático e sem efeito colateral por contrato**: ele nunca roda o módulo. Tratar
 verde de gate como prova de funcionamento é o defeito que `03-operacao.md` §6 registra. Os degraus 4 e
-5 compartilham **um** ambiente efêmero, subido e derrubado pelo `verificar_entregavel.py`.
+5 compartilham **um** ambiente efêmero, subido e derrubado pelo `verify_deliverable.py`.
 
 ## Invariantes do módulo genérico (cobrados, não lembrados)
 
@@ -151,7 +151,7 @@ gate acusou; quais termos a denylist pegou; se a origem estava estável no passo
 - [ ] Inventário rodado **antes** de qualquer pergunta ao usuário?
 - [ ] Mapa de capacidade aprovado em HITL, com cada item do inventário em uma das três colunas?
 - [ ] Identidade derivada da capacidade (nenhum nome traduzido da origem)?
-- [ ] Repositório criado por `meta-iniciar-repositorio`, um módulo, `--modulos <id>:domain|gateway`?
+- [ ] Repositório criado por `meta-iniciar-repositorio`, um módulo, `--modules <id>:domain|gateway`?
 - [ ] `consumes` vazio, `role` ≠ `connector`, nenhum SDK de fornecedor dentro do módulo?
 - [ ] Decisões do mapa registradas como ADR de desenho, **sem** procedência?
 - [ ] `openapi.yaml` escrito antes do código, com `/health`, `/meta`, `/summary` e exemplos neutros?
@@ -164,6 +164,6 @@ gate acusou; quais termos a denylist pegou; se a origem estava estável no passo
 - `references/templates.md` — mapa de capacidade, plano HITL, denylist, ADR de pontos de extensão,
   `compose` de verificação e relatório final.
 - `references/examples.md` — uma generalização certa e uma errada, com o impacto de cada desvio.
-- `scripts/inventariar_origem.py` — passo 1, read-only, com `--selftest`.
-- `scripts/verificar_neutralidade.py` — degrau 6, lógica pura, com `--selftest`.
-- `scripts/verificar_entregavel.py` — orquestra os seis degraus e o ambiente efêmero, com `--selftest`.
+- `scripts/inventory_source.py` — passo 1, read-only, com `--selftest`.
+- `scripts/verify_neutrality.py` — degrau 6, lógica pura, com `--selftest`.
+- `scripts/verify_deliverable.py` — orquestra os seis degraus e o ambiente efêmero, com `--selftest`.

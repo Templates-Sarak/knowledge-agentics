@@ -15,8 +15,8 @@ input do usuário é o que torna crítico). SQLi e validação de entrada são *
 | **SSRF** (`fetch`/`requests` com variável) | servidor acessa URL controlada pelo atacante | allowlist de hosts; bloquear IPs internos/metadata (169.254.169.254) |
 
 ## Como triar
-- `confianca: alta` → quase sempre real, priorizar.
-- `media` → depende se há **input externo** alcançando o ponto (siga o fluxo do dado).
-- `baixa` → muito ruído (ex.: `Math.random` para animação é ok; só importa para segredo/token). Confirme a intenção.
+- `confidence: high` → quase sempre real, priorizar.
+- `medium` → depende se há **input externo** alcançando o ponto (siga o fluxo do dado).
+- `low` → muito ruído (ex.: `Math.random` para animação é ok; só importa para segredo/token). Confirme a intenção.
 
 > Validação de **todo input na borda `api/`** e **queries parametrizadas** são norma (`padrao-escrita`) — se violadas, registre como achado e corrija conforme a norma.

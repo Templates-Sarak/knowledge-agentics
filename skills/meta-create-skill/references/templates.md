@@ -148,27 +148,27 @@ import json
 from pathlib import Path
 
 
-def carregar_config(caminho_config: str) -> dict:
+def load_config(config_path: str) -> dict:
     """Lê parâmetros externos (padrões, limites, caminhos). Nada hardcoded."""
-    return json.loads(Path(caminho_config).read_text(encoding="utf-8"))
+    return json.loads(Path(config_path).read_text(encoding="utf-8"))
 
 
-def executar(alvo: Path, config: dict) -> list:
+def execute(target: Path, config: dict) -> list:
     """Faz UMA coisa. Retorna estrutura clara para o agente consumir."""
-    resultados = []
+    results = []
     # ... lógica determinística ...
-    return resultados
+    return results
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="[descrição]")
-    parser.add_argument("alvo", help="Caminho do arquivo/pasta a processar")
+    parser.add_argument("target", help="Caminho do arquivo/pasta a processar")
     parser.add_argument("--config", default="config.json", help="Caminho do config.json")
     args = parser.parse_args()
 
-    config = carregar_config(args.config)
-    resultados = executar(Path(args.alvo), config)
-    print(json.dumps(resultados, ensure_ascii=False, indent=2))
+    config = load_config(args.config)
+    results = execute(Path(args.target), config)
+    print(json.dumps(results, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

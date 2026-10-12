@@ -1,636 +1,704 @@
-"""aplicacao.py — o APLICAR e o DESFAZER da propagacao (chamados pela CLI do `propagar.py`).
+"""apply.py — o APPLY e o UNDO da propagacao (chamados pela CLI do `propagate.py`).
 
-Aplicar: no branch CORRENTE do sistema (nunca cria branch), escreve SO o que o plano manda e SEM commit
-— `adicionar`, `substituir`, `substituir-politica` e, com flag explicita por execucao, `divergente` e
-`adicionar?`; e, por arquivo, o `divergente`/`conflito` dado em `--adotar`. `--manter ... --motivo` nao escreve
-o arquivo: registra a decisao em `mantidos` no carimbo (que o aplicar preserva, descartando as vencidas).
-Nunca: `conflito` sem `--adotar`, `obsoleto?` (nunca apaga), `bloqueado`,
+Apply: no branch CORRENTE do sistema (nunca cria branch), escreve SO o que o plano manda e SEM commit
+— `add`, `replace`, `replace-policy` e, com flag explicita por execucao, `divergent` e
+`add?`; e, por arquivo, o `divergent`/`conflict` dado em `--adopt`. `--keep ... --reason` nao escreve
+o arquivo: registra a decisao em `kept` no carimbo (que o apply preserva, descartando as vencidas).
+Nunca: `conflict` sem `--adopt`, `obsolete?` (nunca apaga), `blocked`,
 molde de processo/conteudo presentes, codigo do projeto. Depois: carimbo `.sarak/base.json` (pelas
-funcoes do `carimbo.py`), `00-resumo` (so sem migracao de familias pendente), gate (so modular),
-manifesto `.sarak/propagacao-<curto>.json` e o `status` no `mapa.json`.
+funcoes do `stamp.py`), `00-resumo` (so sem migracao de familias pendente), gate (so modular),
+manifesto `.sarak/propagation-<curto>.json` e o `status` no `mapa.json`.
 
-Desfazer: pelo manifesto — restaura do HEAD o que existia, apaga o que foi criado e restaura o status.
-So desfaz se o HEAD do sistema e o mesmo do aplicar (o manifesto o registra) e se o worktree contem
+Undo: pelo manifesto — restaura do HEAD o que existia, apaga o que foi criado e restaura o status.
+So desfaz se o HEAD do sistema e o mesmo do apply (o manifesto o registra) e se o worktree contem
 EXATAMENTE as mudancas do manifesto; commit ou mudanca alheia = erro (reverter e decisao do usuario).
 
-Nucleo x casca: `acoes_aplicaveis`, `compor`, `lacunas_restantes`, `pendencias`, `precondicoes`,
-`precondicoes_desfazer`, `montar_manifesto`, `plano_de_desfazer` e `erros_de_desfazer` sao PUROS —
-provados pelo `--selftest` do `propagar.py` (este modulo nao tem CLI propria).
+Manifestos ANTIGOS (`.sarak/propagacao-<curto>.json`, chaves em PT) continuam desfazendo: a leitura passa
+por `normalize_manifest` (o mapa antigo->novo vive so em `LEGACY_*` abaixo) e o arquivo e localizado
+tambem pelo nome antigo (`manifest_names`). Snapshots antigos nao sao reescritos.
+
+Nucleo x casca: `applicable_actions`, `compose`, `remaining_gaps`, `pendencies`, `preconditions`,
+`undo_preconditions`, `build_manifest`, `undo_plan`, `undo_errors`, `normalize_manifest` e
+`manifest_names` sao PUROS — provados pelo `--selftest` do `propagate.py` (este modulo nao tem CLI propria).
 """
 
 import datetime
 import json
 import sys
+import tempfile
 from pathlib import Path
 
-import propagar as pp
+import propagate as pp
 
-SEMPRE_APLICADAS = ("adicionar", "substituir", "substituir-politica")
-SEMPRE_PENDENTES = ("conflito", "bloqueado", "obsoleto?")
-DECIDIVEIS = ("divergente", "conflito")
-RESUMO = "specs/panorama/00-resumo.md"
-PLANEJAMENTO = "specs/panorama/00-planejamento.md"
-SARAK_IGNORADO = (
-    "o `.sarak/` está no `.gitignore` — o carimbo não seria versionado e a próxima propagação veria o "
-    "sistema sem carimbo; remover a regra é decisão do usuário"
+ALWAYS_APPLIED = ("add", "replace", "replace-policy")
+ALWAYS_PENDING = ("conflict", "blocked", "obsolete?")
+DECIDABLE = ("divergent", "conflict")
+SUMMARY = "specs/panorama/00-resumo.md"
+PLANNING = "specs/panorama/00-planejamento.md"
+SARAK_IGNORED = (
+    "`.sarak/` is in `.gitignore` — the stamp would not be versioned and the next propagation would see "
+    "the system without a stamp; removing the rule is the user's decision"
 )
+MANIFEST_NAME = "propagation-{short}.json"
+
+# ----------------------------------------------------- compatibilidade com o manifesto antigo (PT)
+# Mapa antigo -> novo, centralizado: o que versoes anteriores gravaram em `.sarak/propagacao-<curto>.json`.
+# So a LEITURA os aceita; a escrita grava so as chaves novas.
+LEGACY_MANIFEST_NAMES = ("propagacao-{short}.json",)
+LEGACY_MANIFEST_KEYS = {
+    "arquivos": "files",
+    "head_no_aplicar": "head_at_apply",
+    "status_anterior": "previous_status",
+    "status_base_anterior": "previous_status_commit",
+}
+LEGACY_MANIFEST_FILE_KEYS = {
+    "caminho": "path",
+    "acao": "action",
+    "existia": "existed",
+    "no_head": "in_head",
+    "anterior": "previous",
+}
+# Valores antigos de `action` (rotulos de arquivo escrito).
+LEGACY_ACTION_VALUES = {
+    "adicionar": "add",
+    "adicionar?": "add?",
+    "substituir": "replace",
+    "substituir-politica": "replace-policy",
+    "divergente": "divergent",
+    "adotar": "adopt",
+    "carimbo": "stamp",
+    "manifesto": "manifest",
+    "regenerar": "regenerate",
+}
 
 
 # ------------------------------------------------------------------ nucleo
 
 
-def acoes_aplicaveis(acoes: dict, flags: dict) -> list:
-    """Nucleo: `[(rel, acao)]` a escrever. `flags` = {divergentes, adicionar}; `bloqueado` nunca entra."""
-    escolhidas = [
-        *SEMPRE_APLICADAS,
-        *(["divergente"] if flags.get("divergentes") else []),
-        *(["adicionar?"] if flags.get("adicionar") else []),
+def applicable_actions(actions: dict, flags: dict) -> list:
+    """Nucleo: `[(rel, acao)]` a escrever. `flags` = {divergent, add, adopt}; `blocked` nunca entra."""
+    chosen = [
+        *ALWAYS_APPLIED,
+        *(["divergent"] if flags.get("divergent") else []),
+        *(["add?"] if flags.get("add") else []),
     ]
-    gerais = [(rel, acao) for acao in escolhidas for rel in acoes.get(acao, [])]
-    ja = {rel for rel, _ in gerais}
-    adotados = [
-        (rel, "adotar")
-        for acao in DECIDIVEIS
-        for rel in acoes.get(acao, [])
-        if rel in flags.get("adotar", ()) and rel not in ja
+    general = [(rel, action) for action in chosen for rel in actions.get(action, [])]
+    already = {rel for rel, _ in general}
+    adopted = [
+        (rel, "adopt")
+        for action in DECIDABLE
+        for rel in actions.get(action, [])
+        if rel in flags.get("adopt", ()) and rel not in already
     ]
-    return gerais + adotados
+    return general + adopted
 
 
-def decidiveis(acoes: dict) -> set:
-    """Nucleo: o que aceita decisao por arquivo — os `divergente` e `conflito` do plano."""
-    return {rel for acao in DECIDIVEIS for rel in acoes.get(acao, [])}
+def decidable(actions: dict) -> set:
+    """Nucleo: o que aceita decisao por arquivo — os `divergent` e `conflict` do plano."""
+    return {rel for action in DECIDABLE for rel in actions.get(action, [])}
 
 
-def erros_de_decisao(adotar: list, manter: list, motivos: list, acoes_por_id: dict) -> list:
-    """Nucleo: os erros de `--adotar`/`--manter`/`--motivo` (vazio = pode aplicar). Cada caminho precisa estar
-    em `divergente`/`conflito` de algum dos sistemas escolhidos; cada `--manter` leva o seu `--motivo`."""
-    erros = (
-        [f"cada --manter precisa do seu --motivo e vice-versa ({len(manter)} --manter, {len(motivos)} --motivo)"]
-        if len(manter) != len(motivos)
-        else [f"--motivo vazio para {c}" for c, m in zip(manter, motivos) if not m.strip()]
+def decision_errors(
+    adopt: list, keep: list, reasons: list, actions_by_id: dict
+) -> list:
+    """Nucleo: os erros de `--adopt`/`--keep`/`--reason` (vazio = pode aplicar). Cada caminho precisa estar
+    em `divergent`/`conflict` de algum dos sistemas escolhidos; cada `--keep` leva o seu `--reason`."""
+    errors = (
+        [
+            f"each --keep needs its --reason and vice versa ({len(keep)} --keep, {len(reasons)} --reason)"
+        ]
+        if len(keep) != len(reasons)
+        else [f"empty --reason for {c}" for c, m in zip(keep, reasons) if not m.strip()]
     )
-    erros += [f"{c}: em --adotar e em --manter" for c in sorted(set(adotar) & set(manter))]
-    possiveis = set().union(*(decidiveis(a) for a in acoes_por_id.values())) if acoes_por_id else set()
-    erros += [
-        f"{c}: nao esta em divergente/conflito — so esses aceitam --adotar/--manter"
-        for c in dict.fromkeys([*adotar, *manter])
-        if c not in possiveis
+    errors += [f"{c}: in --adopt and in --keep" for c in sorted(set(adopt) & set(keep))]
+    possible = (
+        set().union(*(decidable(a) for a in actions_by_id.values()))
+        if actions_by_id
+        else set()
+    )
+    errors += [
+        f"{c}: not in divergent/conflict — only those accept --adopt/--keep"
+        for c in dict.fromkeys([*adopt, *keep])
+        if c not in possible
     ]
-    return erros
+    return errors
 
 
-def decisoes_do_sistema(acoes: dict, adotar: list, manter: list, motivos: list) -> tuple:
-    """Nucleo: `(adotar, [(rel, motivo)])` que cabem a um sistema (o caminho esta no `divergente`/`conflito` dele)."""
-    aqui = decidiveis(acoes)
+def system_decisions(actions: dict, adopt: list, keep: list, reasons: list) -> tuple:
+    """Nucleo: `(adopt, [(rel, reason)])` que cabem a um sistema (o caminho esta no `divergent`/`conflict` dele)."""
+    here = decidable(actions)
     return (
-        [r for r in adotar if r in aqui],
-        [(r, m) for r, m in zip(manter, motivos, strict=False) if r in aqui],
+        [r for r in adopt if r in here],
+        [(r, m) for r, m in zip(keep, reasons, strict=False) if r in here],
     )
 
 
-def entrada_mantida(rel: str, motivo: str, texto_sistema: str, texto_ref: str) -> dict:
-    """Nucleo: a entrada de `mantidos` no carimbo — o sha1 do conteudo normalizado dos dois lados."""
+def kept_entry(rel: str, reason: str, system_text: str, ref_text: str) -> dict:
+    """Nucleo: a entrada de `kept` no carimbo — o sha1 do conteudo normalizado dos dois lados."""
     return {
-        "caminho": rel,
-        "motivo": motivo,
-        "sha1_sistema": pp.sha1_comparavel(rel, texto_sistema),
-        "sha1_referencia": pp.sha1_comparavel(rel, texto_ref),
+        "path": rel,
+        "reason": reason,
+        "system_sha1": pp.comparable_sha1(rel, system_text),
+        "reference_sha1": pp.comparable_sha1(rel, ref_text),
     }
 
 
-def mesclar_mantidos(validos: list, novos: list, adotados: list) -> list:
-    """Nucleo: os `mantidos` do carimbo novo — as decisoes validas que seguem de pe (menos as adotadas agora)
+def merge_kept(valid: list, new: list, adopted: list) -> list:
+    """Nucleo: os `kept` do carimbo novo — as decisoes validas que seguem de pe (menos as adotadas agora)
     mais as novas (que substituem a antiga do mesmo caminho). As vencidas ja ficaram de fora."""
-    por_caminho = {e["caminho"]: e for e in validos if e["caminho"] not in adotados}
-    por_caminho.update({e["caminho"]: e for e in novos})
-    return [por_caminho[c] for c in sorted(por_caminho)]
+    by_path = {e["path"]: e for e in valid if e["path"] not in adopted}
+    by_path.update({e["path"]: e for e in new})
+    return [by_path[c] for c in sorted(by_path)]
 
 
-def _tipo_de_titulo(linha: str) -> str:
-    return "titulo" if linha.startswith("titulo:") else "h1"
+def _title_kind(line: str) -> str:
+    return "title" if line.startswith("titulo:") else "h1"
 
 
-def compor(rel: str, texto_ref: str, texto_sistema: str | None) -> str:
+def compose(rel: str, ref_text: str, system_text: str | None) -> str:
     """Nucleo: o arquivo a escrever — o corpo da referencia com as linhas de titulo DO SISTEMA (pareadas
     por tipo: `titulo:` com `titulo:`, H1 com H1) e o fim de linha do sistema."""
-    if texto_sistema is None:
-        return texto_ref
-    ref, sis = (
-        pp.normalizar(texto_ref).split("\n"),
-        pp.normalizar(texto_sistema).split("\n"),
+    if system_text is None:
+        return ref_text
+    ref, system = (
+        pp.normalize(ref_text).split("\n"),
+        pp.normalize(system_text).split("\n"),
     )
-    do_sistema = {
-        _tipo_de_titulo(sis[i]): sis[i] for i in pp.linhas_de_titulo(rel, sis)
+    from_system = {
+        _title_kind(system[i]): system[i] for i in pp.title_lines(rel, system)
     }
-    for i in pp.linhas_de_titulo(rel, ref):
-        ref[i] = do_sistema.get(_tipo_de_titulo(ref[i]), ref[i])
-    saida = "\n".join(ref)
-    return saida.replace("\n", "\r\n") if "\r\n" in texto_sistema else saida
+    for i in pp.title_lines(rel, ref):
+        ref[i] = from_system.get(_title_kind(ref[i]), ref[i])
+    output = "\n".join(ref)
+    return output.replace("\n", "\r\n") if "\r\n" in system_text else output
 
 
-def lacunas_restantes(falta: dict, escritos: set) -> dict:
-    """Nucleo: as lacunas que sobram depois de escrever `escritos` (o planejamento e as bases adicionados
+def remaining_gaps(gap_map: dict, written: set) -> dict:
+    """Nucleo: as lacunas que sobram depois de escrever `written` (o planejamento e as bases adicionados
     resolvem as suas)."""
     return {
-        **falta,
-        "sem-planejamento": falta["sem-planejamento"] and PLANEJAMENTO not in escritos,
-        "binding-sem-base": [
+        **gap_map,
+        "no-planning": gap_map["no-planning"] and PLANNING not in written,
+        "binding-without-base": [
             b
-            for b in falta["binding-sem-base"]
-            if f"specs/arquitetura/00-base-{b}.md" not in escritos
+            for b in gap_map["binding-without-base"]
+            if f"specs/arquitetura/00-base-{b}.md" not in written
         ],
     }
 
 
-def pendencias(acoes: dict, escritos: set, falta: dict, gate: dict | None) -> list:
-    """Nucleo: o que sobrou para decisao humana. Vazio -> `atualizado`; senao `pendente`. `escritos` = o que
-    foi escrito ou decidido (`--adotar`/`--manter`) agora; `mantido` nunca e pendencia."""
-    motivos = []
-    for acao in SEMPRE_PENDENTES:
-        restam = [r for r in acoes.get(acao, []) if r not in escritos]
-        motivos += [f"{acao}: {len(restam)}"] if restam else []
-    for acao in ("divergente", "adicionar?"):
-        faltam = [r for r in acoes.get(acao, []) if r not in escritos]
-        motivos += [f"{acao} nao aplicado: {len(faltam)}"] if faltam else []
-    sobra = lacunas_restantes(falta, escritos)
-    motivos += [f"lacuna {chave}" for chave, valor in sobra.items() if valor]
-    if gate is not None and gate["codigo"] != 0:
-        motivos.append(f"gate reprovado (exit {gate['codigo']})")
-    return motivos
+def pendencies(actions: dict, written: set, gap_map: dict, gate: dict | None) -> list:
+    """Nucleo: o que sobrou para decisao humana. Vazio -> `updated`; senao `pending`. `written` = o que
+    foi escrito ou decidido (`--adopt`/`--keep`) agora; `kept` nunca e pendencia."""
+    reasons = []
+    for action in ALWAYS_PENDING:
+        left = [r for r in actions.get(action, []) if r not in written]
+        reasons += [f"{action}: {len(left)}"] if left else []
+    for action in ("divergent", "add?"):
+        missing = [r for r in actions.get(action, []) if r not in written]
+        reasons += [f"{action} not applied: {len(missing)}"] if missing else []
+    left_gaps = remaining_gaps(gap_map, written)
+    reasons += [f"gap {key}" for key, value in left_gaps.items() if value]
+    if gate is not None and gate["code"] != 0:
+        reasons.append(f"gate failed (exit {gate['code']})")
+    return reasons
 
 
-def _erros_do_sistema(sistema: dict | None, ident: str) -> list:
-    if sistema is None:
-        return [f"{ident}: nao esta no mapa"]
-    erros = (
+def _system_errors(system: dict | None, ident: str) -> list:
+    if system is None:
+        return [f"{ident}: not in the map"]
+    errors = (
         []
-        if sistema.get("situacao") == "ativo"
+        if system.get("lifecycle") == "active"
         else [
-            f"{ident}: situacao '{sistema.get('situacao')}' (so 'ativo' recebe propagacao)"
+            f"{ident}: lifecycle '{system.get('lifecycle')}' (only 'active' receives propagation)"
         ]
     )
-    return erros + (
-        [] if sistema.get("raiz_git") else [f"{ident}: sem raiz_git no mapa"]
+    return errors + (
+        [] if system.get("git_root") else [f"{ident}: no git_root in the map"]
     )
 
 
-def _erros_de_grupo(ids: list, sistemas: list) -> list:
-    erros = []
-    for raiz in sorted(
-        {s["raiz_git"] for s in sistemas if s.get("id") in ids and s.get("raiz_git")}
+def _group_errors(ids: list, systems: list) -> list:
+    errors = []
+    for root in sorted(
+        {s["git_root"] for s in systems if s.get("id") in ids and s.get("git_root")}
     ):
-        grupo = sorted(s["id"] for s in sistemas if s.get("raiz_git") == raiz)
-        faltam = [i for i in grupo if i not in ids]
-        erros += (
+        group = sorted(s["id"] for s in systems if s.get("git_root") == root)
+        missing = [i for i in group if i not in ids]
+        errors += (
             [
-                f"monorepo {raiz}: aplique/desfaca o grupo inteiro na mesma chamada — {', '.join(grupo)} (faltou {', '.join(faltam)})"
+                f"monorepo {root}: apply/undo the whole group in the same call — {', '.join(group)} (missing {', '.join(missing)})"
             ]
-            if faltam
+            if missing
             else []
         )
-    return erros
+    return errors
 
 
-def precondicoes_desfazer(ids: list, sistemas: list) -> list:
-    """Nucleo: ids conhecidos, com raiz_git, e o grupo de monorepo inteiro."""
-    por_id = {s["id"]: s for s in sistemas}
-    erros = [
-        e
-        for i in ids
-        for e in _erros_do_sistema(por_id.get(i), i)
-        if "situacao" not in e
+def undo_preconditions(ids: list, systems: list) -> list:
+    """Nucleo: ids conhecidos, com git_root, e o grupo de monorepo inteiro."""
+    by_id = {s["id"]: s for s in systems}
+    errors = [
+        e for i in ids for e in _system_errors(by_id.get(i), i) if "lifecycle" not in e
     ]
-    return erros + _erros_de_grupo(ids, sistemas)
+    return errors + _group_errors(ids, systems)
 
 
-def precondicoes(ids: list, sistemas: list, fatos: dict) -> list:
-    """Nucleo: os erros que impedem aplicar. `fatos` = {base_suja: [linhas], ignorados: [ids com o
-    `.sarak/base.json` num .gitignore], repos: {raiz_git: {limpo, head}}}. Qualquer erro -> nada e escrito."""
-    por_id = {s["id"]: s for s in sistemas}
-    erros = [] if ids else ["informe ao menos um --id"]
-    erros += [e for i in ids for e in _erros_do_sistema(por_id.get(i), i)]
-    erros += [f"{i}: {SARAK_IGNORADO}" for i in fatos["ignorados"]]
-    erros += (
-        [
-            f"base com alteracoes locais alem do mapa.json: {', '.join(fatos['base_suja'])}"
-        ]
-        if fatos["base_suja"]
+def preconditions(ids: list, systems: list, facts: dict) -> list:
+    """Nucleo: os erros que impedem aplicar. `facts` = {dirty_base: [linhas], ignored: [ids com o
+    `.sarak/base.json` num .gitignore], repos: {git_root: {clean, head}}}. Qualquer erro -> nada e escrito."""
+    by_id = {s["id"]: s for s in systems}
+    errors = [] if ids else ["provide at least one --id"]
+    errors += [e for i in ids for e in _system_errors(by_id.get(i), i)]
+    errors += [f"{i}: {SARAK_IGNORED}" for i in facts["ignored"]]
+    errors += (
+        [f"base with local changes besides mapa.json: {', '.join(facts['dirty_base'])}"]
+        if facts["dirty_base"]
         else []
     )
-    erros += _erros_de_grupo(ids, sistemas)
-    for raiz, repo in sorted(fatos["repos"].items()):
-        erros += (
+    errors += _group_errors(ids, systems)
+    for root, repo in sorted(facts["repos"].items()):
+        errors += (
             []
-            if repo["limpo"]
-            else [f"{raiz}: worktree sujo — aplicar sobre trabalho alheio e proibido"]
+            if repo["clean"]
+            else [
+                f"{root}: dirty worktree — applying over someone else's work is forbidden"
+            ]
         )
-        erros += [] if repo["head"] else [f"{raiz}: repositorio sem commit (HEAD)"]
-    return erros
+        errors += (
+            [] if repo["head"] else [f"{root}: repository without a commit (HEAD)"]
+        )
+    return errors
 
 
-def montar_manifesto(meta: dict, arquivos: list) -> dict:
-    """Nucleo: o manifesto da aplicacao. `meta` = {id, base_commit, head_no_aplicar,
-    status_anterior, status_base_anterior}; `arquivos` = [{caminho, acao, existia, no_head, anterior}]."""
-    return {**meta, "arquivos": sorted(arquivos, key=lambda a: a["caminho"])}
+def build_manifest(meta: dict, files: list) -> dict:
+    """Nucleo: o manifesto da aplicacao. `meta` = {id, base_commit, head_at_apply,
+    previous_status, previous_status_commit}; `files` = [{path, action, existed, in_head, previous}]."""
+    return {**meta, "files": sorted(files, key=lambda a: a["path"])}
 
 
-def _caminho_da_porcelana(linha: str) -> str:
-    caminho = linha[3:].split(" -> ")[-1]
-    return (
-        caminho[1:-1] if caminho.startswith('"') and caminho.endswith('"') else caminho
-    )
-
-
-def plano_de_desfazer(manifestos: list, sujas: list) -> dict:
-    """Nucleo: o que restaurar do HEAD, reescrever (existia fora do HEAD), apagar (criado) — e o que no
-    worktree e ALHEIO ao manifesto (erro: so se desfaz exatamente o que se aplicou)."""
-    arquivos = {a["caminho"]: a for m in manifestos for a in m["arquivos"]}
+def _rename(data: dict, renames: dict) -> dict:
+    """Chaves traduzidas por `renames`, na mesma posicao; a chave nova ja presente vence a antiga."""
     return {
-        "restaurar": sorted(c for c, a in arquivos.items() if a["no_head"]),
-        "reescrever": sorted(
-            c for c, a in arquivos.items() if a["existia"] and not a["no_head"]
-        ),
-        "apagar": sorted(c for c, a in arquivos.items() if not a["existia"]),
-        "alheios": sorted(
-            c for c in map(_caminho_da_porcelana, sujas) if c not in arquivos
-        ),
+        renames.get(k, k): v
+        for k, v in data.items()
+        if renames.get(k, k) == k or renames[k] not in data
     }
 
 
-def erros_de_desfazer(manifestos: list, head_atual: str | None, sujas: list) -> list:
-    """Nucleo: o que impede desfazer um repositorio — o HEAD mudou desde o aplicar (o usuario ja commitou:
+def normalize_manifest(data: dict) -> dict:
+    """Nucleo: um manifesto de propagacao (novo OU antigo) na forma nova. Nao muta `data`. Traduz as chaves
+    do manifesto e de cada arquivo, os valores de `action` e os de `previous_status` (via o mapa de
+    valores do `stamp.py`)."""
+    result = _rename(data, LEGACY_MANIFEST_KEYS)
+    status_values = pp.stamp_module.LEGACY_VALUES["status"]
+    if isinstance(result.get("previous_status"), str):
+        result["previous_status"] = status_values.get(
+            result["previous_status"], result["previous_status"]
+        )
+    files = []
+    for entry in result.get("files", []):
+        item = _rename(entry, LEGACY_MANIFEST_FILE_KEYS)
+        item["action"] = LEGACY_ACTION_VALUES.get(
+            item.get("action"), item.get("action")
+        )
+        files.append(item)
+    result["files"] = files
+    return result
+
+
+def manifest_names(short: str) -> list:
+    """Nucleo: os nomes de arquivo do manifesto de `short` — o novo primeiro, depois os antigos."""
+    return [
+        MANIFEST_NAME.format(short=short),
+        *(n.format(short=short) for n in LEGACY_MANIFEST_NAMES),
+    ]
+
+
+def _porcelain_path(line: str) -> str:
+    path = line[3:].split(" -> ")[-1]
+    return path[1:-1] if path.startswith('"') and path.endswith('"') else path
+
+
+def undo_plan(manifests: list, dirty: list) -> dict:
+    """Nucleo: o que restaurar do HEAD, reescrever (existia fora do HEAD), apagar (criado) — e o que no
+    worktree e ALHEIO ao manifesto (erro: so se desfaz exatamente o que se aplicou)."""
+    files = {a["path"]: a for m in manifests for a in m["files"]}
+    return {
+        "restore": sorted(c for c, a in files.items() if a["in_head"]),
+        "rewrite": sorted(
+            c for c, a in files.items() if a["existed"] and not a["in_head"]
+        ),
+        "delete": sorted(c for c, a in files.items() if not a["existed"]),
+        "foreign": sorted(c for c in map(_porcelain_path, dirty) if c not in files),
+    }
+
+
+def undo_errors(manifests: list, current_head: str | None, dirty: list) -> list:
+    """Nucleo: o que impede desfazer um repositorio — o HEAD mudou desde o apply (o usuario ja commitou:
     reverter e decisao dele) ou ha mudanca no worktree alheia ao manifesto."""
-    esperado = manifestos[0]["head_no_aplicar"]
-    erros = (
+    expected = manifests[0]["head_at_apply"]
+    errors = (
         [
-            f"o HEAD do sistema mudou desde o aplicar ({str(esperado)[:7]} -> {str(head_atual)[:7]}) — o resultado ja foi commitado; reverter (git revert) e decisao sua"
+            f"the system HEAD changed since the apply ({str(expected)[:7]} -> {str(current_head)[:7]}) — the result was already committed; reverting (git revert) is your decision"
         ]
-        if head_atual != esperado
+        if current_head != expected
         else []
     )
-    alheios = plano_de_desfazer(manifestos, sujas)["alheios"]
-    return erros + (
-        [f"mudancas ALHEIAS ao manifesto: {', '.join(alheios)}"] if alheios else []
+    foreign = undo_plan(manifests, dirty)["foreign"]
+    return errors + (
+        [f"changes FOREIGN to the manifest: {', '.join(foreign)}"] if foreign else []
     )
 
 
 # ------------------------------------------------------------------ casca: apoio
 
 
-def _carimbo():
-    """O modulo `carimbo.py` da `meta-iniciar-repositorio` — reaproveitado, nunca copiado."""
-    pasta = str(
-        Path(__file__).resolve().parents[2] / "meta-iniciar-repositorio" / "scripts"
-    )
-    if pasta not in sys.path:
-        sys.path.insert(0, pasta)
-    import carimbo
-
-    return carimbo
+def _read_map(root: Path, args) -> tuple:
+    path = Path(args.map or root / "mapa.json")
+    return path, pp.read_map_file(path)
 
 
-def _ler_mapa(raiz: Path, args) -> tuple:
-    caminho = Path(args.mapa or raiz / "mapa.json")
-    return caminho, json.loads(caminho.read_text(encoding="utf-8"))
+def _write_map(path: Path, map_data: dict) -> None:
+    path.write_text(pp.stamp_module.serialize(map_data), encoding="utf-8", newline="\n")
 
 
-def _gravar_mapa(caminho: Path, mapa: dict) -> None:
-    caminho.write_text(_carimbo().serializar(mapa), encoding="utf-8", newline="\n")
-
-
-def _base_suja_alem_do_mapa(raiz: Path) -> list:
+def _dirty_beyond_map(root: Path) -> list:
     return [
-        linha
-        for linha in pp.linhas_sujas(raiz)
-        if _caminho_da_porcelana(linha) != "mapa.json"
+        line for line in pp.dirty_lines(root) if _porcelain_path(line) != "mapa.json"
     ]
 
 
-def _repo(raiz: Path, sistema: dict) -> Path:
-    return (raiz / sistema["raiz_git"]).resolve()
+def _repo(root: Path, system: dict) -> Path:
+    return (root / system["git_root"]).resolve()
 
 
-def _fatos_do_repo(repo: Path) -> dict:
+def _repo_facts(repo: Path) -> dict:
     return {
-        "limpo": not pp.linhas_sujas(repo),
+        "clean": not pp.dirty_lines(repo),
         "head": pp.git(repo, "rev-parse", "HEAD"),
     }
 
 
-def _rel_no_repo(repo: Path, arquivo: Path) -> str:
-    return arquivo.resolve().relative_to(repo).as_posix()
+def _rel_in_repo(repo: Path, file: Path) -> str:
+    return file.resolve().relative_to(repo).as_posix()
 
 
-def _registro(repo: Path, arquivo: Path, acao: str) -> dict:
-    """Como o arquivo estava ANTES de ser escrito — o que o desfazer precisa."""
-    rel = _rel_no_repo(repo, arquivo)
-    existia = arquivo.is_file()
-    no_head = existia and pp.git(repo, "cat-file", "-e", f"HEAD:{rel}") is not None
-    anterior = (
-        arquivo.read_text(encoding="utf-8", errors="replace")
-        if existia and not no_head
+def _record(repo: Path, file: Path, action: str) -> dict:
+    """Como o arquivo estava ANTES de ser escrito — o que o undo precisa."""
+    rel = _rel_in_repo(repo, file)
+    existed = file.is_file()
+    in_head = existed and pp.git(repo, "cat-file", "-e", f"HEAD:{rel}") is not None
+    previous = (
+        file.read_text(encoding="utf-8", errors="replace")
+        if existed and not in_head
         else None
     )
     return {
-        "caminho": rel,
-        "acao": acao,
-        "existia": existia,
-        "no_head": no_head,
-        "anterior": anterior,
+        "path": rel,
+        "action": action,
+        "existed": existed,
+        "in_head": in_head,
+        "previous": previous,
     }
 
 
-def _escrever(repo: Path, arquivo: Path, conteudo: str, acao: str) -> dict:
-    registro = _registro(repo, arquivo, acao)
-    arquivo.parent.mkdir(parents=True, exist_ok=True)
-    arquivo.write_bytes(conteudo.encode("utf-8"))
-    return registro
+def _write(repo: Path, file: Path, content: str, action: str) -> dict:
+    record = _record(repo, file, action)
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_bytes(content.encode("utf-8"))
+    return record
 
 
 # ------------------------------------------------------------------ casca: aplicar um sistema
 
 
-def _bruto(arquivo: Path) -> str | None:
-    """O texto como esta no disco (o `ler_arvore` normaliza o fim de linha; o `compor` precisa do original)."""
+def _raw(file: Path) -> str | None:
+    """O texto como esta no disco (o `read_tree` normaliza o fim de linha; o `compose` precisa do original)."""
     return (
-        arquivo.read_bytes().decode("utf-8", errors="replace")
-        if arquivo.is_file()
-        else None
+        file.read_bytes().decode("utf-8", errors="replace") if file.is_file() else None
     )
 
 
-def _escrever_plano(contexto: dict, plano: dict, ref: dict) -> list:
-    pasta, repo = contexto["pasta"], contexto["repo"]
+def _write_plan(context: dict, plan: dict, ref: dict) -> list:
+    folder, repo = context["folder"], context["repo"]
     return [
-        _escrever(repo, pasta / rel, compor(rel, ref[rel], _bruto(pasta / rel)), acao)
-        for rel, acao in acoes_aplicaveis(plano["acoes"], contexto["flags"])
+        _write(repo, folder / rel, compose(rel, ref[rel], _raw(folder / rel)), action)
+        for rel, action in applicable_actions(plan["actions"], context["flags"])
     ]
 
 
-def _escrever_carimbo(contexto: dict, sistema: dict, mantidos: list) -> dict:
-    carimbo = _carimbo()
-    estado = {
-        **carimbo.estado_da_base(contexto["raiz"]),
-        "sujo": bool(_base_suja_alem_do_mapa(contexto["raiz"])),
+def _write_stamp(context: dict, system: dict, kept: list) -> dict:
+    stamp_module = pp.stamp_module
+    state = {
+        **stamp_module.base_state(context["root"]),
+        "dirty": bool(_dirty_beyond_map(context["root"])),
     }
     info = {
-        "tipo": sistema["tipo"],
-        "modular": sistema["modular"],
-        "bindings": sistema["bindings"],
+        "kind": system["kind"],
+        "modular": system["modular"],
+        "bindings": system["bindings"],
     }
-    dados = carimbo.montar_carimbo(
-        estado, info, datetime.datetime.now(datetime.UTC).date().isoformat()
+    data = stamp_module.build_stamp(
+        state, info, datetime.datetime.now(datetime.UTC).date().isoformat()
     )
-    dados.update({"mantidos": mantidos} if mantidos else {})
-    return _escrever(
-        contexto["repo"],
-        contexto["pasta"] / ".sarak" / "base.json",
-        carimbo.serializar(dados),
-        "carimbo",
+    data.update({"kept": kept} if kept else {})
+    return _write(
+        context["repo"],
+        context["folder"] / ".sarak" / "base.json",
+        stamp_module.serialize(data),
+        "stamp",
     )
 
 
-def _regenerar_resumo(contexto: dict, falta: dict) -> tuple:
+def _regenerate_summary(context: dict, gap_map: dict) -> tuple:
     """`(registro ou None, nota)` — so regenera sem migracao de familias pendente (senao o resumo mentiria)."""
-    pasta = contexto["pasta"]
-    if falta["migracao-de-familias-pendente"]:
-        return None, "resumo não regenerado: migração de famílias pendente"
-    if not (pasta / PLANEJAMENTO).is_file():
-        return None, "resumo não regenerado: sem panorama/00-planejamento.md"
-    registro = _registro(contexto["repo"], pasta / RESUMO, "regenerar")
+    folder = context["folder"]
+    if gap_map["family-migration-pending"]:
+        return None, "summary not regenerated: family migration pending"
+    if not (folder / PLANNING).is_file():
+        return None, "summary not regenerated: no panorama/00-planejamento.md"
+    record = _record(context["repo"], folder / SUMMARY, "regenerate")
     script = (
-        contexto["raiz"] / "skills" / "spec-panorama" / "scripts" / "gerar_resumo.py"
+        context["root"] / "skills" / "spec-panorama" / "scripts" / "generate_summary.py"
     )
-    pp.rodar([sys.executable, str(script), "--specs", str(pasta / "specs")])
-    return registro, "resumo regenerado"
+    pp.run([sys.executable, str(script), "--specs", str(folder / "specs")])
+    return record, "summary regenerated"
 
 
-def _rodar_gate(pasta: Path, sistema: dict) -> dict | None:
-    if not sistema["modular"]:
+def _run_gate(folder: Path, system: dict) -> dict | None:
+    if not system["modular"]:
         return None
-    r = pp.rodar(["node", "tools/gate/validate.mjs", "--all"], cwd=pasta)
-    saida = (r.stdout + r.stderr).decode("utf-8", errors="replace").strip().splitlines()
-    return {"codigo": r.returncode, "resumo": saida[-6:]}
+    result = pp.run(["node", "tools/gate/validate.mjs", "--all"], cwd=folder)
+    output = (
+        (result.stdout + result.stderr)
+        .decode("utf-8", errors="replace")
+        .strip()
+        .splitlines()
+    )
+    return {"code": result.returncode, "summary": output[-6:]}
 
 
-def _gravar_manifesto(contexto: dict, sistema: dict, arquivos: list) -> Path:
-    destino = contexto["pasta"] / ".sarak" / f"propagacao-{contexto['curto']}.json"
-    arquivos = [*arquivos, _registro(contexto["repo"], destino, "manifesto")]
+def _write_manifest(context: dict, system: dict, files: list) -> Path:
+    destination = (
+        context["folder"] / ".sarak" / MANIFEST_NAME.format(short=context["short"])
+    )
+    files = [*files, _record(context["repo"], destination, "manifest")]
     meta = {
-        "id": sistema["id"],
-        "base_commit": contexto["head"],
-        "head_no_aplicar": contexto["head_repo"],
-        "status_anterior": sistema.get("status"),
-        "status_base_anterior": sistema.get("status_base"),
+        "id": system["id"],
+        "base_commit": context["head"],
+        "head_at_apply": context["head_repo"],
+        "previous_status": system.get("status"),
+        "previous_status_commit": system.get("status_commit"),
     }
-    destino.write_text(
-        _carimbo().serializar(montar_manifesto(meta, arquivos)),
+    destination.write_text(
+        pp.stamp_module.serialize(build_manifest(meta, files)),
         encoding="utf-8",
         newline="\n",
     )
-    return destino
+    return destination
 
 
-def aplicar_sistema(contexto: dict, sistema: dict) -> dict:
-    """Casca: aplica num sistema (no branch corrente do repositorio). Devolve o resultado para o relatorio e o mapa."""
-    plano, ref, lido = contexto["analises"][sistema["id"]]
-    if "erro" in plano:
-        return {"id": sistema["id"], "erro": plano["erro"]}
-    adotar, manter = decisoes_do_sistema(plano["acoes"], *contexto["decisoes"])
-    contexto = {
-        **contexto,
-        "pasta": (contexto["raiz"] / sistema["caminho"]).resolve(),
-        "flags": {**contexto["flags"], "adotar": adotar},
+def apply_system(context: dict, system: dict) -> dict:
+    """Casca: aplica num sistema (no branch corrente do repositorio). Devolve o resultado para o report e o mapa."""
+    plan, ref, current = context["analyses"][system["id"]]
+    if "error" in plan:
+        return {"id": system["id"], "error": plan["error"]}
+    adopt, keep = system_decisions(plan["actions"], *context["decisions"])
+    context = {
+        **context,
+        "folder": (context["root"] / system["path"]).resolve(),
+        "flags": {**context["flags"], "adopt": adopt},
     }
-    novos = [entrada_mantida(r, m, lido[r], ref[r]) for r, m in manter]
-    mantidos = mesclar_mantidos(plano["mantidos-validos"], novos, adotar)
-    arquivos = _escrever_plano(contexto, plano, ref) + [
-        _escrever_carimbo(contexto, sistema, mantidos)
-    ]
-    resumo, nota = _regenerar_resumo(contexto, plano["lacunas"])
-    arquivos += [resumo] if resumo else []
-    gate = _rodar_gate(contexto["pasta"], sistema)
-    escritos = {
-        (contexto["repo"] / a["caminho"]).relative_to(contexto["pasta"]).as_posix()
-        for a in arquivos
+    new = [kept_entry(r, m, current[r], ref[r]) for r, m in keep]
+    kept = merge_kept(plan["kept-valid"], new, adopt)
+    files = _write_plan(context, plan, ref) + [_write_stamp(context, system, kept)]
+    summary, note = _regenerate_summary(context, plan["gaps"])
+    files += [summary] if summary else []
+    gate = _run_gate(context["folder"], system)
+    written = {
+        (context["repo"] / a["path"]).relative_to(context["folder"]).as_posix()
+        for a in files
     }
-    decididos = escritos | {r for r, _ in manter}
-    motivos = pendencias(plano["acoes"], decididos, plano["lacunas"], gate)
-    manifesto = _gravar_manifesto(contexto, sistema, arquivos)
+    decided = written | {r for r, _ in keep}
+    reasons = pendencies(plan["actions"], decided, plan["gaps"], gate)
+    manifest = _write_manifest(context, system, files)
     return {
-        "id": sistema["id"],
-        "plano": plano,
-        "arquivos": arquivos,
-        "mantidos": [r for r, _ in manter],
-        "vencidos": plano["mantidos-vencidos"],
-        "nota": nota,
+        "id": system["id"],
+        "plan": plan,
+        "files": files,
+        "kept": [r for r, _ in keep],
+        "expired": plan["kept-expired"],
+        "note": note,
         "gate": gate,
-        "pendencias": motivos,
-        "status": "pendente" if motivos else "atualizado",
-        "manifesto": manifesto,
+        "pendencies": reasons,
+        "status": "pending" if reasons else "updated",
+        "manifest": manifest,
     }
 
 
-# ------------------------------------------------------------------ casca: aplicar (CLI)
+# ------------------------------------------------------------------ casca: apply (CLI)
 
 
-def _imprimir_resultado(resultado: dict) -> None:
-    if "erro" in resultado:
-        print(f"=== {resultado['id']}\n  [ERRO] {resultado['erro']}")
+def _print_result(result: dict) -> None:
+    if "error" in result:
+        print(f"=== {result['id']}\n  [ERROR] {result['error']}")
         return
-    contagem = {}
-    for arquivo in resultado["arquivos"]:
-        contagem[arquivo["acao"]] = contagem.get(arquivo["acao"], 0) + 1
-    print(f"=== {resultado['id']} — status: {resultado['status']}")
-    print("  aplicado: " + " · ".join(f"{a} {n}" for a, n in sorted(contagem.items())))
-    print(f"  {resultado['nota']}")
-    print(f"  mantidos agora: {', '.join(resultado['mantidos']) or '—'}")
-    if resultado["vencidos"]:
-        print(f"  decisoes `mantido` vencidas (descartadas): {', '.join(resultado['vencidos'])}")
-    gate = resultado["gate"]
+    counts = {}
+    for file in result["files"]:
+        counts[file["action"]] = counts.get(file["action"], 0) + 1
+    print(f"=== {result['id']} — status: {result['status']}")
+    print("  applied: " + " · ".join(f"{a} {n}" for a, n in sorted(counts.items())))
+    print(f"  {result['note']}")
+    print(f"  kept now: {', '.join(result['kept']) or '—'}")
+    if result["expired"]:
+        print(f"  `kept` decisions expired (discarded): {', '.join(result['expired'])}")
+    gate = result["gate"]
     print(
-        "  gate: nao se aplica (nao modular)"
+        "  gate: not applicable (not modular)"
         if gate is None
-        else f"  gate: exit {gate['codigo']} — {' | '.join(gate['resumo'][-2:])}"
+        else f"  gate: exit {gate['code']} — {' | '.join(gate['summary'][-2:])}"
     )
-    print(f"  pendente: {'; '.join(resultado['pendencias']) or '—'}")
-    print(f"  manifesto: {resultado['manifesto']}")
+    print(f"  pending: {'; '.join(result['pendencies']) or '—'}")
+    print(f"  manifest: {result['manifest']}")
 
 
-def _instrucoes(repos: dict) -> None:
-    for raiz, repo in repos.items():
-        print(f"\n--- {raiz}: git diff --stat (rastreados) + novos")
-        print(
-            pp.git(repo["caminho"], "diff", "--stat")
-            or "(sem mudanca em arquivo rastreado)"
-        )
-        novos = [
-            linha
-            for linha in pp.linhas_sujas(repo["caminho"])
-            if linha.startswith("??")
-        ]
-        print(f"  novos (nao rastreados): {len(novos)}")
+def _instructions(repos: dict) -> None:
+    for root, repo in repos.items():
+        print(f"\n--- {root}: git diff --stat (tracked) + new")
+        print(pp.git(repo["path"], "diff", "--stat") or "(no change in tracked files)")
+        new = [line for line in pp.dirty_lines(repo["path"]) if line.startswith("??")]
+        print(f"  new (untracked): {len(new)}")
     print(
-        "\nProximos passos (HITL): o executor confere o diff; o revisor aprova; o usuario commita no repositorio e o mapa.json na base."
+        "\nmapa.json (base) and the repository are committed by the user. Next (HITL): the executor checks the diff; the reviewer approves."
     )
     print(
-        "Para voltar atras antes de commitar: propagar.py --desfazer --id <os mesmos ids> (recusa se o HEAD mudou)."
+        "To go back before committing: propagate.py --undo --id <the same ids> (refuses if HEAD changed)."
     )
 
 
-def _fatos_para_aplicar(raiz: Path, args, sistemas: list) -> dict:
-    """`--permitir-base-suja` existe SO para teste/desenvolvimento: a referencia vem do HEAD (worktree)."""
-    escolhidos = [s for s in sistemas if s["id"] in args.id and s.get("raiz_git")]
-    repos = {s["raiz_git"]: _fatos_do_repo(_repo(raiz, s)) for s in escolhidos}
-    suja = [] if args.permitir_base_suja else _base_suja_alem_do_mapa(raiz)
-    ignorados = [
-        s["id"]
-        for s in escolhidos
-        if pp.sarak_ignorado((raiz / s["caminho"]).resolve())
+def _facts_to_apply(root: Path, args, systems: list) -> dict:
+    """`--allow-dirty-base` existe SO para teste/desenvolvimento: a referencia vem do HEAD (worktree)."""
+    chosen = [s for s in systems if s["id"] in args.id and s.get("git_root")]
+    repos = {s["git_root"]: _repo_facts(_repo(root, s)) for s in chosen}
+    dirty = [] if args.allow_dirty_base else _dirty_beyond_map(root)
+    ignored = [
+        s["id"] for s in chosen if pp.sarak_ignored((root / s["path"]).resolve())
     ]
-    return {"base_suja": suja, "ignorados": ignorados, "repos": repos}
+    return {"dirty_base": dirty, "ignored": ignored, "repos": repos}
 
 
-def _contexto_base(args, raiz: Path, head: str) -> dict:
+def _base_context(args, root: Path, head: str) -> dict:
     flags = {
-        "divergentes": args.incluir_divergentes,
-        "adicionar": args.incluir_adicionar,
+        "divergent": args.include_divergent,
+        "add": args.include_add,
     }
     return {
-        "raiz": raiz,
+        "root": root,
         "head": head,
-        "curto": head[:7],
+        "short": head[:7],
         "flags": flags,
-        "decisoes": (
-            [c.replace("\\", "/") for c in args.adotar],
-            [c.replace("\\", "/") for c in args.manter],
-            list(args.motivo),
+        "decisions": (
+            [c.replace("\\", "/") for c in args.adopt],
+            [c.replace("\\", "/") for c in args.keep],
+            list(args.reason),
         ),
         "cache": {},
     }
 
 
-def _falhar(erros: list) -> int:
-    print("\n".join(f"[ERRO] {e}" for e in erros), file=sys.stderr)
+def _fail(errors: list) -> int:
+    print("\n".join(f"[ERROR] {e}" for e in errors), file=sys.stderr)
     return 2
 
 
-def _erros_das_decisoes(base: dict, analises: dict) -> list:
-    """Valida `--adotar`/`--manter`/`--motivo` contra o plano de TODOS os sistemas, antes de escrever."""
-    acoes = {i: a[0]["acoes"] for i, a in analises.items() if "erro" not in a[0]}
-    adotar, manter, motivos = base["decisoes"]
-    return erros_de_decisao(adotar, manter, motivos, acoes)
+def _decision_errors_of(base: dict, analyses: dict) -> list:
+    """Valida `--adopt`/`--keep`/`--reason` contra o plano de TODOS os sistemas, antes de escrever."""
+    actions = {i: a[0]["actions"] for i, a in analyses.items() if "error" not in a[0]}
+    adopt, keep, reasons = base["decisions"]
+    return decision_errors(adopt, keep, reasons, actions)
 
 
-def aplicar(args, raiz: Path) -> int:
-    """Casca da CLI `--aplicar`: pre-condicoes, analise e decisoes validadas ANTES de escrever, aplicacao por
-    sistema no branch corrente, status no mapa, relatorio."""
-    caminho_do_mapa, mapa = _ler_mapa(raiz, args)
-    head = pp.git(raiz, "rev-parse", "HEAD")
-    fatos = _fatos_para_aplicar(raiz, args, mapa["sistemas"])
-    erros = precondicoes(args.id, mapa["sistemas"], fatos)
-    if erros:
-        return _falhar(erros)
-    escolhidos = [s for s in mapa["sistemas"] if s["id"] in args.id]
-    base = _contexto_base(args, raiz, head)
-    base["analises"] = {
-        s["id"]: pp.analisar_sistema(raiz, s, head, base["cache"]) for s in escolhidos
+def apply(args, root: Path) -> int:
+    """Casca da CLI `--apply`: pre-condicoes, analise e decisoes validadas ANTES de escrever, aplicacao por
+    sistema no branch corrente, status no mapa, report."""
+    map_path, map_data = _read_map(root, args)
+    head = pp.git(root, "rev-parse", "HEAD")
+    facts = _facts_to_apply(root, args, map_data["systems"])
+    errors = preconditions(args.id, map_data["systems"], facts)
+    if errors:
+        return _fail(errors)
+    chosen = [s for s in map_data["systems"] if s["id"] in args.id]
+    base = _base_context(args, root, head)
+    base["analyses"] = {
+        s["id"]: pp.analyze_system(root, s, head, base["cache"]) for s in chosen
     }
-    erros = _erros_das_decisoes(base, base["analises"])
-    if erros:
-        return _falhar(erros)
+    errors = _decision_errors_of(base, base["analyses"])
+    if errors:
+        return _fail(errors)
     repos = {
-        r: {"caminho": (raiz / r).resolve(), "head": f["head"]}
-        for r, f in fatos["repos"].items()
+        r: {"path": (root / r).resolve(), "head": f["head"]}
+        for r, f in facts["repos"].items()
     }
-    for sistema in escolhidos:
-        repo = repos[sistema["raiz_git"]]
-        resultado = aplicar_sistema(
-            {**base, "repo": repo["caminho"], "head_repo": repo["head"]},
-            sistema,
+    for system in chosen:
+        repo = repos[system["git_root"]]
+        result = apply_system(
+            {**base, "repo": repo["path"], "head_repo": repo["head"]},
+            system,
         )
-        _imprimir_resultado(resultado)
-        if "erro" not in resultado:
-            sistema.update({"status": resultado["status"], "status_base": head[:7]})
-            _gravar_mapa(caminho_do_mapa, mapa)
-    _instrucoes(repos)
+        _print_result(result)
+        if "error" not in result:
+            system.update({"status": result["status"], "status_commit": head[:7]})
+            _write_map(map_path, map_data)
+    _instructions(repos)
     return 0
 
 
-# ------------------------------------------------------------------ casca: desfazer
+# ------------------------------------------------------------------ casca: undo
 
 
-def _manifestos_do_grupo(raiz: Path, sistemas: list) -> tuple:
-    """O manifesto de cada sistema e o do `status_base` (o curto do ultimo aplicar, gravado no mapa)."""
-    manifestos, erros = [], []
-    for sistema in sistemas:
-        curto = sistema.get("status_base")
-        caminho = (
-            (raiz / sistema["caminho"]).resolve() / ".sarak" / f"propagacao-{curto}.json"
+def find_manifest(folder: Path, short: str) -> Path | None:
+    """Casca: o arquivo do manifesto de `short` em `<folder>/.sarak` — pelo nome novo, senao pelo antigo."""
+    for name in manifest_names(short):
+        candidate = folder / ".sarak" / name
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _group_manifests(root: Path, systems: list) -> tuple:
+    """O manifesto de cada sistema e o do `status_commit` (o curto do ultimo apply, gravado no mapa)."""
+    manifests, errors = [], []
+    for system in systems:
+        short = system.get("status_commit")
+        found = (
+            find_manifest((root / system["path"]).resolve(), short) if short else None
         )
-        if curto and caminho.is_file():
-            manifestos.append(json.loads(caminho.read_text(encoding="utf-8")))
-        else:
-            erros.append(
-                f"{sistema['id']}: manifesto de propagacao nao encontrado (status_base {curto or 'vazio'})"
+        if found:
+            manifests.append(
+                normalize_manifest(json.loads(found.read_text(encoding="utf-8")))
             )
-    return manifestos, erros
+        else:
+            errors.append(
+                f"{system['id']}: propagation manifest not found (status_commit {short or 'empty'})"
+            )
+    return manifests, errors
 
 
-def _apagar_com_pastas_vazias(repo: Path, rel: str) -> None:
-    arquivo = repo / rel
-    if arquivo.is_file():
-        arquivo.unlink()
-    pasta = arquivo.parent
-    while pasta != repo and pasta.is_dir() and not any(pasta.iterdir()):
-        pasta.rmdir()
-        pasta = pasta.parent
+def _delete_with_empty_dirs(repo: Path, rel: str) -> None:
+    file = repo / rel
+    if file.is_file():
+        file.unlink()
+    folder = file.parent
+    while folder != repo and folder.is_dir() and not any(folder.iterdir()):
+        folder.rmdir()
+        folder = folder.parent
 
 
-def _executar_desfazer(repo: Path, plano: dict, manifestos: list) -> None:
-    if plano["restaurar"]:
-        pp.rodar(
+def _run_undo(repo: Path, plan: dict, manifests: list) -> None:
+    if plan["restore"]:
+        pp.run(
             [
                 "git",
                 "-C",
@@ -640,14 +708,14 @@ def _executar_desfazer(repo: Path, plano: dict, manifestos: list) -> None:
                 "--staged",
                 "--worktree",
                 "--",
-                *plano["restaurar"],
+                *plan["restore"],
             ]
         )
-    fora_do_head = plano["reescrever"] + plano["apagar"]
+    outside_head = plan["rewrite"] + plan["delete"]
     if (
-        fora_do_head
+        outside_head
     ):  # se o usuario deu `git add`, o arquivo sai do indice antes (senao fica "AD")
-        pp.rodar(
+        pp.run(
             [
                 "git",
                 "-C",
@@ -657,151 +725,143 @@ def _executar_desfazer(repo: Path, plano: dict, manifestos: list) -> None:
                 "--cached",
                 "--ignore-unmatch",
                 "--",
-                *fora_do_head,
+                *outside_head,
             ]
         )
-    anteriores = {
-        a["caminho"]: a["anterior"] for m in manifestos for a in m["arquivos"]
-    }
-    for rel in plano["reescrever"]:
-        (repo / rel).write_bytes(anteriores[rel].encode("utf-8"))
-    for rel in plano["apagar"]:
-        _apagar_com_pastas_vazias(repo, rel)
+    previous = {a["path"]: a["previous"] for m in manifests for a in m["files"]}
+    for rel in plan["rewrite"]:
+        (repo / rel).write_bytes(previous[rel].encode("utf-8"))
+    for rel in plan["delete"]:
+        _delete_with_empty_dirs(repo, rel)
 
 
-def _desfazer_repo(raiz: Path, grupo: list) -> tuple:
+def _undo_repo(root: Path, group: list) -> tuple:
     """`(manifestos, erros)` de um repositorio; sem erro, ja desfeito no disco (o branch nao e tocado)."""
-    repo = _repo(raiz, grupo[0])
-    manifestos, erros = _manifestos_do_grupo(raiz, grupo)
-    if not erros:
-        sujas = pp.linhas_sujas(repo)
-        erros = [
+    repo = _repo(root, group[0])
+    manifests, errors = _group_manifests(root, group)
+    if not errors:
+        dirty = pp.dirty_lines(repo)
+        errors = [
             f"{repo}: {e}"
-            for e in erros_de_desfazer(
-                manifestos, pp.git(repo, "rev-parse", "HEAD"), sujas
-            )
+            for e in undo_errors(manifests, pp.git(repo, "rev-parse", "HEAD"), dirty)
         ]
-    if erros:
-        return [], erros
-    _executar_desfazer(
-        repo, plano_de_desfazer(manifestos, pp.linhas_sujas(repo)), manifestos
-    )
-    return manifestos, []
+    if errors:
+        return [], errors
+    _run_undo(repo, undo_plan(manifests, pp.dirty_lines(repo)), manifests)
+    return manifests, []
 
 
-def desfazer(args, raiz: Path) -> int:
-    """Casca da CLI `--desfazer`: por repositorio, restaura pelo manifesto e devolve o status anterior."""
-    caminho_do_mapa, mapa = _ler_mapa(raiz, args)
-    erros = precondicoes_desfazer(args.id, mapa["sistemas"]) or (
-        [] if args.id else ["informe ao menos um --id"]
+def undo(args, root: Path) -> int:
+    """Casca da CLI `--undo`: por repositorio, restaura pelo manifesto e devolve o status anterior."""
+    map_path, map_data = _read_map(root, args)
+    errors = undo_preconditions(args.id, map_data["systems"]) or (
+        [] if args.id else ["provide at least one --id"]
     )
-    if erros:
-        print("\n".join(f"[ERRO] {e}" for e in erros), file=sys.stderr)
+    if errors:
+        print("\n".join(f"[ERROR] {e}" for e in errors), file=sys.stderr)
         return 2
-    escolhidos = [s for s in mapa["sistemas"] if s["id"] in args.id]
-    for raiz_git in sorted({s["raiz_git"] for s in escolhidos}):
-        manifestos, erros = _desfazer_repo(
-            raiz, [s for s in escolhidos if s["raiz_git"] == raiz_git]
+    chosen = [s for s in map_data["systems"] if s["id"] in args.id]
+    for git_root in sorted({s["git_root"] for s in chosen}):
+        manifests, errors = _undo_repo(
+            root, [s for s in chosen if s["git_root"] == git_root]
         )
-        if erros:
-            print("\n".join(f"[ERRO] {e}" for e in erros), file=sys.stderr)
+        if errors:
+            print("\n".join(f"[ERROR] {e}" for e in errors), file=sys.stderr)
             return 2
-        for manifesto in manifestos:
-            sistema = next(s for s in mapa["sistemas"] if s["id"] == manifesto["id"])
-            sistema.update(
+        for manifest in manifests:
+            system = next(s for s in map_data["systems"] if s["id"] == manifest["id"])
+            system.update(
                 {
-                    "status": manifesto["status_anterior"],
-                    "status_base": manifesto["status_base_anterior"],
+                    "status": manifest["previous_status"],
+                    "status_commit": manifest["previous_status_commit"],
                 }
             )
-        _gravar_mapa(caminho_do_mapa, mapa)
+        _write_map(map_path, map_data)
         print(
-            f"[OK] {raiz_git}: desfeito — branch inalterado, status restaurado ({', '.join(m['id'] for m in manifestos)})."
+            f"[OK] {git_root}: undone — branch untouched, status restored ({', '.join(m['id'] for m in manifests)})."
         )
     return 0
 
 
-# ------------------------------------------------------------------ autoteste (rodado pelo propagar.py)
+# ------------------------------------------------------------------ selftest (rodado pelo propagate.py)
 
-_ACOES = {
-    **{a: [] for a in pp.ORDEM_DAS_ACOES},
-    "adicionar": ["a"],
-    "substituir": ["s"],
-    "substituir-politica": ["t"],
-    "divergente": ["d"],
-    "adicionar?": ["q"],
-    "bloqueado": ["b"],
-    "conflito": ["c"],
+_ACTIONS = {
+    **{a: [] for a in pp.ACTION_ORDER},
+    "add": ["a"],
+    "replace": ["s"],
+    "replace-policy": ["t"],
+    "divergent": ["d"],
+    "add?": ["q"],
+    "blocked": ["b"],
+    "conflict": ["c"],
 }
-_VAZIAS = {a: [] for a in pp.ORDEM_DAS_ACOES}
-_FALTA_LIMPA = {
-    "lei-ou-fundacao-fora-do-reservado": [],
-    "migracao-de-familias-pendente": [],
-    "molde-em-formato-antigo": [],
-    "binding-sem-base": [],
-    "sem-planejamento": False,
-    "sarak-ignorado": False,
+_EMPTY = {a: [] for a in pp.ACTION_ORDER}
+_CLEAN_GAPS = {
+    "law-or-foundation-outside-reserved": [],
+    "family-migration-pending": [],
+    "template-in-old-format": [],
+    "binding-without-base": [],
+    "no-planning": False,
+    "sarak-ignored": False,
 }
-_SIS = [
-    {"id": "x", "situacao": "ativo", "raiz_git": "../X"},
-    {"id": "r1", "situacao": "ativo", "raiz_git": "../R"},
-    {"id": "r2", "situacao": "ativo", "raiz_git": "../R"},
-    {"id": "chat", "situacao": "adocao-posterior", "raiz_git": "../C"},
+_SYSTEMS = [
+    {"id": "x", "lifecycle": "active", "git_root": "../X"},
+    {"id": "r1", "lifecycle": "active", "git_root": "../R"},
+    {"id": "r2", "lifecycle": "active", "git_root": "../R"},
+    {"id": "chat", "lifecycle": "later-adoption", "git_root": "../C"},
 ]
-_REPO_OK = {"limpo": True, "head": "a" * 40}
+_REPO_OK = {"clean": True, "head": "a" * 40}
 
 
-def _erros(
-    ids: list, base_suja: list | None = None, ignorados: tuple = (), **repo
+def _errors(
+    ids: list, dirty_base: list | None = None, ignored: tuple = (), **repo
 ) -> list:
-    raizes = {s["raiz_git"] for s in _SIS if s["id"] in ids}
-    return precondicoes(
+    roots = {s["git_root"] for s in _SYSTEMS if s["id"] in ids}
+    return preconditions(
         ids,
-        _SIS,
+        _SYSTEMS,
         {
-            "base_suja": base_suja or [],
-            "ignorados": list(ignorados),
-            "repos": {r: {**_REPO_OK, **repo} for r in raizes},
+            "dirty_base": dirty_base or [],
+            "ignored": list(ignored),
+            "repos": {r: {**_REPO_OK, **repo} for r in roots},
         },
     )
 
 
-def _caso_compor() -> bool:
-    ref_base = '---\ntitulo: "Arquitetura Base: TypeScript"\n---\n\n# Arquitetura Base\nnovo corpo\n'
-    sis_base = '---\r\ntitulo: "Arquitetura: ERP (TypeScript)"\r\n---\r\n\r\n# Arquitetura do ERP\r\ncorpo velho\r\n'
-    composto = compor("specs/arquitetura/00-base-typescript.md", ref_base, sis_base)
-    readme = compor(
-        "specs/README.md", "# Ref\ncorpo novo\n", "# Meu Sistema\ncorpo velho\n"
-    )
+def _case_compose() -> bool:
+    ref_base = '---\ntitulo: "Arquitetura Base: TypeScript"\n---\n\n# Arquitetura Base\nnew body\n'
+    system_base = '---\r\ntitulo: "Arquitetura: ERP (TypeScript)"\r\n---\r\n\r\n# Arquitetura do ERP\r\nold body\r\n'
+    composed = compose("specs/arquitetura/00-base-typescript.md", ref_base, system_base)
+    readme = compose("specs/README.md", "# Ref\nnew body\n", "# My System\nold body\n")
     return (
-        composto
-        == '---\r\ntitulo: "Arquitetura: ERP (TypeScript)"\r\n---\r\n\r\n# Arquitetura do ERP\r\nnovo corpo\r\n'
-        and readme == "# Meu Sistema\ncorpo novo\n"
-        and compor("specs/00-knowledge.md", "# R\nx\n", "# S\ny\n") == "# R\nx\n"
+        composed
+        == '---\r\ntitulo: "Arquitetura: ERP (TypeScript)"\r\n---\r\n\r\n# Arquitetura do ERP\r\nnew body\r\n'
+        and readme == "# My System\nnew body\n"
+        and compose("specs/00-knowledge.md", "# R\nx\n", "# S\ny\n") == "# R\nx\n"
     )
 
 
-def _arq(caminho: str, existia: bool, no_head: bool, anterior=None) -> dict:
+def _file(path: str, existed: bool, in_head: bool, previous=None) -> dict:
     return {
-        "caminho": caminho,
-        "acao": "x",
-        "existia": existia,
-        "no_head": no_head,
-        "anterior": anterior,
+        "path": path,
+        "action": "x",
+        "existed": existed,
+        "in_head": in_head,
+        "previous": previous,
     }
 
 
-def _caso_desfazer() -> bool:
-    manifesto = montar_manifesto(
+def _case_undo() -> bool:
+    manifest = build_manifest(
         {"id": "x"},
         [
-            _arq("specs/00-knowledge.md", True, True),
-            _arq(".sarak/base.json", True, False, "{}"),
-            _arq("specs/panorama/00-planejamento.md", False, False),
+            _file("specs/00-knowledge.md", True, True),
+            _file(".sarak/base.json", True, False, "{}"),
+            _file("specs/panorama/00-planejamento.md", False, False),
         ],
     )
-    plano = plano_de_desfazer(
-        [manifesto],
+    plan = undo_plan(
+        [manifest],
         [
             " M specs/00-knowledge.md",
             "?? specs/panorama/00-planejamento.md",
@@ -809,161 +869,295 @@ def _caso_desfazer() -> bool:
         ],
     )
     return (
-        plano["restaurar"] == ["specs/00-knowledge.md"]
-        and plano["reescrever"] == [".sarak/base.json"]
-        and plano["apagar"] == ["specs/panorama/00-planejamento.md"]
-        and plano["alheios"] == ["src/app.ts"]
+        plan["restore"] == ["specs/00-knowledge.md"]
+        and plan["rewrite"] == [".sarak/base.json"]
+        and plan["delete"] == ["specs/panorama/00-planejamento.md"]
+        and plan["foreign"] == ["src/app.ts"]
     )
 
 
-def _caso_erros_de_desfazer() -> bool:
-    manifesto = montar_manifesto(
-        {"id": "x", "head_no_aplicar": "a" * 40}, [_arq("specs/a.md", False, False)]
+def _case_undo_errors() -> bool:
+    manifest = build_manifest(
+        {"id": "x", "head_at_apply": "a" * 40}, [_file("specs/a.md", False, False)]
     )
-    propria = ["?? specs/a.md"]
+    own = ["?? specs/a.md"]
     return (
-        erros_de_desfazer([manifesto], "a" * 40, propria) == []
-        and "HEAD do sistema mudou" in erros_de_desfazer([manifesto], "b" * 40, [])[0]
-        and "ALHEIAS" in erros_de_desfazer([manifesto], "a" * 40, [" M src/x.ts"])[0]
+        undo_errors([manifest], "a" * 40, own) == []
+        and "HEAD changed" in undo_errors([manifest], "b" * 40, [])[0]
+        and "FOREIGN" in undo_errors([manifest], "a" * 40, [" M src/x.ts"])[0]
     )
 
 
-def _caso_decisao() -> bool:
-    acoes = {**_VAZIAS, "divergente": ["a", "b"], "conflito": ["c"], "substituir": ["s"]}
-    todas = acoes_aplicaveis(acoes, {"adotar": ["a", "c", "s"]})
-    so_adotar = [(r, x) for r, x in todas if x == "adotar"]
-    ja_incluido = acoes_aplicaveis(acoes, {"divergentes": True, "adotar": ["a"]})
-    por_id = {"x": acoes}
+def _case_decision() -> bool:
+    actions = {**_EMPTY, "divergent": ["a", "b"], "conflict": ["c"], "replace": ["s"]}
+    every = applicable_actions(actions, {"adopt": ["a", "c", "s"]})
+    only_adopt = [(r, x) for r, x in every if x == "adopt"]
+    included = applicable_actions(actions, {"divergent": True, "adopt": ["a"]})
+    by_id = {"x": actions}
     return (
-        so_adotar == [("a", "adotar"), ("c", "adotar")]
-        and ("s", "substituir") in todas
-        and [r for r, _ in ja_incluido].count("a") == 1
-        and erros_de_decisao(["a"], ["b"], ["motivo"], por_id) == []
-        and len(erros_de_decisao(["s"], [], [], por_id)) == 1
-        and len(erros_de_decisao([], ["a"], [], por_id)) == 1
-        and len(erros_de_decisao(["a"], ["a"], ["m"], por_id)) == 1
-        and len(erros_de_decisao([], ["b"], [" "], por_id)) == 1
-        and decisoes_do_sistema(acoes, ["a", "z"], ["c"], ["m"]) == (["a"], [("c", "m")])
+        only_adopt == [("a", "adopt"), ("c", "adopt")]
+        and ("s", "replace") in every
+        and [r for r, _ in included].count("a") == 1
+        and decision_errors(["a"], ["b"], ["reason"], by_id) == []
+        and len(decision_errors(["s"], [], [], by_id)) == 1
+        and len(decision_errors([], ["a"], [], by_id)) == 1
+        and len(decision_errors(["a"], ["a"], ["m"], by_id)) == 1
+        and len(decision_errors([], ["b"], [" "], by_id)) == 1
+        and system_decisions(actions, ["a", "z"], ["c"], ["m"]) == (["a"], [("c", "m")])
     )
 
 
-def _caso_mantido() -> bool:
+def _case_kept() -> bool:
     rel = "specs/00-knowledge.md"
-    entrada = entrada_mantida(rel, "x", "meu\r\ncorpo\r\n", "ref\n")
-    plano = {"acoes": {**_VAZIAS, "divergente": [rel], "conflito": ["specs/b.md"]}}
+    entry = kept_entry(rel, "x", "mine\r\nbody\r\n", "ref\n")
+    plan = {"actions": {**_EMPTY, "divergent": [rel], "conflict": ["specs/b.md"]}}
     ref = {rel: "ref\n", "specs/b.md": "r"}
-    vale = pp.aplicar_mantidos(plano, {rel: "meu\ncorpo\n", "specs/b.md": "s"}, ref, [entrada])
-    editou = pp.aplicar_mantidos(plano, {rel: "meu\ncorpo2\n", "specs/b.md": "s"}, ref, [entrada])
-    base_mudou = pp.aplicar_mantidos(plano, {rel: "meu\ncorpo\n"}, {rel: "ref2\n"}, [entrada])
-    novo = {**entrada, "motivo": "y"}
+    valid = pp.apply_kept(plan, {rel: "mine\nbody\n", "specs/b.md": "s"}, ref, [entry])
+    edited = pp.apply_kept(
+        plan, {rel: "mine\nbody2\n", "specs/b.md": "s"}, ref, [entry]
+    )
+    base_changed = pp.apply_kept(plan, {rel: "mine\nbody\n"}, {rel: "ref2\n"}, [entry])
+    renewed = {**entry, "reason": "y"}
     return (
-        len(entrada["sha1_sistema"]) == 40
-        and vale["acoes"]["mantido"] == [rel]
-        and vale["acoes"]["divergente"] == []
-        and vale["acoes"]["conflito"] == ["specs/b.md"]
-        and vale["mantidos"] == {rel: "x"}
-        and editou["acoes"]["divergente"] == [rel]
-        and editou["mantidos-vencidos"] == [rel]
-        and base_mudou["acoes"]["mantido"] == []
-        and mesclar_mantidos([entrada], [novo], []) == [novo]
-        and mesclar_mantidos([entrada], [], [rel]) == []
+        len(entry["system_sha1"]) == 40
+        and valid["actions"]["kept"] == [rel]
+        and valid["actions"]["divergent"] == []
+        and valid["actions"]["conflict"] == ["specs/b.md"]
+        and valid["kept"] == {rel: "x"}
+        and edited["actions"]["divergent"] == [rel]
+        and edited["kept-expired"] == [rel]
+        and base_changed["actions"]["kept"] == []
+        and merge_kept([entry], [renewed], []) == [renewed]
+        and merge_kept([entry], [], [rel]) == []
     )
 
 
-def _caso_status_mantido() -> bool:
-    acoes = {**_VAZIAS, "mantido": ["m"], "conflito": ["c"], "divergente": ["d"]}
-    sem = pendencias(acoes, {"c", "d"}, _FALTA_LIMPA, {"codigo": 0})
-    com = pendencias(acoes, set(), _FALTA_LIMPA, {"codigo": 0})
-    return sem == [] and len(com) == 2
+def _case_kept_status() -> bool:
+    actions = {**_EMPTY, "kept": ["m"], "conflict": ["c"], "divergent": ["d"]}
+    without = pendencies(actions, {"c", "d"}, _CLEAN_GAPS, {"code": 0})
+    with_pending = pendencies(actions, set(), _CLEAN_GAPS, {"code": 0})
+    return without == [] and len(with_pending) == 2
 
 
-CASOS = [
+# Manifesto como as versoes anteriores gravaram (chaves em PT, nome `propagacao-<curto>.json`).
+LEGACY_MANIFEST = {
+    "id": "x",
+    "base_commit": "b" * 40,
+    "head_no_aplicar": "a" * 40,
+    "status_anterior": "desatualizado",
+    "status_base_anterior": "abc1234",
+    "arquivos": [
+        {
+            "caminho": "specs/00-knowledge.md",
+            "acao": "substituir",
+            "existia": True,
+            "no_head": True,
+            "anterior": None,
+        },
+        {
+            "caminho": ".sarak/base.json",
+            "acao": "carimbo",
+            "existia": True,
+            "no_head": False,
+            "anterior": "{}",
+        },
+        {
+            "caminho": "specs/panorama/00-planejamento.md",
+            "acao": "adicionar",
+            "existia": False,
+            "no_head": False,
+            "anterior": None,
+        },
+        {
+            "caminho": ".sarak/propagacao-bbbbbbb.json",
+            "acao": "manifesto",
+            "existia": False,
+            "no_head": False,
+            "anterior": None,
+        },
+    ],
+}
+
+
+def _case_legacy_manifest() -> bool:
+    manifest = normalize_manifest(LEGACY_MANIFEST)
+    again = normalize_manifest(manifest)
+    plan = undo_plan(
+        [manifest],
+        [
+            " M specs/00-knowledge.md",
+            "?? specs/panorama/00-planejamento.md",
+            "?? .sarak/propagacao-bbbbbbb.json",
+        ],
+    )
+    return (
+        manifest["head_at_apply"] == "a" * 40
+        and (manifest["previous_status"], manifest["previous_status_commit"])
+        == ("outdated", "abc1234")
+        and "arquivos" not in manifest
+        and [f["action"] for f in manifest["files"]]
+        == ["replace", "stamp", "add", "manifest"]
+        and again == manifest
+        and "head_no_aplicar" in LEGACY_MANIFEST
+        and plan["restore"] == ["specs/00-knowledge.md"]
+        and plan["rewrite"] == [".sarak/base.json"]
+        and plan["delete"]
+        == [".sarak/propagacao-bbbbbbb.json", "specs/panorama/00-planejamento.md"]
+        and plan["foreign"] == []
+        and undo_errors([manifest], "a" * 40, [" M specs/00-knowledge.md"]) == []
+    )
+
+
+def _case_manifest_location() -> bool:
+    names = manifest_names("abc1234")
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp)
+        (folder / ".sarak").mkdir()
+        none = find_manifest(folder, "abc1234")
+        (folder / ".sarak" / "propagacao-abc1234.json").write_text(
+            "{}", encoding="utf-8"
+        )
+        legacy = find_manifest(folder, "abc1234")
+        (folder / ".sarak" / "propagation-abc1234.json").write_text(
+            "{}", encoding="utf-8"
+        )
+        current = find_manifest(folder, "abc1234")
+    return (
+        names == ["propagation-abc1234.json", "propagacao-abc1234.json"]
+        and none is None
+        and legacy is not None
+        and legacy.name == "propagacao-abc1234.json"
+        and current is not None
+        and current.name == "propagation-abc1234.json"
+    )
+
+
+def _case_new_manifest_keys() -> bool:
+    manifest = build_manifest(
+        {
+            "id": "x",
+            "base_commit": "b" * 40,
+            "head_at_apply": "a" * 40,
+            "previous_status": "updated",
+            "previous_status_commit": None,
+        },
+        [_file("a.md", True, True)],
+    )
+    legacy_keys = set(LEGACY_MANIFEST_KEYS) | set(LEGACY_MANIFEST_FILE_KEYS)
+    return (
+        not legacy_keys & set(manifest)
+        and not legacy_keys & set(manifest["files"][0])
+        and normalize_manifest(manifest) == manifest
+    )
+
+
+CASES = [
     (
-        "aplicar: so adicionar/substituir/politica por padrao",
+        "apply: only add/replace/replace-policy by default",
         lambda: (
-            [a for _, a in acoes_aplicaveis(_ACOES, {})]
-            == ["adicionar", "substituir", "substituir-politica"]
+            [a for _, a in applicable_actions(_ACTIONS, {})]
+            == ["add", "replace", "replace-policy"]
         ),
     ),
     (
-        "aplicar: flags incluem divergente e adicionar?, nunca bloqueado/conflito",
+        "apply: flags include divergent and add?, never blocked/conflict",
         lambda: (
             [
                 r
-                for r, _ in acoes_aplicaveis(
-                    _ACOES, {"divergentes": True, "adicionar": True}
+                for r, _ in applicable_actions(
+                    _ACTIONS, {"divergent": True, "add": True}
                 )
             ]
             == ["a", "s", "t", "d", "q"]
         ),
     ),
     (
-        "compor: corpo da referencia com o titulo do sistema e o fim de linha dele",
-        _caso_compor,
+        "compose: reference body with the system title and its line ending",
+        _case_compose,
     ),
     (
-        "status: limpo e gate verde -> sem pendencia",
+        "status: clean and green gate -> no pendency",
         lambda: (
-            pendencias(
+            pendencies(
                 {
-                    **_ACOES,
-                    "divergente": [],
-                    "adicionar?": [],
-                    "bloqueado": [],
-                    "conflito": [],
+                    **_ACTIONS,
+                    "divergent": [],
+                    "add?": [],
+                    "blocked": [],
+                    "conflict": [],
                 },
                 set(),
-                _FALTA_LIMPA,
-                {"codigo": 0},
+                _CLEAN_GAPS,
+                {"code": 0},
             )
             == []
         ),
     ),
     (
-        "status: conflito, divergente nao aplicado, bloqueado e gate vermelho pendem",
-        lambda: len(pendencias(_ACOES, {"d"}, _FALTA_LIMPA, {"codigo": 1})) == 4,
+        "status: conflict, unapplied divergent, blocked and red gate are pending",
+        lambda: len(pendencies(_ACTIONS, {"d"}, _CLEAN_GAPS, {"code": 1})) == 4,
     ),
     (
-        "status: planejamento e base adicionados resolvem as lacunas",
+        "status: planning and base added resolve the gaps",
         lambda: (
-            lacunas_restantes(
+            remaining_gaps(
                 {
-                    **_FALTA_LIMPA,
-                    "sem-planejamento": True,
-                    "binding-sem-base": ["python"],
+                    **_CLEAN_GAPS,
+                    "no-planning": True,
+                    "binding-without-base": ["python"],
                 },
-                {PLANEJAMENTO, "specs/arquitetura/00-base-python.md"},
+                {PLANNING, "specs/arquitetura/00-base-python.md"},
             )
-            == _FALTA_LIMPA
+            == _CLEAN_GAPS
         ),
     ),
-    ("pre-condicoes: tudo certo -> nenhum erro", lambda: _erros(["x"]) == []),
+    ("preconditions: all good -> no error", lambda: _errors(["x"]) == []),
     (
-        "pre-condicoes: worktree sujo e base suja (sem checagem de branch)",
-        lambda: len(_erros(["x"], ["src/a.py"], limpo=False)) == 2,
+        "preconditions: dirty worktree and dirty base (no branch check)",
+        lambda: len(_errors(["x"], ["src/a.py"], clean=False)) == 2,
     ),
     (
-        "pre-condicoes: qualquer branch corrente serve, mas e preciso ter commit",
-        lambda: _erros(["x"], head=None) == ["../X: repositorio sem commit (HEAD)"],
-    ),
-    (
-        "pre-condicoes: monorepo pela metade e adocao-posterior",
+        "preconditions: any current branch will do, but a commit is required",
         lambda: (
-            any("monorepo ../R" in e for e in _erros(["r1"]))
-            and any("adocao-posterior" in e for e in _erros(["chat"]))
+            _errors(["x"], head=None) == ["../X: repository without a commit (HEAD)"]
         ),
     ),
     (
-        "pre-condicoes: .sarak/ no .gitignore e erro (nada escrito)",
-        lambda: _erros(["x"], ignorados=("x",)) == [f"x: {SARAK_IGNORADO}"],
+        "preconditions: half a monorepo and later-adoption",
+        lambda: (
+            any("monorepo ../R" in e for e in _errors(["r1"]))
+            and any("later-adoption" in e for e in _errors(["chat"]))
+        ),
     ),
-    ("desfazer: restaura, reescreve, apaga e acusa o alheio", _caso_desfazer),
-    ("decisao: --adotar filtra divergente/conflito; erros de caminho e de motivo", _caso_decisao),
-    ("mantido: entrada com sha1 normalizado; so vale com os dois sha1 iguais", _caso_mantido),
-    ("status: mantido nao e pendencia; conflito/divergente decididos agora tambem nao", _caso_status_mantido),
-    ("desfazer: recusa HEAD mudado e mudanca alheia", _caso_erros_de_desfazer),
     (
-        "desfazer: monorepo pela metade e erro",
-        lambda: any("monorepo" in e for e in precondicoes_desfazer(["r2"], _SIS)),
+        "preconditions: .sarak/ in .gitignore is an error (nothing written)",
+        lambda: _errors(["x"], ignored=("x",)) == [f"x: {SARAK_IGNORED}"],
+    ),
+    ("undo: restores, rewrites, deletes and flags the foreign", _case_undo),
+    (
+        "decision: --adopt filters divergent/conflict; path and reason errors",
+        _case_decision,
+    ),
+    ("kept: entry with normalized sha1; valid only with both sha1 equal", _case_kept),
+    (
+        "status: kept is not a pendency; conflict/divergent decided now neither",
+        _case_kept_status,
+    ),
+    ("undo: refuses a changed HEAD and a foreign change", _case_undo_errors),
+    (
+        "undo: half a monorepo is an error",
+        lambda: any("monorepo" in e for e in undo_preconditions(["r2"], _SYSTEMS)),
+    ),
+    (
+        "compat: old manifest (PT keys) read and undone by the undo plan",
+        _case_legacy_manifest,
+    ),
+    (
+        "compat: manifest located by the new and by the old name (propagacao-*)",
+        _case_manifest_location,
+    ),
+    (
+        "manifest: what is written has only new keys and is idempotent when normalized",
+        _case_new_manifest_keys,
     ),
 ]

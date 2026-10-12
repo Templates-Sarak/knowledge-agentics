@@ -1,5 +1,5 @@
 """
-check_headers.py — DAST leve: checa headers de segurança e paths sensíveis expostos de uma URL.
+check_headers.py — DAST leve: checa headers de segurança e paths sensíveis exposed de uma URL.
 
 ⚠️ SOMENTE no PRÓPRIO app (staging/local) ou alvo AUTORIZADO — nunca contra terceiros.
 
@@ -7,7 +7,7 @@ Uso:
     python check_headers.py --url https://meu-app.local [--config config.json]
 
 Retorno:
-    JSON {url, status, headers_presentes, headers_faltando, paths_expostos}.
+    JSON {url, status, headers_present, headers_missing, paths_exposed}.
 
 Regras (padrao-escrita): zero hardcoded (headers/paths no config.json),
 responsabilidade única (apenas observa — a correção é decisão com HITL na skill).
@@ -20,12 +20,12 @@ import urllib.request
 from urllib.parse import urljoin
 
 
-def carregar_config(caminho):
-    with open(caminho, encoding="utf-8") as fh:
+def load_config(path):
+    with open(path, encoding="utf-8") as fh:
         return json.load(fh)
 
 
-def requisitar(url, timeout):
+def fetch(url, timeout):
     req = urllib.request.Request(url, method="GET", headers={"User-Agent": "sarak-cyber-config"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -39,40 +39,40 @@ def requisitar(url, timeout):
 def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(description="DAST leve de headers/paths (alvo proprio/autorizado).")
-    parser.add_argument("--url", required=True, help="URL do PROPRIO app/alvo autorizado")
+    parser = argparse.ArgumentParser(description="Lightweight DAST of headers/paths (own/authorized target).")
+    parser.add_argument("--url", required=True, help="URL of your OWN app/authorized target")
     parser.add_argument("--config", default=str(__import__("pathlib").Path(__file__).parent / "config.json"))
     args = parser.parse_args()
 
     try:
-        config = carregar_config(args.config)
+        config = load_config(args.config)
     except FileNotFoundError:
-        sys.exit(f"Erro: config nao encontrado em '{args.config}'.")
-    except json.JSONDecodeError as erro:
-        sys.exit(f"Erro: config invalido ({erro}).")
+        sys.exit(f"Error: config not found at '{args.config}'.")
+    except json.JSONDecodeError as error:
+        sys.exit(f"Error: invalid config ({error}).")
 
     timeout = config.get("timeout_s", 10)
-    status, headers = requisitar(args.url, timeout)
+    status, headers = fetch(args.url, timeout)
     if status is None:
-        print(json.dumps({"url": args.url, "status": None, "erro": "url inacessivel"}, ensure_ascii=False, indent=2))
+        print(json.dumps({"url": args.url, "status": None, "error": "url unreachable"}, ensure_ascii=False, indent=2))
         return
 
-    esperados = [h.lower() for h in config.get("headers_seguranca", [])]
-    presentes = {h: headers[h] for h in esperados if h in headers}
-    faltando = [h for h in esperados if h not in headers]
+    expected = [h.lower() for h in config.get("security_headers", [])]
+    present = {h: headers[h] for h in expected if h in headers}
+    missing = [h for h in expected if h not in headers]
 
-    expostos = []
-    for path in config.get("paths_sensiveis", []):
-        code, _ = requisitar(urljoin(args.url, path), timeout)
+    exposed = []
+    for path in config.get("sensitive_paths", []):
+        code, _ = fetch(urljoin(args.url, path), timeout)
         if code == 200:
-            expostos.append(path)
+            exposed.append(path)
 
     print(json.dumps({
         "url": args.url,
         "status": status,
-        "headers_presentes": presentes,
-        "headers_faltando": faltando,
-        "paths_expostos": expostos,
+        "headers_present": present,
+        "headers_missing": missing,
+        "paths_exposed": exposed,
     }, ensure_ascii=False, indent=2))
 
 

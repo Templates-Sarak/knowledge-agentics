@@ -1,22 +1,22 @@
 {
-  "_comment": "Rotulos e mensagens exibidos ao usuario. Nenhum texto literal no codigo. O dado e em ingles: `statusLabels` traduz o valor armazenado (config/domain.json) e `errorLabels` traduz o codigo de erro da API — o front mostra o rotulo, nunca o valor cru.",
+  "_comment": "Rótulos e mensagens exibidos ao usuário. Nenhum texto literal no código. O dado é em inglês: `statusLabels` traduz o valor armazenado (config/domain.json) e `errorLabels` traduz o código de erro da API — o front mostra o rótulo, nunca o valor cru.",
   "title": "<Module>",
   "loading": "Carregando...",
   "emptyList": "Nenhum registro ainda.",
-  "genericError": "Nao foi possivel carregar os dados.",
+  "genericError": "Não foi possível carregar os dados.",
   "statusLabels": {
     "draft": "Rascunho",
     "active": "Ativo",
     "closed": "Encerrado"
   },
   "errorLabels": {
-    "VALIDATION": "Os dados enviados sao invalidos.",
-    "UNAUTHENTICATED": "Sessao ausente ou expirada.",
-    "FORBIDDEN": "Voce nao tem permissao para esta acao.",
-    "NOT_FOUND": "Registro nao encontrado.",
+    "VALIDATION": "Os dados enviados são inválidos.",
+    "UNAUTHENTICATED": "Sessão ausente ou expirada.",
+    "FORBIDDEN": "Você não tem permissão para esta ação.",
+    "NOT_FOUND": "Registro não encontrado.",
     "CONFLICT": "O registro conflita com o estado atual.",
-    "LIMIT_EXCEEDED": "Muitas requisicoes. Tente de novo em instantes.",
-    "EXTERNAL_DEPENDENCY": "Um servico necessario esta indisponivel.",
+    "LIMIT_EXCEEDED": "Muitas requisições. Tente de novo em instantes.",
+    "EXTERNAL_DEPENDENCY": "Um serviço necessário está indisponível.",
     "INTERNAL": "Erro interno. Tente novamente."
   }
 }

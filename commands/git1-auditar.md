@@ -14,19 +14,19 @@ persiste o relatório em `.sarak/git-audit/`. **Não reescreve histórico** — 
 adequação ao `/git2-adequar`.
 
 ## Pré-requisitos (opcionais — degradação graciosa)
-**gitleaks**/**trufflehog** para cross-check do histórico. Ausentes → o `git-auditor` usa só o `scan_historico.py`
+**gitleaks**/**trufflehog** para cross-check do histórico. Ausentes → o `git-auditor` usa só o `scan_history.py`
 (Sarak) e **registra a lacuna**. Não trava.
 
 ## Passos
 
-1. **Delimitar** — confirme que `$1` é um **repo Git** (senão, pare e avise). Capture `<data>` (`Bash date +%F`).
+1. **Delimitar** — confirme que `$1` é um **repo Git** (senão, pare e avise). Capture `<date>` (`Bash date +%F`).
 
 2. **Disparar o `git-auditor`** — via **Task** (Sonnet), **um** agente: varredura completa read-only do histórico
-   (`scan_historico.py` + cross-check gitleaks/trufflehog), classificação (vivo/passado/arquivo/entropia) e
+   (`scan_history.py` + cross-check gitleaks/trufflehog), classificação (vivo/passado/arquivo/entropia) e
    gravação em `.sarak/git-audit/`. Trabalhe com o **resumo** que ele devolve (não re-leia os artefatos inteiros).
 
 3. **Apresentar** — sumário: achados por tipo (conteúdo/arquivo/entropia), nº de branches/tags auditadas, top
-   achados **mascarados**, e os caminhos (`.sarak/git-audit/relatorio-<data>.md` + `achados-<data>.json`).
+   achados **mascarados**, e os caminhos (`.sarak/git-audit/report-<date>.md` + `findings-<date>.json`).
 
 4. **Encaminhar a adequação (se houver achado)** — a próxima fase é o **`/git2-adequar`** (reescrita de histórico +
    rotação, **HITL severo + backup**, que orquestra os passos 4-6 da skill `git-especialista-repositorio`) —

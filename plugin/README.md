@@ -52,7 +52,7 @@ python sync_ide.py --target antigravity  # só o Antigravity
 
 **Codex — espelho provisório.** O `--target codex` só atualiza um plugin **já instalado** pelo app, em
 `<CODEX_HOME ou ~/.codex>/plugins/cache/<marketplace>/<plugin>/<versão>/`; sem essa instalação, para com
-`[ERRO]` e não cria nada. Substitui só as subpastas da base — `.git/` e `.codex-marketplace-install.json`
+`[ERROR]` e não cria nada. Substitui só as subpastas da base — `.git/` e `.codex-marketplace-install.json`
 são do app e ficam intactos — e a próxima atualização pelo app troca tudo pela versão do remoto. Serve para
 teste local; o definitivo é push + atualizar o plugin no app.
 

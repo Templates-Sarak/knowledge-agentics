@@ -10,7 +10,7 @@ def get_python_executable(venv_path):
         return venv_path / "bin" / "python"
 
 def run_setup(xskills_root):
-    print("\n--- Preparando Ambiente Global de Dependências Sarak ---")
+    print("\n--- Preparing the Sarak Global Dependencies Environment ---")
     venv_dir = xskills_root / ".venv"
     req_file = xskills_root / "requirements.txt"
     pkg_file = xskills_root / "package.json"
@@ -18,39 +18,39 @@ def run_setup(xskills_root):
     # 1. Configuração do Python (VENV)
     if req_file.exists():
         if not venv_dir.exists():
-            print("[INFO] Criando ambiente virtual Python (.venv)...")
+            print("[INFO] Creating the Python virtual environment (.venv)...")
             try:
                 subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
             except subprocess.CalledProcessError as e:
-                print(f"[ERRO] Falha ao criar o venv: {e}")
+                print(f"[ERROR] Failed to create the venv: {e}")
                 return False
 
         python_exe = get_python_executable(venv_dir)
         if not python_exe.exists():
-            print(f"[ERRO] Executável Python não encontrado em: {python_exe}")
+            print(f"[ERROR] Python executable not found at: {python_exe}")
             return False
             
-        print(f"[INFO] Instalando/Atualizando bibliotecas Python em {venv_dir.name}...")
+        print(f"[INFO] Installing/updating Python libraries in {venv_dir.name}...")
         try:
             subprocess.run([str(python_exe), "-m", "pip", "install", "-q", "-r", str(req_file)], check=True)
-            print("[OK] Bibliotecas Python (requirements.txt) instaladas no Sarak Global.")
+            print("[OK] Python libraries (requirements.txt) installed in Sarak Global.")
         except subprocess.CalledProcessError as e:
-            print(f"[ERRO] Falha ao instalar pacotes Python: {e}")
+            print(f"[ERROR] Failed to install Python packages: {e}")
     else:
-        print("[INFO] Nenhum requirements.txt encontrado. Pulando setup Python.")
+        print("[INFO] No requirements.txt found. Skipping the Python setup.")
 
     # 2. Configuração do Node (NPM)
     if pkg_file.exists():
         node_modules = xskills_root / "node_modules"
-        print("[INFO] Checando dependências Node (package.json)...")
+        print("[INFO] Checking Node dependencies (package.json)...")
         npm_cmd = "npm.cmd" if os.name == 'nt' else "npm"
         try:
             subprocess.run([npm_cmd, "install", "--silent"], cwd=str(xskills_root), check=True)
-            print("[OK] Bibliotecas Node instaladas no Sarak Global.")
+            print("[OK] Node libraries installed in Sarak Global.")
         except FileNotFoundError:
-            print("[AVISO] NPM não encontrado no sistema. Pulando instalação de dependências Node.")
+            print("[WARNING] NPM not found on the system. Skipping the Node dependencies install.")
         except subprocess.CalledProcessError as e:
-            print(f"[ERRO] Falha ao rodar npm install: {e}")
+            print(f"[ERROR] Failed to run npm install: {e}")
             
     return True
 

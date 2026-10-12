@@ -1,6 +1,6 @@
 {
-  "_fonte": "CATALOGO CANONICO de padroes de segredo do ecossistema Sarak (skill cyber-segredos). git-verificacao-commit e git-especialista-repositorio derivam daqui — manter em sincronia.",
-  "padroes": {
+  "_source": "CANONICAL CATALOG of secret patterns of the Sarak ecosystem (skill cyber-segredos). git-verificacao-commit and git-especialista-repositorio derive from here — keep in sync.",
+  "patterns": {
     "AWS Access Key": "AKIA[0-9A-Z]{16}",
     "GitHub Token": "gh[pousr]_[A-Za-z0-9]{36,}",
     "GitHub PAT fine-grained": "github_pat_[A-Za-z0-9_]{60,}",
@@ -11,19 +11,19 @@
     "JWT": "eyJ[A-Za-z0-9_\\-]{10,}\\.[A-Za-z0-9_\\-]{10,}\\.[A-Za-z0-9_\\-]{6,}",
     "Private Key": "-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----",
     "Bearer Token": "(?i)bearer\\s+[a-z0-9._\\-]{20,}",
-    "Segredo atribuido": "(?i)(api[_-]?key|secret|token|password|passwd|senha|access[_-]?key)\\s*[:=]\\s*['\"][^'\"]{8,}['\"]",
-    "String de conexao": "(?i)(postgres|postgresql|mysql|mongodb)(\\+srv)?://(?!(?:\\$\\{[A-Za-z_][A-Za-z0-9_]*(?::\\?[^}]*)?\\}|\\$[A-Za-z_][A-Za-z0-9_]*):(?:\\$\\{[A-Za-z_][A-Za-z0-9_]*(?::\\?[^}]*)?\\}|\\$[A-Za-z_][A-Za-z0-9_]*)@)[^\\s'\"]+:[^\\s'\"]+@"
+    "Assigned secret": "(?i)(api[_-]?key|secret|token|password|passwd|senha|access[_-]?key)\\s*[:=]\\s*['\"][^'\"]{8,}['\"]",
+    "Connection string": "(?i)(postgres|postgresql|mysql|mongodb)(\\+srv)?://(?!(?:\\$\\{[A-Za-z_][A-Za-z0-9_]*(?::\\?[^}]*)?\\}|\\$[A-Za-z_][A-Za-z0-9_]*):(?:\\$\\{[A-Za-z_][A-Za-z0-9_]*(?::\\?[^}]*)?\\}|\\$[A-Za-z_][A-Za-z0-9_]*)@)[^\\s'\"]+:[^\\s'\"]+@"
   },
-  "arquivos_sensiveis": [
+  "sensitive_files": [
     ".env", ".env.*", "*.pem", "*.key", "id_rsa", "id_dsa", "id_ecdsa",
     "*.p12", "*.pfx", "*.ppk", "*.keystore", "*.jks", "credentials.json",
     ".npmrc", "service-account*.json"
   ],
-  "arquivos_permitidos": [".env.example", ".env.sample", ".env.template", ".env.dist"],
-  "extensoes_texto": [".js", ".ts", ".jsx", ".tsx", ".py", ".json", ".env", ".yml", ".yaml", ".txt", ".go", ".java", ".rb", ".php", ".ini", ".sh", ".config"],
-  "ignorar_dirs": ["node_modules", ".git", "dist", "build", ".next", ".venv", "venv", "__pycache__"],
-  "tamanho_max_arquivo_bytes": 2000000,
-  "entropia_ativa": true,
-  "entropia_min": 4.2,
+  "allowed_files": [".env.example", ".env.sample", ".env.template", ".env.dist"],
+  "text_extensions": [".js", ".ts", ".jsx", ".tsx", ".py", ".json", ".env", ".yml", ".yaml", ".txt", ".go", ".java", ".rb", ".php", ".ini", ".sh", ".config"],
+  "ignore_dirs": ["node_modules", ".git", "dist", "build", ".next", ".venv", "venv", "__pycache__"],
+  "max_file_size_bytes": 2000000,
+  "entropy_enabled": true,
+  "entropy_min": 4.2,
   "token_min_len": 24
 }

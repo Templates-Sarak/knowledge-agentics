@@ -92,7 +92,7 @@ function runStep(name, fn) {
 
 function fromProcess(spawnResult) {
   const c = classifyStep(spawnResult);
-  return { ok: c.ok, detail: c.ok ? null : `${c.motivo} — ${[spawnResult?.stdout, spawnResult?.stderr].filter(Boolean).join(' | ').slice(0, 300)}` };
+  return { ok: c.ok, detail: c.ok ? null : `${c.reason} — ${[spawnResult?.stdout, spawnResult?.stderr].filter(Boolean).join(' | ').slice(0, 300)}` };
 }
 
 /** Varre uma árvore inteira (arquivo por arquivo) devolvendo `{ path relativo, text }` — só de
@@ -179,14 +179,13 @@ function catalogSteps() {
   };
   const countBy = (key) => RULES.reduce((a, r) => ({ ...a, [r[key]]: (a[r[key]] ?? 0) + 1 }), {});
   const countBySeverity = () => RULES.reduce((counts, rule) => {
-    const severity = rule.nivel === 'erro' ? 'error' : 'warning';
-    counts[severity] = (counts[severity] ?? 0) + 1;
+    counts[rule.severity] = (counts[rule.severity] ?? 0) + 1;
     return counts;
   }, {});
 
   return [
     { name: 'catalog: total rule count', fn: () => compareValue('rules', RULES.length, 81) },
-    { name: 'catalog: counts by scope', fn: () => compareValue('scope', countBy('escopo'), { module: 60, root: 17, global: 4 }) },
+    { name: 'catalog: counts by scope', fn: () => compareValue('scope', countBy('scope'), { module: 60, root: 17, global: 4 }) },
     { name: 'catalog: counts by severity', fn: () => compareValue('severity', countBySeverity(), { error: 77, warning: 4 }) },
     { name: 'catalog: counts by family', fn: () => compareValue('family', byFamily(), EXPECTED_FAMILIES) },
     {
@@ -272,8 +271,8 @@ function moduleRejectionSteps(python) {
   }
   const initRepo = join(BASE_ROOT, 'skills', 'meta-iniciar-repositorio', 'scripts', 'init_repo.py');
   const cases = [
-    { target: 'fe-t1', args: ['--modulos', 'catalogo'] },
-    { target: 'fe-t2', args: ['--modulos', 'hub:connector:artefato'] },
+    { target: 'fe-t1', args: ['--modules', 'catalog'] },
+    { target: 'fe-t2', args: ['--modules', 'hub:connector:artifact'] },
   ];
   return cases.map(({ target, args }) => ({
     name: `invalid-shape rejection — ${args.join(' ')}`,
@@ -321,7 +320,7 @@ function generatedProjectSteps(python) {
     },
     {
       name: 'G: create-module works in the generated project',
-      fn: () => fromProcess(runNode([join(destination, 'tools', 'create-module.mjs'), 'catalogo', '--role', 'domain'], destination)),
+      fn: () => fromProcess(runNode([join(destination, 'tools', 'create-module.mjs'), 'catalog', '--role', 'domain'], destination)),
     },
     {
       name: 'G: gate --all passes in the generated project',

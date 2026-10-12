@@ -118,7 +118,7 @@ const SYNTAX_FAMILY = { typescript: 'js', javascript: 'js', python: 'py' };
  */
 function withoutCoverage(reason) {
   const cause = /** @type {Error & {code: string}} */ (new Error(reason));
-  cause.code = 'SEM_COBERTURA';
+  cause.code = 'NO_COVERAGE';
   return cause;
 }
 
@@ -137,7 +137,7 @@ function invalidMutation(rel, from, content) {
   const cause = /** @type {Error & {code: string}} */ (new Error(probablyEol
     ? `${base} — file uses CRLF while the search string uses LF; renormalize (git add --renormalize .)`
     : base));
-  cause.code = 'MUTACAO_INVALIDA';
+  cause.code = 'INVALID_MUTATION';
   return cause;
 }
 
@@ -252,24 +252,24 @@ function buildProjectRoot(temporary, binding) {
 
 /** Vizinho mínimo, para as regras globais (import lateral, tabela alheia, ciclo). */
 function createNeighbor(modulesDir, template, consumes) {
-  const root = join(modulesDir, 'vizinho');
+  const root = join(modulesDir, 'neighbor');
   cpSync(template, root, { recursive: true });
   const path = join(root, 'module.json');
   const manifest = readJson(path);
-  manifest.id = 'vizinho';
-  manifest.basePath = '/api/v1/vizinho';
-  manifest.webPath = '/vizinho';
-  manifest.data = { schema: 'escopo', prefix: 'vizinho_', tables: ['vizinho_metadata'] };
-  manifest.permissions = ['vizinho:read', 'vizinho:write'];
+  manifest.id = 'neighbor';
+  manifest.basePath = '/api/v1/neighbor';
+  manifest.webPath = '/neighbor';
+  manifest.data = { schema: 'scope', prefix: 'neighbor_', tables: ['neighbor_metadata'] };
+  manifest.permissions = ['neighbor:read', 'neighbor:write'];
   // `/summary` e obrigatoria em todo modulo: o vizinho fecha o ciclo sem violar `consumes-contract`.
-  manifest.consumes = consumes ? [{ module: 'molde', contract: 'GET /summary', why: 'ciclo' }] : [];
+  manifest.consumes = consumes ? [{ module: 'mold', contract: 'GET /summary', why: 'cycle' }] : [];
   writeJson(path, manifest);
   return root;
 }
 
 /** Monta um projeto temporário com o molde (e opcionalmente um vizinho), roda o gate e limpa. */
 function runCase(binding, testCase) {
-  const temporary = mkdtempSync(join(tmpdir(), 'gate-teste-'));
+  const temporary = mkdtempSync(join(tmpdir(), 'gate-test-'));
   try {
     const modules = join(temporary, 'modules');
     const template = join(TEMPLATE_ROOT, 'bindings', binding, '_template');
@@ -283,7 +283,7 @@ function runCase(binding, testCase) {
     if (testCase?.requiresNeighbor === true) dirs.push(createNeighbor(modules, template, testCase.neighborConsumes === true));
 
     const contexts = dirs.map((p) => loadContext(p, temporary));
-    const targetCtx = contexts.filter((c) => c.raiz === target);
+    const targetCtx = contexts.filter((c) => c.root === target);
     return analyze(contexts, targetCtx, {});
   } finally {
     rmSync(temporary, { recursive: true, force: true });
@@ -291,12 +291,12 @@ function runCase(binding, testCase) {
 }
 
 function checkConformance(binding) {
-  const errors = runCase(binding, null).filter((a) => a.nivel === 'erro');
+  const errors = runCase(binding, null).filter((a) => a.severity === 'error');
   if (errors.length === 0) return { ok: true, label: 'template conformance produces zero errors' };
   return {
     ok: false,
     label: 'template conformance produces zero errors',
-    detail: errors.map((e) => `[${e.regra}] ${e.mensagem}`).join('\n      '),
+    detail: errors.map((e) => `[${e.rule}] ${e.message}`).join('\n      '),
   };
 }
 
@@ -313,37 +313,37 @@ function checkConformance(binding) {
  * mesma tolerância de hoje).
  */
 function checkFineAssertion(testCase, findings) {
-  const withoutAssertion = testCase.arquivo === undefined && testCase.contains === undefined
+  const withoutAssertion = testCase.file === undefined && testCase.contains === undefined
     && testCase.notContains === undefined && testCase.times === undefined;
   if (withoutAssertion) return null;
 
-  const ruleFindings = findings.filter((a) => a.regra === testCase.regra);
+  const ruleFindings = findings.filter((a) => a.rule === testCase.rule);
   const matched = ruleFindings.filter((a) => (
-    (testCase.arquivo === undefined || a.mensagem.includes(testCase.arquivo))
-    && (testCase.contains === undefined || a.mensagem.includes(testCase.contains))
+    (testCase.file === undefined || a.message.includes(testCase.file))
+    && (testCase.contains === undefined || a.message.includes(testCase.contains))
   ));
 
   if (matched.length === 0) {
     const missed = [
-      testCase.arquivo !== undefined ? `file "${testCase.arquivo}"` : null,
+      testCase.file !== undefined ? `file "${testCase.file}"` : null,
       testCase.contains !== undefined ? `text "${testCase.contains}"` : null,
     ].filter((x) => x !== null).join(' and ');
-    return `no finding for "${testCase.regra}" matches ${missed} — rule findings: `
-      + (ruleFindings.map((a) => a.mensagem).join(' | ') || '(none)');
+    return `no finding for "${testCase.rule}" matches ${missed} — rule findings: `
+      + (ruleFindings.map((a) => a.message).join(' | ') || '(none)');
   }
-  const forbidden = ruleFindings.find((a) => testCase.notContains !== undefined && a.mensagem.includes(testCase.notContains));
+  const forbidden = ruleFindings.find((a) => testCase.notContains !== undefined && a.message.includes(testCase.notContains));
   if (forbidden !== undefined) {
-    return `finding for "${testCase.regra}" contains forbidden text "${testCase.notContains}": ${forbidden.mensagem}`;
+    return `finding for "${testCase.rule}" contains forbidden text "${testCase.notContains}": ${forbidden.message}`;
   }
   if (testCase.times !== undefined && matched.length !== testCase.times) {
     return `expected ${testCase.times} finding(s) matching file/text; received ${matched.length}: `
-      + matched.map((a) => a.mensagem).join(' | ');
+      + matched.map((a) => a.message).join(' | ');
   }
   return null;
 }
 
 function checkCase(binding, testCase) {
-  const label = `${testCase.regra} — ${testCase.description}`;
+  const label = `${testCase.rule} — ${testCase.description}`;
   let findings;
   try {
     findings = runCase(binding, testCase);
@@ -352,19 +352,19 @@ function checkCase(binding, testCase) {
     // declara trecho para a sintaxe dele. Isso e AUSENCIA DE COBERTURA, nao aprovacao — por isso
     // conta separado, aparece na saida e diz o MOTIVO, para lacuna nao se confundir com conformidade.
     if (cause?.code === 'ENOENT') {
-      return { skipped: true, label, motivo: 'this binding template does not contain the file mutated by the case' };
+      return { skipped: true, label, reason: 'this binding template does not contain the file mutated by the case' };
     }
-    if (cause?.code === 'SEM_COBERTURA') return { skipped: true, label, motivo: cause.message };
+    if (cause?.code === 'NO_COVERAGE') return { skipped: true, label, reason: cause.message };
     // A agulha de `substituir` nao foi achada: o CASO se aplica a este binding e a mutacao falhou —
     // reprova so ele, no vocabulario comum de FALHA, sem cegar os demais.
-    if (cause?.code === 'MUTACAO_INVALIDA') return { ok: false, label, detail: cause.message };
+    if (cause?.code === 'INVALID_MUTATION') return { ok: false, label, detail: cause.message };
     throw cause;
   }
-  const ids = new Set(findings.map((a) => a.regra));
-  const allowed = new Set([testCase.regra, ...(testCase.also ?? [])]);
+  const ids = new Set(findings.map((a) => a.rule));
+  const allowed = new Set([testCase.rule, ...(testCase.also ?? [])]);
   const extras = [...ids].filter((id) => !allowed.has(id));
 
-  if (!ids.has(testCase.regra)) {
+  if (!ids.has(testCase.rule)) {
     return {
       ok: false,
       label,
@@ -388,10 +388,10 @@ function checkCase(binding, testCase) {
 
 function main() {
   const publicFinding = serializeFinding({
-    modulo: 'orders',
-    regra: 'manifest',
-    nivel: 'aviso',
-    mensagem: 'example',
+    module: 'orders',
+    rule: 'manifest',
+    severity: 'warning',
+    message: 'example',
   });
   const expectedPublicFinding = {
     module: 'orders',
@@ -415,14 +415,14 @@ function main() {
   for (const result of results) {
     const mark = result.ok === true ? 'ok   ' : (result.skipped === true ? 'skip ' : 'FAIL');
     process.stdout.write(`  ${mark} ${result.label}\n`);
-    if (result.skipped === true) process.stdout.write(`       NO COVERAGE: ${result.motivo}\n`);
+    if (result.skipped === true) process.stdout.write(`       NO COVERAGE: ${result.reason}\n`);
     if (result.ok !== true && result.skipped !== true) {
       process.stdout.write(`       ${result.detail}\n`);
     }
   }
 
   const executed = results.length - skipped.length;
-  const covered = new Set(CASES.map((c) => c.regra));
+  const covered = new Set(CASES.map((c) => c.rule));
   process.stdout.write(`\nbinding ${binding}: ${executed - failures.length}/${executed} passed`);
   if (skipped.length > 0) {
     process.stdout.write(`, ${skipped.length} NO COVERAGE cases for another binding`);

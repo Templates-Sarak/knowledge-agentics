@@ -296,10 +296,10 @@ function fileImportFindings(ctx, file, ids) {
   for (const target of importsOf(file)) {
     const neighbor = isModulePackage(target, ids.filter((id) => id !== ctx.dirId));
     if (neighbor !== null) {
-      findings.push({ modulo: ctx.dirId, mensagem: `${file.rel}: imports module "${neighbor}" ("${target}")` });
+      findings.push({ module: ctx.dirId, message: `${file.rel}: imports module "${neighbor}" ("${target}")` });
     }
     if (leavesModule(file.rel, target)) {
-      findings.push({ modulo: ctx.dirId, mensagem: `${file.rel}: relative path leaves the module directory ("${target}")` });
+      findings.push({ module: ctx.dirId, message: `${file.rel}: relative path leaves the module directory ("${target}")` });
     }
   }
   return findings;
@@ -308,8 +308,8 @@ function fileImportFindings(ctx, file, ids) {
 export default [
   {
     id: 'lateral-import',
-    nivel: 'erro',
-    escopo: 'global',
+    severity: 'error',
+    scope: 'global',
     check(contexts) {
       const ids = contexts.map((c) => c.dirId);
       const findings = [];
@@ -323,8 +323,8 @@ export default [
   },
   {
     id: 'import-adapter',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -341,8 +341,8 @@ export default [
   },
   {
     id: 'vendor-sdk',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -357,8 +357,8 @@ export default [
   },
   {
     id: 'gateway-http',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const forbidden = new RegExp(`\\b(${SQL_SOURCE}|createClient|new\\s+Pool|\\.query\\()`, 'i');
       return ctx.code
@@ -370,8 +370,8 @@ export default [
   },
   {
     id: 'gateway-declared',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const consumed = (ctx.manifest?.consumes ?? []).map((c) => c.module);
       // A exclusao de barril mora em `gatewaysOf` — ver o import no topo.
@@ -390,15 +390,15 @@ export default [
   },
   {
     id: 'consumes-contract',
-    nivel: 'erro',
-    escopo: 'global',
+    severity: 'error',
+    scope: 'global',
     check(contexts) {
       const owners = new Map(contexts.map((c) => [c.dirId, c]));
       const findings = [];
       for (const ctx of contexts) {
         for (const entry of ctx.manifest?.consumes ?? []) {
           const failure = checkConsumption(owners.get(entry.module) ?? null, entry);
-          if (failure !== null) findings.push({ modulo: ctx.dirId, mensagem: failure });
+          if (failure !== null) findings.push({ module: ctx.dirId, message: failure });
         }
       }
       return findings;
@@ -406,8 +406,8 @@ export default [
   },
   {
     id: 'consumes-cycle',
-    nivel: 'erro',
-    escopo: 'global',
+    severity: 'error',
+    scope: 'global',
     check(contexts) {
       const graph = new Map(
         contexts.map((c) => [c.dirId, (c.manifest?.consumes ?? []).map((x) => x.module)]),
@@ -415,15 +415,15 @@ export default [
       const findings = [];
       for (const start of graph.keys()) {
         const path = findCycle(graph, start);
-        if (path !== null) findings.push({ modulo: start, mensagem: `dependency cycle: ${path.join(' -> ')}` });
+        if (path !== null) findings.push({ module: start, message: `dependency cycle: ${path.join(' -> ')}` });
       }
       return findings;
     },
   },
   {
     id: 'ui-kit',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       if (!kitModeApplies(ctx)) return [];
 
@@ -459,8 +459,8 @@ export default [
      * que destroem a interface: as outras áreas do sistema, e o fornecedor.
      */
     id: 'pure-ports',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       const findings = [];
@@ -491,8 +491,8 @@ export default [
      * contrário, e proibir inverteria a arquitetura.
      */
     id: 'isolated-adapter',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       const findings = [];
@@ -522,8 +522,8 @@ export default [
      * acusado. Só `modules/` é.
      */
     id: 'composition-discovery',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       return areaImports(project, 'src/')
@@ -535,8 +535,8 @@ export default [
   },
   {
     id: 'ui-token',
-    nivel: 'aviso',
-    escopo: 'module',
+    severity: 'warning',
+    scope: 'module',
     check(ctx) {
       if (!kitModeApplies(ctx)) return [];
       const findings = [];

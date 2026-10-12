@@ -7,6 +7,8 @@ node_modules/
 # Auditorias e artefatos locais temporários
 *.log
 .DS_Store
+# Windows: `> nul` no bash cria um ARQUIVO com esse nome reservado e o `git add` falha (mmap failed).
+nul
 
 # Config LOCAL do Claude (permissões/overrides da máquina) — não versionar.
 # A config versionada é .claude/settings.json; a local é por desenvolvedor.

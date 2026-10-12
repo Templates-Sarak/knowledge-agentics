@@ -308,16 +308,16 @@ export function scanRoot(project, apply) {
 export default [
   {
     id: 'log',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       return scan(ctx, () => true, DIRECT_OUTPUT, 'direct output — use the structured logger');
     },
   },
   {
     id: 'determinism',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       return scan(
         ctx,
@@ -329,8 +329,8 @@ export default [
   },
   {
     id: 'insecure-random',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -351,8 +351,8 @@ export default [
   },
   {
     id: 'public-route-authenticated',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const apiFiles = ctx.code.filter((a) => !a.isTest && a.rel.startsWith('api/'));
       // Sem `api/` nao ha cadeia de middleware para julgar — `structure` ja cobra a ausencia dela.
@@ -374,8 +374,8 @@ export default [
      * Procurá-la seria cobrar o oposto do que se cobra na linha de cima. Registrado no §7.1.
      */
     id: 'permission-literal',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       return scan(
         ctx,
@@ -388,8 +388,8 @@ export default [
   },
   {
     id: 'secure-cookie',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -410,8 +410,8 @@ export default [
   },
   {
     id: 'token-in-storage',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const findings = [];
       for (const file of ctx.code) {
@@ -440,8 +440,8 @@ export default [
      * e `context.mjs` mantém as duas coleções disjuntas por construção.
      */
     id: 'concatenated-sql',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       return scanRoot(project, (text) => (isInjectedSql(text)
@@ -468,8 +468,8 @@ export default [
      * entra na string. Divergir aqui faria uma das duas acusar o que a outra deixa passar.
      */
     id: 'sql-in-module',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       return scan(
         ctx,
@@ -493,8 +493,8 @@ export default [
      * segredo; `ROOT_API_BASE_URL` não é, e não é acusada.
      */
     id: 'secret-in-log',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       const credentials = (project.manifest.value?.requiredEnv ?? [])
@@ -513,8 +513,8 @@ export default [
   },
   {
     id: 'gateway-credential',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       if (ctx.manifest?.role === 'gateway') return [];
       return (ctx.manifest?.requiredEnv ?? [])
@@ -527,13 +527,13 @@ export default [
      * O projeto nasce dockerizado (ADR-022) e os arquivos de container existem na raiz.
      *
      * Presença, e só presença: o CONTEÚDO do Dockerfile (não-root, sem `:latest`, healthcheck) é da
-     * skill `deploy-docker-monolito`/`validar_monolito.py`, que é por-provedor e por-decisão — a lei
+     * skill `deploy-docker-monolito`/`validate_monolith.py`, que é por-provedor e por-decisão — a lei
      * do template afirma que os arquivos existem, não que sejam bons. A imagem de front só é exigida
      * quando algum módulo publica uma tela: o binding Python nasce sem `web/` e sem front.
      */
     id: 'container-present',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       // Módulo solto (extraído e ainda não religado a um projeto) não tem raiz a cobrar.
       if (!project.isProject) return [];
@@ -556,14 +556,14 @@ export default [
      * `deploy/.env`, e é a forma com globstar (`**` + `/.env`) quem os pega. Um `COPY . .` num estágio de build com o `.env` no contexto grava o
      * segredo numa camada (e no cache de build) — e é o primeiro "NUNCA" da skill de deploy.
      *
-     * É a ÚNICA checagem fina do `validar_monolito.py` promovida a lei do template, e a razão é a
+     * É a ÚNICA checagem fina do `validate_monolith.py` promovida a lei do template, e a razão é a
      * mesma que torna `gitignore-secret` lei: vale para todo projeto, sem depender de provedor. As
      * outras (loopback, digest, rótulo, não-root) são decisão por provedor e ficam na skill (§7.2).
      * `.dockerignore` ausente é do `container-present` — um defeito, uma mensagem.
      */
     id: 'dockerignore-secret',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       const text = project.container.dockerignore;
@@ -597,8 +597,8 @@ export default [
      * arquivo, não a da declaração. `$$VAR` (escape do compose) e comentário não contam.
      */
     id: 'compose-variables-declared',
-    nivel: 'erro',
-    escopo: 'root',
+    severity: 'error',
+    scope: 'root',
     check(project) {
       if (!project.isProject) return [];
       // Manifesto da raiz ausente ou quebrado e do `root-manifest`: sem ele toda `ROOT_*` pareceria

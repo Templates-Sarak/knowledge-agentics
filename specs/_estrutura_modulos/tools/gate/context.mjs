@@ -30,7 +30,7 @@ const SKIP_WALK = new Set([
 const IGNORED_CONTENT_BUT_ENTRY = new Set(['generated']);
 
 const EXT_CODE = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py']);
-const TEMPLATE_SYNTHETIC_ID = 'molde';
+const TEMPLATE_SYNTHETIC_ID = 'mold';
 
 /**
  * A FIACAO — o codigo que mora na raiz do projeto, fora de `modules/`.
@@ -78,7 +78,7 @@ function swapMarkers(text, isTemplate) {
   return text
     .replaceAll('<module_snake>', TEMPLATE_SYNTHETIC_ID.replace(/-/g, '_'))
     .replaceAll('<MODULE>', TEMPLATE_SYNTHETIC_ID.toUpperCase())
-    .replaceAll('<Module>', 'Molde')
+    .replaceAll('<Module>', 'Mold')
     .replaceAll('<module>', TEMPLATE_SYNTHETIC_ID)
     .replaceAll('<scope>', 'scope');
 }
@@ -314,7 +314,7 @@ function readProject(projectRoot) {
 
   const rootManifest = readRootManifest(projectRoot);
   return {
-    raiz: projectRoot,
+    root: projectRoot,
     isProject,
     manifest: rootManifest,
     check,
@@ -351,7 +351,7 @@ export function loadContext(root, projectRoot) {
   const files = walk(root).map((abs) => buildFile(abs, root, isTemplate));
 
   return {
-    raiz: root,
+    root,
     projectRoot,
     isTemplate,
     dirId: dirId(root),
@@ -431,7 +431,7 @@ export function loadExceptions(projectRoot) {
   const path = join(projectRoot, 'config', 'compliance.json');
   if (!existsSync(path)) return { valid: [], invalid: [] };
   try {
-    const { exceptions: exceptions = [] } = JSON.parse(readText(path));
+    const { exceptions = [] } = JSON.parse(readText(path));
     const validIds = declaredAdrIds(projectRoot);
     const valid = [];
     const invalid = [];

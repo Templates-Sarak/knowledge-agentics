@@ -22,11 +22,15 @@ estão sendo cumpridas.
 ## Workflow
 Trate **a base inteira** como um único bloco.
 
-1. **Varrer a base** — rode `python scripts/audit_base.py --raiz <caminho_base>`. O script requer o argumento `--raiz` (ex: `.` se estiver na raiz do knowledge-agentics) e varrerá os 4 pilares em busca de:
+1. **Varrer a base** — rode `python scripts/audit_base.py --root <caminho_base>`. O script requer o argumento `--root` (ex: `.` se estiver na raiz do knowledge-agentics) e varrerá os 4 pilares em busca de:
    - **Armadilhas YAML:** Dois pontos (`: `) indevidos em descrições.
    - **Contratos:** Subagentes sem obrigatoriedade JSON.
    - **Ponteiros/Órfãos:** Inconsistências de nomenclatura.
    - **Erros Sintáticos/Vazamentos:** JSONs inválidos, JS quebrado ou tokens *hardcoded*.
+
+   **Categorias do JSON de saída:** `agents`, `commands`, `hooks`, `skills`, `pointers`, `counts`, `leaks`,
+   `thresholds`, `naming`, `proactivity`, `sections`, `parity`, `manifests`, `map`, `systems_in_shipped_files`,
+   `cited_ids`.
 
    **Código de saída.** O script sai com **`1` quando qualquer categoria do JSON tem achado** e com **`0` só
    quando todas estão vazias** (o total de achados vai a `stderr`). Quem o encadeia — o `pre-commit` local, o
@@ -38,13 +42,13 @@ Trate **a base inteira** como um único bloco.
 5. **Re-scan** — rode o script novamente para atestar que os erros corrigidos desapareceram do relatório.
 
 ## Regras e limites
-- **NÃO** use caminhos absolutos (`C:\Users\...`). O script é dinâmico; use sempre o caminho atual repassado via `--raiz`.
+- **NÃO** use caminhos absolutos (`C:\Users\...`). O script é dinâmico; use sempre o caminho atual repassado via `--root`.
 - **NÃO** altere nenhum arquivo sem passar pelo HITL. Você é um auditor de infraestrutura; mutações são cirúrgicas.
 - **NUNCA** classifique *links* markdown entre skills (ex: `references/workflow.md`) como "ponteiros órfãos" sem antes confirmar se a referência não é apenas o cruzamento de contexto para o agente ler.
 - **NÃO** saia do escopo: esta *skill* foca nos 4 pilares do *framework* Sarak. Auditoria do produto/código cliente é de responsabilidade da família `code-` ou `cyber-`.
 
 ## Checklist "pronta"
-- [ ] Script rodado passando o parâmetro `--raiz` sem caminhos fixos?
+- [ ] Script rodado passando o parâmetro `--root` sem caminhos fixos?
 - [ ] Relatório gerado listando falhas reais vs avisos?
 - [ ] Plano de adequação proposto ao usuário via HITL?
 - [ ] Correções executadas apenas no que foi aprovado?
@@ -52,7 +56,7 @@ Trate **a base inteira** como um único bloco.
 
 ## Referências (Camada 3 — leia sob demanda)
 - `scripts/audit_base.py` — script de validação determinística de metadados, contratos e sintaxes no ecossistema Sarak.
-- `scripts/ponteiros.py` — coerência de referência nas **duas direções**, chamada pelo `audit_base.py`:
+- `scripts/pointers.py` — coerência de referência nas **duas direções**, chamada pelo `audit_base.py`:
   **(a)** o que é citado existe — ponteiro órfão de caminho e de nome de artefato;
   **(b)** o que existe é citado — todo artefato do disco (`skills/`, `agents/`, `commands/`) aparece nos
   índices que **se declaram** inventário completo, pela marca `**Inventário completo.**` no próprio texto.
@@ -60,30 +64,31 @@ Trate **a base inteira** como um único bloco.
   editorial vira dono de decisão que não é dele. As isenções estão documentadas no topo do arquivo: ele
   resolve só o que consegue ancorar sem ambiguidade e **prefere falso negativo a falso positivo**, como a
   família heurística do gate (`04-regras.md` §7.2).
-- `scripts/paridade.py` — chamada pelo `audit_base.py`: cobra que `specs/_estrutura_base/` e
+- `scripts/parity.py` — chamada pelo `audit_base.py`: cobra que `specs/_estrutura_base/` e
   `specs/_estrutura_base_site/` ensinam o MESMO fluxo SDD. Compara **TODO arquivo, de qualquer
   extensão**, presente nas duas árvores e exige identidade — exceto a divergência **declarada** em
-  `paridade.EXCECOES` (hoje `00-contexto.md`, `INDEX.md`, `README.md`, cada um com o motivo ao
-  lado) e as pastas geradas/cache de `paridade.PASTAS_IGNORADAS` (`.ruff_cache` e afins — nunca
+  `parity.EXCEPTIONS` (hoje `00-contexto.md`, `INDEX.md`, `README.md`, cada um com o motivo ao
+  lado) e as pastas geradas/cache de `parity.IGNORED_DIRS` (`.ruff_cache` e afins — nunca
   conteúdo do repositório). Arquivo que só existe numa das árvores é o desenho (specs próprias do
   site), não achado. Fim de linha (CRLF/LF) é
   normalizado antes de comparar, nunca contado como divergência de conteúdo.
-- `scripts/manifestos.py` — chamada pelo `audit_base.py` (categoria `manifestos`): cobra que
+- `scripts/manifests.py` — chamada pelo `audit_base.py` (categoria `manifests`): cobra que
   `.codex-plugin/plugin.json`, `plugin.json` e o `plugins[0]` de `.claude-plugin/marketplace.json`
   repitam a identidade (`name`/`version`/`description`/`author`) da fonte `.claude-plugin/plugin.json`.
-  Manifesto ausente é achado, salvo exceção nominal com motivo em `manifestos.EXCECOES`.
-- `scripts/mapa.py` — chamada pelo `audit_base.py` (categoria `mapa`): cobra o **schema** do `mapa.json`
-  da raiz — campos e tipos, `id` único e em kebab-case, `caminho` único, `tipo`/`situacao`/`binding` dentro
-  dos valores aceitos e caminhos relativos com `/`. **Não** cobra que o caminho exista: o audit roda em CI e
+  Manifesto ausente é achado, salvo exceção nominal com motivo em `manifests.EXCEPTIONS`.
+- `scripts/map_schema.py` — chamada pelo `audit_base.py` (categoria `map`): cobra o **schema** do `mapa.json`
+  da raiz — campos e tipos (`systems[].id/name/path/repo/git_root/kind/modular/bindings/lifecycle/status/status_commit`),
+  `id` único e em kebab-case, `path` único, `kind`/`lifecycle`/`status`/`bindings` dentro dos valores aceitos e
+  caminhos relativos com `/`. Chave ou valor do mapa antigo (`sistemas`, `nome`, `ativo`…) é acusado com a dica do novo. **Não** cobra que o caminho exista: o audit roda em CI e
   em outras máquinas, onde os sistemas não estão clonados ao lado da base.
-- `scripts/sistemas_nos_viajantes.py` — chamada pelo `audit_base.py` (categoria `sistemas_nos_viajantes`): nenhum
-  arquivo que **viaja** para o projeto gerado (`doutrina/`, `bindings/`, `tools/` do template e os moldes do
-  fluxo SDD em `specs/_estrutura_base*/`) pode conter o `id` ou o `nome` de um sistema do `mapa.json`. A lista
+- `scripts/systems_in_shipped_files.py` — chamada pelo `audit_base.py` (categoria `systems_in_shipped_files`): nenhum
+  arquivo que **viaja** para o projeto gerado (`doutrina/`, `bindings/`, `tools/` e `tests/` do template e os moldes do
+  fluxo SDD em `specs/_estrutura_base*/`) pode conter o `id` ou o `name` de um sistema do `mapa.json`. A lista
   vem do mapa lido em runtime. Mapa ilegível ou sem sistema é achado (a guarda sem o que procurar passaria
   calada). Documentação que não viaja (`skills/**`, `README.md`) pode citar sistema.
-- `scripts/ids_citados.py` — chamada pelo `audit_base.py` (categoria `ids_citados`): todo id de regra citado em
+- `scripts/cited_ids.py` — chamada pelo `audit_base.py` (categoria `cited_ids`): todo id de regra citado em
   `skills/**`, `commands/**`, `agents/**`, `hooks/**` e `README.md` existe no catálogo, **lido do código do
   gate** (`tools/gate/rules/*.mjs` + o pseudo-id do `engine.mjs`). Só a forma inequívoca conta: id antigo com
   hífen entre crases (da tabela `tools/gate/renamed-rules.json`), token entre crases logo após "regra(s)"/"id(s)"
-  e a primeira coluna de tabela de catálogo. Prefere falso negativo; `ids_citados.EXCECOES` lista, com motivo,
+  e a primeira coluna de tabela de catálogo. Prefere falso negativo; `cited_ids.EXCEPTIONS` lista, com motivo,
   os arquivos que citam id antigo de propósito.

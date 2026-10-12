@@ -28,7 +28,7 @@ entre módulos é da thread principal (do command `/code1-auditar`) — não a f
    `template`: consuma `findings[]`/`errorCount` do `--json` do gate que o orquestrador passou e
    **complemente só as lacunas** dele (`04-regras.md` §7) — não reproduza achado que o gate já emitiu.
    Cada finding usa `module`, `rule`, `severity` e `message`; ao gravar o backlog existente,
-   mapeie `rule` para o campo de saída `regra` sem alterar o formato persistido nesta onda.
+   use `rule` como o `rule` do achado de backlog (e `severity` `error`/`warning` do gate como `high`/`medium`).
 2. **Motor mecânico (verificação de padrões de código)** — rode o validador da linguagem nos arquivos e **consuma o JSON/saída**:
    - **Python** → `padrao-python/scripts/validate.py` (interno, via `ast`).
    - **TS/JS** → `padrao-typescript/scripts/validate.mjs` (via API do `tsc` do projeto).
@@ -37,16 +37,16 @@ entre módulos é da thread principal (do command `/code1-auditar`) — não a f
    - **NÃO** invoque auditores externos pesados (SonarQube/Semgrep/gitleaks/pip-audit) — segurança/deps é das skills `cyber-*`.
 3. **Classificar as 12 dimensões** — complemente o mecânico com julgamento onde preciso (SRP, nomes, acoplamento,
    contrato de API, validação na borda). Critérios em `code-diagnostico/references/backlog-format.md`.
-4. **Avaliar cobertura** — há `tests/` cobrindo o comportamento? Marque `cobertura: sem-testes | parcial | ok`.
-   Sem testes → `precisaCaracterizacao: true` em toda tarefa que **muda código**.
-5. **Decompor em `tarefas[]`** — schema de `references/decomposicao.md`: `id` (`<module>-<seq>`), `arquivo`,
-   `dimensao`, `regra`, `estadoAtual`/`estadoAlvo`, `risco`, `precisaCaracterizacao`, `dependeDe`, `verificacao`,
-   `onda`, `status: pending`. Átomo = **uma mudança coerente por arquivo** (não uma-violação-por-tarefa).
+4. **Avaliar cobertura** — há `tests/` cobrindo o comportamento? Marque `coverage: untested | partial | ok`.
+   Sem testes → `needsCharacterization: true` em toda tarefa que **muda código**.
+5. **Decompor em `tasks[]`** — schema de `references/decomposicao.md`: `id` (`<module>-<seq>`), `module`, `file`,
+   `dimension`, `rule`, `currentState`/`targetState`, `risk`, `needsCharacterization`, `dependsOn`, `verification`,
+   `wave`, `status: pending`. Átomo = **uma mudança coerente por arquivo** (não uma-violação-por-tarefa).
 6. **Gravar os artefatos do módulo** (Write **só** sob `.sarak/audit/<module>/`):
-   - `.sarak/audit/<module>/backlog.json` — `{ modulo, cobertura, resumo, tarefas[] }`, tarefas ordenadas por (risco asc, severidade desc).
-   - `.sarak/audit/<module>/auditoria.md` — preenchendo `assets/auditoria.template.md` com o escopo do módulo.
+   - `.sarak/audit/<module>/backlog.json` — `{ module, coverage, summary, tasks[] }`, tarefas ordenadas por (`risk` asc, `severity` desc). Chaves em inglês; formato em `backlog-format.md`.
+   - `.sarak/audit/<module>/audit.md` — preenchendo `assets/auditoria.template.md` com o escopo do módulo.
 7. **Devolver um resumo compacto** à thread principal (NÃO despeje os arquivos inteiros): contagens por dimensão,
-   `cobertura`, nº de tarefas por onda, top 2-3 riscos, e os **caminhos** dos dois artefatos gravados.
+   `coverage`, nº de tarefas por onda, top 2-3 riscos, e os **caminhos** dos dois artefatos gravados.
 
 ## Regras e limites
 - **NUNCA** edite/crie/remova arquivo de **código-fonte** — você é estritamente read-only sobre o source.
@@ -61,14 +61,14 @@ entre módulos é da thread principal (do command `/code1-auditar`) — não a f
 Retorne **EXCLUSIVAMENTE** um bloco de código JSON válido contendo o resumo estruturado, sem nenhum texto introdutório ou de fechamento. Exemplo de estrutura:
 ```json
 {
-  "modulo": "...",
-  "cobertura": "...",
-  "violacoesPorDimensao": {},
-  "tarefasPorOnda": {},
-  "topRiscos": [],
-  "artefatos": {
+  "module": "...",
+  "coverage": "...",
+  "findingsByDimension": {},
+  "tasksByWave": {},
+  "topRisks": [],
+  "artifacts": {
     "backlog": "...",
-    "auditoria": "..."
+    "audit": "..."
   }
 }
 ```

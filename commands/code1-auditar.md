@@ -20,9 +20,9 @@ consolida os achados num **plano de adequação** e **persiste** em `.sarak/audi
    | # | `Glob` | Topologia | Módulos são |
    |---|---|---|---|
    | 1 | `modules/*/module.json` | **template** | cada pasta em `modules/` (menos `_template`) |
-   | 2 | `backend/*/`, `frontend/*/`, `src/modules/*/`, `apps/*/`, `packages/*/` | **modular-legado** | cada pasta encontrada |
-   | 3 | `controllers/`, `services/`, `models/` no topo | **por-camadas** | **não há** — o alvo é o repo inteiro, como um módulo único |
-   | 4 | nenhum acima | **monólito simples** | o repo inteiro; avise que o Nível 1 não se aplica |
+   | 2 | `backend/*/`, `frontend/*/`, `src/modules/*/`, `apps/*/`, `packages/*/` | **legacy-modular** | cada pasta encontrada |
+   | 3 | `controllers/`, `services/`, `models/` no topo | **layered** | **não há** — o alvo é o repo inteiro, como um módulo único |
+   | 4 | nenhum acima | **simple-monolith** | o repo inteiro; avise que o Nível 1 não se aplica |
 
    **Nenhum módulo encontrado nunca é "está conforme"** — é sinal de que a topologia é outra. Declare qual é
    antes de seguir. Se for **template**, rode `node tools/gate/validate.mjs --all --json` primeiro e
@@ -31,29 +31,30 @@ consolida os achados num **plano de adequação** e **persiste** em `.sarak/audi
    O contrato JSON do gate usa `findings[]` e `errorCount`; cada achado tem `module`, `rule`,
    `severity` (`error` ou `warning`) e `message`. Preserve esses nomes ao consumir a entrada.
 
-   Capture a data com `Bash`: `date +%F` (use como `<data>`).
+   Capture a data com `Bash`: `date +%F` (use como `<date>`).
 
 2. **Fan-out (um `code-auditor` por módulo, em paralelo)** — dispare, via **Task**, o agente `code-auditor`
    para **cada módulo**, passando o caminho do módulo. Os agentes rodam em **Sonnet**, são **read-only** sobre o
-   source e gravam `.sarak/audit/<module>/{backlog.json,auditoria.md}`. Cada um devolve só um **resumo compacto**
+   source e gravam `.sarak/audit/<module>/{backlog.json,audit.md}`. Cada um devolve só um **resumo compacto**
    (contagens por dimensão, cobertura, tarefas por onda, top riscos, caminhos). **Não** re-leia os arquivos
    inteiros — trabalhe com os resumos.
 
 3. **Consolidar (julgamento — thread principal)** — a partir dos resumos:
-   - `.sarak/audit/backlog-<data>.json` — funda os `tarefas[]` de todos os módulos num único array, **ordenado por
-     (`risco` asc, `severidade` desc)** e agrupado por **onda**; mantenha `status: pending`. Inclua um `resumo`
-     (módulos, violações por dimensão, módulos sem teste, nº de tarefas por onda).
-   - `.sarak/audit/auditoria-<data>.md` — preencha `code-diagnostico/assets/auditoria.template.md`: sumário
+   - `.sarak/audit/backlog-<date>.json` — funda os `tasks[]` de todos os módulos num único array, **ordenado por
+     (`risk` asc, `severity` desc)** e agrupado por `wave`; mantenha `status: pending`. Inclua um `summary`
+     (`modules`, `findings`/`byDimension`, `modulesWithoutTests`, nº de tarefas por onda) e a `topology`.
+     Formato em `code-diagnostico/references/backlog-format.md` (chaves em inglês).
+   - `.sarak/audit/audit-<date>.md` — preencha `code-diagnostico/assets/auditoria.template.md`: sumário
      executivo, mapa por módulo, backlog decomposto, **sequenciamento das ondas atravessando módulos**, mapa de
-     dependências (`dependeDe`) e recomendações (ADR para acoplamento/dados; bugs ≠ adequação).
-   - Este `auditoria-<data>.md` é um **snapshot congelado** (não sobrescreva auditorias antigas — datas coexistem).
+     dependências (`dependsOn`) e recomendações (ADR para acoplamento/dados; bugs ≠ adequação).
+   - Este `audit-<date>.md` é um **snapshot congelado** (não sobrescreva auditorias antigas — datas coexistem).
 
 4. **HITL — Portão A (aprovar o plano)** — apresente o **sumário executivo + as ondas propostas + os maiores
    riscos** e pergunte: **"⚠️ Aprova o plano / ajusta escopo / descarta módulos?"**. **Aguarde** a resposta.
    Aplique ajustes/descartes no consolidado se pedido.
 
 5. **Finalizar** — aponte os caminhos gerados (`.sarak/audit/...`) e indique o **próximo passo**: a execução em
-   ondas (`/code3-adequar`, etapa futura) consome o `backlog-<data>.json`, roteando cada tarefa pelo `risco`.
+   ondas (`/code3-adequar`, etapa futura) consome o `backlog-<date>.json`, roteando cada tarefa pelo `risk`.
    Lembre o usuário: **`.sarak/` é versionável — commite** (é o plano/registro da campanha, e o git é o histórico
    do backlog vivo); **não** o coloque no `.gitignore`.
 

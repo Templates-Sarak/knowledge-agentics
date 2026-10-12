@@ -25,11 +25,11 @@ Trate **um módulo/funcionalidade por vez**. Estratégia em `references/estrateg
 1. **Definir o que testar** — caminhos **críticos**: caminho feliz + erros/limites relevantes. Teste pela **borda pública** (`api/`/funções públicas), **não** internals. Priorize lógica de negócio; ignore getters triviais e libs de terceiros.
 2. **Escolher a ferramenta** — pytest (Python) ou vitest/jest (TS/JS); localização `tests/` do módulo (`padrao-escrita` §9). Ver `references/ferramentas.md`.
 3. **Escrever os testes** — padrão **AAA** (arrange-act-assert); **um comportamento por teste**; nome descritivo do caso; **mock só de I/O externo** (rede/DB/relógio) — nunca do sistema sob teste.
-4. **Rodar + cobertura** — execute a suíte; meça cobertura do módulo (meta **~80%**, sinal de saúde — não inflar com teste vazio). Caminhos críticos cobertos são obrigatórios. O **mínimo do gate** vem de `hooks/config.json → cobertura.minima` (default 80); o hook `test-cobertura` o cobra **no push** (ver `references/ferramentas.md`).
+4. **Rodar + cobertura** — execute a suíte; meça cobertura do módulo (meta **~80%**, sinal de saúde — não inflar com teste vazio). Caminhos críticos cobertos são obrigatórios. O **mínimo do gate** vem de `hooks/config.json → coverage.minimum` (default 80); o hook `test-cobertura` o cobra **no push** (ver `references/ferramentas.md`).
 5. **Reportar** — o que foi coberto, % do módulo, e lacunas que exigem refator para testar (acoplamento).
 
 > **Gate de cobertura (no push):** o hook `test-cobertura` mede a cobertura na fronteira do `git push` e, abaixo
-> do mínimo, **pede aprovação do usuário** (modo `ask`, default) — ou bloqueia/avisa conforme `cobertura.modo`.
+> do mínimo, **pede aprovação do usuário** (modo `ask`, default) — ou bloqueia/avisa conforme `coverage.mode`.
 > A **mecânica do gate vive no `hooks/`** (config + hook); aqui é o **como elevar** a cobertura. Esta skill não
 > dispara o gate — ela é o caminho para passar nele.
 
@@ -46,7 +46,7 @@ Trate **um módulo/funcionalidade por vez**. Estratégia em `references/estrateg
 - [ ] Testes em `tests/` do módulo, na ferramenta da stack?
 - [ ] AAA, um comportamento por teste, nomes descritivos?
 - [ ] Mock só de I/O externo (não do alvo); testes determinísticos (sem flaky)?
-- [ ] Cobertura medida (~80% do módulo, sem inflar) e ≥ `cobertura.minima` (ou aprovação consciente no push)?
+- [ ] Cobertura medida (~80% do módulo, sem inflar) e ≥ `coverage.minimum` (ou aprovação consciente no push)?
 - [ ] Cobertura e lacunas reportadas?
 
 ## Referências (Camada 3 — leia sob demanda)

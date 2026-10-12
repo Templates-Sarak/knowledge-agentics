@@ -14,9 +14,13 @@ primeira linha de defesa — rápida (sem varrer histórico). O check-up profund
 
 > Escopo deliberadamente estreito: **apenas o commit atual**. Os padrões de segredo e nomes sensíveis em
 > `scripts/config.json` são **GERADOS** do catálogo canônico da skill `cyber-segredos` (fonte única do
-> ecossistema) por `scripts/gerar_config.py` — nunca editados à mão. Depois de mudar o catálogo canônico,
-> rode `python scripts/gerar_config.py`; `--conferir` prova que os dois não divergiram.
+> ecossistema) por `scripts/generate_config.py` — nunca editados à mão. Depois de mudar o catálogo canônico,
+> rode `python scripts/generate_config.py`; `--check` prova que os dois não divergiram.
 > Princípios globais em `padrao-escrita`.
+
+> **Formato:** a saída é `{blocked, secret_findings:[{file, kind, masked_snippet}], sensitive_files}`; flag
+> `--root`. Compatibilidade de leitura: o `config.json` já instalado em `.githooks/` com chaves antigas
+> (`padroes`, `arquivos_sensiveis`, `arquivos_permitidos`) continua aceito — o script traduz na carga.
 
 ## Quando usar
 - Para **instalar/configurar** o gate num repositório (hook + script).
@@ -27,18 +31,18 @@ primeira linha de defesa — rápida (sem varrer histórico). O check-up profund
 ## Workflow
 
 ### A. Instalar o gate (mutação leve — confirme antes)
-1. Crie `.githooks/` no repo-alvo; copie para lá `scripts/verificar_commit.py` e `scripts/config.json`.
+1. Crie `.githooks/` no repo-alvo; copie para lá `scripts/verify_commit.py` e `scripts/config.json`.
 2. Copie `assets/pre-commit` para `.githooks/pre-commit` e torne-o executável (`chmod +x`).
 3. Aponte o git para a pasta: `git config core.hooksPath .githooks`. Pronto — roda em todo commit.
 
 ### B. Quando o gate bloqueia (exit 1)
-1. Leia a saída JSON de `verificar_commit.py` (`achados_segredo` mascarados + `arquivos_sensiveis`).
+1. Leia a saída JSON de `verify_commit.py` (`secret_findings` mascarados + `sensitive_files`).
 2. **Corrija**: mova o segredo para `.env` (e `.gitignore`), troque por `process.env`/`os.getenv`, e **re-stage**.
 3. Se o segredo **já está em commits anteriores/no histórico**, isto aqui não basta → acione a `git-especialista-repositorio` (reescrita + rotação).
 4. **Falso positivo**: ajuste a allowlist em `.githooks/config.json` — **nunca** use `--no-verify` para burlar.
 
 ### C. Checagem manual
-- `python scripts/verificar_commit.py --raiz <repo>` → JSON do staged (exit 1 se houver achado).
+- `python scripts/verify_commit.py --root <repo>` → JSON do staged (exit 1 se houver achado).
 
 ## Regras e limites
 - **NUNCA** oriente `git commit --no-verify` para passar por cima de um achado real — falso positivo vai para a allowlist do config.
@@ -49,11 +53,11 @@ primeira linha de defesa — rápida (sem varrer histórico). O check-up profund
 
 ## Checklist "pronta"
 - [ ] Hook instalado (`.githooks/pre-commit` executável + `core.hooksPath` apontado)?
-- [ ] `verificar_commit.py` + `config.json` presentes em `.githooks/` do repo?
+- [ ] `verify_commit.py` + `config.json` presentes em `.githooks/` do repo?
 - [ ] Em bloqueio: achados triados, segredo movido para `.env` e re-staged (sem `--no-verify`)?
 - [ ] Suspeita de histórico encaminhada à `git-especialista-repositorio`?
 
 ## Referências (Camada 3 — leia sob demanda)
-- `scripts/verificar_commit.py` + `scripts/config.json` — gate do staged (segredos + arquivos sensíveis; exit 1 bloqueia).
-- `scripts/gerar_config.py` — gera `config.json` do catálogo canônico de `cyber-segredos`; `--conferir` prova que estão em sincronia.
+- `scripts/verify_commit.py` + `scripts/config.json` — gate do staged (segredos + arquivos sensíveis; exit 1 bloqueia).
+- `scripts/generate_config.py` — gera `config.json` do catálogo canônico de `cyber-segredos`; `--check` prova que estão em sincronia.
 - `assets/pre-commit` — hook `pre-commit` que chama o script (instalado pela `git-commit-inicial`).

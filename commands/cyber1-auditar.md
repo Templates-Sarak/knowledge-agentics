@@ -24,8 +24,8 @@ Ausente → o `cyber-auditor` cai no script Sarak/julgamento e **registra a lacu
    autorização explícita. **Nunca** sondar alvo de terceiros.
 
 2. **Fan-out (um `cyber-auditor` por domínio)** — dispare, via **Task** (Sonnet, **estático**), um agente para
-   cada domínio: `segredos, dependencias, codigo, auth, api, config, dados`. Cada um roda a ferramenta externa +
-   script Sarak, grava `.sarak/security/<dominio>/{achados.json,relatorio.md}` e devolve um **resumo compacto**.
+   cada domínio: `secrets, dependencies, code, auth, api, config, data`. Cada um roda a ferramenta externa +
+   script Sarak, grava `.sarak/security/<domain>/{findings.json,report.md}` e devolve um **resumo compacto**.
    Trabalhe com os resumos (não re-leia os arquivos inteiros).
 
 3. **DAST opcional (autorizado)** — se houver URL: rode `cyber-config/scripts/check_headers.py --url <url>`
@@ -33,9 +33,9 @@ Ausente → o `cyber-auditor` cai no script Sarak/julgamento e **registra a lacu
    marque esses achados como **"requer alvo autorizado"** (não pulados silenciosamente).
 
 4. **Consolidar** — a partir dos resumos:
-   - `.sarak/security/achados-<data>.json` — funda os `achados[]` num array único, **ordenado por severidade**
-     (crítica→alta→média→baixa), `status: aberto`. (`<data>` via `Bash date +%F`.)
-   - `.sarak/security/relatorio-<data>.md` — preencha `cyber-config/assets/relatorio_seguranca.md` (resumo por
+   - `.sarak/security/findings-<date>.json` — funda os `findings[]` num array único, **ordenado por `severity`**
+     (`critical`→`high`→`medium`→`low`), `status: open`. (`<date>` via `Bash date +%F`.)
+   - `.sarak/security/report-<date>.md` — preencha `cyber-config/assets/relatorio_seguranca.md` (resumo por
      domínio + achados + métricas "antes"). **Segredos sempre mascarados.**
 
 5. **Apresentar** — sumário executivo (achados por domínio, severidade máx, top críticos), os caminhos gerados, e

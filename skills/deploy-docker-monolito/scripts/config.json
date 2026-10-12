@@ -1,5 +1,5 @@
 {
-  "_source": "Tunables do validar_monolito.py (zero hardcoded). Cada projeto pode ajustar nomes e listas.",
+  "_source": "Tunables of validate_monolith.py (zero hardcoded). Each project may adjust names and lists.",
   "backend_dockerfile_globs": [
     "Dockerfile",
     "Dockerfile.*"

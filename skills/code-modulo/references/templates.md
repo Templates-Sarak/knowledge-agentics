@@ -119,7 +119,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 ```
 
 **`role` tem UM vocabulário só, o inglês do manifesto** — `--role domain`\|`gateway`\|`connector`, a
-mesma forma que `init_repo.py` exige em `--modulos <id>:<role>` e a mesma que sai gravada em
+mesma forma que `init_repo.py` exige em `--modules <id>:<role>` e a mesma que sai gravada em
 `module.json`. Não há tradução em lugar nenhum do caminho. A flag é **obrigatória**: papel adivinhado
 pelo nome do id é o defeito que a exigência fecha.
 

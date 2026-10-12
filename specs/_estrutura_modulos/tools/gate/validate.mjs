@@ -21,7 +21,7 @@ import { findProjectRoot, loadContext, loadExceptions, loadProject, listModules 
 import { ROOT_TARGET, analyze, serializeFinding } from './engine.mjs';
 
 function applyExceptions(findings, exceptions) {
-  const waived = (a) => exceptions.valid.some((e) => e.module === a.modulo && e.rule === a.regra);
+  const waived = (a) => exceptions.valid.some((e) => e.module === a.module && e.rule === a.rule);
   return findings.filter((a) => !waived(a));
 }
 
@@ -30,13 +30,13 @@ function printHuman(findings, targets, invalidExceptions) {
     process.stdout.write(`  ! Invalid exception (${invalid.module}/${invalid.rule}): ${invalid.invalidBecause}\n`);
   }
   for (const target of targets) {
-    const own = findings.filter((a) => a.modulo === target);
-    const errors = own.filter((a) => a.nivel === 'erro');
-    const warnings = own.filter((a) => a.nivel === 'aviso');
+    const own = findings.filter((a) => a.module === target);
+    const errors = own.filter((a) => a.severity === 'error');
+    const warnings = own.filter((a) => a.severity === 'warning');
     process.stdout.write(`\n${target}: ${errors.length} error(s), ${warnings.length} warning(s)\n`);
     for (const item of [...errors, ...warnings]) {
-      const mark = item.nivel === 'erro' ? 'x' : '!';
-      process.stdout.write(`  ${mark} [${item.regra}] ${item.mensagem}\n`);
+      const mark = item.severity === 'error' ? 'x' : '!';
+      process.stdout.write(`  ${mark} [${item.rule}] ${item.message}\n`);
     }
   }
 }
@@ -55,7 +55,7 @@ function readArguments() {
     all: rawArgs.includes('--all'),
     json: rawArgs.includes('--json'),
     extraction: rawArgs.includes('--extraction'),
-    caminho: rawArgs.find((a) => !a.startsWith('--')) ?? null,
+    path: rawArgs.find((a) => !a.startsWith('--')) ?? null,
   };
 }
 
@@ -78,7 +78,7 @@ function outputTargets(options, selected, projectRoot) {
 function report(options, contexts, selected, projectRoot) {
   const exceptions = loadExceptions(projectRoot);
   const findings = applyExceptions(analyze(contexts, selected, options), exceptions);
-  const errors = findings.filter((a) => a.nivel === 'erro');
+  const errors = findings.filter((a) => a.severity === 'error');
 
   if (options.json) {
     process.stdout.write(JSON.stringify({
@@ -105,10 +105,10 @@ function report(options, contexts, selected, projectRoot) {
 function main() {
   const options = readArguments();
   const here = dirname(fileURLToPath(import.meta.url));
-  const start = options.caminho !== null ? resolve(process.cwd(), options.caminho) : join(here, '..', '..');
+  const start = options.path !== null ? resolve(process.cwd(), options.path) : join(here, '..', '..');
   const projectRoot = findProjectRoot(start);
 
-  const target = options.all ? null : resolveTarget(options.caminho ?? '', projectRoot);
+  const target = options.all ? null : resolveTarget(options.path ?? '', projectRoot);
   if (!options.all && target === null) {
     process.stderr.write('Usage: validate.mjs <module-path> | --all | --extraction <module-path>\n');
     return 1;
@@ -124,7 +124,7 @@ function main() {
   }
 
   const contexts = dirs.map((dir) => loadContext(dir, projectRoot));
-  const selected = options.all ? contexts : contexts.filter((c) => c.raiz === target);
+  const selected = options.all ? contexts : contexts.filter((c) => c.root === target);
   return report(options, contexts, selected, projectRoot);
 }
 

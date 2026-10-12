@@ -472,7 +472,7 @@ muda a doutrina.
 **O que o gate cobra** (§4.6 de `04-regras.md`): `container-present`, `compose-variables-declared` e
 `dockerignore-secret` (o `.env` — inclusive `modules/<id>/.env` e `deploy/.env` — fica fora do contexto de
 build). Dockerfile **bom** — não-root, sem `:latest`, healthcheck, porta em loopback, digest — é da skill
-(`validar_monolito.py`, para o legado), não lei do template: depende de decisão por provedor.
+(`validate_monolith.py`, para o legado), não lei do template: depende de decisão por provedor.
 
 **O que fica fora, de propósito:** o compose de **produção** (registry, digests, entrada, servidor) e a
 publicação — a skill `deploy-docker-monolito` os traz, porque mudam por provedor. O template também não modela

@@ -25,8 +25,8 @@ function foreignReferenceFindings(ctx, file, other) {
   const pattern = new RegExp(`\\b${other.dirId.replace(/-/g, '_')}_[a-z][a-z0-9_]*`, 'g');
   for (const finding of new Set(codeText(file).match(pattern) ?? [])) {
     findings.push({
-      modulo: ctx.dirId,
-      mensagem: `${file.rel}: references a table owned by another module ("${finding}") — access its data through that module's API`,
+      module: ctx.dirId,
+      message: `${file.rel}: references a table owned by another module ("${finding}") — access its data through that module's API`,
     });
   }
   return findings;
@@ -35,8 +35,8 @@ function foreignReferenceFindings(ctx, file, other) {
 export default [
   {
     id: 'non-public-schema',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const schema = ctx.manifest?.data?.schema;
       if (schema === undefined || schema === '') return ['data.schema is not declared'];
@@ -46,8 +46,8 @@ export default [
   },
   {
     id: 'table-prefix',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const data = ctx.manifest?.data;
       if (data === undefined) return [];
@@ -69,8 +69,8 @@ export default [
   },
   {
     id: 'foreign-table',
-    nivel: 'erro',
-    escopo: 'global',
+    severity: 'error',
+    scope: 'global',
     check(contexts) {
       const findings = [];
       for (const ctx of contexts) {
@@ -85,8 +85,8 @@ export default [
   },
   {
     id: 'migrations',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const migrations = ctx.sql.filter((a) => a.rel.startsWith('database/migrations/'));
       const findings = [];
@@ -118,8 +118,8 @@ export default [
      * conserto só.
      */
     id: 'table-declared',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const tables = ctx.manifest?.data?.tables ?? [];
       // Ausencia TOTAL de SQL e do `migrations` — um defeito, uma mensagem.
@@ -132,8 +132,8 @@ export default [
   },
   {
     id: 'rls',
-    nivel: 'aviso',
-    escopo: 'module',
+    severity: 'warning',
+    scope: 'module',
     check(ctx) {
       const sql = joinSql(ctx);
       return (ctx.manifest?.data?.tables ?? [])
@@ -158,8 +158,8 @@ export default [
      * no laco dela.
      */
     id: 'table-undeclared',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const declared = new Set(ctx.manifest?.data?.tables ?? []);
       const created = createdTables(joinSql(ctx));
@@ -186,8 +186,8 @@ export default [
      * tres DROPs como reais, esvaziando o conjunto de "vivas" mesmo no molde conforme.
      */
     id: 'schema-mirrors-migrations',
-    nivel: 'erro',
-    escopo: 'module',
+    severity: 'error',
+    scope: 'module',
     check(ctx) {
       const migrations = ctx.sql.filter((a) => a.rel.startsWith('database/migrations/'));
       const schemaSql = ctx.sql.find((a) => a.rel === 'database/schema.sql');

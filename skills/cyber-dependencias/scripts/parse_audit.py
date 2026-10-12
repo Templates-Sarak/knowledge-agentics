@@ -3,10 +3,10 @@ parse_audit.py — Normaliza a saída de `npm audit --json` num resumo de severi
 
 Uso:
     npm audit --json > audit.json
-    python parse_audit.py --arquivo audit.json
+    python parse_audit.py --file audit.json
 
 Retorno:
-    JSON {total, por_severidade:{critical,high,moderate,low}, pacotes:[{nome, severidade, fix}]}.
+    JSON {total, by_severity:{critical,high,moderate,low}, packages:[{name, severity, fix}]}.
     Suporta npm v7+ (`vulnerabilities`) e npm v6 (`advisories`). Para pip-audit/osv-scanner, leia a saída direto.
 
 Regras (padrao-escrita): responsabilidade única (só normaliza — a correção é decisão com HITL na skill);
@@ -16,48 +16,48 @@ import argparse
 import json
 import sys
 
-SEVERIDADES = ["critical", "high", "moderate", "low"]
+SEVERITIES = ["critical", "high", "moderate", "low"]
 
 
-def normalizar(data: dict) -> dict:
-    pacotes = []
+def normalize(data: dict) -> dict:
+    packages = []
     if isinstance(data.get("vulnerabilities"), dict):  # npm v7+
-        for nome, v in data["vulnerabilities"].items():
+        for name, v in data["vulnerabilities"].items():
             if not isinstance(v, dict):
                 continue
-            pacotes.append({
-                "nome": nome,
-                "severidade": v.get("severity", "unknown"),
+            packages.append({
+                "name": name,
+                "severity": v.get("severity", "unknown"),
                 "fix": bool(v.get("fixAvailable")),
             })
     elif isinstance(data.get("advisories"), dict):  # npm v6
         for adv in data["advisories"].values():
-            pacotes.append({
-                "nome": adv.get("module_name", "?"),
-                "severidade": adv.get("severity", "unknown"),
+            packages.append({
+                "name": adv.get("module_name", "?"),
+                "severity": adv.get("severity", "unknown"),
                 "fix": bool(adv.get("patched_versions")),
             })
 
-    por_sev = {s: sum(1 for p in pacotes if p["severidade"] == s) for s in SEVERIDADES}
-    return {"total": len(pacotes), "por_severidade": por_sev, "pacotes": pacotes}
+    by_severity = {s: sum(1 for p in packages if p["severity"] == s) for s in SEVERITIES}
+    return {"total": len(packages), "by_severity": by_severity, "packages": packages}
 
 
 def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(description="Normaliza npm audit --json.")
-    parser.add_argument("--arquivo", required=True, help="Caminho do JSON gerado por `npm audit --json`")
+    parser = argparse.ArgumentParser(description="Normalizes npm audit --json.")
+    parser.add_argument("--file", required=True, help="Path of the JSON produced by `npm audit --json`")
     args = parser.parse_args()
 
     try:
-        with open(args.arquivo, encoding="utf-8") as fh:
+        with open(args.file, encoding="utf-8") as fh:
             data = json.load(fh)
     except FileNotFoundError:
-        sys.exit(f"Erro: arquivo nao encontrado '{args.arquivo}'.")
-    except json.JSONDecodeError as erro:
-        sys.exit(f"Erro: JSON invalido ({erro}).")
+        sys.exit(f"Error: file not found '{args.file}'.")
+    except json.JSONDecodeError as error:
+        sys.exit(f"Error: invalid JSON ({error}).")
 
-    print(json.dumps(normalizar(data), ensure_ascii=False, indent=2))
+    print(json.dumps(normalize(data), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

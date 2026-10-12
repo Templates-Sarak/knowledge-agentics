@@ -2,7 +2,7 @@
 
 Validações independentes de provedor, feitas **antes** de publicar em qualquer alvo (Vercel, Netlify,
 Railway...). Os futuros `deploy-*` referenciam esta lista em vez de duplicá-la. O motor determinístico é
-`scripts/validar_predeploy.py` (config de build, env exigidas, segredos versionados).
+`scripts/validate_predeploy.py` (config de build, env exigidas, segredos versionados).
 
 ## 1. Build local passa
 - Rode o build da stack (`npm run build`, `pnpm build`, `go build`, startup do servidor Python...).

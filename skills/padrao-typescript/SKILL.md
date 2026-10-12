@@ -30,22 +30,22 @@ tipagem é N/A em arquivos JS).
 Usa a **API do compilador TypeScript** (parseia `.ts` e `.js`); thresholds em `scripts/config.json` (zero hardcoded).
 
 ```
-node scripts/validate.mjs <arquivo-ou-pasta> [--config scripts/config.json]
+node scripts/validate.mjs <file-or-dir> [--config scripts/config.json]
 ```
 **Dependência:** pacote `typescript`, resolvido **a partir do projeto-alvo** (ou do cwd). Se faltar, o script avisa `npm i -D typescript` e sai com código 2.
-Saída: JSON `{ "alvo", "violacoes": [ {caminho, linha, dimensao, severidade, risco, descricao, regra, confianca} ] }`.
+Saída: JSON `{ "target", "findings": [ {path, line, dimension, severity, risk, message, rule, confidence} ] }`. Valores: `severity` high|medium|low, `risk` high|medium|low, `confidence` high|low.
 
 **Dimensões detectadas (mecânicas):**
-- `limiares` — função/arrow/método > maxFunctionLines, aninhamento > maxNesting, params > maxParams.
+- `thresholds` — função/arrow/método > maxFunctionLines, aninhamento > maxNesting, params > maxParams.
 - `logging` — `console.*`; `catch {}` vazio (exceção engolida).
-- `tipagem` — função pública sem tipo de retorno/parâmetros (**só `.ts/.tsx`**).
-- `segredos` — literal string em nome sensível (`token`, `apiKey`, `password`…) → severidade **alta**.
-- `hardcoded` (heurística) — número mágico fora do allowlist (e fora de constante `UPPER_CASE`) e URL/host literal → `confianca: "baixa"`.
+- `typing` — função pública sem tipo de retorno/parâmetros (**só `.ts/.tsx`**).
+- `secrets` — literal string em nome sensível (`token`, `apiKey`, `password`…) → severity **high**.
+- `hardcoded` (heurística) — número mágico fora do allowlist (e fora de constante `UPPER_CASE`) e URL/host literal → `confidence: "low"`.
 
 Julgamento (SRP, acoplamento, "é segredo de verdade?") **não** é do validador — fica com o agente/`code-diagnostico`.
 
 ## Regras e limites
-- **NÃO** trate `confianca: "baixa"` (hardcoded heurístico) como verdade absoluta — é candidato a revisão.
+- **NÃO** trate `confidence: "low"` (hardcoded heurístico) como verdade absoluta — é candidato a revisão.
 - **NÃO** cobre tipagem em arquivos `.js/.jsx` — lá a regra é N/A (JS não tem tipos).
 - **NÃO** embuta limiares no script — todos vêm de `config.json`.
 - **NÃO** redefina as regras universais aqui — em dúvida, leia `padrao-escrita`.
@@ -56,7 +56,7 @@ Julgamento (SRP, acoplamento, "é segredo de verdade?") **não** é do validador
 - [ ] `tsconfig` com `strict: true`; assinaturas públicas tipadas (sem `any`)?
 - [ ] `validate.mjs` roda resolvendo o `typescript` do projeto e lê limiares do `config.json`?
 - [ ] Saída do validador é JSON no formato de dimensões do `backlog-format.md`?
-- [ ] Tipagem não cobrada em `.js/.jsx`; hardcoded heurístico com `confianca: "baixa"`?
+- [ ] Tipagem não cobrada em `.js/.jsx`; hardcoded heurístico com `confidence: "low"`?
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/idioms.md` — idiomas TS/JS detalhados e o mapeamento regra-universal → forma TS/JS / como o validador detecta.

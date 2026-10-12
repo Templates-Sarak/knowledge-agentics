@@ -9,7 +9,7 @@ histórico **não o torna seguro** — se já foi versionado, considere-o **comp
 | **Segredo vivo** (no working tree **e** no histórico) | trocar por `.env`/`process.env` **+** reescrever histórico **+** rotacionar |
 | **Segredo só no passado** (já saiu do código, mas está em commits antigos) | reescrever histórico **+** rotacionar |
 | **Arquivo sensível no histórico** (`.env`, `*.pem`, `id_rsa`...) | expurgar o arquivo do histórico **+** rotacionar o que ele continha |
-| **Alta entropia (`confianca: baixa`)** | triar manualmente — pode ser falso positivo (hash, build id) |
+| **Alta entropia (`confidence: low`)** | triar manualmente — pode ser falso positivo (hash, build id) |
 
 ## 2. Cross-check opcional (ferramenta externa)
 Antes de reescrever, confirme o conjunto de achados com uma ferramenta consagrada (não obrigatória):
@@ -39,4 +39,4 @@ Para cada segredo exposto: **invalide no provedor** e **emita nova**. Depois atu
 - Chave privada (`*.pem`/`id_rsa`) → gerar novo par, substituir a pública nos serviços.
 
 ## 5. Confirmar
-Rode `scan_historico.py` de novo (e o gitleaks) — `total: 0` no conteúdo/arquivos sensíveis. Registre no relatório.
+Rode `scan_history.py` de novo (e o gitleaks) — `total: 0` no conteúdo/arquivos sensíveis. Registre no relatório.

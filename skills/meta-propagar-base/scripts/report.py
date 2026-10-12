@@ -1,4 +1,4 @@
-"""relatorio.py — o RELATORIO objetivo da propagacao (o `--relatorio` do `propagar.py`), a entrada do HITL
+"""report.py — o REPORT objetivo da propagacao (o `--report` do `propagate.py`), a entrada do HITL
 de selecao: por sistema, o que a atualizacao direta escreveria e as PLANS que o revisor escreveria no
 repositorio para o que precisa de adequacao. Somente leitura — nada e escrito, nem o status do mapa.
 
@@ -7,72 +7,74 @@ da sintese). Os numeros `NN` saem do `proximo_numero_plan` da familia `00` do `0
 (formato novo) ou comecam em `01` (formato antigo, ou sem indice). A proposta e SUGESTAO: quem cria a
 plan e o revisor, depois do HITL.
 
-Nucleo x casca: `propostas`, `proximo_da_familia`, `atualizacao_direta`, `motivos_de_bloqueio` e
-`montar_relatorio` sao PUROS — provados pelo `--selftest` do `propagar.py` (este modulo nao tem CLI
+O mapa lido (novo OU antigo) passa por `stamp.normalize_map` (via `propagate.read_map_file`).
+
+Nucleo x casca: `proposals`, `next_in_family`, `direct_update`, `blocking_reasons` e
+`build_report` sao PUROS — provados pelo `--selftest` do `propagate.py` (este modulo nao tem CLI
 propria). Git, disco e referencias temporarias sao casca.
 """
 
-import json
 import re
 import sys
 from pathlib import Path
 
-import propagar as pp
+import propagate as pp
 
-FAMILIA = "00"
-NOMES_NA_LISTA = 5
-SEM_DESTINO = "—"
-CONTADOR_DA_FAMILIA = re.compile(rf"""["']?{FAMILIA}["']?\s*:\s*["']?(\d+)""")
+FAMILY = "00"
+NAMES_IN_LIST = 5
+NO_TARGET = "—"
+FAMILY_COUNTER = re.compile(rf"""["']?{FAMILY}["']?\s*:\s*["']?(\d+)""")
 
-# FONTE UNICA da regra lacuna/acao -> plan proposta: (chave, titulo, destino da sintese, depende_de), na ordem
+# FONTE UNICA da regra lacuna/acao -> plan proposta: (chave, titulo, destino da sintese, depends_on), na ordem
 # em que recebem numero — a ordem tambem e dado: a conversao do `00-indice` e a primeira de qualquer repositorio
-# em formato antigo, e as outras dependem dela; a decisao (divergente/conflito) e as familias vem depois da lei.
-# `depende_de` = chaves de outras linhas; so valem as que foram propostas. A chave e `lacuna:<nome da lacuna>` ou `acao:<nome da acao>`. Sem `panorama/00-planejamento`
-# nao ha plan: e adicionado pela atualizacao direta (molde de processo ausente).
-INDICE = "lacuna:molde-em-formato-antigo"
-LEI = "lacuna:lei-ou-fundacao-fora-do-reservado"
+# em formato antigo, e as outras dependem dela; a decisao (divergent/conflict) e as familias vem depois da lei.
+# `depends_on` = chaves de outras linhas; so valem as que foram propostas. A chave e `gap:<nome da lacuna>` ou
+# `action:<nome da acao>`. Sem `panorama/00-planejamento` nao ha plan: e adicionado pela atualizacao direta
+# (molde de processo ausente).
+INDEX = "gap:template-in-old-format"
+LAW = "gap:law-or-foundation-outside-reserved"
 PLANS = (
     (
-        INDICE,
-        "Converter o `00-indice` para o contador por família",
-        SEM_DESTINO,
+        INDEX,
+        "Convert `00-indice` to the per-family counter",
+        NO_TARGET,
         (),
     ),
     (
-        LEI,
-        "Reconciliar a lei do template renomeada (destrava os `bloqueado`)",
-        SEM_DESTINO,
-        (INDICE,),
+        LAW,
+        "Reconcile the renamed template law (unblocks the `blocked` ones)",
+        NO_TARGET,
+        (INDEX,),
     ),
     (
-        "lacuna:migracao-de-familias-pendente",
-        "Migrar specs e plans para famílias `FF.NN` e montar o catálogo",
-        SEM_DESTINO,
-        (INDICE, LEI),
+        "gap:family-migration-pending",
+        "Migrate specs and plans to `FF.NN` families and build the catalog",
+        NO_TARGET,
+        (INDEX, LAW),
     ),
     (
-        "acao:divergente",
-        "Decidir arquivo a arquivo: adotar a versão da base ou manter",
-        SEM_DESTINO,
-        (INDICE, LEI),
+        "action:divergent",
+        "Decide file by file: adopt the base version or keep",
+        NO_TARGET,
+        (INDEX, LAW),
     ),
     (
-        "acao:conflito",
-        "Decidir arquivo a arquivo (com carimbo): adotar a versão da base ou manter",
-        SEM_DESTINO,
-        (INDICE, LEI),
+        "action:conflict",
+        "Decide file by file (with stamp): adopt the base version or keep",
+        NO_TARGET,
+        (INDEX, LAW),
     ),
     (
-        "lacuna:binding-sem-base",
-        "Criar a base de linguagem que falta",
+        "gap:binding-without-base",
+        "Create the missing language base",
         "arquitetura/00-base-<binding>.md",
-        (INDICE,),
+        (INDEX,),
     ),
     (
-        "lacuna:sarak-ignorado",
-        "Tirar `.sarak/` do `.gitignore` (pré-requisito do aplicar)",
-        SEM_DESTINO,
-        (INDICE,),
+        "gap:sarak-ignored",
+        "Remove `.sarak/` from `.gitignore` (prerequisite of apply)",
+        NO_TARGET,
+        (INDEX,),
     ),
 )
 
@@ -80,368 +82,383 @@ PLANS = (
 # ------------------------------------------------------------------ nucleo
 
 
-def proximo_da_familia(texto_indice: str | None) -> int:
+def next_in_family(index_text: str | None) -> int:
     """Nucleo: o `NN` da proxima plan da familia `00` — o valor dela no mapa `proximo_numero_plan` do
     `00-indice`; `1` no formato antigo (contador escalar), sem entrada da familia ou sem indice."""
-    texto = texto_indice or ""
-    if pp.PROXIMO_ESCALAR.search(texto):
+    text = index_text or ""
+    if pp.SCALAR_NEXT.search(text):
         return 1
-    achado = CONTADOR_DA_FAMILIA.search(
-        next((l for l in texto.splitlines() if l.startswith("proximo_numero_plan")), "")
+    found = FAMILY_COUNTER.search(
+        next((l for l in text.splitlines() if l.startswith("proximo_numero_plan")), "")
     )
-    return int(achado.group(1)) if achado else 1
+    return int(found.group(1)) if found else 1
 
 
-def _motivos_de_plan(lacunas: dict, acoes: dict) -> dict:
+def _plan_reasons(gap_map: dict, actions: dict) -> dict:
     """Nucleo: `{chave: motivo/contagem}` so das propostas que se aplicam."""
-    lei = lacunas["lei-ou-fundacao-fora-do-reservado"]
-    candidatos = {
-        "lacuna:lei-ou-fundacao-fora-do-reservado": (
-            lei,
-            f"{len(lei)} arquivo(s) fora do reservado"
-            + (f" · {len(acoes['bloqueado'])} bloqueado(s)" if acoes["bloqueado"] else ""),
+    law = gap_map["law-or-foundation-outside-reserved"]
+    candidates = {
+        "gap:law-or-foundation-outside-reserved": (
+            law,
+            f"{len(law)} file(s) outside the reserved names"
+            + (f" · {len(actions['blocked'])} blocked" if actions["blocked"] else ""),
         ),
-        "lacuna:migracao-de-familias-pendente": (
-            lacunas["migracao-de-familias-pendente"],
-            f"{len(lacunas['migracao-de-familias-pendente'])} spec(s)/plan(s) fora do formato `FF.NN`",
+        "gap:family-migration-pending": (
+            gap_map["family-migration-pending"],
+            f"{len(gap_map['family-migration-pending'])} spec(s)/plan(s) outside the `FF.NN` format",
         ),
-        "lacuna:molde-em-formato-antigo": (
-            lacunas["molde-em-formato-antigo"],
-            "`proximo_numero_plan` escalar",
+        "gap:template-in-old-format": (
+            gap_map["template-in-old-format"],
+            "scalar `proximo_numero_plan`",
         ),
-        "acao:divergente": (
-            acoes["divergente"],
-            f"{len(acoes['divergente'])} arquivo(s) da base editado(s) no projeto",
+        "action:divergent": (
+            actions["divergent"],
+            f"{len(actions['divergent'])} base file(s) edited in the project",
         ),
-        "acao:conflito": (
-            acoes["conflito"],
-            f"{len(acoes['conflito'])} arquivo(s) editado(s) no projeto e mudados na base",
+        "action:conflict": (
+            actions["conflict"],
+            f"{len(actions['conflict'])} file(s) edited in the project and changed in the base",
         ),
-        "lacuna:binding-sem-base": (
-            lacunas["binding-sem-base"],
-            f"binding(s) {', '.join(lacunas['binding-sem-base'])}",
+        "gap:binding-without-base": (
+            gap_map["binding-without-base"],
+            f"binding(s) {', '.join(gap_map['binding-without-base'])}",
         ),
-        "lacuna:sarak-ignorado": (
-            lacunas["sarak-ignorado"],
-            "o carimbo não seria versionado",
+        "gap:sarak-ignored": (
+            gap_map["sarak-ignored"],
+            "the stamp would not be versioned",
         ),
     }
-    return {chave: motivo for chave, (ativo, motivo) in candidatos.items() if ativo}
+    return {key: reason for key, (active, reason) in candidates.items() if active}
 
 
-def propostas(lacunas: dict, acoes: dict, primeiro: int = 1) -> list:
-    """Nucleo: as plans propostas, na ordem de `PLANS`, numeradas a partir de `primeiro` (familia `00`).
-    `[{id, titulo, motivo, destino, depende_de}]`."""
-    motivos, saida, numeros = _motivos_de_plan(lacunas, acoes), [], {}
-    for chave, titulo, destino, depende in PLANS:
-        if chave not in motivos:
+def proposals(gap_map: dict, actions: dict, first: int = 1) -> list:
+    """Nucleo: as plans propostas, na ordem de `PLANS`, numeradas a partir de `first` (familia `00`).
+    `[{id, title, reason, target, depends_on}]`."""
+    reasons, output, numbers = _plan_reasons(gap_map, actions), [], {}
+    for key, title, target, depends in PLANS:
+        if key not in reasons:
             continue
-        numeros[chave] = f"plan-{FAMILIA}.{primeiro + len(saida):02d}"
-        saida.append(
+        numbers[key] = f"plan-{FAMILY}.{first + len(output):02d}"
+        output.append(
             {
-                "id": numeros[chave],
-                "titulo": titulo,
-                "motivo": motivos[chave],
-                "destino": destino,
-                "depende_de": [numeros[d] for d in depende if d in numeros],
+                "id": numbers[key],
+                "title": title,
+                "reason": reasons[key],
+                "target": target,
+                "depends_on": [numbers[d] for d in depends if d in numbers],
             }
         )
-    return saida
+    return output
 
 
-def atualizacao_direta(acoes: dict) -> dict:
-    """Nucleo: o que a atualizacao direta escreve SEM flag — `substituir` (arquivos da base),
-    `substituir-politica` (`tools/`) e `adicionar` (novos) —, com ate `NOMES_NA_LISTA` nomes (so o arquivo)."""
-    grupos = (
-        ("da-base", acoes["substituir"]),
-        ("tools", acoes["substituir-politica"]),
-        ("novos", acoes["adicionar"]),
+def direct_update(actions: dict) -> dict:
+    """Nucleo: o que a atualizacao direta escreve SEM flag — `replace` (arquivos da base),
+    `replace-policy` (`tools/`) e `add` (novos) —, com ate `NAMES_IN_LIST` nomes (so o arquivo)."""
+    groups = (
+        ("from-base", actions["replace"]),
+        ("tools", actions["replace-policy"]),
+        ("new", actions["add"]),
     )
-    nomes = [rel for _, lista in grupos for rel in lista]
+    names = [rel for _, items in groups for rel in items]
     return {
-        **{chave: len(lista) for chave, lista in grupos},
-        "nomes": [rel.rsplit("/", 1)[-1] for rel in nomes[:NOMES_NA_LISTA]],
-        "resto": max(0, len(nomes) - NOMES_NA_LISTA),
+        **{key: len(items) for key, items in groups},
+        "names": [rel.rsplit("/", 1)[-1] for rel in names[:NAMES_IN_LIST]],
+        "rest": max(0, len(names) - NAMES_IN_LIST),
     }
 
 
-def motivos_de_bloqueio(
-    sistema: dict, worktree_sujo: bool, sarak_ignorado: bool
-) -> list:
-    """Nucleo: por que o sistema NAO pode ser aplicado agora — as mesmas pre-condicoes do `--aplicar`,
+def blocking_reasons(system: dict, dirty_worktree: bool, sarak_ignored: bool) -> list:
+    """Nucleo: por que o sistema NAO pode ser aplicado agora — as mesmas pre-condicoes do `--apply`,
     avaliadas sem escrever."""
-    if sistema.get("situacao") != "ativo":
-        return [str(sistema.get("situacao"))]
+    if system.get("lifecycle") != "active":
+        return [str(system.get("lifecycle"))]
     return [
-        *([] if sistema.get("raiz_git") else ["sem raiz_git no mapa"]),
-        *(["worktree sujo"] if worktree_sujo else []),
-        *([".sarak/ ignorado"] if sarak_ignorado else []),
+        *([] if system.get("git_root") else ["no git_root in the map"]),
+        *(["dirty worktree"] if dirty_worktree else []),
+        *([".sarak/ ignored"] if sarak_ignored else []),
     ]
 
 
-def _linhas_da_direta(direta: dict | None) -> list:
-    if direta is None:
+def _direct_lines(direct: dict | None) -> list:
+    if direct is None:
         return []
-    partes = [
-        texto
-        for total, texto in (
-            (direta["da-base"], f"{direta['da-base']} da base"),
-            (direta["tools"], f"{direta['tools']} `tools/` por política"),
-            (direta["novos"], f"{direta['novos']} novos"),
+    parts = [
+        text
+        for total, text in (
+            (direct["from-base"], f"{direct['from-base']} from the base"),
+            (direct["tools"], f"{direct['tools']} `tools/` by policy"),
+            (direct["new"], f"{direct['new']} new"),
         )
         if total
     ]
-    if not partes:
-        return ["**Atualização direta:** só o carimbo"]
-    mais = f" … +{direta['resto']}" if direta["resto"] else ""
-    nomes = ", ".join(f"`{n}`" for n in direta["nomes"])
-    return [f"**Atualização direta:** {' · '.join(partes)}", f"{nomes}{mais}"]
+    if not parts:
+        return ["**Direct update:** stamp only"]
+    more = f" … +{direct['rest']}" if direct["rest"] else ""
+    names = ", ".join(f"`{n}`" for n in direct["names"])
+    return [f"**Direct update:** {' · '.join(parts)}", f"{names}{more}"]
 
 
-def _linhas_de_plans(item: dict) -> list:
-    if item.get("direta") is None:
+def _plan_lines(item: dict) -> list:
+    if item.get("direct") is None:
         return []
-    if not item["propostas"]:
-        return ["**Plans propostas:** nenhuma"]
-    return ["**Plans propostas:**"] + [
-        f"- {p['id']} {p['titulo']} — {p['motivo']}" for p in item["propostas"]
+    if not item["proposals"]:
+        return ["**Proposed plans:** none"]
+    return ["**Proposed plans:**"] + [
+        f"- {p['id']} {p['title']} — {p['reason']}" for p in item["proposals"]
     ]
 
 
-def _bloco(item: dict) -> str:
-    aviso = f" · ⚠ {'; '.join(item['motivos'])}" if item["motivos"] else ""
-    linhas = [
-        f"### {item['id']} · {item['status']}{aviso}",
-        *_linhas_da_direta(item.get("direta")),
-        *_linhas_de_plans(item),
+def _block(item: dict) -> str:
+    warning = f" · ⚠ {'; '.join(item['reasons'])}" if item["reasons"] else ""
+    lines = [
+        f"### {item['id']} · {item['status']}{warning}",
+        *_direct_lines(item.get("direct")),
+        *_plan_lines(item),
     ]
-    return "\n".join(linhas)
+    return "\n".join(lines)
 
 
-def montar_relatorio(itens: list, base: str) -> str:
-    """Nucleo: o Markdown do relatorio. `itens` = [{id, status, motivos, direta, propostas}] (`direta` e
-    `None` quando nao ha analise: adocao-posterior ou erro); `base` = o commit curto da base."""
-    cabecalho = f"## Propagação — base {base} · {len(itens)} sistema(s)"
-    rodape = "Escolha os repositórios (e as plans que aceita); nada foi escrito."
-    return "\n\n".join([cabecalho, *(_bloco(i) for i in itens), rodape]) + "\n"
+def build_report(items: list, base: str) -> str:
+    """Nucleo: o Markdown do report. `items` = [{id, status, reasons, direct, proposals}] (`direct` e
+    `None` quando nao ha analise: later-adoption ou erro); `base` = o commit curto da base."""
+    header = f"## Propagation — base {base} · {len(items)} system(s)"
+    footer = "Choose the repositories (and the plans you accept); nothing was written."
+    return "\n\n".join([header, *(_block(i) for i in items), footer]) + "\n"
 
 
 # ------------------------------------------------------------------ casca
 
 
-def _repo_do_sistema(raiz: Path, sistema: dict) -> Path | None:
-    return (raiz / sistema["raiz_git"]).resolve() if sistema.get("raiz_git") else None
+def _system_repo(root: Path, system: dict) -> Path | None:
+    return (root / system["git_root"]).resolve() if system.get("git_root") else None
 
 
-def _item_sem_analise(sistema: dict, motivos: list) -> dict:
+def _item_without_analysis(system: dict, reasons: list) -> dict:
     return {
-        "id": sistema["id"],
-        "status": sistema.get("status"),
-        "motivos": motivos,
-        "direta": None,
-        "propostas": [],
+        "id": system["id"],
+        "status": system.get("status"),
+        "reasons": reasons,
+        "direct": None,
+        "proposals": [],
     }
 
 
-def _item(raiz: Path, sistema: dict, head: str, cache: dict) -> dict:
-    """Casca: analisa o sistema (referencia em temporario, sistema so lido) e monta o item do relatorio."""
-    if sistema.get("situacao") != "ativo":
-        return _item_sem_analise(sistema, motivos_de_bloqueio(sistema, False, False))
-    plano, _ref, lido = pp.analisar_sistema(raiz, sistema, head, cache)
-    if "erro" in plano:
-        return _item_sem_analise(sistema, [f"erro: {plano['erro']}"])
-    repo = _repo_do_sistema(raiz, sistema)
-    suja = bool(repo and pp.linhas_sujas(repo))
-    falta = plano["lacunas"]
+def _item(root: Path, system: dict, head: str, cache: dict) -> dict:
+    """Casca: analisa o sistema (referencia em temporario, sistema so lido) e monta o item do report."""
+    if system.get("lifecycle") != "active":
+        return _item_without_analysis(system, blocking_reasons(system, False, False))
+    plan, _ref, current = pp.analyze_system(root, system, head, cache)
+    if "error" in plan:
+        return _item_without_analysis(system, [f"error: {plan['error']}"])
+    repo = _system_repo(root, system)
+    dirty = bool(repo and pp.dirty_lines(repo))
+    gap_map = plan["gaps"]
     return {
-        "id": sistema["id"],
-        "status": sistema.get("status"),
-        "motivos": motivos_de_bloqueio(sistema, suja, falta["sarak-ignorado"]),
-        "direta": atualizacao_direta(plano["acoes"]),
-        "propostas": propostas(
-            falta,
-            plano["acoes"],
-            proximo_da_familia(lido.get("specs/00-indice.md")),
+        "id": system["id"],
+        "status": system.get("status"),
+        "reasons": blocking_reasons(system, dirty, gap_map["sarak-ignored"]),
+        "direct": direct_update(plan["actions"]),
+        "proposals": proposals(
+            gap_map,
+            plan["actions"],
+            next_in_family(current.get("specs/00-indice.md")),
         ),
     }
 
 
-def executar(args, raiz: Path) -> int:
-    """Casca da CLI `--relatorio`: todos os sistemas do mapa (ou os `--id`), somente leitura."""
-    if pp.linhas_sujas(raiz) and not args.permitir_base_suja:
+def execute(args, root: Path) -> int:
+    """Casca da CLI `--report`: todos os sistemas do mapa (ou os `--id`), somente leitura."""
+    if pp.dirty_lines(root) and not args.allow_dirty_base:
         print(
-            "[ERRO] a base tem alteracoes locais — o relatorio compara com o HEAD; commite ou descarte antes.",
+            "[ERROR] the base has local changes — the report compares against HEAD; commit or discard first.",
             file=sys.stderr,
         )
         return 2
-    mapa = json.loads(Path(args.mapa or raiz / "mapa.json").read_text(encoding="utf-8"))
-    sistemas = [
-        s for s in mapa.get("sistemas", []) if not args.id or s["id"] in args.id
+    map_data = pp.read_map_file(Path(args.map or root / "mapa.json"))
+    systems = [
+        s for s in map_data.get("systems", []) if not args.id or s["id"] in args.id
     ]
-    head, cache = pp.git(raiz, "rev-parse", "HEAD"), {}
-    itens = [_item(raiz, s, head, cache) for s in sistemas]
-    print(montar_relatorio(itens, head[:7]), end="")
+    head, cache = pp.git(root, "rev-parse", "HEAD"), {}
+    items = [_item(root, s, head, cache) for s in systems]
+    print(build_report(items, head[:7]), end="")
     return 0
 
 
-# ------------------------------------------------------------------ autoteste (rodado pelo propagar.py)
+# ------------------------------------------------------------------ selftest (rodado pelo propagate.py)
 
-_LACUNAS = {
-    "lei-ou-fundacao-fora-do-reservado": [],
-    "migracao-de-familias-pendente": [],
-    "molde-em-formato-antigo": [],
-    "binding-sem-base": [],
-    "sem-planejamento": False,
-    "sarak-ignorado": False,
+_GAPS = {
+    "law-or-foundation-outside-reserved": [],
+    "family-migration-pending": [],
+    "template-in-old-format": [],
+    "binding-without-base": [],
+    "no-planning": False,
+    "sarak-ignored": False,
 }
-_ACOES = {a: [] for a in pp.ORDEM_DAS_ACOES}
+_ACTIONS = {a: [] for a in pp.ACTION_ORDER}
 
 
-def _caso_propostas() -> bool:
-    lacunas = {
-        **_LACUNAS,
-        "lei-ou-fundacao-fora-do-reservado": [
+def _case_proposals() -> bool:
+    gap_map = {
+        **_GAPS,
+        "law-or-foundation-outside-reserved": [
             "specs/arquitetura/00-arquitetura-erp.md"
         ],
-        "binding-sem-base": ["python"],
-        "sarak-ignorado": True,
+        "binding-without-base": ["python"],
+        "sarak-ignored": True,
     }
-    acoes = {
-        **_ACOES,
-        "bloqueado": ["a", "b"],
-        "divergente": ["x"],
-        "conflito": ["y", "z"],
+    actions = {
+        **_ACTIONS,
+        "blocked": ["a", "b"],
+        "divergent": ["x"],
+        "conflict": ["y", "z"],
     }
-    r = propostas(lacunas, acoes, 3)
+    r = proposals(gap_map, actions, 3)
     return (
         [p["id"] for p in r]
         == ["plan-00.03", "plan-00.04", "plan-00.05", "plan-00.06", "plan-00.07"]
-        and r[0]["titulo"].startswith("Reconciliar a lei")
-        and "2 bloqueado(s)" in r[0]["motivo"]
-        and r[1]["titulo"].startswith("Decidir arquivo a arquivo:")
-        and "2 arquivo(s)" in r[2]["motivo"]
-        and r[3]["destino"] == "arquitetura/00-base-<binding>.md"
-        and r[4]["titulo"].startswith("Tirar `.sarak/`")
-        and propostas(_LACUNAS, _ACOES) == []
-        and _ordem_com_indice()
+        and r[0]["title"].startswith("Reconcile the renamed template law")
+        and "2 blocked" in r[0]["reason"]
+        and r[1]["title"].startswith("Decide file by file:")
+        and "2 file(s)" in r[2]["reason"]
+        and r[3]["target"] == "arquitetura/00-base-<binding>.md"
+        and r[4]["title"].startswith("Remove `.sarak/`")
+        and proposals(_GAPS, _ACTIONS) == []
+        and _order_with_index()
     )
 
 
-def _ordem_com_indice() -> bool:
-    lacunas = {
-        **_LACUNAS,
-        "molde-em-formato-antigo": ["specs/00-indice.md"],
-        "migracao-de-familias-pendente": ["specs/specs/03-x.md"],
-        "lei-ou-fundacao-fora-do-reservado": ["specs/arquitetura/00-arquitetura-erp.md"],
+def _order_with_index() -> bool:
+    gap_map = {
+        **_GAPS,
+        "template-in-old-format": ["specs/00-indice.md"],
+        "family-migration-pending": ["specs/specs/03-x.md"],
+        "law-or-foundation-outside-reserved": [
+            "specs/arquitetura/00-arquitetura-erp.md"
+        ],
     }
-    r = propostas(lacunas, {**_ACOES, "divergente": ["x"]}, 1)
-    por_titulo = {p["titulo"].split()[0]: p for p in r}
+    r = proposals(gap_map, {**_ACTIONS, "divergent": ["x"]}, 1)
+    by_title = {p["title"].split()[0]: p for p in r}
     return (
         [p["id"] for p in r] == ["plan-00.01", "plan-00.02", "plan-00.03", "plan-00.04"]
-        and r[0]["titulo"].startswith("Converter o `00-indice`")
-        and r[0]["depende_de"] == []
-        and r[1]["depende_de"] == ["plan-00.01"]
-        and por_titulo["Migrar"]["depende_de"] == ["plan-00.01", "plan-00.02"]
-        and por_titulo["Decidir"]["depende_de"] == ["plan-00.01", "plan-00.02"]
-        and propostas({**_LACUNAS, "binding-sem-base": ["python"]}, _ACOES)[0]["depende_de"] == []
+        and r[0]["title"].startswith("Convert `00-indice`")
+        and r[0]["depends_on"] == []
+        and r[1]["depends_on"] == ["plan-00.01"]
+        and by_title["Migrate"]["depends_on"] == ["plan-00.01", "plan-00.02"]
+        and by_title["Decide"]["depends_on"] == ["plan-00.01", "plan-00.02"]
+        and proposals({**_GAPS, "binding-without-base": ["python"]}, _ACTIONS)[0][
+            "depends_on"
+        ]
+        == []
     )
 
 
-def _caso_proximo() -> bool:
-    novo = 'tipo: "processo"\nproximo_numero_plan: { "01": "04", "00": "03" } # mapa\n'
+def _case_next() -> bool:
+    new = 'tipo: "processo"\nproximo_numero_plan: { "01": "04", "00": "03" } # mapa\n'
     return (
-        proximo_da_familia(novo) == 3
-        and proximo_da_familia('proximo_numero_plan: { "01": "04" }\n') == 1
-        and proximo_da_familia('proximo_numero_plan: "05"\n') == 1
-        and proximo_da_familia("proximo_numero_plan: {}\n") == 1
-        and proximo_da_familia(None) == 1
+        next_in_family(new) == 3
+        and next_in_family('proximo_numero_plan: { "01": "04" }\n') == 1
+        and next_in_family('proximo_numero_plan: "05"\n') == 1
+        and next_in_family("proximo_numero_plan: {}\n") == 1
+        and next_in_family(None) == 1
     )
 
 
-def _caso_direta() -> bool:
-    nomes = [f"specs/n{i}.md" for i in range(5)]
-    d = atualizacao_direta(
+def _case_direct() -> bool:
+    names = [f"specs/n{i}.md" for i in range(5)]
+    d = direct_update(
         {
-            **_ACOES,
-            "substituir": ["specs/a.md", "specs/b.md"],
-            "substituir-politica": ["tools/x.mjs"],
-            "adicionar": nomes,
+            **_ACTIONS,
+            "replace": ["specs/a.md", "specs/b.md"],
+            "replace-policy": ["tools/x.mjs"],
+            "add": names,
         }
     )
-    vazio = atualizacao_direta(_ACOES)
+    empty = direct_update(_ACTIONS)
     return (
-        (d["da-base"], d["tools"], d["novos"]) == (2, 1, 5)
-        and len(d["nomes"]) == 5
-        and d["resto"] == 3
-        and vazio["resto"] == 0
-        and not vazio["nomes"]
+        (d["from-base"], d["tools"], d["new"]) == (2, 1, 5)
+        and len(d["names"]) == 5
+        and d["rest"] == 3
+        and empty["rest"] == 0
+        and not empty["names"]
     )
 
 
-def _caso_bloqueio() -> bool:
-    ativo = {"situacao": "ativo", "raiz_git": "../X"}
+def _case_blocking() -> bool:
+    active = {"lifecycle": "active", "git_root": "../X"}
     return (
-        motivos_de_bloqueio(ativo, False, False) == []
-        and motivos_de_bloqueio(ativo, True, True)
-        == ["worktree sujo", ".sarak/ ignorado"]
-        and motivos_de_bloqueio({"situacao": "adocao-posterior"}, True, True)
-        == ["adocao-posterior"]
+        blocking_reasons(active, False, False) == []
+        and blocking_reasons(active, True, True)
+        == ["dirty worktree", ".sarak/ ignored"]
+        and blocking_reasons({"lifecycle": "later-adoption"}, True, True)
+        == ["later-adoption"]
     )
 
 
-def _caso_montagem() -> bool:
-    direta = atualizacao_direta(
-        {**_ACOES, "substituir": ["specs/a.md"], "adicionar": ["specs/b.md"]}
+def _case_assembly() -> bool:
+    direct = direct_update(
+        {**_ACTIONS, "replace": ["specs/a.md"], "add": ["specs/b.md"]}
     )
-    prop = propostas({**_LACUNAS, "binding-sem-base": ["python"]}, _ACOES)
-    texto = montar_relatorio(
+    proposed = proposals({**_GAPS, "binding-without-base": ["python"]}, _ACTIONS)
+    text = build_report(
         [
             {
                 "id": "x",
-                "status": "desatualizado",
-                "motivos": ["worktree sujo"],
-                "direta": direta,
-                "propostas": prop,
+                "status": "outdated",
+                "reasons": ["dirty worktree"],
+                "direct": direct,
+                "proposals": proposed,
             },
             {
                 "id": "y",
-                "status": "atualizado",
-                "motivos": [],
-                "direta": atualizacao_direta(_ACOES),
-                "propostas": [],
+                "status": "updated",
+                "reasons": [],
+                "direct": direct_update(_ACTIONS),
+                "proposals": [],
             },
             {
                 "id": "z",
-                "status": "desatualizado",
-                "motivos": ["adocao-posterior"],
-                "direta": None,
-                "propostas": [],
+                "status": "outdated",
+                "reasons": ["later-adoption"],
+                "direct": None,
+                "proposals": [],
             },
         ],
         "abc1234",
     )
-    linhas = texto.splitlines()
+    lines = text.splitlines()
     return (
-        linhas[0] == "## Propagação — base abc1234 · 3 sistema(s)"
-        and "### x · desatualizado · ⚠ worktree sujo" in linhas
-        and "**Atualização direta:** 1 da base · 1 novos"
-        in linhas
-        and "- plan-00.01 Criar a base de linguagem que falta — binding(s) python"
-        in linhas
-        and "**Plans propostas:** nenhuma" in linhas
-        and "**Atualização direta:** só o carimbo" in linhas
-        and "### z · desatualizado · ⚠ adocao-posterior" in linhas
-        and texto.count("**Plans propostas") == 2
+        lines[0] == "## Propagation — base abc1234 · 3 system(s)"
+        and "### x · outdated · ⚠ dirty worktree" in lines
+        and "**Direct update:** 1 from the base · 1 new" in lines
+        and "- plan-00.01 Create the missing language base — binding(s) python" in lines
+        and "**Proposed plans:** none" in lines
+        and "**Direct update:** stamp only" in lines
+        and "### z · outdated · ⚠ later-adoption" in lines
+        and text.count("**Proposed plans") == 2
     )
 
 
-CASOS = [
-    ("relatorio: plans propostas numeradas pela tabela, na ordem", _caso_propostas),
+def _case_legacy_map_report() -> bool:
+    """O report le o `mapa.json` antigo: `sistemas`/`situacao: ativo` viram `systems`/`lifecycle: active`."""
+    old = '{"sistemas": [{"id": "a", "situacao": "ativo", "raiz_git": "../A", "status": "pendente"}, {"id": "b", "situacao": "adocao-posterior"}]}'
+    systems = pp.load_map(old)["systems"]
+    return [blocking_reasons(s, False, False) for s in systems] == [
+        [],
+        ["later-adoption"],
+    ] and systems[0]["status"] == "pending"
+
+
+CASES = [
+    ("report: proposed plans numbered by the table, in order", _case_proposals),
     (
-        "relatorio: contador da familia 00 (formato novo, antigo, sem entrada)",
-        _caso_proximo,
+        "report: counter of family 00 (new format, old, no entry)",
+        _case_next,
     ),
-    ("relatorio: atualizacao direta agrupa e limita a 5 nomes", _caso_direta),
-    ("relatorio: motivos de nao aplicavel agora", _caso_bloqueio),
-    ("relatorio: Markdown na ordem — cabecalho, direta, plans", _caso_montagem),
+    ("report: direct update groups and limits to 5 names", _case_direct),
+    ("report: reasons for not applicable now", _case_blocking),
+    ("report: Markdown in order — header, direct, plans", _case_assembly),
+    (
+        "compat: report reads the old map file (keys and values in PT)",
+        _case_legacy_map_report,
+    ),
 ]

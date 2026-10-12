@@ -23,7 +23,7 @@ com confirmação do usuário. É **mutativa** (publica) → HITL obrigatório a
 ## Workflow
 Trate **um projeto por vez**. Detalhe da Vercel em `references/vercel-stacks.md`; checklist genérico em `references/predeploy-comum.md`.
 
-1. **Pré-deploy comum** — siga `references/predeploy-comum.md` e rode `python scripts/validar_predeploy.py --raiz <projeto>` (JSON: config de build presente, env exigidas no `.env.example`, segredos versionados). Resolva os alertas antes de avançar.
+1. **Pré-deploy comum** — siga `references/predeploy-comum.md` e rode `python scripts/validate_predeploy.py --root <projeto>` (JSON: config de build presente, env exigidas no `.env.example`, segredos versionados). Resolva os alertas antes de avançar.
 2. **Config Vercel por stack** — identifique a stack (`Glob`) e valide/crie o `vercel.json` mínimo (templates em `assets/vercel-templates/`; tabela stack→config + compatibilidade em `references/vercel-stacks.md`). Next.js usa `next.config.*`; SPA precisa de `rewrites`; Python usa `@vercel/python`.
 3. **Env vars via CLI** — compare o `.env.example` com o que está na Vercel usando `vercel env ls` (ou `vercel pull` para baixar). Liste as ausentes por ambiente (production/preview/development). **Nunca** ponha valor real no `vercel.json` — só no painel/CLI.
 4. **Build local (bloqueante)** — rode o build (`npm run build`, ou startup `uvicorn main:app` p/ Python). Falhou → corrija antes de seguir.
@@ -54,5 +54,5 @@ Trate **um projeto por vez**. Detalhe da Vercel em `references/vercel-stacks.md`
 ## Referências (Camada 3 — leia sob demanda)
 - `references/predeploy-comum.md` — checklist genérico de pré-deploy, reutilizável por qualquer `deploy-*`.
 - `references/vercel-stacks.md` — tabela stack→`vercel.json`, mínimos por stack e notas de compatibilidade serverless.
-- `scripts/validar_predeploy.py` + `scripts/config.json` — validação determinística de pré-deploy (listas no config).
+- `scripts/validate_predeploy.py` + `scripts/config.json` — validação determinística de pré-deploy (listas no config).
 - `assets/vercel-templates/` — `vercel.json` copiável por stack (`spa`, `fastapi`, `monorepo`).

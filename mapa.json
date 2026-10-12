@@ -1,167 +1,167 @@
 {
-  "_doc": "Mapa dos sistemas que adotam esta base (moldes do fluxo SDD e, se modulares, o template de módulos). Lista QUAIS sistemas são — NÃO guarda versão: a versão de cada um vive no carimbo .sarak/base.json dentro do próprio sistema. 'caminho' e 'raiz_git' são relativos à raiz desta base, com '/'; 'raiz_git' só difere de 'caminho' quando o sistema é subpasta de um monorepo. tipo: app | site. bindings: lista de typescript | javascript | python, sem repetição — projeto modular pode ser poliglota; sai dos specs/arquitetura/00-base-<binding>.md do sistema (uma base fora dos três, como 00-base-nextjs, não entra); [] = não se aplica ou não dá para determinar. situacao: ativo | adocao-posterior. status: o resultado da ÚLTIMA propagação, não uma comparação ao vivo com o HEAD — desatualizado (nunca recebeu propagação nem adoção) | pendente (recebeu, mas sobraram itens de decisão humana) | atualizado (a última propagação fechou sem pendências, ou o sistema acabou de ser instalado); status_base: o commit curto da base em que o status foi definido, ou null. situacao e status são independentes. Quem escreve o status: o aplicar da meta-propagar-base e, na instalação, o carimbo.py --registrar (nasce atualizado); o --plano só lê. 'repo' e 'raiz_git' podem ser null num sistema ainda sem git ou sem remoto. Quem atualiza: meta-iniciar-repositorio/scripts/carimbo.py (--registrar), chamado pelo init_repo.py e pela spec-site-fundacao, com HITL; à mão só para corrigir. O schema é cobrado pelo audit_base.py (categoria 'mapa').",
-  "sistemas": [
+  "_doc": "Mapa dos sistemas que adotam esta base (moldes do fluxo SDD e, se modulares, o template de módulos). Lista QUAIS sistemas são — NÃO guarda versão: a versão de cada um vive no carimbo .sarak/base.json dentro do próprio sistema. 'path' e 'git_root' são relativos à raiz desta base, com '/'; 'git_root' só difere de 'path' quando o sistema é subpasta de um monorepo. kind: app | site. bindings: lista de typescript | javascript | python, sem repetição — projeto modular pode ser poliglota; sai dos specs/arquitetura/00-base-<binding>.md do sistema (uma base fora dos três, como 00-base-nextjs, não entra); [] = não se aplica ou não dá para determinar. lifecycle: active | later-adoption. status: o resultado da ÚLTIMA propagação, não uma comparação ao vivo com o HEAD — outdated (nunca recebeu propagação nem adoção) | pending (recebeu, mas sobraram itens de decisão humana) | updated (a última propagação fechou sem pendências, ou o sistema acabou de ser instalado); status_commit: o commit curto da base em que o status foi definido, ou null. lifecycle e status são independentes. Quem escreve o status: o --apply da meta-propagar-base e, na instalação, o stamp.py --register (nasce updated); o --plan só lê. 'repo' e 'git_root' podem ser null num sistema ainda sem git ou sem remoto. Quem atualiza: meta-iniciar-repositorio/scripts/stamp.py (--register), chamado pelo init_repo.py e pela spec-site-fundacao, com HITL; à mão só para corrigir. O schema é cobrado pelo audit_base.py (categoria 'map'). Chaves e valores anteriores à lei de idioma (ADR-023) — sistemas, nome, caminho, raiz_git, tipo, situacao, status_base, ativo, adocao-posterior, desatualizado, pendente, atualizado — são aceitos só na LEITURA (stamp.normalize_map).",
+  "systems": [
     {
       "id": "agentes-ads",
-      "nome": "ADS (Agentes)",
-      "caminho": "../Agentes/ADS",
+      "name": "ADS (Agentes)",
+      "path": "../Agentes/ADS",
       "repo": "https://github.com/Templates-Sarak/Agents-ADS.git",
-      "raiz_git": "../Agentes/ADS",
-      "tipo": "app",
+      "git_root": "../Agentes/ADS",
+      "kind": "app",
       "modular": false,
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo",
-      "status": "atualizado",
-      "status_base": "8bc706b"
+      "lifecycle": "active",
+      "status": "updated",
+      "status_commit": "8bc706b"
     },
     {
       "id": "sarak-lib-login",
-      "nome": "Sarak Lib Login",
-      "caminho": "../Biblioteca/Sarak-Lib-Login/login-completo",
+      "name": "Sarak Lib Login",
+      "path": "../Biblioteca/Sarak-Lib-Login/login-completo",
       "repo": "https://github.com/Lib-Sarak/Sarak-Lib-Login.git",
-      "raiz_git": "../Biblioteca/Sarak-Lib-Login/login-completo",
-      "tipo": "app",
+      "git_root": "../Biblioteca/Sarak-Lib-Login/login-completo",
+      "kind": "app",
       "modular": true,
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "sarak-lib-ui-core",
-      "nome": "Sarak Lib UI Core",
-      "caminho": "../Biblioteca/Sarak-Lib-UI-Core",
+      "name": "Sarak Lib UI Core",
+      "path": "../Biblioteca/Sarak-Lib-UI-Core",
       "repo": "https://github.com/Lib-Sarak/Sarak-Lib-UI-Core.git",
-      "raiz_git": "../Biblioteca/Sarak-Lib-UI-Core",
-      "tipo": "app",
+      "git_root": "../Biblioteca/Sarak-Lib-UI-Core",
+      "kind": "app",
       "modular": false,
       "bindings": [],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "setup-is-cripto",
-      "nome": "Setup IS — Cripto",
-      "caminho": "../Code - Cripto/Setup IS - Cripto",
+      "name": "Setup IS — Cripto",
+      "path": "../Code - Cripto/Setup IS - Cripto",
       "repo": "https://github.com/Setup-I-S/Govenranca-refatorada.git",
-      "raiz_git": "../Code - Cripto/Setup IS - Cripto",
-      "tipo": "app",
+      "git_root": "../Code - Cripto/Setup IS - Cripto",
+      "kind": "app",
       "modular": true,
       "bindings": [
         "javascript",
         "python"
       ],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "recorta-artefatos",
-      "nome": "Recorta — artefatos",
-      "caminho": "../Earendel/Desenvolvimento/Recorta/artefatos",
+      "name": "Recorta — artefatos",
+      "path": "../Earendel/Desenvolvimento/Recorta/artefatos",
       "repo": "https://github.com/Recorta-art/Recorta-art.git",
-      "raiz_git": "../Earendel/Desenvolvimento/Recorta",
-      "tipo": "app",
+      "git_root": "../Earendel/Desenvolvimento/Recorta",
+      "kind": "app",
       "modular": false,
       "bindings": [],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "recorta-site",
-      "nome": "Site Recorta",
-      "caminho": "../Earendel/Desenvolvimento/Recorta/site-recorta",
+      "name": "Site Recorta",
+      "path": "../Earendel/Desenvolvimento/Recorta/site-recorta",
       "repo": "https://github.com/Recorta-art/Recorta-art.git",
-      "raiz_git": "../Earendel/Desenvolvimento/Recorta",
-      "tipo": "site",
+      "git_root": "../Earendel/Desenvolvimento/Recorta",
+      "kind": "site",
       "modular": false,
       "bindings": [],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "sellersgo",
-      "nome": "SellersGO",
-      "caminho": "../Earendel/Desenvolvimento/SellersGO",
+      "name": "SellersGO",
+      "path": "../Earendel/Desenvolvimento/SellersGO",
       "repo": "https://github.com/Sarak-Igor/SellersGO.git",
-      "raiz_git": "../Earendel/Desenvolvimento/SellersGO",
-      "tipo": "app",
+      "git_root": "../Earendel/Desenvolvimento/SellersGO",
+      "kind": "app",
       "modular": false,
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "earendel-erp",
-      "nome": "ERP Earendel",
-      "caminho": "../Earendel/ERP",
+      "name": "ERP Earendel",
+      "path": "../Earendel/ERP",
       "repo": "https://github.com/Sarak-Igor/ERP-Iarendel.git",
-      "raiz_git": "../Earendel/ERP",
-      "tipo": "app",
+      "git_root": "../Earendel/ERP",
+      "kind": "app",
       "modular": true,
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "earendel-site",
-      "nome": "Site Earendel",
-      "caminho": "../Earendel/Site-Earendel",
+      "name": "Site Earendel",
+      "path": "../Earendel/Site-Earendel",
       "repo": "https://github.com/earendel-site/site-testes.git",
-      "raiz_git": "../Earendel/Site-Earendel",
-      "tipo": "site",
+      "git_root": "../Earendel/Site-Earendel",
+      "kind": "site",
       "modular": false,
       "bindings": [
         "typescript"
       ],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "zp-relatorios",
-      "nome": "ZP — Automação de relatórios",
-      "caminho": "../ZP/Automacao-relatorios/Novo",
+      "name": "ZP — Automação de relatórios",
+      "path": "../ZP/Automacao-relatorios/Novo",
       "repo": "https://github.com/ZP-relatorios/relatorios-auto.git",
-      "raiz_git": "../ZP/Automacao-relatorios/Novo",
-      "tipo": "app",
+      "git_root": "../ZP/Automacao-relatorios/Novo",
+      "kind": "app",
       "modular": true,
       "bindings": [
         "typescript",
         "python"
       ],
-      "situacao": "ativo",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "active",
+      "status": "outdated",
+      "status_commit": null
     },
     {
       "id": "agentes-chat",
-      "nome": "Chat (Agentes)",
-      "caminho": "../Agentes/Chat",
+      "name": "Chat (Agentes)",
+      "path": "../Agentes/Chat",
       "repo": "https://github.com/Agents-templates/Agents-Chat.git",
-      "raiz_git": "../Agentes/Chat",
-      "tipo": "app",
+      "git_root": "../Agentes/Chat",
+      "kind": "app",
       "modular": false,
       "bindings": [
         "typescript",
         "python"
       ],
-      "situacao": "adocao-posterior",
-      "status": "desatualizado",
-      "status_base": null
+      "lifecycle": "later-adoption",
+      "status": "outdated",
+      "status_commit": null
     }
   ]
 }

@@ -1,11 +1,11 @@
-"""diagnosticar_terreno.py — diagnostico mecanico do terreno antes da campanha de adequacao modular.
+"""diagnose_terrain.py — diagnostico mecanico do terreno antes da campanha de adequacao modular.
 
-    python diagnosticar_terreno.py --raiz <alvo> [--modulos <pasta> ...] [--json]
-        (sem `--modulos`, os candidatos sao DESCOBERTOS varrendo a raiz de modulos)
-    python diagnosticar_terreno.py --selftest
+    python diagnose_terrain.py --root <target> [--modules <pasta> ...] [--json]
+        (sem `--modules`, os candidatos sao DESCOBERTOS varrendo a raiz de modulos)
+    python diagnose_terrain.py --selftest
 
 Responde, sem julgamento nenhum, as perguntas que "meta-adequacao-modular" precisa antes de abrir a boca:
-em que FASE a campanha esta (A planejar / B conferir / EM_ANDAMENTO), qual dos dois CAMINHOS de entrada
+em que FASE a campanha esta (A planejar / B conferir / IN_PROGRESS), qual dos dois CAMINHOS de entrada
 (com ou sem specs SDD), se o APARATO DO TEMPLATE ja esta instalado ali (nada / parcial / completo — e
 quais pecas faltam, no caso parcial), se o repositorio colide com o que o scaffold do template escreveria
 (SO quando o aparato ainda nao existe — ver abaixo), se ele carrega marcas de uma GERACAO ANTIGA do
@@ -13,22 +13,22 @@ proprio template (nao e legado puro — e outro problema), se ja tem workspaces/
 precisar de composicao manual, e — para cada pasta candidata a modulo que o chamador ja apontou — se o
 nome bate `^[a-z][a-z0-9-]*$` e qual seria o kebab-case sugerido.
 
-**Por que `template_instalado` existe.** Sem ele, um projeto 100% conforme (gerado pelo proprio
-`create-project.mjs`/`create-module.mjs`) era diagnosticado como legado: `colisao_raiz` acusava
+**Por que `template_installed` existe.** Sem ele, um projeto 100% conforme (gerado pelo proprio
+`create-project.mjs`/`create-module.mjs`) era diagnosticado como legado: `root_collision` acusava
 `package.json`/`.gitignore` — que sao o PROPRIO scaffold do template, copiados por
-`bindings/<binding>/root/` — e `workspaces_legado` acusava `["modules/[a-z]*", "packages/*",
+`bindings/<binding>/root/` — e `legacy_workspaces` acusava `["modules/[a-z]*", "packages/*",
 "adapters/*"]`, que e exatamente o `workspaces` que o template escreve. Os dois apontavam o usuario para
 o portao de HITL mais caro (`--force`) sobre um repositorio que nao precisava de nada. Medido, nao
 suposto: rodar este script contra a saida de `create-project.mjs --binding typescript` +
 `create-module.mjs catalogo --role domain` reproduzia os dois falsos positivos byte a byte.
 
-**Por que a descoberta de candidatos existe.** `modulos_candidatos` avaliava SO o que viesse em
-`--modulos`, enquanto o `SKILL.md` documentava a invocacao sem a flag e prometia que "o script sugere" o
+**Por que a descoberta de candidatos existe.** `module_candidates` avaliava SO o que viesse em
+`--modules`, enquanto o `SKILL.md` documentava a invocacao sem a flag e prometia que "o script sugere" o
 nome. Quem seguia a skill ao pe da letra recebia `[]` e ficava sem insumo no portao de HITL CENTRAL (a
 lista de modulos e o nome de cada um). Medido num legado real (ERP): quatro modulos em `modulos/`,
-`modulos_candidatos: []`. Agora, sem a flag, a casca varre a raiz de modulos — `modules/` e os nomes de
+`module_candidates: []`. Agora, sem a flag, a casca varre a raiz de modulos — `modules/` e os nomes de
 GERACAO ANTIGA que apontam para ela (`modulos/`), vocabulario que este mesmo arquivo ja fecha em
-MARCADORES_GERACAO_ANTIGA. `--modulos` continua vencendo, como override explicito, e `modulos_origem` diz
+OLD_GENERATION_MARKERS. `--modules` continua vencendo, como override explicito, e `modules_origin` diz
 qual dos dois produziu a lista: `[]` com origem `varredura` significa "nao ha candidato", `[]` com origem
 `flag` significa "ninguem apontou" — dois fatos diferentes que antes eram indistinguiveis.
 
@@ -36,36 +36,36 @@ qual dos dois produziu a lista: `[]` com origem `varredura` significa "nao ha ca
 — o proprio legado que motivou esta versao estava com a campanha inteira em `main`, com delecoes ja
 staged. Pela lei do ecossistema, regra sem verificador nao e regra. `branch.atual` vazio significa
 **nao foi possivel determinar** (nao e repo git), e `"(destacado)"` significa HEAD destacado: nos dois
-casos pergunte, nunca presuma que esta seguro. `arvore_suja` e tri-estado de proposito — `null` e
+casos pergunte, nunca presuma que esta seguro. `dirty_tree` e tri-estado de proposito — `null` e
 "nao consegui rodar `git status`", NUNCA "esta limpa" (fail-open e o defeito que se evita aqui).
 
 NAO decide topologia (isso e code-diagnostico/code1-auditar): a descoberta olha UMA raiz conhecida de
 modulos, nunca infere fronteira de modulo em monolito, por-camadas ou `apps/`. Para esses, aponte as
-pastas com `--modulos`.
+pastas com `--modules`.
 
-**Por que `equivalentes_suspeitos` existe.** `template_instalado` classifica por PRESENCA DE CAMINHO
+**Por que `suspected_equivalents` existe.** `template_installed` classifica por PRESENCA DE CAMINHO
 canonico — e um legado localizado tem o aparato sob outro nome. Medido: um alvo com
 `<alvo>/scripts/validar-modulos.mjs`, `packages/portas/` e `adapters/memoria/` saia com `faltando:
-["adapters_memoria","gate","manifesto_raiz","portas"]`, acusando como ausente o que ja existia sob nome
-traduzido. `gerar_candidatos_equivalentes` gera, por vocabulario fechado, os nomes alternativos possiveis
-de cada marcador; `ler_equivalentes_suspeitos` testa em disco so os marcadores que estao em `faltando`. O
-campo e insumo de HITL — nunca afirma equivalencia, e nunca muda `template_instalado`: as pastas em ingles
+["memory_adapters","gate","root_manifest","ports"]`, acusando como ausente o que ja existia sob nome
+traduzido. `generate_equivalent_candidates` gera, por vocabulario fechado, os nomes alternativos possiveis
+de cada marcador; `read_suspected_equivalents` testa em disco so os marcadores que estao em `faltando`. O
+campo e insumo de HITL — nunca afirma equivalencia, e nunca muda `template_installed`: as pastas em ingles
 continuam normativas, e classificar pelo nome traduzido faria a campanha nunca renomear.
 
-**Por que `caminho` virou tri-estado, com `sinais_sdd`.** `detectar_caminho` exigia indice E pasta de
-plans, caindo em "sem-specs" caso contrario — e um alvo com specs SDD completas, cujo mapa de leitura se
-chamava `specs/INDEX.md` em vez de `specs/00-indice.md`, era classificado "sem-specs" como se a campanha
-ainda nao tivesse specs, quando na verdade tinha estrutura SDD divergente da canonica. `sinais_sdd` (via
-`ler_sinais_sdd`) diz especificamente quais nomes de sinal foram achados sob `specs/`, para o revisor
+**Por que `path` virou tri-estado, com `sdd_signals`.** `detect_path` exigia indice E pasta de
+plans, caindo em "no-specs" caso contrario — e um alvo com specs SDD completas, cujo mapa de leitura se
+chamava `specs/INDEX.md` em vez de `specs/00-indice.md`, era classificado "no-specs" como se a campanha
+ainda nao tivesse specs, quando na verdade tinha estrutura SDD divergente da canonica. `sdd_signals` (via
+`read_sdd_signals`) diz especificamente quais nomes de sinal foram achados sob `specs/`, para o revisor
 conferir o que e de fato antes de instalar specs por cima de specs.
 
-Nucleo puro (nunca toca disco): `detectar_fase`, `detectar_caminho`, `avaliar_template_instalado`,
-`kebabizar`, `avaliar_id_modulo`, `detectar_geracao_antiga`, `detectar_colisao_raiz`,
-`detectar_workspaces_legado`, `detectar_hooks_legado`, `raizes_de_modulos`, `avaliar_branch`,
-`gerar_candidatos_equivalentes` — e o que o `--selftest` prova com fixtures em memoria. A CASCA
-(`ler_marcadores_template`, `ler_status_plans_xx`, `ler_entradas_raiz`, `ler_package_json`,
-`ler_pastas_de_modulos`, `ler_branch_atual`, `ler_arvore_suja`, `ler_sinais_sdd`,
-`ler_equivalentes_suspeitos`, `main`) e a unica parte que le disco — ou, nas duas de branch/arvore, que
+Nucleo puro (nunca toca disco): `detect_phase`, `detect_path`, `evaluate_template_installed`,
+`kebabize`, `evaluate_module_id`, `detect_old_generation`, `detect_root_collision`,
+`detect_legacy_workspaces`, `detect_legacy_hooks`, `module_roots`, `evaluate_branch`,
+`generate_equivalent_candidates` — e o que o `--selftest` prova com fixtures em memoria. A CASCA
+(`read_template_markers`, `read_xx_plans_status`, `read_root_entries`, `read_package_json`,
+`read_module_dirs`, `read_current_branch`, `read_dirty_tree`, `read_sdd_signals`,
+`read_suspected_equivalents`, `main`) e a unica parte que le disco — ou, nas duas de branch/arvore, que
 chama `git`.
 """
 
@@ -77,47 +77,47 @@ import subprocess
 import sys
 from pathlib import Path
 
-MARCADORES_GERACAO_ANTIGA = {
+OLD_GENERATION_MARKERS = {
     "ferramentas": "tools",
     "modulos": "modules",
     "projeto.json": "project.json",
 }
 
-ENTRADAS_DE_COLISAO = ("package.json", "pyproject.toml", ".gitignore")
+COLLISION_ENTRIES = ("package.json", "pyproject.toml", ".gitignore")
 
 # Vocabulario FECHADO de branch padrao. Deliberadamente curto: nao existe forma barata e confiavel de
 # descobrir a branch padrao de um repositorio sem falar com o remoto (`origin/HEAD` pode nem estar
 # resolvido no clone). Consequencia assumida, e declarada: um repositorio cuja branch principal se chame
 # outra coisa (`trunk`, `develop`) NAO e acusado — falso negativo. A direcao do erro e a segura: acusar
 # `develop` como "padrao" pararia uma campanha legitima.
-BRANCHES_PADRAO = ("main", "master")
+DEFAULT_BRANCHES = ("main", "master")
 
 # As oito pecas do aparato do template (SKILL.md, Passo 3.2) — caminho relativo a raiz do projeto.
 # Deliberadamente SEM "package.json"/"pyproject.toml"/".gitignore": esses tres sao os mesmos nomes que
-# ENTRADAS_DE_COLISAO verifica, e um marcador nao pode ser o proprio arquivo que ele explica (senao
+# COLLISION_ENTRIES verifica, e um marcador nao pode ser o proprio arquivo que ele explica (senao
 # "esta presente" vira circular).
 #
-# "scaffolder" (tools/create-module.mjs) e "molde_modulo" (modules/_template) substituem o antigo
-# "modules_raiz" (a pasta `modules/` sozinha, que existiu ate esta versao). Nao e enxugamento: e a
+# "scaffolder" (tools/create-module.mjs) e "module_template" (modules/_template) substituem o antigo
+# "modules_root" (a pasta `modules/` sozinha, que existiu ate esta versao). Nao e enxugamento: e a
 # correcao de uma fraqueza medida. `modules/` sozinho era o marcador MENOS especifico dos sete que
 # existiam — qualquer projeto JS generico pode ter uma pasta de topo com esse nome por motivo proprio, e
-# so por acaso disso `avaliar_template_instalado` saia de "nao-instalado", o que ja bastava para
-# `detectar_colisao_raiz` parar de acusar `package.json`/`.gitignore` mesmo que nada mais do template
-# estivesse ali. `molde_modulo` responde a mesma pergunta com marcador FORTE: todo projeto nascido do
+# so por acaso disso `evaluate_template_installed` saia de "not-installed", o que ja bastava para
+# `detect_root_collision` parar de acusar `package.json`/`.gitignore` mesmo que nada mais do template
+# estivesse ali. `module_template` responde a mesma pergunta com marcador FORTE: todo projeto nascido do
 # template ganha `modules/_template` copiado do binding (`specs/_estrutura_modulos/tools/
 # create-project.mjs`, funcao `copyTemplate`) — presenca que um legado nao replica por acidente.
 # "scaffolder" fecha a lacuna irma: o script conferia que o gate existia mas nunca que
 # `create-module.mjs` existia — e um legado real terminou uma campanha com `pnpm criar-modulo <id>`
 # produzindo modulo que nao compila, sem nada acusar.
-MARCADORES_TEMPLATE = {
+TEMPLATE_MARKERS = {
     "gate": "tools/gate/validate.mjs",
     "scaffolder": "tools/create-module.mjs",
-    "manifesto_raiz": "project.json",
-    "portas": "packages/ports",
-    "adapters_memoria": "adapters/memory",
-    "config_raiz": "config",
+    "root_manifest": "project.json",
+    "ports": "packages/ports",
+    "memory_adapters": "adapters/memory",
+    "root_config": "config",
     "githooks": ".githooks",
-    "molde_modulo": "modules/_template",
+    "module_template": "modules/_template",
 }
 
 # Vocabulario FECHADO de segmento canonico -> nomes alternativos em legado localizado. "" como
@@ -126,10 +126,10 @@ MARCADORES_TEMPLATE = {
 # e uma supressao ao mesmo tempo). Prefere falso negativo a falso positivo: um segmento fora deste mapa
 # so produz ele mesmo, nunca e "adivinhado".
 #
-# `.githooks` -> `.husky` aqui SOBREPOE o que `detectar_hooks_legado` ja acusa. E proposital, nao
-# deduplique: sao duas perguntas diferentes — "ha gerenciador de hook legado a compor?" (hooks_legado)
-# e "algo ja faz o papel de `.githooks`?" (equivalentes_suspeitos).
-SEGMENTOS_EQUIVALENTES = {
+# `.githooks` -> `.husky` aqui SOBREPOE o que `detect_legacy_hooks` ja acusa. E proposital, nao
+# deduplique: sao duas perguntas diferentes — "ha gerenciador de hook legado a compor?" (legacy_hooks)
+# e "algo ja faz o papel de `.githooks`?" (suspected_equivalents).
+EQUIVALENT_SEGMENTS = {
     "tools": ("scripts", "ferramentas"),
     "modules": ("modulos",),
     "packages": ("pacotes",),
@@ -146,10 +146,10 @@ SEGMENTOS_EQUIVALENTES = {
 }
 
 # Sinais de estrutura SDD (`specs/_estrutura_base/`) que, se achados sob `specs/` do alvo SEM o par
-# indice+plan/ completo, classificam o caminho como "specs-divergentes" em vez de "sem-specs" — ver
-# `detectar_caminho`. "INDEX.md" (mapa de leitura) e "00-indice.md" (fila de execucao) NAO sao
+# indice+plan/ completo, classificam o caminho como "divergent-specs" em vez de "no-specs" — ver
+# `detect_path`. "INDEX.md" (mapa de leitura) e "00-indice.md" (fila de execucao) NAO sao
 # sinonimos: os dois existem em `specs/_estrutura_base/` e fazem coisas diferentes.
-SINAIS_SDD = (
+SDD_SIGNALS = (
     "INDEX.md",
     "00-contexto.md",
     "00-knowledge.md",
@@ -163,137 +163,137 @@ SINAIS_SDD = (
     "_templates",
 )
 
-PADRAO_ID_CONFORME = re.compile(r"^[a-z][a-z0-9-]*$")
+COMPLIANT_ID_PATTERN = re.compile(r"^[a-z][a-z0-9-]*$")
 
 # `workspaces` que o proprio create-project.mjs escreve no package.json gerado (medido nos tres
 # bindings) — uma entrada que bate aqui NAO e workspace legado, e um monorepo legado real jamais
 # produz este trio exato por acidente (o segmento "[a-z]*" e sintaxe de glob do proprio template).
-WORKSPACES_CANONICOS_TEMPLATE = frozenset(
+TEMPLATE_CANONICAL_WORKSPACES = frozenset(
     {"modules/[a-z]*", "packages/*", "adapters/*"}
 )
 
-STATUS_ENCERRADOS = {"🟢 Aprovada", "⚪ Sintetizada", "🟢", "⚪"}
+CLOSED_STATUSES = {"🟢 Aprovada", "⚪ Sintetizada", "🟢", "⚪"}
 
 
-def detectar_fase(plans_xx: list) -> str:
-    """`plans_xx` e uma lista de status (string) das plans cujo nome comeca com "xx-". Vazia -> Fase A
+def detect_phase(xx_plans: list) -> str:
+    """`xx_plans` e uma lista de status (string) das plans cujo nome comeca com "xx-". Vazia -> Fase A
     (campanha nao comecou). Todas encerradas (aprovada/sintetizada) -> Fase B (pronta para conferir).
-    Qualquer uma ainda ativa -> EM_ANDAMENTO (nem planejar de novo, nem conferir ainda)."""
-    if not plans_xx:
+    Qualquer uma ainda ativa -> IN_PROGRESS (nem planejar de novo, nem conferir ainda)."""
+    if not xx_plans:
         return "A"
-    if all(status in STATUS_ENCERRADOS for status in plans_xx):
+    if all(status in CLOSED_STATUSES for status in xx_plans):
         return "B"
-    return "EM_ANDAMENTO"
+    return "IN_PROGRESS"
 
 
-def detectar_caminho(tem_indice: bool, tem_plan_dir: bool, sinais_sdd=()) -> str:
-    """Tri-estado. "com-specs" continua exigindo as DUAS coisas — indice e pasta de plans. Sem os
-    dois, mas com algum nome de `SINAIS_SDD` achado sob `specs/` (`sinais_sdd` nao vazio) -> o alvo TEM
-    estrutura SDD, so nao a canonica: "specs-divergentes", nunca "sem-specs" (que instalaria specs por
-    cima de specs). Nenhum dos dois -> "sem-specs" de verdade."""
-    if tem_indice and tem_plan_dir:
-        return "com-specs"
-    if sinais_sdd:
-        return "specs-divergentes"
-    return "sem-specs"
+def detect_path(has_index: bool, has_plan_dir: bool, sdd_signals=()) -> str:
+    """Tri-estado. "with-specs" continua exigindo as DUAS coisas — indice e pasta de plans. Sem os
+    dois, mas com algum nome de `SDD_SIGNALS` achado sob `specs/` (`sdd_signals` nao vazio) -> o alvo TEM
+    estrutura SDD, so nao a canonica: "divergent-specs", nunca "no-specs" (que instalaria specs por
+    cima de specs). Nenhum dos dois -> "no-specs" de verdade."""
+    if has_index and has_plan_dir:
+        return "with-specs"
+    if sdd_signals:
+        return "divergent-specs"
+    return "no-specs"
 
 
-def kebabizar(nome: str) -> str:
+def kebabize(name: str) -> str:
     """PascalCase/camelCase/snake_case/espacos -> kebab-case minusculo. Pura fronteira de palavra:
     letra minuscula seguida de maiuscula, ou minuscula/numero seguido de maiuscula em sequencia,
     ganham hifen; '_'/'.'/espaco viram hifen; hifens repetidos colapsam; bordas sao aparadas."""
-    com_fronteiras = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "-", nome)
-    normalizado = re.sub(r"[^a-zA-Z0-9]+", "-", com_fronteiras).lower()
-    colapsado = re.sub(r"-+", "-", normalizado)
-    return colapsado.strip("-")
+    with_boundaries = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "-", name)
+    normalized = re.sub(r"[^a-zA-Z0-9]+", "-", with_boundaries).lower()
+    collapsed = re.sub(r"-+", "-", normalized)
+    return collapsed.strip("-")
 
 
-def avaliar_id_modulo(nome_pasta: str) -> dict:
+def evaluate_module_id(dir_name: str) -> dict:
     """Um candidato a modulo: o id atual (nome da pasta), se ja conforme, e o sugerido."""
-    conforme = bool(PADRAO_ID_CONFORME.fullmatch(nome_pasta))
+    compliant = bool(COMPLIANT_ID_PATTERN.fullmatch(dir_name))
     return {
-        "pasta": nome_pasta,
-        "id_atual": nome_pasta,
-        "conforme": conforme,
-        "id_sugerido": nome_pasta if conforme else kebabizar(nome_pasta),
+        "dir": dir_name,
+        "current_id": dir_name,
+        "compliant": compliant,
+        "suggested_id": dir_name if compliant else kebabize(dir_name),
     }
 
 
-def detectar_geracao_antiga(entradas_raiz: set) -> list:
+def detect_old_generation(root_entries: set) -> list:
     """Marcadores de DUAS renomeacoes atras do proprio template — nao e legado puro, e migracao de
-    versao. Vocabulario fechado (MARCADORES_GERACAO_ANTIGA); ordem estavel para saida determinística."""
-    achados = []
-    for antigo, atual in MARCADORES_GERACAO_ANTIGA.items():
-        if antigo in entradas_raiz:
-            achados.append({"encontrado": antigo, "atual": atual})
-    return achados
+    versao. Vocabulario fechado (OLD_GENERATION_MARKERS); ordem estavel para saida determinística."""
+    findings = []
+    for old, current in OLD_GENERATION_MARKERS.items():
+        if old in root_entries:
+            findings.append({"found": old, "current": current})
+    return findings
 
 
-def avaliar_template_instalado(marcadores_presentes: set) -> dict:
-    """`marcadores_presentes` e o subconjunto das CHAVES de MARCADORES_TEMPLATE que a casca ja
+def evaluate_template_installed(present_markers: set) -> dict:
+    """`present_markers` e o subconjunto das CHAVES de TEMPLATE_MARKERS que a casca ja
     resolveu em disco (uma por caminho relativo checado). Classifica os tres estados que importam
-    para a skill: nenhum marcador -> "nao-instalado" (legado puro, o fluxo de hoje esta certo);
+    para a skill: nenhum marcador -> "not-installed" (legado puro, o fluxo de hoje esta certo);
     todos -> "completo" (nada a instalar); uns sim outros nao -> "parcial", com `faltando` listando
     exatamente as pecas que sobram — o estado que mais engana se tratado como "nada instalado"."""
-    todas_chaves = set(MARCADORES_TEMPLATE)
-    presentes = sorted(marcadores_presentes & todas_chaves)
-    faltando = sorted(todas_chaves - marcadores_presentes)
-    if not presentes:
-        estado = "nao-instalado"
-    elif not faltando:
-        estado = "completo"
+    all_keys = set(TEMPLATE_MARKERS)
+    present = sorted(present_markers & all_keys)
+    missing = sorted(all_keys - present_markers)
+    if not present:
+        state = "not-installed"
+    elif not missing:
+        state = "complete"
     else:
-        estado = "parcial"
-    return {"estado": estado, "presentes": presentes, "faltando": faltando}
+        state = "partial"
+    return {"state": state, "present": present, "missing": missing}
 
 
-def gerar_candidatos_equivalentes(marcador: str) -> list:
-    """Quebra o caminho canonico de `marcador` (em MARCADORES_TEMPLATE) em segmentos por "/" e devolve
+def generate_equivalent_candidates(marker: str) -> list:
+    """Quebra o caminho canonico de `marcador` (em TEMPLATE_MARKERS) em segmentos por "/" e devolve
     o produto cartesiano das opcoes de cada segmento — cada segmento oferece ele mesmo mais as
-    alternativas de SEGMENTOS_EQUIVALENTES (segmento fora do vocabulario so produz ele mesmo) — MENOS o
+    alternativas de EQUIVALENT_SEGMENTS (segmento fora do vocabulario so produz ele mesmo) — MENOS o
     proprio caminho canonico. Uma alternativa "" suprime aquele segmento do caminho gerado (junta os
     demais pulando o vazio). Ordenado e deterministico. Custo por marcador: produto do tamanho das
     opcoes de cada segmento (o pior caso hoje, "gate" com tres segmentos 3x3x4, fica bem abaixo de 40)."""
-    canonico = MARCADORES_TEMPLATE[marcador]
-    opcoes_por_segmento = [
-        (segmento,) + SEGMENTOS_EQUIVALENTES.get(segmento, ())
-        for segmento in canonico.split("/")
+    canonical = TEMPLATE_MARKERS[marker]
+    options_per_segment = [
+        (segment,) + EQUIVALENT_SEGMENTS.get(segment, ())
+        for segment in canonical.split("/")
     ]
-    candidatos = set()
-    for combinacao in itertools.product(*opcoes_por_segmento):
-        caminho = "/".join(parte for parte in combinacao if parte)
-        if caminho and caminho != canonico:
-            candidatos.add(caminho)
-    return sorted(candidatos)
+    candidates = set()
+    for combination in itertools.product(*options_per_segment):
+        path = "/".join(part for part in combination if part)
+        if path and path != canonical:
+            candidates.add(path)
+    return sorted(candidates)
 
 
-def detectar_colisao_raiz(entradas_raiz: set, estado_template: str) -> list:
+def detect_root_collision(root_entries: set, template_state: str) -> list:
     """Manifestos que o create-project/create-module abortariam ao encontrar sem `--force` — SO
-    quando o aparato do template ainda nao existe ali (`estado_template == "nao-instalado"`). Uma vez
+    quando o aparato do template ainda nao existe ali (`template_state == "not-installed"`). Uma vez
     que qualquer peca do template ja esta presente (parcial ou completo), `package.json`/`.gitignore`/
     `pyproject.toml` sao o PROPRIO scaffold do template (copiados por `bindings/<binding>/root/`), nao
     legado colidindo — sinalizar colisao ali aponta o usuario para o `--force` sobre nada."""
-    if estado_template != "nao-instalado":
+    if template_state != "not-installed":
         return []
-    return sorted(entradas_raiz & set(ENTRADAS_DE_COLISAO))
+    return sorted(root_entries & set(COLLISION_ENTRIES))
 
 
-def detectar_workspaces_legado(package_json: dict) -> list:
+def detect_legacy_workspaces(package_json: dict) -> list:
     """`workspaces` ja declarado, MENOS as entradas que sao o proprio padrao canonico do template
-    (WORKSPACES_CANONICOS_TEMPLATE) — essas nunca precisam de merge humano, sao o que o template
+    (TEMPLATE_CANONICAL_WORKSPACES) — essas nunca precisam de merge humano, sao o que o template
     escreveria de qualquer jeito. O que sobra e legado de verdade precisando de decisao."""
     workspaces = package_json.get("workspaces", [])
     if isinstance(workspaces, dict):
         workspaces = workspaces.get("packages", [])
     if not isinstance(workspaces, list):
         return []
-    return [w for w in workspaces if w not in WORKSPACES_CANONICOS_TEMPLATE]
+    return [w for w in workspaces if w not in TEMPLATE_CANONICAL_WORKSPACES]
 
 
-def detectar_hooks_legado(entradas_raiz: set, package_json: dict) -> bool:
+def detect_legacy_hooks(root_entries: set, package_json: dict) -> bool:
     """Husky/lint-staged proprios — o terceiro caso de composicao de pre-commit que `compor_pre_commit`
     ainda nao cobre (ele resolve so gate-de-segredos + verify-commit.mjs, um-com-um)."""
-    if ".husky" in entradas_raiz:
+    if ".husky" in root_entries:
         return True
     deps = {
         **package_json.get("dependencies", {}),
@@ -302,68 +302,68 @@ def detectar_hooks_legado(entradas_raiz: set, package_json: dict) -> bool:
     return "husky" in deps or "lint-staged" in deps
 
 
-def raizes_de_modulos(entradas_raiz: set) -> list:
+def module_roots(root_entries: set) -> list:
     """Nomes de pasta, na raiz, que valem como RAIZ DE MODULOS para a descoberta de candidatos: a
     canonica `modules/` mais os nomes de geracao antiga que apontam para ela (`modulos/`) — o mesmo
-    vocabulario fechado de MARCADORES_GERACAO_ANTIGA, nunca uma segunda lista a manter em sincronia.
+    vocabulario fechado de OLD_GENERATION_MARKERS, nunca uma segunda lista a manter em sincronia.
     Ordem estavel para saida deterministica."""
-    nomes = {"modules"} | {
-        antigo
-        for antigo, atual in MARCADORES_GERACAO_ANTIGA.items()
-        if atual == "modules"
+    names = {"modules"} | {
+        old
+        for old, current in OLD_GENERATION_MARKERS.items()
+        if current == "modules"
     }
-    return sorted(nome for nome in nomes if nome in entradas_raiz)
+    return sorted(name for name in names if name in root_entries)
 
 
-def avaliar_branch(branch_atual: str, arvore_suja) -> dict:
-    """Classifica o estado de branch para o portao de HITL da skill. `branch_atual` vazio = nao foi
-    possivel determinar (nao e repo git); `"(destacado)"` = HEAD destacado. Nos dois casos `e_padrao`
+def evaluate_branch(current_branch: str, dirty_tree) -> dict:
+    """Classifica o estado de branch para o portao de HITL da skill. `current_branch` vazio = nao foi
+    possivel determinar (nao e repo git); `"(destacado)"` = HEAD destacado. Nos dois casos `is_default`
     sai False, e o `SKILL.md` manda PERGUNTAR em vez de presumir — o valor nunca afirma "seguro", so
-    diz o que se sabe. `arvore_suja` e repassado como veio (True/False/None): `None` e "nao consegui
+    diz o que se sabe. `dirty_tree` e repassado como veio (True/False/None): `None` e "nao consegui
     verificar", jamais "limpa"."""
     return {
-        "atual": branch_atual,
-        "e_padrao": branch_atual in BRANCHES_PADRAO,
-        "arvore_suja": arvore_suja,
+        "current": current_branch,
+        "is_default": current_branch in DEFAULT_BRANCHES,
+        "dirty_tree": dirty_tree,
     }
 
 
-def diagnosticar(
-    entradas_raiz: set,
+def diagnose(
+    root_entries: set,
     package_json: dict,
-    plans_xx: list,
-    tem_indice: bool,
-    tem_plan_dir: bool,
-    pastas_candidatas: list,
-    marcadores_template: set,
-    branch_atual: str = "",
-    arvore_suja=None,
-    modulos_origem: str = "flag",
-    sinais_sdd=(),
-    equivalentes_suspeitos: dict = None,
+    xx_plans: list,
+    has_index: bool,
+    has_plan_dir: bool,
+    candidate_dirs: list,
+    template_markers: set,
+    current_branch: str = "",
+    dirty_tree=None,
+    modules_origin: str = "flag",
+    sdd_signals=(),
+    suspected_equivalents: dict = None,
 ) -> dict:
     """Une os doze diagnosticos num relatorio so. Pura: nao le nada, so combina o que ja foi lido.
-    `template_instalado` e calculado ANTES de `colisao_raiz` porque esta depende daquele — a colisao
+    `template_installed` e calculado ANTES de `root_collision` porque esta depende daquele — a colisao
     so faz sentido contra o que e legado, nunca contra o proprio scaffold do template. Os cinco
     ultimos parametros tem default para que um chamador antigo (fixture, script de terceiro) continue
-    valendo — o relatorio, esse, sempre traz as doze chaves. `equivalentes_suspeitos` chega ja
-    resolvido pela casca (`ler_equivalentes_suspeitos`) porque depende de disco; aqui so e repassado."""
-    template_instalado = avaliar_template_instalado(marcadores_template)
+    valendo — o relatorio, esse, sempre traz as doze chaves. `suspected_equivalents` chega ja
+    resolvido pela casca (`read_suspected_equivalents`) porque depende de disco; aqui so e repassado."""
+    template_installed = evaluate_template_installed(template_markers)
     return {
-        "fase": detectar_fase(plans_xx),
-        "caminho": detectar_caminho(tem_indice, tem_plan_dir, sinais_sdd),
-        "sinais_sdd": sorted(sinais_sdd),
-        "branch": avaliar_branch(branch_atual, arvore_suja),
-        "template_instalado": template_instalado,
-        "colisao_raiz": detectar_colisao_raiz(
-            entradas_raiz, template_instalado["estado"]
+        "phase": detect_phase(xx_plans),
+        "path": detect_path(has_index, has_plan_dir, sdd_signals),
+        "sdd_signals": sorted(sdd_signals),
+        "branch": evaluate_branch(current_branch, dirty_tree),
+        "template_installed": template_installed,
+        "root_collision": detect_root_collision(
+            root_entries, template_installed["state"]
         ),
-        "geracao_antiga": detectar_geracao_antiga(entradas_raiz),
-        "workspaces_legado": detectar_workspaces_legado(package_json),
-        "hooks_legado": detectar_hooks_legado(entradas_raiz, package_json),
-        "modulos_candidatos": [avaliar_id_modulo(p) for p in pastas_candidatas],
-        "modulos_origem": modulos_origem,
-        "equivalentes_suspeitos": equivalentes_suspeitos or {},
+        "old_generation": detect_old_generation(root_entries),
+        "legacy_workspaces": detect_legacy_workspaces(package_json),
+        "legacy_hooks": detect_legacy_hooks(root_entries, package_json),
+        "module_candidates": [evaluate_module_id(p) for p in candidate_dirs],
+        "modules_origin": modules_origin,
+        "suspected_equivalents": suspected_equivalents or {},
     }
 
 
@@ -372,116 +372,116 @@ def diagnosticar(
 # ================================================================================================
 
 
-def ler_entradas_raiz(raiz: Path) -> set:
-    if not raiz.is_dir():
+def read_root_entries(root: Path) -> set:
+    if not root.is_dir():
         return set()
-    return {p.name for p in raiz.iterdir()}
+    return {p.name for p in root.iterdir()}
 
 
-def ler_package_json(raiz: Path) -> dict:
-    caminho = raiz / "package.json"
-    if not caminho.is_file():
+def read_package_json(root: Path) -> dict:
+    path = root / "package.json"
+    if not path.is_file():
         return {}
     try:
-        return json.loads(caminho.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return {}
 
 
-def ler_status_plans_xx(raiz: Path) -> list:
+def read_xx_plans_status(root: Path) -> list:
     """Status (frontmatter `status:`) de toda plan cujo NOME comeca com "xx-" em specs/plan/."""
-    pasta_plan = raiz / "specs" / "plan"
-    if not pasta_plan.is_dir():
+    plan_dir = root / "specs" / "plan"
+    if not plan_dir.is_dir():
         return []
-    status_encontrados = []
-    for arquivo in sorted(pasta_plan.glob("xx-*.md")):
-        texto = arquivo.read_text(encoding="utf-8", errors="replace")
-        casado = re.search(r'^status:\s*"?([^"\n]+)"?', texto, re.MULTILINE)
-        status_encontrados.append(casado.group(1).strip() if casado else "")
-    return status_encontrados
+    found_statuses = []
+    for file in sorted(plan_dir.glob("xx-*.md")):
+        text = file.read_text(encoding="utf-8", errors="replace")
+        found_match = re.search(r'^status:\s*"?([^"\n]+)"?', text, re.MULTILINE)
+        found_statuses.append(found_match.group(1).strip() if found_match else "")
+    return found_statuses
 
 
-def ler_sinais_sdd(raiz: Path) -> list:
-    """Quais nomes de SINAIS_SDD existem como entrada direta de `raiz/specs/` — alimenta o tri-estado
-    de `detectar_caminho` quando indice+plan/ nao estao os dois presentes."""
-    pasta_specs = raiz / "specs"
-    if not pasta_specs.is_dir():
+def read_sdd_signals(root: Path) -> list:
+    """Quais nomes de SDD_SIGNALS existem como entrada direta de `root/specs/` — alimenta o tri-estado
+    de `detect_path` quando indice+plan/ nao estao os dois presentes."""
+    specs_dir = root / "specs"
+    if not specs_dir.is_dir():
         return []
-    entradas = {p.name for p in pasta_specs.iterdir()}
-    return sorted(entradas & set(SINAIS_SDD))
+    entries = {p.name for p in specs_dir.iterdir()}
+    return sorted(entries & set(SDD_SIGNALS))
 
 
-def ler_marcadores_template(raiz: Path) -> set:
-    """Quais chaves de MARCADORES_TEMPLATE existem de fato sob `raiz` — a UNICA funcao que resolve
-    esse sinal em disco; `avaliar_template_instalado` (nucleo) so classifica o conjunto ja lido."""
+def read_template_markers(root: Path) -> set:
+    """Quais chaves de TEMPLATE_MARKERS existem de fato sob `root` — a UNICA funcao que resolve
+    esse sinal em disco; `evaluate_template_installed` (nucleo) so classifica o conjunto ja lido."""
     return {
-        chave
-        for chave, relativo in MARCADORES_TEMPLATE.items()
-        if (raiz / relativo).exists()
+        key
+        for key, relative in TEMPLATE_MARKERS.items()
+        if (root / relative).exists()
     }
 
 
-def ler_equivalentes_suspeitos(raiz: Path, faltando: list) -> dict:
-    """Para cada marcador em `faltando`, testa em disco os candidatos que `gerar_candidatos_equivalentes`
+def read_suspected_equivalents(root: Path, missing: list) -> dict:
+    """Para cada marcador em `faltando`, testa em disco os candidatos que `generate_equivalent_candidates`
     gera e devolve so os que existem de fato — chaves e valores ordenados, marcador sem acerto nenhum
-    fica de fora (nao aparece com lista vazia). Nunca altera `template_instalado`: e insumo de HITL,
+    fica de fora (nao aparece com lista vazia). Nunca altera `template_installed`: e insumo de HITL,
     "va olhar aqui", nunca afirma equivalencia."""
-    achados = {}
-    for marcador in sorted(faltando):
-        vistos = [
-            candidato
-            for candidato in gerar_candidatos_equivalentes(marcador)
-            if (raiz / candidato).exists()
+    findings = {}
+    for marker in sorted(missing):
+        seen = [
+            candidate
+            for candidate in generate_equivalent_candidates(marker)
+            if (root / candidate).exists()
         ]
-        if vistos:
-            achados[marcador] = vistos
-    return achados
+        if seen:
+            findings[marker] = seen
+    return findings
 
 
-def ler_pastas_de_modulos(raiz: Path, nomes_de_raiz: list) -> list:
+def read_module_dirs(root: Path, root_names: list) -> list:
     """Subpastas de cada raiz de modulos — os candidatos que o chamador nao precisou apontar. Ignora
     entrada oculta e `_template`/`_adapter` (moldes do proprio template, nunca modulo). Devolve nome
-    de pasta, nao caminho: e o mesmo contrato que `--modulos` ja tinha, e `avaliar_id_modulo` julga o
+    de pasta, nao caminho: e o mesmo contrato que `--modules` ja tinha, e `evaluate_module_id` julga o
     NOME. Sem deduplicar entre raizes: se `modules/` e `modulos/` coexistem, ver o nome duas vezes e
     o achado, nao ruido."""
-    achados = []
-    for nome_raiz in nomes_de_raiz:
-        pasta = raiz / nome_raiz
-        if not pasta.is_dir():
+    findings = []
+    for root_name in root_names:
+        dir_path = root / root_name
+        if not dir_path.is_dir():
             continue
-        for entrada in sorted(pasta.iterdir()):
-            if entrada.is_dir() and not entrada.name.startswith((".", "_")):
-                achados.append(entrada.name)
-    return achados
+        for entry in sorted(dir_path.iterdir()):
+            if entry.is_dir() and not entry.name.startswith((".", "_")):
+                findings.append(entry.name)
+    return findings
 
 
-def ler_branch_atual(raiz: Path) -> str:
+def read_current_branch(root: Path) -> str:
     """Branch por LEITURA de `.git/HEAD` — nao chama `git`, e por isso funciona com git ausente do
     PATH. Vazio = nao e repo git (ou HEAD ilegivel); `"(destacado)"` = HEAD aponta para um commit, nao
     para um ref. Nao resolve worktree/submodulo (`.git` como ARQUIVO): tambem devolve vazio, e o
     `SKILL.md` manda perguntar — limite declarado, nao silencio."""
-    head = raiz / ".git" / "HEAD"
+    head = root / ".git" / "HEAD"
     if not head.is_file():
         return ""
     try:
-        conteudo = head.read_text(encoding="utf-8", errors="replace").strip()
+        content = head.read_text(encoding="utf-8", errors="replace").strip()
     except OSError:
         return ""
-    if conteudo.startswith("ref: refs/heads/"):
-        return conteudo[len("ref: refs/heads/") :].strip()
-    return "(destacado)" if conteudo else ""
+    if content.startswith("ref: refs/heads/"):
+        return content[len("ref: refs/heads/") :].strip()
+    return "(detached)" if content else ""
 
 
-def ler_arvore_suja(raiz: Path):
+def read_dirty_tree(root: Path):
     """True/False pelo `git status --porcelain`; **None quando nao deu para saber** (git ausente,
     diretorio nao versionado, chamada falhou). None NUNCA vira False: "nao verifiquei" e "esta limpa"
     sao fatos diferentes, e confundi-los e exatamente o fail-open que esta skill cobra dos outros."""
-    if not (raiz / ".git").exists():
+    if not (root / ".git").exists():
         return None
     try:
-        saida = subprocess.run(
+        proc = subprocess.run(
             ["git", "status", "--porcelain"],
-            cwd=str(raiz),
+            cwd=str(root),
             capture_output=True,
             text=True,
             timeout=30,
@@ -489,490 +489,490 @@ def ler_arvore_suja(raiz: Path):
         )
     except (OSError, subprocess.SubprocessError):
         return None
-    if saida.returncode != 0:
+    if proc.returncode != 0:
         return None
-    return bool(saida.stdout.strip())
+    return bool(proc.stdout.strip())
 
 
 def get_args():
     parser = argparse.ArgumentParser(
-        description="Diagnostico mecanico do terreno de adequacao modular."
+        description="Mechanical diagnosis of the modular-adequacy terrain."
     )
-    parser.add_argument("--raiz", default=".", help="Raiz do repositorio-alvo")
+    parser.add_argument("--root", default=".", help="Root of the target repository")
     parser.add_argument(
-        "--modulos", nargs="*", default=(), help="Pastas candidatas a modulo (nomes)"
+        "--modules", nargs="*", default=(), help="Candidate module folders (names)"
     )
     parser.add_argument(
-        "--json", action="store_true", help="Saida em JSON (padrao: legivel)"
+        "--json", action="store_true", help="JSON output (default: readable)"
     )
     parser.add_argument("--selftest", action="store_true")
     return parser.parse_args()
 
 
-def _casos_de_autoteste() -> list:
+def _selftest_cases() -> list:
     return [
         {
-            "nome": "detectar_fase: sem plans xx- -> A",
-            "fn": lambda: detectar_fase([]) == "A",
+            "name": "detect_phase: no xx- plans -> A",
+            "fn": lambda: detect_phase([]) == "A",
         },
         {
-            "nome": "detectar_fase: todas encerradas -> B",
-            "fn": lambda: detectar_fase(["🟢 Aprovada", "⚪ Sintetizada"]) == "B",
+            "name": "detect_phase: all closed -> B",
+            "fn": lambda: detect_phase(["🟢 Aprovada", "⚪ Sintetizada"]) == "B",
         },
         {
-            "nome": "detectar_fase: uma ativa -> EM_ANDAMENTO",
+            "name": "detect_phase: one active -> IN_PROGRESS",
             "fn": lambda: (
-                detectar_fase(["🟢 Aprovada", "🟡 Em execução"]) == "EM_ANDAMENTO"
+                detect_phase(["🟢 Aprovada", "🟡 Em execução"]) == "IN_PROGRESS"
             ),
         },
         {
-            "nome": "detectar_caminho: indice e plan/ -> com-specs",
-            "fn": lambda: detectar_caminho(True, True) == "com-specs",
+            "name": "detect_path: index and plan/ -> with-specs",
+            "fn": lambda: detect_path(True, True) == "with-specs",
         },
         {
-            "nome": "detectar_caminho: so indice, com sinal SDD -> specs-divergentes (era sem-specs)",
+            "name": "detect_path: index only, with SDD signal -> divergent-specs (was no-specs)",
             "fn": lambda: (
-                detectar_caminho(True, False, ("00-indice.md",)) == "specs-divergentes"
+                detect_path(True, False, ("00-indice.md",)) == "divergent-specs"
             ),
         },
         {
-            "nome": "detectar_caminho: sinal SDD isolado (INDEX.md) -> specs-divergentes",
+            "name": "detect_path: isolated SDD signal (INDEX.md) -> divergent-specs",
             "fn": lambda: (
-                detectar_caminho(False, False, ("INDEX.md",)) == "specs-divergentes"
+                detect_path(False, False, ("INDEX.md",)) == "divergent-specs"
             ),
         },
         {
-            "nome": "detectar_caminho: nenhum indicio -> sem-specs",
-            "fn": lambda: detectar_caminho(False, False) == "sem-specs",
+            "name": "detect_path: no hint -> no-specs",
+            "fn": lambda: detect_path(False, False) == "no-specs",
         },
         {
-            "nome": "kebabizar: PascalCase",
-            "fn": lambda: kebabizar("Propostas") == "propostas",
+            "name": "kebabize: PascalCase",
+            "fn": lambda: kebabize("Proposals") == "proposals",
         },
         {
-            "nome": "kebabizar: composto",
-            "fn": lambda: kebabizar("NotaFiscal") == "nota-fiscal",
+            "name": "kebabize: compound",
+            "fn": lambda: kebabize("NotaFiscal") == "nota-fiscal",
         },
         {
-            "nome": "kebabizar: snake_case",
-            "fn": lambda: kebabizar("nota_fiscal") == "nota-fiscal",
+            "name": "kebabize: snake_case",
+            "fn": lambda: kebabize("nota_fiscal") == "nota-fiscal",
         },
         {
-            "nome": "kebabizar: ja kebab com hifen duplo",
-            "fn": lambda: kebabizar("Contratos--Legado") == "contratos-legado",
+            "name": "kebabize: already kebab with double hyphen",
+            "fn": lambda: kebabize("Contracts--Legacy") == "contracts-legacy",
         },
         {
-            "nome": "avaliar_id_modulo: conforme nao sugere outra coisa",
+            "name": "evaluate_module_id: compliant suggests nothing else",
             "fn": lambda: (
-                avaliar_id_modulo("catalogo")
+                evaluate_module_id("catalog")
                 == {
-                    "pasta": "catalogo",
-                    "id_atual": "catalogo",
-                    "conforme": True,
-                    "id_sugerido": "catalogo",
+                    "dir": "catalog",
+                    "current_id": "catalog",
+                    "compliant": True,
+                    "suggested_id": "catalog",
                 }
             ),
         },
         {
-            "nome": "avaliar_id_modulo: nao conforme sugere kebab",
+            "name": "evaluate_module_id: non-compliant suggests kebab",
             "fn": lambda: (
-                avaliar_id_modulo("Propostas")["id_sugerido"] == "propostas"
-                and avaliar_id_modulo("Propostas")["conforme"] is False
+                evaluate_module_id("Proposals")["suggested_id"] == "proposals"
+                and evaluate_module_id("Proposals")["compliant"] is False
             ),
         },
         {
-            "nome": "detectar_geracao_antiga: acha os tres marcadores",
+            "name": "detect_old_generation: finds the three markers",
             "fn": lambda: (
-                detectar_geracao_antiga(
+                detect_old_generation(
                     {"ferramentas", "modulos", "projeto.json", "README.md"}
                 )
                 == [
-                    {"encontrado": "ferramentas", "atual": "tools"},
-                    {"encontrado": "modulos", "atual": "modules"},
-                    {"encontrado": "projeto.json", "atual": "project.json"},
+                    {"found": "ferramentas", "current": "tools"},
+                    {"found": "modulos", "current": "modules"},
+                    {"found": "projeto.json", "current": "project.json"},
                 ]
             ),
         },
         {
-            "nome": "detectar_geracao_antiga: template atual nao acusa nada",
+            "name": "detect_old_generation: current template flags nothing",
             "fn": lambda: (
-                detectar_geracao_antiga({"tools", "modules", "project.json"}) == []
+                detect_old_generation({"tools", "modules", "project.json"}) == []
             ),
         },
         {
-            "nome": "avaliar_template_instalado: nada presente -> nao-instalado",
+            "name": "evaluate_template_installed: nothing present -> not-installed",
             "fn": lambda: (
-                avaliar_template_instalado(set())["estado"] == "nao-instalado"
+                evaluate_template_installed(set())["state"] == "not-installed"
             ),
         },
         {
-            "nome": "avaliar_template_instalado: todas as chaves presentes -> completo",
+            "name": "evaluate_template_installed: all keys present -> complete",
             "fn": lambda: (
-                avaliar_template_instalado(set(MARCADORES_TEMPLATE))
+                evaluate_template_installed(set(TEMPLATE_MARKERS))
                 == {
-                    "estado": "completo",
-                    "presentes": sorted(MARCADORES_TEMPLATE),
-                    "faltando": [],
+                    "state": "complete",
+                    "present": sorted(TEMPLATE_MARKERS),
+                    "missing": [],
                 }
             ),
         },
         {
-            "nome": "avaliar_template_instalado: subconjunto -> parcial, com o que falta",
+            "name": "evaluate_template_installed: subset -> partial, with what is missing",
             "fn": lambda: (
-                avaliar_template_instalado({"gate", "manifesto_raiz"})
+                evaluate_template_installed({"gate", "root_manifest"})
                 == {
-                    "estado": "parcial",
-                    "presentes": ["gate", "manifesto_raiz"],
-                    "faltando": sorted(
-                        set(MARCADORES_TEMPLATE) - {"gate", "manifesto_raiz"}
+                    "state": "partial",
+                    "present": ["gate", "root_manifest"],
+                    "missing": sorted(
+                        set(TEMPLATE_MARKERS) - {"gate", "root_manifest"}
                     ),
                 }
             ),
         },
         {
-            "nome": "avaliar_template_instalado: so molde_modulo -> parcial",
+            "name": "evaluate_template_installed: only module_template -> partial",
             "fn": lambda: (
-                avaliar_template_instalado({"molde_modulo"})["estado"] == "parcial"
+                evaluate_template_installed({"module_template"})["state"] == "partial"
             ),
         },
         {
-            "nome": "avaliar_template_instalado: modules_raiz nao volta ao vocabulario",
-            "fn": lambda: "modules_raiz" not in MARCADORES_TEMPLATE,
+            "name": "evaluate_template_installed: modules_root does not return to the vocabulary",
+            "fn": lambda: "modules_root" not in TEMPLATE_MARKERS,
         },
         {
-            "nome": "gerar_candidatos_equivalentes: gate sugere scripts/validar-modulos.mjs",
+            "name": "generate_equivalent_candidates: gate suggests scripts/validar-modulos.mjs",
             "fn": lambda: (
-                "scripts/validar-modulos.mjs" in gerar_candidatos_equivalentes("gate")
+                "scripts/validar-modulos.mjs" in generate_equivalent_candidates("gate")
             ),
         },
         {
-            "nome": "gerar_candidatos_equivalentes: portas sugere packages/portas",
-            "fn": lambda: "packages/portas" in gerar_candidatos_equivalentes("portas"),
+            "name": "generate_equivalent_candidates: ports suggests packages/portas",
+            "fn": lambda: "packages/portas" in generate_equivalent_candidates("ports"),
         },
         {
-            "nome": "gerar_candidatos_equivalentes: molde_modulo sugere modulos/_template",
+            "name": "generate_equivalent_candidates: module_template suggests modulos/_template",
             "fn": lambda: (
-                "modulos/_template" in gerar_candidatos_equivalentes("molde_modulo")
+                "modulos/_template" in generate_equivalent_candidates("module_template")
             ),
         },
         {
-            "nome": "gerar_candidatos_equivalentes: canonico nunca aparece na propria saida",
+            "name": "generate_equivalent_candidates: canonical never appears in its own output",
             "fn": lambda: all(
-                MARCADORES_TEMPLATE[marcador]
-                not in gerar_candidatos_equivalentes(marcador)
-                for marcador in MARCADORES_TEMPLATE
+                TEMPLATE_MARKERS[marker]
+                not in generate_equivalent_candidates(marker)
+                for marker in TEMPLATE_MARKERS
             ),
         },
         {
-            "nome": "gerar_candidatos_equivalentes: saida ordenada e deterministica",
+            "name": "generate_equivalent_candidates: output is sorted and deterministic",
             "fn": lambda: (
-                gerar_candidatos_equivalentes("gate")
-                == sorted(gerar_candidatos_equivalentes("gate"))
-                and gerar_candidatos_equivalentes("gate")
-                == gerar_candidatos_equivalentes("gate")
+                generate_equivalent_candidates("gate")
+                == sorted(generate_equivalent_candidates("gate"))
+                and generate_equivalent_candidates("gate")
+                == generate_equivalent_candidates("gate")
             ),
         },
         {
-            "nome": "detectar_colisao_raiz: nao-instalado acusa package.json existente",
+            "name": "detect_root_collision: not-installed flags existing package.json",
             "fn": lambda: (
-                detectar_colisao_raiz({"package.json", "src"}, "nao-instalado")
+                detect_root_collision({"package.json", "src"}, "not-installed")
                 == ["package.json"]
             ),
         },
         {
-            "nome": "detectar_colisao_raiz: nao-instalado e nada colide",
+            "name": "detect_root_collision: not-installed and nothing collides",
             "fn": lambda: (
-                detectar_colisao_raiz({"src", "README.md"}, "nao-instalado") == []
+                detect_root_collision({"src", "README.md"}, "not-installed") == []
             ),
         },
         {
-            "nome": "detectar_colisao_raiz: parcial NAO acusa (e o proprio scaffold)",
+            "name": "detect_root_collision: partial does NOT flag (it is the scaffold itself)",
             "fn": lambda: (
-                detectar_colisao_raiz({"package.json", ".gitignore"}, "parcial") == []
+                detect_root_collision({"package.json", ".gitignore"}, "partial") == []
             ),
         },
         {
-            "nome": "detectar_colisao_raiz: completo NAO acusa (e o proprio scaffold)",
+            "name": "detect_root_collision: complete does NOT flag (it is the scaffold itself)",
             "fn": lambda: (
-                detectar_colisao_raiz({"package.json", ".gitignore"}, "completo") == []
+                detect_root_collision({"package.json", ".gitignore"}, "complete") == []
             ),
         },
         {
-            "nome": "detectar_workspaces_legado: lista direta, nao-canonica",
+            "name": "detect_legacy_workspaces: direct list, non-canonical",
             "fn": lambda: (
-                detectar_workspaces_legado({"workspaces": ["backend/*"]})
+                detect_legacy_workspaces({"workspaces": ["backend/*"]})
                 == ["backend/*"]
             ),
         },
         {
-            "nome": "detectar_workspaces_legado: forma objeto (npm/yarn)",
+            "name": "detect_legacy_workspaces: object form (npm/yarn)",
             "fn": lambda: (
-                detectar_workspaces_legado({"workspaces": {"packages": ["apps/*"]}})
+                detect_legacy_workspaces({"workspaces": {"packages": ["apps/*"]}})
                 == ["apps/*"]
             ),
         },
         {
-            "nome": "detectar_workspaces_legado: ausente -> vazio",
-            "fn": lambda: detectar_workspaces_legado({}) == [],
+            "name": "detect_legacy_workspaces: absent -> empty",
+            "fn": lambda: detect_legacy_workspaces({}) == [],
         },
         {
-            "nome": "detectar_workspaces_legado: trio canonico do template -> nenhum legado",
+            "name": "detect_legacy_workspaces: template canonical trio -> no legacy",
             "fn": lambda: (
-                detectar_workspaces_legado(
+                detect_legacy_workspaces(
                     {"workspaces": ["modules/[a-z]*", "packages/*", "adapters/*"]}
                 )
                 == []
             ),
         },
         {
-            "nome": "detectar_workspaces_legado: canonico + legado -> so o legado sobra",
+            "name": "detect_legacy_workspaces: canonical + legacy -> only the legacy remains",
             "fn": lambda: (
-                detectar_workspaces_legado(
+                detect_legacy_workspaces(
                     {
                         "workspaces": [
-                            "Modulos/*",
+                            "Modules/*",
                             "modules/[a-z]*",
                             "packages/*",
                             "adapters/*",
                         ]
                     }
                 )
-                == ["Modulos/*"]
+                == ["Modules/*"]
             ),
         },
         {
-            "nome": "detectar_hooks_legado: pasta .husky",
-            "fn": lambda: detectar_hooks_legado({".husky"}, {}) is True,
+            "name": "detect_legacy_hooks: .husky folder",
+            "fn": lambda: detect_legacy_hooks({".husky"}, {}) is True,
         },
         {
-            "nome": "detectar_hooks_legado: lint-staged em devDependencies",
+            "name": "detect_legacy_hooks: lint-staged in devDependencies",
             "fn": lambda: (
-                detectar_hooks_legado(
+                detect_legacy_hooks(
                     set(), {"devDependencies": {"lint-staged": "^15.0.0"}}
                 )
                 is True
             ),
         },
         {
-            "nome": "detectar_hooks_legado: nenhum sinal",
+            "name": "detect_legacy_hooks: no signal",
             "fn": lambda: (
-                detectar_hooks_legado({"src"}, {"dependencies": {"express": "^4.0.0"}})
+                detect_legacy_hooks({"src"}, {"dependencies": {"express": "^4.0.0"}})
                 is False
             ),
         },
         {
-            "nome": "diagnosticar: legado puro (nada do template presente) acusa colisao normalmente",
+            "name": "diagnose: pure legacy (nothing of the template present) flags collision normally",
             "fn": lambda: (
-                diagnosticar(
-                    {"package.json", "Propostas"},
+                diagnose(
+                    {"package.json", "Proposals"},
                     {"workspaces": ["apps/*"]},
                     [],
                     False,
                     False,
-                    ["Propostas"],
+                    ["Proposals"],
                     set(),
                 )
                 == {
-                    "fase": "A",
-                    "caminho": "sem-specs",
-                    "sinais_sdd": [],
+                    "phase": "A",
+                    "path": "no-specs",
+                    "sdd_signals": [],
                     "branch": {
-                        "atual": "",
-                        "e_padrao": False,
-                        "arvore_suja": None,
+                        "current": "",
+                        "is_default": False,
+                        "dirty_tree": None,
                     },
-                    "template_instalado": {
-                        "estado": "nao-instalado",
-                        "presentes": [],
-                        "faltando": sorted(MARCADORES_TEMPLATE),
+                    "template_installed": {
+                        "state": "not-installed",
+                        "present": [],
+                        "missing": sorted(TEMPLATE_MARKERS),
                     },
-                    "colisao_raiz": ["package.json"],
-                    "geracao_antiga": [],
-                    "workspaces_legado": ["apps/*"],
-                    "hooks_legado": False,
-                    "modulos_candidatos": [
+                    "root_collision": ["package.json"],
+                    "old_generation": [],
+                    "legacy_workspaces": ["apps/*"],
+                    "legacy_hooks": False,
+                    "module_candidates": [
                         {
-                            "pasta": "Propostas",
-                            "id_atual": "Propostas",
-                            "conforme": False,
-                            "id_sugerido": "propostas",
+                            "dir": "Proposals",
+                            "current_id": "Proposals",
+                            "compliant": False,
+                            "suggested_id": "proposals",
                         }
                     ],
-                    "modulos_origem": "flag",
-                    "equivalentes_suspeitos": {},
+                    "modules_origin": "flag",
+                    "suspected_equivalents": {},
                 }
             ),
         },
         {
-            "nome": "diagnosticar: projeto 100% conforme NAO acusa colisao nem workspace legado",
+            "name": "diagnose: 100% compliant project does NOT flag collision nor legacy workspace",
             "fn": lambda: (
-                diagnosticar(
+                diagnose(
                     {"package.json", ".gitignore"},
                     {"workspaces": ["modules/[a-z]*", "packages/*", "adapters/*"]},
                     [],
                     False,
                     False,
                     [],
-                    set(MARCADORES_TEMPLATE),
+                    set(TEMPLATE_MARKERS),
                 )
                 == {
-                    "fase": "A",
-                    "caminho": "sem-specs",
-                    "sinais_sdd": [],
+                    "phase": "A",
+                    "path": "no-specs",
+                    "sdd_signals": [],
                     "branch": {
-                        "atual": "",
-                        "e_padrao": False,
-                        "arvore_suja": None,
+                        "current": "",
+                        "is_default": False,
+                        "dirty_tree": None,
                     },
-                    "template_instalado": {
-                        "estado": "completo",
-                        "presentes": sorted(MARCADORES_TEMPLATE),
-                        "faltando": [],
+                    "template_installed": {
+                        "state": "complete",
+                        "present": sorted(TEMPLATE_MARKERS),
+                        "missing": [],
                     },
-                    "colisao_raiz": [],
-                    "geracao_antiga": [],
-                    "workspaces_legado": [],
-                    "hooks_legado": False,
-                    "modulos_candidatos": [],
-                    "modulos_origem": "flag",
-                    "equivalentes_suspeitos": {},
+                    "root_collision": [],
+                    "old_generation": [],
+                    "legacy_workspaces": [],
+                    "legacy_hooks": False,
+                    "module_candidates": [],
+                    "modules_origin": "flag",
+                    "suspected_equivalents": {},
                 }
             ),
         },
         {
-            "nome": "raizes_de_modulos: nome canonico",
-            "fn": lambda: raizes_de_modulos({"modules", "src"}) == ["modules"],
+            "name": "module_roots: canonical name",
+            "fn": lambda: module_roots({"modules", "src"}) == ["modules"],
         },
         {
-            "nome": "raizes_de_modulos: nome de geracao antiga (o achado do ERP)",
-            "fn": lambda: raizes_de_modulos({"modulos", "src"}) == ["modulos"],
+            "name": "module_roots: old-generation name (the ERP finding)",
+            "fn": lambda: module_roots({"modulos", "src"}) == ["modulos"],
         },
         {
-            "nome": "raizes_de_modulos: os dois coexistindo -> os dois, ordenados",
+            "name": "module_roots: both coexisting -> both, sorted",
             "fn": lambda: (
-                raizes_de_modulos({"modules", "modulos"}) == ["modules", "modulos"]
+                module_roots({"modules", "modulos"}) == ["modules", "modulos"]
             ),
         },
         {
-            "nome": "raizes_de_modulos: nenhuma raiz -> vazio",
-            "fn": lambda: raizes_de_modulos({"src", "app"}) == [],
+            "name": "module_roots: no root -> empty",
+            "fn": lambda: module_roots({"src", "app"}) == [],
         },
         {
-            "nome": "avaliar_branch: main e branch padrao",
-            "fn": lambda: avaliar_branch("main", False)["e_padrao"] is True,
+            "name": "evaluate_branch: main is the default branch",
+            "fn": lambda: evaluate_branch("main", False)["is_default"] is True,
         },
         {
-            "nome": "avaliar_branch: branch de campanha nao e padrao",
+            "name": "evaluate_branch: campaign branch is not default",
             "fn": lambda: (
-                avaliar_branch("adequacao-modular", False)["e_padrao"] is False
+                evaluate_branch("adequacao-modular", False)["is_default"] is False
             ),
         },
         {
-            "nome": "avaliar_branch: indeterminada nao se afirma padrao (nem segura)",
+            "name": "evaluate_branch: undetermined is not asserted default (nor safe)",
             "fn": lambda: (
-                avaliar_branch("", None)["e_padrao"] is False
-                and avaliar_branch("(destacado)", None)["e_padrao"] is False
+                evaluate_branch("", None)["is_default"] is False
+                and evaluate_branch("(detached)", None)["is_default"] is False
             ),
         },
         {
-            "nome": "avaliar_branch: arvore_suja None NAO vira False (fail-open)",
-            "fn": lambda: avaliar_branch("main", None)["arvore_suja"] is None,
+            "name": "evaluate_branch: dirty_tree None does NOT become False (fail-open)",
+            "fn": lambda: evaluate_branch("main", None)["dirty_tree"] is None,
         },
     ]
 
 
-def rodar_autoteste() -> int:
-    falhas = 0
-    for caso in _casos_de_autoteste():
-        ok = bool(caso["fn"]())
-        print(f"  {'ok   ' if ok else 'FALHA'} {caso['nome']}")
+def run_selftest() -> int:
+    failures = 0
+    for test_case in _selftest_cases():
+        ok = bool(test_case["fn"]())
+        print(f"  {'ok   ' if ok else 'FAIL'} {test_case['name']}")
         if not ok:
-            falhas += 1
+            failures += 1
 
-    total = len(_casos_de_autoteste())
-    print(f"\nautoteste (diagnosticar_terreno): {total - falhas}/{total} ok")
-    return 0 if falhas == 0 else 1
+    total = len(_selftest_cases())
+    print(f"\nselftest (diagnose_terrain): {total - failures}/{total} ok")
+    return 0 if failures == 0 else 1
 
 
-def imprimir_legivel(relatorio: dict) -> None:
-    print(f"fase: {relatorio['fase']}")
-    print(f"caminho: {relatorio['caminho']}")
-    print(f"sinais_sdd: {relatorio['sinais_sdd'] or '(nenhum)'}")
-    branch = relatorio["branch"]
-    atual = branch["atual"] or "(indeterminada)"
-    alerta = (
-        "  <- PARE: campanha nao roda na branch padrao" if branch["e_padrao"] else ""
+def print_readable(report: dict) -> None:
+    print(f"phase: {report['phase']}")
+    print(f"path: {report['path']}")
+    print(f"sdd_signals: {report['sdd_signals'] or '(none)'}")
+    branch = report["branch"]
+    current = branch["current"] or "(undetermined)"
+    warning = (
+        "  <- STOP: the campaign does not run on the default branch" if branch["is_default"] else ""
     )
-    print(f"branch: {atual}{alerta}")
-    suja = {True: "sim", False: "nao", None: "(nao verificado)"}[branch["arvore_suja"]]
-    print(f"arvore_suja: {suja}")
-    template = relatorio["template_instalado"]
-    print(f"template_instalado: {template['estado']}", end="")
-    if template["estado"] == "parcial":
-        print(f" (falta: {', '.join(template['faltando'])})")
+    print(f"branch: {current}{warning}")
+    dirty = {True: "yes", False: "no", None: "(not checked)"}[branch["dirty_tree"]]
+    print(f"dirty_tree: {dirty}")
+    template = report["template_installed"]
+    print(f"template_installed: {template['state']}", end="")
+    if template["state"] == "partial":
+        print(f" (missing: {', '.join(template['missing'])})")
     else:
         print()
-    print(f"colisao_raiz: {relatorio['colisao_raiz'] or '(nenhuma)'}")
-    print(f"geracao_antiga: {relatorio['geracao_antiga'] or '(nenhuma)'}")
-    print(f"workspaces_legado: {relatorio['workspaces_legado'] or '(nenhum)'}")
-    print(f"hooks_legado: {relatorio['hooks_legado']}")
+    print(f"root_collision: {report['root_collision'] or '(none)'}")
+    print(f"old_generation: {report['old_generation'] or '(none)'}")
+    print(f"legacy_workspaces: {report['legacy_workspaces'] or '(none)'}")
+    print(f"legacy_hooks: {report['legacy_hooks']}")
     print(
-        f"equivalentes_suspeitos: {relatorio['equivalentes_suspeitos'] or '(nenhum)'}"
+        f"suspected_equivalents: {report['suspected_equivalents'] or '(none)'}"
     )
-    print(f"modulos_candidatos ({relatorio['modulos_origem']}):")
-    for candidato in relatorio["modulos_candidatos"]:
-        marca = "ok" if candidato["conforme"] else f"-> {candidato['id_sugerido']}"
-        print(f"  {candidato['pasta']}: {marca}")
+    print(f"module_candidates ({report['modules_origin']}):")
+    for candidate in report["module_candidates"]:
+        mark = "ok" if candidate["compliant"] else f"-> {candidate['suggested_id']}"
+        print(f"  {candidate['dir']}: {mark}")
 
 
-def _resolver_candidatos_modulo(raiz: Path, args, entradas_raiz: set):
-    """`--modulos` vence, sempre: e o override explicito de quem ja sabe onde os modulos estao. Sem
-    ela, varre a raiz de modulos — e `modulos_origem` preserva a diferenca entre "nao ha candidato" e
+def _resolve_module_candidates(root: Path, args, root_entries: set):
+    """`--modules` vence, sempre: e o override explicito de quem ja sabe onde os modulos estao. Sem
+    ela, varre a raiz de modulos — e `modules_origin` preserva a diferenca entre "nao ha candidato" e
     "ninguem apontou", que antes eram o mesmo `[]`."""
-    if args.modulos:
-        return list(args.modulos), "flag"
-    pastas_candidatas = ler_pastas_de_modulos(raiz, raizes_de_modulos(entradas_raiz))
-    return pastas_candidatas, "varredura"
+    if args.modules:
+        return list(args.modules), "flag"
+    candidate_dirs = read_module_dirs(root, module_roots(root_entries))
+    return candidate_dirs, "scan"
 
 
 def main() -> int:
     args = get_args()
     if args.selftest:
-        return rodar_autoteste()
+        return run_selftest()
 
-    raiz = Path(args.raiz).resolve()
-    entradas_raiz = ler_entradas_raiz(raiz)
-    package_json = ler_package_json(raiz)
-    plans_xx = ler_status_plans_xx(raiz)
-    tem_indice = (raiz / "specs" / "00-indice.md").is_file()
-    tem_plan_dir = (raiz / "specs" / "plan").is_dir()
-    sinais_sdd = ler_sinais_sdd(raiz)
-    marcadores_template = ler_marcadores_template(raiz)
-    faltando = avaliar_template_instalado(marcadores_template)["faltando"]
-    equivalentes_suspeitos = ler_equivalentes_suspeitos(raiz, faltando)
-    pastas_candidatas, modulos_origem = _resolver_candidatos_modulo(
-        raiz, args, entradas_raiz
+    root = Path(args.root).resolve()
+    root_entries = read_root_entries(root)
+    package_json = read_package_json(root)
+    xx_plans = read_xx_plans_status(root)
+    has_index = (root / "specs" / "00-indice.md").is_file()
+    has_plan_dir = (root / "specs" / "plan").is_dir()
+    sdd_signals = read_sdd_signals(root)
+    template_markers = read_template_markers(root)
+    missing = evaluate_template_installed(template_markers)["missing"]
+    suspected_equivalents = read_suspected_equivalents(root, missing)
+    candidate_dirs, modules_origin = _resolve_module_candidates(
+        root, args, root_entries
     )
 
-    relatorio = diagnosticar(
-        entradas_raiz,
+    report = diagnose(
+        root_entries,
         package_json,
-        plans_xx,
-        tem_indice,
-        tem_plan_dir,
-        pastas_candidatas,
-        marcadores_template,
-        ler_branch_atual(raiz),
-        ler_arvore_suja(raiz),
-        modulos_origem,
-        sinais_sdd,
-        equivalentes_suspeitos,
+        xx_plans,
+        has_index,
+        has_plan_dir,
+        candidate_dirs,
+        template_markers,
+        read_current_branch(root),
+        read_dirty_tree(root),
+        modules_origin,
+        sdd_signals,
+        suspected_equivalents,
     )
 
     if args.json:
-        print(json.dumps(relatorio, ensure_ascii=False, indent=2))
+        print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
-        imprimir_legivel(relatorio)
+        print_readable(report)
     return 0
 
 

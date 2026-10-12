@@ -51,7 +51,7 @@ contador += 1
 # reportar um vazamento que nao existe. Auto-deteccao e falso positivo, nao achado.
 eu_mesmo = os.path.abspath(__file__)
 ```
-(exemplo real, `scan_segredos.py` — o comentário existe porque sem ele alguém "corrigiria" a
+(exemplo real, `scan_secrets.py` — o comentário existe porque sem ele alguém "corrigiria" a
 auto-exclusão achando que é um bug.)
 
 ## Limite declarado
@@ -107,7 +107,7 @@ básico.
 
 ## Marcadores (`TODO`/`FIXME`)
 
-Política de uso — não redefina a checagem: `git-revisao-diff` (`scripts/revisar_diff.py`) já marca
+Política de uso — não redefina a checagem: `git-revisao-diff` (`scripts/review_diff.py`) já marca
 `TODO`/`FIXME` presentes no diff staged como **aviso**, não bloqueio. Um `TODO` é aceitável para
 sinalizar trabalho pendente **explícito e rastreável** — nunca como substituto de implementar a
 parte difícil. `TODO` sem contexto ("TODO: consertar isso") é pior que nenhum: não diz o que falta

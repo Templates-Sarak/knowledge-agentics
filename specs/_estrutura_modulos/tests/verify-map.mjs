@@ -13,7 +13,7 @@
  * referência — isso pegaria edição manual, que não é o risco. O risco é `§` citado que deixou de
  * existir quando a lei for reorganizada. Por isso o núcleo lê os TÍTULOS reais de cada arquivo citado
  * e confere que a seção referida ainda está lá — precedente de `skills/meta-verificacao-base/scripts/
- * ponteiros.py`, mesma ideia, outro alvo (a doutrina do template, não a base inteira).
+ * pointers.py`, mesma ideia, outro alvo (a doutrina do template, não a base inteira).
  *
  * NÚCLEO × CASCA, precedente de `affected.mjs`: `extractCitations`/`extractSections`/`orphanPoints` são
  * puras — nenhuma toca `fs`. `--selftest` prova as três com fixtures em memória.
@@ -46,7 +46,7 @@ export function extractCitations(text) {
       const preceding = files.filter((a) => a.index < sectionMatch.index);
       if (preceding.length === 0) continue;
       const file = preceding.at(-1)[1];
-      citations.push({ arquivo: file, section: sectionMatch[1], linha: index + 1 });
+      citations.push({ file, section: sectionMatch[1], line: index + 1 });
     }
   });
   return citations;
@@ -71,7 +71,7 @@ export function extractSections(text) {
  * lendo os arquivos de verdade; aqui é só comparação.
  */
 export function orphanPoints(citations, sectionsByFile) {
-  return citations.filter(({ arquivo: file, section }) => {
+  return citations.filter(({ file, section }) => {
     const sections = sectionsByFile.get(file);
     return sections === undefined || !sections.has(section);
   });
@@ -102,17 +102,17 @@ function buildSectionsByFile(architectureDir) {
 function check(architectureDir) {
   const mapPath = join(architectureDir, 'README.md');
   if (!existsSync(mapPath)) {
-    return { ok: false, motivo: `architecture map not installed: ${mapPath} does not exist` };
+    return { ok: false, reason: `architecture map not installed: ${mapPath} does not exist` };
   }
 
   const citations = extractCitations(readText(mapPath));
   const sectionsByFile = buildSectionsByFile(architectureDir);
   const orphans = orphanPoints(citations, sectionsByFile);
   if (orphans.length > 0) {
-    const lines = orphans.map((o) => `  README.md:${o.linha} -> \`${o.arquivo}\` §${o.section} does not exist`);
-    return { ok: false, motivo: `${orphans.length} orphan reference(s):\n${lines.join('\n')}` };
+    const lines = orphans.map((o) => `  README.md:${o.line} -> \`${o.file}\` §${o.section} does not exist`);
+    return { ok: false, reason: `${orphans.length} orphan reference(s):\n${lines.join('\n')}` };
   }
-  return { ok: true, motivo: null };
+  return { ok: true, reason: null };
 }
 
 // ================================================================================================
@@ -124,40 +124,40 @@ function selfTestCases() {
     {
       name: 'extractCitations: file and section are on the same line in a Markdown table',
       fn: () => {
-        const c = extractCitations('| … alterar campo | `01-modulo.md` §9.1 |');
-        return c.length === 1 && c[0].arquivo === '01-modulo.md' && c[0].section === '9.1';
+        const c = extractCitations('| … change field | `01-modulo.md` §9.1 |');
+        return c.length === 1 && c[0].file === '01-modulo.md' && c[0].section === '9.1';
       },
     },
     {
       name: 'extractCitations: two sections from the same file share a line',
       fn: () => {
-        const c = extractCitations('ver `01-modulo.md` §8 e §9 para criar e alterar');
-        return c.length === 2 && c.every((x) => x.arquivo === '01-modulo.md') && c[0].section === '8' && c[1].section === '9';
+        const c = extractCitations('see `01-modulo.md` §8 and §9 to create and change');
+        return c.length === 2 && c.every((x) => x.file === '01-modulo.md') && c[0].section === '8' && c[1].section === '9';
       },
     },
     {
       name: 'extractCitations: section before any file on a line is ignored, not a citation',
-      fn: () => extractCitations('§9 nao aparece antes de nenhum arquivo aqui').length === 0,
+      fn: () => extractCitations('§9 does not appear before any file here').length === 0,
     },
     {
       name: 'extractCitations: a line without a file produces no citation',
-      fn: () => extractCitations('so prosa, nenhuma crase, nenhuma secao').length === 0,
+      fn: () => extractCitations('prose only, no backticks, no section').length === 0,
     },
     {
       name: 'extractSections: level 1 and 2 headings, with and without a trailing period',
       fn: () => {
-        const s = extractSections('# 8. Criar um modulo novo\n\n## 9.1 Campo novo no contrato\n');
+        const s = extractSections('# 8. Create a new module\n\n## 9.1 New field in the contract\n');
         return s.has('8') && s.has('9.1') && !s.has('9');
       },
     },
     {
       name: 'extractSections: numbered prose is not a section; it must be a heading',
-      fn: () => extractSections('Isto fala de 9.1 mas nao e um titulo').size === 0,
+      fn: () => extractSections('This talks about 9.1 but is not a heading').size === 0,
     },
     {
       name: 'orphanPoints: a cited section still exists, so there is no orphan',
       fn: () => {
-        const citations = [{ arquivo: '01-modulo.md', section: '9.1', linha: 1 }];
+        const citations = [{ file: '01-modulo.md', section: '9.1', line: 1 }];
         const map = new Map([['01-modulo.md', new Set(['8', '9', '9.1'])]]);
         return orphanPoints(citations, map).length === 0;
       },
@@ -165,7 +165,7 @@ function selfTestCases() {
     {
       name: 'orphanPoints: cited section no longer exists after renumbering, so it is an orphan',
       fn: () => {
-        const citations = [{ arquivo: '01-modulo.md', section: '9.9', linha: 5 }];
+        const citations = [{ file: '01-modulo.md', section: '9.9', line: 5 }];
         const map = new Map([['01-modulo.md', new Set(['8', '9', '9.1'])]]);
         const orphans = orphanPoints(citations, map);
         return orphans.length === 1 && orphans[0].section === '9.9';
@@ -174,7 +174,7 @@ function selfTestCases() {
     {
       name: 'orphanPoints: cited file is outside the map after rename or deletion, so it is an orphan',
       fn: () => {
-        const citations = [{ arquivo: '99-fantasma.md', section: '1', linha: 2 }];
+        const citations = [{ file: '99-ghost.md', section: '1', line: 2 }];
         const map = new Map([['01-modulo.md', new Set(['1'])]]);
         return orphanPoints(citations, map).length === 1;
       },
@@ -218,7 +218,7 @@ function main() {
   const result = check(architectureDir);
   process.stdout.write(result.ok
     ? `map: OK — ${architectureDir}\n`
-    : `map: FAILED — ${result.motivo}\n`);
+    : `map: FAILED — ${result.reason}\n`);
   return result.ok ? 0 : 1;
 }
 

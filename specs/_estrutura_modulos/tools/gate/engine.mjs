@@ -5,16 +5,16 @@
  * este é o MOTOR. Assim o autoteste do gate (`tests/run.mjs`) roda as regras sem simular
  * linha de comando nem capturar stdout.
  */
-import estrutura from './rules/structure.mjs';
-import isolamento from './rules/isolation.mjs';
-import dados from './rules/data.mjs';
-import configuracao from './rules/configuration.mjs';
-import contrato from './rules/contract.mjs';
-import operacao from './rules/operation.mjs';
-import escrita from './rules/writing.mjs';
+import structure from './rules/structure.mjs';
+import isolation from './rules/isolation.mjs';
+import data from './rules/data.mjs';
+import configuration from './rules/configuration.mjs';
+import contract from './rules/contract.mjs';
+import operation from './rules/operation.mjs';
+import writing from './rules/writing.mjs';
 
 export const RULES = [
-  ...estrutura, ...isolamento, ...dados, ...configuracao, ...contrato, ...operacao, ...escrita,
+  ...structure, ...isolation, ...data, ...configuration, ...contract, ...operation, ...writing,
 ];
 
 /** O pseudo-id que `checkExtraction` emite fora do catálogo (`--extraction`). */
@@ -42,25 +42,25 @@ export const ROOT_TARGET = '(root)';
 /** Stable public JSON contract; internal finding fields remain an implementation detail. */
 export function serializeFinding(finding) {
   return {
-    module: finding.modulo,
-    rule: finding.regra,
-    severity: finding.nivel === 'erro' ? 'error' : 'warning',
-    message: finding.mensagem,
+    module: finding.module,
+    rule: finding.rule,
+    severity: finding.severity,
+    message: finding.message,
   };
 }
 
 function normalize(output, moduleId) {
   return (output ?? []).map((item) => (
-    typeof item === 'string' ? { modulo: moduleId, mensagem: item } : item
+    typeof item === 'string' ? { module: moduleId, message: item } : item
   ));
 }
 
 /** Regras de escopo `module` sobre um contexto. */
 export function runModuleRules(ctx) {
   const findings = [];
-  for (const rule of RULES.filter((r) => r.escopo === 'module')) {
+  for (const rule of RULES.filter((r) => r.scope === 'module')) {
     for (const item of normalize(rule.check(ctx), ctx.dirId)) {
-      findings.push({ ...item, regra: rule.id, nivel: rule.nivel });
+      findings.push({ ...item, rule: rule.id, severity: rule.severity });
     }
   }
   return findings;
@@ -69,9 +69,9 @@ export function runModuleRules(ctx) {
 /** Regras de escopo `global`, que precisam enxergar todos os módulos. */
 export function runGlobalRules(contexts) {
   const findings = [];
-  for (const rule of RULES.filter((r) => r.escopo === 'global')) {
+  for (const rule of RULES.filter((r) => r.scope === 'global')) {
     for (const item of normalize(rule.check(contexts), '?')) {
-      findings.push({ ...item, regra: rule.id, nivel: rule.nivel });
+      findings.push({ ...item, rule: rule.id, severity: rule.severity });
     }
   }
   return findings;
@@ -91,9 +91,9 @@ export function runGlobalRules(contexts) {
 export function runRootRules(project) {
   if (project === undefined) return [];
   const findings = [];
-  for (const rule of RULES.filter((r) => r.escopo === 'root')) {
+  for (const rule of RULES.filter((r) => r.scope === 'root')) {
     for (const item of normalize(rule.check(project, { ids: CATALOG_IDS }), ROOT_TARGET)) {
-      findings.push({ ...item, regra: rule.id, nivel: rule.nivel });
+      findings.push({ ...item, rule: rule.id, severity: rule.severity });
     }
   }
   return findings;
@@ -105,13 +105,13 @@ export function checkExtraction(ctx) {
   const chosen = ctx.configs.ports.value ?? {};
   for (const port of ctx.manifest?.ports ?? []) {
     if (chosen[port] === undefined) {
-      findings.push({ modulo: ctx.dirId, regra: EXTRACTION_ID, nivel: 'erro', mensagem: `Port "${port}" has no adapter in config/ports.json` });
+      findings.push({ module: ctx.dirId, rule: EXTRACTION_ID, severity: 'error', message: `Port "${port}" has no adapter in config/ports.json` });
     }
   }
   const env = (ctx.manifest?.requiredEnv ?? []).join(' ');
-  for (const { modulo: module } of ctx.manifest?.consumes ?? []) {
+  for (const { module } of ctx.manifest?.consumes ?? []) {
     if (!env.includes(module.toUpperCase().replace(/-/g, '_'))) {
-      findings.push({ modulo: ctx.dirId, regra: EXTRACTION_ID, nivel: 'aviso', mensagem: `Consumes "${module}", but no environment variable points to its base URL` });
+      findings.push({ module: ctx.dirId, rule: EXTRACTION_ID, severity: 'warning', message: `Consumes "${module}", but no environment variable points to its base URL` });
     }
   }
   return findings;
@@ -124,11 +124,11 @@ export function analyze(contexts, selected, options = {}) {
   // e passá-lo por ali o apagaria sempre. Todos os contextos de uma invocação compartilham a mesma
   // `ctx.projeto` (memoizada por raiz), então ler o primeiro é ler o projeto.
   let findings = selected.flatMap(runModuleRules)
-    .concat(runGlobalRules(contexts).filter((a) => ids.includes(a.modulo)))
+    .concat(runGlobalRules(contexts).filter((a) => ids.includes(a.module)))
     .concat(runRootRules(contexts[0]?.project));
 
   if (options.extraction === true) {
-    findings = findings.filter((a) => EXTRACTION_RULES.has(a.regra))
+    findings = findings.filter((a) => EXTRACTION_RULES.has(a.rule))
       .concat(selected.flatMap(checkExtraction));
   }
   return findings;

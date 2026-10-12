@@ -2,11 +2,11 @@
 sast_scan.py — Análise estática (SAST) leve: detecta padrões de código inseguro.
 
 Uso:
-    python sast_scan.py --raiz . [--config config.json]
+    python sast_scan.py --root . [--config config.json]
 
 Retorno:
-    JSON {total, achados:[{arquivo, linha, tipo, confianca, trecho}]}.
-    Heurístico → cada achado é CANDIDATO; o agente triagem (especialmente `confianca: baixa`).
+    JSON {total, findings:[{file, line, kind, confidence, snippet}]}.
+    Heurístico → cada achado é CANDIDATO; o agente triagem (especialmente `confidence: low`).
 
 Regras (padrao-escrita): zero hardcoded (padrões/confiança no config.json),
 responsabilidade única (apenas detecta — a refatoração é decisão com HITL na skill).
@@ -18,66 +18,66 @@ import sys
 from pathlib import Path
 
 
-def carregar_config(caminho: Path) -> dict:
-    return json.loads(caminho.read_text(encoding="utf-8"))
+def load_config(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def compilar(padroes: dict) -> list:
-    saida = []
-    for tipo, cfg in padroes.items():
-        saida.append((tipo, re.compile(cfg["regex"]), cfg.get("confianca", "media")))
-    return saida
+def compile_patterns(patterns: dict) -> list:
+    compiled = []
+    for kind, cfg in patterns.items():
+        compiled.append((kind, re.compile(cfg["regex"]), cfg.get("confidence", "medium")))
+    return compiled
 
 
-def listar_arquivos(raiz: Path, extensoes, ignorar_dirs):
-    for caminho in raiz.rglob("*"):
-        if not caminho.is_file() or any(p in ignorar_dirs for p in caminho.parts):
+def list_files(root: Path, extensions, ignore_dirs):
+    for path in root.rglob("*"):
+        if not path.is_file() or any(p in ignore_dirs for p in path.parts):
             continue
-        if extensoes and caminho.suffix.lower() not in extensoes:
+        if extensions and path.suffix.lower() not in extensions:
             continue
-        yield caminho
+        yield path
 
 
-def escanear(caminho: Path, padroes) -> list:
+def scan_file(path: Path, patterns) -> list:
     try:
-        linhas = caminho.read_text(encoding="utf-8", errors="ignore").splitlines()
+        lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
     except OSError:
         return []
-    achados = []
-    for num, linha in enumerate(linhas, start=1):
-        for tipo, regex, conf in padroes:
-            if regex.search(linha):
-                achados.append({"arquivo": str(caminho), "linha": num, "tipo": tipo,
-                                "confianca": conf, "trecho": linha.strip()[:140]})
-    return achados
+    findings = []
+    for number, line in enumerate(lines, start=1):
+        for kind, regex, confidence in patterns:
+            if regex.search(line):
+                findings.append({"file": str(path), "line": number, "kind": kind,
+                                 "confidence": confidence, "snippet": line.strip()[:140]})
+    return findings
 
 
 def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")  # saída UTF-8 mesmo em console cp1252 (Windows/acentos)
-    parser = argparse.ArgumentParser(description="SAST leve por padroes.")
-    parser.add_argument("--raiz", default=".")
+    parser = argparse.ArgumentParser(description="Lightweight pattern-based SAST.")
+    parser.add_argument("--root", default=".")
     parser.add_argument("--config", default=str(Path(__file__).parent / "config.json"))
     args = parser.parse_args()
 
     try:
-        config = carregar_config(Path(args.config))
+        config = load_config(Path(args.config))
     except FileNotFoundError:
-        sys.exit(f"Erro: config nao encontrado em '{args.config}'.")
-    except json.JSONDecodeError as erro:
-        sys.exit(f"Erro: config invalido ({erro}).")
+        sys.exit(f"Error: config not found at '{args.config}'.")
+    except json.JSONDecodeError as error:
+        sys.exit(f"Error: invalid config ({error}).")
 
-    raiz = Path(args.raiz)
-    if not raiz.exists():
-        sys.exit(f"Erro: raiz '{raiz}' nao existe.")
+    root = Path(args.root)
+    if not root.exists():
+        sys.exit(f"Error: root '{root}' does not exist.")
 
-    padroes = compilar(config["padroes"])
-    ext = {e.lower() for e in config.get("extensoes", [])}
-    achados = []
-    for caminho in listar_arquivos(raiz, ext, set(config.get("ignorar_dirs", []))):
-        achados.extend(escanear(caminho, padroes))
+    patterns = compile_patterns(config["patterns"])
+    extensions = {e.lower() for e in config.get("extensions", [])}
+    findings = []
+    for path in list_files(root, extensions, set(config.get("ignore_dirs", []))):
+        findings.extend(scan_file(path, patterns))
 
-    print(json.dumps({"total": len(achados), "achados": achados}, ensure_ascii=False, indent=2))
+    print(json.dumps({"total": len(findings), "findings": findings}, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

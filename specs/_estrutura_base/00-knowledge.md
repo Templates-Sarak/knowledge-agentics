@@ -83,7 +83,7 @@ precisa agir sem pedido para cumprir o papel — hoje três: as normas sempre-re
 
 > **Inventário completo.** Este índice lista **todas** as skills, agents e commands da base — não é
 > subconjunto curado. Ausência aqui é **defeito**, não decisão editorial, e a checagem inversa do
-> `ponteiros.py` (skill `meta-verificacao-base`) a cobra por máquina.
+> `pointers.py` (skill `meta-verificacao-base`) a cobra por máquina.
 
 ## 4.0 Os três níveis de norma — quem é dono de quê
 

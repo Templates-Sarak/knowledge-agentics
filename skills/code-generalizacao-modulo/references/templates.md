@@ -113,13 +113,13 @@ política, campos e provedor próprios; embutir qualquer um deles tornaria o mó
 
 ---
 
-## §5 — `config/verificacao.json` (no repo novo — degraus 4 e 5)
+## §5 — `config/verification.json` (no repo novo — degraus 4 e 5)
 
 ```json
 {
   "compose": "docker-compose.verificacao.yml",
   "schema": ["npm", "run", "verificar:schema"],
-  "contrato": ["npm", "run", "verificar:contrato"]
+  "contract": ["npm", "run", "verificar:contrato"]
 }
 ```
 
@@ -129,12 +129,12 @@ No binding Python:
 {
   "compose": "docker-compose.verificacao.yml",
   "schema": ["python", "verificar_schema.py"],
-  "contrato": ["python", "verificar_contrato.py"]
+  "contract": ["python", "verificar_contrato.py"]
 }
 ```
 
 Os comandos são **declarados**, não adivinhados: o script não inventa nome de compose nem de script.
-Ausente ou incompleto → degraus 4 e 5 voltam `NAO EXECUTADO`, e isso **reprova**.
+Ausente ou incompleto → degraus 4 e 5 voltam `NOT EXECUTED`, e isso **reprova**.
 
 ---
 

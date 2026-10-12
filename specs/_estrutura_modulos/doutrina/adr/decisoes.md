@@ -1897,7 +1897,7 @@ e entrega o autoteste verde antes da seguinte.
 | **5** | código da base: `skills/*/scripts`, `hooks`, `plugin`; chaves de saída citadas em skills/commands; flags; nomes de script; chaves JSON do `.sarak/` (decisão 6) | medido à parte | decisões 5 e 6; a flag anda **junto com a onda 2** | `audit_base.py`, `meta-verificacao-base`, `autoteste:tudo` |
 | **6** | cobrança por máquina: regra de gate (id em inglês) com o vocabulário fechado num **arquivo único** do template (decisão 7); isenções (valor de `texts.json`, comentário, documentação, `module.json:name` — decisão 2); `verify-catalog` e `cases.mjs` ganham o caso | 1.186 termos; catálogo 81 → 82 | ondas 1–5 (senão o gate reprova o próprio repositório) | `run.mjs`, `verify-catalog`, o autoteste |
 
-**Aplicação.** Ondas 1 (`ADR-024`), 2 (`ADR-025`), 3 (`ADR-026`) e 4a/4b (`ADR-027`) aplicadas. A medida
+**Aplicação.** Ondas 1 (`ADR-024`), 2 (`ADR-025`), 3 (`ADR-026`), 4a/4b (`ADR-027`) e 5 aplicadas; falta a 6. A medida
 passa a ser reproduzível por `tests/measure-language.mjs` (vocabulário em `tests/language-vocabulary.json`).
 
 **Consequências.**
