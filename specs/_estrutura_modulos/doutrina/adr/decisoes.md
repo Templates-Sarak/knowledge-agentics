@@ -1768,8 +1768,10 @@ mesmos arquivos de container, e a cada projeto o mesmo erro (imagem de front ser
 
 **Status:** 🟢 Aceito — **substitui** o princípio do `ADR-009`, as exceções que o `04-regras.md` §3.1
 "Idioma" carregava e o `ADR-019` §3.1 (ver "O que substitui, e como cada ADR é marcado"). **Esta decisão não
-renomeia nada**: ela escreve a lei, mede o que ainda está em português, registra as decisões do dono e fixa o
+renomeia nada**: ela escreve a lei, mede o que ainda estava em português, registra as decisões do dono e fixa o
 plano de ondas. As tabelas de renomeação são o `ADR-024` (onda 1), o `ADR-025` (onda 2) e o `ADR-027` (onda 4).
+**Aplicada: as seis ondas** — a regra passou a ser cobrada por máquina na onda 6 (seção "A onda 6 — a regra
+cobrada por máquina", abaixo).
 
 **Contexto.** A campanha do `ADR-013` ao `ADR-020` aplicou, eixo a eixo, o princípio do `ADR-009` — *"a
 árvore de arquivos é inglês; o conteúdo dela é português"* — e fechou o conjunto com gate verde. O que
@@ -1882,7 +1884,8 @@ estão em `campanha-idioma.md` (acima).
 | 6 | código da própria base (`skills/*/scripts`, `hooks`, `plugin`) | medido à parte; **não viaja** com o projeto | — | a flag `--autoteste` e os scripts `autoteste:*` ligam a base e o template (decisão 5) |
 
 A contagem de ids é independente de qualquer script:
-`grep -h "^\s*id: '" tools/gate/rules/*.mjs | sort -u | wc -l` → 81.
+`grep -h "^\s*id: '" tools/gate/rules/*.mjs | sort -u | wc -l` → 81 **na data da medição**; a onda 6 acrescenta
+`portuguese-identifier`, e o catálogo passa a **82**.
 
 **O plano de ondas.** Ordem e dependências escritas; cada onda é um **eixo independente** (como no `ADR-013`)
 e entrega o autoteste verde antes da seguinte.
@@ -1897,8 +1900,36 @@ e entrega o autoteste verde antes da seguinte.
 | **5** | código da base: `skills/*/scripts`, `hooks`, `plugin`; chaves de saída citadas em skills/commands; flags; nomes de script; chaves JSON do `.sarak/` (decisão 6) | medido à parte | decisões 5 e 6; a flag anda **junto com a onda 2** | `audit_base.py`, `meta-verificacao-base`, `autoteste:tudo` |
 | **6** | cobrança por máquina: regra de gate (id em inglês) com o vocabulário fechado num **arquivo único** do template (decisão 7); isenções (valor de `texts.json`, comentário, documentação, `module.json:name` — decisão 2); `verify-catalog` e `cases.mjs` ganham o caso | 1.186 termos; catálogo 81 → 82 | ondas 1–5 (senão o gate reprova o próprio repositório) | `run.mjs`, `verify-catalog`, o autoteste |
 
-**Aplicação.** Ondas 1 (`ADR-024`), 2 (`ADR-025`), 3 (`ADR-026`), 4a/4b (`ADR-027`) e 5 aplicadas; falta a 6. A medida
-passa a ser reproduzível por `tests/measure-language.mjs` (vocabulário em `tests/language-vocabulary.json`).
+**Aplicação.** Ondas 1 (`ADR-024`), 2 (`ADR-025`), 3 (`ADR-026`), 4a/4b (`ADR-027`), 5 e 6 aplicadas — o plano
+está **fechado**. A medida é reproduzível por `tests/measure-language.mjs`, que lê o **mesmo** vocabulário que o
+gate (`tools/gate/language-vocabulary.json`, o arquivo único da decisão 7).
+
+### A onda 6 — a regra cobrada por máquina
+
+A lei deixou de ser convenção de leitura humana. O que a onda 6 decidiu, com o motivo de cada escolha:
+
+| # | Decisão | Por quê |
+|---|---|---|
+| 1 | **`portuguese-identifier`**, erro, família Escrita (`rules/writing.mjs`). O id segue o critério B do `ADR-024` (ordem idiomática, "defeito + coisa", como `swallowed-exception` e `hardcode-url`) | o nome descreve o defeito (um identificador em português), não a lei; `foreign-table`/`swallowed-exception` já eram assim |
+| 2 | **Um id, dois territórios.** A regra é de escopo `module` e tem também `checkRoot`, que o motor chama **uma vez por projeto** sobre a fiação e a config da raiz; o alvo do achado é `(root)` | a lei é uma só e a exceção nominal (`module` + `rule`) tem de valer nos dois; o par `hardcode-url`/`root-hardcode-url` daria dois ids para uma lei, e o catálogo passaria de 81 para 83 |
+| 3 | **O vocabulário é o arquivo único do template**, em `tools/gate/language-vocabulary.json`: o gate, o medidor e o hook de qualidade da base leem **o mesmo arquivo**, e o casamento (`language.mjs`) é uma implementação só | quarta cópia divergiria; o arquivo viaja com `tools/gate/` para o projeto gerado, e a origem dele não nomeia sistema |
+| 4 | **Tokenizador léxico, zero dependência** (`tools/gate/language.mjs`) — não a API do TypeScript | `tools/` roda em projeto JS e Python sem `typescript` instalado (lei 3). Pula comentário, string, template (lê o `${…}`), regex e texto de JSX; só erra por **omissão** (04-regras §7.2) |
+| 5 | **O que cobra:** identificador solto de código, chave entre aspas de objeto/dicionário, chave de `module.json`, `project.json` e `config/*.json`. **O que não cobra:** comentário, string, valor de `config/texts.json`, `module.json:name` (decisões 2 e 3), acesso por ponto, nome de pasta/arquivo, SQL e `openapi.yaml` | a régua é a da lei — os três lugares do português; o resto é o limite declarado do tokenizador, nunca silêncio |
+| 6 | **Exceção de projeto: a que já existe** — `config/compliance.json` (módulo + regra + decisão) | nenhum mecanismo novo; idioma de código legado entra ali até o plan de adequação migrá-lo |
+| 7 | **Nível 0: um hook de aviso** (`padrao-idioma`), `language.mode` `warn` por padrão, **nunca bloqueia sem configuração**. Lê o par `language.mjs` + vocabulário do gate vendorizado no projeto ou, na falta, do caminho em que o plugin o instala; sem ele, se cala e diz por quê | a lei vale com ou sem template (decisão 4), mas idioma é convenção de projeto, e legado em português receberia um bloqueio por edição |
+| 8 | **Concordância com o medidor é provada por máquina**: `tests/verify-language-parity.mjs` compara, por arquivo, os nomes que cada lado enxerga | o tokenizador troca a árvore sintática por velocidade e zero dependência; sem a comparação, a troca seria fé |
+
+**Medido.** No template atual os dois lados concordam em **todos** os nomes (a lista é de exceções declaradas).
+Sobre uma árvore **anterior** à campanha — onde há português de verdade — o gate enxerga **2.943 de 2.943** nomes
+que o medidor declara, mais 25 usos de nomes cujo dono está em outro arquivo (o medidor conta a declaração, o
+gate acusa também o uso): zero nome que o medidor vê e o gate perde, zero divergência sem explicação.
+
+**Sobras da onda 5 fechadas junto:** os marcadores `<comando-verificar>`/`<comando-iniciar>` da doutrina
+viraram `<verify-command>`/`<start-command>` (com `create-project.mjs`, que os substitui); o instalador grava
+`.agents/generate_index.py` e `.githooks/verify_commit.py` em projeto **novo** — projeto existente continua com os
+nomes antigos, que o instalador e a propagação reconhecem, e os adota **sob demanda**, sem migração automática; a
+isenção do `.gitleaks.toml` passou a `regexTarget = "match"`, e a senha literal na mesma linha da URL
+interpolada deixa de ser perdoada.
 
 **Consequências.**
 
@@ -1906,9 +1937,9 @@ passa a ser reproduzível por `tests/measure-language.mjs` (vocabulário em `tes
    exceções. O que sobra em português fora dos três lugares é **dívida com número**, não "decisão antiga".
 2. **A régua fica de uma frase.** Quem chega depois decide por "é código? então é inglês", sem consultar uma
    tabela de onze linhas.
-3. **Este ADR não muda gate nem catálogo**: quem troca os ids é o `ADR-024` (onda 1), e a regra de idioma só
-   entra na onda 6. O texto do `04-regras.md` afirma que o gate **não** cobra idioma, e isso continua
-   verdadeiro até a onda 6.
+3. **Este ADR não muda gate nem catálogo por si**: quem troca os ids é o `ADR-024` (onda 1), e a regra de
+   idioma entra na onda 6 — o catálogo passa de 81 para 82 e o `04-regras.md` deixa de afirmar que o gate
+   não cobra idioma.
 4. **Custo declarado**: ~3.900 declarações no que o projeto recebe (1.741 em `tools/`, 802 em `tests/`,
    1.344 em `bindings/`) e ~1.200 strings em português, as citações de id e a doutrina inteira com
    exemplos em português (`catalogo`, `clienteApelido`) — fora o código da própria base. Os exemplos da

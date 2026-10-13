@@ -558,6 +558,9 @@ export const CASES = [
   {
     rule: 'compliance-declared',
     description: 'Portuguese key in the exception list ("regra" instead of "rule")',
+    // A chave `regra` do fixture e, ela mesma, uma chave de config em portugues: o co-achado de
+    // `portuguese-identifier` e legitimo — a regra de idioma acusa exatamente o que o caso planta.
+    also: ['portuguese-identifier'],
     // O defeito medido em 2026-08-15: exececao com chave errada nao pegava a violacao, e nada
     // dizia por que. `additionalProperties:false` reprova o campo a mais, e o `rule` obrigatorio
     // ausente reprova junto — um erro, duas mensagens, as duas apontando a forma certa.
@@ -1433,8 +1436,8 @@ export const CASES = [
     // `mapper-naming` fica muda. Se `mapper-naming` aparecesse aqui, seria id NAO
     // DECLARADO e o caso reprovaria.
     mutate: (m) => m.addIn('mappers', {
-      js: '\nexport function itemToRecord(linha) {\n  console.log("x");\n  return { hash: linha.hash };\n}\n',
-      py: '\n\ndef item_to_record(linha):\n    print("x")\n    return {"hash": linha["hash"]}\n',
+      js: '\nexport function itemToRecord(row) {\n  console.log("x");\n  return { hash: row.hash };\n}\n',
+      py: '\n\ndef item_to_record(row):\n    print("x")\n    return {"hash": row["hash"]}\n',
     }),
   },
   {
@@ -1513,7 +1516,7 @@ export const CASES = [
     // direto do nome do lado do BANCO no lado FastAPI, que nao passa por `.json(...)`.
     mutate: (m) => m.addIn('routes', {
       js: '\nexport const raw = (res, record) => res.json(record);\n',
-      py: '\n\ndef raw(linha):\n    return linha\n',
+      py: '\n\ndef raw(row):\n    return row\n',
     }),
   },
   {
@@ -1544,8 +1547,8 @@ export const CASES = [
     // O padrao do mapeador (`return (linha|linhas|row|rows)$`) nao muda. Trava isso nos
     // tres bindings, nao so no Python que o caso acima ja cobre.
     mutate: (m) => m.addIn('routes', {
-      js: '\nexport function otherRoute(linha) {\n  return linha\n}\n',
-      py: '\n\ndef other_route(linha):\n    return linha\n',
+      js: '\nexport function otherRoute(row) {\n  return row\n}\n',
+      py: '\n\ndef other_route(row):\n    return row\n',
     }),
   },
   {
@@ -1725,5 +1728,71 @@ export const CASES = [
     rule: 'swallowed-exception',
     description: 'empty catch block',
     mutate: (m) => m.writeOut('core/domain/mau.ts', 'export function f(g) {\n  try { g(); } catch (e) {}\n}\n'),
+  },
+  {
+    rule: 'portuguese-identifier',
+    description: 'a function declared with a Portuguese name in module code',
+    // `contains` cita o par de termos que a mensagem nomeia, e vale nos tres bindings: o TS escreve
+    // `listarRegistros`, o Python `listar_registros`, e o vocabulario devolve `"listar", "registros"`
+    // nos dois. `times: 1` prova que o MESMO nome nao vira um achado por uso.
+    contains: 'Portuguese term "listar", "registros"',
+    times: 1,
+    mutate: (m) => m.addIn('routes', {
+      js: '\nexport function listarRegistros() {\n  return [];\n}\nexport const total = listarRegistros().length;\n',
+      py: '\n\ndef listar_registros():\n    return []\n\n\ntotal = len(listar_registros())\n',
+    }),
+  },
+  {
+    rule: 'portuguese-identifier',
+    description: 'a Portuguese name in the composition code at the project root is reported against (root)',
+    // O segundo territorio da MESMA regra: `adapters/` nao esta em `ctx.code` de modulo nenhum, e
+    // quem o le e o `checkRoot`. Sem este caso a metade da raiz poderia sumir calada.
+    file: 'adapters/memory/',
+    contains: 'Portuguese term "listar", "registros"',
+    times: 1,
+    mutate: (m) => m.addIn('rootAdapter', {
+      js: '\nexport const listarRegistros = () => [];\n',
+      py: '\n\ndef listar_registros():\n    return []\n',
+    }),
+  },
+  {
+    rule: 'portuguese-identifier',
+    description: 'a config key in Portuguese (the key is code; only the value is user text)',
+    // A chave de `texts.json` e codigo (`emptyList`); o VALOR e o que a pessoa le. Chave sem leitor
+    // tambem e `dead-config` — co-achado legitimo, o fixture nao tem quem a use.
+    also: ['dead-config'],
+    contains: 'config key "mensagemVazia"',
+    times: 1,
+    mutate: (m) => m.config('texts', (x) => ({ ...x, mensagemVazia: 'Nada por aqui.' })),
+  },
+  {
+    rule: 'strict-structure',
+    description: 'DECOY: Portuguese in comments, strings, texts.json values and cognates is not a Portuguese identifier',
+    // O harness so sabe afirmar PRESENCA, entao a nao-acusacao entra de chamariz: o id esperado e o de
+    // OUTRA regra (`strict-structure`, por `junk.txt`), e tudo abaixo e portugues ou cognato que a regra
+    // de idioma NAO pode acusar. Se ela acusar qualquer um, o id `portuguese-identifier` aparece sem
+    // estar em `also` e o caso reprova — o falso positivo derruba o autoteste na hora.
+    //   - comentario com portugues;
+    //   - string e template com portugues (o texto ao usuario fica em literal);
+    //   - cognatos reais DENTRO de nome composto (`data`, `status`, `base`, `item`, `hash`, `config`);
+    //   - o VALOR de `config/texts.json` e `module.json:name` (decisoes 2 e 3 do ADR-023);
+    //   - acesso por ponto (o dono do nome e quem o declara).
+    mutate: (m) => {
+      m.writeOut('junk.txt', 'not expected');
+      m.config('texts', (x) => ({ ...x, genericError: 'Nenhum registro ainda, crie o primeiro.' }));
+      m.manifest((x) => ({ ...x, name: 'Pedidos de venda' }));
+      m.addIn('routes', {
+        js: '\n// A lista de registros fica vazia quando nao ha pagina nem situacao.\n'
+          + "export const noticeText = 'Nenhum registro encontrado para esta situacao';\n"
+          + 'export const noticeLine = `Pagina ${noticeText.length} de registros`;\n'
+          + 'export const dataStatusBase = { item: 1, hash: noticeText, config: true };\n'
+          + 'export const dataStatusLength = dataStatusBase.item + noticeText.length;\n',
+        py: '\n\n# A lista de registros fica vazia quando nao ha pagina nem situacao.\n'
+          + 'notice_text = "Nenhum registro encontrado para esta situacao"\n'
+          + 'notice_line = f"Pagina {len(notice_text)} de registros"\n'
+          + 'data_status_base = {"item": 1, "hash": notice_text, "config": True}\n'
+          + 'data_status_length = data_status_base["item"] + len(notice_text)\n',
+      });
+    },
   },
 ];

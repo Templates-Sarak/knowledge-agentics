@@ -5,7 +5,7 @@
       "Bash(./.venv/Scripts/python.exe -m pip install -q -e \".[dev]\")",
       "Bash(./.venv/Scripts/python.exe -m ruff check .)",
       "Bash(./.venv/Scripts/python.exe -m ruff check . --output-format=concise)",
-      "Bash(./.venv/Scripts/python.exe skills/meta-verificacao-base/scripts/audit_base.py --raiz .)",
+      "Bash(./.venv/Scripts/python.exe skills/meta-verificacao-base/scripts/audit_base.py --root .)",
       "Bash(node --input-type=module -e ' *)",
       "Read(//c//**)"
     ]

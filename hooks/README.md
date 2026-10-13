@@ -46,10 +46,31 @@ Segurança não negocia: sem gitleaks, o commit/push é bloqueado. **Não** depe
 |---|---|---|
 | `padrao-limiares.js` | PostToolUse(`Write/Edit`) | Função ≤N linhas, aninhamento ≤N, ≤N params; sem `print`/`console.log`; sem exceção engolida |
 | `padrao-format.js` | PostToolUse(`Write/Edit`) | Formatação consistente (formatter da linguagem), sem reformatar arquivo legado (`formatting.scope`) |
+| `padrao-idioma.js` | PostToolUse(`Write/Edit`) | **Avisa** quando um identificador do arquivo editado (JS/TS/Python) bate o vocabulário fechado de português — o código é em inglês (`ADR-023`). Nunca bloqueia por padrão (`language.mode`) |
 
 Política em `quality.mode`: **block** (cobra correção) · **warn** (só avisa) · **off**.
 `padrao-format` é best-effort (sem formatter, pula). Cobre **Python, JS/TS, Go e Java** — cada um pelo
 linter/formatter de `languages`.
+
+**`language.mode` — o idioma do código (`padrao-idioma`).** A regra de idioma é a mesma que o gate do
+template cobra como `portuguese-identifier`, aqui no **Nível 0**: vale para projeto com ou sem template. O hook
+**não** carrega vocabulário nem tokenizador próprios — importa `language.mjs` e lê
+`language-vocabulary.json`, o **arquivo único** do template (`tools/gate/`), na ordem: o gate vendorizado no
+projeto (`<projeto>/tools/gate/`, o que o gate dele cobra) e, depois, o caminho em que o plugin o instala
+(`<plugin>/specs/_estrutura_modulos/tools/gate/`). Sem o par de arquivos (instalação manual sem `specs/`), o hook
+**se cala e diz por quê** no stderr — não quebra a edição e não finge conformidade.
+
+- **Modo** em `language.mode` (`config/verification.json` do projeto, com fallback para `hooks/config.json`):
+  `warn` (padrão — só avisa) · `block` (cobra correção) · `off`. Idioma é convenção, e projeto legado em
+  português receberia um bloqueio a cada edição: por isso o padrão **nunca** bloqueia.
+- **Cobra** identificador solto de código e chave entre aspas de objeto/dicionário. **Não** cobra comentário,
+  string, valor de `config/texts.json`, acesso por ponto, nome de arquivo nem SQL.
+- **Falso positivo não se aceita:** cognatos e termos técnicos (`data`, `status`, `base`, `item`…) ficam fora
+  pelo vocabulário, que é fechado e tem origem por termo.
+- **Exceção declarada** (`config/compliance.json`, módulo + regra `portuguese-identifier`) é respeitada: o
+  hook não avisa onde o projeto já decidiu — o mesmo mecanismo do gate, nenhum novo.
+- Não instalado o plugin (modo manual de `settings.template.json`) e sem `tools/gate/` no projeto, o hook fica
+  mudo: instale também o template, ou copie `language.mjs` e `language-vocabulary.json` para `tools/gate/`.
 
 **`formatting.scope` — o que o `padrao-format` reformata.** Formatar o arquivo inteiro a cada edição faz
 uma linha mudada num arquivo legado (que nunca passou pelo formatador) virar centenas de linhas de diff de

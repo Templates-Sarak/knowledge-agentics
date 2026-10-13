@@ -19,14 +19,14 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 | Topologia | schema único \| um schema por módulo |
 | Schema | `<nome>` — **nunca** `public` |
 
-**Interface:** ui.modo padrão `<proprio\|kit>` <, pacote `@<scope>/ui-kit`>
+**Interface:** ui.mode padrão `<own\|kit>` <, pacote `@<scope>/ui-kit`>
 
 **Decisões que virarão ADR em `specs/adr/`**
 | # | Decisão | Escolha |
 |---|---|---|
 | 1 | Idioma das pastas | misto (EN técnico + PT domínio) \| PT puro |
 | 2 | Topologia de schema | <acima> |
-| 3 | `ui.modo` padrão | <acima> |
+| 3 | `ui.mode` padrão | <acima> |
 
 **Módulos iniciais**
 | id | role | o que faz | generatesArtifact | webPath |
@@ -59,7 +59,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
 | binding | typescript \| javascript \| python |
 | basePath | `/api/v1/<id>` |
 | webPath | `/<id>` \| null |
-| ui.modo | proprio \| kit |
+| ui.mode | own \| kit |
 | generatesArtifact | true \| false |
 
 **Dados** — schema `<schema>` (nunca `public`), prefixo `<id>_`
@@ -106,7 +106,7 @@ Pergunte só o que não dá para inferir. Nome e escopo saem da pasta e do remot
     { "module": "<outro>", "contract": "GET /<recurso>", "why": "<motivo de negócio>" }
   ],
 
-  "ui": { "modo": "proprio" },
+  "ui": { "mode": "own" },
 
   "permissions": ["<id>:read", "<id>:write"],
   "publicRoutes": ["GET /health", "GET /meta", "GET /summary"],

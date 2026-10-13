@@ -92,7 +92,7 @@ Confira também que o `.githooks/pre-commit` saiu **composto**, não sobrescrito
 
 ```bash
 grep -c "^node tools/verify-commit.mjs" <alvo>/.githooks/pre-commit             # == 1: gate de conformidade do template
-grep -c "^\"\$PY\" .githooks/verificar_commit.py" <alvo>/.githooks/pre-commit   # == 1: gate de segredos
+grep -c "^\"\$PY\" .githooks/verify_commit.py" <alvo>/.githooks/pre-commit   # == 1: gate de segredos
 ```
 
 Ancorado na **invocação**, não em qualquer menção ao nome do arquivo — o hook também comenta
@@ -135,7 +135,7 @@ que o script escreve já é o final — nada a fazer aqui.
 - [ ] `specs/arquitetura/` com as 5 leis + a base da linguagem, e **nenhuma** pasta `doutrina/` na raiz?
 - [ ] `specs/adr/000-decisoes-do-template.md` presente?
 - [ ] Módulos criados, cada um com manifesto e contrato?
-- [ ] `.agents/` com `gerar_indice.py`, `core.hooksPath` apontando para `.githooks`, e — em projeto
+- [ ] `.agents/` com `generate_index.py`, `core.hooksPath` apontando para `.githooks`, e — em projeto
       modular — `.githooks/pre-commit` com o gate de segredos **e** `verify-commit.mjs` do template
       compostos (nunca um sobrescrevendo o outro), `.githooks/pre-push` intacto?
 - [ ] `validate.mjs --all` verde?

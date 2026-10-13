@@ -235,7 +235,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 
 ---
 
-# 7. Hooks (5) — as garantias determinísticas
+# 7. Hooks (6) — as garantias determinísticas
 
 | Hook | Evento | Garante |
 |---|---|---|
@@ -244,6 +244,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `test-cobertura` | PreToolUse `Bash` | Cobre a exigência de teste antes de operações de entrega. |
 | `padrao-format` | PostToolUse `Write\|Edit\|MultiEdit\|apply_patch` | Formata o que foi escrito — sem reformatar arquivo legado fora do formatador. |
 | `padrao-limiares` | PostToolUse `Write\|Edit\|MultiEdit\|apply_patch` | Verifica os limiares objetivos (linhas, aninhamento, parâmetros). |
+| `padrao-idioma` | PostToolUse `Write\|Edit\|MultiEdit\|apply_patch` | Avisa quando um identificador do arquivo editado bate o vocabulário fechado de português (o código é em inglês — `ADR-023`); nunca bloqueia por padrão. |
 
 Ativação: nativa ao instalar o plugin (`hooks/hooks.json`) — no Claude Code entra ativa; no Codex, depois de
 autorizar os hooks do plugin no app. Modo manual (só Claude Code): mesclar `hooks/settings.template.json` no

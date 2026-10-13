@@ -165,7 +165,7 @@ function restSteps() {
 // ── B. o catálogo de regras (§4.2) ──────────────────────────────────────────────────────────────
 
 const EXPECTED_FAMILIES = {
-  configuration: 21, contract: 11, data: 8, isolation: 12, operation: 14, structure: 11, writing: 4,
+  configuration: 21, contract: 11, data: 8, isolation: 12, operation: 14, structure: 11, writing: 5,
 };
 
 function catalogSteps() {
@@ -184,9 +184,9 @@ function catalogSteps() {
   }, {});
 
   return [
-    { name: 'catalog: total rule count', fn: () => compareValue('rules', RULES.length, 81) },
-    { name: 'catalog: counts by scope', fn: () => compareValue('scope', countBy('scope'), { module: 60, root: 17, global: 4 }) },
-    { name: 'catalog: counts by severity', fn: () => compareValue('severity', countBySeverity(), { error: 77, warning: 4 }) },
+    { name: 'catalog: total rule count', fn: () => compareValue('rules', RULES.length, 82) },
+    { name: 'catalog: counts by scope', fn: () => compareValue('scope', countBy('scope'), { module: 61, root: 17, global: 4 }) },
+    { name: 'catalog: counts by severity', fn: () => compareValue('severity', countBySeverity(), { error: 78, warning: 4 }) },
     { name: 'catalog: counts by family', fn: () => compareValue('family', byFamily(), EXPECTED_FAMILIES) },
     {
       // O terceiro argumento varre `tools/**` atras de "N regras com caso"/"N regras suas"
@@ -255,10 +255,10 @@ function routeAndTestSteps() {
       },
     },
     {
-      // 6: os cinco de antes + `supervise.mjs` (casca de processo do autoteste do template — teto e
+      // 8: os sete de antes + `verify-language-parity.mjs` (a prova de concordância entre o gate e o medidor, ADR-023 onda 6). Antes: os cinco de antes + `supervise.mjs` (casca de processo do autoteste do template — teto e
       // encerramento da arvore). `shutdown-proof.py` e `.json` nao entram: so `.mjs` e contado.
-      name: 'maintenance tools: exactly 7 .mjs files in tests/',
-      fn: () => compareValue('.mjs files in tests/', readdirSync(HERE).filter((n) => n.endsWith('.mjs')).length, 7),
+      name: 'maintenance tools: exactly 8 .mjs files in tests/',
+      fn: () => compareValue('.mjs files in tests/', readdirSync(HERE).filter((n) => n.endsWith('.mjs')).length, 8),
     },
   ];
 }

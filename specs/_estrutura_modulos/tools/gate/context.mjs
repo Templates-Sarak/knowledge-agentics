@@ -37,7 +37,7 @@ const TEMPLATE_SYNTHETIC_ID = 'mold';
  *
  * Sao estas tres e mais nenhuma. `tools/` fica de fora de proposito: e o gate, que o template
  * instala e ninguem edita — varre-lo faria as regras de raiz julgarem o proprio verificador.
- * `modules/` fica de fora porque ja tem 60 regras suas.
+ * `modules/` fica de fora porque ja tem 61 regras suas.
  */
 const ROOT_DIRS = ['adapters', 'src', 'packages'];
 
@@ -195,6 +195,21 @@ function readRenames() {
   }
 }
 
+const VOCABULARY_FILE = join(dirname(fileURLToPath(import.meta.url)), 'language-vocabulary.json');
+
+/**
+ * O vocabulário fechado da regra `portuguese-identifier` (ADR-023 decisão 7) — o MESMO arquivo que o
+ * medidor lê, ao lado do gate. Ausente ou ilegível vira `null`: a regra de módulo cala e a de raiz acusa
+ * UMA vez, porque "regra que não pôde rodar" não pode ser indistinguível de "nada a acusar" (§7.2).
+ */
+function readVocabulary() {
+  try {
+    return JSON.parse(readText(VOCABULARY_FILE));
+  } catch {
+    return null;
+  }
+}
+
 /** Os nomes que o gerador pode produzir. Ler os dois é mais barato que descobrir o binding aqui. */
 const LINT_CONFIGS = ['eslint.config.js', '.ruff.toml'];
 
@@ -207,6 +222,21 @@ function readRootManifest(projectRoot) {
   } catch (cause) {
     return { present: true, value: null, error: String(cause) };
   }
+}
+
+/**
+ * Os JSON de configuração da RAIZ — `project.json` e `config/*.json` —, com o texto cru (a regra de
+ * idioma julga CHAVE, e quer a linha). Ilegível entra sem `value`: quem acusa JSON quebrado é
+ * `root-manifest`/`valid-config`, e empilhar aqui daria duas mensagens para um conserto só.
+ */
+function readRootJson(projectRoot) {
+  const configDir = join(projectRoot, 'config');
+  const names = existsSync(configDir)
+    ? readdirSync(configDir).filter((name) => name.endsWith('.json')).map((name) => `config/${name}`)
+    : [];
+  return ['project.json', ...names]
+    .filter((rel) => existsSync(join(projectRoot, rel)))
+    .map((rel) => ({ rel, text: readText(join(projectRoot, rel)) }));
 }
 
 /**
@@ -320,6 +350,8 @@ function readProject(projectRoot) {
     check,
     compliance,
     renamedRules: readRenames(),
+    languageVocabulary: readVocabulary(),
+    rootJson: readRootJson(projectRoot),
     lintConfigs,
     gitignore,
     githooksPreCommit,

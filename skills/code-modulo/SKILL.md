@@ -51,7 +51,7 @@ Detalhe de cada passo em `references/workflow.md` §A.
    | Identidade | destino, nome do sistema, escopo dos packages (`@acme`) |
    | Stack | binding — `typescript` \| `javascript` \| `python` |
    | Dados | topologia (schema único ou por módulo) + nome do schema — **nunca `public`** |
-   | Interface | `ui.modo` padrão (`proprio` \| `kit`) e o pacote, se `kit` |
+   | Interface | `ui.mode` padrão (`own` \| `kit`) e o pacote, se `kit` |
    | Decisões registráveis | idioma das pastas (misto EN ou PT puro) → vira ADR no projeto |
    | Primeiros módulos | quais criar já e o papel de cada um (inclui se haverá `conector` e `gateway`) |
 
@@ -59,7 +59,7 @@ Detalhe de cada passo em `references/workflow.md` §A.
    → "⚠️ Confirma?" **Aguarde.**
 4. **Instanciar** — `node <template>/tools/create-project.mjs <destino> --binding <b> --scope <e>`.
    A doutrina cai em `specs/arquitetura/`; as decisões, em `specs/adr/000-decisoes-do-template.md`.
-5. **Registrar as decisões do projeto** — idioma das pastas, topologia de schema e `ui.modo` viram ADR novo
+5. **Registrar as decisões do projeto** — idioma das pastas, topologia de schema e `ui.mode` viram ADR novo
    em `specs/adr/`, não comentário solto.
 6. **Criar cada módulo** — repita o Fluxo B para cada um, na ordem: `conector` por último (ele agrega os outros).
 7. **Verificar** — `validate.mjs --all` + o comando `verificar` do binding. **Não encerre vermelho.**
@@ -78,7 +78,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
    | Bloco | Extrai |
    |---|---|
    | Identidade | `id` (kebab-case), `name`, `description` numa linha, `role` (`domain`\|`gateway`\|`connector` — a mesma palavra na CLI `--role` e no manifesto) |
-   | Forma | `generatesArtifact`, `webPath` ou `null`, `ui.modo` |
+   | Forma | `generatesArtifact`, `webPath` ou `null`, `ui.mode` |
    | Dados | tabelas do módulo (schema e prefixo **herdados** dos vizinhos) |
    | Dependências | portas de infraestrutura (`ports`); `consumes` de outros módulos — **com checagem de ciclo antes de confirmar** |
    | Segurança | `permissions`, `publicRoutes` (opt-in, **método incluso**), `sensitiveFields`, `requiredEnv` |
@@ -127,7 +127,7 @@ Detalhe em `references/workflow.md` §B. Trate **um módulo por vez**.
 - [ ] `.env.example` gerado pelo script (não editado à mão) e valores no `.env` da raiz?
 - [ ] Testes de domínio e de contrato rodando **sem rede e sem banco** (adapters de memória)?
 - [ ] `validate <module>` e `validate --extraction <module>` verdes? (Fluxo A: também `--all`.)
-- [ ] Fluxo A: decisões do projeto (idioma, schema, `ui.modo`) registradas em `specs/adr/`?
+- [ ] Fluxo A: decisões do projeto (idioma, schema, `ui.mode`) registradas em `specs/adr/`?
 
 ## Referências (Camada 3 — leia sob demanda)
 - `references/workflow.md` — cada passo dos dois fluxos em detalhe, com o que detectar e como corrigir.

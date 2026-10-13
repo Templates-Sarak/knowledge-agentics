@@ -1,4 +1,4 @@
-# Campanha de idioma (ADR-023 a ADR-025) — insumo da propagação
+# Campanha de idioma (ADR-023 a ADR-027) — insumo da propagação
 
 Documentação **da base**: não viaja para projeto gerado (o `decisoes.md` que viaja só tem a lei, o método e o
 plano de ondas). Aqui mora o que é específico dos **sistemas do `mapa.json`** e o inventário detalhado da
@@ -43,12 +43,23 @@ efeitos a conferir no plan:
 - o gate novo reprova no sistema o que o antigo perdoava calado (exceção com id antigo, 1.1), então o plan de
   `tools/` e o de `config/compliance.json` vão **juntos**, na mesma execução.
 
-### 1.3 Sistema com vocabulário de idioma próprio (onda 6)
+### 1.3 Sistema com vocabulário de idioma próprio (onda 6 — aplicada na base)
 
 `earendel-erp` é o sistema adotante que **já cobra** idioma por regra própria (`identificador-em-portugues`,
 vocabulário fechado em `tools/gate/vocabulario.mjs`, 327 termos). A decisão 7 do `ADR-023` fixa **um arquivo
-único** de vocabulário no template; na propagação da onda 6 o sistema migra o dele para o do template (a
-união dos termos), em vez de manter dois.
+único** de vocabulário no template, e a onda 6 o entregou: `tools/gate/language-vocabulary.json`, lido pela
+regra `portuguese-identifier` (gate), pelo medidor e pelo hook `padrao-idioma`. Na propagação o sistema migra o
+dele para o do template (a união dos termos), em vez de manter dois — e, ao trocar a regra própria pela do
+template, três consequências a conferir **no plan dele**:
+
+- **o id muda** (`identificador-em-portugues` → `portuguese-identifier`): toda exceção dele em
+  `config/compliance.json` citando o id antigo passa a ser **acusada** por `compliance-declared` (id fora do
+  catálogo) — a troca de id e a vinda de `tools/` andam na mesma execução (§1.1);
+- **o recorte difere do dele**: a regra do template cobre identificador de código e chave de config/manifesto,
+  nunca comentário, string, valor de `texts.json` nem `module.json:name`; o que a regra própria cobrava além
+  disso precisa ser decidido pelo dono, não herdado;
+- **o vocabulário do template é a base**: os termos dele que faltarem entram **com origem** no arquivo único
+  (decisão 6), nunca por "parecer português" — e cognato dele que o template já exclui continua excluído.
 
 ### 1.4 O que a doutrina não força
 
@@ -92,8 +103,9 @@ método é este, e qualquer reimplementação que o siga reproduz os totais:
 3. **Raio** — ocorrências do nome por arquivo (limite superior) e imports reais entre arquivos (o
    acoplamento verdadeiro).
 4. **Ids de regra**, independente do script:
-   `grep -h "^\s*id: '" specs/_estrutura_modulos/tools/gate/rules/*.mjs | sort -u | wc -l` → 81. A forma
-   pós-onda 1 do catálogo é a que o `audit_base.py` (`cited_ids`, antes `ids_citados`) lê do código do gate.
+   `grep -h "^\s*id: '" specs/_estrutura_modulos/tools/gate/rules/*.mjs | sort -u | wc -l` → **82** (81 na
+   medição da onda 0; a onda 6 acrescentou `portuguese-identifier`). A forma pós-onda 1 do catálogo é a que o
+   `audit_base.py` (`cited_ids`, antes `ids_citados`) lê do código do gate.
 5. **Citações de id** — busca por id com fronteira (`(?<![\w-])id(?![\w-])`); os ids de uma palavra
    (`log`, `manifest`, `contract`…) só contam entre crases ou aspas, e a lista de ambíguos é revista à mão.
 
@@ -181,7 +193,7 @@ Resíduos intencionais revisados:
 ## 7. Estado depois da onda 4 (bindings e domínio do molde)
 
 **O medidor agora mora no repositório.** `specs/_estrutura_modulos/tests/measure-language.mjs`, com o vocabulário
-fechado ao lado (`language-vocabulary.json`: 668 termos, **origem por termo**, 61 cognatos que nunca entram,
+fechado ao lado (`tools/gate/language-vocabulary.json` desde a onda 6; antes `tests/`: 668 termos, **origem por termo**, 61 cognatos que nunca entram,
 palavras funcionais só para texto livre). Não viaja para o projeto gerado. `node tests/measure-language.mjs`
 imprime por escopo (`bindings`, `tools`, `tests`), categoria (`decl`, `member`, `string`, `data`) e raiz;
 `--list --full` lista cada ocorrência; `--root <pasta>` mede outra árvore (um `git worktree` do commit
@@ -312,8 +324,102 @@ no `--selftest`. Snapshots datados não são reescritos.
 - `tools/gate/renamed-rules.json` (os 70 ids antigos são o dado), `thresholds.mjs`, `EXTRACTION_ID` e
   `functionLines/nesting/params` mantêm o nome: o `eslint.config.mjs` e o `meta-verificacao-base` os leem por nome.
 - Marcadores `<comando-verificar>`/`<comando-iniciar>` da doutrina: mudam em par com `create-project.mjs`.
-- `ui.modo` (`proprio|kit`) do `module.json` segue em português nas referências do `code-modulo`.
+  **Fechado na onda 6** (`<verify-command>`/`<start-command>`).
+- `ui.modo` (`proprio|kit`) do `module.json` segue em português nas referências do `code-modulo`. **Fechado na
+  onda 6**: o template, o schema e o gate já usavam `ui.mode`/`own` (`ADR-020`); sobravam as referências do
+  `code-modulo` e do `init_repo.py`.
 - Comentários e prosa emitidos em arquivos gerados (`sync-env`, `sync-deploy`): o `--check` compara com a cópia
   versionada do molde.
 - A propagação (`SYSTEM_AREAS`) não compara `.githooks/`: o par `pre-commit`/`verificar_commit.py` de projetos
-  vivos não é atualizado por ela.
+  vivos não é atualizado por ela. **Continua valendo** — o par agora se chama `verify_commit.py` em projeto
+  **novo** (§9.4); em projeto existente o nome antigo segue, e a propagação reconhece os dois.
+
+## 9. Fechamento — a onda 6 (a regra cobrada por máquina)
+
+A lei deixou de ser convenção de leitura humana. Os números abaixo são os do fechamento; **remeça** antes de
+citá-los num plan.
+
+### 9.1 O que foi entregue
+
+| Peça | Onde | Observação |
+|---|---|---|
+| a regra `portuguese-identifier` | `specs/_estrutura_modulos/tools/gate/rules/writing.mjs`; `04-regras.md` §4.7 e §7.2 | erro; **um id, dois territórios** (`check` no módulo, `checkRoot` na fiação e na config da raiz, uma vez por projeto); catálogo **81 → 82** |
+| o tokenizador e o casamento | `tools/gate/language.mjs` | zero dependência; o medidor importa as **mesmas** funções |
+| o vocabulário (arquivo único) | `tools/gate/language-vocabulary.json` (saiu de `tests/`) | 668 termos com origem por termo, 61 cognatos, 48 palavras funcionais (só texto livre, só o medidor) |
+| o aviso do Nível 0 | `hooks/padrao-idioma.js`; `language.mode` em `hooks/config.json` e no schema de `verification.json` | `warn` por padrão; nunca bloqueia sem configuração; sem o par de arquivos, se cala e diz por quê |
+| a prova de concordância | `tests/verify-language-parity.mjs` | gate × medidor, por arquivo; registrado no `run-all-selftests` |
+| o caso do motor que faltava | `tools/gate/tests/engine-selftest.mjs` | `checkExtraction` com `consumes[]` na forma real (o defeito da onda 5 em §8.4) e o registro de dois territórios |
+
+### 9.2 Concordância tokenizador × medidor
+
+`node tests/verify-language-parity.mjs [--root <template>] [--list]` compara, por arquivo, os nomes em português
+que cada lado enxerga. Dois corpos:
+
+| Corpo | Medidor (árvore sintática) | Gate (léxico) | Concordam | Só o medidor | Só o gate |
+|---|---:|---:|---:|---:|---:|
+| template atual (`bindings`, `tools`, `tests`; sem exceções aplicadas) | 76 | 76 | 76 | 0 | 0 |
+| árvore **anterior à campanha** (onde há português de verdade) | 2.943 | 2.968 | 2.943 | **0** | 25 (todas explicadas) |
+
+Cada "só o gate" é o **uso** de um nome em português que o medidor não conta como declaração **naquele**
+arquivo, e que ele vê declarado em outro: tipo importado (`Registro`, `Pagina`, `Colecao`), reexportado
+(`RaizDoModulo`) ou passado como argumento nomeado (`criado_em=`, `nivel_minimo=`, `dados=` — o `ast` os guarda
+como `keyword`, que o medidor põe em `member`). Também aparece o nome em `except … as causa`, que o `ast` guarda
+como texto, e não como `Name`: aí o tokenizador é **mais completo** que o medidor. O que o tokenizador **não** vê
+e o medidor vê: nada, na árvore medida — os dois casos que apareceram no caminho (atributo anotado
+`self.x: T = …` e código dentro de `${…}` de template) foram corrigidos e viraram casos do `--selftest`.
+
+### 9.3 Provas da regra
+
+| Prova | Resultado |
+|---|---|
+| o molde e o projeto gerado passam limpos | zero erro nos três bindings (`run.mjs`, `selftest:template`) |
+| identificador em português plantado no módulo reprova | `portuguese-identifier`, mensagem com arquivo, linha, nome e termo, apontando o `ADR-023` |
+| o mesmo nome na fiação reprova contra `(root)` | caso `adapters/memory/` |
+| chave de config em português reprova | caso `config key "mensagemVazia"` |
+| o mesmo nome em comentário, string ou `texts.json` **não** reprova | chamariz (`strict-structure` esperado; `portuguese-identifier` seria id não declarado) com comentário, string, template, valor de `texts.json`, `module.json:name` e cognatos (`data`, `status`, `base`, `item`, `hash`, `config`) |
+
+Casos novos por binding: **+4** (3 positivos e 1 chamariz) — TS 138 → 142, JS 138 → 142, Python 133 → 137; os
+casos "sem cobertura" não mudam (4, 4 e 9). Nenhum caso existente perdeu cobertura: três fixtures de caso
+(`linha` → `row`) e o caso de `compliance-declared` com chave `regra` (que **é** uma chave de config em
+português, e agora declara o co-achado) foram ajustados.
+
+### 9.4 As sobras da onda 5
+
+- **Marcadores da doutrina** `<comando-verificar>`/`<comando-iniciar>` → `<verify-command>`/`<start-command>`,
+  junto de `create-project.mjs`, que os substitui. Nenhum outro marcador **substituído por código** estava em
+  português (os `<nome>`/`<caminho>` das referências são placeholder de prosa, documentação).
+- **`ui.modo`/`proprio`**: o manifesto, o schema, o gate e a doutrina já eram `ui.mode`/`own` (`ADR-020`);
+  as referências do `code-modulo` e a mensagem do `init_repo.py` foram acertadas.
+- **Arquivos instalados com nome em português** — para **projeto novo**: `.agents/generate_index.py` e
+  `.githooks/verify_commit.py`. **Projeto existente continua funcionando com o que tem** e adota o nome novo sob
+  demanda, **sem migração automática**: o `init_repo.py` reconhece o par antigo no `pre-commit` (idempotência) e,
+  se o projeto já o tem, reinstala **com o nome antigo** (para o hook dele não quebrar); `propagate.py` classifica
+  os dois nomes. Para adotar: renomear os dois arquivos e as duas linhas do `.githooks/pre-commit`, num commit.
+  Nenhum outro arquivo instalado tinha nome em português (varredura por vocabulário nos instaladores e no template).
+- **Allowlist do gitleaks**: `.gitleaks.toml` dos três bindings passou de `regexTarget = "line"` para
+  `"match"`. Medido com o gitleaks real: a URL interpolada passa; a **mesma linha** com `# password=<literal>`
+  ao lado era **perdoada** com `line` (0 achados) e é **reportada** com `match` (1 achado). O caso está em
+  `template-self-test.mjs` (usa o binário; sem ele, declara PULADO).
+- **`.claude/settings.json`**: a regra de permissão do `audit_base.py` usa `--root`.
+- **Caso do `--selftest` faltante**: `engine-selftest.mjs` (seis casos de `checkExtraction`).
+
+### 9.5 Remedição final por raiz
+
+Mesmo método da §3, vocabulário e exceções do fechamento. "Declarada" é ocorrência coberta por
+`tests/language-exceptions.json` (arquivo + categoria + nome/trecho + **motivo**); **não declarada** é o que
+`--check` reprova.
+
+| Escopo | Arquivos | Declarações (PT não declaradas / total · declaradas) | Strings (idem) | Palavras de dado (idem) |
+|---|---:|---|---|---|
+| `bindings` | 154 | 0 / 3.023 · 0 | 0 / 1.884 · 0 | 0 / 1.734 · 0 |
+| `tools` | 43 | 0 / 2.954 · 4 | 0 / 4.197 · 51 | 0 / 743 · 70 |
+| `tests` | 8 | 0 / 1.211 · 0 | 0 / 1.616 · 82 | 0 / 23 · 0 |
+| `skills` (scripts) | 59 | 0 / 3.764 · 96 | 0 / 5.489 · 273 | 0 / 652 · 8 |
+| `hooks` | 10 | 0 / 544 · 10 | 0 / 620 · 17 | 0 / 138 · 20 |
+| `plugin` | 2 | 0 / 89 · 0 | 0 / 213 · 1 | 0 / 0 · 0 |
+
+**O que o projeto recebe (`bindings`, `tools`, `tests`): zero ocorrência em português não declarada**, e o
+`bindings` — o que vira código do projeto gerado — **não tem nem exceção declarada**. As 227 raízes que restam
+nas exceções são nome de pasta/skill/arquivo da base e da doutrina (`modulo` 98, `arquitetura` 70, `estrutura`
+70, `padrao` 41, `regra` 40, `indice` 23, `mapa` 19, `arquivo` 16, `titulo` 16…), vocabulário de detecção de
+código de usuário e fixtures que **precisam** de português para provar a detecção — cada uma com motivo.

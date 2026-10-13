@@ -153,9 +153,9 @@ function generateEnvironmentExample(destination) {
  * composto (`verify.py`) e sobe pelo módulo `src.composition`.
  */
 const COMMAND_MARKERS = {
-  typescript: { '<comando-verificar>': 'npm run verify', '<comando-iniciar>': 'npm run start' },
-  javascript: { '<comando-verificar>': 'npm run verify', '<comando-iniciar>': 'npm run start' },
-  python: { '<comando-verificar>': 'python verify.py', '<comando-iniciar>': 'python -m src.composition' },
+  typescript: { '<verify-command>': 'npm run verify', '<start-command>': 'npm run start' },
+  javascript: { '<verify-command>': 'npm run verify', '<start-command>': 'npm run start' },
+  python: { '<verify-command>': 'python verify.py', '<start-command>': 'python -m src.composition' },
 };
 
 /** Substitui os marcadores de comando do mapa pelo comando real do binding — precedente de `<module>`

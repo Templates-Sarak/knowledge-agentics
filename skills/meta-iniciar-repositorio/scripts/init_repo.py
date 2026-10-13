@@ -45,7 +45,7 @@ BINDINGS = ("typescript", "javascript", "python")
 AGENTS_SUBDIRS = ("skills", "commands", "agents", "hooks")
 AGENTS_IMPORT_LINE = "@AGENTS.md"
 
-INDEX_GENERATOR = '''"""gerar_indice.py — catalogo da inteligencia local (.agents). Gerado pelo init_repo do Sarak."""
+INDEX_GENERATOR = '''"""generate_index.py — catalogo da inteligencia local (.agents). Gerado pelo init_repo do Sarak."""
 import os
 import re
 from pathlib import Path
@@ -101,7 +101,7 @@ HOOK_PRE_COMMIT = """#!/bin/sh
 if command -v python >/dev/null 2>&1; then PY=python; else PY=python3; fi
 
 echo "[Sarak] Checking staged files for leaked secrets..."
-"$PY" .githooks/verificar_commit.py --root .
+"$PY" .githooks/verify_commit.py --root .
 if [ "$?" -ne 0 ]; then
   echo ""
   echo "COMMIT BLOCKED - secret or sensitive file detected in staged files."
@@ -109,9 +109,9 @@ if [ "$?" -ne 0 ]; then
   exit 1
 fi
 
-if [ -f .agents/gerar_indice.py ]; then
+if [ -f .agents/generate_index.py ]; then
   echo "[Sarak] Updating the local agents index..."
-  "$PY" .agents/gerar_indice.py
+  "$PY" .agents/generate_index.py
   git add .agents/index.md
 fi
 
@@ -123,7 +123,14 @@ exit 0
 # `compose_pre_commit` as vezes precisa dela sem ter o arquivo do template em mao (estado C: so o
 # nosso hook existe, nada para extrair).
 TEMPLATE_HOOK_LINE = "node tools/verify-commit.mjs pre-commit || exit 1"
-OWN_HOOK_MARKER = "verificar_commit.py"
+OWN_HOOK_SCRIPT = "verify_commit.py"
+INDEX_SCRIPT = "generate_index.py"
+# Nomes que projetos criados antes da onda 6 do ADR-023 têm instalados. O projeto existente continua
+# funcionando com eles (o pre-commit dele os chama) e adota o nome novo sob demanda — nunca por migração
+# automática. `compose_pre_commit` reconhece os dois, e o instalador reaproveita o nome que o projeto já usa.
+LEGACY_OWN_HOOK_SCRIPT = "verificar_commit.py"
+LEGACY_INDEX_SCRIPT = "gerar_indice.py"
+OWN_HOOK_MARKERS = (OWN_HOOK_SCRIPT, LEGACY_OWN_HOOK_SCRIPT)
 TEMPLATE_HOOK_MARKER = "verify-commit.mjs"
 
 
@@ -161,7 +168,7 @@ def compose_pre_commit(existing: str | None, ours: str) -> str:
     if existing is None:
         return ours
 
-    has_ours = OWN_HOOK_MARKER in existing
+    has_ours = any(marker in existing for marker in OWN_HOOK_MARKERS)
     has_template = TEMPLATE_HOOK_MARKER in existing
 
     if has_ours and has_template:
@@ -175,6 +182,11 @@ def compose_pre_commit(existing: str | None, ours: str) -> str:
 
     existing_body = _strip_final_exit0(_strip_shebang(existing)).rstrip("\n")
     return f"#!/bin/sh\n{existing_body}\n\n{TEMPLATE_HOOK_LINE}\n\nexit 0\n"
+
+
+def _legacy_hook() -> str:
+    """O pre-commit de um projeto criado antes da onda 6 do ADR-023 (os dois nomes antigos)."""
+    return HOOK_PRE_COMMIT.replace(OWN_HOOK_SCRIPT, LEGACY_OWN_HOOK_SCRIPT).replace(INDEX_SCRIPT, LEGACY_INDEX_SCRIPT)
 
 
 def _pre_commit_selftest_cases() -> list[dict]:
@@ -205,6 +217,16 @@ def _pre_commit_selftest_cases() -> list[dict]:
             "existing": f"{HOOK_PRE_COMMIT}\n{TEMPLATE_HOOK_LINE}\n",
             "expected_equal_to": "existing",
         },
+        {
+            "name": "(e) existing project, legacy script name + template -> recognized, changes nothing",
+            "existing": f"{_legacy_hook()}\n{TEMPLATE_HOOK_LINE}\n",
+            "expected_equal_to": "existing",
+        },
+        {
+            "name": "(f) existing project, only the legacy hook -> appends the template chain, keeps the legacy name",
+            "existing": _legacy_hook(),
+            "expected_markers": (LEGACY_OWN_HOOK_SCRIPT, TEMPLATE_HOOK_MARKER),
+        },
     ]
 
 
@@ -217,11 +239,13 @@ def run_pre_commit_selftest() -> int:
             ok = result == HOOK_PRE_COMMIT
         elif case.get("expected_equal_to") == "existing":
             ok = result == case["existing"]
+        elif "expected_markers" in case:
+            ok = all(marker in result for marker in case["expected_markers"]) and result.rstrip("\n").endswith("exit 0")
         else:
             ok = (
-                OWN_HOOK_MARKER in result
+                OWN_HOOK_SCRIPT in result
                 and TEMPLATE_HOOK_MARKER in result
-                and result.index(OWN_HOOK_MARKER) < result.index(TEMPLATE_HOOK_MARKER)
+                and result.index(OWN_HOOK_SCRIPT) < result.index(TEMPLATE_HOOK_MARKER)
                 and result.startswith("#!/bin/sh\n")
                 and result.rstrip("\n").endswith("exit 0")
             )
@@ -510,7 +534,9 @@ def install_agents_structure(target: Path, base_dir: Path) -> Path:
     else:
         print(f"[WARNING] meta-create-skill not found at {source}.")
 
-    (agents_dir / "gerar_indice.py").write_text(INDEX_GENERATOR, encoding="utf-8")
+    # Projeto que já tem o nome antigo o mantém: o pre-commit dele o chama (adota o novo sob demanda).
+    index_name = LEGACY_INDEX_SCRIPT if (agents_dir / LEGACY_INDEX_SCRIPT).exists() else INDEX_SCRIPT
+    (agents_dir / index_name).write_text(INDEX_GENERATOR, encoding="utf-8")
     print("[OK] .agents/ structure created.")
     return agents_dir
 
@@ -613,9 +639,11 @@ def install_git_hooks(target: Path, base_dir: Path) -> None:
 
     source = base_dir / "skills" / "git-verificacao-commit" / "scripts"
     if source.exists():
-        # Origem em ingles (verify_commit.py); o nome instalado no projeto fica `verificar_commit.py` — contrato
-        # com os projetos vivos (o pre-commit deles o chama e `OWN_HOOK_MARKER` o reconhece).
-        shutil.copy2(source / "verify_commit.py", githooks / "verificar_commit.py")
+        # Projeto novo recebe `verify_commit.py`; o que já tem o pre-commit com o nome antigo mantém o
+        # nome que ele chama (`LEGACY_OWN_HOOK_SCRIPT`) — a decisão sai do pre-commit existente.
+        pre_commit_text = (githooks / "pre-commit").read_text(encoding="utf-8") if (githooks / "pre-commit").exists() else ""
+        installed = LEGACY_OWN_HOOK_SCRIPT if LEGACY_OWN_HOOK_SCRIPT in pre_commit_text else OWN_HOOK_SCRIPT
+        shutil.copy2(source / OWN_HOOK_SCRIPT, githooks / installed)
         shutil.copy2(source / "config.json", githooks / "config.json")
         print("[OK] Secrets gate copied to .githooks/")
 
@@ -650,7 +678,7 @@ def next_steps(modular: bool) -> None:
     if modular:
         print("  1. fill in the root .env with the real values")
         print("  2. fill in specs/00-contexto.md (the repository's first plan)")
-        print("  3. record the project decisions in specs/adr/ (language, schema, ui.modo)")
+        print("  3. record the project decisions in specs/adr/ (language, schema, ui.mode)")
     print("  4. first commit + remote: skill 'git-commit-inicial'")
 
 

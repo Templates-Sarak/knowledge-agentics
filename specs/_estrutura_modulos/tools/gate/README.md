@@ -122,6 +122,10 @@ depois da tabela de precisão dos verificadores.
 
 3. Regra de escopo `global` devolve `{ module, message }` em vez de string, porque precisa dizer de quem é o
    achado. Regra de escopo `root` devolve string: o alvo dela é sempre `(root)`.
+   **Um id, dois territórios:** uma regra de escopo `module` pode ter também `checkRoot(project)` — o motor a chama
+   **uma vez por projeto**, sob o alvo `(root)`. É o caso de `portuguese-identifier`: a lei é uma só (o código é
+   em inglês), o código dela mora em `modules/**` e na fiação, e a exceção nominal (`module` + `rule`) tem de
+   valer nos dois. Use isto — e não um segundo id `root-…` — quando a lei não muda de um território para o outro.
 4. **Nenhuma regra lê disco.** Tudo vem do contexto (`tools/gate/context.mjs`) — é o que as mantém
    rápidas e testáveis. O que é do **projeto**, e não do módulo, chega em `ctx.project`
    (`loadProject`): a política de `config/verification.json` e a config do linter em disco. É lido uma vez
@@ -136,6 +140,15 @@ depois da tabela de precisão dos verificadores.
    `file.content`: comentário e docstring não são código, e a lei escrita num comentário viraria
    violação dela mesma (`04-regras.md` §7.2). `content` é para quem julga texto que **não** é código —
    `-- rollback` numa migration, `.env.example`, o próprio `openapi.yaml`.
+
+## A regra de idioma e o vocabulário
+
+`portuguese-identifier` (família Escrita) lê dois arquivos que moram **ao lado do gate** e viajam com ele:
+`language.mjs` (o tokenizador léxico e o casamento — zero dependência, de propósito: o gate roda em projeto
+sem `typescript`) e `language-vocabulary.json` (o vocabulário **fechado**: cada termo com origem rastreável e
+a lista de cognatos que nunca entram). O medidor da base (`tests/measure-language.mjs`) e o hook de qualidade
+da base leem **os mesmos dois**. Termo novo entra no JSON com origem — nunca por "parecer português". O que a
+regra cobra e o que não cobra está em `04-regras.md` §4.7 e §7.2.
 
 ## O molde também é validado
 

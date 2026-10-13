@@ -171,7 +171,10 @@ def _selftest_systems_in_shipped_files():
     _case(failures, legacy_terms == [("old-sys", "old-sys"), ("Old Name", "old-sys")],
           f"systems_in_shipped_files: legacy map keys are read too (found {legacy_terms!r})")
     tests_dir = "specs/_estrutura_modulos/tests"
-    covered = [is_shipped(f"{tests_dir}/language-vocabulary.json"), is_shipped(f"{tests_dir}/x/y.json")]
+    covered = [
+        is_shipped(tests_dir.rsplit("/", 1)[0] + "/tools/gate/language-vocabulary.json"),
+        is_shipped(f"{tests_dir}/x/y.json"),
+    ]
     _case(failures, all(covered) and not is_shipped("skills/x/SKILL.md")
           and not is_shipped(f"{tests_dir}-other/x.json"),
           f"systems_in_shipped_files: tests/** ships and the rest does not (found {covered!r})")

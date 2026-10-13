@@ -101,7 +101,9 @@ APP_ONLY = "app-only"  # universal em app; em site, project (o site nao recebe .
 # modules/_template e adapters/_template, AGENTS.md/CLAUDE.md (o init_repo so ANEXA) e .sarak/.
 RULES = [
     (r"^tools/", UNIVERSAL),  # A, B
-    (r"^\.agents/(gerar_indice\.py$|skills/meta-create-skill/)", APP_ONLY),  # F
+    # F — o instalador grava `generate_index.py`; o projeto criado antes da onda 6 do ADR-023 tem o nome
+    # antigo, e a propagação reconhece os dois (não migra: o projeto adota o nome novo sob demanda).
+    (r"^\.agents/((generate_index|gerar_indice)\.py$|skills/meta-create-skill/)", APP_ONLY),
     (
         r"^specs/.*/\.gitkeep$",
         GITKEEP,
@@ -184,7 +186,7 @@ NO_DIRECT_SOURCE = [
         r"^specs/arquitetura/README\.md$",
         "binding commands (create-project.mjs applyMapCommands)",
     ),
-    (r"^\.agents/gerar_indice\.py$", "embedded in init_repo.py (INDEX_GENERATOR)"),
+    (r"^\.agents/(generate_index|gerar_indice)\.py$", "embedded in init_repo.py (INDEX_GENERATOR)"),
 ]
 H1_ONLY = ("specs/README.md", "specs/INDEX.md")
 BASE_WITH_TITLE = re.compile(r"^specs/arquitetura/00-base-[a-z]+\.md$")
@@ -1515,8 +1517,9 @@ CASES = [
     (
         ".agents is universal in app and project in site",
         lambda: (
-            classify(".agents/gerar_indice.py", APP) == UNIVERSAL
-            and classify(".agents/gerar_indice.py", SITE) == PROJECT
+            classify(".agents/generate_index.py", APP) == UNIVERSAL
+            and classify(".agents/gerar_indice.py", APP) == UNIVERSAL
+            and classify(".agents/generate_index.py", SITE) == PROJECT
         ),
     ),
     (

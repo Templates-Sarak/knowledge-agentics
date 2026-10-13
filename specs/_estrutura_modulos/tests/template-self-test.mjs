@@ -1865,6 +1865,42 @@ function containerCases() {
           && sampleLines.slice(2).every((line) => !allowlisted.test(line));
       });
     } },
+    { name: 'gitleaks allowlist, with the real binary: the interpolated URL passes, a literal password beside it on the SAME line is reported', fn: () => {
+      // `regexTarget = "line"` isentava a linha inteira: a senha literal ao lado da URL passava. Aqui a
+      // prova é com o gitleaks de verdade, nos três bindings. Sem o binário o caso se declara PULADO na
+      // saída (nunca verde calado) — a falta de uma ferramenta opcional não reprova o autoteste.
+      if (spawnSync('gitleaks', ['version'], { encoding: 'utf8' }).status !== 0) {
+        process.stdout.write('       SKIPPED: gitleaks is not installed — the real-binary proof did not run\n');
+        return true;
+      }
+      const url = 'DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@db:5432/app"';
+      // Montado em tempo de execução: o arquivo do autoteste não carrega, ele mesmo, um segredo de mentira.
+      const literal = ['Zq8vK2mP9xL4', 'nR7wT3yB6cD1', 'fG5hJ0aS'].join('');
+      const samples = [
+        { name: 'interpolated.env', text: `${url}\n`, findings: 0 },
+        { name: 'mixed.env', text: `${url} # password=${literal}\n`, findings: 1 },
+      ];
+      return BINDINGS.every((binding) => samples.every((sample) => {
+        const dir = mkdtempSync(join(tmpdir(), 'sarak-gitleaks-'));
+        try {
+          writeFileSync(join(dir, sample.name), sample.text, 'utf8');
+          const report = join(dir, 'report.json');
+          const config = join(TEMPLATE_ROOT, 'bindings', binding, 'root', '.gitleaks.toml');
+          spawnSync('gitleaks', ['detect', '--no-git', '--no-banner', '--source', dir, '--config', config,
+            '--report-format', 'json', '--report-path', report], { encoding: 'utf8' });
+          const found = JSON.parse(readFileSync(report, 'utf8')).filter((item) => item.File.endsWith(sample.name));
+          return found.length === sample.findings;
+        } finally {
+          rmSync(dir, { recursive: true, force: true });
+        }
+      }));
+    } },
+    { name: 'gitleaks allowlist targets the matched snippet, never the whole line', fn: () => (
+      BINDINGS.every((binding) => {
+        const config = readFileSync(join(TEMPLATE_ROOT, 'bindings', binding, 'root', '.gitleaks.toml'), 'utf8');
+        return /^regexTarget = "match"$/m.test(config) && !/regexTarget = "line"/.test(config);
+      })
+    ) },
     { name: 'bindingSteps: container-files follows verify-map in all three bindings, including --fast', fn: () => (
       BINDINGS.every((binding) => [{}, { fast: true }].every((options) => {
         const names = bindingNames(binding, options);

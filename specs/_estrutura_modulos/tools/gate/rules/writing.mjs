@@ -1,6 +1,7 @@
 /**
  * rules/writing.mjs — família "Escrita" do catálogo (specs/arquitetura/04-regras.md §4.7).
- * ids: function-threshold, nesting-threshold, parameters-threshold, swallowed-exception
+ * ids: function-threshold, nesting-threshold, parameters-threshold, swallowed-exception,
+ *      portuguese-identifier
  *
  * Por que no gate e não só no linter: o gate viaja com o módulo e roda sem `npm install`. Delegar
  * 100% ao ESLint/Ruff significa que num repositório sem linter instalado estes limites não são
@@ -15,6 +16,9 @@
  * que ninguém teria como notar.
  */
 import { THRESHOLDS } from '../thresholds.mjs';
+// O casamento e o tokenizador são de `../language.mjs` — o MESMO núcleo que o medidor usa. Importar (e não
+// reimplementar) é o que impede o gate e o medidor de divergirem sobre o que é "português".
+import { buildVocabulary, findPortugueseKeys, findPortugueseNames, languageOf } from '../language.mjs';
 
 const MAX_FUNCTION_LINES = THRESHOLDS.functionLines;
 const MAX_NESTING = THRESHOLDS.nesting;
@@ -146,6 +150,52 @@ function pythonNesting(lines) {
   return findings;
 }
 
+/** O mesmo vocabulário vira UM consultor por arquivo lido (a memória é pelo objeto cru do contexto). */
+const vocabularies = new WeakMap();
+
+function vocabularyOf(raw) {
+  if (raw === null || raw === undefined) return null;
+  if (!vocabularies.has(raw)) vocabularies.set(raw, buildVocabulary(raw));
+  return vocabularies.get(raw);
+}
+
+const MAX_NAMES_PER_FILE = 10;
+const IDIOM_LAW = 'code is in English (ADR-023): Portuguese stays only in comments, documentation, and the values of'
+  + ' config/texts.json';
+
+const quoted = (terms) => terms.map((term) => `"${term}"`).join(', ');
+
+/** Um achado por nome, com teto por arquivo — um módulo legado inteiro não vira milhares de linhas. */
+function languageFindings(rel, kind, names) {
+  const findings = names.slice(0, MAX_NAMES_PER_FILE).map(({ name, terms, line }) => (
+    `${rel}:${line}: ${kind} "${name}" contains the Portuguese term ${quoted(terms)} — ${IDIOM_LAW}`
+  ));
+  if (names.length > MAX_NAMES_PER_FILE) {
+    findings.push(`${rel}: ${names.length - MAX_NAMES_PER_FILE} more Portuguese name(s) not listed — rename them all (ADR-023)`);
+  }
+  return findings;
+}
+
+/** `{ rel, content, ext }[]` → achados de nome de código e de chave de config/manifesto. */
+function scanLanguage(sources, vocabulary) {
+  const findings = [];
+  for (const { rel, content, ext } of sources) {
+    if (ext === '.json') {
+      findings.push(...languageFindings(rel, 'config key', findPortugueseKeys(content, vocabulary)));
+      continue;
+    }
+    const language = languageOf(ext);
+    if (language === null) continue;
+    findings.push(...languageFindings(rel, 'identifier', findPortugueseNames(content, language, vocabulary)));
+  }
+  return findings;
+}
+
+/** Manifesto e config do MÓDULO: `module.json` e `config/*.json` (chave, nunca valor). */
+function isModuleJson(file) {
+  return file.ext === '.json' && (file.rel === 'module.json' || /^config\/[^/]+\.json$/.test(file.rel));
+}
+
 export default [
   {
     id: 'function-threshold',
@@ -224,6 +274,46 @@ export default [
         });
       }
       return findings;
+    },
+  },
+  {
+    /**
+     * O código é em inglês (ADR-023) — cobrado por máquina com vocabulário FECHADO.
+     *
+     * Id em inglês pelo critério B do ADR-024 (ordem idiomática): o par é o de `hardcode-url` e
+     * `swallowed-exception`, "defeito + coisa" — um identificador em português. É UMA regra e UM id
+     * para os dois territórios: o código do módulo (`check`, escopo `module`) e a fiação e a config da
+     * raiz (`checkRoot`, que o motor chama uma vez por projeto). A exceção nominal de
+     * `config/compliance.json` (módulo + regra + decisão) vale nos dois, o alvo da raiz sendo `(root)`.
+     *
+     * O QUE COBRA: identificador solto de código (declaração e uso do mesmo nome saem uma vez por
+     * arquivo), chave entre aspas de objeto/dicionário e chave de `module.json`, `project.json` e
+     * `config/*.json`. O QUE NÃO COBRA, e é lei: comentário, string, valor de `config/texts.json`,
+     * `module.json:name` (texto ao usuário — decisões 2 e 3 do ADR-023) e acesso por ponto, cujo dono é
+     * quem declara o nome. Nome de pasta/arquivo, SQL e `openapi.yaml` ficam fora: o tokenizador é de
+     * código e de chave de JSON, e na dúvida esta regra não acusa (§7.2).
+     *
+     * Falso positivo não se aceita: o vocabulário é fechado, com origem por termo, e os cognatos
+     * (`data`, `status`, `base`, `item`…) nunca entram, mesmo dentro de nome composto.
+     */
+    id: 'portuguese-identifier',
+    severity: 'error',
+    scope: 'module',
+    check(ctx) {
+      const vocabulary = vocabularyOf(ctx.project?.languageVocabulary);
+      if (vocabulary === null) return [];
+      const sources = ctx.files.filter((file) => languageOf(file.ext) !== null || isModuleJson(file));
+      return scanLanguage(sources, vocabulary);
+    },
+    checkRoot(project) {
+      if (!project.isProject) return [];
+      const vocabulary = vocabularyOf(project.languageVocabulary);
+      if (vocabulary === null) {
+        return ['the language vocabulary (tools/gate/language-vocabulary.json) is missing or unreadable — the'
+          + ' "portuguese-identifier" rule cannot run, and silence would look like conformance'];
+      }
+      const json = project.rootJson.map(({ rel, text }) => ({ rel, content: text, ext: '.json' }));
+      return scanLanguage([...project.code, ...json], vocabulary);
     },
   },
 ];

@@ -60,7 +60,7 @@ Estas são **decisões**, não configuração — vão para `specs/adr/NNN-*.md`
 |---|---|
 | Idioma das pastas (misto EN ou PT puro) | o gate cobra **consistência**, não a escolha — sem o registro, não há o que ser consistente com |
 | Topologia de schema (único ou por módulo) | muda o custo de separar depois; e `data.schema` de todo módulo depende dela |
-| `ui.modo` padrão (`proprio` ou `kit`) | `kit` proíbe importar a lib de UI bruta; adotar depois é campanha |
+| `ui.mode` padrão (`own` ou `kit`) | `kit` proíbe importar a lib de UI bruta; adotar depois é campanha |
 
 ## A6: Criar cada módulo
 
@@ -109,7 +109,7 @@ fora do padrão e vira dívida no dia da adequação. Adequar o projeto é campa
 | `binding` | `typescript` \| `javascript` \| `python` | define o molde e o conjunto de regras de linguagem |
 | `generatesArtifact` | `true` só se o módulo produz saída publicável | `false` descarta `core/engine`, `core/templates` e `generated/` |
 | `webPath` | `/<id>` ou `null` | `null` descarta `web/`; se declarado, o gate exige página real |
-| `ui.modo` | `proprio` \| `kit` | `kit` proíbe importar a lib de UI bruta fora do `ui-kit` |
+| `ui.mode` | `own` \| `kit` | `kit` proíbe importar a lib de UI bruta fora do `ui-kit` |
 
 **O que detectar:**
 - `id` com maiúscula, underscore ou acento → reprova no scaffold.

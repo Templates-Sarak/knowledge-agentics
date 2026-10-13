@@ -16,7 +16,8 @@
         "matcher": "Write|Edit|MultiEdit|apply_patch",
         "hooks": [
           { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/padrao-format.js\"" },
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/padrao-limiares.js\"" }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/padrao-limiares.js\"" },
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/padrao-idioma.js\"" }
         ]
       }
     ]

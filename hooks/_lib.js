@@ -212,6 +212,7 @@ function projectPolicy(root) {
   return {
     quality: raw.quality,
     formatting: raw.formatting,
+    language: raw.language,
     coverage: raw.coverage,
     dependencies: raw.dependencies,
     languages: Object.keys(languages).length > 0 ? languages : undefined,
@@ -243,6 +244,7 @@ function loadConfig(payloadCwd) {
       mode: "warn", // block | warn | off
     },
     formatting: { active: true, scope: "conforming" }, // scope: conforming | file
+    language: { mode: "warn" }, // block | warn | off — o idioma do código (ADR-023); nunca bloqueia por padrão
     coverage: {
       mode: "ask", // ask | block | warn | off
       minimum: 80,
@@ -279,6 +281,7 @@ function mergePolicy(defaults, raw) {
   return {
     quality: { ...defaults.quality, ...raw.quality },
     formatting: { ...defaults.formatting, ...raw.formatting },
+    language: { ...defaults.language, ...raw.language },
     coverage: { ...defaults.coverage, ...raw.coverage,
       tools: { ...defaults.coverage.tools, ...(raw.coverage?.tools) } },
     dependencies: { ...defaults.dependencies, ...raw.dependencies,

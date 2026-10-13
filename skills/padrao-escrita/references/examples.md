@@ -7,8 +7,9 @@ extraível; o ruim mostra os acoplamentos que impedem a futura separação.
 > que cara tem uma violação, e o que exatamente ela custa.
 
 > **Idioma dos exemplos:** os identificadores abaixo (`catalogo`, `criarItem`, `ErroValidacao`) ainda estão
-> em português por herança — são ilustração, **não** o padrão. A regra é código em inglês (`SKILL.md`,
-> "Idioma"); o exemplo é reescrito junto das ondas do `ADR-023`.
+> em português por herança — são ilustração, **não** o padrão: o mesmo identificador num arquivo de código
+> seria acusado (`portuguese-identifier`, e o aviso do hook `padrao-idioma`). A regra é código em inglês
+> (`SKILL.md`, "Idioma"); este exemplo ainda não foi reescrito.
 
 ---
 

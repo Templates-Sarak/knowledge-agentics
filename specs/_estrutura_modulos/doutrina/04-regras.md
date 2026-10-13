@@ -134,13 +134,19 @@ em português (linha 2 — é documentação, o terceiro lugar acima).
 próprias, e **nenhuma tabela em produção é renomeada por doutrina**: a migration é decisão do dono do sistema, com
 expand-contract (`db-migrations`).
 
-**O gate não cobra isto.** Não existe regra de idioma no catálogo — a mais próxima é `route-naming`,
-que julga kebab-case e verbo em rota, nunca idioma (limite declarado no §7.2). A cobrança por máquina é
-da onda 6 do `ADR-023`; até lá, divergência de idioma em código novo é achado de revisão, não de gate.
+**O gate cobra isto**, com a regra **`portuguese-identifier`** (§4.7): identificador de código e chave de
+`module.json`/`config/*.json` que contenha termo do **vocabulário fechado** de português
+(`tools/gate/language-vocabulary.json` — o arquivo **único** do template, com origem por termo e a lista de
+cognatos que nunca entram) reprova, no módulo **e** na fiação da raiz. O que **não** cobra é o que a lei
+manda ficar em português: comentário, string, valor de `config/texts.json`, `module.json:name`. Fora do
+template, o Nível 0 recebe um **aviso** (hook `padrao-idioma`, modo `warn`, nunca bloqueia por padrão) com o
+mesmo vocabulário. A exceção de projeto é a que já existe — `config/compliance.json`, módulo + regra + decisão —,
+sem mecanismo novo; idioma de código **legado** entra ali enquanto o plan de adequação não o migra.
 
-**A única coisa que o gate cobra sobre nome de função é a convenção do mapeador** (`mapper-naming`,
-§4.5): toda função **exportada** num arquivo de mapeador segue `to<Algo>`/`to_<algo>` (saída) ou
-`<algo>To<Algo>`/`<algo>_to_<algo>` (conversão de banco) — nada além disso, e nada sobre idioma. Método de
+**A única coisa que o gate cobra sobre a *forma* do nome de função é a convenção do mapeador**
+(`mapper-naming`, §4.5; o idioma do nome é de `portuguese-identifier`, acima): toda função **exportada** num
+arquivo de mapeador segue `to<Algo>`/`to_<algo>` (saída) ou
+`<algo>To<Algo>`/`<algo>_to_<algo>` (conversão de banco) — nada além disso. Método de
 classe ou propriedade de objeto ficam fora (§7.2): a regra julga o **nome**, não a **forma sintática** de
 quem o carrega.
 
@@ -257,10 +263,12 @@ quem o carrega.
 
 ## 4.7 Escrita — limiares dentro do arquivo
 
-**Estes limiares não são desta lei — são do Nível 0** (§1.1). A skill **`padrao-escrita`** é a dona: é lá que
-o valor de cada um é decidido e alterado. O gate os repete aqui porque **viaja com o módulo e roda sem
-`npm install`** — delegá-los inteiramente ao linter significa que num repositório sem linter instalado eles
-não são cobrados por ninguém.
+**Estas regras não são desta lei — são do Nível 0** (§1.1). A skill **`padrao-escrita`** é a dona: é lá que
+o valor de cada limiar e a regra de idioma são decididos e alterados. O gate os repete aqui porque **viaja com
+o módulo e roda sem `npm install`** — delegá-los inteiramente ao linter significa que num repositório sem
+linter instalado eles não são cobrados por ninguém. O idioma tem **um id para dois territórios**: o código do
+módulo (`check`) e a fiação com a config da raiz (`checkRoot`, uma vez por projeto) — a lei é uma só, e a
+exceção nominal (`module` + `rule`) vale nos dois.
 
 > **Se este número divergir do `padrao-escrita`, o `padrao-escrita` está certo e este catálogo está
 > desatualizado.** Repetir um valor é dívida assumida; disputar a posse dele seria o defeito.
@@ -271,6 +279,7 @@ não são cobrados por ninguém.
 | `nesting-threshold` | erro | no máximo **3 níveis** de bloco de **controle** (`if`/`for`/`while`/`switch`/`try`). Objeto literal, JSX, callback e corpo de função **não** contam — só controle | módulo |
 | `parameters-threshold` | erro | no máximo **4 parâmetros** por função (`self`/`cls` não contam) | módulo |
 | `swallowed-exception` | erro | nenhum `catch {}` vazio nem `except: pass` — exceção se trata, se traduz ou sobe | módulo |
+| `portuguese-identifier` | erro | nenhum identificador de código (função, tipo, classe, constante, variável, parâmetro, propriedade) nem chave de `module.json`/`config/*.json` contém termo do vocabulário fechado de português (`tools/gate/language-vocabulary.json`; cognatos e termos técnicos ficam fora). Vale no código do módulo **e** na fiação e na config da raiz (alvo `(root)`). Comentário, string, valor de `config/texts.json`, `module.json:name` e acesso por ponto ficam fora (§7.2) | módulo e raiz |
 
 **O linter continua sendo a verificação profunda** e é onde vivem as regras que exigem AST de verdade:
 
@@ -393,6 +402,7 @@ regras de `ui` não são heurísticas — `ui-kit` lê import, e o modo `proprio
 | Regra | Limite conhecido |
 |---|---|
 | `function-threshold`, `nesting-threshold`, `parameters-threshold` | assinatura fora do padrão comum pode não ser medida; nenhum falso positivo esperado, falso negativo é possível |
+| `portuguese-identifier` | **tokenizador léxico, zero dependência** (o gate roda em projeto sem `typescript`): pula comentário, string, template (lê o que está em `${…}`, que é código), regex e texto de JSX. A troca pela árvore sintática do medidor tem preço declarado e **só vai num sentido** — pode **deixar passar**, nunca acusar o que está em comentário, string ou valor de `texts.json`. Falso negativo assumido: texto de JSX que contenha pontuação de código; chave entre aspas sem separador antes dela; acesso por ponto (`obj.nome` — o dono do nome é quem o declara, e a declaração é acusada); nome de pasta e de arquivo; SQL e `openapi.yaml`. O **uso** de um nome em português declarado em outro arquivo também é acusado (um achado por nome e por arquivo). **Falso positivo não se aceita**: o vocabulário é **fechado** (a medição nunca é "parece português"), cada termo tem origem rastreável e os cognatos (`data`, `status`, `base`, `item`, `hash`, `config`…) nunca entram, nem dentro de nome composto. Concordância com o medidor, provada por máquina: `tests/verify-language-parity.mjs` |
 | `mapper-naming` | julga **só o nome** de função **exportada de nível de módulo** — método de classe e propriedade de objeto (`chaveDeCache` — casos "metodo de classe que NAO publica" e "propriedade-arrow que NAO publica" de `cases.mjs`) ficam fora: não são "função exportada", é a classe/objeto que carrega o `export`. É o mesmo limite, já declarado, do extrator de projeção que `contract-projection`/`payload-camelcase`/`sensitive-in-output` compartilham (§7.2, "Extração de texto... de mapeador") — esta regra fecha a lacuna do NOME solto, não a da forma sintática. **E não fecha o escape por NOME DE ARQUIVO** — as quatro regras da família selecionam "é mapeador" pelo mesmo `/mapper/i`, e um mapeador batizado fora desse vocabulário escapa das quatro por igual (§7.2.1, item 4). Falso negativo assumido nas duas formas; nenhum falso positivo esperado |
 | `public-route-authenticated` | cobre **duas** das três coisas que a lei afirma, e a terceira fica declarada aqui em vez de fingida. Cobre: a lista de isenção vir do manifesto (a `api/` lê `publicRoutes` e não escreve rota literal) e cada entrada apontar para caminho **e método** que o contrato tem. **Não** cobre que o middleware esteja de fato aplicado e na posição certa da cadeia: em TS/JS o wiring é `app.use(authentication(...))` no bootstrap, em Python ele vive dentro de `record_middlewares`, e não há forma portável de afirmar estaticamente "esta cadeia rejeita quem não tem token". Isso é comportamento, e quem o prova é o teste de contrato, que exercita a requisição de verdade. A cláusula do manifesto é o que sobra de verificável, e ela é o suficiente para pegar o defeito que importa: a lista em vigor ser outra que não a declarada. Spec ausente ou `paths:` ilegível é do `contract`, e aqui a regra silencia |
 | `input-allowlist` | cobra a **forma** do defeito, não a ausência da allowlist. Passar o corpo adiante é legítimo e é o que o molde faz — `create(req.body, …)` chama `readBody`, que rejeita campo desconhecido; proibir a passagem acusaria o código correto. Por isso a regra persegue as três formas em que o corpo vira entidade **sem passar por ninguém**: spread, repositório direto e `Object.assign`. O que escapa: allowlist escrita mas incompleta (campo novo esquecido) — o gate não sabe quais campos deviam estar lá, e essa metade é do teste de contrato. Falso negativo assumido; nenhum falso positivo esperado |

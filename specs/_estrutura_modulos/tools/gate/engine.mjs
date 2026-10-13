@@ -91,12 +91,26 @@ export function runGlobalRules(contexts) {
 export function runRootRules(project) {
   if (project === undefined) return [];
   const findings = [];
-  for (const rule of RULES.filter((r) => r.scope === 'root')) {
-    for (const item of normalize(rule.check(project, { ids: CATALOG_IDS }), ROOT_TARGET)) {
+  for (const rule of RULES) {
+    const check = rootCheckOf(rule);
+    if (check === null) continue;
+    for (const item of normalize(check(project, { ids: CATALOG_IDS }), ROOT_TARGET)) {
       findings.push({ ...item, rule: rule.id, severity: rule.severity });
     }
   }
   return findings;
+}
+
+/**
+ * A verificação de RAIZ de uma regra, ou `null`. Regra de escopo `root` é a própria `check`; regra de
+ * escopo `module` pode ter uma `checkRoot` — o MESMO id, a MESMA lei, outro território. É o caso de
+ * `portuguese-identifier`: a lei é uma só (o código é em inglês) e o código dela mora em dois lugares que
+ * nenhum contexto enxerga junto (`modules/**` e a fiação). Com dois ids o catálogo teria duas linhas para
+ * uma lei, e a exceção nominal (`module` + `rule`) apontaria para ids diferentes.
+ */
+function rootCheckOf(rule) {
+  if (rule.scope === 'root') return rule.check;
+  return typeof rule.checkRoot === 'function' ? rule.checkRoot : null;
 }
 
 /** Checagens específicas da pergunta de extração, além das regras do catálogo. */

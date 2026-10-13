@@ -4,8 +4,8 @@ title = "Sarak project secret scanning"
 useDefault = true
 
 [[allowlists]]
-description = "Allow database URLs when both credentials come from environment interpolation"
-regexTarget = "line"
+description = "Allow database URLs when both credentials come from environment interpolation. regexTarget = \"match\" exempts ONLY the matched snippet, never the whole line: a literal secret next to the URL on the same line is still reported"
+regexTarget = "match"
 regexes = [
   '''(postgres|postgresql|mysql|mongodb(\+srv)?)://(\$\{[A-Za-z_][A-Za-z0-9_]*(:\?[^}]*)?\}|\$[A-Za-z_][A-Za-z0-9_]*):(\$\{[A-Za-z_][A-Za-z0-9_]*(:\?[^}]*)?\}|\$[A-Za-z_][A-Za-z0-9_]*)@''',
 ]

@@ -48,7 +48,7 @@ reescrever import.
 
 **Ele se verifica sozinho**, em quatro camadas: o gate cobra o projeto · o gate se testa · o template
 prova que gera projeto que passa na própria cadeia · toda ferramenta com `--selftest` é executada.
-Verde significa que verificou — e **81 regras** são cobradas por máquina, não de memória.
+Verde significa que verificou — e **82 regras** são cobradas por máquina, não de memória.
 
 **O projeto nasce dockerizado** (ADR-022): `Dockerfile` (uma imagem de backend do monólito composto),
 `compose.yml` (Postgres de dev + paridade), `deploy/` e, nos bindings com `web/`, `front.Dockerfile` — o
@@ -311,7 +311,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `site-` | `site-organizacao`, `site-seo`, `site-criacao` | — | ✅ `/site-organizar`, `/site-seo` | — |
 | `spec-` | `spec-write`, `spec-fundacao`, `spec-site-fundacao`, `spec-revisao`, `spec-panorama` | — | — | — |
 | `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base`, `meta-fluxos`, `meta-propagar-base` | — | ✅ `/meta-criar-skill` | — |
-| `padrao-` | `padrao-escrita`, `padrao-python`, `padrao-typescript` | `padrao-limiares`, `padrao-format` | ⬜ (subsumido pelo `code-`) | ⬜ |
+| `padrao-` | `padrao-escrita`, `padrao-python`, `padrao-typescript` | `padrao-limiares`, `padrao-format`, `padrao-idioma` | ⬜ (subsumido pelo `code-`) | ⬜ |
 
 **Governança:** a criação de **skills** é regida pela `meta-create-skill`. Para commands/agents/hooks,
 **§4 deste README é a fonte da verdade**.
@@ -346,13 +346,13 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 > scripts/audit_base.py` cobra, por máquina, que toda skill fora dessa lista de exceções tenha a
 > trava. Garantia determinística é trabalho de **hook**.
 
-### Commands (13), Agents (5) e Hooks (5)
+### Commands (13), Agents (5) e Hooks (6)
 
 - **Commands:** `/code1-auditar`, `/code2-caracterizar`, `/code3-adequar`, `/code-entregar`, `/cyber1-auditar`, `/cyber2-adequar`,
   `/git1-auditar`, `/git2-adequar`, `/deploy-vercel`, `/deploy-docker`, `/site-organizar`, `/site-seo`, `/meta-criar-skill`.
 - **Agents:** `code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`.
 - **Hooks:** `cyber-git-seguro`, `cyber-dependencias`, `test-cobertura` (PreToolUse) · `padrao-format`,
-  `padrao-limiares` (PostToolUse).
+  `padrao-limiares`, `padrao-idioma` (PostToolUse).
 
 ### Verificar a integridade da base
 
@@ -379,7 +379,7 @@ O repo é, ao mesmo tempo, um **marketplace** e o **plugin `sarak`** (manifestos
 /plugin install sarak@knowledge-agentics
 ```
 
-Isso carrega **skills, commands, agents e hooks** nativamente em qualquer projeto — os 5 hooks
+Isso carrega **skills, commands, agents e hooks** nativamente em qualquer projeto — os 6 hooks
 (`hooks/hooks.json`), servindo 4 garantias, ficam **ativos por padrão**. Atualizar depois:
 
 ```

@@ -10,6 +10,10 @@
     "scope": "conforming",
     "_scope_doc": "conforming = só reformata arquivo fora de git, novo, ou cujo HEAD já estava formatado (legado fica intacto, sem diff ruidoso) | file = sempre formata o arquivo inteiro"
   },
+  "language": {
+    "mode": "warn",
+    "_mode_doc": "warn = avisa o modelo quando um identificador do arquivo editado bate o vocabulário fechado de português (ADR-023) | block = cobra correção | off = ignora. NUNCA bloqueia por padrão: idioma é convenção do projeto, e projeto legado em português receberia um bloqueio a cada edição. O vocabulário é o arquivo único do template (`tools/gate/language-vocabulary.json`); sem ele o hook se cala e diz por quê no log."
+  },
   "coverage": {
     "mode": "ask",
     "_mode_doc": "ask = pede aprovação do usuário se abaixo do mínimo | block = bloqueia o push | warn = avisa e prossegue | off = ignora",

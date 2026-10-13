@@ -106,7 +106,7 @@ reverter aí é decisão do usuário.
 chaves em português — por um mapa antigo→novo único (`LEGACY_MANIFEST_*` em `scripts/apply.py`; o do carimbo e do
 mapa vive no `stamp.py`). Quem grava só grava chaves novas. A referência de um commit **antigo** da base é
 gerada pelo `init_repo.py` daquele commit (`installer_api` reconhece os nomes antigos). Fora da propagação:
-`.githooks/pre-commit` e `.githooks/verificar_commit.py` são um **par** (o hook novo chama `--root .`); a
+`.githooks/pre-commit` e `.githooks/verify_commit.py` (`verificar_commit.py` em projeto criado antes da onda 6 do ADR-023) são um **par** (o hook novo chama `--root .`); a
 propagação só compara `specs/`, `tools/` e `.agents/`, não os atualiza — adequar o par é trabalho do projeto.
 
 **Ações do plano:** `add` (falta no sistema) · `add?` (lei do template ou ADR 000 ausente **sem
@@ -136,7 +136,7 @@ da sua fonte na base (`git log -- <fonte>`). Igual a alguma → `replace`; nenhu
 **transformados** pelo instalador também são adotados: `00-base-*` comparado sem a linha `titulo:` e o H1;
 doutrina com escopo (`01-modulo`, `04-regras`, …) com o escopo do sistema trocado pelo marcador lido do
 `create-project.mjs`. `specs/README.md` e `specs/INDEX.md` comparam **sem o título**. Sem fonte direta (README
-da doutrina, `gerar_indice.py`) → `divergent`. Arquivo com título do projeto é escrito com **o corpo da
+da doutrina, `generate_index.py`, ou `gerar_indice.py` no projeto antigo) → `divergent`. Arquivo com título do projeto é escrito com **o corpo da
 referência e as linhas de título do sistema**, no fim de linha do sistema.
 
 **Lacunas** — trabalho de uma **plan do revisor no próprio projeto** (as propostas do relatório), nunca da

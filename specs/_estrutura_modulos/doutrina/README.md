@@ -34,8 +34,8 @@ tags: ["indice", "mapa", "arquitetura", "onboarding"]
 ## 2. O laço
 
 ```sh
-<comando-verificar>                        gate + env + schemas + forma + limiares + tipos + testes
-<comando-iniciar>                          sobe o sistema — um processo, uma porta
+<verify-command>                        gate + env + schemas + forma + limiares + tipos + testes
+<start-command>                          sobe o sistema — um processo, uma porta
 git config core.hooksPath .githooks        ativa os hooks (config LOCAL — cada clone repete)
 ```
 

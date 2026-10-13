@@ -69,8 +69,13 @@ variável local e parâmetro), nomes de módulo, rotas, tabelas, colunas, schema
 manifesto, ids de regra, mensagens e saídas de ferramentas. **O português mora em três lugares**: o texto
 mostrado ao usuário final no front (o *valor* em `config/texts.json` — a chave é inglês), os **comentários**
 e a **documentação** (`specs/`, `doutrina/`, skills, commands, agents, READMEs). Vale com ou sem template.
-Convenção de leitura humana: nenhum verificador a cobra ainda. O detalhe do template e o plano de migração
-do que ainda está em português são do `ADR-023` (`specs/_estrutura_modulos/doutrina/adr/decisoes.md`).
+**Cobrado por máquina**, com o mesmo vocabulário fechado nos dois lugares (`tools/gate/language-vocabulary.json`,
+com origem por termo e a lista de cognatos que nunca entram): no template, o gate reprova com a regra
+`portuguese-identifier` (`04-regras.md` §4.7); em qualquer projeto, o hook `padrao-idioma` **avisa**
+(`language.mode`, `warn` por padrão — nunca bloqueia sem a configuração do projeto). Comentário, string, valor
+de `config/texts.json` e `module.json:name` não são cobrados — é o que a lei manda ficar em português. A
+exceção de projeto é a de `config/compliance.json` (módulo + regra + decisão). O detalhe do template é do
+`ADR-023` (`specs/_estrutura_modulos/doutrina/adr/decisoes.md`).
 
 **Testes** — toda nova funcionalidade vem com testes **na mesma entrega**; **caminhos críticos obrigatórios**. Testes ficam em `tests/` do módulo. Legado entra via testes de caracterização (skill `code-adequacao`).
 - **Cobertura ~80% é alvo de equipe, e explicitamente NÃO é regra.** Medi-la exige **executar** os testes, e um gate estático não executa nada. Cobre-se em revisão e no comando `verificar` do projeto. Cobertura também não é meta em si: teste que existe só para subir número é peso morto.
@@ -98,7 +103,7 @@ marcadores `TODO`/`FIXME` e idioma: `references/comentarios.md`.
 
 | Onde | O quê |
 |---|---|
-| `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~81 regras, cada uma com id e verificador |
+| `specs/_estrutura_modulos/doutrina/04-regras.md` | **o catálogo normativo** — ~82 regras, cada uma com id e verificador |
 | `specs/_estrutura_modulos/doutrina/` — `00-arquitetura.md` · `01-modulo.md` · `02-contrato-e-dados.md` · `03-operacao.md` | por que a regra existe e como trabalhar dentro dela |
 | `tools/gate/validate.mjs` | **o verificador** — a regra é cobrada por máquina, não por memória |
 

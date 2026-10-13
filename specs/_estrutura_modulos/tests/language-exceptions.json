@@ -134,12 +134,13 @@
    "file": "skills/meta-iniciar-repositorio/scripts/init_repo.py",
    "category": "string",
    "contains": [
+    "generate_index.py — catalogo",
     "gerar_indice.py — catalogo",
     "if command -v python",
     "verificar_commit.py",
     "gerar_indice.py"
    ],
-   "reason": "nomes de arquivo instalados em projetos vivos (.agents/gerar_indice.py, .githooks/verificar_commit.py) sao contrato com o projeto e o pre-commit ja instalado; o conteudo do index.md gerado e documentacao em portugues"
+   "reason": "nomes LEGADOS de arquivo instalados em projetos criados antes da onda 6 (.agents/gerar_indice.py, .githooks/verificar_commit.py): o instalador os reconhece e mantem para o projeto vivo, que adota o nome novo sob demanda; o conteudo do index.md gerado e documentacao em portugues"
   },
   {
    "file": "skills/meta-iniciar-repositorio/scripts/init_repo.py",
@@ -155,10 +156,9 @@
     "git-commit-inicial",
     "git-verificacao-commit",
     "00-contexto",
-    "ui.modo",
     "mapa.json"
    ],
-   "reason": "texto de documentacao gerado para o projeto (AGENTS.md), chave 'titulo:' e titulos de specs em portugues que o script reescreve, nomes reais de pasta/skill/arquivo da base e de specs (_estrutura_*, git-*, 00-contexto.md, mapa.json, ui.modo)"
+   "reason": "texto de documentacao gerado para o projeto (AGENTS.md), chave 'titulo:' e titulos de specs em portugues que o script reescreve, nomes reais de pasta/skill/arquivo da base e de specs (_estrutura_*, git-*, 00-contexto.md, mapa.json)"
   },
   {
    "file": "skills/meta-propagar-base/scripts/propagate.py",
@@ -944,15 +944,6 @@
   },
   {
    "file": "tools/create-project.mjs",
-   "category": "decl",
-   "reason": "template markers <comando-verificar>/<comando-iniciar> are syntax of the Portuguese doctrine README that this tool substitutes; renaming needs the doctrine README renamed in the same change",
-   "names": [
-    "<comando-verificar>",
-    "<comando-iniciar>"
-   ]
-  },
-  {
-   "file": "tools/create-project.mjs",
    "category": "string",
    "reason": "names of Portuguese doctrine files/dirs copied into the generated project (000-decisoes-do-template.md, decisoes.md, specs/arquitetura)",
    "contains": [
@@ -1103,7 +1094,8 @@
     "git-especialista-repositorio",
     "code-documentacao",
     "code-assinatura",
-    "git-revisao-diff"
+    "git-revisao-diff",
+    "padrao-idioma"
    ]
   },
   {
@@ -1160,6 +1152,43 @@
     "_estrutura_modulos",
     "catalogo",
     "doutrina"
+   ]
+  },
+  {
+   "file": "tools/gate/tests/cases.mjs",
+   "category": "decl",
+   "reason": "fixture of portuguese-identifier: a Portuguese config key ('mensagemVazia') planted in texts.json is the defect the case must see",
+   "names": [
+    "mensagemVazia"
+   ]
+  },
+  {
+   "file": "tools/gate/tests/cases.mjs",
+   "category": "string",
+   "reason": "fixtures of portuguese-identifier: the planted Portuguese names, the decoys that must NOT be reported (comment, string, texts.json value, module name) and the assertion texts that name the terms",
+   "contains": [
+    "Portuguese term \"listar\"",
+    "listarRegistros",
+    "listar_registros",
+    "config key \"mensagemVazia\"",
+    "Nada por aqui",
+    "Nenhum registro",
+    "Pedidos de venda",
+    "noticeLine",
+    "notice_line"
+   ]
+  },
+  {
+   "file": "hooks/padrao-idioma.js",
+   "category": "string",
+   "reason": "nome do arquivo do hook (decisão 4), nome da skill padrao-escrita, a pasta real specs/_estrutura_modulos e as fixtures do selftest, que PRECISAM de português de verdade para provar que o aviso dispara e que comentário, string e cognato ficam quietos",
+   "contains": [
+    "padrao-idioma",
+    "padrao-escrita",
+    "_estrutura_modulos",
+    "listar_registros",
+    "Nenhum registro",
+    "listar registros"
    ]
   }
  ]

@@ -30,7 +30,7 @@
  *               ao usuário e ficam de fora — ADR-023, decisões 2 e 3).
  *
  * COMO DECIDE. Um nome é português quando alguma de suas palavras (partida por camelCase, snake_case,
- * kebab-case e dígito, sem acento, minúscula) está em `language-vocabulary.json` — lista FECHADA com origem
+ * kebab-case e dígito, sem acento, minúscula) está em `tools/gate/language-vocabulary.json` — lista FECHADA com origem
  * rastreável por termo. Cognatos e termos técnicos ficam de fora de propósito (`cognates`). Nunca "parece
  * português". Texto livre (`string`) também casa as palavras funcionais de `functionWords`.
  *
@@ -43,9 +43,15 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// O casamento é o do gate: UMA implementação, dois leitores (tools/gate/language.mjs).
+import { buildVocabulary, fold, matchTerms, splitWords } from '../tools/gate/language.mjs';
+
+export { buildVocabulary, fold, matchTerms, splitWords };
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = join(HERE, '..');
-const VOCABULARY_FILE = join(HERE, 'language-vocabulary.json');
+/** O arquivo único do template (ADR-023 decisão 7): o gate lê o MESMO. */
+const VOCABULARY_FILE = join(HERE, '..', 'tools', 'gate', 'language-vocabulary.json');
 const DEFAULT_BASE_ROOT = join(HERE, '..', '..', '..');
 const EXCEPTIONS_FILE = join(HERE, 'language-exceptions.json');
 /** Escopos do template (relativos a `--root`) e da base (relativos a `--base-root`; globs `*` por pasta). */
@@ -61,52 +67,15 @@ function isDocKey(key) {
   return key.startsWith('//') || DOC_ONLY_KEYS.has(key);
 }
 /** O medidor não se mede: o vocabulário e as fixtures do próprio selftest são português de propósito. */
-const SELF_DATA = new Set(['language-vocabulary.json', 'language-exceptions.json', 'measure-language.mjs']);
+const SELF_DATA = new Set([
+  'language-vocabulary.json', 'language-exceptions.json', 'measure-language.mjs', 'verify-language-parity.mjs',
+]);
 let nameWidth = 80;
 const GENERATED_COMMENT = /^\s*(#|\/\/|--|\/\*|\*)/;
 
 // ================================================================================================
 // NÚCLEO — puro.
 // ================================================================================================
-
-/** Sem acento e minúsculo — `situação` e `Situacao` viram a mesma palavra. */
-export function fold(text) {
-  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
-
-/** Palavras de um identificador ou texto: parte por caixa (camelCase), `_`, `-`, `.`, `/`, espaço e dígito. */
-export function splitWords(text) {
-  const spaced = text
-    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
-  return fold(spaced).split(/[^a-z]+/).filter((word) => word.length > 0);
-}
-
-/** Cria o consultor do vocabulário a partir do JSON versionado. */
-export function buildVocabulary(raw) {
-  const terms = new Map(Object.entries(raw.terms));
-  const functionWords = new Map(Object.entries(raw.functionWords ?? {}));
-  const cognates = new Set(raw.cognates ?? []);
-  const rootOf = (term) => {
-    for (const cut of [['oes', 'ao'], ['ais', 'al'], ['es', ''], ['s', '']]) {
-      if (!term.endsWith(cut[0])) continue;
-      const singular = term.slice(0, term.length - cut[0].length) + cut[1];
-      if (terms.has(singular)) return singular;
-    }
-    return term;
-  };
-  return { terms, functionWords, cognates, rootOf };
-}
-
-/** Termos do vocabulário que aparecem no texto. `free` inclui as palavras funcionais (texto livre). */
-export function matchTerms(text, vocabulary, free = false) {
-  const found = [];
-  for (const word of splitWords(text)) {
-    if (vocabulary.cognates.has(word)) continue;
-    if (vocabulary.terms.has(word) || (free && vocabulary.functionWords.has(word))) found.push(word);
-  }
-  return found;
-}
 
 /** Remove as linhas que são comentário emitido em arquivo gerado (`#`, `//`, `--`) de um texto. */
 export function dropCommentLines(text) {
@@ -360,7 +329,7 @@ function runPython(files) {
   return null;
 }
 
-function loadTypeScript() {
+export function loadTypeScript() {
   const require = createRequire(import.meta.url);
   return require('typescript');
 }
@@ -437,7 +406,7 @@ function loadExceptions(files) {
   return list;
 }
 
-function measureScope(root, baseRoot, scope, vocabulary, ts, exceptions, only = []) {
+export function measureScope(root, baseRoot, scope, vocabulary, ts, exceptions, only = []) {
   const exts = [...CODE_EXT, '.py', ...DATA_EXT];
   const anchor = scope in BASE_SCOPES ? baseRoot : root;
   const relOf = (path) => relative(anchor, path).split('\\').join('/');
