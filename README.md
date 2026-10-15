@@ -36,7 +36,7 @@ Essa fronteira é a chave para entender o resto. É o que a §2 detalha.
 
 ```
 AGENTS.md / CLAUDE.md   os inegociáveis, sempre no contexto do agente (CLAUDE.md só importa o AGENTS.md)
-skills/                 o comportamento do agente — 56 skills, uma pasta cada (§7)
+skills/                 o comportamento do agente — 57 skills, uma pasta cada (§7)
 commands/               os atalhos /comando que você dispara — 13
 agents/                 subagentes de contexto isolado (auditores, adequador, revisor) — 5
 hooks/                  as garantias determinísticas que rodam a cada edição/commit — 6
@@ -143,6 +143,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 | Criar um módulo, ou um sistema modular | skill `code-modulo` |
 | **Transformar um módulo existente em módulo genérico de prateleira** | skill `code-generalizacao-modulo` (um módulo, um repositório) |
 | **Adequar um sistema legado ao template** | skill `meta-adequacao-modular` (Fase A planeja · Fase B confere) |
+| **Cortar o sistema para produção (limpeza integral, `v1.0.0`, `develop`)** | skill `meta-marco-0` (A planeja · B limpa · C confere · D publica) |
 | Adequar código legado ao Nível 0 | `/code1-auditar` → `/code2-caracterizar` → `/code3-adequar` |
 | Auditar segurança | `/cyber1-auditar` → `/cyber2-adequar` |
 | Auditar o histórico git | `/git1-auditar` → `/git2-adequar` |
@@ -151,7 +152,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 
 | Bloco | Status |
 |---|---|
-| `skills/` | ✅ **56** skills por área (§7) |
+| `skills/` | ✅ **57** skills por área (§7) |
 | `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
 | `hooks/` | ✅ **6** hooks · **4** garantias (segredo no git, padrão de escrita — limiares, formato e idioma —, dependências, cobertura — `hooks/README.md`) |
@@ -350,7 +351,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `deploy-` | `deploy-vercel`, `deploy-docker-monolito`, `deploy-docker-microsservico` | — | ✅ `/deploy-vercel`, `/deploy-docker` | — |
 | `site-` | `site-organizacao`, `site-seo`, `site-criacao` | — | ✅ `/site-organizar`, `/site-seo` | — |
 | `spec-` | `spec-write`, `spec-fundacao`, `spec-site-fundacao`, `spec-revisao`, `spec-panorama` | — | — | — |
-| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-atualizar-base`, `meta-verificacao-base`, `meta-fluxos`, `meta-propagar-base` | — | ✅ `/meta-criar-skill` | — |
+| `meta-` | `meta-create-skill`, `meta-iniciar-repositorio`, `meta-adequacao-modular`, `meta-marco-0`, `meta-atualizar-base`, `meta-verificacao-base`, `meta-fluxos`, `meta-propagar-base` | — | ✅ `/meta-criar-skill` | — |
 | `padrao-` | `padrao-escrita`, `padrao-python`, `padrao-typescript` | `padrao-limiares`, `padrao-format`, `padrao-idioma` | ⬜ (subsumido pelo `code-`) | ⬜ |
 
 **Governança:** a criação de **skills** é regida pela `meta-create-skill`. Para commands/agents/hooks,
@@ -360,7 +361,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 
 ## 7. Inventário atual
 
-### Skills (56, por área)
+### Skills (57, por área)
 
 | Prefixo | Skills |
 |---|---|
@@ -375,7 +376,7 @@ em todas as áreas: `adequar`.** Command avulso → sem número.
 | `site-` (3) | `site-criacao`, `site-organizacao`, `site-seo` |
 | `git-` (4) | `git-commit-inicial`, `git-especialista-repositorio`, `git-revisao-diff`, `git-verificacao-commit` |
 | `cyber-` (9) | `cyber-api`, `cyber-auth`, `cyber-codigo`, `cyber-config`, `cyber-dados`, `cyber-dependencias`, `cyber-ia`, `cyber-infra`, `cyber-segredos` |
-| `meta-` (7) | `meta-adequacao-modular`, `meta-atualizar-base`, `meta-create-skill`, `meta-fluxos`, `meta-iniciar-repositorio`, `meta-propagar-base`, `meta-verificacao-base` |
+| `meta-` (8) | `meta-adequacao-modular`, `meta-atualizar-base`, `meta-create-skill`, `meta-fluxos`, `meta-iniciar-repositorio`, `meta-marco-0`, `meta-propagar-base`, `meta-verificacao-base` |
 
 > **Critério, não lista de nomes:** skill **mutativa** (edita/gera/apaga arquivo) ou de **varredura**
 > (audita/relata sem julgamento novo) termina a `description` com a trava `NÃO acione

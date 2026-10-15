@@ -51,6 +51,7 @@ precisa agir sem pedido para cumprir o papel — hoje três: as normas sempre-re
 | Saber se um código legado está conforme | `code-diagnostico` (read-only) · em escala: `/code1-auditar` |
 | Adequar legado ao padrão sem mudar comportamento | `code-adequacao` · fluxo completo: `/code2-caracterizar` → `/code3-adequar` |
 | Levar um legado (já em produção) ao **template de módulos** (Nível 1) | `meta-adequacao-modular` — duas conversas: planejar (Fase A) e conferir (Fase B) |
+| Cortar o sistema para produção (limpeza integral, tag `v1.0.0`, `develop`) | `meta-marco-0` — quatro fases: planejar, limpar, conferir (outra conversa), publicar |
 | Cobrir código novo com testes | `test-unitario` |
 | Testar endpoint com banco real efêmero | `test-integracao-api` |
 | Testar contrato de API em runtime (provider/consumer, payload entre versões) | `test-api-contrato` |
@@ -190,6 +191,7 @@ o Nível 0 mais o Nível 2 — não improvise meia estrutura modular.
 | `meta-create-skill` | `meta-` | Criar/revisar skill: 3 camadas, `description`-gatilho, scaffold, checklist. |
 | `meta-iniciar-repositorio` | `meta-` | Preparar um repo-alvo para receber inteligência local (`.agents/`, entrypoints, hook de índice). |
 | `meta-adequacao-modular` | `meta-` | Levar um legado ao template de módulos — diagnóstico, gate instalado antes do refactor, plans `xx-*`, conferência em conversa separada. |
+| `meta-marco-0` | `meta-` | Marco-0: limpa o legado para produção (comentários e migrations obsoletos), prova a paridade do schema, fecha as specs sem ADRs de evolução e publica `v1.0.0` + `develop`. |
 | `meta-atualizar-base` | `meta-` | Atualizar a Fonte da Verdade Sarak e espelhar para as IDEs (`sync_ide.py`). |
 | `meta-verificacao-base` | `meta-` | Verificar integridade da base: YAML, contratos JSON, ponteiros órfãos. |
 | `meta-fluxos` | `meta-` | Executar um fluxo de `commands/` pelo nome num harness sem commands (Codex) — roteia, não copia. |

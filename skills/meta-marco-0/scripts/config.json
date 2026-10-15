@@ -1,0 +1,59 @@
+{
+  "work_branch": "marco-0",
+  "integration_branch": "develop",
+  "release_tag": "v1.0.0",
+  "default_branches": ["main", "master"],
+  "plan_prefix": "m0-",
+  "plans_dir": "specs/plan",
+  "closed_plan_statuses": ["🟢 Aprovada", "⚪ Sintetizada", "🟢", "⚪"],
+  "protect_manifest": "marco-0.protect",
+  "adr_dir": "specs/adr",
+  "adr_anchor": "000-decisoes-do-template.md",
+  "workflow_dir": ".github/workflows",
+  "risky_workflow_patterns": ["^\\s*release\\s*:", "^\\s*tags\\s*:", "^\\s*-?\\s*['\"]?v\\*"],
+  "ignore_dirs": ["node_modules", ".git", "dist", "build", ".venv", "venv", "__pycache__", ".next"],
+  "test_dir_names": ["tests", "test", "__tests__", "spec"],
+  "test_file_patterns": ["*.test.*", "*.spec.*", "test_*.py", "*_test.py", "*_test.go"],
+  "schema_file_candidates": [
+    "schema.sql",
+    "db/schema.sql",
+    "database/schema.sql",
+    "sql/schema.sql",
+    "init.sql",
+    "db/init.sql",
+    "prisma/schema.prisma"
+  ],
+  "migration_tools": [
+    { "name": "prisma", "markers": ["prisma/migrations"], "dir": "prisma/migrations" },
+    { "name": "alembic", "markers": ["alembic.ini", "alembic/versions"], "dir": "alembic/versions" },
+    { "name": "flyway", "markers": ["flyway.conf", "db/migration"], "dir": "db/migration" },
+    { "name": "knex", "markers": ["knexfile.js", "knexfile.ts"], "dir": "migrations" },
+    { "name": "typeorm", "markers": ["ormconfig.json", "src/migrations"], "dir": "src/migrations" },
+    { "name": "plain-sql", "markers": ["db/migrations", "migrations"], "dir": "migrations" }
+  ],
+  "parity_profiles": {
+    "postgres-docker": {
+      "description": "Postgres efêmero em container; schema.sql x cadeia de migrations .sql em ordem lexicográfica.",
+      "requires": ["docker"],
+      "start": [
+        { "argv": ["docker", "run", "-d", "--rm", "--name", "{container}", "-e", "POSTGRES_PASSWORD={password}", "postgres:16"] }
+      ],
+      "ready": { "argv": ["docker", "exec", "{container}", "pg_isready", "-U", "postgres"], "retries": 30, "interval_seconds": 1 },
+      "reset": [
+        { "argv": ["docker", "exec", "{container}", "psql", "-U", "postgres", "-c", "DROP DATABASE IF EXISTS {db}"] },
+        { "argv": ["docker", "exec", "{container}", "psql", "-U", "postgres", "-c", "CREATE DATABASE {db}"] }
+      ],
+      "apply_schema": [
+        { "argv": ["docker", "exec", "-i", "{container}", "psql", "-U", "postgres", "-d", "{db}", "-v", "ON_ERROR_STOP=1"], "stdin": "{schema_file}" }
+      ],
+      "apply_migrations": [
+        { "each_file": "{migrations_dir}/*.sql", "argv": ["docker", "exec", "-i", "{container}", "psql", "-U", "postgres", "-d", "{db}", "-v", "ON_ERROR_STOP=1"] }
+      ],
+      "dump": { "argv": ["docker", "exec", "{container}", "pg_dump", "-U", "postgres", "-d", "{db}", "--schema-only", "--no-owner", "--no-privileges"] },
+      "stop": [
+        { "argv": ["docker", "rm", "-f", "{container}"] }
+      ],
+      "normalize_drop_patterns": ["^--", "^SET ", "^SELECT pg_catalog\\.set_config", "^\\\\restrict", "^\\\\unrestrict", "^$"]
+    }
+  }
+}
