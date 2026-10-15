@@ -1,21 +1,61 @@
 # knowledge-agentics — Ecossistema Sarak
 
-> **Este README é o manual do diretório.** Explica **o que** este repositório é, **como as três peças se
+> **Este README é o manual do diretório.** Explica **o que** este repositório é (§1), **como as três peças se
 > encaixam** (§2) e **como criar/modificar** qualquer artefato sob o mesmo padrão (§4). Toda funcionalidade
 > nova nasce seguindo o que está aqui.
 
 ## 1. O que é este repositório
 
-A **base de inteligência do ecossistema Sarak**: o cérebro compartilhado que orienta como um agente
-(Claude Code, Codex, Antigravity) escreve, organiza, revisa e entrega código — **e** o repositório-modelo
-que cada projeto novo recebe como ponto de partida.
+**Em uma frase:** é a **base de inteligência do ecossistema Sarak** — o conhecimento compartilhado que
+orienta como um agente de IA (Claude Code, Codex, Antigravity) **escreve, organiza, revisa, protege e
+entrega** código, **e** o **repositório-modelo** de onde nasce cada projeto novo.
 
-Não é o código de um produto. São duas coisas, com destinos diferentes:
+Não é o código de um produto. Ninguém "roda" este repositório: ele é **consumido**. São duas coisas, com
+destinos diferentes:
 
-- **o que o agente sabe fazer** — fica aqui, e é consumido de fora (plugin/sincronizador);
-- **o que o projeto recebe** — é **copiado** para dentro dele e passa a ser dele.
+- **o que o agente sabe fazer** — skills, commands, agents e hooks. Fica **aqui** e chega aos projetos
+  instalado como o **plugin `sarak`** (ou espelhado pelo sincronizador, §8). Atualizou a base, todo projeto
+  passa a usar a versão nova.
+- **o que o projeto recebe** — o template de módulos e o fluxo de specs. É **copiado** para dentro do
+  projeto na criação e passa a ser **dele**: evolui lá, e só adota uma versão nova da base quando o dono do
+  projeto decide.
 
 Essa fronteira é a chave para entender o resto. É o que a §2 detalha.
+
+### 1.1 O que você encontra aqui
+
+| Se você quer… | A base oferece |
+|---|---|
+| que o agente escreva código no padrão | os **inegociáveis** (`AGENTS.md`) e a skill **`padrao-escrita`** (+ `padrao-typescript`/`padrao-python`), cobrados por hooks a cada edição |
+| começar um projeto novo | o **template de módulos** — esqueleto em TypeScript, JavaScript ou Python, com a lei, o verificador (82 regras) e os arquivos de container já dentro — e o **fluxo SDD** de specs |
+| levar um projeto legado ao padrão | as trilhas **auditar → caracterizar → adequar** (código, segurança, histórico git) |
+| publicar | as skills de **deploy** (Docker monólito ou microsserviço, Vercel) e de **pré-entrega** (limpeza, autoria, licença, documentação) |
+| testar, observar, otimizar | skills de teste (unitário, integração, contrato, e2e, carga, tempo real), de logs/métricas e de performance em três níveis de custo |
+
+### 1.2 O mapa do repositório
+
+```
+AGENTS.md / CLAUDE.md   os inegociáveis, sempre no contexto do agente (CLAUDE.md só importa o AGENTS.md)
+skills/                 o comportamento do agente — 56 skills, uma pasta cada (§7)
+commands/               os atalhos /comando que você dispara — 13
+agents/                 subagentes de contexto isolado (auditores, adequador, revisor) — 5
+hooks/                  as garantias determinísticas que rodam a cada edição/commit — 6
+specs/                  o que VIAJA para o projeto: template de módulos + fluxo SDD (§2)
+plugin/                 o sincronizador para provedores sem marketplace (§8)
+.claude-plugin/ .codex-plugin/ plugin.json   os manifestos do plugin `sarak` por provedor
+mapa.json               os sistemas que adotam a base (§8)
+.github/workflows/      a CI da própria base (auditoria + autoteste do template)
+package.json            só o ferramental de verificação da base (selftests, lint, typecheck)
+```
+
+### 1.3 Duas regras que valem para tudo
+
+- **A lei vive num lugar só, e quem cobra é a máquina.** A doutrina afirma, o gate e os hooks cobram, e as
+  skills **apontam** — nunca copiam (§2.4).
+- **Código em inglês; português só em três lugares:** o texto mostrado ao usuário final no front, os
+  comentários e a documentação (esta base inteira — skills, specs, READMEs — é documentação, por isso está
+  em português). A regra é o `ADR-023` e é cobrada pelo gate do template (`portuguese-identifier`) e, em
+  qualquer projeto, avisada pelo hook `padrao-idioma`.
 
 ---
 
@@ -90,7 +130,7 @@ skills e commands **apontam**; quem afirma é a doutrina, e quem cobra é o gate
 E os dois níveis não se misturam:
 
 - **Nível 0** — SRP, limiares (≤40 linhas, ≤3 aninhamento, ≤4 parâmetros), zero hardcoded, segredo no
-  `.env`. Vale para **qualquer** projeto → skill `padrao-escrita` + `padrao-<linguagem>`.
+  `.env`, código em inglês. Vale para **qualquer** projeto → skill `padrao-escrita` + `padrao-<linguagem>`.
 - **Nível 1** — a arquitetura de módulos. Vale **só** para projeto que adotou o template.
 
 Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.**
@@ -114,7 +154,7 @@ Sem o template, vale o Nível 0 — **não se improvisa meia estrutura modular.*
 | `skills/` | ✅ **56** skills por área (§7) |
 | `commands/` | ✅ **13** (code/cyber/git auditar→adequar; deploy/site/meta/entrega) |
 | `agents/` | ✅ **5** (`code-auditor`, `code-adequador`, `code-revisor`, `cyber-auditor`, `git-auditor`) |
-| `hooks/` | ✅ **5** hooks · **4** garantias (segredo no git, padrão de escrita, dependências, cobertura — `hooks/README.md`) |
+| `hooks/` | ✅ **6** hooks · **4** garantias (segredo no git, padrão de escrita — limiares, formato e idioma —, dependências, cobertura — `hooks/README.md`) |
 | `specs/` | ✅ template de módulos + fluxo SDD (app e site) + bases por linguagem |
 | `plugin/` | ✅ sincronizador de IDEs — ver `plugin/README.md` |
 
@@ -429,6 +469,10 @@ cobrada pelo `audit_base.py` (categoria `manifests`).
 
 ### Mapa de sistemas e carimbo
 
+> **A adoção é por sistema e sob demanda.** O template e as specs são copiados na criação e passam a ser do
+> projeto (§1): uma mudança na base **não** chega sozinha a nenhum sistema. Cada um adota uma versão nova
+> quando o seu dono decide, pelo fluxo de propagação descrito abaixo.
+
 Duas fontes, uma para cada coisa — é o que a **propagação** de atualizações da base lê:
 
 | Arquivo | Onde | O quê | Quem escreve |
@@ -484,7 +528,7 @@ fluxo SDD, primeiros módulos, `.agents/` e os hooks de git, e termina com o gat
 ```bash
 python skills/meta-iniciar-repositorio/scripts/init_repo.py \
   --target <caminho> --name "<nome>" --binding typescript --scope acme \
-  --modules catalogo:domain hub:connector --git-init
+  --modules catalog:domain hub:connector --git-init
 ```
 
 Depois dele restam quatro pendências de HITL, de propósito: preencher os **valores** do `.env`, escrever
